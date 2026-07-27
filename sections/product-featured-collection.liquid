@@ -89,13 +89,13 @@
   >
     <div class="product-featured-collection__inner section-spacing{% if section.settings.section_width == 'page' %} product-featured-collection__inner--page{% endif %}">
       {% if has_header_content %}
-        <div class="product-featured-collection__header product-featured-collection__header--centered">
+        <div class="product-featured-collection__header product-featured-collection__header--{{ section.settings.header_alignment | default: 'center' }}">
           {% if eyebrow_block != blank and eyebrow_block.settings.text != blank %}
             <p class="product-featured-collection__eyebrow" {{ eyebrow_block.shopify_attributes }}>{{ eyebrow_block.settings.text | escape }}</p>
           {% endif %}
           {% if heading_block != blank and heading_block.settings.heading != blank %}
             <div class="product-featured-collection__heading-block" {{ heading_block.shopify_attributes }}>
-              <{{ heading_block.settings.heading_tag }} class="product-featured-collection__heading omnise-heading--{{ heading_block.settings.heading_size }} heading--{{ heading_block.settings.heading_size }} content-heading--{{ heading_block.settings.alignment }}">
+              <{{ heading_block.settings.heading_tag }} class="product-featured-collection__heading omnise-heading--{{ heading_block.settings.heading_size }} heading--{{ heading_block.settings.heading_size }} content-heading--{{ section.settings.header_alignment | default: 'center' }}">
                 {{ heading_block.settings.heading | escape }}
               </{{ heading_block.settings.heading_tag }}>
             </div>
@@ -182,34 +182,28 @@
 
   .product-featured-collection__header {
     display: flex;
-    align-items: flex-end;
-    justify-content: center;
-    gap: 48px;
-  }
-
-  .product-featured-collection__header--with-intro {
-    justify-content: space-between;
-  }
-
-  .product-featured-collection__header--centered {
     flex-direction: column;
     gap: 8px;
-    justify-content: center;
+  }
+
+  .product-featured-collection__header--left {
+    align-items: flex-start;
+    text-align: left;
+  }
+
+  .product-featured-collection__header--center {
+    align-items: center;
+    text-align: center;
+  }
+
+  .product-featured-collection__header--right {
+    align-items: flex-end;
+    text-align: right;
   }
 
   .product-featured-collection__eyebrow {
     margin: 0;
     color: var(--color-text);
-  }
-
-  .product-featured-collection__header--centered .product-featured-collection__intro {
-    margin-inline: auto;
-    text-align: center;
-  }
-
-  .product-featured-collection__header:not(.product-featured-collection__header--with-intro) .product-featured-collection__intro {
-    margin-inline: auto;
-    text-align: center;
   }
 
   .product-featured-collection__intro {
@@ -240,10 +234,6 @@
     align-items: center;
     justify-content: safe center;
     scrollbar-width: none;
-  }
-
-  .product-featured-collection__header--with-intro .product-featured-collection__tabs {
-    justify-content: flex-end;
   }
 
   .product-featured-collection__tabs::-webkit-scrollbar,
@@ -508,17 +498,7 @@
 
   @media screen and (max-width: 989px) {
     .product-featured-collection__header {
-      align-items: flex-start;
-      flex-direction: column;
       gap: 24px;
-    }
-
-    .product-featured-collection__header:not(.product-featured-collection__header--with-intro) {
-      align-items: center;
-    }
-
-    .product-featured-collection__header--with-intro .product-featured-collection__tabs {
-      justify-content: flex-start;
     }
 
     .product-featured-collection--has-promotion .product-featured-collection__panels {
@@ -619,6 +599,12 @@
     {
       "type": "header",
       "content": "Layout"
+    },
+    {
+      "type": "text_alignment",
+      "id": "header_alignment",
+      "label": "Header alignment",
+      "default": "center"
     },
     {
       "type": "range",
@@ -746,12 +732,6 @@
             { "value": "h6", "label": "H6" }
           ],
           "default": "h2"
-        },
-        {
-          "type": "text_alignment",
-          "id": "alignment",
-          "label": "Alignment",
-          "default": "center"
         }
       ]
     },
