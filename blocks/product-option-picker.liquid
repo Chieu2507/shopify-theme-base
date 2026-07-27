@@ -1,0 +1,157 @@
+{% assign product = closest.product | default: product %}
+{% unless product.has_only_default_variant %}
+  <div class="product-option-picker" {{ block.shopify_attributes }} data-product-options>
+    {% for option in product.options_with_values %}
+      {% assign option_name = option.name | downcase | strip %}
+      {% assign option_is_color = false %}
+      {% assign option_is_size = false %}
+      {% if option_name contains 'size' %}{% assign option_is_size = true %}{% endif %}
+      {% if option_name contains 'color' %}{% assign option_is_color = true %}{% elsif option_name contains 'metal' %}{% assign option_is_color = true %}{% elsif option_name contains 'tone' %}{% assign option_is_color = true %}{% elsif option_name contains 'finish' %}{% assign option_is_color = true %}{% endif %}
+      {% assign picker_type = block.settings.picker_type | default: 'button' %}
+      {% assign option_is_swatch = false %}
+      {% if picker_type == 'button' and block.settings.enable_color_swatches and option_is_color %}{% assign option_is_swatch = true %}{% endif %}
+      {% assign show_size_guide = false %}
+      {% if option_is_size and block.settings.enable_size_chart and block.settings.size_chart != blank and block.settings.size_chart_page != blank %}{% assign show_size_guide = true %}{% endif %}
+      <fieldset class="product-option-picker__group product-option-picker__group--{{ picker_type }}{% if option_is_swatch %} product-option-picker__group--swatches{% endif %}" data-option-position="{{ option.position }}" data-option-style="{% if option_is_swatch %}color{% else %}{{ picker_type }}{% endif %}">
+        <legend{% unless block.settings.show_variant_labels or show_size_guide %} class="product-option-picker__legend--hidden"{% endunless %}>
+        <span{% unless block.settings.show_variant_labels %} class="visually-hidden"{% endunless %}>{{ option.name | escape }}{% if block.settings.show_variant_labels %}: <span data-option-label>{{ option.selected_value | escape }}</span>{% endif %}</span>
+        {% if show_size_guide %}
+          <button class="product-option-picker__size-chart" type="button" data-size-chart-open aria-controls="SizeChart-{{ section.id }}">{{ block.settings.size_guide | escape }}</button>
+        {% endif %}
+      </legend>
+        {% if picker_type == 'dropdown' %}
+          <div class="product-option-picker__select-wrap">
+            <select class="product-option-picker__select" name="options[{{ option.name | escape }}]" data-product-option data-option-position="{{ option.position }}" aria-label="{{ option.name | escape }}">
+              {% for value in option.values %}
+                {% assign value_name = value.name | default: value %}
+                <option value="{{ value_name | escape }}"{% if value_name == option.selected_value %} selected{% endif %}>{{ value_name | escape }}</option>
+              {% endfor %}
+            </select>
+            <svg aria-hidden="true" viewBox="0 0 12 8" fill="none"><path d="m1 1 5 5 5-5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </div>
+        {% else %}
+        <div class="product-option-picker__values">
+          {% for value in option.values %}
+            {% assign value_name = value.name | default: value %}
+            {% assign input_id = section.id | append: '-' | append: option.position | append: '-' | append: forloop.index %}
+            <input class="visually-hidden" type="radio" id="{{ input_id }}" name="options[{{ option.name | escape }}]" value="{{ value_name | escape }}" data-product-option data-option-position="{{ option.position }}"{% if value_name == option.selected_value %} checked{% endif %}>
+            {% assign swatch_key = value_name | handleize %}
+            {% assign swatch_color = '#e9e7e2' %}
+            {% assign swatch_image_url = blank %}
+            {% case swatch_key %}
+              {% when 'white' %}{% assign swatch_color = '#f6f5f1' %}
+              {% when 'silver' %}{% assign swatch_color = '#c6c8ca' %}
+              {% when 'yellow' %}{% assign swatch_color = '#d4ad56' %}
+              {% when 'gold' %}{% assign swatch_color = '#c6942f' %}
+              {% when 'rose', 'rose-gold' %}{% assign swatch_color = '#c98b82' %}
+              {% when 'black' %}{% assign swatch_color = '#1d1d1b' %}
+              {% when 'red' %}{% assign swatch_color = '#a93b3b' %}
+              {% when 'blue' %}{% assign swatch_color = '#6c83a9' %}
+              {% when 'green' %}{% assign swatch_color = '#6e866b' %}
+            {% endcase %}
+            {% if value.swatch.color != blank %}{% assign swatch_color = value.swatch.color | color_to_hex %}{% endif %}
+            {% if value.swatch.image != blank %}{% assign swatch_image_url = value.swatch.image | image_url: width: 96 %}{% endif %}
+            {% if option_is_swatch and block.settings.swatch_type == 'variant_image' %}
+              {% assign option_index = option.position | minus: 1 %}
+              {% for candidate_variant in product.variants %}
+                {% if candidate_variant.options[option_index] == value_name and candidate_variant.featured_media.preview_image != blank %}
+                  {% assign swatch_image_url = candidate_variant.featured_media.preview_image | image_url: width: 160 %}
+                  {% break %}
+                {% endif %}
+              {% endfor %}
+            {% endif %}
+            <label for="{{ input_id }}" class="product-option-picker__value"{% if option_is_swatch %} aria-label="{{ value_name | escape }}"{% endif %}>
+              {% if option_is_swatch %}<span class="product-option-picker__swatch" data-swatch-value="{{ swatch_key }}" style="--swatch-background: {{ swatch_color }};{% if swatch_image_url != blank %} --swatch-background-image: url('{{ swatch_image_url }}');{% endif %} --swatches-focal-point: center;"></span><span class="product-option-picker__value-text visually-hidden">{{ value_name | escape }}</span>{% else %}{% render 'product-option-value', value: value %}{% endif %}
+            </label>
+          {% endfor %}
+        </div>
+        {% endif %}
+      </fieldset>
+    {% endfor %}
+    {% if block.settings.enable_size_chart and block.settings.size_chart != blank and block.settings.size_chart_page != blank %}
+      <div class="product-size-chart" id="SizeChart-{{ section.id }}" data-size-chart-dialog role="dialog" aria-modal="true" aria-hidden="true" aria-labelledby="SizeChartTitle-{{ section.id }}" tabindex="-1">
+        <button type="button" class="product-size-chart__backdrop" data-size-chart-close aria-label="Close size chart"></button>
+        <div class="product-size-chart__panel">
+          <header class="product-size-chart__header">
+            <h2 id="SizeChartTitle-{{ section.id }}" class="product-size-chart__title">{{ block.settings.size_chart | escape }}</h2>
+            <button type="button" class="product-size-chart__close modal-close-button close-icon" data-size-chart-close aria-label="Close size chart"></button>
+          </header>
+          <div class="product-size-chart__content rte">{{ block.settings.size_chart_page.content }}</div>
+        </div>
+      </div>
+    {% endif %}
+  </div>
+{% endunless %}
+{% schema %}
+{
+  "name": "Variant picker",
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_variant_labels",
+      "label": "Show variant labels",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "picker_type",
+      "label": "Variant picker type",
+      "options": [
+        { "value": "dropdown", "label": "Dropdown" },
+        { "value": "button", "label": "Button" }
+      ],
+      "default": "button"
+    },
+    {
+      "type": "header",
+      "content": "Color swatches"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_color_swatches",
+      "label": "Enable color swatches",
+      "info": "Requires variant picker type to be Button.",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "swatch_type",
+      "label": "Swatch type",
+      "options": [
+        { "value": "color", "label": "Color swatch" },
+        { "value": "variant_image", "label": "Variant image" }
+      ],
+      "default": "color",
+      "info": "Variant image mode requires variants to have associated images."
+    },
+    {
+      "type": "header",
+      "content": "Size chart"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_size_chart",
+      "label": "Enable size chart",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "size_guide",
+      "label": "Size guide",
+      "default": "Size guide"
+    },
+    {
+      "type": "text",
+      "id": "size_chart",
+      "label": "Size chart",
+      "default": "Size chart"
+    },
+    {
+      "type": "page",
+      "id": "size_chart_page",
+      "label": "Select size chart",
+      "info": "Used only when the size chart is enabled."
+    }
+  ]
+}
+{% endschema %}

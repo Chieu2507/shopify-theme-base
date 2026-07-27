@@ -1,0 +1,862 @@
+{% liquid
+  assign announcement_item_count = 0
+
+  for block in section.blocks
+    case block.type
+      when 'text_slide'
+        if block.settings.text != blank
+          assign announcement_item_count = announcement_item_count | plus: 1
+        endif
+      when 'link'
+        if block.settings.label != blank and block.settings.url != blank
+          assign announcement_item_count = announcement_item_count | plus: 1
+        endif
+      when 'countdown_timer'
+        if block.settings.end_at != blank
+          assign announcement_item_count = announcement_item_count | plus: 1
+        endif
+    endcase
+  endfor
+%}
+
+{% if section.blocks.size > 0 %}
+  <announcement-bar
+    class="announcement-bar announcement-bar--navigator-{{ section.settings.navigator_style }} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
+    style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px; --announcement-bar-font-weight: {{ section.settings.font_weight }};"
+    data-behavior="{{ section.settings.text_behavior }}"
+    data-interval="{{ section.settings.autoplay_interval | times: 1000 }}"
+    aria-label="{{ 'announcement_bar.announcement' | t | escape }}"
+  >
+    <div class="announcement-bar__inner{% if section.settings.section_width == 'page' %} announcement-bar__inner--contained{% endif %}">
+      {% for block in section.blocks %}
+        {% if block.type == 'social_links' %}
+          {% if block.settings.facebook_url != blank or block.settings.instagram_url != blank or block.settings.pinterest_url != blank %}
+            <div
+              class="announcement-bar__social"
+              role="group"
+              aria-label="{{ 'announcement_bar.social_links' | t | escape }}"
+              {{ block.shopify_attributes }}
+            >
+              {% if block.settings.facebook_url != blank %}
+                <a href="{{ block.settings.facebook_url }}" aria-label="{{ 'announcement_bar.facebook' | t | escape }}">
+                  {% render 'social-icon', name: 'facebook', variant: 'announcement' %}
+                </a>
+              {% endif %}
+
+              {% if block.settings.instagram_url != blank %}
+                <a href="{{ block.settings.instagram_url }}" aria-label="{{ 'announcement_bar.instagram' | t | escape }}">
+                  {% render 'social-icon', name: 'instagram', variant: 'announcement' %}
+                </a>
+              {% endif %}
+
+              {% if block.settings.pinterest_url != blank %}
+                <a href="{{ block.settings.pinterest_url }}" aria-label="{{ 'announcement_bar.pinterest' | t | escape }}">
+                  {% render 'social-icon', name: 'pinterest', variant: 'announcement' %}
+                </a>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+
+      {% if announcement_item_count > 0 %}
+        <div class="announcement-bar__content">
+          <div class="announcement-bar__messages" aria-live="polite">
+            {% assign announcement_item_index = 0 %}
+            {% for block in section.blocks %}
+              {% case block.type %}
+                {% when 'text_slide' %}
+                  {% if block.settings.text != blank %}
+                    <div
+                      class="announcement-bar__item"
+                      data-announcement-item
+                      data-block-id="{{ block.id }}"
+                      {% if announcement_item_index > 0 and section.settings.text_behavior == 'rotate' %}hidden{% endif %}
+                      {{ block.shopify_attributes }}
+                    >
+                      {{ block.settings.text }}
+                    </div>
+                    {% assign announcement_item_index = announcement_item_index | plus: 1 %}
+                  {% endif %}
+
+                {% when 'link' %}
+                  {% if block.settings.label != blank and block.settings.url != blank %}
+                    <a
+                      class="announcement-bar__item announcement-bar__link"
+                      href="{{ block.settings.url }}"
+                      data-announcement-item
+                      data-block-id="{{ block.id }}"
+                      {% if block.settings.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+                      {% if announcement_item_index > 0 and section.settings.text_behavior == 'rotate' %}hidden{% endif %}
+                      {{ block.shopify_attributes }}
+                    >
+                      {{ block.settings.label | escape }}
+                    </a>
+                    {% assign announcement_item_index = announcement_item_index | plus: 1 %}
+                  {% endif %}
+
+                {% when 'countdown_timer' %}
+                  {% if block.settings.end_at != blank %}
+                    <div
+                      class="announcement-bar__item announcement-bar__countdown"
+                      data-announcement-item
+                      data-block-id="{{ block.id }}"
+                      data-announcement-countdown="{{ block.settings.end_at | escape }}"
+                      {% if announcement_item_index > 0 and section.settings.text_behavior == 'rotate' %}hidden{% endif %}
+                      {{ block.shopify_attributes }}
+                    >
+                      {% if block.settings.label != blank %}<span>{{ block.settings.label | escape }}</span>{% endif %}
+                      <time data-countdown-output>{{ 'announcement_bar.countdown_pending' | t }}</time>
+                    </div>
+                    {% assign announcement_item_index = announcement_item_index | plus: 1 %}
+                  {% endif %}
+              {% endcase %}
+            {% endfor %}
+          </div>
+
+          {% if section.settings.text_behavior == 'rotate' and announcement_item_count > 1 %}
+            <div class="announcement-bar__controls">
+              <nav class="announcement-bar__navigator" aria-label="{{ 'announcement_bar.slide_navigation' | t | escape }}" data-announcement-navigator>
+                <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="-1" aria-label="{{ 'announcement_bar.previous_slide' | t | escape }}">
+                  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m9.5 3-5 5 5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
+                </button>
+                <span class="announcement-bar__navigator-dots">
+                  {% for item_number in (1..announcement_item_count) %}
+                    <button class="announcement-bar__navigator-dot" type="button" data-announcement-index="{{ forloop.index0 }}" aria-label="{{ 'announcement_bar.go_to_slide' | t: index: item_number | escape }}"{% if forloop.first %} aria-current="true"{% endif %}><span></span></button>
+                  {% endfor %}
+                </span>
+                <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="1" aria-label="{{ 'announcement_bar.next_slide' | t | escape }}">
+                  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m6.5 3 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
+                </button>
+              </nav>
+              <button
+                class="announcement-bar__rotation-toggle"
+                type="button"
+                data-announcement-rotation-toggle
+                data-pause-label="{{ 'announcement_bar.pause_rotation' | t | escape }}"
+                data-play-label="{{ 'announcement_bar.play_rotation' | t | escape }}"
+                aria-label="{{ 'announcement_bar.pause_rotation' | t | escape }}"
+                aria-pressed="false"
+                hidden
+              >
+                <svg data-announcement-pause-icon viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                  <path d="M5 3v10M11 3v10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/>
+                </svg>
+                <svg data-announcement-play-icon viewBox="0 0 16 16" aria-hidden="true" focusable="false" hidden>
+                  <path d="m5 3 7 5-7 5V3Z" fill="currentColor"/>
+                </svg>
+              </button>
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+    </div>
+  </announcement-bar>
+{% endif %}
+
+{% stylesheet %}
+  .announcement-bar {
+    position: relative;
+    z-index: 22;
+    display: block;
+    width: 100%;
+    min-height: var(--announcement-bar-height);
+    background: var(--gradient-background, var(--color-background));
+    color: var(--color-text);
+    font-family: var(--font-body--family);
+    font-size: var(--font-caption);
+    font-weight: var(--announcement-bar-font-weight);
+  }
+
+  .announcement-bar__inner {
+    position: relative;
+    display: grid;
+    min-height: var(--announcement-bar-height);
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    padding-inline: var(--page-margin);
+  }
+
+  .announcement-bar__inner--contained {
+    width: min(100%, var(--page-width));
+    margin-inline: auto;
+  }
+
+  .announcement-bar__content {
+    display: block;
+    min-width: 0;
+    grid-column: 2;
+    grid-row: 1;
+    justify-content: center;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .announcement-bar__messages {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+    gap: 24px;
+    justify-content: center;
+  }
+
+  .announcement-bar[data-behavior='rotate'] .announcement-bar__item[hidden] {
+    display: none;
+  }
+
+  .announcement-bar__item {
+    color: inherit;
+    white-space: nowrap;
+    will-change: opacity, transform;
+  }
+
+  .announcement-bar__item p {
+    display: inline;
+  }
+
+  .announcement-bar__link {
+    text-underline-offset: 3px;
+  }
+
+  .announcement-bar__rotation-toggle {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    flex: 0 0 auto;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    opacity: 0.8;
+    place-items: center;
+    transition: opacity 160ms ease;
+  }
+
+  .announcement-bar__rotation-toggle[hidden],
+  .announcement-bar__rotation-toggle svg[hidden] {
+    display: none;
+  }
+
+  .announcement-bar__rotation-toggle:hover {
+    opacity: 1;
+  }
+
+  .announcement-bar__rotation-toggle:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 2px;
+  }
+
+  .announcement-bar__rotation-toggle svg {
+    width: 14px;
+    height: 14px;
+  }
+
+  .announcement-bar__controls {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .announcement-bar__navigator {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+    pointer-events: none;
+  }
+
+  .announcement-bar__navigator-dots {
+    display: inline-flex;
+    grid-column: 2;
+    align-items: center;
+    gap: 4px;
+    pointer-events: auto;
+  }
+
+  .announcement-bar__navigator-arrow,
+  .announcement-bar__navigator-dot {
+    display: grid;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    place-items: center;
+  }
+
+  .announcement-bar__navigator-arrow {
+    width: 26px;
+    height: 26px;
+    color: #fff;
+    opacity: 0.78;
+    pointer-events: auto;
+    transition: opacity 180ms ease, transform 180ms ease;
+  }
+
+  .announcement-bar__navigator-arrow:first-child { grid-column: 1; justify-self: start; margin-left: 24px; }
+  .announcement-bar__navigator-arrow:last-child { grid-column: 3; justify-self: end; margin-right: 24px; }
+
+  .announcement-bar__navigator-arrow:hover {
+    opacity: 1;
+    transform: scale(1.06);
+  }
+
+  .announcement-bar__navigator-arrow svg { width: 16px; height: 16px; }
+
+  .announcement-bar__navigator-dot { width: 15px; height: 22px; }
+  .announcement-bar__navigator-dot span {
+    display: block;
+    width: 4px;
+    height: 4px;
+    border-radius: 999px;
+    background: currentcolor;
+    opacity: 0.42;
+    transition: width 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
+  }
+
+  .announcement-bar__navigator-dot[aria-current='true'] span { width: 16px; opacity: 1; }
+
+  .announcement-bar__navigator-arrow:focus-visible,
+  .announcement-bar__navigator-dot:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 2px;
+  }
+
+  .announcement-bar--navigator-dots .announcement-bar__navigator-arrow,
+  .announcement-bar--navigator-arrows .announcement-bar__navigator-dots,
+  .announcement-bar--navigator-both .announcement-bar__navigator-dots { display: none; }
+
+  .announcement-bar--navigator-dots .announcement-bar__navigator-dots { grid-column: 3; justify-self: end; }
+  .announcement-bar__rotation-toggle { display: none !important; }
+
+  .announcement-bar__countdown {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+
+  .announcement-bar__social {
+    display: flex;
+    grid-column: 1;
+    grid-row: 1;
+    align-items: center;
+    gap: 16px;
+    justify-self: start;
+  }
+
+  .announcement-bar__social > * {
+    display: grid;
+    width: 13px;
+    height: 13px;
+    place-items: center;
+    color: inherit;
+    opacity: 0.8;
+    transition: opacity 160ms ease;
+  }
+
+  .announcement-bar__social a:hover {
+    opacity: 1;
+  }
+
+  .announcement-bar__social svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 749px) {
+    .announcement-bar,
+    .announcement-bar__inner {
+      min-height: var(--announcement-bar-height-mobile);
+    }
+
+    .announcement-bar__inner {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .announcement-bar__content {
+      width: 100%;
+      grid-column: 1;
+      overflow: hidden;
+    }
+
+    .announcement-bar__messages {
+      overflow: hidden;
+    }
+
+    .announcement-bar__item {
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .announcement-bar__social {
+      display: none;
+    }
+
+    .announcement-bar__navigator-arrow { width: 24px; height: 24px; }
+    .announcement-bar__navigator-arrow svg { width: 14px; height: 14px; }
+    .announcement-bar__navigator-arrow:first-child { margin-left: 12px; }
+    .announcement-bar__navigator-arrow:last-child { margin-right: 12px; }
+    .announcement-bar__navigator-dots { gap: 2px; }
+    .announcement-bar__navigator-dot { width: 11px; }
+    .announcement-bar__navigator-dot[aria-current='true'] span { width: 11px; }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .announcement-bar__social > *,
+    .announcement-bar__rotation-toggle,
+    .announcement-bar__navigator-arrow,
+    .announcement-bar__navigator-dot span,
+    .announcement-bar__item {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  if (!customElements.get('announcement-bar')) {
+    class AnnouncementBar extends HTMLElement {
+      connectedCallback() {
+        this.items = Array.from(this.querySelectorAll('[data-announcement-item]'));
+        this.rotationToggle = this.querySelector('[data-announcement-rotation-toggle]');
+        this.navigator = this.querySelector('[data-announcement-navigator]');
+        this.navigatorDots = Array.from(this.querySelectorAll('[data-announcement-index]'));
+        this.countdowns = Array.from(this.querySelectorAll('[data-announcement-countdown]'));
+        this.pauseIcon = this.querySelector('[data-announcement-pause-icon]');
+        this.playIcon = this.querySelector('[data-announcement-play-icon]');
+        this.index = Math.max(0, this.items.findIndex((item) => !item.hidden));
+        this.interval = Number(this.dataset.interval) || 5000;
+        this.motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
+        this.reduceMotion = this.motionPreference.matches;
+        this.isPausedByUser = false;
+        this.isPointerInside = false;
+        this.hasFocusWithin = false;
+        this.itemAnimation = null;
+        this.onBlockSelect = this.handleBlockSelect.bind(this);
+        this.onMouseEnter = this.handleMouseEnter.bind(this);
+        this.onMouseLeave = this.handleMouseLeave.bind(this);
+        this.onFocusIn = this.handleFocusIn.bind(this);
+        this.onFocusOut = this.handleFocusOut.bind(this);
+        this.onRotationToggle = this.handleRotationToggle.bind(this);
+        this.onNavigatorClick = this.handleNavigatorClick.bind(this);
+        this.onMotionPreferenceChange = this.handleMotionPreferenceChange.bind(this);
+        this.onVisibilityChange = this.handleVisibilityChange.bind(this);
+        this.addEventListener('mouseenter', this.onMouseEnter);
+        this.addEventListener('mouseleave', this.onMouseLeave);
+        this.addEventListener('focusin', this.onFocusIn);
+        this.addEventListener('focusout', this.onFocusOut);
+        this.rotationToggle?.addEventListener('click', this.onRotationToggle);
+        this.navigator?.addEventListener('click', this.onNavigatorClick);
+        this.motionPreference.addEventListener('change', this.onMotionPreferenceChange);
+        document.addEventListener('shopify:block:select', this.onBlockSelect);
+        document.addEventListener('visibilitychange', this.onVisibilityChange);
+        this.updateCountdowns();
+        this.startCountdowns();
+        this.updateRotationControl();
+        this.updateNavigator();
+        this.startRotation();
+      }
+
+      disconnectedCallback() {
+        this.stopRotation();
+        this.itemAnimation?.cancel();
+        window.clearInterval(this.countdownTimer);
+        this.removeEventListener('mouseenter', this.onMouseEnter);
+        this.removeEventListener('mouseleave', this.onMouseLeave);
+        this.removeEventListener('focusin', this.onFocusIn);
+        this.removeEventListener('focusout', this.onFocusOut);
+        this.rotationToggle?.removeEventListener('click', this.onRotationToggle);
+        this.navigator?.removeEventListener('click', this.onNavigatorClick);
+        this.motionPreference.removeEventListener('change', this.onMotionPreferenceChange);
+        document.removeEventListener('shopify:block:select', this.onBlockSelect);
+        document.removeEventListener('visibilitychange', this.onVisibilityChange);
+        this.stopCountdowns();
+      }
+
+      startRotation() {
+        this.stopRotation();
+        if (
+          this.dataset.behavior !== 'rotate' ||
+          this.items.length < 2 ||
+          this.reduceMotion ||
+          this.isPausedByUser ||
+          this.isPointerInside ||
+          this.hasFocusWithin ||
+          document.hidden
+        ) return;
+        this.rotationTimer = window.setInterval(() => this.showItem(this.index + 1), this.interval);
+      }
+
+      stopRotation() {
+        window.clearInterval(this.rotationTimer);
+        this.rotationTimer = null;
+      }
+
+      startCountdowns() {
+        this.stopCountdowns();
+        if (!this.countdowns.length || document.hidden) return;
+        this.countdownTimer = window.setInterval(() => this.updateCountdowns(), 1000);
+      }
+
+      stopCountdowns() {
+        window.clearInterval(this.countdownTimer);
+        this.countdownTimer = null;
+      }
+
+      handleVisibilityChange() {
+        if (document.hidden) {
+          this.stopRotation();
+          this.stopCountdowns();
+          return;
+        }
+        this.updateCountdowns();
+        this.startCountdowns();
+        this.startRotation();
+      }
+
+      showItem(index) {
+        if (!this.items.length) return;
+        const nextIndex = (index + this.items.length) % this.items.length;
+        if (nextIndex === this.index) {
+          this.updateNavigator();
+          return;
+        }
+        this.itemAnimation?.cancel();
+        this.index = nextIndex;
+        this.items.forEach((item, itemIndex) => {
+          item.hidden = itemIndex !== this.index;
+        });
+        this.updateNavigator();
+
+        const nextItem = this.items[this.index];
+        if (!this.reduceMotion && typeof nextItem.animate === 'function') {
+          this.itemAnimation = nextItem.animate([
+            { opacity: 0, transform: 'translateY(6px)' },
+            { opacity: 1, transform: 'translateY(0)' }
+          ], {
+            duration: 300,
+            easing: 'cubic-bezier(0.22, 1, 0.36, 1)'
+          });
+        }
+      }
+
+      handleBlockSelect(event) {
+        const item = event.target.closest('[data-announcement-item]');
+        if (!item || !this.contains(item)) return;
+        const itemIndex = this.items.indexOf(item);
+        if (itemIndex >= 0 && this.dataset.behavior === 'rotate') this.showItem(itemIndex);
+        this.stopRotation();
+      }
+
+      handleMouseEnter() {
+        this.isPointerInside = true;
+        this.stopRotation();
+      }
+
+      handleMouseLeave() {
+        this.isPointerInside = false;
+        this.startRotation();
+      }
+
+      handleFocusIn() {
+        this.hasFocusWithin = true;
+        this.stopRotation();
+      }
+
+      handleFocusOut(event) {
+        if (this.contains(event.relatedTarget)) return;
+        this.hasFocusWithin = false;
+        this.startRotation();
+      }
+
+      handleRotationToggle() {
+        this.isPausedByUser = !this.isPausedByUser;
+        if (this.isPausedByUser) {
+          this.stopRotation();
+        } else {
+          this.startRotation();
+        }
+        this.updateRotationControl();
+      }
+
+      handleNavigatorClick(event) {
+        const control = event.target.closest('[data-announcement-index], [data-announcement-step]');
+        if (!control || !this.navigator?.contains(control)) return;
+        this.stopRotation();
+        if (control.dataset.announcementIndex !== undefined) {
+          this.showItem(Number(control.dataset.announcementIndex));
+        } else {
+          this.showItem(this.index + Number(control.dataset.announcementStep));
+        }
+        this.startRotation();
+      }
+
+      handleMotionPreferenceChange(event) {
+        this.reduceMotion = event.matches;
+        this.itemAnimation?.cancel();
+        if (this.reduceMotion) {
+          this.stopRotation();
+        } else {
+          this.startRotation();
+        }
+        this.updateRotationControl();
+      }
+
+      updateRotationControl() {
+        if (!this.rotationToggle) return;
+        const canRotate = this.dataset.behavior === 'rotate' && this.items.length > 1 && !this.reduceMotion;
+        this.rotationToggle.hidden = !canRotate;
+        if (!canRotate) return;
+
+        this.rotationToggle.setAttribute('aria-pressed', String(this.isPausedByUser));
+        this.rotationToggle.setAttribute(
+          'aria-label',
+          this.isPausedByUser ? this.rotationToggle.dataset.playLabel : this.rotationToggle.dataset.pauseLabel
+        );
+        if (this.pauseIcon) this.pauseIcon.hidden = this.isPausedByUser;
+        if (this.playIcon) this.playIcon.hidden = !this.isPausedByUser;
+      }
+
+      updateNavigator() {
+        this.navigatorDots.forEach((dot, dotIndex) => {
+          if (dotIndex === this.index) {
+            dot.setAttribute('aria-current', 'true');
+          } else {
+            dot.removeAttribute('aria-current');
+          }
+        });
+      }
+
+      updateCountdowns() {
+        this.countdowns.forEach((countdown) => {
+          const output = countdown.querySelector('[data-countdown-output]');
+          const endTime = new Date(countdown.dataset.announcementCountdown).getTime();
+          if (!output || Number.isNaN(endTime)) return;
+          const remaining = Math.max(0, endTime - Date.now());
+          const days = Math.floor(remaining / 86400000);
+          const hours = Math.floor((remaining % 86400000) / 3600000);
+          const minutes = Math.floor((remaining % 3600000) / 60000);
+          const seconds = Math.floor((remaining % 60000) / 1000);
+          output.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
+        });
+      }
+    }
+
+    customElements.define('announcement-bar', AnnouncementBar);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Announcement bar",
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "select",
+      "id": "text_behavior",
+      "label": "Text block behavior",
+      "options": [
+        {
+          "value": "rotate",
+          "label": "Rotate"
+        },
+        {
+          "value": "show_all",
+          "label": "Show all"
+        }
+      ],
+      "default": "rotate"
+    },
+    {
+      "type": "range",
+      "id": "autoplay_interval",
+      "min": 3,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "label": "Autoplay interval",
+      "default": 5,
+      "visible_if": "{{ section.settings.text_behavior == 'rotate' }}"
+    },
+    {
+      "type": "select",
+      "id": "navigator_style",
+      "label": "Navigator style",
+      "options": [
+        { "value": "arrows", "label": "Arrows at sides" },
+        { "value": "dots", "label": "Dots" }
+      ],
+      "default": "arrows",
+      "visible_if": "{{ section.settings.text_behavior == 'rotate' }}"
+    },
+    {
+      "type": "select",
+      "id": "font_weight",
+      "label": "Font weight",
+      "options": [
+        {
+          "value": "400",
+          "label": "Regular"
+        },
+        {
+          "value": "500",
+          "label": "Medium"
+        },
+        {
+          "value": "600",
+          "label": "Semi bold"
+        }
+      ],
+      "default": "400"
+    },
+    {
+      "type": "range",
+      "id": "height_desktop",
+      "min": 37,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "label": "Desktop height",
+      "default": 41
+    },
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "min": 32,
+      "max": 52,
+      "step": 1,
+      "unit": "px",
+      "label": "Mobile height",
+      "default": 37
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "page",
+          "label": "Page width"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-3"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "social_links",
+      "name": "Social links",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "url",
+          "id": "facebook_url",
+          "label": "Facebook URL"
+        },
+        {
+          "type": "url",
+          "id": "instagram_url",
+          "label": "Instagram URL"
+        },
+        {
+          "type": "url",
+          "id": "pinterest_url",
+          "label": "Pinterest URL"
+        }
+      ]
+    },
+    {
+      "type": "text_slide",
+      "name": "Text slide",
+      "settings": [
+        {
+          "type": "inline_richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "Free shipping worldwide on orders over $150 USD"
+        }
+      ]
+    },
+    {
+      "type": "link",
+      "name": "Link",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Shop now"
+        },
+        {
+          "type": "url",
+          "id": "url",
+          "label": "Link"
+        },
+        {
+          "type": "checkbox",
+          "id": "open_in_new_tab",
+          "label": "Open in a new tab",
+          "default": false
+        }
+      ]
+    },
+    {
+      "type": "countdown_timer",
+      "name": "Countdown timer",
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Offer ends in"
+        },
+        {
+          "type": "text",
+          "id": "end_at",
+          "label": "End date and time",
+          "info": "Use ISO 8601 format, for example 2026-12-31T23:59:59Z"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Announcement bar",
+      "blocks": [
+        {
+          "type": "social_links",
+          "settings": {
+            "facebook_url": "https://www.facebook.com/",
+            "instagram_url": "https://www.instagram.com/",
+            "pinterest_url": "https://www.pinterest.com/"
+          }
+        },
+        { "type": "text_slide" }
+      ]
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,23 @@
+{% if variant != blank %}
+  {% assign on_sale = false %}
+  {% if variant.compare_at_price > variant.price %}{% assign on_sale = true %}{% endif %}
+  {% assign discount_amount = variant.compare_at_price | minus: variant.price %}
+  {% assign discount_percentage = discount_amount | times: 100.0 | divided_by: variant.compare_at_price | round %}
+  <div class="product-price product-price--{{ block.settings.price_size }}{% if on_sale %} product-price--sale{% endif %}" data-product-price {{ block.shopify_attributes }}>
+    <span class="product-price__current" data-price>{% render 'money', amount: variant.price %}</span>
+    <s class="product-price__compare{% unless on_sale %} is-hidden{% endunless %}" data-compare-price>{% render 'money', amount: variant.compare_at_price %}</s>
+    {% if settings.show_sale_badge %}
+      <span class="product-badge product-badge--sale product-price__sale-badge" data-sale-badge data-discount-mode="{{ block.settings.show_discount_percentage }}"{% unless on_sale %} hidden{% endunless %}>
+        <span data-sale-badge-value>{% if block.settings.show_discount_percentage %}{{ discount_percentage }}% OFF{% else %}{% render 'money', amount: discount_amount %} OFF{% endif %}</span>
+      </span>
+    {% endif %}
+    {% unless settings.hide_shipping_content %}
+      {% if shop.taxes_included or shop.shipping_policy.body != blank %}
+        <small class="product-price__shipping" data-shipping-content>
+          {% if shop.taxes_included %}Taxes included.{% endif %}
+          {% if shop.shipping_policy.body != blank %} <a href="{{ shop.shipping_policy.url }}">Shipping calculated at checkout.</a>{% endif %}
+        </small>
+      {% endif %}
+    {% endunless %}
+  </div>
+{% endif %}

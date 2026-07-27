@@ -1,0 +1,319 @@
+{% doc %}
+  Renders a product card for collection-based product grids and rails.
+
+  @param {product} [product] - Product resource to render.
+  @param {string} [media_ratio] - Product media ratio: global, square, portrait, or adapt.
+  @param {boolean} [show_badges] - Whether sale and sold-out badges are visible.
+  @param {boolean} [show_compare_at_price] - Whether the compare-at price is visible.
+  @param {boolean} [show_variant_dots] - Whether a compact variant count indicator is visible.
+  @param {number} [placeholder_index] - Placeholder artwork index used when no product is available.
+  @param {string} [sizes] - Responsive image sizes attribute.
+  @param {string} [loading] - Image loading behavior.
+  @param {string} [fetchpriority] - Browser fetch priority for the primary product image.
+  @param {boolean} [preload] - Whether Shopify should emit an early preload hint for the primary image.
+  @param {string} [heading_tag] - Semantic product-title heading tag from h2 through h6.
+  @param {boolean} [show_secondary_image] - Whether the second product image appears on hover. Defaults to Product cards theme settings.
+  @param {boolean} [show_quick_add] - Whether an available one-variant product can be added directly.
+  @param {boolean} [show_media_actions] - Whether card hover actions are visible over the media.
+  @param {boolean} [enable_quick_view] - Whether the quick view dialog is available from the card.
+
+  @example
+  {% render 'product-card', product: product, media_ratio: 'portrait', show_badges: true %}
+{% enddoc %}
+
+{% liquid
+  assign placeholder_seed = placeholder_index | default: product.id | default: 1
+  assign placeholder_asset_index = placeholder_seed | minus: 1 | modulo: 4 | plus: 1
+  assign placeholder_asset = 'placeholder-image-product-' | append: placeholder_asset_index | append: '.svg'
+  assign card_sizes = sizes | default: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 50vw'
+  assign card_loading = loading | default: 'lazy'
+  assign card_fetchpriority = fetchpriority | default: 'auto'
+  assign card_heading_tag = heading_tag | default: 'h3'
+  assign card_media_ratio = media_ratio | default: 'global'
+  if show_badges == nil
+    assign show_badges = true
+  endif
+  if show_compare_at_price == nil
+    assign show_compare_at_price = settings.show_compare_at_price
+  endif
+  if show_variant_dots == nil
+    assign show_variant_dots = settings.show_variant_indicators
+  endif
+  if card_media_ratio == 'global'
+    assign card_media_ratio = settings.product_card_image_ratio | default: 'portrait'
+  endif
+  if show_secondary_image == nil
+    assign show_secondary_image = settings.product_card_show_secondary_image
+  endif
+  assign show_quick_add = show_quick_add | default: false
+  assign show_media_actions = show_media_actions | default: false
+  assign enable_quick_view = enable_quick_view | default: false
+  assign is_best_seller = false
+  assign color_option = blank
+  assign secondary_image = blank
+
+  case card_heading_tag
+    when 'h2', 'h3', 'h4', 'h5', 'h6'
+    else
+      assign card_heading_tag = 'h3'
+  endcase
+
+  if product
+    assign card_variant = product.selected_or_first_available_variant
+    assign card_price = card_variant.price
+    assign card_compare_at_price = card_variant.compare_at_price
+    assign card_currency_code = cart.currency.iso_code | default: shop.currency
+    assign card_price_text = card_price | money
+    if settings.show_currency_code
+      assign card_price_text = card_price_text | append: ' ' | append: card_currency_code
+    endif
+    assign is_on_sale = false
+
+    if product.price_varies
+      assign card_min_price = product.price_min | money
+      if settings.show_currency_code
+        assign card_min_price = card_min_price | append: ' ' | append: card_currency_code
+      endif
+      assign card_price_text = 'product_card.from_price' | t: price: card_min_price
+    endif
+
+    if card_compare_at_price > card_price
+      assign is_on_sale = true
+    endif
+    if product.tags contains 'Best Seller'
+      assign is_best_seller = true
+    endif
+
+    if product.images[1] != blank
+      assign secondary_image = product.images[1]
+    endif
+
+    for option in product.options_with_values
+      assign option_name = option.name | downcase
+      if option_name == 'color' or option_name == 'colour'
+        assign color_option = option
+        break
+      endif
+    endfor
+  endif
+
+  assign has_visible_badge = false
+  if show_badges and product
+    if product.available == false and settings.show_sold_out_badge
+      assign has_visible_badge = true
+    elsif is_on_sale and settings.show_sale_badge
+      assign has_visible_badge = true
+    elsif is_best_seller
+      assign has_visible_badge = true
+    endif
+  endif
+%}
+
+<article class="product-card{% unless product %} product-card--placeholder{% endunless %}"{% if product %} data-product-card data-product-card-url="{{ product.url }}" data-selected-variant-id="{{ card_variant.id }}"{% endif %}>
+  <div class="product-card__media product-card__media--{{ card_media_ratio }}">
+    {% if product %}
+      <a class="product-card__media-link" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+        {% if product.featured_image %}
+          {% render 'responsive-image',
+            image: product.featured_image,
+            max_width: 960,
+            widths: '240, 360, 480, 640, 800, 960',
+            sizes: card_sizes,
+            class: 'product-card__image',
+            loading: card_loading,
+            fetchpriority: card_fetchpriority,
+            preload: preload,
+            alt: product.featured_image.alt
+          %}
+          {% if show_secondary_image and secondary_image != blank %}
+            <img
+              class="product-card__image product-card__image--secondary"
+              alt=""
+              width="{{ secondary_image.width }}"
+              height="{{ secondary_image.height }}"
+              decoding="async"
+              loading="lazy"
+              src="{{ secondary_image | image_url: width: 960 }}"
+              srcset="
+                {{ secondary_image | image_url: width: 240 }} 240w,
+                {{ secondary_image | image_url: width: 360 }} 360w,
+                {{ secondary_image | image_url: width: 480 }} 480w,
+                {{ secondary_image | image_url: width: 640 }} 640w,
+                {{ secondary_image | image_url: width: 800 }} 800w,
+                {{ secondary_image | image_url: width: 960 }} 960w
+              "
+              sizes="{{ card_sizes | escape }}"
+              data-product-card-secondary-image
+              data-secondary-src="{{ secondary_image | image_url: width: 960 }}"
+              data-secondary-srcset="
+                {{ secondary_image | image_url: width: 240 }} 240w,
+                {{ secondary_image | image_url: width: 360 }} 360w,
+                {{ secondary_image | image_url: width: 480 }} 480w,
+                {{ secondary_image | image_url: width: 640 }} 640w,
+                {{ secondary_image | image_url: width: 800 }} 800w,
+                {{ secondary_image | image_url: width: 960 }} 960w
+              "
+              data-secondary-sizes="{{ card_sizes | escape }}"
+            >
+          {% endif %}
+        {% else %}
+          {% render 'media-placeholder', class_name: 'product-card__placeholder', asset_name: placeholder_asset %}
+        {% endif %}
+      </a>
+
+      {% if has_visible_badge %}
+        <div class="product-card__badges">
+          {% unless product.available %}
+            {% if settings.show_sold_out_badge %}<span class="product-card__badge product-card__badge--sold-out">{{ 'product_card.sold_out' | t }}</span>{% endif %}
+          {% elsif is_on_sale %}
+            {% if settings.show_sale_badge %}<span class="product-card__badge product-card__badge--sale">{{ 'product_card.sale' | t }}</span>{% endif %}
+          {% elsif is_best_seller %}
+            <span class="product-card__badge product-card__badge--best-seller">{{ 'product_card.best_seller' | t }}</span>
+          {% endunless %}
+        </div>
+      {% endif %}
+
+      {% if show_media_actions %}
+        <div class="product-card__media-actions">
+          {% if enable_quick_view %}
+            <button class="product-card__media-action" type="button" aria-label="{{ 'product_card.quick_view' | t | escape }}" aria-haspopup="dialog" data-product-card-quick-view-open data-product-card-quick-view-url="{{ product.url }}">
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
+            </button>
+          {% endif %}
+          <button class="product-card__media-action product-card__media-action--primary" type="button" aria-label="{{ 'product_card.quick_add' | t | escape }}" data-product-card-quick-add{% unless card_variant.available %} disabled{% endunless %}>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+          </button>
+        </div>
+      {% endif %}
+    {% else %}
+      {% render 'media-placeholder', class_name: 'product-card__placeholder', asset_name: placeholder_asset %}
+    {% endif %}
+  </div>
+
+  <div class="product-card__content">
+    <div class="product-card__details">
+      {% if product %}
+        <{{ card_heading_tag }} class="product-card__title"><a href="{{ product.url }}">{{ product.title | escape }}</a></{{ card_heading_tag }}>
+        {% if settings.show_product_vendor and product.vendor != blank %}<p class="product-card__vendor">{{ product.vendor | escape }}</p>{% endif %}
+        <div class="product-card__price{% if is_on_sale %} product-card__price--sale{% endif %}" data-product-card-price>
+          <span data-product-card-current-price>{{ card_price_text }}</span>
+          {% if show_compare_at_price %}
+            <s data-product-card-compare-price{% unless is_on_sale %} hidden{% endunless %}>{% if is_on_sale %}{% render 'money', amount: card_compare_at_price %}{% endif %}</s>
+          {% endif %}
+        </div>
+      {% else %}
+        <{{ card_heading_tag }} class="product-card__title">{{ 'onboarding.product_title' | t }}</{{ card_heading_tag }}>
+        <div class="product-card__price"><span>{% render 'money', amount: 0 %}</span></div>
+      {% endif %}
+    </div>
+
+    {% if product and show_variant_dots and color_option != blank %}
+      <ul class="product-card__variant-dots" role="list" aria-label="{{ color_option.name | escape }}">
+        {% for value in color_option.values limit: 4 %}
+          {% liquid
+            assign swatch_key = value.name | handleize
+            assign swatch_color = blank
+            assign value_variant = value.variant
+            assign variant_price_text = value_variant.price | money
+            assign variant_compare_at_price_text = value_variant.compare_at_price | money
+            assign variant_image_url = blank
+            assign variant_image_srcset = blank
+            assign variant_image_alt = product.title
+            assign value_is_on_sale = false
+            assign is_swatch_selected = false
+
+            if settings.show_currency_code
+              assign variant_price_text = variant_price_text | append: ' ' | append: card_currency_code
+              assign variant_compare_at_price_text = variant_compare_at_price_text | append: ' ' | append: card_currency_code
+            endif
+
+            if value_variant.compare_at_price > value_variant.price
+              assign value_is_on_sale = true
+            endif
+
+            if value_variant.featured_media != blank
+              assign variant_image = value_variant.featured_media.preview_image
+              assign variant_image_url = variant_image | image_url: width: 960
+              capture variant_image_srcset
+                echo variant_image | image_url: width: 240 | append: ' 240w, '
+                echo variant_image | image_url: width: 360 | append: ' 360w, '
+                echo variant_image | image_url: width: 480 | append: ' 480w, '
+                echo variant_image | image_url: width: 640 | append: ' 640w, '
+                echo variant_image | image_url: width: 800 | append: ' 800w, '
+                echo variant_image | image_url: width: 960 | append: ' 960w'
+              endcapture
+              if value_variant.featured_media.alt != blank
+                assign variant_image_alt = value_variant.featured_media.alt
+              endif
+            endif
+
+            if value.selected
+              assign is_swatch_selected = true
+            elsif forloop.first
+              assign is_swatch_selected = true
+            endif
+
+            if value.swatch.color != blank
+              assign swatch_color = value.swatch.color | color_to_hex
+            endif
+
+            if swatch_color == blank
+              case swatch_key
+                when 'gold', 'yellow-gold'
+                  assign swatch_color = '#d4ad56'
+                when 'silver', 'white-gold'
+                  assign swatch_color = '#c6c8ca'
+                when 'rose-gold'
+                  assign swatch_color = '#c98b82'
+                when 'black'
+                  assign swatch_color = '#1d1d1b'
+                when 'blue'
+                  assign swatch_color = '#6c83a9'
+                when 'green'
+                  assign swatch_color = '#6e866b'
+              endcase
+            endif
+          %}
+          <li class="product-card__variant-swatch">
+            <button
+              class="product-card__variant-swatch-button{% if is_swatch_selected %} is-active{% endif %}"
+              type="button"
+              aria-pressed="{% if is_swatch_selected %}true{% else %}false{% endif %}"
+              data-product-card-variant
+              data-variant-id="{{ value_variant.id }}"
+              data-variant-price="{{ variant_price_text | escape }}"
+              data-variant-compare-price="{{ variant_compare_at_price_text | escape }}"
+              data-variant-on-sale="{{ value_is_on_sale }}"
+              data-variant-image="{{ variant_image_url | escape }}"
+              data-variant-image-srcset="{{ variant_image_srcset | strip | escape }}"
+              data-variant-image-sizes="{{ card_sizes | escape }}"
+              data-variant-image-alt="{{ variant_image_alt | escape }}"
+              data-swatch-label="{{ value.name | escape }}"
+              aria-label="{{ color_option.name | escape }}: {{ value.name | escape }}"
+            >
+              <span aria-hidden="true"{% if swatch_color != blank %} style="--product-card-swatch-color: {{ swatch_color }};"{% endif %}></span>
+            </button>
+          </li>
+        {% endfor %}
+      </ul>
+    {% endif %}
+  </div>
+
+  {% if product and show_quick_add %}
+    <div class="product-card__actions">
+      {% if product.available %}
+        {% if product.has_only_default_variant %}
+          {% form 'product', product, class: 'product-card__quick-add-form' %}
+            <input type="hidden" name="id" value="{{ card_variant.id }}">
+            <button class="product-card__quick-add" type="submit">{{ 'product_card.quick_add' | t }}</button>
+          {% endform %}
+        {% else %}
+          <a class="product-card__quick-add" href="{{ product.url }}">{{ 'product_card.choose_options' | t }}</a>
+        {% endif %}
+      {% else %}
+        <a class="product-card__quick-add product-card__quick-add--unavailable" href="{{ product.url }}">{{ 'product_card.view_product' | t }}</a>
+      {% endif %}
+    </div>
+  {% endif %}
+
+</article>

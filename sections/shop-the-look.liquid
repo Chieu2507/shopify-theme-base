@@ -1,0 +1,496 @@
+{% render 'section-stylesheet', asset: 'section-shop-the-look.css', defer_on_home: true %}
+
+{% liquid
+  assign product_block_count = 0
+  for block in section.blocks
+    if block.type == 'product_hotspot'
+      assign product_block_count = product_block_count | plus: 1
+    endif
+  endfor
+%}
+
+{% if product_block_count > 0 %}
+  <shop-the-look
+    data-deferred-module="{{ 'shop-the-look.js' | asset_url }}"
+    class="shop-the-look color-scheme color-{{ section.settings.color_scheme.id }} full-width shop-the-look--media-{{ section.settings.media_position }}"
+    style="--shop-the-look-height: {{ section.settings.height_desktop }}px; --shop-the-look-height-tablet: {{ section.settings.height_tablet }}px; --shop-the-look-height-mobile: {{ section.settings.height_mobile }}px; --shop-the-look-content-padding: {{ section.settings.content_padding }}px; --shop-the-look-product-image-size: {{ section.settings.product_image_size }}px;"
+  >
+    <div class="shop-the-look__layout">
+      <div class="shop-the-look__media-column">
+        {% assign media_rendered = false %}
+        {% for block in section.blocks %}
+          {% if block.type == 'media' and media_rendered == false %}
+            {% liquid
+              assign editorial_image_style = 'object-position: ' | append: block.settings.focal_point
+              assign editorial_image_alt = block.settings.image.alt
+              if editorial_image_alt == blank
+                assign editorial_image_alt = 'shop_the_look.editorial_image' | t
+              endif
+            %}
+            <div class="shop-the-look__media" {{ block.shopify_attributes }}>
+              {% if block.settings.image != blank %}
+                {% render 'responsive-image',
+                  image: block.settings.image,
+                  max_width: 1920,
+                  widths: '480, 720, 960, 1200, 1440, 1920',
+                  sizes: '(min-width: 990px) 50vw, 100vw',
+                  class: 'shop-the-look__editorial-image',
+                  loading: 'lazy',
+                  alt: editorial_image_alt,
+                  style: editorial_image_style
+                %}
+              {% else %}
+                {% render 'media-placeholder', class_name: 'shop-the-look__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
+              {% endif %}
+            </div>
+            {% assign media_rendered = true %}
+          {% endif %}
+        {% endfor %}
+
+        {% unless media_rendered %}
+          <div class="shop-the-look__media">
+            {% render 'media-placeholder', class_name: 'shop-the-look__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
+          </div>
+        {% endunless %}
+
+        <div class="shop-the-look__hotspots" role="tablist" aria-label="{{ 'shop_the_look.products' | t | escape }}">
+          {% assign hotspot_index = 0 %}
+          {% for block in section.blocks %}
+            {% if block.type == 'product_hotspot' %}
+              {% liquid
+                assign hotspot_label = block.settings.product.title
+                if hotspot_label == blank
+                  assign hotspot_label = 'shop_the_look.product' | t
+                endif
+              %}
+              <button
+                class="shop-the-look__hotspot"
+                type="button"
+                role="tab"
+                id="ShopTheLookHotspot-{{ section.id }}-{{ block.id }}"
+                aria-controls="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
+                aria-label="{{ 'shop_the_look.select_product' | t: product: hotspot_label | escape }}"
+                aria-selected="{% if hotspot_index == 0 %}true{% else %}false{% endif %}"
+                tabindex="{% if hotspot_index == 0 %}0{% else %}-1{% endif %}"
+                style="--hotspot-x: {{ block.settings.horizontal_position }}%; --hotspot-y: {{ block.settings.vertical_position }}%;"
+                data-shop-the-look-hotspot
+                data-block-id="{{ block.id }}"
+              >
+                <span aria-hidden="true"></span>
+              </button>
+              {% assign hotspot_index = hotspot_index | plus: 1 %}
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        <div class="shop-the-look__mobile-preview" aria-live="polite" aria-atomic="true">
+          {% assign preview_index = 0 %}
+          {% for block in section.blocks %}
+            {% if block.type == 'product_hotspot' %}
+              {% liquid
+                assign preview_product = block.settings.product
+                assign preview_variant = preview_product.selected_or_first_available_variant
+                assign preview_placeholder_index = preview_index | modulo: 6 | plus: 1
+                assign preview_placeholder_asset_index = preview_placeholder_index | minus: 1 | modulo: 4 | plus: 1
+                assign preview_placeholder_asset = 'placeholder-image-product-' | append: preview_placeholder_asset_index | append: '.svg'
+              %}
+              <a
+                class="shop-the-look__mobile-preview-card"
+                href="{{ preview_product.url | default: '#' }}"
+                data-shop-the-look-preview
+                data-block-id="{{ block.id }}"
+                {% unless preview_index == 0 %}hidden{% endunless %}
+              >
+                <span class="shop-the-look__mobile-preview-media">
+                  {% if preview_product != blank and preview_product.featured_image != blank %}
+                    {% render 'responsive-image',
+                      image: preview_product.featured_image,
+                      max_width: 160,
+                      widths: '80, 120, 160',
+                      sizes: '64px',
+                      class: 'shop-the-look__mobile-preview-image',
+                      loading: 'lazy',
+                      alt: preview_product.featured_image.alt
+                    %}
+                  {% else %}
+                    {% render 'media-placeholder', class_name: 'shop-the-look__mobile-preview-placeholder', asset_name: preview_placeholder_asset %}
+                  {% endif %}
+                </span>
+                <span class="shop-the-look__mobile-preview-details">
+                  <span class="shop-the-look__mobile-preview-title">
+                    {% if preview_product != blank %}
+                      {{ preview_product.title | escape }}
+                    {% else %}
+                      {{ 'onboarding.product_title' | t }}
+                    {% endif %}
+                  </span>
+                  <span class="shop-the-look__mobile-preview-price{% if preview_variant.compare_at_price > preview_variant.price %} shop-the-look__mobile-preview-price--sale{% endif %}">
+                    {% render 'money', amount: preview_variant.price %}
+                  </span>
+                </span>
+                <svg class="shop-the-look__mobile-preview-arrow" viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m7.5 4.5 5 5.5-5 5.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </a>
+              {% assign preview_index = preview_index | plus: 1 %}
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+
+      <div class="shop-the-look__content-column">
+        <div class="shop-the-look__header">
+          {% for block in section.blocks %}
+            {% case block.type %}
+              {% when 'eyebrow' %}
+                {% if block.settings.text != blank %}
+                  <p class="shop-the-look__eyebrow" {{ block.shopify_attributes }}>{{ block.settings.text | escape }}</p>
+                {% endif %}
+              {% when 'heading' %}
+                {% if block.settings.heading != blank %}
+                  <{{ block.settings.heading_tag }} class="shop-the-look__heading shop-the-look__omnise-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} omnise-heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}" {{ block.shopify_attributes }}>
+                    {{ block.settings.heading | escape }}
+                  </{{ block.settings.heading_tag }}>
+                {% endif %}
+            {% endcase %}
+          {% endfor %}
+        </div>
+
+        <div class="shop-the-look__spotlight">
+          {% if product_block_count > 1 %}
+            <button class="shop-the-look__arrow shop-the-look__arrow--previous" type="button" aria-label="{{ 'shop_the_look.previous_product' | t | escape }}" data-shop-the-look-previous>
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m12.5 4.5-5 5.5 5 5.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          {% endif %}
+
+          <div class="shop-the-look__products swiper" data-shop-the-look-slider>
+            <div class="swiper-wrapper">
+              {% assign product_index = 0 %}
+              {% for block in section.blocks %}
+                {% if block.type == 'product_hotspot' %}
+                  {% assign product_placeholder_index = product_index | plus: 1 %}
+                  <div
+                    class="shop-the-look__product-slide swiper-slide"
+                    id="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
+                    role="tabpanel"
+                    aria-labelledby="ShopTheLookHotspot-{{ section.id }}-{{ block.id }}"
+                    data-shop-the-look-product
+                    data-block-id="{{ block.id }}"
+                    {% unless product_index == 0 %}aria-hidden="true" inert{% endunless %}
+                    {{ block.shopify_attributes }}
+                  >
+                    {% render 'product-card',
+                      product: block.settings.product,
+                      placeholder_index: product_placeholder_index,
+                      sizes: '(max-width: 749px) 48vw, (min-width: 990px) 360px, 44vw',
+                      show_badges: true,
+                      show_compare_at_price: true,
+                      show_variant_dots: true,
+                      show_media_actions: true,
+                      enable_quick_view: true
+                    %}
+                  </div>
+                  {% assign product_index = product_index | plus: 1 %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          </div>
+
+          {% if product_block_count > 1 %}
+            <button class="shop-the-look__arrow shop-the-look__arrow--next" type="button" aria-label="{{ 'shop_the_look.next_product' | t | escape }}" data-shop-the-look-next>
+              <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m7.5 4.5 5 5.5-5 5.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          {% endif %}
+        </div>
+
+        {% if product_block_count > 1 %}
+          <div class="shop-the-look__indicators" aria-hidden="true">
+            {% assign indicator_index = 0 %}
+            {% for block in section.blocks %}
+              {% if block.type == 'product_hotspot' %}
+                <span class="shop-the-look__indicator{% if indicator_index == 0 %} shop-the-look__indicator--active{% endif %}" data-shop-the-look-indicator></span>
+                {% assign indicator_index = indicator_index | plus: 1 %}
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </shop-the-look>
+{% endif %}
+
+
+
+{% schema %}
+{
+  "name": "Shop the look",
+  "tag": "section",
+  "class": "section-shop-the-look",
+  "max_blocks": 8,
+  "settings": [
+    {
+      "type": "select",
+      "id": "media_position",
+      "label": "Desktop media position",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "range",
+      "id": "product_image_size",
+      "min": 160,
+      "max": 360,
+      "step": 20,
+      "unit": "px",
+      "label": "Product image size",
+      "default": 240
+    },
+    {
+      "type": "range",
+      "id": "content_padding",
+      "min": 24,
+      "max": 96,
+      "step": 8,
+      "unit": "px",
+      "label": "Content padding",
+      "default": 48
+    },
+    {
+      "type": "header",
+      "content": "Section height"
+    },
+    {
+      "type": "range",
+      "id": "height_desktop",
+      "min": 640,
+      "max": 1200,
+      "step": 40,
+      "unit": "px",
+      "label": "Desktop",
+      "default": 960
+    },
+    {
+      "type": "range",
+      "id": "height_tablet",
+      "min": 440,
+      "max": 720,
+      "step": 40,
+      "unit": "px",
+      "label": "Tablet content",
+      "default": 560
+    },
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "min": 360,
+      "max": 560,
+      "step": 40,
+      "unit": "px",
+      "label": "Mobile content",
+      "default": 440
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-4"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "media",
+      "name": "Editorial image",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "focal_point",
+          "label": "Focal point",
+          "default": "center center",
+          "info": "CSS object-position, for example: 50% 40%"
+        }
+      ]
+    },
+    {
+      "type": "eyebrow",
+      "name": "Eyebrow",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Shop the look"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Statement Stacks"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            {
+              "value": "h1",
+              "label": "XX-large"
+            },
+            {
+              "value": "h2",
+              "label": "X-large"
+            },
+            {
+              "value": "h3",
+              "label": "Large"
+            },
+            {
+              "value": "h4",
+              "label": "Medium"
+            },
+            {
+              "value": "h5",
+              "label": "Small"
+            },
+            {
+              "value": "h6",
+              "label": "X-small"
+            }
+          ],
+          "default": "h3"
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "HTML Tag",
+          "options": [
+            {
+              "value": "h1",
+              "label": "H1"
+            },
+            {
+              "value": "h2",
+              "label": "H2"
+            },
+            {
+              "value": "h3",
+              "label": "H3"
+            },
+            {
+              "value": "h4",
+              "label": "H4"
+            },
+            {
+              "value": "h5",
+              "label": "H5"
+            },
+            {
+              "value": "h6",
+              "label": "H6"
+            }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "Alignment",
+          "default": "center"
+        }
+      ]
+    },
+    {
+      "type": "product_hotspot",
+      "name": "Product hotspot",
+      "settings": [
+        {
+          "type": "product",
+          "id": "product",
+          "label": "Product"
+        },
+        {
+          "type": "range",
+          "id": "horizontal_position",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "label": "Horizontal position",
+          "default": 60
+        },
+        {
+          "type": "range",
+          "id": "vertical_position",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "label": "Vertical position",
+          "default": 58
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Shop the look",
+      "blocks": [
+        {
+          "type": "media"
+        },
+        {
+          "type": "eyebrow"
+        },
+        {
+          "type": "heading"
+        },
+        {
+          "type": "product_hotspot",
+          "settings": {
+            "horizontal_position": 60,
+            "vertical_position": 58
+          }
+        },
+        {
+          "type": "product_hotspot",
+          "settings": {
+            "horizontal_position": 49,
+            "vertical_position": 52
+          }
+        },
+        {
+          "type": "product_hotspot",
+          "settings": {
+            "horizontal_position": 72,
+            "vertical_position": 63
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

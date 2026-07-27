@@ -1,0 +1,57 @@
+{% doc %}
+  Renders a reusable section header with optional eyebrow, text and action.
+
+  @param {string} heading - Heading text.
+  @param {string} [heading_tag] - Semantic heading tag.
+  @param {string} [heading_size] - Visual heading scale.
+  @param {string} [heading_class] - Section-specific heading classes.
+  @param {string} [eyebrow] - Eyebrow text.
+  @param {string} [eyebrow_class] - Section-specific eyebrow classes.
+  @param {string} [text] - Rich text content.
+  @param {string} [text_class] - Section-specific text classes.
+  @param {string} [action_label] - Action label.
+  @param {string} [action_url] - Action URL.
+  @param {string} [action_style] - Theme button style.
+  @param {string} [action_class] - Section-specific action classes.
+  @param {string} [alignment] - Header alignment.
+  @param {string} [class] - Section-specific wrapper classes.
+  @param {string} [tag] - Wrapper tag.
+  @param {string} [attributes] - Theme Editor attributes.
+{% enddoc %}
+
+{% liquid
+  assign wrapper_tag = tag | default: 'header'
+  assign header_alignment = alignment | default: 'left'
+  assign title_tag = heading_tag | default: 'h2'
+  assign title_size = heading_size | default: 'h2'
+%}
+
+<{{ wrapper_tag }}
+  class="section-header section-header--{{ header_alignment }}{% if class != blank %} {{ class }}{% endif %}"
+  {{ attributes }}
+>
+  {% if eyebrow != blank %}
+    <p class="section-header__eyebrow{% if eyebrow_class != blank %} {{ eyebrow_class }}{% endif %}">
+      {{ eyebrow | escape }}
+    </p>
+  {% endif %}
+
+  {% if heading != blank %}
+    <{{ title_tag }} class="section-header__heading heading--{{ title_size }}{% if heading_class != blank %} {{ heading_class }}{% endif %}">
+      {{ heading | escape }}
+    </{{ title_tag }}>
+  {% endif %}
+
+  {% if text != blank %}
+    <div class="section-header__text rte{% if text_class != blank %} {{ text_class }}{% endif %}">
+      {{ text }}
+    </div>
+  {% endif %}
+
+  {% render 'cta',
+    label: action_label,
+    url: action_url,
+    style: action_style,
+    class: action_class
+  %}
+</{{ wrapper_tag }}>

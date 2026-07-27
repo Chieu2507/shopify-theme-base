@@ -1,0 +1,389 @@
+{% render 'section-stylesheet', asset: 'section-scrolling-text-critical.css', inline_on_home: true %}
+
+{% liquid
+  assign item_count = 0
+  for block in section.blocks
+    if block.settings.text != blank
+      assign item_count = item_count | plus: 1
+    endif
+  endfor
+%}
+
+{% if item_count > 0 %}
+  <section
+    class="scrolling-text color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} scrolling-text--{{ section.settings.behavior }} scrolling-text--direction-{{ section.settings.direction }} scrolling-text--icon-{{ section.settings.icon_size }} scrolling-text--font-{{ section.settings.font_role }}{% if section.settings.pause_on_hover %} scrolling-text--pause-on-hover{% endif %}"
+    style="--scrolling-text-height: {{ section.settings.height_desktop }}px; --scrolling-text-height-mobile: {{ section.settings.height_mobile }}px; --scrolling-text-gap: {{ section.settings.item_gap }}px; --scrolling-text-duration: {{ section.settings.speed }}s; --scrolling-text-font-size: {{ section.settings.font_size }}px; --scrolling-text-font-size-mobile: {{ section.settings.font_size_mobile }}px;"
+    aria-label="{{ 'scrolling_text.announcements' | t | escape }}"
+  >
+    <scrolling-text-marquee class="scrolling-text__viewport">
+      <div class="scrolling-text__track">
+        <div class="scrolling-text__group">
+          {% for block in section.blocks %}
+            {% if block.settings.text != blank %}
+              <div class="scrolling-text__item" {{ block.shopify_attributes }}>
+                {% if block.settings.link != blank %}
+                  <a class="scrolling-text__link" href="{{ block.settings.link }}">{{ block.settings.text | escape }}</a>
+                {% else %}
+                  <span>{{ block.settings.text | escape }}</span>
+                {% endif %}
+              </div>
+              {% if section.settings.separator_icon != blank %}
+                <span class="scrolling-text__separator" aria-hidden="true">
+                  {% render 'responsive-image',
+                    image: section.settings.separator_icon,
+                    max_width: 128,
+                    widths: '16, 24, 32, 48, 64, 96, 128',
+                    sizes: 'var(--scrolling-text-icon-size)',
+                    class: 'scrolling-text__icon',
+                    decorative: true,
+                    loading: 'lazy'
+                  %}
+                </span>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        </div>
+
+        {% if section.settings.behavior == 'marquee' %}
+          <div class="scrolling-text__group" aria-hidden="true">
+            {% for block in section.blocks %}
+              {% if block.settings.text != blank %}
+                <div class="scrolling-text__item">
+                  {% if block.settings.link != blank %}
+                    <a class="scrolling-text__link" href="{{ block.settings.link }}" tabindex="-1">{{ block.settings.text | escape }}</a>
+                  {% else %}
+                    <span>{{ block.settings.text | escape }}</span>
+                  {% endif %}
+                </div>
+                {% if section.settings.separator_icon != blank %}
+                  <span class="scrolling-text__separator" aria-hidden="true">
+                    {% render 'responsive-image',
+                      image: section.settings.separator_icon,
+                      max_width: 128,
+                      widths: '16, 24, 32, 48, 64, 96, 128',
+                      sizes: 'var(--scrolling-text-icon-size)',
+                      class: 'scrolling-text__icon',
+                      decorative: true,
+                      loading: 'lazy'
+                    %}
+                  </span>
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </scrolling-text-marquee>
+  </section>
+{% endif %}
+
+
+
+{% javascript %}
+  if (!customElements.get('scrolling-text-marquee')) {
+    class ScrollingTextMarquee extends HTMLElement {
+      connectedCallback() {
+        this.track = this.querySelector('.scrolling-text__track');
+        this.groups = Array.from(this.querySelectorAll('.scrolling-text__group'));
+        if (!this.track || this.groups.length < 2) return;
+
+        this.originalChildren = this.groups.map((group) => Array.from(group.children));
+        this.handleResize = this.fillGroups.bind(this);
+        this.resizeObserver = new ResizeObserver(this.handleResize);
+        this.resizeObserver.observe(this);
+        this.fillGroups();
+        document.fonts?.ready.then(this.handleResize);
+
+        if ('IntersectionObserver' in window) {
+          this.visibilityObserver = new IntersectionObserver((entries) => {
+            this.classList.toggle('is-active', entries.some((entry) => entry.isIntersecting));
+          });
+          this.visibilityObserver.observe(this);
+        } else {
+          this.classList.add('is-active');
+        }
+      }
+
+      disconnectedCallback() {
+        this.resizeObserver?.disconnect();
+        this.visibilityObserver?.disconnect();
+      }
+
+      fillGroups() {
+        if (!this.isConnected || this.clientWidth === 0) return;
+
+        this.groups.forEach((group, groupIndex) => {
+          group.querySelectorAll('[data-scrolling-text-clone]').forEach((clone) => clone.remove());
+          const originals = this.originalChildren[groupIndex].filter((child) => child.isConnected);
+          if (!originals.length) return;
+
+          let clonePasses = 0;
+          while (group.scrollWidth < this.clientWidth && clonePasses < 20) {
+            const fragment = document.createDocumentFragment();
+            originals.forEach((original) => {
+              const clone = original.cloneNode(true);
+              clone.setAttribute('data-scrolling-text-clone', '');
+              clone.setAttribute('aria-hidden', 'true');
+              clone.querySelectorAll('a, button, input, select, textarea, [tabindex]').forEach((control) => {
+                control.tabIndex = -1;
+              });
+              fragment.appendChild(clone);
+            });
+            group.appendChild(fragment);
+            clonePasses += 1;
+          }
+        });
+      }
+    }
+
+    customElements.define('scrolling-text-marquee', ScrollingTextMarquee);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Scrolling text",
+  "tag": "section",
+  "class": "section-scrolling-text",
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "select",
+      "id": "behavior",
+      "label": "Behavior",
+      "options": [
+        {
+          "value": "marquee",
+          "label": "Scrolling"
+        },
+        {
+          "value": "static",
+          "label": "Static"
+        }
+      ],
+      "default": "marquee"
+    },
+    {
+      "type": "select",
+      "id": "direction",
+      "label": "Direction",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "pause_on_hover",
+      "label": "Pause on hover or focus",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "speed",
+      "min": 10,
+      "max": 80,
+      "step": 5,
+      "unit": "s",
+      "label": "Scrolling duration",
+      "default": 35
+    },
+    {
+      "type": "range",
+      "id": "item_gap",
+      "min": 12,
+      "max": 64,
+      "step": 4,
+      "unit": "px",
+      "label": "Item gap",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "font_role",
+      "label": "Text font",
+      "options": [
+        {
+          "value": "heading",
+          "label": "Heading font"
+        },
+        {
+          "value": "body",
+          "label": "Body font"
+        }
+      ],
+      "default": "heading"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "min": 12,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Desktop font size",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "font_size_mobile",
+      "min": 10,
+      "max": 18,
+      "step": 1,
+      "unit": "px",
+      "label": "Mobile font size",
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Separator icon"
+    },
+    {
+      "type": "image_picker",
+      "id": "separator_icon",
+      "label": "Icon image or SVG"
+    },
+    {
+      "type": "select",
+      "id": "icon_size",
+      "label": "Icon size",
+      "default": "small",
+      "options": [
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Section height"
+    },
+    {
+      "type": "range",
+      "id": "height_desktop",
+      "min": 40,
+      "max": 96,
+      "step": 4,
+      "unit": "px",
+      "label": "Desktop",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "min": 36,
+      "max": 72,
+      "step": 4,
+      "unit": "px",
+      "label": "Mobile",
+      "default": 48
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "page",
+          "label": "Page width"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "text_item",
+      "name": "Text item",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Sustainable manufacturing"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Scrolling text",
+      "blocks": [
+        {
+          "type": "text_item",
+          "settings": {
+            "text": "Sustainable manufacturing"
+          }
+        },
+        {
+          "type": "text_item",
+          "settings": {
+            "text": "Made to be used"
+          }
+        },
+        {
+          "type": "text_item",
+          "settings": {
+            "text": "Considered materials"
+          }
+        },
+        {
+          "type": "text_item",
+          "settings": {
+            "text": "Made with love"
+          }
+        },
+        {
+          "type": "text_item",
+          "settings": {
+            "text": "Carefully finished"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

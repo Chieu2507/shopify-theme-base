@@ -1,0 +1,849 @@
+{% render 'section-stylesheet', asset: 'section-blog-posts.css', defer_on_home: true %}
+
+{% liquid
+  assign article_count = 0
+  assign header_count = section.blocks | where: 'type', 'header' | size
+
+  for block in section.blocks
+    if block.type == 'article' and block.settings.article != blank
+      assign article_count = article_count | plus: 1
+    endif
+  endfor
+%}
+
+{% if article_count > 0 or header_count > 0 %}
+  <section
+    class="blog-posts color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+    style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --section-padding-top-mobile: calc({{ section.settings.padding_top }}px * 0.6); --section-padding-bottom-mobile: calc({{ section.settings.padding_bottom }}px * 0.6); --blog-posts-card-gap: {{ section.settings.card_gap }}px;"
+  >
+    <div class="blog-posts__inner section-spacing">
+      {% if header_count > 0 %}
+        <header class="blog-posts__header">
+          {% for block in section.blocks %}
+            {% if block.type == 'header' %}
+              {% assign blog_header_text_class = 'blog-posts__intro content-text content-text--' | append: block.settings.text_size %}
+              {% capture header_attributes %}{{ block.shopify_attributes }}{% endcapture %}
+              {% render 'section-header',
+                heading: block.settings.heading,
+                heading_tag: block.settings.heading_tag,
+                heading_size: block.settings.heading_size,
+                heading_class: 'blog-posts__heading',
+                text: block.settings.text,
+                text_class: blog_header_text_class,
+                action_label: block.settings.link_label,
+                action_url: block.settings.link,
+                action_style: 'text',
+                action_class: 'blog-posts__view-all',
+                alignment: 'center',
+                class: 'blog-posts__header-content',
+                tag: 'div',
+                attributes: header_attributes
+              %}
+            {% endif %}
+          {% endfor %}
+        </header>
+      {% endif %}
+
+      {% if article_count > 0 %}
+        <div class="blog-posts__articles">
+          {% for block in section.blocks %}
+            {% if block.type == 'article' %}
+              {% liquid
+                assign card_article = block.settings.article
+                assign card_image = block.settings.image | default: card_article.image
+                assign card_title = block.settings.title | default: card_article.title
+                assign card_excerpt = block.settings.excerpt | default: card_article.excerpt_or_content
+                assign card_url = block.settings.link | default: card_article.url
+                assign card_tag = block.settings.tag
+                if card_tag == blank
+                  assign card_tag = card_article.tags | first
+                endif
+                assign card_alt = block.settings.image_alt | default: card_image.alt | default: card_title
+                assign card_media_ratio = block.settings.media_ratio
+                if card_media_ratio == 'inherit'
+                  assign card_media_ratio = section.settings.media_ratio
+                endif
+
+                assign card_excerpt_words = block.settings.excerpt_words
+                if card_excerpt_words == blank or card_excerpt_words == 0
+                  assign card_excerpt_words = section.settings.excerpt_words
+                endif
+
+                assign show_card_tag = section.settings.show_tags
+                if block.settings.tag_visibility == 'show'
+                  assign show_card_tag = true
+                elsif block.settings.tag_visibility == 'hide'
+                  assign show_card_tag = false
+                endif
+
+                assign show_card_date = section.settings.show_date
+                if block.settings.date_visibility == 'show'
+                  assign show_card_date = true
+                elsif block.settings.date_visibility == 'hide'
+                  assign show_card_date = false
+                endif
+
+                assign show_card_author = section.settings.show_author
+                if block.settings.author_visibility == 'show'
+                  assign show_card_author = true
+                elsif block.settings.author_visibility == 'hide'
+                  assign show_card_author = false
+                endif
+
+                assign show_card_excerpt = true
+                if block.settings.excerpt_visibility == 'hide'
+                  assign show_card_excerpt = false
+                endif
+
+                assign card_heading_tag = block.settings.heading_tag | default: 'h3'
+                assign card_link_label = block.settings.link_label
+              %}
+
+              {% if card_article != blank %}
+                <article
+                  class="blog-posts__card blog-posts__card--media-{{ block.settings.media_position }} blog-posts__card--mobile-media-{{ block.settings.mobile_media_position }} blog-posts__card--align-{{ block.settings.content_alignment }} blog-posts__card--vertical-{{ block.settings.vertical_alignment }}{% unless block.settings.show_image %} blog-posts__card--no-media{% endunless %}"
+                  style="--blog-posts-card-media-width: {{ block.settings.media_width }}%; --blog-posts-card-content-width: {{ block.settings.content_width }}px; --blog-posts-card-image-position: {{ block.settings.image_position }};"
+                  {{ block.shopify_attributes }}
+                >
+                  <div class="blog-posts__card-content">
+                    <div class="blog-posts__card-copy">
+                      {% if show_card_tag and card_tag != blank %}
+                        <p class="blog-posts__tag">{{ card_tag | escape }}</p>
+                      {% endif %}
+
+                      <{{ card_heading_tag }} class="blog-posts__card-title omnise-heading--{{ block.settings.title_size }} heading--{{ block.settings.title_size }}">
+                        <a href="{{ card_url }}"{% if block.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ card_title | escape }}</a>
+                      </{{ card_heading_tag }}>
+
+                      {% if show_card_date or show_card_author %}
+                        <p class="blog-posts__metadata">
+                          {% if show_card_date %}
+                            {{ card_article.published_at | time_tag: format: 'date' }}
+                          {% endif %}
+                          {% if show_card_date and show_card_author %}
+                            <span aria-hidden="true"> · </span>
+                          {% endif %}
+                          {% if show_card_author %}
+                            <span>{{ card_article.author | escape }}</span>
+                          {% endif %}
+                        </p>
+                      {% endif %}
+
+                      {% if show_card_excerpt and card_excerpt != blank %}
+                        <div class="blog-posts__excerpt blog-posts__excerpt--{{ block.settings.excerpt_size }} rte">
+                          {{ card_excerpt | strip_html | truncatewords: card_excerpt_words | escape }}
+                        </div>
+                      {% endif %}
+                    </div>
+
+                    {% render 'cta',
+                      label: card_link_label,
+                      url: card_url,
+                      style: block.settings.link_style,
+                      class: 'blog-posts__read-more',
+                      open_in_new_tab: block.settings.open_in_new_tab
+                    %}
+                  </div>
+
+                  {% if block.settings.show_image %}
+                    <div class="blog-posts__media blog-posts__media--{{ card_media_ratio }}">
+                      <a class="blog-posts__media-link" href="{{ card_url }}" tabindex="-1" aria-hidden="true"{% if block.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
+                        {% if card_image != blank %}
+                          {% render 'responsive-image',
+                            image: card_image,
+                            max_width: 1200,
+                            widths: '360, 480, 640, 800, 1000, 1200',
+                            sizes: '(min-width: 990px) 34vw, (min-width: 750px) 42vw, calc(100vw - 32px)',
+                            class: 'blog-posts__image media-cover',
+                            loading: 'lazy',
+                            alt: card_alt,
+                            style: 'object-position: var(--blog-posts-card-image-position);'
+                          %}
+                        {% else %}
+                          {% render 'media-placeholder', class_name: 'blog-posts__image media-cover', asset_name: 'placeholder-image-default-1.svg' %}
+                        {% endif %}
+                      </a>
+                    </div>
+                  {% endif %}
+                </article>
+              {% endif %}
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+{% endif %}
+
+
+
+{% schema %}
+{
+  "name": "Blog posts",
+  "tag": "section",
+  "class": "section-blog-posts",
+  "max_blocks": 5,
+  "settings": [
+    {
+      "type": "select",
+      "id": "media_ratio",
+      "label": "Image ratio",
+      "options": [
+        {
+          "value": "landscape",
+          "label": "Landscape"
+        },
+        {
+          "value": "square",
+          "label": "Square"
+        },
+        {
+          "value": "portrait",
+          "label": "Portrait"
+        }
+      ],
+      "default": "landscape"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "Show tags",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "Show date",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "label": "Show author",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "excerpt_words",
+      "min": 10,
+      "max": 50,
+      "step": 1,
+      "label": "Excerpt length",
+      "default": 28
+    },
+    {
+      "type": "range",
+      "id": "card_gap",
+      "min": 16,
+      "max": 64,
+      "step": 2,
+      "unit": "px",
+      "label": "Card spacing",
+      "default": 36
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "page",
+          "label": "Page width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 80
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "header",
+      "name": "Header",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Enjoy Our Articles"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            {
+              "value": "h1",
+              "label": "XX-large"
+            },
+            {
+              "value": "h2",
+              "label": "X-large"
+            },
+            {
+              "value": "h3",
+              "label": "Large"
+            },
+            {
+              "value": "h4",
+              "label": "Medium"
+            },
+            {
+              "value": "h5",
+              "label": "Small"
+            },
+            {
+              "value": "h6",
+              "label": "X-small"
+            }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "HTML Tag",
+          "options": [
+            {
+              "value": "h1",
+              "label": "H1"
+            },
+            {
+              "value": "h2",
+              "label": "H2"
+            },
+            {
+              "value": "h3",
+              "label": "H3"
+            },
+            {
+              "value": "h4",
+              "label": "H4"
+            },
+            {
+              "value": "h5",
+              "label": "H5"
+            },
+            {
+              "value": "h6",
+              "label": "H6"
+            }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Discover the latest updates, insights, and inspirations.</p>"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "options": [
+            {
+              "value": "x-large",
+              "label": "X-large"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "x-small",
+              "label": "X-small"
+            }
+          ],
+          "default": "medium"
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "Link label",
+          "default": "View all"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "article",
+      "name": "Article",
+      "settings": [
+        {
+          "type": "article",
+          "id": "article",
+          "label": "Article"
+        },
+        {
+          "type": "header",
+          "content": "Content overrides"
+        },
+        {
+          "type": "text",
+          "id": "tag",
+          "label": "Tag override"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title override"
+        },
+        {
+          "type": "textarea",
+          "id": "excerpt",
+          "label": "Excerpt override"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link override"
+        },
+        {
+          "type": "header",
+          "content": "Metadata and excerpt"
+        },
+        {
+          "type": "select",
+          "id": "tag_visibility",
+          "label": "Tag visibility",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Use section setting"
+            },
+            {
+              "value": "show",
+              "label": "Show"
+            },
+            {
+              "value": "hide",
+              "label": "Hide"
+            }
+          ],
+          "default": "inherit"
+        },
+        {
+          "type": "select",
+          "id": "date_visibility",
+          "label": "Date visibility",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Use section setting"
+            },
+            {
+              "value": "show",
+              "label": "Show"
+            },
+            {
+              "value": "hide",
+              "label": "Hide"
+            }
+          ],
+          "default": "inherit"
+        },
+        {
+          "type": "select",
+          "id": "author_visibility",
+          "label": "Author visibility",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Use section setting"
+            },
+            {
+              "value": "show",
+              "label": "Show"
+            },
+            {
+              "value": "hide",
+              "label": "Hide"
+            }
+          ],
+          "default": "inherit"
+        },
+        {
+          "type": "select",
+          "id": "excerpt_visibility",
+          "label": "Excerpt visibility",
+          "options": [
+            {
+              "value": "show",
+              "label": "Show"
+            },
+            {
+              "value": "hide",
+              "label": "Hide"
+            }
+          ],
+          "default": "show"
+        },
+        {
+          "type": "range",
+          "id": "excerpt_words",
+          "min": 0,
+          "max": 60,
+          "step": 1,
+          "label": "Excerpt length",
+          "default": 0
+        },
+        {
+          "type": "paragraph",
+          "content": "Set excerpt length to 0 to use the section setting."
+        },
+        {
+          "type": "header",
+          "content": "Typography and alignment"
+        },
+        {
+          "type": "select",
+          "id": "title_size",
+          "label": "Heading size",
+          "options": [
+            {
+              "value": "h1",
+              "label": "XX-large"
+            },
+            {
+              "value": "h2",
+              "label": "X-large"
+            },
+            {
+              "value": "h3",
+              "label": "Large"
+            },
+            {
+              "value": "h4",
+              "label": "Medium"
+            },
+            {
+              "value": "h5",
+              "label": "Small"
+            },
+            {
+              "value": "h6",
+              "label": "X-small"
+            }
+          ],
+          "default": "h4"
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "HTML Tag",
+          "options": [
+            {
+              "value": "h1",
+              "label": "H1"
+            },
+            {
+              "value": "h2",
+              "label": "H2"
+            },
+            {
+              "value": "h3",
+              "label": "H3"
+            },
+            {
+              "value": "h4",
+              "label": "H4"
+            },
+            {
+              "value": "h5",
+              "label": "H5"
+            },
+            {
+              "value": "h6",
+              "label": "H6"
+            }
+          ],
+          "default": "h3"
+        },
+        {
+          "type": "select",
+          "id": "excerpt_size",
+          "label": "Excerpt size",
+          "options": [
+            {
+              "value": "large",
+              "label": "Large"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "x-small",
+              "label": "X-small"
+            }
+          ],
+          "default": "small"
+        },
+        {
+          "type": "text_alignment",
+          "id": "content_alignment",
+          "label": "Content alignment",
+          "default": "left"
+        },
+        {
+          "type": "select",
+          "id": "vertical_alignment",
+          "label": "Vertical alignment",
+          "options": [
+            {
+              "value": "top",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "bottom",
+              "label": "Bottom"
+            }
+          ],
+          "default": "center"
+        },
+        {
+          "type": "range",
+          "id": "content_width",
+          "min": 360,
+          "max": 760,
+          "step": 4,
+          "unit": "px",
+          "label": "Content width",
+          "default": 736
+        },
+        {
+          "type": "header",
+          "content": "Image"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_image",
+          "label": "Show image",
+          "default": true
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image override"
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        },
+        {
+          "type": "select",
+          "id": "media_ratio",
+          "label": "Image ratio",
+          "options": [
+            {
+              "value": "inherit",
+              "label": "Use section setting"
+            },
+            {
+              "value": "landscape",
+              "label": "Landscape"
+            },
+            {
+              "value": "square",
+              "label": "Square"
+            },
+            {
+              "value": "portrait",
+              "label": "Portrait"
+            }
+          ],
+          "default": "inherit"
+        },
+        {
+          "type": "select",
+          "id": "image_position",
+          "label": "Image focal point",
+          "options": [
+            {
+              "value": "center center",
+              "label": "Center"
+            },
+            {
+              "value": "center top",
+              "label": "Top"
+            },
+            {
+              "value": "center bottom",
+              "label": "Bottom"
+            },
+            {
+              "value": "left center",
+              "label": "Left"
+            },
+            {
+              "value": "right center",
+              "label": "Right"
+            }
+          ],
+          "default": "center center"
+        },
+        {
+          "type": "select",
+          "id": "media_position",
+          "label": "Desktop image position",
+          "options": [
+            {
+              "value": "right",
+              "label": "Right"
+            },
+            {
+              "value": "left",
+              "label": "Left"
+            }
+          ],
+          "default": "right"
+        },
+        {
+          "type": "select",
+          "id": "mobile_media_position",
+          "label": "Mobile image position",
+          "options": [
+            {
+              "value": "top",
+              "label": "Top"
+            },
+            {
+              "value": "bottom",
+              "label": "Bottom"
+            }
+          ],
+          "default": "top"
+        },
+        {
+          "type": "range",
+          "id": "media_width",
+          "min": 30,
+          "max": 50,
+          "step": 2,
+          "unit": "%",
+          "label": "Desktop image width",
+          "default": 40
+        },
+        {
+          "type": "header",
+          "content": "Link"
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "Link label",
+          "default": "Read more"
+        },
+        {
+          "type": "select",
+          "id": "link_style",
+          "label": "Link style",
+          "options": [
+            {
+              "value": "text",
+              "label": "Text link"
+            },
+            {
+              "value": "primary",
+              "label": "Primary button"
+            },
+            {
+              "value": "secondary",
+              "label": "Secondary button"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "open_in_new_tab",
+          "label": "Open link in a new tab",
+          "default": false
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Blog posts",
+      "blocks": [
+        {
+          "type": "header"
+        },
+        {
+          "type": "article"
+        },
+        {
+          "type": "article"
+        },
+        {
+          "type": "article"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

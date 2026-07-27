@@ -1,0 +1,272 @@
+{% render 'section-stylesheet', asset: 'section-collection-showcase.css', defer_on_home: true %}
+{% render 'swiper-stylesheet', defer_on_home: true %}
+
+{% liquid
+  assign link_blocks = section.blocks | where: 'type', 'collection_link'
+  assign showcase_image_sizes = '(min-width: 1200px) 600px, (min-width: 990px) 50vw, (min-width: 750px) 320px, calc(100vw - 32px)'
+
+  if section.settings.media_display == 'fill'
+    assign showcase_image_sizes = '(min-width: 750px) 50vw, 100vw'
+  endif
+%}
+
+<collection-showcase
+  data-deferred-module="{{ 'collection-showcase.js' | asset_url }}"
+  class="collection-showcase color-scheme color-{{ section.settings.content_color_scheme.id }} collection-showcase--desktop-media-{{ section.settings.media_position_desktop }} collection-showcase--mobile-media-{{ section.settings.media_position_mobile }} collection-showcase--media-{{ section.settings.media_display }} collection-showcase--link-font-{{ section.settings.link_font }} collection-showcase--link-size-{{ section.settings.link_size }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+  style="--collection-showcase-height-desktop: {{ section.settings.height_desktop }}px; --collection-showcase-height-tablet: {{ section.settings.height_tablet }}px; --collection-showcase-height-mobile: {{ section.settings.height_mobile }}px;"
+>
+  <div class="collection-showcase__inner{% if section.settings.section_width == 'page' %} collection-showcase__inner--page{% endif %}">
+    <div class="collection-showcase__content color-scheme color-{{ section.settings.content_color_scheme.id }}">
+      {% for block in section.blocks %}
+        {% if block.type == 'eyebrow' and block.settings.text != blank %}
+          <p class="collection-showcase__eyebrow" {{ block.shopify_attributes }}>
+            {{ block.settings.text | escape }}
+          </p>
+        {% endif %}
+      {% endfor %}
+
+      {% if link_blocks.size > 0 %}
+        <ul
+          class="collection-showcase__list"
+          aria-label="{{ 'collection_showcase.collections' | t | escape }}"
+        >
+          {% assign tab_index = 0 %}
+          {% for block in link_blocks %}
+            {% liquid
+              assign item_collection = block.settings.collection
+              assign item_title = block.settings.title | default: item_collection.title
+              assign item_link = block.settings.link | default: item_collection.url
+              assign item_count = block.settings.count
+              if item_count == blank and item_collection != blank
+                assign item_count = item_collection.products_count
+              endif
+              assign item_is_preview = false
+              if item_title == blank
+                assign item_title = 'collection_showcase.preview_title' | t
+                assign item_count = 12
+                assign item_is_preview = true
+              endif
+            %}
+            <li
+              class="collection-showcase__item{% if tab_index == 0 %} collection-showcase__item--active{% endif %}{% if item_is_preview %} collection-showcase__item--preview{% endif %}"
+              data-collection-showcase-item
+              data-block-id="{{ block.id }}"
+              {{ block.shopify_attributes }}
+            >
+              <button
+                type="button"
+                id="CollectionShowcaseTab-{{ section.id }}-{{ block.id }}"
+                class="collection-showcase__link"
+                aria-pressed="{% if tab_index == 0 %}true{% else %}false{% endif %}"
+                data-collection-showcase-tab
+              >
+                <span class="collection-showcase__title-group">
+                  <span class="collection-showcase__title">{{ item_title | escape }}</span>
+                  {% if item_count != blank %}
+                    <span class="collection-showcase__count">{{ item_count | escape }}</span>
+                  {% endif %}
+                </span>
+              </button>
+              {% if item_link != blank %}
+                <a
+                  class="collection-showcase__arrow"
+                  href="{{ item_link }}"
+                  aria-label="{{ 'collection_showcase.view_collection' | t: collection: item_title | escape }}"
+                  data-collection-showcase-action
+                >
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="m9 5 7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </a>
+              {% else %}
+                <span class="collection-showcase__arrow" aria-hidden="true">
+                  <svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none">
+                    <path d="m9 5 7 7-7 7" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+                  </svg>
+                </span>
+              {% endif %}
+            </li>
+            {% assign tab_index = tab_index | plus: 1 %}
+          {% endfor %}
+        </ul>
+      {% endif %}
+    </div>
+
+    <div
+      class="collection-showcase__media color-scheme color-{{ section.settings.media_color_scheme.id }}"
+    >
+      <div class="collection-showcase__slider swiper" data-collection-showcase-slider>
+        <div class="swiper-wrapper">
+          {% assign panel_index = 0 %}
+          {% for block in link_blocks %}
+            {% liquid
+              assign item_collection = block.settings.collection
+              assign item_title = block.settings.title | default: item_collection.title
+              assign item_image = block.settings.image | default: item_collection.image
+              assign item_image_alt = block.settings.image_alt
+              if item_image_alt == blank
+                assign item_image_alt = item_image.alt | default: item_title
+              endif
+              assign item_focal_point = block.settings.focal_point | default: 'center center'
+              assign item_is_preview = false
+              if item_title == blank
+                assign item_title = 'collection_showcase.preview_title' | t
+                assign item_is_preview = true
+              endif
+            %}
+            <div
+              class="collection-showcase__panel swiper-slide{% if item_is_preview %} collection-showcase__panel--preview{% endif %}"
+              id="CollectionShowcasePanel-{{ section.id }}-{{ block.id }}"
+              aria-hidden="{% if panel_index == 0 %}false{% else %}true{% endif %}"
+              data-collection-showcase-panel
+              data-block-id="{{ block.id }}"
+              style="--collection-showcase-focal-point: {{ item_focal_point }};"
+            >
+              {% if item_image != blank %}
+                {% render 'responsive-image',
+                  image: item_image,
+                  max_width: 1800,
+                  widths: '480, 720, 840, 960, 1200, 1500, 1800',
+                  sizes: showcase_image_sizes,
+                  class: 'collection-showcase__image',
+                  loading: 'lazy',
+                  alt: item_image_alt
+                %}
+              {% else %}
+                {% render 'media-placeholder', class_name: 'collection-showcase__placeholder' %}
+              {% endif %}
+            </div>
+            {% assign panel_index = panel_index | plus: 1 %}
+          {% endfor %}
+
+          {% if panel_index == 0 %}
+            <div class="collection-showcase__panel swiper-slide">
+              {% render 'media-placeholder', class_name: 'collection-showcase__placeholder' %}
+            </div>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
+</collection-showcase>
+
+
+
+{% schema %}
+{
+  "name": "Collection showcase",
+  "tag": "section",
+  "class": "section",
+  "settings": [
+    { "type": "header", "content": "Layout" },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "full", "label": "Full width" },
+        { "value": "page", "label": "Page width" }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "select",
+      "id": "media_position_desktop",
+      "label": "Desktop media position",
+      "options": [
+        { "value": "before", "label": "Before" },
+        { "value": "after", "label": "After" }
+      ],
+      "default": "after"
+    },
+    {
+      "type": "select",
+      "id": "media_position_mobile",
+      "label": "Mobile media position",
+      "options": [
+        { "value": "before", "label": "Before" },
+        { "value": "after", "label": "After" }
+      ],
+      "default": "after"
+    },
+    { "type": "header", "content": "Section height" },
+    { "type": "range", "id": "height_desktop", "min": 640, "max": 960, "step": 4, "unit": "px", "label": "Desktop", "default": 812 },
+    { "type": "range", "id": "height_tablet", "min": 480, "max": 800, "step": 4, "unit": "px", "label": "Tablet", "default": 560 },
+    { "type": "range", "id": "height_mobile", "min": 320, "max": 680, "step": 4, "unit": "px", "label": "Mobile media", "default": 520 },
+    { "type": "header", "content": "Media display" },
+    {
+      "type": "select",
+      "id": "media_display",
+      "label": "Media display",
+      "options": [
+        { "value": "contained", "label": "Contained" },
+        { "value": "fill", "label": "Fill" }
+      ],
+      "default": "contained",
+      "info": "Fill makes media cover its entire column and removes the mobile inset."
+    },
+    { "type": "header", "content": "Collection link typography" },
+    {
+      "type": "select",
+      "id": "link_font",
+      "label": "Font family",
+      "options": [
+        { "value": "heading", "label": "Heading" },
+        { "value": "body", "label": "Body" }
+      ],
+      "default": "heading",
+      "info": "Uses the fonts selected in Theme settings."
+    },
+    {
+      "type": "select",
+      "id": "link_size",
+      "label": "Font size",
+      "options": [
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" }
+      ],
+      "default": "large"
+    },
+    { "type": "header", "content": "Colors" },
+    { "type": "color_scheme", "id": "content_color_scheme", "label": "Content color scheme", "default": "scheme-3" },
+    { "type": "color_scheme", "id": "media_color_scheme", "label": "Media color scheme", "default": "scheme-2" }
+  ],
+  "blocks": [
+    {
+      "type": "eyebrow",
+      "name": "Eyebrow",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "text", "label": "Text", "default": "DREAM COME TRUE — AW ‘26 COLLECTION" }
+      ]
+    },
+    {
+      "type": "collection_link",
+      "name": "Collection link",
+      "limit": 6,
+      "settings": [
+        { "type": "collection", "id": "collection", "label": "Collection" },
+        { "type": "image_picker", "id": "image", "label": "Image for right-hand panel", "info": "Choose the image displayed for this collection in the right-hand panel." },
+        { "type": "text", "id": "image_alt", "label": "Custom image alt text" },
+        { "type": "text", "id": "focal_point", "label": "Image focal point", "default": "center center", "info": "CSS object-position, for example: 50% 40%" },
+        { "type": "text", "id": "title", "label": "Custom title" },
+        { "type": "text", "id": "count", "label": "Custom count (optional)", "info": "Leave blank to show the collection's live product count." },
+        { "type": "url", "id": "link", "label": "Custom link" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Collection showcase",
+      "blocks": [
+        { "type": "eyebrow" },
+        { "type": "collection_link" },
+        { "type": "collection_link" },
+        { "type": "collection_link" },
+        { "type": "collection_link" }
+      ]
+    }
+  ]
+}
+{% endschema %}

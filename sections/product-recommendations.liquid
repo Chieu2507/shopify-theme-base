@@ -1,0 +1,109 @@
+<section class="product-recommendations" data-recommendation-source data-section-id="{{ section.id }}">
+  {% if recommendations.performed and recommendations.products_count > 0 %}
+    {% if section.settings.heading != blank %}
+      <{{ section.settings.html_tag | default: 'h2' }} class="product-recommendations__heading product-recommendations__omnise-heading--{{ section.settings.heading_size | default: 'lg' }} heading--{{ section.settings.heading_size | default: 'lg' }} omnise-heading--{{ section.settings.heading_size | default: 'lg' }} heading--{{ section.settings.heading_size | default: 'lg' }}">{{ section.settings.heading | strip_html | escape }}</{{ section.settings.html_tag | default: 'h2' }}>
+    {% endif %}
+    <ul role="list">
+      {% for recommendation in recommendations.products limit: 5 %}
+        {% assign recommendation_variant = recommendation.selected_or_first_available_variant %}
+        <li class="product-recommendations__item">
+          <a class="product-recommendations__image" href="{{ recommendation.url }}" aria-label="{{ recommendation.title | escape }}">
+            {% if recommendation.featured_image %}
+              {{ recommendation.featured_image | image_url: width: 240 | image_tag: loading: 'lazy', widths: '120, 180, 240', sizes: '96px', alt: recommendation.featured_image.alt | default: recommendation.title | escape }}
+            {% endif %}
+          </a>
+          <div class="product-recommendations__details">
+            <h3><a href="{{ recommendation.url }}">{{ recommendation.title | escape }}</a></h3>
+            <div class="product-recommendations__price{% if recommendation_variant.compare_at_price > recommendation_variant.price %} product-recommendations__price--sale{% endif %}">
+              <span>{% render 'money', amount: recommendation_variant.price %}</span>
+              {% if recommendation_variant.compare_at_price > recommendation_variant.price %}<s>{% render 'money', amount: recommendation_variant.compare_at_price %}</s>{% endif %}
+            </div>
+          </div>
+          <a class="product-recommendations__quick-add" href="{{ recommendation.url }}" aria-label="View {{ recommendation.title | escape }}">+</a>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>
+{% schema %}
+{
+  "name": "Product recommendations",
+  "settings": [
+    {
+      "type": "inline_richtext",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Complete the set"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Heading size",
+      "options": [
+        {
+          "value": "h1",
+          "label": "XX-large"
+        },
+        {
+          "value": "h2",
+          "label": "X-large"
+        },
+        {
+          "value": "h3",
+          "label": "Large"
+        },
+        {
+          "value": "h4",
+          "label": "Medium"
+        },
+        {
+          "value": "h5",
+          "label": "Small"
+        },
+        {
+          "value": "h6",
+          "label": "X-small"
+        }
+      ],
+      "default": "h3"
+    },
+    {
+      "type": "select",
+      "id": "html_tag",
+      "label": "HTML Tag",
+      "options": [
+        {
+          "value": "h1",
+          "label": "H1"
+        },
+        {
+          "value": "h2",
+          "label": "H2"
+        },
+        {
+          "value": "h3",
+          "label": "H3"
+        },
+        {
+          "value": "h4",
+          "label": "H4"
+        },
+        {
+          "value": "h5",
+          "label": "H5"
+        },
+        {
+          "value": "h6",
+          "label": "H6"
+        }
+      ],
+      "default": "h2"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Product recommendations"
+    }
+  ]
+}
+{% endschema %}

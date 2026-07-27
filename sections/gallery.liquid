@@ -1,0 +1,381 @@
+{% render 'section-stylesheet', asset: 'section-gallery.css', defer_on_home: true %}
+
+{% liquid
+  assign image_count = section.blocks | where: 'type', 'image' | size
+  assign header_count = section.blocks | where: 'type', 'header' | size
+%}
+
+{% if image_count > 0 or header_count > 0 %}
+  <section
+    class="gallery color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+    style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --gallery-content-gap: {{ section.settings.content_gap }}px; --gallery-grid-gap: {{ section.settings.grid_gap }}px; --gallery-columns-desktop: {{ section.settings.columns_desktop }}; --gallery-columns-tablet: {{ section.settings.columns_desktop }}; --gallery-columns-mobile: {{ section.settings.columns_mobile }};"
+  >
+    <div class="gallery__inner section-spacing">
+      {% if header_count > 0 %}
+        <header class="gallery__header">
+          {% for block in section.blocks %}
+            {% if block.type == 'header' %}
+              {% assign gallery_header_text_class = 'gallery__intro content-text content-text--' | append: block.settings.text_size %}
+              {% capture header_attributes %}{{ block.shopify_attributes }}{% endcapture %}
+              {% assign gallery_heading_class = 'gallery__heading omnise-heading--' | append: block.settings.heading_size %}
+              {% render 'section-header',
+                heading: block.settings.heading,
+                heading_tag: block.settings.heading_tag,
+                heading_size: block.settings.heading_size,
+                heading_class: gallery_heading_class,
+                text: block.settings.text,
+                text_class: gallery_header_text_class,
+                action_label: block.settings.link_label,
+                action_url: block.settings.link,
+                action_style: 'text',
+                action_class: 'gallery__view-all',
+                alignment: 'center',
+                class: 'gallery__header-content',
+                tag: 'div',
+                attributes: header_attributes
+              %}
+            {% endif %}
+          {% endfor %}
+        </header>
+      {% endif %}
+
+      {% if image_count > 0 %}
+        <div class="gallery__grid">
+          {% for block in section.blocks %}
+            {% if block.type == 'image' %}
+              {% liquid
+                assign gallery_image = block.settings.image
+                assign image_alt = block.settings.image_alt | default: gallery_image.alt
+                assign placeholder_asset = 'placeholder-image-default-1.svg'
+                assign placeholder_index = forloop.index0 | modulo: 2
+                if placeholder_index == 1
+                  assign placeholder_asset = 'placeholder-image-default-2.svg'
+                endif
+              %}
+
+              <div class="gallery__item" {{ block.shopify_attributes }}>
+                {% if block.settings.link != blank %}<a class="gallery__link" href="{{ block.settings.link }}">{% endif %}
+                  <div class="gallery__media">
+                    {% if gallery_image != blank %}
+                      {% render 'responsive-image',
+                        image: gallery_image,
+                        max_width: 1200,
+                        widths: '240, 360, 450, 600, 750, 900, 1200',
+                        sizes: '(min-width: 990px) calc((100vw - 120px) / 4), (min-width: 750px) calc((100vw - 68px) / 2), calc((100vw - 40px) / 2)',
+                        class: 'gallery__image media-cover',
+                        loading: 'lazy',
+                        alt: image_alt
+                      %}
+                    {% else %}
+                      {% render 'media-placeholder', class_name: 'gallery__placeholder media-cover', asset_name: placeholder_asset %}
+                    {% endif %}
+                    <span class="gallery__social-icon" aria-hidden="true">
+                      {% render 'social-icon', name: 'instagram' %}
+                    </span>
+                  </div>
+                {% if block.settings.link != blank %}</a>{% endif %}
+              </div>
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+{% endif %}
+
+
+
+{% schema %}
+{
+  "name": "Gallery",
+  "tag": "section",
+  "class": "section-gallery",
+  "max_blocks": 13,
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 2,
+      "max": 6,
+      "step": 1,
+      "label": "Desktop columns",
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Mobile columns",
+      "options": [
+        {
+          "value": "1",
+          "label": "1"
+        },
+        {
+          "value": "2",
+          "label": "2"
+        }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "contained",
+          "label": "Contained"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "range",
+      "id": "content_gap",
+      "min": 16,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "label": "Header to gallery gap",
+      "default": 40
+    },
+    {
+      "type": "range",
+      "id": "grid_gap",
+      "min": 0,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "label": "Image gap",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 80
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "header",
+      "name": "Header",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "Shop The Latest From Instagram"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            {
+              "value": "h1",
+              "label": "XX-large"
+            },
+            {
+              "value": "h2",
+              "label": "X-large"
+            },
+            {
+              "value": "h3",
+              "label": "Large"
+            },
+            {
+              "value": "h4",
+              "label": "Medium"
+            },
+            {
+              "value": "h5",
+              "label": "Small"
+            },
+            {
+              "value": "h6",
+              "label": "X-small"
+            }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "HTML Tag",
+          "options": [
+            {
+              "value": "h1",
+              "label": "H1"
+            },
+            {
+              "value": "h2",
+              "label": "H2"
+            },
+            {
+              "value": "h3",
+              "label": "H3"
+            },
+            {
+              "value": "h4",
+              "label": "H4"
+            },
+            {
+              "value": "h5",
+              "label": "H5"
+            },
+            {
+              "value": "h6",
+              "label": "H6"
+            }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Follow us on Instagram for the latest updates and inspirations.</p>"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "options": [
+            {
+              "value": "x-large",
+              "label": "X-large"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "x-small",
+              "label": "X-small"
+            }
+          ],
+          "default": "medium"
+        },
+        {
+          "type": "text",
+          "id": "link_label",
+          "label": "Link label",
+          "default": "View on Instagram"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    },
+    {
+      "type": "image",
+      "name": "Image",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gallery",
+      "blocks": [
+        {
+          "type": "header"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        },
+        {
+          "type": "image"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

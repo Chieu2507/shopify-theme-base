@@ -1,0 +1,50 @@
+{% doc %}
+  Renders the compact product media slider used by Quick View.
+
+  @param {product} product - Product whose media should be displayed.
+  @param {string} [media_ratio] - Media ratio class.
+  @param {string} [mobile_media_ratio] - Mobile media ratio class.
+  @param {string} [media_fit] - Object fit behavior.
+  @param {string} [image_zoom] - Image interaction mode.
+  @param {boolean} [show_pagination] - Show slider pagination.
+  @param {boolean} [show_thumbnails] - Show media thumbnails.
+  @param {number} [thumbnail_size] - Thumbnail size in pixels.
+  @param {number} [thumbnail_gap] - Thumbnail gap in pixels.
+{% enddoc %}
+
+<div
+  class="product-gallery product-gallery--carousel product-gallery--quick-view product-gallery--zoom-{{ image_zoom | default: 'open_lightbox' }} product-gallery--mobile-thumbnails-{{ show_thumbnails | default: false }} product-gallery--ratio-{{ media_ratio | default: 'portrait' }} product-gallery--mobile-ratio-{{ mobile_media_ratio | default: 'portrait' }}"
+  data-image-zoom="{{ image_zoom | default: 'open_lightbox' }}"
+  data-product-gallery
+  style="--gallery-fit: {{ media_fit | default: 'cover' }}; --gallery-thumbnail-size: {{ thumbnail_size | default: 64 }}px; --gallery-thumbnail-gap: {{ thumbnail_gap | default: 8 }}px;"
+>
+  <div class="product-gallery__mobile">
+    <div class="swiper product-gallery__main" data-product-main-gallery>
+      <div class="swiper-wrapper">
+        {% for media in product.media %}
+          <div class="swiper-slide" data-media-id="{{ media.id }}">
+            {% render 'product-media', media: media, product: product, layout: 'slider', zoom_mode: image_zoom %}
+          </div>
+        {% endfor %}
+      </div>
+      {% if product.media.size > 1 and show_pagination != false %}
+        <div class="swiper-pagination" data-product-gallery-pagination></div>
+      {% endif %}
+    </div>
+    {% if product.media.size > 1 and show_thumbnails %}
+      <div class="swiper product-gallery__thumbnails" data-product-thumbnail-gallery aria-label="Product media thumbnails">
+        <div class="swiper-wrapper">
+          {% for media in product.media %}
+            <button class="swiper-slide product-gallery__thumbnail" type="button" data-media-thumbnail data-media-id="{{ media.id }}" aria-label="View media {{ forloop.index }}">
+              {% render 'product-media-thumbnail', media: media %}
+            </button>
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% unless image_zoom == 'none' %}
+  {% render 'product-lightbox', product: product %}
+{% endunless %}

@@ -1,0 +1,102 @@
+<!doctype html>
+{% assign is_quick_view_template = false %}
+{% if request.page_type == 'product' and template.suffix == 'quick-view' %}
+  {% assign is_quick_view_template = true %}
+{% endif %}
+{% assign use_local_kaisei = false %}
+{% assign heading_font_family_handle = settings.heading_font.family | handleize %}
+{% if heading_font_family_handle == 'kaisei-decol' %}
+  {% assign use_local_kaisei = true %}
+{% endif %}
+<html class="no-js" lang="{{ request.locale.iso_code }}">
+  <head>
+    <script>document.documentElement.classList.remove('no-js');</script>
+
+    {% if use_local_kaisei %}
+      <link
+        rel="preload"
+        href="{{ 'kaisei-decol-latin-400.woff2' | asset_url }}"
+        as="font"
+        type="font/woff2"
+        crossorigin
+        fetchpriority="high"
+      >
+    {% elsif settings.heading_font.system? == false and settings.heading_font != settings.body_font %}
+      {{ settings.heading_font | font_url | preload_tag: as: 'font', crossorigin: 'anonymous' }}
+    {% endif %}
+
+    {% unless settings.body_font.system? %}
+      {{ settings.body_font | font_url | preload_tag: as: 'font', crossorigin: 'anonymous' }}
+    {% endunless %}
+
+    {% # Inlined CSS Variables %}
+    {% render 'css-variables' %}
+
+    {% assign base_css_url = 'base.css' | asset_url %}
+    {% if request.page_type == 'index' and request.design_mode == false %}
+      <link rel="preload" href="{{ base_css_url }}" as="style">
+      <link rel="stylesheet" href="{{ base_css_url }}" media="print" onload="this.media='all'">
+      <noscript>{{ base_css_url | stylesheet_tag }}</noscript>
+      <link rel="stylesheet" href="{{ 'section-header-critical-2.css' | asset_url }}" media="print" onload="this.media='all'">
+    {% else %}
+      {{ base_css_url | stylesheet_tag: preload: true }}
+    {% endif %}
+    {% if settings.cart_drawer_enabled %}
+      {{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
+    {% endif %}
+    {% if request.page_type == 'collection' and request.design_mode == false %}
+      <style>{{ 'section-collection-critical.css' | inline_asset_content }}</style>
+    {% endif %}
+    {% # Social, title, etc. %}
+    {% render 'meta-tags' %}
+
+    {% if settings.favicon != blank %}
+      <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
+    {% else %}
+      <link rel="icon" type="image/png" href="{{ 'omniselle-favicon.png' | asset_url }}">
+    {% endif %}
+
+    {{ content_for_header }}
+    <script src="{{ 'deferred-module-loader.js' | asset_url }}" defer></script>
+    {% if request.page_type == 'index' %}
+      <script src="{{ 'section-stylesheet-loader.js' | asset_url }}" defer></script>
+    {% endif %}
+    <script src="{{ 'product-card-loader.js' | asset_url }}" defer></script>
+  </head>
+
+  <body class="template-{{ request.page_type | handle }}{% if is_quick_view_template %} template-quick-view{% endif %}{% if request.design_mode %} shopify-design-mode{% endif %}">
+    {% unless is_quick_view_template %}
+      <a class="skip-link" href="#MainContent">{{ 'accessibility.skip_to_content' | t }}</a>
+      {% sections 'header-group' %}
+    {% endunless %}
+
+    {% if is_quick_view_template %}
+      {{ content_for_layout }}
+    {% else %}
+      <main id="MainContent" role="main" tabindex="-1">
+        {{ content_for_layout }}
+      </main>
+    {% endif %}
+
+    {% unless is_quick_view_template %}
+      <dialog
+        class="quick-view-modal"
+        scroll-lock
+        data-quick-view-modal
+        data-product-page-module="{{ 'product-page.js' | asset_url }}"
+        aria-label="{{ 'product_card.quick_view' | t | escape }}"
+      >
+        <span class="quick-view-modal__backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
+        <div data-quick-view-modal-content></div>
+      </dialog>
+
+      {% sections 'footer-group' %}
+      {% if settings.cart_drawer_enabled %}
+        {% render 'cart-drawer' %}
+      {% endif %}
+    {% endunless %}
+    {% if settings.cart_drawer_enabled %}
+      <script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
+    {% endif %}
+  </body>
+</html>

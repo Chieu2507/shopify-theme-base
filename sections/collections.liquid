@@ -1,0 +1,165 @@
+{% liquid
+  assign collections_card_width_desktop = 100.0 | divided_by: section.settings.columns_desktop
+  assign collections_card_width_tablet = 100.0 | divided_by: section.settings.columns_desktop
+  assign collections_card_width_mobile = 100.0 | divided_by: section.settings.columns_mobile
+%}
+
+{% capture collections_card_sizes %}(min-width: 990px) {{ collections_card_width_desktop }}vw, (min-width: 750px) {{ collections_card_width_tablet }}vw, {{ collections_card_width_mobile }}vw{% endcapture %}
+
+<section
+  class="collections-page color-scheme color-{{ section.settings.color_scheme.id }}"
+    style="--collections-columns-desktop: {{ section.settings.columns_desktop }}; --collections-columns-tablet: {{ section.settings.columns_desktop }}; --collections-columns-mobile: {{ section.settings.columns_mobile }}; --collections-grid-gap: {{ section.settings.grid_gap }}px; --collections-padding-top: {{ section.settings.padding_top }}px; --collections-padding-bottom: {{ section.settings.padding_bottom }}px; --collections-padding-top-mobile: {{ section.settings.padding_top_mobile }}px; --collections-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;"
+>
+  <div class="collections-page__inner{% if section.settings.section_width == 'page' %} collections-page__inner--page{% endif %}">
+    <header class="collections-page__header collections-page__header--{{ section.settings.text_alignment }}">
+      <h1 class="collections-page__heading">{{ section.settings.heading | escape }}</h1>
+      {% if section.settings.description != blank %}
+        <div class="collections-page__description rte">{{ section.settings.description }}</div>
+      {% endif %}
+    </header>
+
+    {% paginate collections by section.settings.collections_per_page %}
+      <ul class="collections-page__grid" role="list">
+        {% for collection in collections %}
+          {% liquid
+            assign collection_image_alt = collection.title
+            if collection.featured_image.alt != blank
+              assign collection_image_alt = collection.featured_image.alt
+            endif
+          %}
+          <li class="collections-page__item">
+            <a class="collections-page__card" href="{{ collection.url }}">
+              <div class="collections-page__media collections-page__media--{{ section.settings.image_ratio }}">
+                {% if collection.featured_image != blank %}
+                  {% render 'responsive-image',
+                    image: collection.featured_image,
+                    max_width: 1400,
+                    widths: '320, 480, 640, 800, 1000, 1200, 1400',
+                    sizes: collections_card_sizes,
+                    class: 'collections-page__image',
+                    loading: 'lazy',
+                    alt: collection_image_alt
+                  %}
+                {% else %}
+                  {% render 'media-placeholder', class_name: 'collections-page__placeholder', asset_name: 'placeholder-image-default-4.svg' %}
+                {% endif %}
+                <span class="collections-page__overlay" aria-hidden="true"></span>
+              </div>
+              <span class="collections-page__content collections-page__content--{{ section.settings.card_text_alignment }}">
+                <span class="collections-page__title">{{ collection.title | escape }}</span>
+                {% if section.settings.show_product_count %}
+                  <span class="collections-page__count">{{ 'collection.product_count' | t: count: collection.products_count }}</span>
+                {% endif %}
+              </span>
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+
+      {% if paginate.pages > 1 %}
+        <nav class="collections-page__pagination" aria-label="{{ 'collection.pagination' | t | escape }}">
+          {% if paginate.previous %}
+            <a class="collections-page__pagination-arrow" href="{{ paginate.previous.url }}" aria-label="{{ 'collection.previous_page' | t | escape }}">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="m10.5 3-5 5 5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+          {% endif %}
+
+          {% for part in paginate.parts %}
+            {% if part.is_link %}
+              <a href="{{ part.url }}">{{ part.title }}</a>
+            {% else %}
+              <span{% if part.title == paginate.current_page %} class="is-current" aria-current="page"{% endif %}>{{ part.title }}</span>
+            {% endif %}
+          {% endfor %}
+
+          {% if paginate.next %}
+            <a class="collections-page__pagination-arrow" href="{{ paginate.next.url }}" aria-label="{{ 'collection.next_page' | t | escape }}">
+              <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
+                <path d="m5.5 3 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+              </svg>
+            </a>
+          {% endif %}
+        </nav>
+      {% endif %}
+    {% endpaginate %}
+  </div>
+</section>
+
+{% stylesheet %}
+  .collections-page { padding: var(--collections-padding-top) var(--page-margin) var(--collections-padding-bottom); background: var(--gradient-background, var(--color-background)); color: var(--color-text); }
+  .collections-page__inner { width: 100%; }
+  .collections-page__inner--page { max-width: var(--page-width); margin-inline: auto; }
+  .collections-page__header { display: grid; max-width: 660px; gap: 14px; margin-bottom: clamp(32px, 5vw, 64px); }
+  .collections-page__header--left { justify-items: start; text-align: left; }
+  .collections-page__header--center { justify-items: center; margin-inline: auto; text-align: center; }
+  .collections-page__header--right { justify-items: end; margin-left: auto; text-align: right; }
+  .collections-page__heading { margin: 0; color: var(--color-heading); font-size: var(--font-h1-size); line-height: var(--font-h1-line-height); }
+  .collections-page__description { max-width: 56ch; color: var(--color-text); line-height: var(--body-line-height); }
+  .collections-page__description > * { margin: 0; }
+  .collections-page__grid { display: grid; gap: var(--collections-grid-gap); margin: 0; padding: 0; grid-template-columns: repeat(var(--collections-columns-desktop), minmax(0, 1fr)); list-style: none; }
+  .collections-page__item { min-width: 0; }
+  .collections-page__card { position: relative; display: block; overflow: hidden; color: #fff; isolation: isolate; text-decoration: none; }
+  .collections-page__media { position: relative; overflow: hidden; background: var(--color-variant-component-background); }
+  .collections-page__media--portrait { aspect-ratio: 5 / 6; }
+  .collections-page__media--square { aspect-ratio: 1; }
+  .collections-page__media--landscape { aspect-ratio: 4 / 3; }
+  .collections-page__image, .collections-page__placeholder { display: block; width: 100%; height: 100%; object-fit: cover; transition: transform 280ms ease; }
+  .collections-page__overlay { position: absolute; inset: 0; background: linear-gradient(to top, rgb(0 0 0 / .56), rgb(0 0 0 / .03) 62%); pointer-events: none; }
+  .collections-page__content { position: absolute; z-index: 1; right: 0; bottom: 0; left: 0; display: grid; gap: 3px; padding: 22px 20px; }
+  .collections-page__content--left { justify-items: start; text-align: left; }
+  .collections-page__content--center { justify-items: center; text-align: center; }
+  .collections-page__content--right { justify-items: end; text-align: right; }
+  .collections-page__title { color: #fff; font-family: var(--font-heading--family); font-size: var(--font-h4-size); font-style: var(--font-heading--style); font-weight: var(--font-heading--weight); line-height: var(--font-h4-line-height); }
+  .collections-page__count { color: rgb(255 255 255 / 82%); font-size: var(--font-caption); line-height: 1.4; }
+  .collections-page__card:hover .collections-page__image { transform: scale(1.035); }
+  .collections-page__card:focus-visible { outline: 2px solid var(--color-heading); outline-offset: 4px; }
+  .collections-page__pagination { display: flex; min-height: 88px; align-items: center; justify-content: center; gap: 6px; margin-top: 24px; }
+  .collections-page__pagination a, .collections-page__pagination span { display: grid; min-width: 32px; height: 32px; place-items: center; color: var(--color-text); font-size: var(--font-caption); text-decoration: none; }
+  .collections-page__pagination .is-current { background: var(--color-heading); color: var(--color-background); }
+  .collections-page__pagination-arrow svg { width: 14px; height: 14px; }
+  @media screen and (min-width: 750px) and (max-width: 989px) { .collections-page__grid { grid-template-columns: repeat(var(--collections-columns-tablet), minmax(0, 1fr)); } }
+  @media screen and (max-width: 749px) { .collections-page { padding-top: var(--collections-padding-top-mobile); padding-bottom: var(--collections-padding-bottom-mobile); } .collections-page__header { gap: 10px; margin-bottom: 32px; } .collections-page__grid { grid-template-columns: repeat(var(--collections-columns-mobile), minmax(0, 1fr)); } .collections-page__content { padding: 16px 14px; } .collections-page__title { font-size: var(--font-h5-size); line-height: var(--font-h5-line-height); } .collections-page__pagination { min-height: 72px; margin-top: 16px; } }
+  @media (prefers-reduced-motion: reduce) { .collections-page__image { transition: none; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Collection list page",
+  "tag": "section",
+  "class": "section-collections-page",
+  "settings": [
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Collections" },
+    { "type": "richtext", "id": "description", "label": "Description" },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    { "type": "select", "id": "text_alignment", "label": "Header alignment", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" }], "default": "center" },
+    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "full", "label": "Full width" }, { "value": "page", "label": "Page width" }], "default": "page" },
+    { "type": "header", "content": "Collection cards" },
+    { "type": "select", "id": "image_ratio", "label": "Image ratio", "options": [{ "value": "portrait", "label": "Portrait" }, { "value": "square", "label": "Square" }, { "value": "landscape", "label": "Landscape" }], "default": "portrait" },
+    { "type": "select", "id": "card_text_alignment", "label": "Card text alignment", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" }], "default": "left" },
+    { "type": "checkbox", "id": "show_product_count", "label": "Show product count", "default": true },
+    { "type": "range", "id": "columns_desktop", "min": 2, "max": 4, "step": 1, "label": "Desktop columns", "default": 4 },
+    { "type": "select", "id": "columns_mobile", "label": "Mobile columns", "options": [{ "value": "1", "label": "1 column" }, { "value": "2", "label": "2 columns" }], "default": "2" },
+    { "type": "range", "id": "grid_gap", "min": 4, "max": 40, "step": 2, "unit": "px", "label": "Grid gap", "default": 16 },
+    { "type": "range", "id": "collections_per_page", "min": 4, "max": 48, "step": 4, "label": "Collections per page", "default": 12 },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    { "type": "range", "id": "padding_top", "min": 0, "max": 160, "step": 4, "unit": "px", "label": "Desktop top padding", "default": 72 },
+    { "type": "range", "id": "padding_bottom", "min": 0, "max": 160, "step": 4, "unit": "px", "label": "Desktop bottom padding", "default": 96 },
+    { "type": "range", "id": "padding_top_mobile", "min": 0, "max": 96, "step": 4, "unit": "px", "label": "Mobile top padding", "default": 48 },
+    { "type": "range", "id": "padding_bottom_mobile", "min": 0, "max": 96, "step": 4, "unit": "px", "label": "Mobile bottom padding", "default": 56 },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" }
+  ],
+  "presets": [{ "name": "Collection list page" }]
+}
+{% endschema %}

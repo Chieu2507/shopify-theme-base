@@ -1,0 +1,38 @@
+{% assign product = closest.product | default: product %}
+{% assign form_id = 'product-form-' | append: section.id %}
+{% assign details_class = 'product-form product-details' %}
+{% capture details_style %}--product-sticky-offset: {{ block.settings.desktop_top_offset | default: 24 }}px;{% endcapture %}
+{% unless block.settings.enable_sticky %}{% assign details_class = details_class | append: ' product-details--not-sticky' %}{% endunless %}
+{% form 'product', product, id: form_id, class: details_class, novalidate: 'novalidate', data-product-form: '', style: details_style %}
+  {% render 'product-form', product: product %}
+  {% content_for 'blocks' %}
+{% endform %}
+
+{% schema %}
+{
+  "name": "Product details",
+  "blocks": [
+    {
+      "type": "@theme"
+    }
+  ],
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "enable_sticky",
+      "label": "Keep details sticky on desktop",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "desktop_top_offset",
+      "label": "Desktop sticky offset",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 24
+    }
+  ]
+}
+{% endschema %}

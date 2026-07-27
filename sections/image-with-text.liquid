@@ -1,0 +1,493 @@
+{% render 'section-stylesheet', asset: 'section-image-with-text.css', defer_on_home: true %}
+
+{% liquid
+  assign media_count = section.blocks | where: 'type', 'media' | size
+  assign content_count = section.blocks.size | minus: media_count
+  assign primary_media = section.blocks | where: 'type', 'media' | first
+%}
+
+{% if media_count > 0 or content_count > 0 %}
+  <section
+    class="image-with-text image-with-text--media-{{ section.settings.media_position }} image-with-text--media-count-{{ media_count }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} image-with-text--full full-width{% endif %}"
+    style="--image-with-text-column-gap: {{ section.settings.column_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  >
+    <div class="image-with-text__inner section-spacing">
+      {% if media_count > 0 %}
+        <div class="image-with-text__media-collage image-with-text__media-collage--{{ primary_media.settings.desktop_image_ratio }} image-with-text__media-collage--mobile-{{ primary_media.settings.mobile_image_ratio }}">
+          {% assign media_index = 0 %}
+          {% for block in section.blocks %}
+            {% if block.type == 'media' %}
+              {% liquid
+                assign media_index = media_index | plus: 1
+                assign media_role = 'base'
+                if media_index > 1
+                  assign media_role = 'foreground'
+                endif
+                assign media_alt = block.settings.alt | default: block.settings.image.alt
+                assign placeholder_asset = 'placeholder-image-default-1.svg'
+                if media_role == 'foreground'
+                  assign placeholder_asset = 'placeholder-image-default-2.svg'
+                endif
+              %}
+              {% if block.settings.link != blank %}
+                <a
+                  href="{{ block.settings.link }}"
+                  class="image-with-text__media image-with-text__media--{{ media_role }} image-with-text__media--{{ block.settings.desktop_image_ratio }} image-with-text__media--mobile-{{ block.settings.mobile_image_ratio }}"
+                  style="--image-with-text-focal-point: {{ block.settings.focal_point }};"
+                  aria-label="{{ media_alt | default: 'View image' | escape }}"
+                  {{ block.shopify_attributes }}
+                >
+              {% else %}
+                <div
+                  class="image-with-text__media image-with-text__media--{{ media_role }} image-with-text__media--{{ block.settings.desktop_image_ratio }} image-with-text__media--mobile-{{ block.settings.mobile_image_ratio }}"
+                  style="--image-with-text-focal-point: {{ block.settings.focal_point }};"
+                  {{ block.shopify_attributes }}
+                >
+              {% endif %}
+                  {% if block.settings.image != blank %}
+                    {% render 'responsive-image',
+                      image: block.settings.image,
+                      max_width: 1200,
+                      widths: '320, 480, 640, 800, 1000, 1200',
+                      sizes: '(min-width: 990px) 42vw, (min-width: 750px) 48vw, 82vw',
+                      class: 'image-with-text__image',
+                      loading: 'lazy',
+                      alt: media_alt
+                    %}
+                  {% elsif block.settings.asset_image != blank %}
+                    <img
+                      src="{{ block.settings.asset_image | asset_url }}"
+                      class="image-with-text__image"
+                      loading="lazy"
+                      alt="{{ media_alt | escape }}"
+                      width="1200"
+                      height="1200"
+                    >
+                  {% else %}
+                    {% render 'media-placeholder', class_name: 'image-with-text__placeholder', asset_name: placeholder_asset %}
+                  {% endif %}
+              {% if block.settings.link != blank %}</a>{% else %}</div>{% endif %}
+            {% endif %}
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if content_count > 0 %}
+        <div class="image-with-text__content image-with-text__content--{{ section.settings.content_alignment }}">
+          {% for block in section.blocks %}
+            {% case block.type %}
+              {% when 'eyebrow' %}
+                {% if block.settings.text != blank %}
+                  <p class="image-with-text__eyebrow" {{ block.shopify_attributes }}>
+                    {{ block.settings.text | escape }}
+                  </p>
+                {% endif %}
+
+              {% when 'heading' %}
+                {% if block.settings.heading != blank %}
+                  <div class="image-with-text__heading-block" {{ block.shopify_attributes }}>
+                    <{{ block.settings.heading_tag }} class="image-with-text__heading image-with-text__omnise-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} omnise-heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}">
+                      {{ block.settings.heading | escape }}
+                    </{{ block.settings.heading_tag }}>
+                  </div>
+                {% endif %}
+
+              {% when 'text' %}
+                {% if block.settings.text != blank %}
+                  <div class="image-with-text__text image-with-text__text--{{ block.settings.text_size | default: 'medium' }} text-block rte" {{ block.shopify_attributes }}>
+                    {{ block.settings.text }}
+                  </div>
+                {% endif %}
+
+              {% when 'button' %}
+                {% if block.settings.label != blank and block.settings.link != blank %}
+                  <div class="image-with-text__button-block" {{ block.shopify_attributes }}>
+                    {% render 'cta', label: block.settings.label, url: block.settings.link, style: block.settings.style %}
+                  </div>
+                {% endif %}
+            {% endcase %}
+          {% endfor %}
+        </div>
+      {% endif %}
+    </div>
+  </section>
+{% endif %}
+
+
+
+{% schema %}
+{
+  "name": "Image with text",
+  "tag": "section",
+  "class": "image-with-text-section",
+  "max_blocks": 7,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "media_position",
+      "label": "Media position",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "text_alignment",
+      "id": "content_alignment",
+      "label": "Content alignment",
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "page",
+          "label": "Page"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "page"
+    },
+    {
+      "type": "range",
+      "id": "column_gap",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "label": "Column gap",
+      "default": 40
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 8,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 96
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 8,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 96
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "media",
+      "name": "Media",
+      "limit": 2,
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "asset_image",
+          "label": "Theme asset filename",
+          "info": "Used when no Shopify image is selected."
+        },
+        {
+          "type": "text",
+          "id": "alt",
+          "label": "Image alt text"
+        },
+        {
+          "type": "select",
+          "id": "desktop_image_ratio",
+          "label": "Desktop image ratio",
+          "options": [
+            {
+              "value": "auto",
+              "label": "Original"
+            },
+            {
+              "value": "square",
+              "label": "Square"
+            },
+            {
+              "value": "portrait",
+              "label": "Portrait"
+            },
+            {
+              "value": "landscape",
+              "label": "Landscape"
+            }
+          ],
+          "default": "portrait"
+        },
+        {
+          "type": "select",
+          "id": "mobile_image_ratio",
+          "label": "Mobile image ratio",
+          "options": [
+            {
+              "value": "auto",
+              "label": "Original"
+            },
+            {
+              "value": "square",
+              "label": "Square"
+            },
+            {
+              "value": "portrait",
+              "label": "Portrait"
+            },
+            {
+              "value": "landscape",
+              "label": "Landscape"
+            }
+          ],
+          "default": "portrait"
+        },
+        {
+          "type": "text",
+          "id": "focal_point",
+          "label": "Focal point",
+          "default": "center center",
+          "info": "Use CSS object-position, for example: 50% 40%."
+        }
+      ]
+    },
+    {
+      "type": "eyebrow",
+      "name": "Eyebrow",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Our mission"
+        }
+      ]
+    },
+    {
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "heading",
+          "label": "Heading",
+          "default": "More Than Beauty, A Philosophy"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            {
+              "value": "h1",
+              "label": "XX-large"
+            },
+            {
+              "value": "h2",
+              "label": "X-large"
+            },
+            {
+              "value": "h3",
+              "label": "Large"
+            },
+            {
+              "value": "h4",
+              "label": "Medium"
+            },
+            {
+              "value": "h5",
+              "label": "Small"
+            },
+            {
+              "value": "h6",
+              "label": "X-small"
+            }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "HTML Tag",
+          "options": [
+            {
+              "value": "h1",
+              "label": "H1"
+            },
+            {
+              "value": "h2",
+              "label": "H2"
+            },
+            {
+              "value": "h3",
+              "label": "H3"
+            },
+            {
+              "value": "h4",
+              "label": "H4"
+            },
+            {
+              "value": "h5",
+              "label": "H5"
+            },
+            {
+              "value": "h6",
+              "label": "H6"
+            }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "Alignment",
+          "default": "left"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>We select materials for their character and durability, creating pieces designed to be used every day.</p>"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "options": [
+            {
+              "value": "x-large",
+              "label": "X-large"
+            },
+            {
+              "value": "large",
+              "label": "Large"
+            },
+            {
+              "value": "medium",
+              "label": "Medium"
+            },
+            {
+              "value": "small",
+              "label": "Small"
+            },
+            {
+              "value": "x-small",
+              "label": "X-small"
+            }
+          ],
+          "default": "medium"
+        }
+      ]
+    },
+    {
+      "type": "button",
+      "name": "Button",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "text",
+          "id": "label",
+          "label": "Label",
+          "default": "Read more"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "options": [
+            {
+              "value": "primary",
+              "label": "Primary"
+            },
+            {
+              "value": "secondary",
+              "label": "Secondary"
+            },
+            {
+              "value": "tertiary",
+              "label": "Tertiary"
+            }
+          ],
+          "default": "tertiary"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Image with text",
+      "blocks": [
+        {
+          "type": "media"
+        },
+        {
+          "type": "media"
+        },
+        {
+          "type": "eyebrow"
+        },
+        {
+          "type": "heading"
+        },
+        {
+          "type": "text"
+        },
+        {
+          "type": "button"
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

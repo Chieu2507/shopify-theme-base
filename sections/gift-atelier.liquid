@@ -1,0 +1,282 @@
+{% render 'section-stylesheet', asset: 'section-gift-atelier.css', inline_on_home: true %}
+
+<gift-atelier
+  id="gift-omniselle"
+  class="gift-atelier gift-atelier--layout-{{ section.settings.layout_ratio }} gift-atelier--choices-{{ section.settings.choice_style }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width gift-atelier--full{% endif %}"
+  data-deferred-module="{{ 'gift-atelier.js' | asset_url }}"
+  data-step-prefix="{{ 'gift_atelier.step' | t | escape }}"
+  data-step-separator="{{ 'gift_atelier.of' | t | escape }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --section-padding-top-mobile: {{ section.settings.padding_top_mobile }}px; --section-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px; --gift-atelier-product-columns: {{ section.settings.product_columns }};"
+>
+  <div class="gift-atelier__spacing section-spacing">
+    <div class="gift-atelier__inner">
+      <div class="gift-atelier__intro"{% if section.settings.heading != blank %} aria-labelledby="GiftAtelierTitle-{{ section.id }}"{% endif %}>
+      {% if section.settings.eyebrow != blank %}
+        <p class="gift-atelier__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+      {% endif %}
+      {% if section.settings.heading != blank %}
+        <h2 class="gift-atelier__heading" id="GiftAtelierTitle-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+      {% endif %}
+      {% if section.settings.intro != blank %}
+        <div class="gift-atelier__intro-copy rte">{{ section.settings.intro }}</div>
+      {% endif %}
+      </div>
+
+      <div class="gift-atelier__finder">
+        <div class="gift-atelier__questions" data-gift-atelier-questions>
+        <div class="gift-atelier__step-meta">
+          <span data-gift-atelier-step-count>{{ 'gift_atelier.step' | t }} 1 {{ 'gift_atelier.of' | t }} 3</span>
+          <span>{{ section.settings.concierge_label | escape }}</span>
+        </div>
+        <h3 class="gift-atelier__question" data-gift-atelier-question tabindex="-1">{{ section.settings.question_recipient | escape }}</h3>
+        <div class="gift-atelier__selection-summary" data-gift-atelier-selection-summary hidden></div>
+        <div class="gift-atelier__choices" data-gift-atelier-choices>
+          <button class="gift-atelier__choice" type="button" data-gift-atelier-choice="partner" aria-pressed="false">{{ section.settings.recipient_partner | escape }}</button>
+          <button class="gift-atelier__choice" type="button" data-gift-atelier-choice="mother" aria-pressed="false">{{ section.settings.recipient_mother | escape }}</button>
+          <button class="gift-atelier__choice" type="button" data-gift-atelier-choice="friend" aria-pressed="false">{{ section.settings.recipient_friend | escape }}</button>
+          <button class="gift-atelier__choice" type="button" data-gift-atelier-choice="myself" aria-pressed="false">{{ section.settings.recipient_myself | escape }}</button>
+        </div>
+        <div class="gift-atelier__flow-footer">
+          <button class="gift-atelier__back" type="button" data-gift-atelier-back hidden>
+            <span aria-hidden="true">←</span>
+            {{ 'gift_atelier.back' | t }}
+          </button>
+          {% if section.settings.show_progress %}
+            <div class="gift-atelier__progress" aria-hidden="true">
+              <span data-gift-atelier-progress></span>
+              <span data-gift-atelier-progress></span>
+              <span data-gift-atelier-progress></span>
+            </div>
+          {% endif %}
+        </div>
+        </div>
+
+        <p class="visually-hidden" data-gift-atelier-status role="status" aria-live="polite"></p>
+        <div class="gift-atelier__result" data-gift-atelier-result hidden></div>
+
+      </div>
+    </div>
+  </div>
+
+  {% for block in section.blocks %}
+    {% liquid
+      assign path_primary_link = block.settings.primary_link
+      if path_primary_link == blank and block.settings.result_collection != blank
+        assign path_primary_link = block.settings.result_collection.url
+      endif
+      assign path_heading = block.settings.heading
+      assign path_copy = block.settings.copy
+      assign path_products = block.settings.result_products
+      if path_products == blank and block.settings.result_collection != blank
+        assign path_products = block.settings.result_collection.products
+      endif
+    %}
+    <template
+      data-gift-atelier-path
+      data-block-id="{{ block.id }}"
+      data-recipient="{{ block.settings.recipient }}"
+      data-occasion="{{ block.settings.occasion }}"
+      data-personal-touch="{{ block.settings.personal_touch }}"
+    >
+      <div class="gift-atelier__result-content" {{ block.shopify_attributes }}>
+        {% if block.settings.featured_badge != blank %}<p class="gift-atelier__result-kicker">{{ block.settings.featured_badge | escape }}</p>{% else %}<p class="gift-atelier__result-kicker">{{ 'gift_atelier.curated_edit' | t }}</p>{% endif %}
+        <h3 class="gift-atelier__result-heading" data-gift-atelier-result-heading tabindex="-1">{{ path_heading | escape }}</h3>
+        {% if path_copy != blank %}<div class="gift-atelier__result-copy rte" data-gift-atelier-result-copy>{{ path_copy }}</div>{% endif %}
+        <div class="gift-atelier__chips" data-gift-atelier-chips></div>
+
+        <div class="gift-atelier__actions">
+          {% render 'cta', label: block.settings.primary_label, url: path_primary_link, style: 'primary' %}
+          {% if block.settings.show_personalization and block.settings.personalization_link != blank %}
+            {% render 'cta', label: block.settings.personalization_label, url: block.settings.personalization_link, style: 'tertiary' %}
+          {% endif %}
+        </div>
+
+        {% if path_products != blank %}
+          <ul class="gift-atelier__products" role="list">
+            {% for product in path_products limit: section.settings.products_to_show %}
+              <li class="gift-atelier__product">
+                {% render 'product-card',
+                  product: product,
+                  show_media_actions: true,
+                  enable_quick_view: true
+                %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% else %}
+          <ul class="gift-atelier__products" role="list" aria-label="{{ 'gift_atelier.curated_edit' | t | escape }}">
+            {% for placeholder_number in (1..section.settings.products_to_show) %}
+              <li class="gift-atelier__product">
+                {% render 'product-card',
+                  placeholder_index: placeholder_number
+                %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% endif %}
+
+        <button class="gift-atelier__restart" type="button" data-gift-atelier-restart>{{ 'gift_atelier.start_again' | t }}</button>
+      </div>
+    </template>
+  {% endfor %}
+
+  {% liquid
+    assign fallback_primary_link = section.settings.fallback_primary_link
+    if fallback_primary_link == blank and section.settings.fallback_collection != blank
+      assign fallback_primary_link = section.settings.fallback_collection.url
+    endif
+    assign fallback_products = section.settings.fallback_products
+    if fallback_products == blank and section.settings.fallback_collection != blank
+      assign fallback_products = section.settings.fallback_collection.products
+    endif
+  %}
+  <template data-gift-atelier-fallback>
+    <div class="gift-atelier__result-content">
+      {% if section.settings.fallback_badge != blank %}<p class="gift-atelier__result-kicker">{{ section.settings.fallback_badge | escape }}</p>{% else %}<p class="gift-atelier__result-kicker">{{ 'gift_atelier.curated_edit' | t }}</p>{% endif %}
+      <h3 class="gift-atelier__result-heading" data-gift-atelier-result-heading tabindex="-1">{{ section.settings.fallback_heading | escape }}</h3>
+      {% if section.settings.fallback_copy != blank %}<div class="gift-atelier__result-copy rte" data-gift-atelier-result-copy>{{ section.settings.fallback_copy }}</div>{% endif %}
+      <div class="gift-atelier__chips" data-gift-atelier-chips></div>
+      <div class="gift-atelier__actions">
+        {% render 'cta', label: section.settings.fallback_primary_label, url: fallback_primary_link, style: 'primary' %}
+      </div>
+      {% if fallback_products != blank %}
+        <ul class="gift-atelier__products" role="list">
+          {% for product in fallback_products limit: section.settings.products_to_show %}
+            <li class="gift-atelier__product">
+              {% render 'product-card', product: product, show_media_actions: true, enable_quick_view: true %}
+            </li>
+          {% endfor %}
+        </ul>
+      {% endif %}
+      <button class="gift-atelier__restart" type="button" data-gift-atelier-restart>{{ 'gift_atelier.start_again' | t }}</button>
+    </div>
+  </template>
+
+  <script type="application/json" data-gift-atelier-steps>
+    [
+      {
+        "key": "recipient",
+        "question": {{ section.settings.question_recipient | json }},
+        "answers": [
+          { "value": "partner", "label": {{ section.settings.recipient_partner | json }} },
+          { "value": "mother", "label": {{ section.settings.recipient_mother | json }} },
+          { "value": "friend", "label": {{ section.settings.recipient_friend | json }} },
+          { "value": "myself", "label": {{ section.settings.recipient_myself | json }} }
+        ]
+      },
+      {
+        "key": "occasion",
+        "question": {{ section.settings.question_occasion | json }},
+        "answers": [
+          { "value": "birthday", "label": {{ section.settings.occasion_birthday | json }} },
+          { "value": "anniversary", "label": {{ section.settings.occasion_anniversary | json }} },
+          { "value": "new-beginning", "label": {{ section.settings.occasion_new_beginning | json }} },
+          { "value": "just-because", "label": {{ section.settings.occasion_just_because | json }} }
+        ]
+      },
+      {
+        "key": "personal_touch",
+        "question": {{ section.settings.question_personal_touch | json }},
+        "answers": [
+          { "value": "birthstone", "label": {{ section.settings.personal_touch_birthstone | json }} },
+          { "value": "engraving", "label": {{ section.settings.personal_touch_engraving | json }} },
+          { "value": "timeless-gold", "label": {{ section.settings.personal_touch_timeless_gold | json }} },
+          { "value": "matching-set", "label": {{ section.settings.personal_touch_matching_set | json }} }
+        ]
+      }
+    ]
+  </script>
+</gift-atelier>
+
+{% schema %}
+{
+  "name": "Gift Omniselle",
+  "tag": "section",
+  "class": "section-gift-atelier",
+  "max_blocks": 50,
+  "settings": [
+    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "A more meaningful way to shop" },
+    { "type": "text", "id": "heading", "label": "Heading", "default": "Begin with their story." },
+    { "type": "richtext", "id": "intro", "label": "Intro text", "default": "<p>A short, considered journey that turns an occasion into a personal jewelry edit.</p>" },
+    { "type": "text", "id": "concierge_label", "label": "Interaction label", "default": "Gift concierge" },
+    { "type": "header", "content": "Step 1 · Recipient" },
+    { "type": "text", "id": "question_recipient", "label": "Question 1 label", "default": "Who is it for?" },
+    { "type": "text", "id": "recipient_partner", "label": "Recipient label: Partner", "default": "Partner" },
+    { "type": "text", "id": "recipient_mother", "label": "Recipient label: Mother", "default": "Mother" },
+    { "type": "text", "id": "recipient_friend", "label": "Recipient label: Friend", "default": "Friend" },
+    { "type": "text", "id": "recipient_myself", "label": "Recipient label: Myself", "default": "Myself" },
+    { "type": "header", "content": "Step 2 · Occasion" },
+    { "type": "text", "id": "question_occasion", "label": "Question 2 label", "default": "What are you celebrating?" },
+    { "type": "text", "id": "occasion_birthday", "label": "Occasion label: Birthday", "default": "Birthday" },
+    { "type": "text", "id": "occasion_anniversary", "label": "Occasion label: Anniversary", "default": "Anniversary" },
+    { "type": "text", "id": "occasion_new_beginning", "label": "Occasion label: New beginning", "default": "New beginning" },
+    { "type": "text", "id": "occasion_just_because", "label": "Occasion label: Just because", "default": "Just because" },
+    { "type": "header", "content": "Step 3 · Personal touch" },
+    { "type": "text", "id": "question_personal_touch", "label": "Question 3 label", "default": "What makes it personal?" },
+    { "type": "text", "id": "personal_touch_birthstone", "label": "Personal-touch label: Birthstone", "default": "Birthstone" },
+    { "type": "text", "id": "personal_touch_engraving", "label": "Personal-touch label: Engraving", "default": "Engraving" },
+    { "type": "text", "id": "personal_touch_timeless_gold", "label": "Personal-touch label: Timeless gold", "default": "Timeless gold" },
+    { "type": "text", "id": "personal_touch_matching_set", "label": "Personal-touch label: Matching set", "default": "Matching set" },
+    { "type": "header", "content": "Fallback gift edit" },
+    { "type": "paragraph", "content": "Shown when no Gift path matches all three answers. Configure this before adding specific paths." },
+    { "type": "collection", "id": "fallback_collection", "label": "Fallback collection", "info": "Supplies product cards and the primary link when no fallback product list or link is selected." },
+    { "type": "product_list", "id": "fallback_products", "label": "Fallback products", "limit": 6, "info": "Takes priority over the fallback collection." },
+    { "type": "text", "id": "fallback_heading", "label": "Fallback heading", "default": "A {occasion} piece, chosen with {personal_touch} in mind.", "info": "Supports {recipient}, {occasion}, and {personal_touch}." },
+    { "type": "richtext", "id": "fallback_copy", "label": "Fallback copy", "default": "<p>A considered edit for {recipient}, selected to make the moment feel personal.</p>", "info": "Supports {recipient}, {occasion}, and {personal_touch}." },
+    { "type": "text", "id": "fallback_badge", "label": "Fallback badge", "default": "Your curated gift edit" },
+    { "type": "text", "id": "fallback_primary_label", "label": "Fallback CTA label", "default": "Explore this gift edit" },
+    { "type": "url", "id": "fallback_primary_link", "label": "Fallback CTA link", "info": "Uses the fallback collection when empty." },
+    { "type": "header", "content": "Product cards" },
+    { "type": "range", "id": "products_to_show", "label": "Products to show", "min": 3, "max": 6, "step": 1, "default": 3 },
+    { "type": "select", "id": "product_columns", "label": "Desktop product columns", "options": [{ "value": "2", "label": "2 columns" }, { "value": "3", "label": "3 columns" }], "default": "3" },
+    { "type": "header", "content": "Layout" },
+    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
+    { "type": "select", "id": "layout_ratio", "label": "Desktop panel ratio", "options": [{ "value": "balanced", "label": "Balanced" }, { "value": "editorial", "label": "Larger intro" }, { "value": "finder", "label": "Larger gift finder" }], "default": "balanced" },
+    { "type": "select", "id": "choice_style", "label": "Choice style", "options": [{ "value": "outline", "label": "Outlined cards" }, { "value": "soft", "label": "Soft fill" }, { "value": "pill", "label": "Rounded pills" }], "default": "outline" },
+    { "type": "checkbox", "id": "show_progress", "label": "Show step progress", "default": true },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "range", "id": "padding_top", "label": "Desktop top padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 80 },
+    { "type": "range", "id": "padding_bottom", "label": "Desktop bottom padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 80 },
+    { "type": "range", "id": "padding_top_mobile", "label": "Mobile top padding", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 48 },
+    { "type": "range", "id": "padding_bottom_mobile", "label": "Mobile bottom padding", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 48 }
+  ],
+  "blocks": [
+    {
+      "type": "gift_path",
+      "name": "Gift path",
+      "settings": [
+        { "type": "paragraph", "content": "Each block is one gift edit. Use all three conditions for a truly tailored result; Any is only for a broad fallback within a recipient." },
+        { "type": "header", "content": "Match conditions" },
+        { "type": "text", "id": "path_label", "label": "Internal path label", "default": "Recipient · Occasion · Personal touch", "info": "Use a clear name such as Mother · Birthday · Birthstone to make this block easy to manage." },
+        { "type": "select", "id": "recipient", "label": "Recipient", "options": [{ "value": "partner", "label": "Partner" }, { "value": "mother", "label": "Mother" }, { "value": "friend", "label": "Friend" }, { "value": "myself", "label": "Myself" }], "default": "partner" },
+        { "type": "select", "id": "occasion", "label": "Occasion", "options": [{ "value": "any", "label": "Any occasion" }, { "value": "birthday", "label": "Birthday" }, { "value": "anniversary", "label": "Anniversary" }, { "value": "new-beginning", "label": "New beginning" }, { "value": "just-because", "label": "Just because" }], "default": "any" },
+        { "type": "select", "id": "personal_touch", "label": "Personal touch", "options": [{ "value": "any", "label": "Any personal touch" }, { "value": "birthstone", "label": "Birthstone" }, { "value": "engraving", "label": "Engraving" }, { "value": "timeless-gold", "label": "Timeless gold" }, { "value": "matching-set", "label": "Matching set" }], "default": "any" },
+        { "type": "header", "content": "Products and destination" },
+        { "type": "collection", "id": "result_collection", "label": "Result collection", "info": "Supplies product cards and the primary link when no product list or link is selected." },
+        { "type": "product_list", "id": "result_products", "label": "Result products", "limit": 6, "info": "Takes priority over the result collection." },
+        { "type": "text", "id": "primary_label", "label": "Primary CTA label", "default": "Explore this gift edit" },
+        { "type": "url", "id": "primary_link", "label": "Primary CTA link", "info": "Uses the result collection when empty." },
+        { "type": "header", "content": "Result copy" },
+        { "type": "text", "id": "heading", "label": "Heading", "default": "A {occasion} piece for {recipient}.", "info": "Supports {recipient}, {occasion}, and {personal_touch}." },
+        { "type": "richtext", "id": "copy", "label": "Copy", "default": "<p>Chosen for its quiet symbolism and made to become part of their everyday ritual.</p>", "info": "Supports {recipient}, {occasion}, and {personal_touch}." },
+        { "type": "text", "id": "featured_badge", "label": "Featured badge", "default": "Your curated gift edit" },
+        { "type": "header", "content": "Personalization CTA" },
+        { "type": "checkbox", "id": "show_personalization", "label": "Show personalization CTA", "default": false },
+        { "type": "text", "id": "personalization_label", "label": "Personalization CTA label", "default": "Make it personal" },
+        { "type": "url", "id": "personalization_link", "label": "Personalization CTA link" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Gift Omniselle",
+      "blocks": [
+        { "type": "gift_path", "settings": { "recipient": "mother", "occasion": "birthday", "personal_touch": "birthstone", "heading": "A {occasion} piece for Mum.", "featured_badge": "Made for birthdays" } },
+        { "type": "gift_path", "settings": { "recipient": "partner", "occasion": "anniversary", "personal_touch": "engraving", "heading": "A keepsake for your shared story.", "featured_badge": "Made to remember" } },
+        { "type": "gift_path", "settings": { "recipient": "friend", "occasion": "new-beginning", "personal_touch": "matching-set", "heading": "A new chapter, made to layer.", "featured_badge": "For new beginnings" } },
+        { "type": "gift_path", "settings": { "recipient": "myself", "occasion": "just-because", "personal_touch": "timeless-gold", "heading": "A piece to keep close.", "featured_badge": "A gift to yourself" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

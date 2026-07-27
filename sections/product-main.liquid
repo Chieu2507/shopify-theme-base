@@ -1,0 +1,90 @@
+{{ 'product-page.css' | asset_url | stylesheet_tag }}
+{% render 'swiper-stylesheet' %}
+
+{% assign form_id = 'product-form-' | append: section.id %}
+
+<product-page
+  class="product-page section-{{ section.id }}"
+  data-section-id="{{ section.id }}"
+  data-product-id="{{ product.id }}"
+  data-product-url="{{ product.url }}"
+  data-product-handle="{{ product.handle }}"
+  data-form-id="{{ form_id }}"
+  data-currency="{{ cart.currency.iso_code | default: shop.currency }}"
+  data-show-currency-code="{{ settings.show_currency_code }}"
+  data-deferred-module="{{ 'product-page.js' | asset_url }}"
+>
+  <div class="product-page__inner page-width" style="--product-layout-gap: {{ section.settings.desktop_gap }}px; --product-media-width: {{ section.settings.media_width }}%; --product-mobile-gap: {{ section.settings.mobile_gap }}px;">
+    <nav class="product-page__breadcrumbs" aria-label="Breadcrumb">
+      <a href="{{ routes.root_url }}">{{ 'product.breadcrumb_home' | t }}</a>
+      <span aria-hidden="true">/</span>
+      <a href="{{ routes.all_products_collection_url }}">{{ 'product.breadcrumb_products' | t }}</a>
+      <span aria-hidden="true">/</span>
+      <span aria-current="page">{{ product.title | escape }}</span>
+    </nav>
+    <div class="product-page__layout">
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+  <script type="application/json" data-product-variants>{{ product.variants | json }}</script>
+  <script type="application/json" data-product-media>{{ product.media | json }}</script>
+  <p class="visually-hidden" data-product-status role="status" aria-live="polite"></p>
+</product-page>
+
+{% schema %}
+{
+  "name": "Product main",
+  "blocks": [
+    {
+      "type": "_product-media-gallery"
+    },
+    {
+      "type": "_product-details"
+    },
+    {
+      "type": "product-usp-list"
+    },
+    {
+      "type": "product-sticky-add-to-cart"
+    }
+  ],
+  "settings": [
+    {
+      "type": "range",
+      "id": "desktop_gap",
+      "label": "Desktop column gap",
+      "min": 24,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "media_width",
+      "label": "Desktop media width",
+      "min": 50,
+      "max": 70,
+      "step": 1,
+      "unit": "%",
+      "default": 58
+    },
+    {
+      "type": "range",
+      "id": "mobile_gap",
+      "label": "Mobile content gap",
+      "min": 8,
+      "max": 32,
+      "step": 2,
+      "unit": "px",
+      "default": 16
+    }
+  ],
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer"
+    ]
+  }
+}
+{% endschema %}

@@ -1,0 +1,49 @@
+{% style %}
+  #shopify-section-{{ section.id }} {
+    --color-background: {{ section.settings.color_scheme.settings.background }};
+    --gradient-background: {{ section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background }};
+    --color-heading: {{ section.settings.color_scheme.settings.heading }};
+    --color-text: {{ section.settings.color_scheme.settings.text }};
+    --color-foreground: {{ section.settings.color_scheme.settings.text }};
+    --color-variant-border: color-mix(in srgb, {{ section.settings.color_scheme.settings.variant_border }} 42%, {{ section.settings.color_scheme.settings.background }});
+    --color-variant-component-background: {{ section.settings.color_scheme.settings.variant_component_background }};
+    background: var(--gradient-background, var(--color-background));
+  }
+{% endstyle %}
+
+<section
+  class="page-content{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+  style="--page-content-width: {{ section.settings.content_width }}px; --page-content-padding-top: {{ section.settings.padding_top }}px; --page-content-padding-bottom: {{ section.settings.padding_bottom }}px; --page-content-padding-top-mobile: {{ section.settings.padding_top_mobile }}px; --page-content-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;"
+>
+  <div class="page-content__inner rte">
+    {{ page.content }}
+  </div>
+</section>
+
+{% stylesheet %}
+  .page-content { background: var(--gradient-background, var(--color-background)); color: var(--color-text); }
+  .page-content__inner { width: min(100%, var(--page-content-width)); margin-inline: auto; padding: var(--page-content-padding-top) var(--page-margin) var(--page-content-padding-bottom); }
+  .page-content.full-width .page-content__inner { width: 100%; max-width: none; }
+  .page-content__inner > * { margin-top: 0; }
+  .page-content__inner > * + * { margin-top: 18px; }
+  @media screen and (max-width: 749px) { .page-content__inner { padding-top: var(--page-content-padding-top-mobile); padding-bottom: var(--page-content-padding-bottom-mobile); } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Page content",
+  "tag": "section",
+  "class": "section-page-content",
+  "enabled_on": { "templates": ["page"] },
+  "settings": [
+    { "type": "range", "id": "content_width", "label": "Content width", "min": 480, "max": 1400, "step": 20, "unit": "px", "default": 800 },
+    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "contained", "label": "Contained" }, { "value": "full", "label": "Full width" }], "default": "contained" },
+    { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 64 },
+    { "type": "range", "id": "padding_top_mobile", "label": "Mobile top padding", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom_mobile", "label": "Mobile bottom padding", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 40 },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" }
+  ],
+  "presets": [{ "name": "Page content" }]
+}
+{% endschema %}

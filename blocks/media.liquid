@@ -1,0 +1,100 @@
+{% doc %}
+  Renders a reusable image theme block.
+
+  @example
+  {% content_for 'block', type: 'media', id: 'media' %}
+{% enddoc %}
+
+<div
+  class="content-media content-media--{{ block.settings.ratio }}"
+  style="--content-media-position: {{ block.settings.focal_point }}"
+  {{ block.shopify_attributes }}
+>
+  {% if block.settings.image != blank %}
+    {% render 'responsive-image',
+      image: block.settings.image,
+      max_width: 2000,
+      widths: '320, 480, 750, 960, 1200, 1600, 2000',
+      sizes: '(min-width: 1600px) 1600px, 100vw',
+      class: 'content-media__image',
+      alt: block.settings.alt
+    %}
+  {% else %}
+    {% render 'media-placeholder', class_name: 'content-media__placeholder', asset_name: 'placeholder-image-default-1.svg' %}
+  {% endif %}
+</div>
+
+{% schema %}
+{
+  "name": "Media",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "alt",
+      "label": "Image alt text"
+    },
+    {
+      "type": "select",
+      "id": "ratio",
+      "label": "Image ratio",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "Adapt to image"
+        },
+        {
+          "value": "landscape",
+          "label": "Landscape"
+        },
+        {
+          "value": "square",
+          "label": "Square"
+        },
+        {
+          "value": "portrait",
+          "label": "Portrait"
+        }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "select",
+      "id": "focal_point",
+      "label": "Image focal point",
+      "options": [
+        {
+          "value": "center center",
+          "label": "Center"
+        },
+        {
+          "value": "center top",
+          "label": "Top"
+        },
+        {
+          "value": "center bottom",
+          "label": "Bottom"
+        },
+        {
+          "value": "left center",
+          "label": "Left"
+        },
+        {
+          "value": "right center",
+          "label": "Right"
+        }
+      ],
+      "default": "center center"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Media"
+    }
+  ]
+}
+{% endschema %}

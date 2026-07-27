@@ -1,0 +1,437 @@
+{% render 'section-stylesheet', asset: 'section-offer-flyout.css', defer_on_home: true %}
+
+{% liquid
+  assign render_flyout = true
+
+  if section.settings.home_only and request.page_type != 'index'
+    assign render_flyout = false
+  endif
+
+  if section.settings.hide_for_customers and customer
+    assign render_flyout = false
+  endif
+
+%}
+
+{% if render_flyout %}
+  <offer-flyout
+    class="offer-flyout"
+    data-section-id="{{ section.id }}"
+    data-scroll-trigger="{{ section.settings.scroll_trigger }}"
+    data-frequency="{{ section.settings.frequency }}"
+    data-design-mode="{{ request.design_mode }}"
+  >
+    {% if section.settings.enable_sticky_tab %}
+      <div
+        class="offer-flyout__tab offer-flyout__tab--{{ section.settings.tab_position }}{% if section.settings.invert_tab_colors %} offer-flyout__tab--inverted{% endif %} color-scheme color-{{ section.settings.color_scheme.id }}"
+      >
+        <button
+          class="offer-flyout__tab-open"
+          type="button"
+          aria-haspopup="dialog"
+          aria-controls="OfferFlyoutDialog-{{ section.id }}"
+          data-offer-flyout-open
+        >
+          <span class="offer-flyout__tab-label">{{ section.settings.tab_label | escape }}</span>
+        </button>
+        <button
+          class="offer-flyout__tab-dismiss close-icon"
+          type="button"
+          aria-label="{{ 'offer_flyout.close' | t | escape }}"
+          data-offer-flyout-dismiss
+        ></button>
+      </div>
+    {% endif %}
+
+    <div
+      class="offer-flyout__dialog offer-flyout__dialog--{{ section.settings.panel_position }}"
+      scroll-lock
+      id="OfferFlyoutDialog-{{ section.id }}"
+      role="dialog"
+      aria-modal="false"
+      aria-label="{{ 'offer_flyout.dialog' | t | escape }}"
+      data-offer-flyout-dialog
+      hidden
+    >
+      <div class="offer-flyout__panel color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.center_text %} offer-flyout__panel--center{% endif %}{% if section.settings.image != blank %} offer-flyout__panel--with-media{% endif %}">
+        <button
+          class="offer-flyout__close modal-close-button close-icon"
+          type="button"
+          aria-label="{{ 'offer_flyout.close' | t | escape }}"
+          data-offer-flyout-close
+        ></button>
+
+        {% if section.settings.image != blank %}
+          <div class="offer-flyout__media offer-flyout__media--{{ section.settings.image_ratio }}{% unless section.settings.show_image_mobile %} offer-flyout__media--desktop-only{% endunless %}">
+            {% if section.settings.image_link != blank %}
+              <a href="{{ section.settings.image_link }}"{% if section.settings.image_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
+            {% endif %}
+            {% render 'responsive-image', image: section.settings.image, max_width: 1400, widths: '480, 640, 750, 960, 1200, 1400', sizes: '(min-width: 750px) 42vw, 100vw', class: 'offer-flyout__image', loading: 'lazy' %}
+            {% if section.settings.image_link != blank %}</a>{% endif %}
+          </div>
+        {% endif %}
+
+        <div class="offer-flyout__content">
+          {% for block in section.blocks %}
+            {% case block.type %}
+              {% when 'heading' %}
+                {% if block.settings.heading != blank %}
+                  <{{ block.settings.heading_tag }}
+                    class="offer-flyout__heading heading omnise-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}"
+                    id="OfferFlyoutTitle-{{ section.id }}"
+                    {{ block.shopify_attributes }}
+                  >
+                    {{ block.settings.heading | escape }}
+                  </{{ block.settings.heading_tag }}>
+                {% endif %}
+
+              {% when 'text' %}
+                {% if block.settings.text != blank %}
+                  <div class="offer-flyout__text text-block text-block--{{ block.settings.text_size | default: 'base' }} content-text--{{ block.settings.text_size }}{% if block.settings.dim_text %} offer-flyout__text--dimmed{% endif %} rte" {{ block.shopify_attributes }}>
+                    {{ block.settings.text }}
+                  </div>
+                {% endif %}
+
+              {% when 'promo_code' %}
+                {% if block.settings.code != blank %}
+                  <div class="offer-flyout__promo" {{ block.shopify_attributes }}>
+                    <span class="offer-flyout__code" data-offer-flyout-code>{{ block.settings.code | escape }}</span>
+                    <button
+                      class="offer-flyout__copy button button--primary"
+                      type="button"
+                      data-offer-flyout-copy
+                      data-default-label="{{ block.settings.button_label | escape }}"
+                      data-copied-label="{{ block.settings.copied_label | escape }}"
+                    >
+                      {{ block.settings.button_label | escape }}
+                    </button>
+                    <span class="visually-hidden" aria-live="polite" data-offer-flyout-copy-status></span>
+                  </div>
+                {% endif %}
+
+              {% when 'newsletter' %}
+                {% liquid
+                  assign form_id = 'OfferFlyoutNewsletter-' | append: section.id | append: '-' | append: block.id
+                  assign email_label = block.settings.email_label
+                  if email_label == blank
+                    assign email_label = 'footer.email' | t
+                  endif
+                %}
+                <div class="offer-flyout__newsletter" {{ block.shopify_attributes }}>
+                  {% form 'customer', id: form_id, class: 'offer-flyout__form' %}
+                    <input type="hidden" name="contact[tags]" value="newsletter">
+                    <label class="visually-hidden" for="{{ form_id }}-email">{{ email_label | escape }}</label>
+                    <input
+                      id="{{ form_id }}-email"
+                      type="email"
+                      name="contact[email]"
+                      value="{{ form.email | escape }}"
+                      autocomplete="email"
+                      autocorrect="off"
+                      autocapitalize="off"
+                      placeholder="{{ block.settings.email_placeholder | escape }}"
+                      required
+                    >
+                    <button class="button button--primary" type="submit">{{ block.settings.button_label | escape }}</button>
+                    {% if form.posted_successfully? %}
+                      <p class="offer-flyout__form-message" tabindex="-1">{{ 'offer_flyout.newsletter_success' | t }}</p>
+                    {% endif %}
+                    {% if form.errors %}
+                      <div class="offer-flyout__form-message offer-flyout__form-message--error" role="alert">{{ form.errors | default_errors }}</div>
+                    {% endif %}
+                  {% endform %}
+                </div>
+            {% endcase %}
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </offer-flyout>
+{% endif %}
+
+
+
+{% javascript %}
+  if (!customElements.get('offer-flyout')) {
+    class OfferFlyout extends HTMLElement {
+      connectedCallback() {
+        this.dialog = this.querySelector('[data-offer-flyout-dialog]');
+        this.tabs = this.querySelectorAll('.offer-flyout__tab');
+        this.openButtons = this.querySelectorAll('[data-offer-flyout-open]');
+        this.dismissButtons = this.querySelectorAll('[data-offer-flyout-dismiss]');
+        this.closeButton = this.querySelector('[data-offer-flyout-close]');
+        this.storageKey = `offer-flyout:${this.dataset.sectionId}`;
+        this.returnFocus = null;
+        this.closeTimer = null;
+        this.tabDismissed = false;
+
+        if (!this.dialog) return;
+
+        this.onOpenClick = (event) => this.open(event.currentTarget, true);
+        this.onTabDismiss = () => {
+          this.tabDismissed = true;
+          this.setTabsVisible(false);
+        };
+        this.onCloseClick = () => this.close();
+        this.onDialogClick = (event) => { if (event.target === this.dialog) this.close(); };
+        this.onScroll = () => {
+          if (this.scrollFrame) return;
+          this.scrollFrame = window.requestAnimationFrame(() => {
+            this.scrollFrame = null;
+            this.maybeOpenFromScroll();
+          });
+        };
+        this.onKeydown = (event) => { if (event.key === 'Escape') this.close(); };
+        this.onSectionSelect = (event) => {
+          if (event.detail?.sectionId === this.dataset.sectionId) this.open(null, false);
+        };
+        this.onBlockSelect = (event) => {
+          if (event.target?.closest('offer-flyout') === this) this.open(null, false);
+        };
+        this.onCopyClick = (event) => this.copyCode(event.currentTarget);
+
+        this.openButtons.forEach((button) => button.addEventListener('click', this.onOpenClick));
+        this.dismissButtons.forEach((button) => button.addEventListener('click', this.onTabDismiss));
+        this.closeButton?.addEventListener('click', this.onCloseClick);
+        this.dialog.addEventListener('click', this.onDialogClick);
+        this.querySelectorAll('[data-offer-flyout-copy]').forEach((button) => button.addEventListener('click', this.onCopyClick));
+        document.addEventListener('shopify:section:select', this.onSectionSelect);
+        document.addEventListener('shopify:block:select', this.onBlockSelect);
+        document.addEventListener('keydown', this.onKeydown);
+
+        if (this.dataset.designMode !== 'true' && this.isEligible()) {
+          window.addEventListener('scroll', this.onScroll, { passive: true });
+          this.maybeOpenFromScroll();
+        }
+      }
+
+      disconnectedCallback() {
+        this.openButtons?.forEach((button) => button.removeEventListener('click', this.onOpenClick));
+        this.dismissButtons?.forEach((button) => button.removeEventListener('click', this.onTabDismiss));
+        this.closeButton?.removeEventListener('click', this.onCloseClick);
+        this.dialog?.removeEventListener('click', this.onDialogClick);
+        this.querySelectorAll('[data-offer-flyout-copy]').forEach((button) => button.removeEventListener('click', this.onCopyClick));
+        document.removeEventListener('shopify:section:select', this.onSectionSelect);
+        document.removeEventListener('shopify:block:select', this.onBlockSelect);
+        document.removeEventListener('keydown', this.onKeydown);
+        window.removeEventListener('scroll', this.onScroll);
+        if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
+        window.clearTimeout(this.closeTimer);
+      }
+
+      isEligible() {
+        if (this.dataset.frequency === 'always') return true;
+
+        try {
+          const storedAt = Number(window.localStorage.getItem(this.storageKey));
+          if (!storedAt) return true;
+          if (this.dataset.frequency === 'once') return false;
+
+          const durations = {
+            '6_hours': 6 * 60 * 60 * 1000,
+            '1_day': 24 * 60 * 60 * 1000,
+            '3_days': 3 * 24 * 60 * 60 * 1000,
+            '1_week': 7 * 24 * 60 * 60 * 1000
+          };
+          return Date.now() - storedAt >= (durations[this.dataset.frequency] || 0);
+        } catch (error) {
+          return true;
+        }
+      }
+
+      maybeOpenFromScroll() {
+        if (this.isOpen() || !this.isEligible()) return;
+        const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+        if (scrollable <= 0) return;
+        const progress = (window.scrollY / scrollable) * 100;
+        if (progress >= Number(this.dataset.scrollTrigger)) {
+          window.removeEventListener('scroll', this.onScroll);
+          if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
+          this.scrollFrame = null;
+          this.open(null, false);
+        }
+      }
+
+      open(trigger, manual) {
+        if (!this.dialog || this.isOpen()) return;
+        this.returnFocus = trigger || document.activeElement;
+        this.dialog.classList.remove('is-closing');
+        this.setTabsVisible(false);
+        this.dialog.hidden = false;
+        if (!manual) this.rememberDisplay();
+      }
+
+      close() {
+        if (!this.isOpen() || this.dialog.classList.contains('is-closing')) return;
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+          this.finishClose();
+          return;
+        }
+        this.dialog.classList.add('is-closing');
+        this.closeTimer = window.setTimeout(() => this.finishClose(), 280);
+      }
+
+      isOpen() {
+        return this.dialog && !this.dialog.hidden;
+      }
+
+      finishClose() {
+        if (!this.dialog) return;
+        this.dialog.hidden = true;
+        this.dialog.classList.remove('is-closing');
+        this.setTabsVisible(true);
+        this.returnFocus?.focus({ preventScroll: true });
+        this.returnFocus = null;
+      }
+
+      rememberDisplay() {
+        if (this.dataset.frequency === 'always') return;
+        try {
+          window.localStorage.setItem(this.storageKey, String(Date.now()));
+        } catch (error) {
+          return;
+        }
+      }
+
+      setTabsVisible(visible) {
+        const shouldShow = visible && !this.tabDismissed;
+        this.tabs.forEach((tab) => {
+          tab.hidden = !shouldShow;
+        });
+      }
+
+      async copyCode(button) {
+        const promo = button.closest('.offer-flyout__promo');
+        const code = promo?.querySelector('[data-offer-flyout-code]')?.textContent.trim();
+        const status = promo?.querySelector('[data-offer-flyout-copy-status]');
+        if (!code) return;
+
+        try {
+          await navigator.clipboard.writeText(code);
+          button.textContent = button.dataset.copiedLabel;
+          if (status) status.textContent = button.dataset.copiedLabel;
+          window.setTimeout(() => { button.textContent = button.dataset.defaultLabel; }, 1800);
+        } catch (error) {
+          if (status) status.textContent = code;
+        }
+      }
+    }
+
+    customElements.define('offer-flyout', OfferFlyout);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Offer flyout",
+  "tag": "section",
+  "class": "section-offer-flyout",
+  "enabled_on": {
+    "groups": ["footer"]
+  },
+  "settings": [
+    { "type": "header", "content": "Display" },
+    { "type": "select", "id": "scroll_trigger", "label": "Show after scrolling", "options": [{ "value": "25", "label": "25%" }, { "value": "50", "label": "50%" }, { "value": "75", "label": "75%" }, { "value": "100", "label": "100%" }], "default": "75" },
+    { "type": "select", "id": "frequency", "label": "Frequency", "options": [{ "value": "once", "label": "Once" }, { "value": "6_hours", "label": "Every 6 hours" }, { "value": "1_day", "label": "Every day" }, { "value": "3_days", "label": "Every 3 days" }, { "value": "1_week", "label": "Every week" }, { "value": "always", "label": "No limit" }], "default": "always" },
+    { "type": "checkbox", "id": "home_only", "label": "Show on home page only", "default": true },
+    { "type": "checkbox", "id": "hide_for_customers", "label": "Disable for registered customers", "default": true },
+    { "type": "header", "content": "Panel" },
+    { "type": "select", "id": "panel_position", "label": "Position", "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }], "default": "right" },
+    { "type": "checkbox", "id": "center_text", "label": "Center text", "default": false },
+    { "type": "image_picker", "id": "image", "label": "Image" },
+    { "type": "checkbox", "id": "show_image_mobile", "label": "Show image on mobile", "default": false, "visible_if": "{{ section.settings.image != blank }}" },
+    { "type": "select", "id": "image_ratio", "label": "Image ratio", "options": [{ "value": "original", "label": "Original" }, { "value": "square", "label": "Square" }, { "value": "landscape", "label": "Landscape" }, { "value": "wide", "label": "Wide" }, { "value": "super-wide", "label": "Super wide" }], "default": "original", "visible_if": "{{ section.settings.image != blank }}" },
+    { "type": "url", "id": "image_link", "label": "Image link", "visible_if": "{{ section.settings.image != blank }}" },
+    { "type": "checkbox", "id": "image_new_tab", "label": "Open image link in a new tab", "default": false, "visible_if": "{{ section.settings.image_link != blank }}" },
+    { "type": "header", "content": "Sticky tab" },
+    { "type": "checkbox", "id": "enable_sticky_tab", "label": "Enable sticky tab", "default": true },
+    { "type": "text", "id": "tab_label", "label": "Label", "default": "Special offer", "visible_if": "{{ section.settings.enable_sticky_tab }}" },
+    { "type": "select", "id": "tab_position", "label": "Position", "options": [{ "value": "left-center", "label": "Left side" }, { "value": "right-center", "label": "Right side" }, { "value": "left-bottom", "label": "Left side bottom" }, { "value": "right-bottom", "label": "Right side bottom" }, { "value": "bottom-left", "label": "Bottom left" }, { "value": "bottom-center", "label": "Bottom center" }, { "value": "bottom-right", "label": "Bottom right" }], "default": "left-center", "visible_if": "{{ section.settings.enable_sticky_tab }}" },
+    { "type": "checkbox", "id": "invert_tab_colors", "label": "Invert tab colors", "default": true, "visible_if": "{{ section.settings.enable_sticky_tab }}" },
+    { "type": "header", "content": "Colors" },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-2" }
+  ],
+  "blocks": [
+    {
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "heading", "label": "Heading", "default": "A private welcome" },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            { "value": "h1", "label": "XX-large" },
+            { "value": "h2", "label": "X-large" },
+            { "value": "h3", "label": "Large" },
+            { "value": "h4", "label": "Medium" },
+            { "value": "h5", "label": "Small" },
+            { "value": "h6", "label": "X-small" }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "HTML Tag",
+          "options": [
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" },
+            { "value": "h5", "label": "H5" },
+            { "value": "h6", "label": "H6" }
+          ],
+          "default": "h2"
+        },
+        { "type": "text_alignment", "id": "alignment", "label": "Alignment", "default": "left" }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "settings": [
+        { "type": "richtext", "id": "text", "label": "Text", "default": "<p>Enjoy a welcome credit on your first selected piece.</p>" },
+        { "type": "select", "id": "text_size", "label": "Text size", "options": [{ "value": "small", "label": "Small" }, { "value": "base", "label": "Medium" }, { "value": "large", "label": "Large" }], "default": "base" },
+        { "type": "checkbox", "id": "dim_text", "label": "Dim text", "default": false }
+      ]
+    },
+    {
+      "type": "promo_code",
+      "name": "Promo code",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "code", "label": "Code", "default": "WELCOME10" },
+        { "type": "text", "id": "button_label", "label": "Button label", "default": "Copy" },
+        { "type": "text", "id": "copied_label", "label": "Copied label", "default": "Copied" }
+      ]
+    },
+    {
+      "type": "newsletter",
+      "name": "Newsletter",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "email_label", "label": "Email label", "default": "Email address" },
+        { "type": "text", "id": "email_placeholder", "label": "Email placeholder", "default": "Enter your email" },
+        { "type": "text", "id": "button_label", "label": "Button label", "default": "Subscribe" }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Offer flyout",
+      "blocks": [
+        { "type": "heading" },
+        { "type": "text" },
+        { "type": "promo_code" }
+      ]
+    }
+  ]
+}
+{% endschema %}
