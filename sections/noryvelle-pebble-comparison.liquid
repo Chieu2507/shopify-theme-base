@@ -1,0 +1,524 @@
+{% liquid
+  assign left_url = section.settings.left_link | default: routes.all_products_collection_url
+  assign right_url = section.settings.right_link | default: routes.all_products_collection_url
+%}
+
+<section
+  class="noryvelle-pebble-comparison full-width color-scheme color-{{ section.settings.color_scheme.id }}"
+  style="--pebble-comparison-position: {{ section.settings.start_position }}%;"
+>
+  <div class="noryvelle-pebble-comparison__container">
+    <header class="noryvelle-pebble-comparison__header">
+      {% if section.settings.tagline != blank %}
+        <p class="noryvelle-pebble-comparison__tagline">{{ section.settings.tagline | escape }}</p>
+      {% endif %}
+      {% if section.settings.heading != blank %}
+        <h2 class="noryvelle-pebble-comparison__heading">{{ section.settings.heading | escape }}</h2>
+      {% endif %}
+    </header>
+
+    <noryvelle-pebble-comparison class="noryvelle-pebble-comparison__stage">
+      <div class="noryvelle-pebble-comparison__media noryvelle-pebble-comparison__media--right">
+        {% if section.settings.right_image != blank %}
+          {% render 'responsive-image',
+            image: section.settings.right_image,
+            max_width: 2400,
+            widths: '375, 550, 750, 960, 1200, 1600, 1920, 2400',
+            sizes: '(min-width: 990px) min(1600px, calc(100vw - 320px)), (min-width: 750px) calc(100vw - 60px), calc(100vw - 32px)',
+            class: 'noryvelle-pebble-comparison__image',
+            alt: section.settings.right_alt,
+            loading: 'lazy'
+          %}
+        {% else %}
+          {% render 'media-placeholder',
+            class_name: 'noryvelle-pebble-comparison__image',
+            asset_name: 'placeholder-image-product-2.svg'
+          %}
+        {% endif %}
+      </div>
+
+      <div class="noryvelle-pebble-comparison__media noryvelle-pebble-comparison__media--left">
+        {% if section.settings.left_image != blank %}
+          {% render 'responsive-image',
+            image: section.settings.left_image,
+            max_width: 2400,
+            widths: '375, 550, 750, 960, 1200, 1600, 1920, 2400',
+            sizes: '(min-width: 990px) min(1600px, calc(100vw - 320px)), (min-width: 750px) calc(100vw - 60px), calc(100vw - 32px)',
+            class: 'noryvelle-pebble-comparison__image',
+            alt: section.settings.left_alt,
+            loading: 'lazy'
+          %}
+        {% else %}
+          {% render 'media-placeholder',
+            class_name: 'noryvelle-pebble-comparison__image',
+            asset_name: 'placeholder-image-product-1.svg'
+          %}
+        {% endif %}
+      </div>
+
+      <div class="noryvelle-pebble-comparison__side noryvelle-pebble-comparison__side--left">
+        {% if section.settings.left_title != blank %}
+          <p class="noryvelle-pebble-comparison__side-title">{{ section.settings.left_title | escape }}</p>
+        {% endif %}
+        {% if section.settings.left_label != blank %}
+          {% render 'cta',
+            label: section.settings.left_label,
+            url: left_url,
+            style: 'tertiary',
+            class: 'noryvelle-pebble-comparison__link'
+          %}
+        {% endif %}
+      </div>
+
+      <div class="noryvelle-pebble-comparison__side noryvelle-pebble-comparison__side--right">
+        {% if section.settings.right_title != blank %}
+          <p class="noryvelle-pebble-comparison__side-title">{{ section.settings.right_title | escape }}</p>
+        {% endif %}
+        {% if section.settings.right_label != blank %}
+          {% render 'cta',
+            label: section.settings.right_label,
+            url: right_url,
+            style: 'tertiary',
+            class: 'noryvelle-pebble-comparison__link'
+          %}
+        {% endif %}
+      </div>
+
+      <div class="noryvelle-pebble-comparison__divider" aria-hidden="true">
+        <span class="noryvelle-pebble-comparison__handle"></span>
+      </div>
+
+      <input
+        class="noryvelle-pebble-comparison__range"
+        type="range"
+        min="0"
+        max="100"
+        value="{{ section.settings.start_position }}"
+        step="1"
+        aria-label="{{ section.settings.slider_label | escape }}"
+        data-comparison-range
+      >
+    </noryvelle-pebble-comparison>
+  </div>
+</section>
+
+{% stylesheet %}
+  .noryvelle-pebble-comparison {
+    width: 100%;
+    padding-top: 96px;
+    overflow: hidden;
+    background: var(--gradient-background, var(--color-background));
+  }
+
+  .noryvelle-pebble-comparison__container {
+    width: min(1600px, calc(100% - 96px));
+    margin-inline: auto;
+  }
+
+  .noryvelle-pebble-comparison__header {
+    display: flex;
+    width: min(100%, 768px);
+    margin-inline: auto;
+    flex-direction: column;
+    gap: 12px;
+    align-items: center;
+    text-align: center;
+  }
+
+  .noryvelle-pebble-comparison__tagline,
+  .noryvelle-pebble-comparison__heading,
+  .noryvelle-pebble-comparison__side-title {
+    margin: 0;
+    color: var(--color-heading);
+    font-family: var(--font-heading--family);
+    font-style: var(--font-heading--style);
+    font-weight: var(--font-heading--weight);
+    text-transform: uppercase;
+  }
+
+  .noryvelle-pebble-comparison__tagline {
+    font-size: 14px;
+    letter-spacing: 2px;
+    line-height: 1.5;
+  }
+
+  .noryvelle-pebble-comparison__heading {
+    font-size: 32px;
+    letter-spacing: 2px;
+    line-height: 1.2;
+  }
+
+  .noryvelle-pebble-comparison__stage {
+    position: relative;
+    display: block;
+    width: 100%;
+    margin-top: 40px;
+    aspect-ratio: 21 / 9;
+    overflow: hidden;
+    background: #f6f6f6;
+    cursor: ew-resize;
+    isolation: isolate;
+    touch-action: pan-y;
+  }
+
+  .noryvelle-pebble-comparison__media {
+    position: absolute;
+    z-index: 0;
+    inset: 0;
+    overflow: hidden;
+  }
+
+  .noryvelle-pebble-comparison__media--left {
+    z-index: 1;
+    clip-path: inset(0 calc(100% - var(--pebble-comparison-position)) 0 0);
+  }
+
+  .noryvelle-pebble-comparison__image {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    pointer-events: none;
+    user-select: none;
+  }
+
+  .noryvelle-pebble-comparison__divider {
+    position: absolute;
+    z-index: 3;
+    top: 0;
+    bottom: 0;
+    left: var(--pebble-comparison-position);
+    width: 2px;
+    background: #ffffff;
+    pointer-events: none;
+    transform: translateX(-1px);
+  }
+
+  .noryvelle-pebble-comparison__handle {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    display: block;
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background: #ffffff;
+    box-shadow: 0 1px 6px rgba(24, 24, 24, 0.08);
+    transform: translate(-50%, -50%);
+  }
+
+  .noryvelle-pebble-comparison__handle::before,
+  .noryvelle-pebble-comparison__handle::after {
+    position: absolute;
+    top: 50%;
+    width: 7px;
+    height: 7px;
+    border-right: 1.5px solid #181818;
+    border-bottom: 1.5px solid #181818;
+    content: '';
+  }
+
+  .noryvelle-pebble-comparison__handle::before {
+    left: 20px;
+    transform: translateY(-50%) rotate(135deg);
+  }
+
+  .noryvelle-pebble-comparison__handle::after {
+    right: 20px;
+    transform: translateY(-50%) rotate(-45deg);
+  }
+
+  .noryvelle-pebble-comparison__range {
+    position: absolute;
+    z-index: 4;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+    cursor: ew-resize;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .noryvelle-pebble-comparison__stage:focus-within .noryvelle-pebble-comparison__handle {
+    outline: 2px solid #181818;
+    outline-offset: 3px;
+  }
+
+  .noryvelle-pebble-comparison__side {
+    position: absolute;
+    z-index: 2;
+    bottom: 0;
+    display: flex;
+    width: calc(50% - 1px);
+    min-height: 147px;
+    padding: 40px;
+    flex-direction: column;
+    gap: 16px;
+    align-items: flex-start;
+    pointer-events: none;
+  }
+
+  .noryvelle-pebble-comparison__side--left {
+    left: 0;
+  }
+
+  .noryvelle-pebble-comparison__side--right {
+    right: 0;
+    align-items: flex-end;
+    text-align: right;
+  }
+
+  .noryvelle-pebble-comparison__side-title {
+    width: 100%;
+    font-size: 20px;
+    letter-spacing: 0.4px;
+    line-height: 1.4;
+  }
+
+  .noryvelle-pebble-comparison__link.button {
+    position: relative;
+    z-index: 5;
+    color: #181818;
+    border-bottom-color: currentcolor;
+    font-family: var(--font-body--family);
+    font-size: 14px;
+    font-style: var(--font-body--style);
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    line-height: 1.5;
+    pointer-events: auto;
+    cursor: pointer;
+    text-transform: uppercase;
+  }
+
+  @media screen and (min-width: 750px) and (max-width: 989px) {
+    .noryvelle-pebble-comparison {
+      padding-top: 64px;
+    }
+
+    .noryvelle-pebble-comparison__container {
+      width: calc(100% - 60px);
+    }
+
+    .noryvelle-pebble-comparison__heading {
+      font-size: 28px;
+    }
+
+    .noryvelle-pebble-comparison__stage {
+      margin-top: 32px;
+    }
+
+    .noryvelle-pebble-comparison__side {
+      min-height: 104px;
+      padding: 32px;
+      gap: 12px;
+    }
+
+    .noryvelle-pebble-comparison__side-title {
+      font-size: 18px;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .noryvelle-pebble-comparison {
+      padding-top: 56px;
+    }
+
+    .noryvelle-pebble-comparison__container {
+      width: calc(100% - 32px);
+    }
+
+    .noryvelle-pebble-comparison__heading {
+      font-size: 24px;
+    }
+
+    .noryvelle-pebble-comparison__stage {
+      margin-top: 32px;
+      aspect-ratio: 5 / 3;
+    }
+
+    .noryvelle-pebble-comparison__side {
+      width: calc(50% - 1px);
+      min-height: 63px;
+      padding: 20px;
+      gap: 0;
+    }
+
+    .noryvelle-pebble-comparison__side--right {
+      padding-inline: 4px 20px;
+    }
+
+    .noryvelle-pebble-comparison__side-title {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  if (!customElements.get('noryvelle-pebble-comparison')) {
+    class NoryvellePebbleComparison extends HTMLElement {
+      connectedCallback() {
+        this.range = this.querySelector('[data-comparison-range]');
+        if (!this.range) return;
+        this.update = () => {
+          this.style.setProperty('--pebble-comparison-position', `${this.range.value}%`);
+        };
+        this.range.addEventListener('input', this.update);
+        this.handlePointerDown = (event) => {
+          if (event.target.closest('a')) return;
+          this.dragging = true;
+          this.setPointerCapture(event.pointerId);
+          this.setFromPointer(event);
+        };
+        this.handlePointerMove = (event) => {
+          if (!this.dragging) return;
+          this.setFromPointer(event);
+        };
+        this.handlePointerUp = (event) => {
+          this.dragging = false;
+          if (this.hasPointerCapture(event.pointerId)) this.releasePointerCapture(event.pointerId);
+        };
+        this.addEventListener('pointerdown', this.handlePointerDown);
+        this.addEventListener('pointermove', this.handlePointerMove);
+        this.addEventListener('pointerup', this.handlePointerUp);
+        this.addEventListener('pointercancel', this.handlePointerUp);
+        this.update();
+      }
+
+      disconnectedCallback() {
+        this.range?.removeEventListener('input', this.update);
+        this.removeEventListener('pointerdown', this.handlePointerDown);
+        this.removeEventListener('pointermove', this.handlePointerMove);
+        this.removeEventListener('pointerup', this.handlePointerUp);
+        this.removeEventListener('pointercancel', this.handlePointerUp);
+      }
+
+      setFromPointer(event) {
+        const bounds = this.getBoundingClientRect();
+        const value = Math.min(100, Math.max(0, ((event.clientX - bounds.left) / bounds.width) * 100));
+        this.range.value = String(Math.round(value));
+        this.update();
+      }
+    }
+
+    customElements.define('noryvelle-pebble-comparison', NoryvellePebbleComparison);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Pebble image compare",
+  "tag": "section",
+  "class": "section-pebble-comparison",
+  "settings": [
+    {
+      "type": "text",
+      "id": "tagline",
+      "label": "Tagline",
+      "default": "Spy Small"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Choose your colour"
+    },
+    {
+      "type": "header",
+      "content": "Left product"
+    },
+    {
+      "type": "image_picker",
+      "id": "left_image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "left_alt",
+      "label": "Image alt text",
+      "default": "Spy Small in peach bud pink"
+    },
+    {
+      "type": "text",
+      "id": "left_title",
+      "label": "Title",
+      "default": "Peach bud pink"
+    },
+    {
+      "type": "text",
+      "id": "left_label",
+      "label": "Link label",
+      "default": "View product"
+    },
+    {
+      "type": "url",
+      "id": "left_link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Right product"
+    },
+    {
+      "type": "image_picker",
+      "id": "right_image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "right_alt",
+      "label": "Image alt text",
+      "default": "Spy Small in pale sage green"
+    },
+    {
+      "type": "text",
+      "id": "right_title",
+      "label": "Title",
+      "default": "Pale sage green"
+    },
+    {
+      "type": "text",
+      "id": "right_label",
+      "label": "Link label",
+      "default": "View product"
+    },
+    {
+      "type": "url",
+      "id": "right_link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Comparison"
+    },
+    {
+      "type": "range",
+      "id": "start_position",
+      "min": 10,
+      "max": 90,
+      "step": 1,
+      "unit": "%",
+      "label": "Starting position",
+      "default": 50
+    },
+    {
+      "type": "text",
+      "id": "slider_label",
+      "label": "Slider accessibility label",
+      "default": "Compare product colours"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Pebble image compare"
+    }
+  ]
+}
+{% endschema %}

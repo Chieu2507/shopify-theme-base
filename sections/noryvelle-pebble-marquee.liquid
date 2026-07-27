@@ -1,0 +1,300 @@
+{% if section.blocks.size > 0 %}
+  <section
+    class="noryvelle-pebble-marquee full-width color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.pause_on_hover %} noryvelle-pebble-marquee--pausable{% endif %}"
+    style="--pebble-marquee-duration: {{ section.settings.speed }}s; --pebble-marquee-text: {{ section.settings.text_color }};"
+    aria-label="{{ section.settings.aria_label | escape }}"
+  >
+    <div class="noryvelle-pebble-marquee__viewport">
+      <div class="noryvelle-pebble-marquee__track">
+        <div class="noryvelle-pebble-marquee__group">
+          {% for block in section.blocks %}
+            <div class="noryvelle-pebble-marquee__item" {{ block.shopify_attributes }}>
+              {% if block.settings.link != blank %}
+                <a class="noryvelle-pebble-marquee__text" href="{{ block.settings.link }}">
+                  {{ block.settings.text | escape }}
+                </a>
+              {% else %}
+                <span class="noryvelle-pebble-marquee__text">{{ block.settings.text | escape }}</span>
+              {% endif %}
+              <span class="noryvelle-pebble-marquee__image" aria-hidden="true">
+                {% if block.settings.image != blank %}
+                  {% render 'responsive-image',
+                    image: block.settings.image,
+                    max_width: 320,
+                    widths: '64, 96, 128, 144, 192, 288, 320',
+                    sizes: '(min-width: 990px) 144px, (min-width: 750px) 96px, 64px',
+                    class: 'noryvelle-pebble-marquee__image-media',
+                    decorative: true,
+                    loading: 'lazy'
+                  %}
+                {% else %}
+                  {% render 'media-placeholder',
+                    class_name: 'noryvelle-pebble-marquee__image-media',
+                    asset_name: 'placeholder-image-product-1.svg'
+                  %}
+                {% endif %}
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+
+        <div class="noryvelle-pebble-marquee__group" aria-hidden="true">
+          {% for block in section.blocks %}
+            <div class="noryvelle-pebble-marquee__item">
+              <span class="noryvelle-pebble-marquee__text">{{ block.settings.text | escape }}</span>
+              <span class="noryvelle-pebble-marquee__image">
+                {% if block.settings.image != blank %}
+                  {% render 'responsive-image',
+                    image: block.settings.image,
+                    max_width: 320,
+                    widths: '64, 96, 128, 144, 192, 288, 320',
+                    sizes: '(min-width: 990px) 144px, (min-width: 750px) 96px, 64px',
+                    class: 'noryvelle-pebble-marquee__image-media',
+                    decorative: true,
+                    loading: 'lazy'
+                  %}
+                {% else %}
+                  {% render 'media-placeholder',
+                    class_name: 'noryvelle-pebble-marquee__image-media',
+                    asset_name: 'placeholder-image-product-1.svg'
+                  %}
+                {% endif %}
+              </span>
+            </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </section>
+{% endif %}
+
+{% stylesheet %}
+  .noryvelle-pebble-marquee {
+    --pebble-marquee-gap: 16px;
+    --pebble-marquee-half-gap: 8px;
+
+    width: 100%;
+    padding-block: 64px;
+    overflow: hidden;
+    background: var(--gradient-background, var(--color-background));
+  }
+
+  .noryvelle-pebble-marquee__viewport {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .noryvelle-pebble-marquee__track {
+    display: flex;
+    width: max-content;
+    gap: var(--pebble-marquee-gap);
+    animation: noryvelle-pebble-marquee-scroll var(--pebble-marquee-duration) linear infinite;
+    will-change: transform;
+  }
+
+  .noryvelle-pebble-marquee__group,
+  .noryvelle-pebble-marquee__item {
+    display: flex;
+    flex: 0 0 auto;
+    gap: var(--pebble-marquee-gap);
+    align-items: center;
+  }
+
+  .noryvelle-pebble-marquee__text {
+    display: flex;
+    padding-inline: 16px;
+    flex: 0 0 auto;
+    align-items: center;
+    color: var(--pebble-marquee-text);
+    font-family: var(--font-heading--family);
+    font-size: 44px;
+    font-style: var(--font-heading--style);
+    font-weight: var(--font-heading--weight);
+    letter-spacing: 2px;
+    line-height: 1.2;
+    text-align: center;
+    text-decoration: none;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .noryvelle-pebble-marquee__text:focus-visible {
+    outline: 2px solid currentcolor;
+    outline-offset: 3px;
+  }
+
+  .noryvelle-pebble-marquee__image {
+    display: block;
+    width: 144px;
+    height: 144px;
+    flex: 0 0 144px;
+    overflow: hidden;
+  }
+
+  .noryvelle-pebble-marquee__image-media {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .noryvelle-pebble-marquee--pausable:hover .noryvelle-pebble-marquee__track,
+  .noryvelle-pebble-marquee--pausable:focus-within .noryvelle-pebble-marquee__track {
+    animation-play-state: paused;
+  }
+
+  @keyframes noryvelle-pebble-marquee-scroll {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(calc(-50% - var(--pebble-marquee-half-gap)));
+    }
+  }
+
+  @media screen and (min-width: 750px) and (max-width: 989px) {
+    .noryvelle-pebble-marquee {
+      padding-block: 56px;
+    }
+
+    .noryvelle-pebble-marquee__text {
+      font-size: 36px;
+    }
+
+    .noryvelle-pebble-marquee__image {
+      width: 96px;
+      height: 96px;
+      flex-basis: 96px;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .noryvelle-pebble-marquee {
+      --pebble-marquee-gap: 12px;
+      --pebble-marquee-half-gap: 6px;
+
+      padding-block: 48px;
+    }
+
+    .noryvelle-pebble-marquee__text {
+      padding-inline: 8px;
+      font-size: 28px;
+    }
+
+    .noryvelle-pebble-marquee__image {
+      width: 64px;
+      height: 64px;
+      flex-basis: 64px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .noryvelle-pebble-marquee__viewport {
+      overflow-x: auto;
+      scrollbar-width: none;
+    }
+
+    .noryvelle-pebble-marquee__track {
+      animation: none;
+      will-change: auto;
+    }
+
+    .noryvelle-pebble-marquee__viewport::-webkit-scrollbar {
+      display: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Pebble marquee",
+  "tag": "section",
+  "class": "section-pebble-marquee",
+  "max_blocks": 8,
+  "settings": [
+    {
+      "type": "range",
+      "id": "speed",
+      "min": 12,
+      "max": 60,
+      "step": 2,
+      "unit": "s",
+      "label": "Animation duration",
+      "default": 28
+    },
+    {
+      "type": "checkbox",
+      "id": "pause_on_hover",
+      "label": "Pause on hover or focus",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "aria_label",
+      "label": "Accessibility label",
+      "default": "Brand values"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color",
+      "default": "#b3b3b3"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "item",
+      "name": "Text and image",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Timeless Appeal"
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Optional link"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Pebble marquee",
+      "blocks": [
+        {
+          "type": "item",
+          "settings": {
+            "text": "Timeless Appeal"
+          }
+        },
+        {
+          "type": "item",
+          "settings": {
+            "text": "Effortless Elegance"
+          }
+        },
+        {
+          "type": "item",
+          "settings": {
+            "text": "Quiet Confidence"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

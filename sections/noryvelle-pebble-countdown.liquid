@@ -1,0 +1,524 @@
+{% liquid
+  assign countdown_url = section.settings.button_link | default: routes.all_products_collection_url
+  assign countdown_preview = false
+  if section.settings.end_at == blank and request.design_mode
+    assign countdown_preview = true
+  endif
+%}
+
+<section
+  class="noryvelle-pebble-countdown full-width color-scheme color-{{ section.settings.color_scheme.id }}"
+  style="--pebble-countdown-background: {{ section.settings.background_color }}; --pebble-countdown-foreground: {{ section.settings.text_color }}; --pebble-countdown-button-background: {{ section.settings.button_background }}; --pebble-countdown-button-label: {{ section.settings.button_label_color }};"
+>
+  <div class="noryvelle-pebble-countdown__inner">
+    <div class="noryvelle-pebble-countdown__copy">
+      <div class="noryvelle-pebble-countdown__heading-group">
+        <div class="noryvelle-pebble-countdown__titles">
+          {% if section.settings.tagline != blank %}
+            <p class="noryvelle-pebble-countdown__tagline">{{ section.settings.tagline | escape }}</p>
+          {% endif %}
+          {% if section.settings.heading != blank %}
+            <h2 class="noryvelle-pebble-countdown__heading">{{ section.settings.heading | escape }}</h2>
+          {% endif %}
+        </div>
+        {% if section.settings.text != blank %}
+          <p class="noryvelle-pebble-countdown__text">{{ section.settings.text | escape }}</p>
+        {% endif %}
+      </div>
+    </div>
+
+    <noryvelle-pebble-countdown
+      class="noryvelle-pebble-countdown__timer"
+      {% if section.settings.end_at != blank %}
+        data-end-at="{{ section.settings.end_at | escape }}"
+        data-completion-behavior="{{ section.settings.completion_behavior }}"
+      {% elsif countdown_preview %}
+        data-preview
+      {% endif %}
+    >
+      <time
+        class="noryvelle-pebble-countdown__units"
+        {% if section.settings.end_at != blank %}datetime="{{ section.settings.end_at | escape }}"{% endif %}
+        aria-label="{{ section.settings.aria_label | escape }}"
+        data-countdown-units
+      >
+        <span class="noryvelle-pebble-countdown__unit">
+          <span class="noryvelle-pebble-countdown__value" data-countdown-days>{% if countdown_preview %}02{% else %}00{% endif %}</span>
+          <span class="noryvelle-pebble-countdown__label">{{ section.settings.days_label | escape }}</span>
+        </span>
+        <span class="noryvelle-pebble-countdown__unit">
+          <span class="noryvelle-pebble-countdown__value" data-countdown-hours>{% if countdown_preview %}14{% else %}00{% endif %}</span>
+          <span class="noryvelle-pebble-countdown__label">{{ section.settings.hours_label | escape }}</span>
+        </span>
+        <span class="noryvelle-pebble-countdown__unit">
+          <span class="noryvelle-pebble-countdown__value" data-countdown-minutes>{% if countdown_preview %}33{% else %}00{% endif %}</span>
+          <span class="noryvelle-pebble-countdown__label">{{ section.settings.minutes_label | escape }}</span>
+        </span>
+        <span class="noryvelle-pebble-countdown__unit">
+          <span class="noryvelle-pebble-countdown__value" data-countdown-seconds>{% if countdown_preview %}20{% else %}00{% endif %}</span>
+          <span class="noryvelle-pebble-countdown__label">{{ section.settings.seconds_label | escape }}</span>
+        </span>
+      </time>
+      <p class="noryvelle-pebble-countdown__complete" data-countdown-complete hidden aria-live="polite">
+        {{ section.settings.completion_message | escape }}
+      </p>
+      {% if section.settings.end_at != blank %}
+        <noscript>
+          <style>.noryvelle-pebble-countdown__units{display:none}</style>
+          <p class="noryvelle-pebble-countdown__fallback">
+            {{ section.settings.no_script_label | escape }} {{ section.settings.end_at | escape }}
+          </p>
+        </noscript>
+      {% endif %}
+    </noryvelle-pebble-countdown>
+
+    {% if section.settings.button_label != blank %}
+      <div class="noryvelle-pebble-countdown__button">
+        {% render 'cta',
+          label: section.settings.button_label,
+          url: countdown_url,
+          style: 'primary',
+          class: 'noryvelle-pebble-countdown__button-link'
+        %}
+      </div>
+    {% endif %}
+  </div>
+</section>
+
+{% stylesheet %}
+  .noryvelle-pebble-countdown {
+    width: 100%;
+    padding-block: 80px;
+    background: var(--pebble-countdown-background);
+    color: var(--pebble-countdown-foreground);
+  }
+
+  .noryvelle-pebble-countdown__inner {
+    display: grid;
+    width: min(1600px, calc(100% - 96px));
+    margin-inline: auto;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: center;
+  }
+
+  .noryvelle-pebble-countdown__copy {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+  }
+
+  .noryvelle-pebble-countdown__heading-group {
+    display: flex;
+    width: min(100%, 768px);
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  .noryvelle-pebble-countdown__titles {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+
+  .noryvelle-pebble-countdown__text,
+  .noryvelle-pebble-countdown__fallback,
+  .noryvelle-pebble-countdown__complete {
+    margin: 0;
+    color: inherit;
+    font-family: var(--font-body--family);
+    font-style: var(--font-body--style);
+    font-weight: 400;
+  }
+
+  .noryvelle-pebble-countdown__tagline {
+    margin: 0;
+    color: inherit;
+    font-family: var(--font-heading--family);
+    font-size: 14px;
+    font-style: var(--font-heading--style);
+    font-weight: var(--font-heading--weight);
+    letter-spacing: 2px;
+    line-height: 1.5;
+    text-transform: uppercase;
+  }
+
+  .noryvelle-pebble-countdown__heading {
+    margin: 0;
+    color: inherit;
+    font-family: var(--font-heading--family);
+    font-size: 32px;
+    font-style: var(--font-heading--style);
+    font-weight: var(--font-heading--weight);
+    letter-spacing: 2px;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .noryvelle-pebble-countdown__text {
+    font-size: 16px;
+    letter-spacing: 0.2px;
+    line-height: 1.5;
+  }
+
+  .noryvelle-pebble-countdown__timer {
+    display: flex;
+    min-width: 0;
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+    justify-content: flex-end;
+  }
+
+  .noryvelle-pebble-countdown__units {
+    display: flex;
+    gap: 16px;
+    justify-content: flex-end;
+    color: inherit;
+    font-family: var(--font-body--family);
+    font-style: var(--font-body--style);
+    font-weight: 400;
+    text-align: center;
+  }
+
+  .noryvelle-pebble-countdown__unit {
+    display: flex;
+    width: 96px;
+    flex: 0 0 96px;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .noryvelle-pebble-countdown__value {
+    width: 100%;
+    font-family: var(--font-heading--family);
+    font-size: 44px;
+    font-style: var(--font-heading--style);
+    font-weight: var(--font-heading--weight);
+    letter-spacing: 2px;
+    line-height: 1.2;
+  }
+
+  .noryvelle-pebble-countdown__label {
+    width: 100%;
+    font-size: 14px;
+    letter-spacing: 0.2px;
+    line-height: 1.5;
+  }
+
+  .noryvelle-pebble-countdown__complete,
+  .noryvelle-pebble-countdown__fallback {
+    align-self: center;
+    font-size: 16px;
+    letter-spacing: 0.2px;
+    line-height: 1.5;
+    text-align: center;
+  }
+
+  .noryvelle-pebble-countdown__button {
+    margin-top: 32px;
+    grid-column: 1;
+    grid-row: 2;
+    justify-self: start;
+  }
+
+  .noryvelle-pebble-countdown__button-link.button {
+    min-height: 48px;
+    padding-inline: 24px;
+    border: 1px solid var(--pebble-countdown-button-background);
+    border-radius: 0;
+    background: var(--pebble-countdown-button-background);
+    color: var(--pebble-countdown-button-label);
+    font-family: var(--font-body--family);
+    font-size: 14px;
+    font-style: var(--font-body--style);
+    font-weight: 500;
+    letter-spacing: 0.6px;
+    line-height: 1.5;
+    text-transform: uppercase;
+  }
+
+  @media screen and (min-width: 750px) and (max-width: 989px) {
+    .noryvelle-pebble-countdown {
+      padding-block: 64px;
+    }
+
+    .noryvelle-pebble-countdown__inner {
+      display: flex;
+      width: calc(100% - 60px);
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .noryvelle-pebble-countdown__heading {
+      font-size: 28px;
+    }
+
+    .noryvelle-pebble-countdown__timer {
+      margin-top: 40px;
+      justify-content: center;
+    }
+
+    .noryvelle-pebble-countdown__value {
+      font-size: 36px;
+    }
+
+    .noryvelle-pebble-countdown__button {
+      margin-top: 40px;
+      align-self: center;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .noryvelle-pebble-countdown {
+      padding-block: 56px;
+    }
+
+    .noryvelle-pebble-countdown__inner {
+      display: flex;
+      width: calc(100% - 32px);
+      flex-direction: column;
+      align-items: stretch;
+    }
+
+    .noryvelle-pebble-countdown__heading {
+      font-size: 24px;
+    }
+
+    .noryvelle-pebble-countdown__timer {
+      margin-top: 32px;
+      justify-content: center;
+    }
+
+    .noryvelle-pebble-countdown__units {
+      gap: 12px;
+    }
+
+    .noryvelle-pebble-countdown__unit {
+      width: 64px;
+      flex-basis: 64px;
+    }
+
+    .noryvelle-pebble-countdown__value {
+      font-size: 28px;
+    }
+
+    .noryvelle-pebble-countdown__button {
+      margin-top: 32px;
+      align-self: center;
+    }
+
+    .noryvelle-pebble-countdown__button-link.button {
+      min-height: 44px;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  if (!customElements.get('noryvelle-pebble-countdown')) {
+    class NoryvellePebbleCountdown extends HTMLElement {
+      connectedCallback() {
+        this.stop();
+        if (this.hasAttribute('data-preview') || !this.dataset.endAt) return;
+        this.units = this.querySelector('[data-countdown-units]');
+        this.completeMessage = this.querySelector('[data-countdown-complete]');
+        this.outputs = {
+          days: this.querySelector('[data-countdown-days]'),
+          hours: this.querySelector('[data-countdown-hours]'),
+          minutes: this.querySelector('[data-countdown-minutes]'),
+          seconds: this.querySelector('[data-countdown-seconds]'),
+        };
+        this.endTime = new Date(this.dataset.endAt).getTime();
+        if (Number.isNaN(this.endTime)) {
+          this.hidden = true;
+          return;
+        }
+        this.update();
+        this.interval = window.setInterval(() => this.update(), 1000);
+      }
+
+      disconnectedCallback() {
+        this.stop();
+      }
+
+      stop() {
+        window.clearInterval(this.interval);
+        this.interval = null;
+      }
+
+      update() {
+        const remaining = Math.max(0, this.endTime - Date.now());
+        const values = {
+          days: Math.floor(remaining / 86400000),
+          hours: Math.floor((remaining % 86400000) / 3600000),
+          minutes: Math.floor((remaining % 3600000) / 60000),
+          seconds: Math.floor((remaining % 60000) / 1000),
+        };
+
+        Object.entries(values).forEach(([key, value]) => {
+          if (this.outputs[key]) this.outputs[key].textContent = String(value).padStart(2, '0');
+        });
+
+        if (remaining === 0) this.complete();
+      }
+
+      complete() {
+        this.stop();
+        if (this.dataset.completionBehavior === 'hide') {
+          this.hidden = true;
+          return;
+        }
+        if (this.units) this.units.hidden = true;
+        if (this.completeMessage) this.completeMessage.hidden = false;
+      }
+    }
+
+    customElements.define('noryvelle-pebble-countdown', NoryvellePebbleCountdown);
+  }
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "Pebble countdown",
+  "tag": "section",
+  "class": "section-pebble-countdown",
+  "settings": [
+    {
+      "type": "text",
+      "id": "tagline",
+      "label": "Tagline",
+      "default": "Limited Release"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Super Sale Up to 20% off"
+    },
+    {
+      "type": "textarea",
+      "id": "text",
+      "label": "Text",
+      "default": "For a limited time only. Discover refined essentials at exclusive prices."
+    },
+    {
+      "type": "text",
+      "id": "end_at",
+      "label": "End date and time",
+      "info": "Use ISO 8601 format, for example 2027-12-31T23:59:59+07:00",
+      "default": "2027-12-31T23:59:59+07:00"
+    },
+    {
+      "type": "text",
+      "id": "days_label",
+      "label": "Days label",
+      "default": "Days"
+    },
+    {
+      "type": "text",
+      "id": "hours_label",
+      "label": "Hours label",
+      "default": "Hours"
+    },
+    {
+      "type": "text",
+      "id": "minutes_label",
+      "label": "Minutes label",
+      "default": "Minutes"
+    },
+    {
+      "type": "text",
+      "id": "seconds_label",
+      "label": "Seconds label",
+      "default": "Seconds"
+    },
+    {
+      "type": "text",
+      "id": "aria_label",
+      "label": "Accessibility label",
+      "default": "Sale countdown"
+    },
+    {
+      "type": "text",
+      "id": "no_script_label",
+      "label": "No JavaScript label",
+      "default": "Offer ends"
+    },
+    {
+      "type": "select",
+      "id": "completion_behavior",
+      "label": "When countdown ends",
+      "options": [
+        {
+          "value": "message",
+          "label": "Show message"
+        },
+        {
+          "value": "hide",
+          "label": "Hide countdown"
+        }
+      ],
+      "default": "message"
+    },
+    {
+      "type": "text",
+      "id": "completion_message",
+      "label": "Completion message",
+      "default": "This offer has ended"
+    },
+    {
+      "type": "header",
+      "content": "Button"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Label",
+      "default": "Shop the sale"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Link"
+    },
+    {
+      "type": "header",
+      "content": "Colors"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background",
+      "default": "#181818"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_background",
+      "label": "Button background",
+      "default": "#ffffff"
+    },
+    {
+      "type": "color",
+      "id": "button_label_color",
+      "label": "Button label",
+      "default": "#1c1c1c"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Pebble countdown"
+    }
+  ]
+}
+{% endschema %}
