@@ -1,0 +1,311 @@
+{% if section.blocks.size > 0 %}
+  <section
+    class="noryvelle-pebble-rich-text full-width color-scheme color-{{ section.settings.color_scheme.id }}"
+    style="--pebble-rich-padding-top: {{ section.settings.padding_top }}px; --pebble-rich-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  >
+    <div class="noryvelle-pebble-rich-text__container">
+      <div class="noryvelle-pebble-rich-text__content">
+        {% for block in section.blocks %}
+          {% case block.type %}
+            {% when 'text' %}
+              {% if block.settings.text != blank %}
+                <span class="noryvelle-pebble-rich-text__text" {{ block.shopify_attributes }}>
+                  {{ block.settings.text | escape }}
+                </span>
+              {% endif %}
+            {% when 'image' %}
+              <span
+                class="noryvelle-pebble-rich-text__image"
+                style="--pebble-chip-width: {{ block.settings.image_scale }}%; --pebble-chip-left: {{ block.settings.image_left }}%; --pebble-chip-top: {{ block.settings.image_top }}%;"
+                aria-hidden="true"
+                {{ block.shopify_attributes }}
+              >
+                {% if block.settings.image != blank %}
+                  {% render 'responsive-image',
+                    image: block.settings.image,
+                    max_width: 360,
+                    widths: '62, 95, 112, 190, 224, 360',
+                    sizes: '(min-width: 990px) 112px, (min-width: 750px) 95px, 62px',
+                    class: 'noryvelle-pebble-rich-text__image-media',
+                    decorative: true,
+                    loading: 'lazy'
+                  %}
+                {% else %}
+                  {% render 'media-placeholder',
+                    class_name: 'noryvelle-pebble-rich-text__image-media noryvelle-pebble-rich-text__image-placeholder',
+                    asset_name: 'placeholder-image-product-1.svg'
+                  %}
+                {% endif %}
+              </span>
+          {% endcase %}
+        {% endfor %}
+      </div>
+    </div>
+  </section>
+{% endif %}
+
+{% stylesheet %}
+  .noryvelle-pebble-rich-text {
+    width: 100%;
+    padding-block: var(--pebble-rich-padding-top) var(--pebble-rich-padding-bottom);
+    overflow: hidden;
+    background: var(--gradient-background, var(--color-background));
+  }
+
+  .noryvelle-pebble-rich-text__container {
+    width: min(1600px, calc(100% - 96px));
+    margin-inline: auto;
+  }
+
+  .noryvelle-pebble-rich-text__content {
+    display: flex;
+    width: min(100%, 1024px);
+    margin-inline: auto;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: center;
+    column-gap: 16px;
+    row-gap: 20px;
+  }
+
+  .noryvelle-pebble-rich-text__text {
+    flex: 0 0 auto;
+    color: var(--color-heading);
+    font-family: var(--font-heading--family);
+    font-size: 44px;
+    font-style: var(--font-heading--style);
+    font-weight: var(--font-heading--weight);
+    letter-spacing: 2px;
+    line-height: 1.2;
+    text-align: center;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .noryvelle-pebble-rich-text__image {
+    position: relative;
+    display: block;
+    width: 112px;
+    height: 80px;
+    flex: 0 0 112px;
+    overflow: hidden;
+  }
+
+  .noryvelle-pebble-rich-text__image-media {
+    position: absolute;
+    top: var(--pebble-chip-top);
+    left: var(--pebble-chip-left);
+    width: var(--pebble-chip-width);
+    max-width: none;
+    height: auto;
+  }
+
+  .noryvelle-pebble-rich-text__image-placeholder {
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media screen and (min-width: 750px) and (max-width: 989px) {
+    .noryvelle-pebble-rich-text {
+      padding-top: 64px;
+    }
+
+    .noryvelle-pebble-rich-text__container {
+      width: calc(100% - 60px);
+    }
+
+    .noryvelle-pebble-rich-text__content {
+      column-gap: 6px;
+      row-gap: 12px;
+    }
+
+    .noryvelle-pebble-rich-text__text {
+      font-size: 36px;
+    }
+
+    .noryvelle-pebble-rich-text__image {
+      width: 95px;
+      height: 68px;
+      flex-basis: 95px;
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .noryvelle-pebble-rich-text {
+      padding-top: 56px;
+    }
+
+    .noryvelle-pebble-rich-text__container {
+      width: calc(100% - 32px);
+    }
+
+    .noryvelle-pebble-rich-text__content {
+      column-gap: 6px;
+      row-gap: 12px;
+    }
+
+    .noryvelle-pebble-rich-text__text {
+      font-size: 28px;
+    }
+
+    .noryvelle-pebble-rich-text__image {
+      width: 62px;
+      height: 44px;
+      flex-basis: 62px;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Pebble rich text",
+  "tag": "section",
+  "class": "section-pebble-rich-text",
+  "max_blocks": 12,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Desktop top padding",
+      "default": 96
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 0
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "text",
+      "name": "Text",
+      "settings": [
+        {
+          "type": "text",
+          "id": "text",
+          "label": "Text",
+          "default": "Looks good."
+        }
+      ]
+    },
+    {
+      "type": "image",
+      "name": "Image",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "range",
+          "id": "image_scale",
+          "min": 100,
+          "max": 240,
+          "step": 2,
+          "unit": "%",
+          "label": "Image scale",
+          "default": 144
+        },
+        {
+          "type": "range",
+          "id": "image_left",
+          "min": -100,
+          "max": 100,
+          "step": 2,
+          "unit": "%",
+          "label": "Horizontal offset",
+          "default": -22
+        },
+        {
+          "type": "range",
+          "id": "image_top",
+          "min": -120,
+          "max": 80,
+          "step": 2,
+          "unit": "%",
+          "label": "Vertical offset",
+          "default": -102
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Pebble rich text",
+      "blocks": [
+        {
+          "type": "text",
+          "settings": {
+            "text": "Looks good."
+          }
+        },
+        {
+          "type": "image",
+          "settings": {
+            "image_scale": 144,
+            "image_left": -22,
+            "image_top": -102
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "Feels amazing."
+          }
+        },
+        {
+          "type": "image",
+          "settings": {
+            "image_scale": 132,
+            "image_left": -20,
+            "image_top": -92
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "Your edit,"
+          }
+        },
+        {
+          "type": "image",
+          "settings": {
+            "image_scale": 130,
+            "image_left": -14,
+            "image_top": -80
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "Your story."
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
