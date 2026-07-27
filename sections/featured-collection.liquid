@@ -6,10 +6,17 @@
   assign has_intro = false
   assign promotion_block = blank
   assign promotion_position = 'before'
+  assign has_recently_viewed_source = false
+  assign has_collection_source = false
   for block in section.blocks
     case block.type
       when 'collection_tab'
         assign tab_count = tab_count | plus: 1
+        if block.settings.source == 'recently_viewed'
+          assign has_recently_viewed_source = true
+        else
+          assign has_collection_source = true
+        endif
       when 'heading', 'text'
         assign has_intro = true
       when 'promotion'
@@ -26,7 +33,11 @@
     class="featured-collection featured-collection--slider color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if promotion_block != blank %} featured-collection--has-promotion featured-collection--promotion-{{ promotion_position }}{% endif %}"
     data-desktop-columns="{{ section.settings.columns_desktop }}"
     data-mobile-columns="{{ section.settings.columns_mobile }}"
+    data-has-recently-viewed-source="{{ has_recently_viewed_source }}"
+    data-design-mode="{{ request.design_mode }}"
+    data-products-to-show="{{ section.settings.products_to_show }}"
     style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --section-padding-top-mobile: min({{ section.settings.padding_top }}px, 48px); --section-padding-bottom-mobile: min({{ section.settings.padding_bottom }}px, 48px); --featured-collection-product-gap: {{ section.settings.product_gap }}px; --featured-collection-columns: {{ section.settings.columns_desktop }};"
+    {% if has_recently_viewed_source and has_collection_source == false and request.design_mode == false %}hidden{% endif %}
   >
     <div class="featured-collection__inner section-spacing{% if section.settings.section_width == 'page' %} featured-collection__inner--page{% endif %}">
       {% if has_intro or tab_count > 1 %}
@@ -65,6 +76,9 @@
                 {% if block.type == 'collection_tab' %}
                   {% liquid
                     assign tab_label = block.settings.label
+                    if tab_label == blank and block.settings.source == 'recently_viewed'
+                      assign tab_label = 'Recently viewed'
+                    endif
                     if tab_label == blank
                       assign tab_label = block.settings.collection.title
                     endif
@@ -82,6 +96,7 @@
                     tabindex="{% if tab_index == 0 %}0{% else %}-1{% endif %}"
                     data-featured-collection-tab
                     data-block-id="{{ block.id }}"
+                    data-featured-collection-source="{{ block.settings.source | default: 'collection' }}"
                   >
                     {{ tab_label | escape }}
                   </button>
@@ -156,12 +171,25 @@
                     aria-labelledby="FeaturedCollectionTab-{{ section.id }}-{{ block.id }}"
                     data-featured-collection-panel
                     data-block-id="{{ block.id }}"
+                    data-featured-collection-source="{{ block.settings.source | default: 'collection' }}"
                     {% unless panel_index == 0 %}hidden{% endunless %}
                     {{ block.shopify_attributes }}
                   >
                     <div class="featured-collection__carousel swiper" data-featured-collection-carousel>
                       <ul class="featured-collection__products swiper-wrapper" role="list" data-featured-collection-scroller>
-                      {% if block.settings.collection != blank and block.settings.collection.products_count > 0 %}
+                      {% if block.settings.source == 'recently_viewed' %}
+                        {% if request.design_mode %}
+                          {% for placeholder_index in (1..section.settings.products_to_show) %}
+                            <li class="featured-collection__product swiper-slide">
+                              {% render 'product-card',
+                                show_media_actions: true,
+                                enable_quick_view: true,
+                                placeholder_index: placeholder_index
+                              %}
+                            </li>
+                          {% endfor %}
+                        {% endif %}
+                      {% elsif block.settings.collection != blank and block.settings.collection.products_count > 0 %}
                         {% for product in block.settings.collection.products limit: section.settings.products_to_show %}
                           {% liquid
                             assign card_loading = 'lazy'
@@ -453,6 +481,16 @@
       "limit": 5,
       "settings": [
         { "type": "text", "id": "label", "label": "Tab label" },
+        {
+          "type": "select",
+          "id": "source",
+          "label": "Product source",
+          "options": [
+            { "value": "collection", "label": "Collection" },
+            { "value": "recently_viewed", "label": "Recently viewed" }
+          ],
+          "default": "collection"
+        },
         {
           "type": "collection",
           "id": "collection",

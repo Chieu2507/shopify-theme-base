@@ -1,4 +1,16 @@
 let productCardFeatures;
+let productCardFeaturesReady = false;
+const loaderScript = document.currentScript;
+const resolveModuleUrl = (url) => {
+  if (!url) return null;
+  try {
+    return new URL(url, window.location.href).href;
+  } catch (_) {
+    return null;
+  }
+};
+const productCardModuleUrl = resolveModuleUrl(loaderScript?.dataset.productCardModule);
+const cartFeedbackModuleUrl = resolveModuleUrl(loaderScript?.dataset.cartFeedbackModule);
 const observedCards = new WeakSet();
 
 const productCardObserver = 'IntersectionObserver' in window
@@ -11,13 +23,21 @@ const productCardObserver = 'IntersectionObserver' in window
 
 const loadProductCardFeatures = () => {
   if (!productCardFeatures) {
+    if (!productCardModuleUrl || !cartFeedbackModuleUrl) {
+      return Promise.reject(new Error('Product card module URLs are unavailable.'));
+    }
     productCardFeatures = Promise.all([
-      import('./product-card.js'),
-      import('./cart-feedback.js'),
-    ]).catch((error) => {
-      productCardFeatures = null;
-      throw error;
-    });
+      import(productCardModuleUrl),
+      import(cartFeedbackModuleUrl),
+    ])
+      .then(() => {
+        productCardFeaturesReady = true;
+      })
+      .catch((error) => {
+        productCardFeatures = null;
+        console.error('[Omniselle] Product card interactions failed to load.', error);
+        throw error;
+      });
   }
   return productCardFeatures;
 };
@@ -48,7 +68,7 @@ if (document.readyState === 'loading') {
 
 document.addEventListener('click', (event) => {
   const trigger = event.target.closest(interactiveSelector);
-  if (!trigger || productCardFeatures) return;
+  if (!trigger || productCardFeaturesReady) return;
 
   event.preventDefault();
   event.stopImmediatePropagation();
