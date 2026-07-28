@@ -123,7 +123,8 @@ if (!customElements.get('offer-flyout')) {
         this.tabUnlocked = true;
         this.syncTabVisibility();
       } else if (this.isEligible()) {
-        const showDelay = Math.max(0, Number(this.dataset.showDelay) || 10000);
+        const configuredShowDelay = Number(this.dataset.showDelay);
+        const showDelay = Math.max(0, Number.isFinite(configuredShowDelay) ? configuredShowDelay : 10000);
         this.showTimer = window.setTimeout(() => this.open(null, true), showDelay);
       } else {
         this.tabUnlocked = true;
