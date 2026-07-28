@@ -200,6 +200,7 @@
           {% if show_compare_at_price %}
             <s data-product-card-compare-price{% unless is_on_sale %} hidden{% endunless %}>{% if is_on_sale %}{% render 'money', amount: card_compare_at_price %}{% endif %}</s>
           {% endif %}
+          <small class="product-card__unit-price" data-product-card-unit-price{% if card_variant.unit_price_measurement == blank %} hidden{% endif %}>{% if card_variant.unit_price_measurement != blank %}{% render 'money', amount: card_variant.unit_price %} / {{ card_variant.unit_price_measurement.reference_value }}{{ card_variant.unit_price_measurement.reference_unit }}{% endif %}</small>
         </div>
       {% else %}
         <{{ card_heading_tag }} class="product-card__title">{{ 'onboarding.product_title' | t }}</{{ card_heading_tag }}>
@@ -216,6 +217,7 @@
             assign value_variant = value.variant
             assign variant_price_text = value_variant.price | money
             assign variant_compare_at_price_text = value_variant.compare_at_price | money
+            assign variant_unit_price_text = blank
             assign variant_image_url = blank
             assign variant_image_srcset = blank
             assign variant_image_alt = product.title
@@ -229,6 +231,15 @@
 
             if value_variant.compare_at_price > value_variant.price
               assign value_is_on_sale = true
+            endif
+
+            if value_variant.unit_price_measurement != blank
+              capture variant_unit_price_text
+                render 'money', amount: value_variant.unit_price
+                echo ' / '
+                echo value_variant.unit_price_measurement.reference_value
+                echo value_variant.unit_price_measurement.reference_unit
+              endcapture
             endif
 
             if value_variant.featured_media != blank
@@ -283,6 +294,7 @@
               data-variant-id="{{ value_variant.id }}"
               data-variant-price="{{ variant_price_text | escape }}"
               data-variant-compare-price="{{ variant_compare_at_price_text | escape }}"
+              data-variant-unit-price="{{ variant_unit_price_text | strip | escape }}"
               data-variant-on-sale="{{ value_is_on_sale }}"
               data-variant-image="{{ variant_image_url | escape }}"
               data-variant-image-srcset="{{ variant_image_srcset | strip | escape }}"

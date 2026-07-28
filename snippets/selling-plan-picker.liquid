@@ -1,0 +1,22 @@
+{% doc %}
+  Renders purchase options for products with subscription selling plans.
+
+  @param {product} product
+{% enddoc %}
+{% if product.selling_plan_groups.size > 0 %}
+  <fieldset class="selling-plan-picker" data-selling-plan-picker>
+    <legend>{{ 'selling_plans.purchase_options' | t }}</legend>
+    <label class="selling-plan-picker__option">
+      <input type="radio" name="selling_plan" value="" checked>
+      <span>{{ 'selling_plans.one_time_purchase' | t }}</span>
+    </label>
+    {% for group in product.selling_plan_groups %}
+      {% for selling_plan in group.selling_plans %}
+        <label class="selling-plan-picker__option">
+          <input type="radio" name="selling_plan" value="{{ selling_plan.id }}">
+          <span>{{ selling_plan.name | escape }}</span>
+        </label>
+      {% endfor %}
+    {% endfor %}
+  </fieldset>
+{% endif %}

@@ -56,6 +56,11 @@
         <h2>{{ shop.name }}</h2>
         <p>{{ 'gift_card.use_at_checkout' | t }}</p>
         <p>{{ gift_card.code | format_code }}</p>
+        <div id="GiftCardQrCode" data-identifier="{{ gift_card.qr_identifier }}" aria-label="{{ 'gift_card.qr_code' | t | escape }}"></div>
+        <p class="gift-card__actions">
+          <button type="button" data-gift-card-print>{{ 'gift_card.print' | t }}</button>
+          <a href="{{ shop.url }}">{{ 'gift_card.continue_shopping' | t }}</a>
+        </p>
 
         {% if gift_card.pass_url %}
           <a href="{{ gift_card.pass_url }}">
@@ -69,5 +74,16 @@
         {% endif %}
       </div>
     </main>
+    <script src="https://cdn.shopify.com/s/javascripts/qrcode.js" defer></script>
+    <script>
+      window.addEventListener('load', function () {
+        var qrCode = document.getElementById('GiftCardQrCode');
+        if (qrCode && qrCode.dataset.identifier && window.QRCode) {
+          new window.QRCode(qrCode, { text: qrCode.dataset.identifier, width: 120, height: 120 });
+        }
+        var printButton = document.querySelector('[data-gift-card-print]');
+        if (printButton) printButton.addEventListener('click', function () { window.print(); });
+      });
+    </script>
   </body>
 </html>

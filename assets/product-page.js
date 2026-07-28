@@ -806,6 +806,12 @@ changeLightboxSlide(delta) {
     const saleBadge = this.querySelector("[data-sale-badge]");
     const saleBadgeValue = this.querySelector("[data-sale-badge-value]");
     if (price) price.textContent = this.formatPrice(this.variant.price);
+    const unitPrice = this.querySelector('[data-unit-price]');
+    if (unitPrice) {
+      const measurement = this.variant.unit_price_measurement;
+      unitPrice.hidden = !measurement;
+      unitPrice.textContent = measurement ? `${this.formatPrice(this.variant.unit_price)} / ${measurement.reference_value}${measurement.reference_unit}` : '';
+    }
     const stickyPrice = this.querySelector('[data-sticky-cart-price]');
     const stickyComparePrice = this.querySelector('[data-sticky-cart-compare-price]');
     const stickyPrices = this.querySelector('[data-sticky-cart-prices]');

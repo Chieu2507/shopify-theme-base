@@ -350,6 +350,7 @@ class ProductCardVariants {
     this.price = card.querySelector('[data-product-card-price]');
     this.currentPrice = card.querySelector('[data-product-card-current-price]');
     this.comparePrice = card.querySelector('[data-product-card-compare-price]');
+    this.unitPrice = card.querySelector('[data-product-card-unit-price]');
     this.image = card.querySelector('.product-card__image');
     this.mediaLink = card.querySelector('.product-card__media-link');
     this.secondaryImage = card.querySelector('[data-product-card-secondary-image]');
@@ -425,6 +426,10 @@ class ProductCardVariants {
     this.card.dataset.selectedVariantId = button.dataset.variantId || '';
     const isOnSale = button.dataset.variantOnSale === 'true';
     if (this.currentPrice) this.currentPrice.textContent = button.dataset.variantPrice || '';
+    if (this.unitPrice) {
+      this.unitPrice.textContent = button.dataset.variantUnitPrice || '';
+      this.unitPrice.hidden = !button.dataset.variantUnitPrice;
+    }
     if (this.price) this.price.classList.toggle('product-card__price--sale', isOnSale);
     if (this.comparePrice) {
       this.comparePrice.textContent = button.dataset.variantComparePrice || '';

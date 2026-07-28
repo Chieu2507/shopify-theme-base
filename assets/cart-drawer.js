@@ -173,18 +173,21 @@
         ? `<img src="${this.escape(item.image)}" alt="${this.escape(item.product_title)}" loading="lazy">`
         : '<span class="cart-drawer__image-placeholder" aria-hidden="true"></span>';
       const variant = item.product_has_only_default_variant ? '' : `<p class="cart-drawer__item-variant">${this.escape(item.variant_title)}</p>`;
+      const sellingPlan = item.selling_plan_allocation?.selling_plan?.name ? `<p class="cart-drawer__item-selling-plan">${this.escape(item.selling_plan_allocation.selling_plan.name)}</p>` : '';
       const originalLinePrice = Number(item.original_line_price ?? item.line_price ?? 0);
       const finalLinePrice = Number(item.final_line_price ?? item.line_price ?? 0);
       const isSale = originalLinePrice > finalLinePrice;
       const price = isSale
         ? `<s class="cart-drawer__item-price-compare">${this.formatMoney(originalLinePrice)}</s><span class="cart-drawer__item-price-current">${this.formatMoney(finalLinePrice)}</span>`
         : `<span class="cart-drawer__item-price-current">${this.formatMoney(finalLinePrice)}</span>`;
+      const unitPrice = item.unit_price_measurement ? `<small class="cart-drawer__item-unit-price">${this.formatMoney(item.unit_price)} / ${this.escape(item.unit_price_measurement.reference_value)}${this.escape(item.unit_price_measurement.reference_unit)}</small>` : '';
       return `<article class="cart-drawer__item" data-cart-line="${this.escape(item.key)}">
         <a class="cart-drawer__item-media" href="${this.escape(item.url)}">${image}</a>
         <div class="cart-drawer__item-info">
           <h3 class="cart-drawer__item-title"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
           ${variant}
-          <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}</p>
+          ${sellingPlan}
+          <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
           <div class="cart-drawer__quantity">
             <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${Math.max(0, item.quantity - 1)}">−</button>
             <span aria-live="polite">${item.quantity}</span>
