@@ -7,13 +7,13 @@ class ProductPage extends HTMLElement {
     this.abortController = new AbortController();
     this.signal = this.abortController.signal;
     this.sectionId = this.dataset.sectionId;
-    this.form = this.querySelector('[data-product-form]');
+    this.form = this.querySelector('[data-product-form]') || this.querySelector('[data-payment-terms-form]');
     this.status = this.querySelector('[data-product-status]');
     this.inventoryWarning = this.querySelector('[data-product-inventory-warning]');
     this.productContext = this.dataset.productContext || 'product-page';
     this.variants = this.readJson('[data-product-variants]');
     this.media = this.readJson('[data-product-media]');
-    this.variant = this.variants.find((variant) => String(variant.id) === this.form?.querySelector('[data-variant-id]')?.value) || this.variants[0];
+    this.variant = this.variants.find((variant) => String(variant.id) === this.form?.querySelector('input[name="id"]')?.value) || this.variants[0];
     this.bind();
     this.bindSizeChart();
     this.bindStickyCart();
@@ -1015,7 +1015,10 @@ changeLightboxSlide(delta) {
     this.setStatus(this.dataset.addingToCartLabel);
     this.dispatch('product:add:start', { variant: this.variant });
     try {
-      const response = await fetch(window.routes?.cart_add_url || '/cart/add.js', { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: new FormData(this.form), signal: this.signal });
+      const formData = new FormData(this.form);
+      const quantityInput = this.querySelector('[data-quantity-input]');
+      if (quantityInput && !formData.has('quantity')) formData.set('quantity', quantityInput.value);
+      const response = await fetch(window.routes?.cart_add_url || '/cart/add.js', { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: formData, signal: this.signal });
       const item = await response.json();
       if (!response.ok) {
         const error = new Error(item.description || item.message || this.dataset.addToCartError);
