@@ -84,18 +84,28 @@ class QuickViewModal {
     this.handleDragTimer = null;
     this.mobileQuickView = window.matchMedia('(max-width: 749px)');
     if (!this.dialog || !this.content) return;
+    this.hideBackdropCursor = () => {
+      document.documentElement.classList.remove('quick-view-backdrop-cursor');
+      this.backdropPointer?.classList.remove('is-visible');
+    };
+    this.handleViewportMouseOut = (event) => {
+      if (!event.relatedTarget) this.hideBackdropCursor();
+    };
     this.handleBackdropCursor = (event) => {
       if (!this.dialog.open) return;
       const rect = this.dialog.getBoundingClientRect();
       const insidePanel = event.clientX >= rect.left && event.clientX <= rect.right && event.clientY >= rect.top && event.clientY <= rect.bottom;
-      document.documentElement.classList.toggle("quick-view-backdrop-cursor", !insidePanel);
+      document.documentElement.classList.toggle('quick-view-backdrop-cursor', !insidePanel);
       if (this.backdropPointer) {
-        this.backdropPointer.style.setProperty("--quick-view-pointer-x", (event.clientX - rect.left) + "px");
-        this.backdropPointer.style.setProperty("--quick-view-pointer-y", (event.clientY - rect.top) + "px");
-        this.backdropPointer.classList.toggle("is-visible", !insidePanel);
+        this.backdropPointer.style.setProperty('--quick-view-pointer-x', (event.clientX - rect.left) + 'px');
+        this.backdropPointer.style.setProperty('--quick-view-pointer-y', (event.clientY - rect.top) + 'px');
+        this.backdropPointer.classList.toggle('is-visible', !insidePanel);
       }
     };
-    document.addEventListener("mousemove", this.handleBackdropCursor, { passive: true });
+    document.addEventListener('mousemove', this.handleBackdropCursor, { passive: true });
+    document.addEventListener('mouseleave', this.hideBackdropCursor);
+    window.addEventListener('mouseout', this.handleViewportMouseOut);
+    window.addEventListener('blur', this.hideBackdropCursor);
 
     this.dialog.addEventListener('click', (event) => {
       if (event.target === this.dialog || event.target.closest('[data-quick-view-close]')) this.close();
@@ -110,8 +120,7 @@ class QuickViewModal {
       this.resetHandleDrag();
       this.dialog.classList.remove('is-loading', 'is-closing');
       this.dialog.removeAttribute('aria-busy');
-      document.documentElement.classList.remove("quick-view-backdrop-cursor");
-      this.backdropPointer?.classList.remove("is-visible");
+      this.hideBackdropCursor();
       this.content.replaceChildren();
       this.returnFocus?.focus({ preventScroll: true });
       this.returnFocus = null;

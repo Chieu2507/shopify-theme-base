@@ -2,132 +2,362 @@ if (!customElements.get('offer-flyout')) {
   class OfferFlyout extends HTMLElement {
     connectedCallback() {
       this.dialog = this.querySelector('[data-offer-flyout-dialog]');
-      this.tabs = this.querySelectorAll('.offer-flyout__tab');
-      this.openButtons = this.querySelectorAll('[data-offer-flyout-open]');
-      this.dismissButtons = this.querySelectorAll('[data-offer-flyout-dismiss]');
+      this.panel = this.querySelector('.offer-flyout__panel');
+      this.tab = this.querySelector('.offer-flyout__tab');
+      this.openButton = this.querySelector('[data-offer-flyout-open]');
+      this.dismissButton = this.querySelector('[data-offer-flyout-dismiss]');
       this.closeButton = this.querySelector('[data-offer-flyout-close]');
-      this.storageKey = `offer-flyout:${this.dataset.sectionId}`;
-      this.returnFocus = null;
+      this.successMessage = this.querySelector('[data-offer-flyout-form-success]');
+      this.form = this.querySelector('.offer-flyout__form');
+      this.tagsInput = this.querySelector('[data-offer-flyout-tags]');
+      this.preferenceInputs = this.querySelectorAll('[data-offer-flyout-preference]');
+      this.backdropPointer = this.dialog?.querySelector('.quick-view-modal__backdrop-pointer');
+      this.handle = this.querySelector('[data-offer-flyout-handle]');
       this.closeTimer = null;
+      this.handleDrag = null;
+      this.handleDragTimer = null;
+      this.showTimer = null;
+      this.returnFocus = null;
       this.tabDismissed = false;
+      this.tabUnlocked = false;
+      this.rememberOnClose = false;
+      this.mobileModal = window.matchMedia('(max-width: 749px)');
+      this.storageKey = `offer-flyout:${this.dataset.sectionId}`;
 
-      if (!this.dialog) return;
+      if (!this.dialog || !this.tab || !this.openButton) return;
 
-      this.onOpenClick = (event) => this.open(event.currentTarget, true);
-      this.onTabDismiss = () => {
+      this.onOpenClick = () => this.open(this.openButton, true);
+      this.onDismissClick = () => {
         this.tabDismissed = true;
-        this.setTabsVisible(false);
+        this.setTabVisible(false);
       };
       this.onCloseClick = () => this.close();
-      this.onDialogClick = (event) => { if (event.target === this.dialog) this.close(); };
-      this.onScroll = () => {
-        if (this.scrollFrame) return;
-        this.scrollFrame = window.requestAnimationFrame(() => {
-          this.scrollFrame = null;
-          this.maybeOpenFromScroll();
-        });
+      this.onDialogClick = (event) => {
+        if (event.target === this.dialog) this.close();
       };
-      this.onKeydown = (event) => { if (event.key === 'Escape') this.close(); };
+      this.onDialogCancel = (event) => {
+        event.preventDefault();
+        this.close();
+      };
+      this.onDialogClose = () => {
+        window.clearTimeout(this.closeTimer);
+        this.resetHandleDrag();
+        this.dialog.classList.remove('is-closing');
+        this.setBackdropCursor(false);
+        if (this.rememberOnClose) this.rememberDisplay();
+        this.rememberOnClose = false;
+        this.tabUnlocked = true;
+        this.syncTabVisibility();
+        this.returnFocus?.focus({ preventScroll: true });
+        this.returnFocus = null;
+      };
+      this.onMouseMove = (event) => {
+        if (!this.dialog.open || !this.panel) return;
+        if (this.mobileModal.matches) {
+          this.setBackdropCursor(false);
+          return;
+        }
+        const panelRect = this.panel.getBoundingClientRect();
+        const overBackdrop =
+          event.clientX < panelRect.left ||
+          event.clientX > panelRect.right ||
+          event.clientY < panelRect.top ||
+          event.clientY > panelRect.bottom;
+        this.setBackdropCursor(overBackdrop, event);
+      };
+      this.onPointerLeaveViewport = () => this.setBackdropCursor(false);
+      this.onViewportMouseOut = (event) => {
+        if (!event.relatedTarget) this.setBackdropCursor(false);
+      };
       this.onSectionSelect = (event) => {
         if (event.detail?.sectionId === this.dataset.sectionId) this.open(null, false);
       };
       this.onBlockSelect = (event) => {
         if (event.target?.closest('offer-flyout') === this) this.open(null, false);
       };
-      this.onCopyClick = (event) => this.copyCode(event.currentTarget);
+      this.onFormSubmit = () => {
+        if (!this.tagsInput) return;
+        const selectedTags = Array.from(this.preferenceInputs)
+          .filter((input) => input.checked && input.value.trim())
+          .map((input) => input.value.trim());
+        this.tagsInput.value = Array.from(new Set(['newsletter', ...selectedTags])).join(', ');
+      };
+      this.onHandlePointerDown = (event) => this.startHandleDrag(event);
+      this.onHandlePointerMove = (event) => this.moveHandleDrag(event);
+      this.onHandlePointerUp = (event) => this.endHandleDrag(event);
+      this.onHandlePointerCancel = (event) => this.endHandleDrag(event, true);
+      this.onHandleTouchStart = (event) => this.startTouchHandleDrag(event);
+      this.onHandleTouchMove = (event) => this.moveTouchHandleDrag(event);
+      this.onHandleTouchEnd = (event) => this.endTouchHandleDrag(event);
+      this.onHandleTouchCancel = (event) => this.endTouchHandleDrag(event, true);
 
-      this.openButtons.forEach((button) => button.addEventListener('click', this.onOpenClick));
-      this.dismissButtons.forEach((button) => button.addEventListener('click', this.onTabDismiss));
+      this.openButton.addEventListener('click', this.onOpenClick);
+      this.dismissButton?.addEventListener('click', this.onDismissClick);
       this.closeButton?.addEventListener('click', this.onCloseClick);
       this.dialog.addEventListener('click', this.onDialogClick);
-      this.querySelectorAll('[data-offer-flyout-copy]').forEach((button) => button.addEventListener('click', this.onCopyClick));
+      this.dialog.addEventListener('cancel', this.onDialogCancel);
+      this.dialog.addEventListener('close', this.onDialogClose);
+      document.addEventListener('mousemove', this.onMouseMove, { passive: true });
+      document.addEventListener('mouseleave', this.onPointerLeaveViewport);
+      window.addEventListener('mouseout', this.onViewportMouseOut);
+      window.addEventListener('blur', this.onPointerLeaveViewport);
       document.addEventListener('shopify:section:select', this.onSectionSelect);
       document.addEventListener('shopify:block:select', this.onBlockSelect);
-      document.addEventListener('keydown', this.onKeydown);
+      this.form?.addEventListener('submit', this.onFormSubmit);
+      if ('PointerEvent' in window) {
+        this.handle?.addEventListener('pointerdown', this.onHandlePointerDown);
+        this.dialog.addEventListener('pointermove', this.onHandlePointerMove);
+        this.dialog.addEventListener('pointerup', this.onHandlePointerUp);
+        this.dialog.addEventListener('pointercancel', this.onHandlePointerCancel);
+      } else {
+        this.handle?.addEventListener('touchstart', this.onHandleTouchStart, { passive: false });
+        this.dialog.addEventListener('touchmove', this.onHandleTouchMove, { passive: false });
+        this.dialog.addEventListener('touchend', this.onHandleTouchEnd);
+        this.dialog.addEventListener('touchcancel', this.onHandleTouchCancel);
+      }
 
-      if (this.dataset.designMode !== 'true' && this.isEligible()) {
-        window.addEventListener('scroll', this.onScroll, { passive: true });
-        this.maybeOpenFromScroll();
+      this.setTabVisible(false);
+      if (this.successMessage) {
+        this.open(null, true);
+      } else if (window.Shopify?.designMode) {
+        this.tabUnlocked = true;
+        this.syncTabVisibility();
+      } else if (this.isEligible()) {
+        const showDelay = Math.max(0, Number(this.dataset.showDelay) || 10000);
+        this.showTimer = window.setTimeout(() => this.open(null, true), showDelay);
+      } else {
+        this.tabUnlocked = true;
+        this.syncTabVisibility();
       }
     }
 
     disconnectedCallback() {
-      this.openButtons?.forEach((button) => button.removeEventListener('click', this.onOpenClick));
-      this.dismissButtons?.forEach((button) => button.removeEventListener('click', this.onTabDismiss));
+      this.openButton?.removeEventListener('click', this.onOpenClick);
+      this.dismissButton?.removeEventListener('click', this.onDismissClick);
       this.closeButton?.removeEventListener('click', this.onCloseClick);
       this.dialog?.removeEventListener('click', this.onDialogClick);
-      this.querySelectorAll('[data-offer-flyout-copy]').forEach((button) => button.removeEventListener('click', this.onCopyClick));
+      this.dialog?.removeEventListener('cancel', this.onDialogCancel);
+      this.dialog?.removeEventListener('close', this.onDialogClose);
+      document.removeEventListener('mousemove', this.onMouseMove);
+      document.removeEventListener('mouseleave', this.onPointerLeaveViewport);
+      window.removeEventListener('mouseout', this.onViewportMouseOut);
+      window.removeEventListener('blur', this.onPointerLeaveViewport);
       document.removeEventListener('shopify:section:select', this.onSectionSelect);
       document.removeEventListener('shopify:block:select', this.onBlockSelect);
-      document.removeEventListener('keydown', this.onKeydown);
-      window.removeEventListener('scroll', this.onScroll);
-      if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
+      this.form?.removeEventListener('submit', this.onFormSubmit);
+      this.handle?.removeEventListener('pointerdown', this.onHandlePointerDown);
+      this.dialog?.removeEventListener('pointermove', this.onHandlePointerMove);
+      this.dialog?.removeEventListener('pointerup', this.onHandlePointerUp);
+      this.dialog?.removeEventListener('pointercancel', this.onHandlePointerCancel);
+      this.handle?.removeEventListener('touchstart', this.onHandleTouchStart);
+      this.dialog?.removeEventListener('touchmove', this.onHandleTouchMove);
+      this.dialog?.removeEventListener('touchend', this.onHandleTouchEnd);
+      this.dialog?.removeEventListener('touchcancel', this.onHandleTouchCancel);
       window.clearTimeout(this.closeTimer);
+      window.clearTimeout(this.showTimer);
+      this.resetHandleDrag();
+      this.setBackdropCursor(false);
+    }
+
+    startTouchHandleDrag(event) {
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      this.startHandleDrag({
+        target: event.target,
+        isPrimary: true,
+        button: 0,
+        pointerId: touch.identifier,
+        clientY: touch.clientY,
+        preventDefault: () => event.preventDefault(),
+      });
+    }
+
+    moveTouchHandleDrag(event) {
+      const drag = this.handleDrag;
+      if (!drag) return;
+      const touch = Array.from(event.changedTouches).find(
+        (candidate) => candidate.identifier === drag.pointerId,
+      );
+      if (!touch) return;
+      this.moveHandleDrag({
+        pointerId: touch.identifier,
+        clientY: touch.clientY,
+        preventDefault: () => event.preventDefault(),
+      });
+    }
+
+    endTouchHandleDrag(event, cancelled = false) {
+      const drag = this.handleDrag;
+      if (!drag) return;
+      const touch = Array.from(event.changedTouches).find(
+        (candidate) => candidate.identifier === drag.pointerId,
+      );
+      if (!touch) return;
+      this.endHandleDrag({ pointerId: touch.identifier }, cancelled);
+    }
+
+    startHandleDrag(event) {
+      if (
+        !this.mobileModal.matches ||
+        !event.isPrimary ||
+        event.button > 0 ||
+        this.dialog.classList.contains('is-closing')
+      ) {
+        return;
+      }
+
+      window.clearTimeout(this.handleDragTimer);
+      this.handleDrag = {
+        pointerId: event.pointerId,
+        handle: this.handle,
+        startY: event.clientY,
+        lastY: event.clientY,
+        lastTime: performance.now(),
+        velocity: 0,
+        distance: 0,
+      };
+      this.dialog.classList.remove('is-handle-settling', 'is-handle-closing');
+      this.dialog.classList.add('is-handle-dragging');
+      this.dialog.style.removeProperty('transition');
+      this.dialog.style.removeProperty('opacity');
+      try {
+        this.handle.setPointerCapture(event.pointerId);
+      } catch {
+        // Pointer capture is an enhancement; dragging still works without it.
+      }
+      event.preventDefault();
+    }
+
+    moveHandleDrag(event) {
+      const drag = this.handleDrag;
+      if (!drag || event.pointerId !== drag.pointerId) return;
+
+      const now = performance.now();
+      const elapsed = Math.max(now - drag.lastTime, 1);
+      drag.velocity = (event.clientY - drag.lastY) / elapsed;
+      drag.lastY = event.clientY;
+      drag.lastTime = now;
+      drag.distance = Math.max(0, event.clientY - drag.startY);
+      this.dialog.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+      event.preventDefault();
+    }
+
+    endHandleDrag(event, cancelled = false) {
+      const drag = this.handleDrag;
+      if (!drag || event.pointerId !== drag.pointerId) return;
+
+      try {
+        drag.handle.releasePointerCapture(event.pointerId);
+      } catch {
+        // The pointer can already be released when the gesture is cancelled.
+      }
+      const closeDistance = Math.min(140, this.dialog.getBoundingClientRect().height * 0.2);
+      const shouldClose =
+        !cancelled &&
+        (drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55));
+      this.handleDrag = null;
+      this.dialog.classList.remove('is-handle-dragging');
+
+      if (shouldClose) {
+        this.dialog.classList.add('is-closing', 'is-handle-closing');
+        this.dialog.style.opacity = '1';
+        window.requestAnimationFrame(() => {
+          const closeOffset = Math.max(window.innerHeight, this.dialog.offsetHeight + 60);
+          this.dialog.style.transform = `translate3d(0, ${closeOffset}px, 0)`;
+          this.dialog.style.opacity = '0';
+        });
+        window.clearTimeout(this.closeTimer);
+        this.closeTimer = window.setTimeout(() => this.finishClose(), 240);
+        return;
+      }
+
+      this.dialog.classList.add('is-handle-settling');
+      window.requestAnimationFrame(() => {
+        this.dialog.style.transform = 'translate3d(0, 0, 0)';
+        this.dialog.style.opacity = '1';
+      });
+      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), 240);
+    }
+
+    resetHandleDrag() {
+      window.clearTimeout(this.handleDragTimer);
+      this.handleDragTimer = null;
+      if (this.handleDrag) {
+        try {
+          this.handleDrag.handle.releasePointerCapture(this.handleDrag.pointerId);
+        } catch {
+          // The pointer can already be released when the dialog closes.
+        }
+      }
+      this.handleDrag = null;
+      this.dialog?.classList.remove(
+        'is-handle-dragging',
+        'is-handle-settling',
+        'is-handle-closing',
+      );
+      this.dialog?.style.removeProperty('transform');
+      this.dialog?.style.removeProperty('opacity');
+      this.dialog?.style.removeProperty('transition');
+    }
+
+    syncTabVisibility() {
+      if (this.dialog.open) {
+        this.setTabVisible(false);
+        return;
+      }
+
+      this.setTabVisible(this.tabUnlocked && !this.tabDismissed);
+    }
+
+    open(trigger, rememberOnClose) {
+      if (this.dialog.open) return;
+      this.returnFocus = trigger || document.activeElement;
+      this.rememberOnClose = rememberOnClose;
+      window.clearTimeout(this.closeTimer);
+      this.resetHandleDrag();
+      this.dialog.classList.remove('is-closing');
+      this.setTabVisible(false);
+      this.dialog.showModal();
+      (this.successMessage || this.closeButton)?.focus({ preventScroll: true });
+    }
+
+    close() {
+      if (!this.dialog.open || this.dialog.classList.contains('is-closing')) return;
+      this.resetHandleDrag();
+      this.dialog.classList.add('is-closing');
+
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        this.finishClose();
+        return;
+      }
+
+      const closeDuration = this.mobileModal.matches ? 280 : 260;
+      this.closeTimer = window.setTimeout(() => this.finishClose(), closeDuration);
+    }
+
+    finishClose() {
+      if (this.dialog.open) this.dialog.close();
     }
 
     isEligible() {
-      if (this.dataset.frequency === 'always') return true;
+      const frequency = this.dataset.frequency || '1_day';
+      if (frequency === 'always') return true;
 
       try {
         const storedAt = Number(window.localStorage.getItem(this.storageKey));
         if (!storedAt) return true;
-        if (this.dataset.frequency === 'once') return false;
+        if (frequency === 'once') return false;
 
         const durations = {
           '6_hours': 6 * 60 * 60 * 1000,
           '1_day': 24 * 60 * 60 * 1000,
           '3_days': 3 * 24 * 60 * 60 * 1000,
-          '1_week': 7 * 24 * 60 * 60 * 1000
+          '1_week': 7 * 24 * 60 * 60 * 1000,
         };
-        return Date.now() - storedAt >= (durations[this.dataset.frequency] || 0);
+        return Date.now() - storedAt >= (durations[frequency] || durations['1_day']);
       } catch (error) {
         return true;
       }
-    }
-
-    maybeOpenFromScroll() {
-      if (this.isOpen() || !this.isEligible()) return;
-      const scrollable = document.documentElement.scrollHeight - window.innerHeight;
-      if (scrollable <= 0) return;
-      const progress = (window.scrollY / scrollable) * 100;
-      if (progress >= Number(this.dataset.scrollTrigger)) {
-        window.removeEventListener('scroll', this.onScroll);
-        if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
-        this.scrollFrame = null;
-        this.open(null, false);
-      }
-    }
-
-    open(trigger, manual) {
-      if (!this.dialog || this.isOpen()) return;
-      this.returnFocus = trigger || document.activeElement;
-      this.dialog.classList.remove('is-closing');
-      this.setTabsVisible(false);
-      this.dialog.hidden = false;
-      if (!manual) this.rememberDisplay();
-    }
-
-    close() {
-      if (!this.isOpen() || this.dialog.classList.contains('is-closing')) return;
-      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-        this.finishClose();
-        return;
-      }
-      this.dialog.classList.add('is-closing');
-      this.closeTimer = window.setTimeout(() => this.finishClose(), 280);
-    }
-
-    isOpen() {
-      return this.dialog && !this.dialog.hidden;
-    }
-
-    finishClose() {
-      if (!this.dialog) return;
-      this.dialog.hidden = true;
-      this.dialog.classList.remove('is-closing');
-      this.setTabsVisible(true);
-      this.returnFocus?.focus({ preventScroll: true });
-      this.returnFocus = null;
     }
 
     rememberDisplay() {
@@ -139,27 +369,28 @@ if (!customElements.get('offer-flyout')) {
       }
     }
 
-    setTabsVisible(visible) {
-      const shouldShow = visible && !this.tabDismissed;
-      this.tabs.forEach((tab) => {
-        tab.hidden = !shouldShow;
-      });
+    setTabVisible(visible) {
+      this.tab.classList.toggle('is-visible', visible);
+      this.tab.setAttribute('aria-hidden', String(!visible));
     }
 
-    async copyCode(button) {
-      const promo = button.closest('.offer-flyout__promo');
-      const code = promo?.querySelector('[data-offer-flyout-code]')?.textContent.trim();
-      const status = promo?.querySelector('[data-offer-flyout-copy-status]');
-      if (!code) return;
+    setBackdropCursor(visible, event) {
+      document.documentElement.classList.toggle('quick-view-backdrop-cursor', visible);
+      if (!this.backdropPointer) return;
 
-      try {
-        await navigator.clipboard.writeText(code);
-        button.textContent = button.dataset.copiedLabel;
-        if (status) status.textContent = button.dataset.copiedLabel;
-        window.setTimeout(() => { button.textContent = button.dataset.defaultLabel; }, 1800);
-      } catch (error) {
-        if (status) status.textContent = code;
+      if (visible && event) {
+        const dialogRect = this.dialog.getBoundingClientRect();
+        this.backdropPointer.style.setProperty(
+          '--quick-view-pointer-x',
+          `${event.clientX - dialogRect.left}px`,
+        );
+        this.backdropPointer.style.setProperty(
+          '--quick-view-pointer-y',
+          `${event.clientY - dialogRect.top}px`,
+        );
       }
+
+      this.backdropPointer.classList.toggle('is-visible', visible);
     }
   }
 
