@@ -9,12 +9,17 @@ class JovieSlideshow extends HTMLElement {
     this.paginationProgress = Array.from(this.querySelectorAll('.slideshow__pagination-progress'));
     this.cursor = this.querySelector('[data-slideshow-cursor]');
     this.cursorProgress = this.querySelector('.slideshow__cursor-progress');
+    this.autoplayToggle = this.querySelector('[data-slideshow-autoplay-toggle]');
+    this.pauseIcon = this.querySelector('[data-slideshow-pause-icon]');
+    this.resumeIcon = this.querySelector('[data-slideshow-resume-icon]');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
     this.onBlockSelect = this.handleBlockSelect.bind(this);
     this.onVisibilityChange = this.handleVisibilityChange.bind(this);
     this.onMouseEnter = this.pauseAutoplay.bind(this);
     this.onMouseLeave = this.scheduleAutoplay.bind(this);
+    this.onFocusIn = this.pauseForFocus.bind(this);
+    this.onAutoplayToggle = this.toggleAutoplay.bind(this);
     this.onClick = this.handleClick.bind(this);
     this.onPointerMove = this.handlePointerMove.bind(this);
     this.onPointerLeave = this.hideCursor.bind(this);
@@ -25,6 +30,8 @@ class JovieSlideshow extends HTMLElement {
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     this.addEventListener('mouseenter', this.onMouseEnter);
     this.addEventListener('mouseleave', this.onMouseLeave);
+    this.addEventListener('focusin', this.onFocusIn);
+    this.autoplayToggle?.addEventListener('click', this.onAutoplayToggle);
     this.addEventListener('click', this.onClick);
     this.addEventListener('pointermove', this.onPointerMove);
     this.addEventListener('pointerleave', this.onPointerLeave);
@@ -50,6 +57,8 @@ class JovieSlideshow extends HTMLElement {
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.removeEventListener('mouseenter', this.onMouseEnter);
     this.removeEventListener('mouseleave', this.onMouseLeave);
+    this.removeEventListener('focusin', this.onFocusIn);
+    this.autoplayToggle?.removeEventListener('click', this.onAutoplayToggle);
     this.removeEventListener('click', this.onClick);
     this.removeEventListener('pointermove', this.onPointerMove);
     this.removeEventListener('pointerleave', this.onPointerLeave);
@@ -69,6 +78,7 @@ class JovieSlideshow extends HTMLElement {
     this.slideCount = slideCount;
     const desktopSlides = this.dataset.desktopStyle === 'double' ? 2 : 1;
     this.autoplayEnabled = this.dataset.autoplay === 'true' && !this.reduceMotion.matches && slideCount > 1;
+    this.autoplayManuallyPaused = !this.autoplayEnabled;
     this.autoplayDelay = Math.max(1, Number.parseInt(this.dataset.autoplayDelay, 10) || 5) * 1000;
     const gap = Math.max(0, Number.parseInt(this.dataset.slideGap, 10) || 0);
 
@@ -97,6 +107,7 @@ class JovieSlideshow extends HTMLElement {
     this.videos = Array.from(this.querySelectorAll('.slideshow__video'));
     this.videos.forEach((video) => video.addEventListener('ended', this.onVideoEnded));
     this.updatePagination();
+    this.updateAutoplayToggle();
     this.swiper.on('slideChangeTransitionStart', () => {
       this.pauseAutoplay();
       this.resetVideos();
@@ -145,12 +156,12 @@ class JovieSlideshow extends HTMLElement {
 
   scheduleAutoplay() {
     window.clearTimeout(this.autoplayTimer);
-    if (this.getActiveVideo()) {
+    if (!this.autoplayManuallyPaused && this.getActiveVideo()) {
       this.startProgressTracking();
       return;
     }
 
-    if (!this.autoplayEnabled || document.hidden || !this.isVisible || !this.swiper) {
+    if (!this.autoplayEnabled || this.autoplayManuallyPaused || document.hidden || !this.isVisible || !this.swiper) {
       this.resetProgress();
       return;
     }
@@ -165,13 +176,49 @@ class JovieSlideshow extends HTMLElement {
     if (!this.getActiveVideo()) this.pauseProgressTracking();
   }
 
+  pauseForFocus(event) {
+    if (event.target.closest('[data-slideshow-autoplay-toggle]')) return;
+    if (!this.autoplayEnabled || this.autoplayManuallyPaused) return;
+
+    this.autoplayManuallyPaused = true;
+    this.pauseAutoplay();
+    this.getActiveVideo()?.pause();
+    this.updateAutoplayToggle();
+  }
+
+  toggleAutoplay() {
+    if (!this.autoplayEnabled) return;
+
+    this.autoplayManuallyPaused = !this.autoplayManuallyPaused;
+    if (this.autoplayManuallyPaused) {
+      this.pauseAutoplay();
+      this.getActiveVideo()?.pause();
+    } else {
+      this.playActiveVideo();
+      this.scheduleAutoplay();
+    }
+    this.updateAutoplayToggle();
+  }
+
+  updateAutoplayToggle() {
+    if (!this.autoplayToggle) return;
+
+    const isPaused = this.autoplayManuallyPaused || !this.autoplayEnabled;
+    const label = isPaused ? this.autoplayToggle.dataset.resumeLabel : this.autoplayToggle.dataset.pauseLabel;
+    this.autoplayToggle.setAttribute('aria-label', label || '');
+    this.autoplayToggle.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
+    this.autoplayToggle.disabled = !this.autoplayEnabled;
+    this.pauseIcon?.toggleAttribute('hidden', isPaused);
+    this.resumeIcon?.toggleAttribute('hidden', !isPaused);
+  }
+
   getActiveVideo() {
     return this.querySelector('.swiper-slide-active .slideshow__video');
   }
 
   playActiveVideo() {
     const video = this.getActiveVideo();
-    if (!video || document.hidden || !this.isVisible) return;
+    if (!video || !this.autoplayEnabled || this.autoplayManuallyPaused || document.hidden || !this.isVisible) return;
 
     video.play().catch(() => {});
   }
