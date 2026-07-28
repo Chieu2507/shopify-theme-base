@@ -494,7 +494,7 @@ document.addEventListener('featured-collection:products-loaded', (event) => {
 document.addEventListener('product-featured-collection:products-loaded', (event) => {
   initializeProductCardVariants(event.detail?.panel || event.target);
 });
-document.addEventListener('gift-atelier:products-loaded', (event) => {
+document.addEventListener('gift-jovie:products-loaded', (event) => {
   const panel = event.detail?.panel || event.target;
   initializeProductCardVariants(panel);
   panel.querySelectorAll('[data-product-card]').forEach((card) => {

@@ -79,5 +79,5 @@ document.addEventListener('shopify:section:load', (event) => initializeForScope(
 document.addEventListener('collection:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
 document.addEventListener('featured-collection:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
 document.addEventListener('product-featured-collection:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
-document.addEventListener('gift-atelier:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
+document.addEventListener('gift-jovie:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
 document.addEventListener('carry-edit:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));

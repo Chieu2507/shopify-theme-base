@@ -11,7 +11,7 @@
   assign logo_width_mobile = logo_block.settings.width_mobile | default: 120
   assign navigation_menu = section.settings.menu
   assign menu_links = navigation_menu.links
-  assign gift_atelier_menu_item = section.settings.gift_atelier_menu_item | default: 'Gifts' | strip
+  assign gift_jovie_menu_item = section.settings.gift_jovie_menu_item | default: 'Gifts' | strip
   assign header_color_scheme = section.settings.color_scheme
   assign transparent_header_enabled = false
   assign has_menu = false
@@ -80,11 +80,11 @@
             {% liquid
               assign badge_block = nil
               assign mega_menu_block = nil
-              assign is_gift_atelier_link = false
+              assign is_gift_jovie_link = false
               assign menu_link_url = link.url
-              if gift_atelier_menu_item != blank and link.title == gift_atelier_menu_item
-                assign is_gift_atelier_link = true
-                assign menu_link_url = routes.root_url | append: '#gift-atelier'
+              if gift_jovie_menu_item != blank and link.title == gift_jovie_menu_item
+                assign is_gift_jovie_link = true
+                assign menu_link_url = routes.root_url | append: '#gift-jovie'
               endif
               for block in section.blocks
                 if block.type == 'menu_badge' and block.settings.menu_item != blank and block.settings.menu_item == link.title
@@ -110,7 +110,7 @@
               if link.links != blank or mega_menu_block != nil
                 assign has_submenu = true
               endif
-              if is_gift_atelier_link
+              if is_gift_jovie_link
                 assign has_submenu = false
               endif
             %}
@@ -236,8 +236,8 @@
                 <a
                   class="header__menu-link{% if link.current %} header__menu-link--active{% endif %}"
                   href="{{ menu_link_url }}"
-                  {% if is_gift_atelier_link %}data-gift-atelier-link{% endif %}
-                  {% if link.current and is_gift_atelier_link == false %}aria-current="page"{% endif %}
+                  {% if is_gift_jovie_link %}data-gift-jovie-link{% endif %}
+                  {% if link.current and is_gift_jovie_link == false %}aria-current="page"{% endif %}
                 >
                   {{ link.title | escape }}
                 </a>
@@ -501,7 +501,7 @@
     },
     {
       "type": "text",
-      "id": "gift_atelier_menu_item",
+      "id": "gift_jovie_menu_item",
       "label": "Gift Jovie menu item title",
       "default": "Gifts",
       "info": "A matching top-level menu item links to the Gift Jovie section on the home page."

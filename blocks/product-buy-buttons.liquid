@@ -1,8 +1,15 @@
-{% doc %}
-  @param {form} form - The product form object provided by the parent product details block.
-{% enddoc %}
 {% assign product = closest.product | default: product %}
-{% render 'buy-buttons', product: product, variant: product.selected_or_first_available_variant, block: block, form: form %}
+{% assign form_id = 'product-form-' | append: section.id %}
+{% form 'product', product, id: form_id, novalidate: 'novalidate', data-product-form: '' %}
+  {% render 'product-form', product: product %}
+  {% render 'buy-buttons',
+    product: product,
+    variant: product.selected_or_first_available_variant,
+    block: block,
+    form: form,
+    form_id: form_id
+  %}
+{% endform %}
 {% schema %}
 {
   "name": "Product buy buttons",

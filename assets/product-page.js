@@ -13,7 +13,7 @@ class ProductPage extends HTMLElement {
     this.productContext = this.dataset.productContext || 'product-page';
     this.variants = this.readJson('[data-product-variants]');
     this.media = this.readJson('[data-product-media]');
-    this.variant = this.variants.find((variant) => String(variant.id) === this.querySelector('[data-variant-id]')?.value) || this.variants[0];
+    this.variant = this.variants.find((variant) => String(variant.id) === this.form?.querySelector('[data-variant-id]')?.value) || this.variants[0];
     this.bind();
     this.bindSizeChart();
     this.bindStickyCart();
@@ -817,8 +817,12 @@ changeLightboxSlide(delta) {
   updateVariantState() {
     this.clearInventoryWarning();
     const available = Boolean(this.variant?.available);
-    const id = this.querySelector('[data-variant-id]');
-    if (id) id.value = this.variant?.id || '';
+    const variantId = this.variant?.id ? String(this.variant.id) : '';
+    this.querySelectorAll('input[data-variant-id], input[data-payment-terms-variant-id]').forEach((input) => {
+      if (input.value === variantId) return;
+      input.value = variantId;
+      input.dispatchEvent(new Event('change', { bubbles: true }));
+    });
     const button = this.querySelector('[data-add-to-cart]');
     const label = this.querySelector('[data-add-to-cart-label]');
     if (button) button.disabled = !available;

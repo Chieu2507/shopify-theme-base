@@ -1,15 +1,15 @@
 {% assign product = closest.product | default: product %}
-{% assign form_id = 'product-form-' | append: section.id %}
+{% assign payment_terms_form_id = 'product-payment-terms-form-' | append: section.id %}
 {% assign details_class = 'product-form product-details' %}
 {% capture details_style %}--product-sticky-offset: {{ block.settings.desktop_top_offset | default: 24 }}px;{% endcapture %}
 {% unless block.settings.enable_sticky %}{% assign details_class = details_class | append: ' product-details--not-sticky' %}{% endunless %}
-{% form 'product', product, id: form_id, class: details_class, novalidate: 'novalidate', data-product-form: '', style: details_style %}
-  {% render 'product-form', product: product %}
+<div class="{{ details_class }}" style="{{ details_style }}">
   {% content_for 'blocks' %}
-  <div class="product-payment-terms">
+  {% form 'product', product, id: payment_terms_form_id, class: 'product-payment-terms', data-payment-terms-form: '' %}
+    <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" data-payment-terms-variant-id>
     {{ form | payment_terms }}
-  </div>
-{% endform %}
+  {% endform %}
+</div>
 
 {% schema %}
 {

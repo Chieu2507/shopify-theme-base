@@ -1,4 +1,4 @@
-class GiftAtelier extends HTMLElement {
+class GiftJovie extends HTMLElement {
   connectedCallback() {
     if (!this.isBound) {
       this.isBound = true;
@@ -32,17 +32,17 @@ class GiftAtelier extends HTMLElement {
   }
 
   initialize() {
-    this.questions = this.querySelector('[data-gift-atelier-questions]');
-    this.result = this.querySelector('[data-gift-atelier-result]');
-    this.status = this.querySelector('[data-gift-atelier-status]');
-    this.question = this.querySelector('[data-gift-atelier-question]');
-    this.choices = this.querySelector('[data-gift-atelier-choices]');
-    this.stepCount = this.querySelector('[data-gift-atelier-step-count]');
-    this.selectionSummary = this.querySelector('[data-gift-atelier-selection-summary]');
-    this.backButton = this.querySelector('[data-gift-atelier-back]');
-    this.progress = Array.from(this.querySelectorAll('[data-gift-atelier-progress]'));
-    this.paths = Array.from(this.querySelectorAll('template[data-gift-atelier-path]'));
-    this.fallbackPath = this.querySelector('template[data-gift-atelier-fallback]');
+    this.questions = this.querySelector('[data-gift-jovie-questions]');
+    this.result = this.querySelector('[data-gift-jovie-result]');
+    this.status = this.querySelector('[data-gift-jovie-status]');
+    this.question = this.querySelector('[data-gift-jovie-question]');
+    this.choices = this.querySelector('[data-gift-jovie-choices]');
+    this.stepCount = this.querySelector('[data-gift-jovie-step-count]');
+    this.selectionSummary = this.querySelector('[data-gift-jovie-selection-summary]');
+    this.backButton = this.querySelector('[data-gift-jovie-back]');
+    this.progress = Array.from(this.querySelectorAll('[data-gift-jovie-progress]'));
+    this.paths = Array.from(this.querySelectorAll('template[data-gift-jovie-path]'));
+    this.fallbackPath = this.querySelector('template[data-gift-jovie-fallback]');
     this.steps = this.readSteps();
 
     if (!this.questions || !this.result || !this.question || !this.choices || !this.steps.length) return;
@@ -69,14 +69,14 @@ class GiftAtelier extends HTMLElement {
   }
 
   handleGiftAnchorClick(event) {
-    const link = event.target.closest?.('[data-gift-atelier-link]');
+    const link = event.target.closest?.('[data-gift-jovie-link]');
     if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
     const destination = new URL(link.href, window.location.href);
     if (
       destination.origin !== window.location.origin
       || destination.pathname !== window.location.pathname
-      || destination.hash !== '#gift-atelier'
+      || destination.hash !== '#gift-jovie'
     ) return;
 
     event.preventDefault();
@@ -93,7 +93,7 @@ class GiftAtelier extends HTMLElement {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const duration = Math.min(1050, Math.max(480, Math.round(distance * 0.45)));
 
-    window.history.pushState(null, '', '#gift-atelier');
+    window.history.pushState(null, '', '#gift-jovie');
     this.classList.remove('is-anchor-target');
     void this.offsetWidth;
     this.classList.add('is-anchor-target');
@@ -105,7 +105,7 @@ class GiftAtelier extends HTMLElement {
 
   readSteps() {
     try {
-      return JSON.parse(this.querySelector('[data-gift-atelier-steps]')?.textContent || '[]');
+      return JSON.parse(this.querySelector('[data-gift-jovie-steps]')?.textContent || '[]');
     } catch (error) {
       return [];
     }
@@ -129,22 +129,22 @@ class GiftAtelier extends HTMLElement {
   createChoice(answer) {
     const button = document.createElement('button');
     button.type = 'button';
-    button.className = 'gift-atelier__choice';
-    button.dataset.giftAtelierChoice = answer.value;
+    button.className = 'gift-jovie__choice';
+    button.dataset.giftJovieChoice = answer.value;
     button.textContent = answer.label;
     button.setAttribute('aria-pressed', 'false');
     return button;
   }
 
   handleClick(event) {
-    const choice = event.target.closest('[data-gift-atelier-choice]');
+    const choice = event.target.closest('[data-gift-jovie-choice]');
     if (choice && this.contains(choice)) {
       this.selectChoice(choice);
       return;
     }
-    const restart = event.target.closest('[data-gift-atelier-restart]');
+    const restart = event.target.closest('[data-gift-jovie-restart]');
     if (restart && this.contains(restart)) this.restart();
-    const back = event.target.closest('[data-gift-atelier-back]');
+    const back = event.target.closest('[data-gift-jovie-back]');
     if (back && this.contains(back)) this.goBack();
   }
 
@@ -193,7 +193,7 @@ class GiftAtelier extends HTMLElement {
     const step = this.steps[this.currentStep];
     if (!step || choice.disabled) return;
     this.answers[step.key] = {
-      value: choice.dataset.giftAtelierChoice,
+      value: choice.dataset.giftJovieChoice,
       label: choice.textContent,
     };
     this.classList.add('is-engaged');
@@ -254,11 +254,11 @@ class GiftAtelier extends HTMLElement {
     }
     const content = path.content.cloneNode(true);
     this.replaceTokens(content);
-    const chips = content.querySelector('[data-gift-atelier-chips]');
+    const chips = content.querySelector('[data-gift-jovie-chips]');
     if (chips) {
       Object.values(this.answers).forEach((answer) => {
         const chip = document.createElement('span');
-        chip.className = 'gift-atelier__chip';
+        chip.className = 'gift-jovie__chip';
         chip.textContent = answer.label;
         chips.append(chip);
       });
@@ -266,14 +266,14 @@ class GiftAtelier extends HTMLElement {
     this.questions.hidden = true;
     this.result.replaceChildren(content);
     this.result.hidden = false;
-    if (this.status) this.status.textContent = this.result.querySelector('[data-gift-atelier-result-heading]')?.textContent?.trim() || '';
+    if (this.status) this.status.textContent = this.result.querySelector('[data-gift-jovie-result-heading]')?.textContent?.trim() || '';
     this.result.dispatchEvent(
-      new CustomEvent('gift-atelier:products-loaded', {
+      new CustomEvent('gift-jovie:products-loaded', {
         bubbles: true,
         detail: { panel: this.result },
       }),
     );
-    this.result.querySelector('[data-gift-atelier-result-heading]')?.focus();
+    this.result.querySelector('[data-gift-jovie-result-heading]')?.focus();
   }
 
   restart() {
@@ -289,4 +289,4 @@ class GiftAtelier extends HTMLElement {
   }
 }
 
-if (!customElements.get('gift-atelier')) customElements.define('gift-atelier', GiftAtelier);
+if (!customElements.get('gift-jovie')) customElements.define('gift-jovie', GiftJovie);
