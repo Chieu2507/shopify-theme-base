@@ -10,8 +10,7 @@ class JovieSlideshow extends HTMLElement {
     this.cursor = this.querySelector('[data-slideshow-cursor]');
     this.cursorProgress = this.querySelector('.slideshow__cursor-progress');
     this.autoplayToggle = this.querySelector('[data-slideshow-autoplay-toggle]');
-    this.pauseIcon = this.querySelector('[data-slideshow-pause-icon]');
-    this.resumeIcon = this.querySelector('[data-slideshow-resume-icon]');
+    this.autoplayIcon = this.querySelector('[data-slideshow-autoplay-icon]');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
     this.onBlockSelect = this.handleBlockSelect.bind(this);
@@ -208,8 +207,10 @@ class JovieSlideshow extends HTMLElement {
     this.autoplayToggle.setAttribute('aria-label', label || '');
     this.autoplayToggle.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
     this.autoplayToggle.disabled = !this.autoplayEnabled;
-    this.pauseIcon?.toggleAttribute('hidden', isPaused);
-    this.resumeIcon?.toggleAttribute('hidden', !isPaused);
+    if (this.autoplayIcon) {
+      this.autoplayIcon.setAttribute('d', isPaused ? 'm8 5.5 6 4.5-6 4.5z' : 'M7 5.5v9M13 5.5v9');
+      this.autoplayIcon.setAttribute('fill', isPaused ? 'currentColor' : 'none');
+    }
   }
 
   getActiveVideo() {

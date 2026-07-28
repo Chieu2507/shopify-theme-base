@@ -12,9 +12,6 @@ class JovieSlideshow extends HTMLElement {
     this.totalSlides = this.querySelector('[data-slideshow-total]');
     this.progress = this.querySelector('[data-slideshow-progress]');
     this.progressBar = this.querySelector('[data-slideshow-progress-bar]');
-    this.autoplayToggle = this.querySelector('[data-slideshow-autoplay-toggle]');
-    this.pauseIcon = this.querySelector('[data-slideshow-pause-icon]');
-    this.resumeIcon = this.querySelector('[data-slideshow-resume-icon]');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.isDoubleSlide = this.dataset.desktopStyle === 'double';
     this.isDesktop = window.matchMedia('(min-width: 750px)');
@@ -23,26 +20,19 @@ class JovieSlideshow extends HTMLElement {
     this.onVisibilityChange = this.handleVisibilityChange.bind(this);
     this.onMouseEnter = this.pauseAutoplay.bind(this);
     this.onMouseLeave = this.scheduleAutoplay.bind(this);
-    this.onFocusIn = this.pauseForFocus.bind(this);
-    this.onAutoplayToggle = this.toggleAutoplay.bind(this);
 
     document.addEventListener('shopify:block:select', this.onBlockSelect);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     this.isDesktop.addEventListener?.('change', this.onViewportChange);
     this.addEventListener('mouseenter', this.onMouseEnter);
     this.addEventListener('mouseleave', this.onMouseLeave);
-    this.addEventListener('focusin', this.onFocusIn);
-    this.autoplayToggle?.addEventListener('click', this.onAutoplayToggle);
     this.isVisible = !('IntersectionObserver' in window);
     this.initialize();
 
     if ('IntersectionObserver' in window) {
       this.visibilityObserver = new IntersectionObserver((entries) => {
         this.isVisible = entries.some((entry) => entry.isIntersecting);
-        if (this.isVisible) {
-          this.playActiveVideo();
-          this.scheduleAutoplay();
-        }
+        if (this.isVisible) this.scheduleAutoplay();
         else this.pauseAutoplay();
       });
       this.visibilityObserver.observe(this);
@@ -55,8 +45,6 @@ class JovieSlideshow extends HTMLElement {
     this.isDesktop?.removeEventListener?.('change', this.onViewportChange);
     this.removeEventListener('mouseenter', this.onMouseEnter);
     this.removeEventListener('mouseleave', this.onMouseLeave);
-    this.removeEventListener('focusin', this.onFocusIn);
-    this.autoplayToggle?.removeEventListener('click', this.onAutoplayToggle);
     this.visibilityObserver?.disconnect();
     window.clearTimeout(this.autoplayTimer);
     window.cancelAnimationFrame(this.autoplayProgressFrame);
@@ -71,7 +59,6 @@ class JovieSlideshow extends HTMLElement {
     this.slideCount = slideCount;
     const desktopSlides = this.isDoubleSlide ? 2 : 1;
     this.autoplayEnabled = this.dataset.autoplay === 'true' && !this.reduceMotion.matches && slideCount > 1;
-    this.autoplayManuallyPaused = !this.autoplayEnabled;
     this.autoplayDelay = Math.max(1, Number.parseInt(this.dataset.autoplayDelay, 10) || 5) * 1000;
     const gap = Math.max(0, Number.parseInt(this.dataset.slideGap, 10) || 0);
 
@@ -107,18 +94,11 @@ class JovieSlideshow extends HTMLElement {
     });
 
     this.updateControls();
-    this.updateAutoplayToggle();
-    this.videos = Array.from(this.querySelectorAll('.slideshow__video'));
     this.swiper.on('slideChange', () => {
       this.resetAutoplayProgress();
-      this.resetVideos();
       this.updateControls();
     });
-    this.swiper.on('slideChangeTransitionEnd', () => {
-      this.playActiveVideo();
-      this.scheduleAutoplay();
-    });
-    this.playActiveVideo();
+    this.swiper.on('slideChangeTransitionEnd', () => this.scheduleAutoplay());
     this.scheduleAutoplay();
   }
 
@@ -154,16 +134,14 @@ class JovieSlideshow extends HTMLElement {
   handleVisibilityChange() {
     if (document.hidden) {
       this.pauseAutoplay();
-      this.getActiveVideo()?.pause();
     } else {
-      this.playActiveVideo();
       this.scheduleAutoplay();
     }
   }
 
   scheduleAutoplay() {
     window.clearTimeout(this.autoplayTimer);
-    if (!this.autoplayEnabled || this.autoplayManuallyPaused || document.hidden || !this.isVisible || !this.swiper) {
+    if (!this.autoplayEnabled || document.hidden || !this.isVisible || !this.swiper) {
       this.resetAutoplayProgress();
       return;
     }
@@ -176,62 +154,6 @@ class JovieSlideshow extends HTMLElement {
   pauseAutoplay() {
     window.clearTimeout(this.autoplayTimer);
     this.pauseAutoplayProgress();
-  }
-
-  pauseForFocus(event) {
-    if (event.target.closest('[data-slideshow-autoplay-toggle]')) return;
-    if (!this.autoplayEnabled || this.autoplayManuallyPaused) return;
-
-    this.autoplayManuallyPaused = true;
-    this.pauseAutoplay();
-    this.getActiveVideo()?.pause();
-    this.updateAutoplayToggle();
-  }
-
-  toggleAutoplay() {
-    if (!this.autoplayEnabled) return;
-
-    this.autoplayManuallyPaused = !this.autoplayManuallyPaused;
-    if (this.autoplayManuallyPaused) this.pauseAutoplay();
-    else {
-      this.playActiveVideo();
-      this.scheduleAutoplay();
-    }
-    if (this.autoplayManuallyPaused) this.getActiveVideo()?.pause();
-    this.updateAutoplayToggle();
-  }
-
-  updateAutoplayToggle() {
-    if (!this.autoplayToggle) return;
-
-    const isPaused = this.autoplayManuallyPaused || !this.autoplayEnabled;
-    const label = isPaused ? this.autoplayToggle.dataset.resumeLabel : this.autoplayToggle.dataset.pauseLabel;
-    this.autoplayToggle.setAttribute('aria-label', label || '');
-    this.autoplayToggle.setAttribute('aria-pressed', isPaused ? 'true' : 'false');
-    this.autoplayToggle.disabled = !this.autoplayEnabled;
-    this.pauseIcon?.toggleAttribute('hidden', isPaused);
-    this.resumeIcon?.toggleAttribute('hidden', !isPaused);
-  }
-
-  getActiveVideo() {
-    return this.querySelector('.swiper-slide-active .slideshow__video');
-  }
-
-  playActiveVideo() {
-    const video = this.getActiveVideo();
-    if (!video || !this.autoplayEnabled || this.autoplayManuallyPaused || document.hidden || !this.isVisible) return;
-
-    video.play().catch(() => {});
-  }
-
-  resetVideos() {
-    this.videos?.forEach((video) => {
-      video.pause();
-      try {
-        video.currentTime = 0;
-      } catch {
-      }
-    });
   }
 
   startAutoplayProgress() {
