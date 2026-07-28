@@ -10,9 +10,15 @@
       {% assign picker_type = block.settings.picker_type | default: 'button' %}
       {% assign option_is_swatch = false %}
       {% if picker_type == 'button' and block.settings.enable_color_swatches and option_is_color %}{% assign option_is_swatch = true %}{% endif %}
+      {% assign swatch_corner_radius = '999px' %}
+      {% if block.settings.swatch_corner_radius == 'square' %}
+        {% assign swatch_corner_radius = '0' %}
+      {% elsif block.settings.swatch_corner_radius == 'rounded' %}
+        {% assign swatch_corner_radius = '6px' %}
+      {% endif %}
       {% assign show_size_guide = false %}
       {% if option_is_size and block.settings.enable_size_chart and block.settings.size_chart != blank and block.settings.size_chart_page != blank %}{% assign show_size_guide = true %}{% endif %}
-      <fieldset class="product-option-picker__group product-option-picker__group--{{ picker_type }}{% if option_is_swatch %} product-option-picker__group--swatches{% endif %}" data-option-position="{{ option.position }}" data-option-style="{% if option_is_swatch %}color{% else %}{{ picker_type }}{% endif %}">
+      <fieldset class="product-option-picker__group product-option-picker__group--{{ picker_type }}{% if option_is_swatch %} product-option-picker__group--swatches{% endif %}" data-option-position="{{ option.position }}" data-option-style="{% if option_is_swatch %}color{% else %}{{ picker_type }}{% endif %}"{% if option_is_swatch %} style="--product-swatch-corner-radius: {{ swatch_corner_radius }};"{% endif %}>
         <legend{% unless block.settings.show_variant_labels or show_size_guide %} class="product-option-picker__legend--hidden"{% endunless %}>
         <span{% unless block.settings.show_variant_labels %} class="visually-hidden"{% endunless %}>{{ option.name | escape }}{% if block.settings.show_variant_labels %}: <span data-option-label>{{ option.selected_value | escape }}</span>{% endif %}</span>
         {% if show_size_guide %}
@@ -123,6 +129,18 @@
       ],
       "default": "color",
       "info": "Variant image mode requires variants to have associated images."
+    },
+    {
+      "type": "select",
+      "id": "swatch_corner_radius",
+      "label": "Corner radius",
+      "options": [
+        { "value": "square", "label": "Square" },
+        { "value": "rounded", "label": "Rounded" },
+        { "value": "pill", "label": "Pill" }
+      ],
+      "default": "pill",
+      "visible_if": "{{ block.settings.enable_color_swatches }}"
     },
     {
       "type": "header",
