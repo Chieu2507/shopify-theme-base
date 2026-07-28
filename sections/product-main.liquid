@@ -5,7 +5,7 @@
 {% if template.suffix != blank %}{% assign form_id = form_id | append: '-' | append: template.suffix %}{% endif %}
 
 <product-page
-  class="product-page section-{{ section.id }}"
+  class="product-page product-page--main section-{{ section.id }} color-scheme color-{{ section.settings.color_scheme.id }} section-spacing"
   data-section-id="{{ section.id }}"
   data-product-id="{{ product.id }}"
   data-product-url="{{ product.url }}"
@@ -21,8 +21,9 @@
   data-in-stock-label="{{ 'product.in_stock' | t | escape }}"
   data-only-items-left-label="{{ 'product.only_items_left' | t: count: '[count]' | escape }}"
   data-deferred-module="{{ 'product-page.js' | asset_url }}"
+  style="--product-layout-gap: {{ section.settings.desktop_gap }}px; --product-media-width: {{ section.settings.media_width }}%; --product-mobile-gap: {{ section.settings.mobile_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
-  <div class="product-page__inner page-width" style="--product-layout-gap: {{ section.settings.desktop_gap }}px; --product-media-width: {{ section.settings.media_width }}%; --product-mobile-gap: {{ section.settings.mobile_gap }}px;">
+  <div class="product-page__inner page-width">
     <div class="product-page__layout">
       {% content_for 'blocks' %}
     </div>
@@ -31,6 +32,12 @@
   <script type="application/json" data-product-media>{{ product.media | json }}</script>
   <p class="visually-hidden" data-product-status role="status" aria-live="polite"></p>
 </product-page>
+
+{% stylesheet %}
+  .product-page--main {
+    margin-bottom: 0;
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
@@ -82,6 +89,40 @@
       "step": 2,
       "unit": "px",
       "default": 16
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 160,
+      "step": 8,
+      "unit": "px",
+      "default": 96
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 160,
+      "step": 8,
+      "unit": "px",
+      "default": 96
     }
   ],
   "disabled_on": {
