@@ -154,9 +154,27 @@
           {% for block in section.blocks %}
             {% case block.type %}
               {% when 'discount_code' %}
-                <div class="cart-page__block cart-page__block--discount" {{ block.shopify_attributes }}>
+                <div
+                  class="cart-page__block cart-page__block--discount"
+                  data-cart-page-discount
+                  data-discount-error-label="{{ 'cart_drawer.discount_error' | t | escape }}"
+                  data-cart-json-url="{{ routes.cart_url }}.js"
+                  data-cart-update-url="{{ routes.cart_update_url }}.js"
+                  {{ block.shopify_attributes }}
+                >
                   <label for="CartDiscount-{{ section.id }}">{{ block.settings.label | escape }}</label>
-                  <div class="cart-page__inline-control"><input id="CartDiscount-{{ section.id }}" type="text" name="discount" placeholder="{{ block.settings.placeholder | escape }}" autocomplete="off"><button type="submit" formaction="/discount" formmethod="post">{{ block.settings.button_label | escape }}</button></div>
+                  <div class="cart-page__inline-control">
+                    <input
+                      id="CartDiscount-{{ section.id }}"
+                      type="text"
+                      data-cart-page-discount-input
+                      placeholder="{{ block.settings.placeholder | escape }}"
+                      autocomplete="off"
+                      aria-describedby="CartDiscountMessage-{{ section.id }}"
+                    >
+                    <button type="submit" formnovalidate data-cart-page-discount-submit data-applying-label="{{ 'cart_drawer.applying_discount' | t | escape }}">{{ block.settings.button_label | escape }}</button>
+                  </div>
+                  <p id="CartDiscountMessage-{{ section.id }}" class="cart-page__discount-message" data-cart-page-discount-message role="status" aria-live="polite" hidden></p>
                 </div>
               {% when 'order_note' %}
                 <div class="cart-page__block cart-page__block--note" {{ block.shopify_attributes }}>
@@ -224,6 +242,7 @@
   .cart-page__summary textarea:focus-visible, .cart-page__inline-control input:focus-visible { border-color: var(--color-heading); outline: 2px solid color-mix(in srgb, var(--color-heading) 30%, transparent); outline-offset: 2px; }
   .cart-page__inline-control button { min-height: var(--control-height); flex: 0 0 auto; padding: 0 var(--button-inline-padding); border: var(--button-secondary-border-width) solid var(--color-secondary-button-outline); border-radius: var(--radius-button); background: var(--color-secondary-button); color: var(--color-secondary-button-label); cursor: pointer; font-family: var(--button-secondary-font-family); font-size: var(--font-caption); font-style: var(--button-secondary-font-style); font-weight: var(--button-secondary-font-weight); text-transform: var(--button-secondary-text-case); }
   .cart-page__block--note textarea { margin-bottom: 0; }
+  .cart-page__discount-message { margin: 8px 0 0; color: var(--color-sale-price, #a33); font-size: var(--font-caption); line-height: 1.4; }
   .cart-page__discounts { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; color: var(--color-text); font-size: var(--font-caption); list-style: none; }
   .cart-page__discounts li { display: flex; justify-content: space-between; gap: 16px; color: var(--color-text); }
   .cart-page__tax-note { margin: 16px 0 0; color: var(--color-text); font-size: var(--font-caption); line-height: 1.4; }
@@ -234,6 +253,192 @@
   @media screen and (max-width: 989px) { .cart-page__form { grid-template-columns: 1fr; gap: 48px; } .cart-page__summary { position: static; max-width: 600px; } }
   @media screen and (max-width: 749px) { .cart-page__inner, .cart-page.full-width .cart-page__inner { padding-inline: var(--page-margin); } .cart-page__header { padding-bottom: 36px; } .cart-page__empty { min-height: 260px; padding-top: 10px; } .cart-page__empty-actions { grid-template-columns: 1fr; margin-top: 48px; } .cart-page__item { grid-template-columns: 88px minmax(0, 1fr); gap: 14px; } .cart-page__item-price { grid-column: 2; grid-row: 1; align-items: flex-start; margin-top: 2px; } .cart-page__item-info { grid-column: 2; } .cart-page__summary { padding: 22px 18px; } }
 {% endstylesheet %}
+
+{% javascript %}
+  (() => {
+    const normalizeCode = (value) => String(value || '').trim().toLowerCase();
+    const mergeDiscountCodes = (...groups) => {
+      const seen = new Set();
+      return groups.flat().map((code) => String(code || '').trim()).filter((code) => {
+        const normalizedCode = normalizeCode(code);
+        if (!normalizedCode || seen.has(normalizedCode)) return false;
+        seen.add(normalizedCode);
+        return true;
+      });
+    };
+    const storedDiscountCodes = (cart) => {
+      const discountCodes = cart.discount_codes || cart.discountCodes || [];
+      if (discountCodes.length) return mergeDiscountCodes(discountCodes.map((discount) => discount.code));
+
+      const applications = [
+        ...(cart.discount_applications || []),
+        ...(cart.cart_level_discount_applications || []),
+        ...(cart.items || []).flatMap((item) => (
+          item.line_level_discount_allocations || []
+        ).map((allocation) => allocation.discount_application || allocation))
+      ];
+      return mergeDiscountCodes(applications.filter((application) => {
+        const type = String(application.type || '').toLowerCase();
+        return type === 'discount_code' || type === 'code';
+      }).map((application) => application.title));
+    };
+
+    const isDiscountApplied = (cart, code) => {
+      const normalizedCode = normalizeCode(code);
+      const discountCodes = cart.discount_codes || cart.discountCodes || [];
+      const matchingCode = discountCodes.find((discount) => normalizeCode(discount.code) === normalizedCode);
+
+      if (matchingCode) return matchingCode.applicable !== false;
+
+      const applications = [
+        ...(cart.discount_applications || []),
+        ...(cart.cart_level_discount_applications || []),
+        ...(cart.items || []).flatMap((item) => (
+          item.line_level_discount_allocations || []
+        ).map((allocation) => allocation.discount_application || allocation))
+      ];
+
+      return applications.some((application) => {
+        const type = String(application.type || '').toLowerCase();
+        return normalizeCode(application.title) === normalizedCode
+          && (!type || type === 'discount_code' || type === 'code');
+      });
+    };
+
+    const cartUpdateUrl = (control) => {
+      if (control.dataset.cartUpdateUrl) return control.dataset.cartUpdateUrl;
+      const root = window.Shopify?.routes?.root || '/';
+      return `${root.endsWith('/') ? root : `${root}/`}cart/update.js`;
+    };
+
+    const cartJsonUrl = (control) => {
+      if (control.dataset.cartJsonUrl) return control.dataset.cartJsonUrl;
+      const root = window.Shopify?.routes?.root || '/';
+      return `${root.endsWith('/') ? root : `${root}/`}cart.js`;
+    };
+
+    const fetchCart = async (control) => {
+      const response = await fetch(cartJsonUrl(control), {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin'
+      });
+      if (!response.ok) throw new Error(control.dataset.discountErrorLabel || '');
+      return response.json();
+    };
+
+    const updateDiscountCodes = async (control, codes) => {
+      const response = await fetch(cartUpdateUrl(control), {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest'
+        },
+        credentials: 'same-origin',
+        body: JSON.stringify({ discount: codes.join(',') })
+      });
+      const cart = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(cart.description || cart.message || control.dataset.discountErrorLabel || '');
+      }
+      return cart;
+    };
+
+    const applyDiscount = async (control) => {
+      const input = control.querySelector('[data-cart-page-discount-input]');
+      const button = control.querySelector('[data-cart-page-discount-submit]');
+      const message = control.querySelector('[data-cart-page-discount-message]');
+      const code = input?.value.trim();
+
+      if (!input || !button || button.disabled) return;
+
+      const setError = (error) => {
+        const errorMessage = error || '';
+        if (errorMessage) {
+          input.setAttribute('aria-invalid', 'true');
+        } else {
+          input.removeAttribute('aria-invalid');
+        }
+        if (message) {
+          message.textContent = errorMessage;
+          message.hidden = !errorMessage;
+        }
+      };
+
+      setError('');
+      if (!code) {
+        setError(control.dataset.discountErrorLabel);
+        input.focus({ preventScroll: true });
+        return;
+      }
+
+      const originalLabel = button.textContent;
+      button.disabled = true;
+      button.textContent = button.dataset.applyingLabel || originalLabel;
+      control.setAttribute('aria-busy', 'true');
+
+      try {
+        const currentCart = await fetchCart(control);
+        const previousCodes = storedDiscountCodes(currentCart);
+        const requestedCodes = mergeDiscountCodes(previousCodes, [code]);
+        const cart = await updateDiscountCodes(control, requestedCodes);
+        const errorLabel = control.dataset.discountErrorLabel || '';
+
+        if (!isDiscountApplied(cart, code)) {
+          try {
+            await updateDiscountCodes(control, previousCodes);
+          } catch (rollbackError) {
+            console.error('[Jovie] Discount rollback failed', rollbackError);
+            window.location.reload();
+            return;
+          }
+          throw new Error(errorLabel);
+        }
+
+        window.location.reload();
+      } catch (error) {
+        setError(error.message || control.dataset.discountErrorLabel);
+        input.focus({ preventScroll: true });
+      } finally {
+        button.disabled = false;
+        button.textContent = originalLabel;
+        control.removeAttribute('aria-busy');
+      }
+    };
+
+    document.addEventListener('submit', (event) => {
+      const submitter = event.submitter?.closest('[data-cart-page-discount-submit]');
+      if (!submitter) return;
+
+      const control = submitter.closest('[data-cart-page-discount]');
+      if (!control) return;
+
+      event.preventDefault();
+      applyDiscount(control);
+    });
+
+    document.addEventListener('keydown', (event) => {
+      const input = event.target.closest('[data-cart-page-discount-input]');
+      if (!input || event.key !== 'Enter' || event.isComposing) return;
+
+      event.preventDefault();
+      input.closest('[data-cart-page-discount]')?.querySelector('[data-cart-page-discount-submit]')?.click();
+    });
+
+    document.addEventListener('input', (event) => {
+      const input = event.target.closest('[data-cart-page-discount-input]');
+      if (!input) return;
+
+      const control = input.closest('[data-cart-page-discount]');
+      const message = control?.querySelector('[data-cart-page-discount-message]');
+      input.removeAttribute('aria-invalid');
+      if (message) {
+        message.textContent = '';
+        message.hidden = true;
+      }
+    });
+  })();
+{% endjavascript %}
 
 {% schema %}
 {

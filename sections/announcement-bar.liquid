@@ -17,12 +17,15 @@
         endif
     endcase
   endfor
+
+  assign announcement_dots_space_desktop = announcement_item_count | times: 19 | plus: 62
+  assign announcement_dots_space_mobile = announcement_item_count | times: 13 | plus: 52
 %}
 
 {% if section.blocks.size > 0 %}
   <announcement-bar
-    class="announcement-bar announcement-bar--navigator-{{ section.settings.navigator_style }} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
-    style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px; --announcement-bar-font-weight: {{ section.settings.font_weight }};"
+    class="announcement-bar announcement-bar--navigator-{{ section.settings.navigator_style }}{% if announcement_item_count > 4 %} announcement-bar--many-items{% endif %} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
+    style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px; --announcement-bar-font-weight: {{ section.settings.font_weight }}; --announcement-dots-space-desktop: {{ announcement_dots_space_desktop }}px; --announcement-dots-space-mobile: {{ announcement_dots_space_mobile }}px;"
     data-behavior="{{ section.settings.text_behavior }}"
     data-interval="{{ section.settings.autoplay_interval | times: 1000 }}"
     data-deferred-module="{{ 'section-announcement-bar.js' | asset_url }}"
@@ -61,7 +64,7 @@
       {% endfor %}
 
       {% if announcement_item_count > 0 %}
-        <div class="announcement-bar__content">
+        <div class="announcement-bar__content{% if section.settings.text_behavior == 'rotate' and announcement_item_count > 1 %} announcement-bar__content--with-rotation-control{% endif %}">
           <div class="announcement-bar__messages" aria-live="polite">
             {% assign announcement_item_index = 0 %}
             {% for block in section.blocks %}
@@ -202,6 +205,15 @@
     justify-content: center;
   }
 
+  .announcement-bar__content--with-rotation-control .announcement-bar__messages {
+    box-sizing: border-box;
+    padding-inline: 86px;
+  }
+
+  .announcement-bar--navigator-dots .announcement-bar__content--with-rotation-control .announcement-bar__messages {
+    padding-inline: var(--announcement-dots-space-desktop);
+  }
+
   .announcement-bar[data-behavior='rotate'] .announcement-bar__item[hidden] {
     display: none;
   }
@@ -221,6 +233,10 @@
   }
 
   .announcement-bar__rotation-toggle {
+    position: absolute;
+    z-index: 3;
+    top: 50%;
+    right: 58px;
     display: grid;
     width: 24px;
     height: 24px;
@@ -233,6 +249,8 @@
     cursor: pointer;
     opacity: 0.8;
     place-items: center;
+    pointer-events: auto;
+    transform: translateY(-50%);
     transition: opacity 160ms ease;
   }
 
@@ -333,8 +351,15 @@
   .announcement-bar--navigator-arrows .announcement-bar__navigator-dots,
   .announcement-bar--navigator-both .announcement-bar__navigator-dots { display: none; }
 
-  .announcement-bar--navigator-dots .announcement-bar__navigator-dots { grid-column: 3; justify-self: end; }
-  .announcement-bar__rotation-toggle { display: none !important; }
+  .announcement-bar--navigator-dots .announcement-bar__navigator-dots {
+    grid-column: 3;
+    margin-right: 58px;
+    justify-self: end;
+  }
+
+  .announcement-bar--navigator-dots .announcement-bar__rotation-toggle {
+    right: 24px;
+  }
 
   .announcement-bar__countdown {
     display: flex;
@@ -390,6 +415,14 @@
       overflow: hidden;
     }
 
+    .announcement-bar__content--with-rotation-control .announcement-bar__messages {
+      padding-inline: 72px;
+    }
+
+    .announcement-bar--navigator-dots .announcement-bar__content--with-rotation-control .announcement-bar__messages {
+      padding-inline: var(--announcement-dots-space-mobile);
+    }
+
     .announcement-bar__item {
       overflow: hidden;
       text-overflow: ellipsis;
@@ -406,6 +439,13 @@
     .announcement-bar__navigator-dots { gap: 2px; }
     .announcement-bar__navigator-dot { width: 11px; }
     .announcement-bar__navigator-dot[aria-current='true'] span { width: 11px; }
+    .announcement-bar__rotation-toggle { right: 44px; }
+    .announcement-bar--navigator-dots .announcement-bar__navigator-dots { margin-right: 46px; }
+    .announcement-bar--navigator-dots .announcement-bar__rotation-toggle { right: 12px; }
+    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__navigator-arrow { display: grid; }
+    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__navigator-dots { display: none; }
+    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__rotation-toggle { right: 44px; }
+    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__content--with-rotation-control .announcement-bar__messages { padding-inline: 72px; }
   }
 
   @media (prefers-reduced-motion: reduce) {

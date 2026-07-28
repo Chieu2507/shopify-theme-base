@@ -5,6 +5,7 @@
   data-cart-drawer
   style="--cart-drawer-width: {{ settings.cart_drawer_width | default: 450 }}px;"
   data-currency="{{ cart.currency.iso_code | default: shop.currency }}"
+  data-cart-update-url="{{ routes.cart_update_url }}.js"
   data-recommendations-enabled="{{ settings.cart_drawer_show_recommendations }}"
   data-recommendations-limit="{{ settings.cart_drawer_recommendations_limit | default: 4 }}"
   data-discount-enabled="{{ settings.cart_drawer_show_discount }}"
@@ -15,6 +16,7 @@
   data-related-product-label="{{ 'cart_drawer.related_product' | t: index: '__index__' | escape }}"
   data-remove-label="{{ 'cart_drawer.remove' | t | escape }}"
   data-add-to-cart-label="{{ 'cart_drawer.add_to_cart' | t | escape }}"
+  data-choose-options-label="{{ 'product_card.choose_options' | t | escape }}"
   data-adding-label="{{ 'cart_drawer.adding' | t | escape }}"
   data-updating-label="{{ 'cart_drawer.updating' | t | escape }}"
   data-applying-discount-label="{{ 'cart_drawer.applying_discount' | t | escape }}"
@@ -40,7 +42,7 @@
     </header>
 
     <div class="cart-drawer__body">
-      <p class="cart-drawer__status" data-cart-drawer-status role="status" aria-live="polite" hidden></p>
+      <p class="cart-drawer__status visually-hidden" data-cart-drawer-status role="status" aria-live="polite" hidden></p>
       <div class="cart-drawer__loading" data-cart-drawer-loading hidden aria-hidden="true"><span class="cart-drawer__loading-spinner"></span></div>
       <div class="cart-drawer__items" data-cart-drawer-items></div>
       <section class="cart-drawer__recommendations" data-cart-drawer-recommendations hidden aria-labelledby="CartDrawerRecommendationsTitle">
@@ -72,11 +74,11 @@
       {% if settings.cart_drawer_show_discount %}
         <form class="cart-drawer__discount" data-cart-drawer-discount>
           <label class="visually-hidden" for="CartDrawerDiscount">{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}</label>
-          <input id="CartDrawerDiscount" type="text" name="discount" autocomplete="off" placeholder="{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}">
+          <input id="CartDrawerDiscount" type="text" name="discount" autocomplete="off" placeholder="{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}" aria-describedby="CartDrawerMessage">
           <button type="submit" class="cart-drawer__text-button">{{ 'cart_drawer.apply' | t | default: 'Apply' | escape }}</button>
         </form>
       {% endif %}
-      <p class="cart-drawer__message" data-cart-drawer-message role="status" aria-live="polite" hidden></p>
+      <p id="CartDrawerMessage" class="cart-drawer__message" data-cart-drawer-message role="status" aria-live="polite" hidden></p>
       <div class="cart-drawer__total"><span>{{ 'cart_drawer.total' | t | default: 'Total' | escape }}</span><strong data-cart-drawer-total></strong></div>
       <a class="cart-drawer__checkout" href="{{ routes.checkout_url | default: '/checkout' }}" data-cart-drawer-checkout>{{ 'cart_drawer.checkout' | t | default: 'Checkout' | escape }}<span aria-hidden="true"> · </span><span data-cart-drawer-checkout-total></span></a>
       {% if additional_checkout_buttons %}

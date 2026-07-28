@@ -28,6 +28,8 @@ class ProductPage extends HTMLElement {
       this.initializeRecentlyViewed();
     }
     this.updateOptionLabels();
+    this.reconcileSellingPlans();
+    this.updatePrice();
     if (this.variant?.featured_media?.id) this.showMedia(String(this.variant.featured_media.id));
     this.loadPickupAvailability();
     this.updateOptionAvailability();
@@ -58,6 +60,7 @@ class ProductPage extends HTMLElement {
 
   bind() {
     this.querySelectorAll('[data-product-option]').forEach((input) => input.addEventListener('change', () => this.onOptionChange(), { signal: this.signal }));
+    this.querySelectorAll('[data-selling-plan-option]').forEach((input) => input.addEventListener('change', () => this.onSellingPlanChange(), { signal: this.signal }));
     this.querySelectorAll('[data-quantity-increase], [data-quantity-decrease]').forEach((button) => button.addEventListener('click', () => this.changeQuantity(button.hasAttribute('data-quantity-increase') ? 1 : -1), { signal: this.signal }));
     this.querySelector('[data-quantity-input]')?.addEventListener('change', () => this.normalizeQuantity(), { signal: this.signal });
     this.form?.addEventListener('submit', (event) => this.addToCart(event), { signal: this.signal });
@@ -814,9 +817,78 @@ changeLightboxSlide(delta) {
     });
   }
 
+  sellingPlanIdForAllocation(allocation) {
+    return String(allocation?.selling_plan_id || allocation?.selling_plan?.id || '');
+  }
+
+  sellingPlanAllocations() {
+    return Array.isArray(this.variant?.selling_plan_allocations) ? this.variant.selling_plan_allocations : [];
+  }
+
+  selectedSellingPlanId() {
+    return this.querySelector('[data-selling-plan-option]:checked')?.value || '';
+  }
+
+  selectedSellingPlanAllocation() {
+    const sellingPlanId = this.selectedSellingPlanId();
+    if (!sellingPlanId) return null;
+    return this.sellingPlanAllocations().find((allocation) => this.sellingPlanIdForAllocation(allocation) === String(sellingPlanId)) || null;
+  }
+
+  reconcileSellingPlans(preferredPlanId) {
+    const picker = this.querySelector('[data-selling-plan-picker]');
+    if (!picker) return null;
+    const allocations = this.sellingPlanAllocations();
+    const availablePlanIds = new Set(allocations.map((allocation) => this.sellingPlanIdForAllocation(allocation)).filter(Boolean));
+    const inputs = [...picker.querySelectorAll('[data-selling-plan-option]')];
+    const requiresSellingPlan = Boolean(this.variant?.requires_selling_plan);
+
+    inputs.forEach((input) => {
+      const available = input.hasAttribute('data-selling-plan-one-time')
+        ? !requiresSellingPlan
+        : availablePlanIds.has(input.value);
+      input.disabled = !available;
+      const row = input.closest('[data-selling-plan-option-row]');
+      if (row) row.hidden = !available;
+    });
+
+    let nextPlanId = preferredPlanId === undefined ? this.selectedSellingPlanId() : String(preferredPlanId || '');
+    if (nextPlanId && !availablePlanIds.has(nextPlanId)) nextPlanId = '';
+    if (!nextPlanId && requiresSellingPlan) nextPlanId = this.sellingPlanIdForAllocation(allocations[0]);
+
+    const nextInput = inputs.find((input) => !input.disabled && input.value === nextPlanId);
+    inputs.forEach((input) => { input.checked = input === nextInput; });
+    return this.selectedSellingPlanAllocation();
+  }
+
+  isPurchaseAvailable() {
+    if (!this.variant?.available) return false;
+    const sellingPlanId = this.selectedSellingPlanId();
+    if (!sellingPlanId) return !this.variant.requires_selling_plan;
+    return Boolean(this.selectedSellingPlanAllocation());
+  }
+
+  onSellingPlanChange() {
+    this.reconcileSellingPlans();
+    this.updateVariantState();
+    this.updatePrice();
+    if (this.dataset.updateUrl !== 'false') {
+      const url = new URL(window.location.href);
+      const sellingPlanId = this.selectedSellingPlanId();
+      if (sellingPlanId) url.searchParams.set('selling_plan', sellingPlanId);
+      else url.searchParams.delete('selling_plan');
+      window.history.replaceState({}, '', url);
+    }
+    this.dispatch('product:selling-plan-change', {
+      variant: this.variant,
+      sellingPlanAllocation: this.selectedSellingPlanAllocation(),
+    });
+  }
+
   updateVariantState() {
     this.clearInventoryWarning();
     const available = Boolean(this.variant?.available);
+    const purchaseAvailable = this.isPurchaseAvailable();
     const variantId = this.variant?.id ? String(this.variant.id) : '';
     this.querySelectorAll('input[data-variant-id], input[data-payment-terms-variant-id]').forEach((input) => {
       if (input.value === variantId) return;
@@ -825,14 +897,16 @@ changeLightboxSlide(delta) {
     });
     const button = this.querySelector('[data-add-to-cart]');
     const label = this.querySelector('[data-add-to-cart-label]');
-    if (button) button.disabled = !available;
-    if (label) label.textContent = this.variant ? (available ? this.dataset.addToCartLabel : this.dataset.soldOutLabel) : this.dataset.unavailableLabel;
+    if (button) button.disabled = !purchaseAvailable;
+    if (label) label.textContent = this.variant ? (available ? (purchaseAvailable ? this.dataset.addToCartLabel : this.dataset.unavailableLabel) : this.dataset.soldOutLabel) : this.dataset.unavailableLabel;
     const stickyButton = this.querySelector('[data-sticky-cart-add]');
     const stickyLabel = this.querySelector('[data-sticky-cart-label]');
     const stickyVariant = this.querySelector('[data-sticky-cart-variant]');
     const stickyImage = this.querySelector('[data-sticky-cart-image]');
-    if (stickyButton) stickyButton.disabled = !available;
-    if (stickyLabel) stickyLabel.textContent = this.variant ? (available ? this.dataset.addToCartLabel : this.dataset.soldOutLabel) : this.dataset.unavailableLabel;
+    const dynamicCheckout = this.querySelector('[data-dynamic-checkout]');
+    if (stickyButton) stickyButton.disabled = !purchaseAvailable;
+    if (stickyLabel) stickyLabel.textContent = this.variant ? (available ? (purchaseAvailable ? this.dataset.addToCartLabel : this.dataset.unavailableLabel) : this.dataset.soldOutLabel) : this.dataset.unavailableLabel;
+    if (dynamicCheckout) dynamicCheckout.hidden = !purchaseAvailable;
     if (stickyVariant) {
       const variantTitle = this.variant?.title || '';
       stickyVariant.textContent = variantTitle;
@@ -850,14 +924,18 @@ changeLightboxSlide(delta) {
           ? this.dataset.onlyItemsLeftLabel.replace('[count]', this.variant.inventory_quantity)
           : this.dataset.inStockLabel)
         : this.dataset.soldOutLabel;
-    const onSale = Number(this.variant?.compare_at_price) > Number(this.variant?.price);
+    const allocation = this.selectedSellingPlanAllocation();
+    const currentPrice = allocation?.price ?? this.variant?.price;
+    const currentCompareAtPrice = allocation?.compare_at_price ?? this.variant?.compare_at_price;
+    const onSale = Number(currentCompareAtPrice) > Number(currentPrice);
     this.querySelector('[data-product-badge-sale]')?.toggleAttribute('hidden', !onSale);
     this.querySelector('[data-product-badge-sold-out]')?.toggleAttribute('hidden', available);
     this.dispatch('product:variant-change', { variant: this.variant });
   }
 
-  applyVariant(variant) {
+  applyVariant(variant, preferredPlanId) {
     this.variant = variant;
+    this.reconcileSellingPlans(preferredPlanId);
     this.updateVariantState();
     this.updatePrice();
     this.updateSku();
@@ -867,46 +945,53 @@ changeLightboxSlide(delta) {
     if (this.dataset.updateUrl !== 'false') {
       const url = new URL(this.dataset.productUrl, window.location.origin);
       url.searchParams.set('variant', variant.id);
+      const sellingPlanId = this.selectedSellingPlanId();
+      if (sellingPlanId) url.searchParams.set('selling_plan', sellingPlanId);
       window.history.replaceState({}, '', url);
     }
   }
 
   updatePrice() {
     if (!this.variant) return;
+    const allocation = this.selectedSellingPlanAllocation();
+    const allocationValue = (key, fallback) => allocation && Object.prototype.hasOwnProperty.call(allocation, key) ? allocation[key] : fallback;
+    const currentPrice = allocationValue('price', this.variant.price);
+    const currentCompareAtPrice = allocationValue('compare_at_price', this.variant.compare_at_price);
+    const currentUnitPrice = allocationValue('unit_price', this.variant.unit_price);
     const price = this.querySelector("[data-price]");
     const comparePrice = this.querySelector("[data-compare-price]");
     const saleBadge = this.querySelector("[data-sale-badge]");
     const saleBadgeValue = this.querySelector("[data-sale-badge-value]");
-    if (price) price.textContent = this.formatPrice(this.variant.price);
+    if (price) price.textContent = this.formatPrice(currentPrice);
     const unitPrice = this.querySelector('[data-unit-price]');
     if (unitPrice) {
       const measurement = this.variant.unit_price_measurement;
-      unitPrice.hidden = !measurement;
-      unitPrice.textContent = measurement ? `${this.formatPrice(this.variant.unit_price)} / ${measurement.reference_value}${measurement.reference_unit}` : '';
+      unitPrice.hidden = !measurement || currentUnitPrice == null;
+      unitPrice.textContent = measurement && currentUnitPrice != null ? `${this.formatPrice(currentUnitPrice)} / ${measurement.reference_value}${measurement.reference_unit}` : '';
     }
     const stickyPrice = this.querySelector('[data-sticky-cart-price]');
     const stickyComparePrice = this.querySelector('[data-sticky-cart-compare-price]');
     const stickyPrices = this.querySelector('[data-sticky-cart-prices]');
-    if (stickyPrice) stickyPrice.textContent = this.formatPrice(this.variant.price);
-    const onSale = Number(this.variant.compare_at_price) > Number(this.variant.price);
+    if (stickyPrice) stickyPrice.textContent = this.formatPrice(currentPrice);
+    const onSale = Number(currentCompareAtPrice) > Number(currentPrice);
     stickyPrices?.classList.toggle('is-sale', onSale);
     if (stickyComparePrice) {
-      stickyComparePrice.textContent = onSale ? this.formatPrice(this.variant.compare_at_price) : '';
+      stickyComparePrice.textContent = onSale ? this.formatPrice(currentCompareAtPrice) : '';
       stickyComparePrice.hidden = !onSale;
     }
     this.querySelector("[data-product-price]")?.classList.toggle("product-price--sale", onSale);
     if (saleBadge) {
       saleBadge.hidden = !onSale;
       if (onSale && saleBadgeValue) {
-        const discountAmount = Number(this.variant.compare_at_price) - Number(this.variant.price);
+        const discountAmount = Number(currentCompareAtPrice) - Number(currentPrice);
         const showPercentage = saleBadge.dataset.discountMode === "true";
         saleBadgeValue.textContent = showPercentage
-          ? `${Math.round((discountAmount * 100) / Number(this.variant.compare_at_price))}% OFF`
+          ? `${Math.round((discountAmount * 100) / Number(currentCompareAtPrice))}% OFF`
           : `${this.formatPrice(discountAmount)} OFF`;
       }
     }
     if (comparePrice) {
-      comparePrice.textContent = onSale ? this.formatPrice(this.variant.compare_at_price) : "";
+      comparePrice.textContent = onSale ? this.formatPrice(currentCompareAtPrice) : "";
       comparePrice.classList.toggle("is-hidden", !onSale);
     }
   }
@@ -943,9 +1028,17 @@ changeLightboxSlide(delta) {
   }
 
   resolveFromUrl() {
-    const variantId = new URL(window.location.href).searchParams.get('variant');
+    const url = new URL(window.location.href);
+    const variantId = url.searchParams.get('variant');
+    const sellingPlanId = url.searchParams.get('selling_plan') || '';
     const variant = this.variants.find((item) => String(item.id) === String(variantId));
-    if (variant && String(variant.id) !== String(this.variant?.id)) this.applyVariant(variant);
+    if (!variant) return;
+    if (String(variant.id) !== String(this.variant?.id)) this.applyVariant(variant, sellingPlanId);
+    else {
+      this.reconcileSellingPlans(sellingPlanId);
+      this.updateVariantState();
+      this.updatePrice();
+    }
   }
 
   showMedia(mediaId, instant = false) {
@@ -1001,7 +1094,7 @@ changeLightboxSlide(delta) {
 
   async addToCart(event, sourceButton = null) {
     event?.preventDefault();
-    if (!this.variant?.available || !this.form) return;
+    if (!this.isPurchaseAvailable() || !this.form) return;
     this.normalizeQuantity();
     const primaryButton = this.querySelector('[data-add-to-cart]');
     const buttons = [...new Set([primaryButton, sourceButton].filter(Boolean))];
@@ -1050,7 +1143,7 @@ changeLightboxSlide(delta) {
       buttons.forEach((button) => {
         button.classList.remove('is-loading');
         button.removeAttribute('aria-busy');
-        if (this.isConnected) button.disabled = button.classList.contains('is-added') || !this.variant?.available;
+        if (this.isConnected) button.disabled = button.classList.contains('is-added') || !this.isPurchaseAvailable();
       });
     }
   }
@@ -1068,7 +1161,7 @@ changeLightboxSlide(delta) {
     this.addedStateTimer = setTimeout(() => {
       button.classList.remove('is-added');
       if (label?.dataset.defaultText) label.textContent = label.dataset.defaultText;
-      if (this.isConnected) button.disabled = !this.variant?.available;
+      if (this.isConnected) button.disabled = !this.isPurchaseAvailable();
     }, 1800);
   }
 

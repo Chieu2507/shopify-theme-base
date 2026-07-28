@@ -365,6 +365,9 @@ class ProductCardVariants {
     this.secondaryImage = card.querySelector('[data-product-card-secondary-image]');
     this.hoverMedia = window.matchMedia('(hover: hover) and (pointer: fine)');
     this.quickAdd = card.querySelector('[data-product-card-quick-add]');
+    this.quickViewTriggers = [...card.querySelectorAll('[data-product-card-quick-view-open]')];
+    this.quickViewPrimary = card.querySelector('[data-product-card-quick-view-primary]');
+    this.updateQuickViewUrls(card.dataset.selectedVariantId);
     this.buttons.forEach((button) => button.addEventListener('click', () => this.select(button)));
     this.buttons.forEach((button) => {
       button.addEventListener('pointerenter', () => this.preload(button), { passive: true });
@@ -433,6 +436,8 @@ class ProductCardVariants {
       candidate.setAttribute('aria-pressed', String(active));
     });
     this.card.dataset.selectedVariantId = button.dataset.variantId || '';
+    const purchaseAvailable = button.dataset.variantPurchaseAvailable === 'true';
+    this.updateQuickViewUrls(button.dataset.variantId);
     const isOnSale = button.dataset.variantOnSale === 'true';
     if (this.currentPrice) this.currentPrice.textContent = button.dataset.variantPrice || '';
     if (this.unitPrice) {
@@ -455,7 +460,18 @@ class ProductCardVariants {
         this.card.querySelector('.product-card__image--secondary')?.classList.add('is-hidden');
       });
     }
-    if (this.quickAdd) this.quickAdd.disabled = button.dataset.variantId === '';
+    if (this.quickAdd) this.quickAdd.disabled = button.dataset.variantId === '' || !purchaseAvailable;
+    if (this.quickViewPrimary) this.quickViewPrimary.disabled = !purchaseAvailable;
+  }
+
+  updateQuickViewUrls(variantId) {
+    if (!variantId || !this.card.dataset.productCardUrl || !this.quickViewTriggers.length) return;
+    const variantUrl = new URL(this.card.dataset.productCardUrl, window.location.origin);
+    variantUrl.searchParams.set('variant', variantId);
+    const quickViewUrl = `${variantUrl.pathname}${variantUrl.search}${variantUrl.hash}`;
+    this.quickViewTriggers.forEach((trigger) => {
+      trigger.dataset.productCardQuickViewUrl = quickViewUrl;
+    });
   }
 
   addSelectedVariant() {

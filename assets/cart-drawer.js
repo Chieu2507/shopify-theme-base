@@ -75,7 +75,13 @@
         const recommendationDot = event.target.closest('[data-cart-drawer-recommendation-dot]');
         if (recommendationDot) this.goToRecommendation(Number(recommendationDot.dataset.index));
       }, { signal });
-      this.querySelector('[data-cart-drawer-discount]')?.addEventListener('submit', (event) => this.applyDiscount(event), { signal });
+      const discountForm = this.querySelector('[data-cart-drawer-discount]');
+      const discountInput = discountForm?.querySelector('input[name="discount"]');
+      discountForm?.addEventListener('submit', (event) => this.applyDiscount(event), { signal });
+      discountInput?.addEventListener('input', () => {
+        discountInput.removeAttribute('aria-invalid');
+        if (this.message?.dataset.error === 'true') this.setMessage('');
+      }, { signal });
       this.querySelector('[data-cart-drawer-save-note]')?.addEventListener('click', () => this.saveNote(), { signal });
       this.recommendationList?.addEventListener('scroll', () => this.updateRecommendationDot(), { passive: true, signal });
       document.addEventListener('keydown', (event) => {
@@ -138,7 +144,7 @@
       this.busy = true;
       this.setStatus(this.dataset.updatingLabel);
       try {
-        const response = await fetch('/cart.js', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        const response = await fetch(this.localeUrl('cart.js'), { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
         if (!response.ok) throw new Error(this.dataset.cartUnavailableLabel);
         const cart = await response.json();
         this.currency = cart.currency || this.currency;
@@ -156,6 +162,7 @@
     }
 
     renderCart(cart) {
+      this.cart = cart;
       if (!cart.item_count) {
         this.renderEmpty();
         return;
@@ -235,7 +242,7 @@
       if (!line || !Number.isFinite(quantity)) return;
       try {
         this.setStatus(this.dataset.updatingLabel);
-        const response = await fetch('/cart/change.js', {
+        const response = await fetch(this.localeUrl('cart/change.js'), {
           method: 'POST',
           headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: JSON.stringify({ id: line, quantity })
@@ -259,7 +266,7 @@
         const formData = new FormData();
         formData.set('id', variantId);
         formData.set('quantity', '1');
-        const response = await fetch('/cart/add.js', { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: formData });
+        const response = await fetch(this.localeUrl('cart/add.js'), { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: formData });
         if (!response.ok) {
           const payload = await response.json().catch(() => ({}));
           throw new Error(payload.description || payload.message || this.dataset.relatedProductErrorLabel);
@@ -281,7 +288,10 @@
       const productId = cart.items[0].product_id;
       const limit = Number(this.dataset.recommendationsLimit || 4);
       try {
-        const url = `/recommendations/products.json?product_id=${encodeURIComponent(productId)}&limit=${Math.min(8, Math.max(2, limit))}&intent=related`;
+        const url = new URL(this.localeUrl('recommendations/products.json'), window.location.origin);
+        url.searchParams.set('product_id', productId);
+        url.searchParams.set('limit', Math.min(8, Math.max(2, limit)));
+        url.searchParams.set('intent', 'related');
         const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
         if (!response.ok) throw new Error('Recommendations unavailable');
         const data = await response.json();
@@ -323,29 +333,72 @@
     }
 
     recommendationTemplate(product) {
-      const variant = product.variants?.[0];
+      const variant = product.variants?.find((candidate) => candidate.available) || product.variants?.[0];
       const image = product.featured_image || product.images?.[0];
+      const requiredAllocation = (product.requires_selling_plan || variant?.requires_selling_plan)
+        ? variant?.selling_plan_allocations?.[0]
+        : null;
+      const requiresSellingPlanSelection = Boolean(
+        product.requires_selling_plan
+        || product.selling_plan_groups?.length
+        || variant?.requires_selling_plan
+        || variant?.selling_plan_allocations?.length
+      );
+      const action = requiresSellingPlanSelection
+        ? `<a class="cart-drawer__text-button" href="${this.escape(product.url)}">${this.escape(this.dataset.chooseOptionsLabel)}</a>`
+        : `<button type="button" class="cart-drawer__text-button" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}">${this.escape(this.dataset.addToCartLabel)}</button>`;
+      const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
       return `<article class="cart-drawer__recommendation">
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="lazy">` : ''}</a>
-        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(product.price)}</p><button type="button" class="cart-drawer__text-button" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}">${this.escape(this.dataset.addToCartLabel)}</button></div>
+        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
       </article>`;
     }
 
     async applyDiscount(event) {
       event.preventDefault();
       const input = event.currentTarget.querySelector('input[name="discount"]');
+      const button = event.currentTarget.querySelector('button[type="submit"]');
       const code = input?.value.trim();
-      if (!code) return;
+      if (button?.disabled) return;
+      input?.removeAttribute('aria-invalid');
+      this.setMessage('');
+      if (!code) {
+        input?.setAttribute('aria-invalid', 'true');
+        this.setMessage(this.dataset.discountErrorLabel, true);
+        return;
+      }
+      if (button) button.disabled = true;
       try {
         this.setStatus(this.dataset.applyingDiscountLabel);
-        const response = await fetch(`/discount/${encodeURIComponent(code)}?redirect=/cart`, { credentials: 'same-origin', redirect: 'follow' });
-        if (!response.ok) throw new Error(this.dataset.discountErrorLabel);
+        const previousCodes = this.storedDiscountCodes(this.cart);
+        const requestedCodes = this.mergeDiscountCodes(previousCodes, [code]);
+        const cart = await this.updateDiscountCodes(requestedCodes);
+
+        if (!this.isDiscountApplied(cart, code)) {
+          let restoredCart = cart;
+          try {
+            restoredCart = await this.updateDiscountCodes(previousCodes);
+          } catch (rollbackError) {
+            console.error('[Jovie] Discount rollback failed', rollbackError);
+            try {
+              restoredCart = await this.fetchCart();
+            } catch (reconcileError) {
+              console.error('[Jovie] Cart reconciliation failed', reconcileError);
+            }
+          }
+          this.syncCart(restoredCart);
+          throw new Error(this.dataset.discountErrorLabel);
+        }
+
+        this.syncCart(cart);
+        input.value = '';
         this.setMessage(this.dataset.discountAppliedLabel);
-        await this.refresh();
       } catch (error) {
-        console.error('[Spinel] Discount code failed', error);
+        console.error('[Jovie] Discount code failed', error);
+        input?.setAttribute('aria-invalid', 'true');
         this.setMessage(error.message, true);
       } finally {
+        if (button) button.disabled = false;
         this.setStatus('');
       }
     }
@@ -354,7 +407,7 @@
       const note = this.querySelector('[data-cart-drawer-note]')?.value || '';
       try {
         this.setStatus(this.dataset.savingNoteLabel);
-        const response = await fetch('/cart/update.js', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ note }) });
+        const response = await fetch(this.dataset.cartUpdateUrl || this.localeUrl('cart/update.js'), { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ note }) });
         if (!response.ok) throw new Error(this.dataset.noteErrorLabel);
         this.setMessage(this.dataset.noteSavedLabel);
       } catch (error) {
@@ -368,7 +421,7 @@
     setStatus(message) {
       if (this.status) {
         this.status.textContent = message;
-        this.status.hidden = true;
+        this.status.hidden = !message;
       }
       if (this.loading) this.loading.hidden = !message;
     }
@@ -378,6 +431,91 @@
       const discounts = cart.cart_level_discount_applications || [];
       this.discounts.innerHTML = discounts.map((discount) => `<li><span>${this.escape(discount.title)}</span><span>−${this.formatMoney(discount.total_allocated_amount)}</span></li>`).join('');
       this.discounts.hidden = discounts.length === 0;
+    }
+
+    isDiscountApplied(cart, code) {
+      const normalizeCode = (value) => String(value || '').trim().toLowerCase();
+      const normalizedCode = normalizeCode(code);
+      const discountCodes = cart.discount_codes || cart.discountCodes || [];
+      const matchingCode = discountCodes.find((discount) => normalizeCode(discount.code) === normalizedCode);
+
+      if (matchingCode) return matchingCode.applicable !== false;
+
+      const applications = [
+        ...(cart.discount_applications || []),
+        ...(cart.cart_level_discount_applications || []),
+        ...(cart.items || []).flatMap((item) => (
+          item.line_level_discount_allocations || []
+        ).map((allocation) => allocation.discount_application || allocation))
+      ];
+
+      return applications.some((application) => {
+        const type = String(application.type || '').toLowerCase();
+        return normalizeCode(application.title) === normalizedCode
+          && (!type || type === 'discount_code' || type === 'code');
+      });
+    }
+
+    storedDiscountCodes(cart) {
+      const discountCodes = cart?.discount_codes || cart?.discountCodes || [];
+      const codes = discountCodes
+        .map((discount) => discount.code);
+      if (codes.length) return this.mergeDiscountCodes(codes);
+      const applications = [
+        ...(cart?.discount_applications || []),
+        ...(cart?.cart_level_discount_applications || []),
+        ...(cart?.items || []).flatMap((item) => (
+          item.line_level_discount_allocations || []
+        ).map((allocation) => allocation.discount_application || allocation))
+      ];
+      applications.forEach((application) => {
+        const type = String(application.type || '').toLowerCase();
+        if (type === 'discount_code' || type === 'code') codes.push(application.title);
+      });
+      return this.mergeDiscountCodes(codes);
+    }
+
+    mergeDiscountCodes(...groups) {
+      const seen = new Set();
+      return groups.flat().map((code) => String(code || '').trim()).filter((code) => {
+        const normalizedCode = code.toLowerCase();
+        if (!normalizedCode || seen.has(normalizedCode)) return false;
+        seen.add(normalizedCode);
+        return true;
+      });
+    }
+
+    async updateDiscountCodes(codes) {
+      const response = await fetch(this.dataset.cartUpdateUrl || this.localeUrl('cart/update.js'), {
+        method: 'POST',
+        headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+        credentials: 'same-origin',
+        body: JSON.stringify({ discount: codes.join(',') })
+      });
+      const cart = await response.json().catch(() => ({}));
+      if (!response.ok) throw new Error(cart.description || cart.message || this.dataset.discountErrorLabel);
+      return cart;
+    }
+
+    async fetchCart() {
+      const response = await fetch(this.localeUrl('cart.js'), {
+        headers: { Accept: 'application/json' },
+        credentials: 'same-origin'
+      });
+      if (!response.ok) throw new Error(this.dataset.cartUnavailableLabel);
+      return response.json();
+    }
+
+    syncCart(cart) {
+      this.currency = cart.currency || this.currency;
+      this.renderCart(cart);
+      this.updateHeaderCount(cart);
+      document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true, detail: { cart } }));
+    }
+
+    localeUrl(path) {
+      const root = window.Shopify?.routes?.root || '/';
+      return `${root.endsWith('/') ? root : `${root}/`}${String(path || '').replace(/^\/+/, '')}`;
     }
 
     setMessage(message, isError = false) {

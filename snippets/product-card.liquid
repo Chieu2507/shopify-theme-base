@@ -60,8 +60,22 @@
 
   if product
     assign card_variant = product.selected_or_first_available_variant
+    assign card_allocation = blank
+    if card_variant.requires_selling_plan
+      assign card_allocation = card_variant.selling_plan_allocations | first
+    endif
     assign card_price = card_variant.price
     assign card_compare_at_price = card_variant.compare_at_price
+    assign card_unit_price = card_variant.unit_price
+    if card_allocation != blank
+      assign card_price = card_allocation.price
+      assign card_compare_at_price = card_allocation.compare_at_price
+      assign card_unit_price = card_allocation.unit_price
+    endif
+    assign card_purchase_available = card_variant.available
+    if card_variant.requires_selling_plan and card_allocation == blank
+      assign card_purchase_available = false
+    endif
     assign card_currency_code = cart.currency.iso_code | default: shop.currency
     assign card_price_text = card_price | money
     if settings.show_currency_code
@@ -69,7 +83,7 @@
     endif
     assign is_on_sale = false
 
-    if product.price_varies
+    if product.price_varies and card_allocation == blank
       assign card_min_price = product.price_min | money
       if settings.show_currency_code
         assign card_min_price = card_min_price | append: ' ' | append: card_currency_code
@@ -189,9 +203,15 @@
               <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" fill="none" stroke="currentColor" stroke-width="1.5"/><circle cx="12" cy="12" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"/></svg>
             </button>
           {% endif %}
-          <button class="product-card__media-action product-card__media-action--primary" type="button" aria-label="{{ 'product_card.quick_add' | t | escape }}" data-product-card-quick-add{% unless card_variant.available %} disabled{% endunless %}>
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
-          </button>
+          {% if product.selling_plan_groups.size > 0 %}
+            <button class="product-card__media-action product-card__media-action--primary" type="button" aria-label="{{ 'product_card.choose_options' | t | escape }}" aria-haspopup="dialog" data-product-card-quick-view-open data-product-card-quick-view-primary data-product-card-quick-view-url="{{ product.url }}"{% unless card_purchase_available %} disabled{% endunless %}>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          {% else %}
+            <button class="product-card__media-action product-card__media-action--primary" type="button" aria-label="{{ 'product_card.quick_add' | t | escape }}" data-product-card-quick-add{% unless card_purchase_available %} disabled{% endunless %}>
+              <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/></svg>
+            </button>
+          {% endif %}
         </div>
       {% endif %}
     {% else %}
@@ -209,7 +229,7 @@
           {% if show_compare_at_price %}
             <s data-product-card-compare-price{% unless is_on_sale %} hidden{% endunless %}>{% if is_on_sale %}{% render 'money', amount: card_compare_at_price %}{% endif %}</s>
           {% endif %}
-          <small class="product-card__unit-price" data-product-card-unit-price{% if card_variant.unit_price_measurement == blank %} hidden{% endif %}>{% if card_variant.unit_price_measurement != blank %}{% render 'money', amount: card_variant.unit_price %} / {{ card_variant.unit_price_measurement.reference_value }}{{ card_variant.unit_price_measurement.reference_unit }}{% endif %}</small>
+          <small class="product-card__unit-price" data-product-card-unit-price{% if card_variant.unit_price_measurement == blank or card_unit_price == blank %} hidden{% endif %}>{% if card_variant.unit_price_measurement != blank and card_unit_price != blank %}{% render 'money', amount: card_unit_price %} / {{ card_variant.unit_price_measurement.reference_value }}{{ card_variant.unit_price_measurement.reference_unit }}{% endif %}</small>
         </div>
       {% else %}
         <{{ card_heading_tag }} class="product-card__title">{{ 'onboarding.product_title' | t }}</{{ card_heading_tag }}>
@@ -225,27 +245,43 @@
             assign swatch_color = blank
             assign swatch_image_url = blank
             assign value_variant = value.variant
-            assign variant_price_text = value_variant.price | money
-            assign variant_compare_at_price_text = value_variant.compare_at_price | money
+            assign value_allocation = blank
+            if value_variant.requires_selling_plan
+              assign value_allocation = value_variant.selling_plan_allocations | first
+            endif
+            assign variant_display_price = value_variant.price
+            assign variant_display_compare_at_price = value_variant.compare_at_price
+            assign variant_display_unit_price = value_variant.unit_price
+            if value_allocation != blank
+              assign variant_display_price = value_allocation.price
+              assign variant_display_compare_at_price = value_allocation.compare_at_price
+              assign variant_display_unit_price = value_allocation.unit_price
+            endif
+            assign variant_price_text = variant_display_price | money
+            assign variant_compare_at_price_text = variant_display_compare_at_price | money
             assign variant_unit_price_text = blank
             assign variant_image_url = blank
             assign variant_image_srcset = blank
             assign variant_image_alt = product.title
             assign value_is_on_sale = false
             assign is_swatch_selected = false
+            assign variant_purchase_available = value_variant.available
+            if value_variant.requires_selling_plan and value_allocation == blank
+              assign variant_purchase_available = false
+            endif
 
             if settings.show_currency_code
               assign variant_price_text = variant_price_text | append: ' ' | append: card_currency_code
               assign variant_compare_at_price_text = variant_compare_at_price_text | append: ' ' | append: card_currency_code
             endif
 
-            if value_variant.compare_at_price > value_variant.price
+            if variant_display_compare_at_price > variant_display_price
               assign value_is_on_sale = true
             endif
 
-            if value_variant.unit_price_measurement != blank
+            if value_variant.unit_price_measurement != blank and variant_display_unit_price != blank
               capture variant_unit_price_text
-                render 'money', amount: value_variant.unit_price
+                render 'money', amount: variant_display_unit_price
                 echo ' / '
                 echo value_variant.unit_price_measurement.reference_value
                 echo value_variant.unit_price_measurement.reference_unit
@@ -305,6 +341,7 @@
               aria-pressed="{% if is_swatch_selected %}true{% else %}false{% endif %}"
               data-product-card-variant
               data-variant-id="{{ value_variant.id }}"
+              data-variant-purchase-available="{{ variant_purchase_available }}"
               data-variant-price="{{ variant_price_text | escape }}"
               data-variant-compare-price="{{ variant_compare_at_price_text | escape }}"
               data-variant-unit-price="{{ variant_unit_price_text | strip | escape }}"
@@ -327,7 +364,7 @@
   {% if product and show_quick_add %}
     <div class="product-card__actions">
       {% if product.available %}
-        {% if product.has_only_default_variant %}
+        {% if product.has_only_default_variant and product.selling_plan_groups.size == 0 %}
           {% form 'product', product, class: 'product-card__quick-add-form' %}
             <input type="hidden" name="id" value="{{ card_variant.id }}">
             <button class="product-card__quick-add" type="submit">{{ 'product_card.quick_add' | t }}</button>
