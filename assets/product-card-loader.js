@@ -35,7 +35,7 @@ const loadProductCardFeatures = () => {
       })
       .catch((error) => {
         productCardFeatures = null;
-        console.error('[Omniselle] Product card interactions failed to load.', error);
+        console.error('[Jovie] Product card interactions failed to load.', error);
         throw error;
       });
   }

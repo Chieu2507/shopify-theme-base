@@ -2,7 +2,7 @@
 
 - Date: 2026-07-21
 - Store: `omnise-themes-omniselle.myshopify.com`
-- Target theme: `191251415412` — Omniselle Jewelry (draft)
+- Target theme: `191251415412` — Jovie Jewelry (draft)
 - Scope: replace the Search results section and extend English search translations.
 - Files pushed:
   - `sections/search.liquid`
@@ -17,7 +17,7 @@
 ## Search results UX upgrade (pending theme sync)
 
 - Date: 2026-07-21
-- Target: `191251415412` — Omniselle Jewelry (draft)
+- Target: `191251415412` — Jovie Jewelry (draft)
 - Reference reviewed read-only: theme `191276876148`, Search results section.
 - Local implementation scope:
   - `sections/search.liquid`: Search heading, prefix search, filter-and-sort drawer, active filter removal, price/list/swatch filter inputs, sorting, responsive grid controls, and article/page result presentation.

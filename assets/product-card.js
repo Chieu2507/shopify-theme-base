@@ -60,7 +60,7 @@ const addVariantToCart = async (variantId, source, image, form) => {
     window.setTimeout(() => source.classList.remove('is-added'), 1400);
     return item;
   } catch (error) {
-    console.error('[Omniselle] Product card add to cart failed', {
+    console.error('[Jovie] Product card add to cart failed', {
       error,
       variantId,
       productHandle: source.closest('[data-product-card]')?.dataset.productHandle || null,
@@ -456,7 +456,7 @@ const initializeProductCardVariants = (root = document) => {
 };
 
 const initializeProductCards = () => {
-  window.OmniselleQuickView ||= new QuickViewModal();
+  window.JovieQuickView ||= new QuickViewModal();
   initializeProductCardVariants();
 };
 
@@ -467,8 +467,8 @@ document.addEventListener('click', (event) => {
   const trigger = event.target.closest('[data-product-card-quick-view-open]');
   if (!trigger) return;
   event.preventDefault();
-  window.OmniselleQuickView ||= new QuickViewModal();
-  window.OmniselleQuickView.open(trigger.dataset.productCardQuickViewUrl, trigger);
+  window.JovieQuickView ||= new QuickViewModal();
+  window.JovieQuickView.open(trigger.dataset.productCardQuickViewUrl, trigger);
 });
 document.addEventListener('shopify:section:load', (event) => initializeProductCardVariants(event.target));
 document.addEventListener('collection:products-loaded', (event) => {

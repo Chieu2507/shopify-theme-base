@@ -1,4 +1,4 @@
-# Quy trình build và fix theme Omniselle
+# Quy trình build và fix theme Jovie
 
 Tài liệu này mô tả workflow mặc định hiện tại khi có yêu cầu build mới hoặc sửa giao diện. Có thể chỉnh trực tiếp các quy định dưới đây để thay đổi cách Codex thực hiện những task tiếp theo.
 
@@ -6,10 +6,10 @@ Tài liệu này mô tả workflow mặc định hiện tại khi có yêu cầu
 
 | Hạng mục | Quy định hiện tại |
 |---|---|
-| Repository | `cassharper/omniselle-jewelry` |
+| Repository | `cassharper/jovie-jewelry` |
 | Nhánh triển khai | `main` |
 | Source of truth | Code mới nhất trên `origin/main` |
-| Theme đích | `191354634612` — Omniselle Jewelry |
+| Theme đích | `191354634612` — Jovie Jewelry |
 | Cách triển khai | Commit và push lên `main`; Shopify Git integration tự đồng bộ theme |
 | Shopify CLI push | Không sử dụng, trừ khi được yêu cầu lại rõ ràng |
 | Theme hoặc Figma tham chiếu | Chỉ đọc để phân tích; không ghi thay đổi vào nguồn tham chiếu |

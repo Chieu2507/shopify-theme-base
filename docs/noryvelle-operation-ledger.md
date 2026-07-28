@@ -2,12 +2,12 @@
 
 > Cập nhật: 25/07/2026
 > Store: `noryvelle-fashion.myshopify.com`
-> Repository: `cassharper/omniselle-jewelry`
+> Repository: `cassharper/jovie-jewelry`
 > Branch: `preset-noryvelle`
-> Git-connected theme: `omniselle-jewelry/preset-noryvelle` — ID `160312000735`
+> Git-connected theme: `jovie-jewelry/preset-noryvelle` — ID `160312000735`
 > Shopify readback: role `MAIN`; development store có password.
 > Giới hạn an toàn: quy trình này không publish/unpublish theme, không sửa hoặc xoá
-> dữ liệu Omniselle.
+> dữ liệu Jovie.
 
 ## 1. Catalog đã tạo
 
@@ -137,7 +137,7 @@ link hệ thống `Your Privacy Choices`.
 ## 6. Media editorial
 
 - Product và collection media: ảnh AI gốc Noryvelle, không sao chép trực tiếp ảnh
-  Omniselle.
+  Jovie.
 - Homepage hero `noryvelle-workday-hero.png`:
   `gid://shopify/MediaImage/41453212434655`.
 - Homepage hero `noryvelle-after-dark-hero.png`:
@@ -158,13 +158,13 @@ link hệ thống `Your Privacy Choices`.
 
 - Root templates hiện là composition Noryvelle Bags cho demo store.
 - Install-state Jewelry:
-  `listings/omniselle/templates/` và `listings/omniselle/sections/`.
+  `listings/jovie/templates/` và `listings/jovie/sections/`.
 - Install-state Bags:
   `listings/noryvelle/templates/` và `listings/noryvelle/sections/`.
 - Shared source vẫn nằm trong `sections/`, `snippets/` và `assets/`.
 - Section riêng của Bags: `sections/carry-edit.liquid`.
 - `config/settings_data.json` có đủ hai named theme-style preset:
-  `Omniselle` và `Noryvelle`; cả hai dùng schema ID hiện hành và không chứa
+  `Jovie` và `Noryvelle`; cả hai dùng schema ID hiện hành và không chứa
   resource/runtime setting.
 - Noryvelle system templates đã được hoàn thiện cho 404, password, generic page,
   list collections, search, FAQ, article và cart.
@@ -172,7 +172,7 @@ link hệ thống `Your Privacy Choices`.
   multi-section composition trong cả root và `listings/noryvelle`.
 - Carry Edit install-state có 8 exact route và 8 wildcard route; enumeration local
   xác nhận 400/400 tổ hợp có compatible route và cả 16 route đều reachable.
-- Root và `listings/noryvelle` khớp tại checkpoint; `listings/omniselle` vẫn giữ
+- Root và `listings/noryvelle` khớp tại checkpoint; `listings/jovie` vẫn giữ
   snapshot Jewelry từ checkpoint `168572f`.
 - Core checkpoint commits đã push:
   - `205c59a` — `feat: build Noryvelle bags preset`
@@ -188,7 +188,7 @@ link hệ thống `Your Privacy Choices`.
   Shopify runtime chỉ đồng bộ các theme directory chuẩn ở root.
 - Header storefront dùng text fallback `Noryvelle`, sáu desktop link nằm trên một
   hàng ở viewport smoke-test và mega menu `Bags` render đủ năm child link/hai promo;
-  không còn request tới hai asset wordmark Omniselle không tồn tại.
+  không còn request tới hai asset wordmark Jovie không tồn tại.
 - Không có mutation publish hoặc unpublish. Shopify báo theme ID `160312000735` có
   role `MAIN`; store vẫn password-protected.
 
@@ -227,8 +227,8 @@ Readback sau checkpoint build:
 
 - Nếu được chủ store xác nhận, lưu thêm Refund, Shipping và Terms trong Shopify
   Policies; API connector hiện chỉ có quyền đọc policy.
-- Smoke-test độc lập Omniselle Jewelry và đối chiếu Jewelry demo store với
-  `listings/omniselle`.
+- Smoke-test độc lập Jovie Jewelry và đối chiếu Jewelry demo store với
+  `listings/jovie`.
 - Kiểm tra ma trận keyboard/focus, empty data, missing media, reduced motion và
   localization cho cả hai preset.
 - Chỉ sau đó mới merge release, cập nhật version/release notes, package ZIP và chạy

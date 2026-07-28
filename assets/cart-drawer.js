@@ -124,7 +124,7 @@
         await this.loadRecommendations(cart);
         document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true, detail: { cart } }));
       } catch (error) {
-        console.error('[Omniselle] Cart drawer refresh failed', error);
+        console.error('[Jovie] Cart drawer refresh failed', error);
         this.setMessage(error.message, true);
       } finally {
         this.busy = false;
@@ -206,7 +206,7 @@
         if (!response.ok) throw new Error(`Unable to update cart (${response.status}).`);
         await this.refresh();
       } catch (error) {
-        console.error('[Omniselle] Cart drawer line update failed', error);
+        console.error('[Jovie] Cart drawer line update failed', error);
         this.setMessage(error.message, true);
       } finally {
         this.setStatus('');
@@ -229,7 +229,7 @@
         }
         await this.refresh();
       } catch (error) {
-        console.error('[Omniselle] Related product add failed', error);
+        console.error('[Jovie] Related product add failed', error);
         this.setMessage(error.message, true);
         button.disabled = false;
         button.textContent = 'Add to cart';
@@ -303,7 +303,7 @@
         this.setMessage('Discount code applied.');
         await this.refresh();
       } catch (error) {
-        console.error('[Omniselle] Discount code failed', error);
+        console.error('[Jovie] Discount code failed', error);
         this.setMessage(error.message, true);
       } finally {
         this.setStatus('');
@@ -318,7 +318,7 @@
         if (!response.ok) throw new Error('Unable to save order note.');
         this.setMessage('Order note saved.');
       } catch (error) {
-        console.error('[Omniselle] Order note failed', error);
+        console.error('[Jovie] Order note failed', error);
         this.setMessage(error.message, true);
       } finally {
         this.setStatus('');

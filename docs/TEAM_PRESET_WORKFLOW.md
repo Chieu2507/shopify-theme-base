@@ -8,12 +8,12 @@ Repository `Omnise` có một codebase dùng cho hai preset:
 
 | Preset | Ngành hàng | Store demo | Branch deployment |
 | --- | --- | --- | --- |
-| Omniselle | Jewelry / gifting | `omnise-themes-omniselle` | `demo-omniselle` |
+| Jovie | Jewelry / gifting | `omnise-themes-omniselle` | `demo-jovie` |
 | Noryvelle | Luxury bags / fashion | `noryvelle-fashion` | `demo-noryvelle` |
 
 - `main` là source of truth và branch phát hành. Không kết nối trực tiếp với store.
-- `demo-omniselle` và `demo-noryvelle` là branch triển khai cho từng store. Shopify có thể tự commit vào hai branch này khi sửa trong Admin.
-- Repository cũ `omniselle-jewelry` và theme đã submit không thuộc workflow này. Không sửa chúng khi phát triển preset mới.
+- `demo-jovie` và `demo-noryvelle` là branch triển khai cho từng store. Shopify có thể tự commit vào hai branch này khi sửa trong Admin.
+- Repository cũ `jovie-jewelry` và theme đã submit không thuộc workflow này. Không sửa chúng khi phát triển preset mới.
 
 ## 2. Phân loại thay đổi trước khi làm
 
@@ -22,14 +22,14 @@ Trước khi viết code, bắt buộc gắn một trong ba nhãn dưới đây 
 | Nhãn | Khi dùng | Nơi thay đổi chính |
 | --- | --- | --- |
 | `shared` | Cả hai preset đều nên nhận thay đổi | `sections/`, `snippets/`, `assets/`, `blocks/`, `layout/`, logic schema chung |
-| `omniselle` | Chỉ phục vụ Jewelry/Gifting | `listings/omniselle/` hoặc section có prefix `omniselle-` |
+| `jovie` | Chỉ phục vụ Jewelry/Gifting | `listings/jovie/` hoặc section có prefix `jovie-` |
 | `noryvelle` | Chỉ phục vụ Luxury Bags/Fashion | `listings/noryvelle/` hoặc section có prefix `noryvelle-` |
 
 Quy tắc quyết định:
 
 1. Nếu thay đổi Liquid, CSS hoặc JS làm preset còn lại cũng hưởng lợi mà không sai trải nghiệm: chọn `shared`.
 2. Nếu thay đổi chỉ là layout, text, ảnh, thứ tự section, menu, collection hoặc template của một preset: chọn preset đó.
-3. Nếu cần section Liquid chỉ cho một preset, file vẫn đặt ở `sections/` nhưng phải đặt tên rõ: `noryvelle-editorial-carry.liquid`, `omniselle-gift-atelier.liquid`. Chỉ template JSON của preset tương ứng được gọi section này.
+3. Nếu cần section Liquid chỉ cho một preset, file vẫn đặt ở `sections/` nhưng phải đặt tên rõ: `noryvelle-editorial-carry.liquid`, `jovie-gift-atelier.liquid`. Chỉ template JSON của preset tương ứng được gọi section này.
 4. Không tạo section chung chỉ để dùng một lần cho một preset. Không sửa section đang dùng chung nếu yêu cầu thật ra chỉ thuộc một preset.
 
 ## 3. Vị trí đúng cho từng loại dữ liệu
@@ -37,7 +37,7 @@ Quy tắc quyết định:
 | Nội dung | Vị trí chuẩn |
 | --- | --- |
 | Logic, markup, CSS/JS dùng chung | root theme folders: `sections/`, `snippets/`, `assets/`, `blocks/`, `layout/` |
-| Homepage/page/product/collection JSON của Omniselle | `listings/omniselle/templates/` |
+| Homepage/page/product/collection JSON của Jovie | `listings/jovie/templates/` |
 | Homepage/page/product/collection JSON của Noryvelle | `listings/noryvelle/templates/` |
 | Header/footer group JSON riêng preset (nếu thực sự khác) | `listings/<preset>/sections/` |
 | Font, màu, setting riêng preset | named preset tương ứng trong `config/settings_data.json` — không dùng `current` làm source |
@@ -47,16 +47,16 @@ Quy tắc quyết định:
 
 ## 4. Branch và pull request
 
-Không code trực tiếp trên `main`, `demo-omniselle`, hoặc `demo-noryvelle` từ local.
+Không code trực tiếp trên `main`, `demo-jovie`, hoặc `demo-noryvelle` từ local.
 
 Tạo branch từ `main` theo đúng mẫu:
 
 ```text
 feature/shared-<muc-tieu>
-feature/omniselle-<muc-tieu>
+feature/jovie-<muc-tieu>
 feature/noryvelle-<muc-tieu>
 fix/shared-<muc-tieu>
-fix/omniselle-<muc-tieu>
+fix/jovie-<muc-tieu>
 fix/noryvelle-<muc-tieu>
 ```
 
@@ -69,9 +69,9 @@ Mọi thay đổi local đi qua PR vào `main`. Một người được chỉ đ
 Shopify sẽ tự commit vào branch demo đang kết nối. Sau đó release owner phải đưa thay đổi về `main`:
 
 ```bash
-# Omniselle
-node scripts/preset-state.mjs capture omniselle templates/index.json
-node scripts/preset-state.mjs capture-settings omniselle
+# Jovie
+node scripts/preset-state.mjs capture jovie templates/index.json
+node scripts/preset-state.mjs capture-settings jovie
 
 # Noryvelle
 node scripts/preset-state.mjs capture noryvelle templates/index.json
@@ -84,7 +84,7 @@ Chỉ capture những file JSON thực sự đã chỉnh. Không copy nguyên c�
 
 Thay đổi sẽ tự commit vào branch demo nhưng **chưa trở thành source chung**.
 
-1. Xác định nó là `shared`, `omniselle` hay `noryvelle`.
+1. Xác định nó là `shared`, `jovie` hay `noryvelle`.
 2. Chuyển thay đổi vào branch feature đúng loại từ `main`.
 3. Mở PR vào `main`.
 4. Release owner deploy commit `main` sang các demo branch cần nhận thay đổi.
@@ -96,8 +96,8 @@ Không lấy một commit Shopify tự tạo từ `demo-*` rồi merge thẳng v
 Sau khi `main` có install-state đúng, hydrate branch demo trước khi deploy:
 
 ```bash
-# Trên branch demo-omniselle
-node scripts/preset-state.mjs hydrate omniselle
+# Trên branch demo-jovie
+node scripts/preset-state.mjs hydrate jovie
 
 # Trên branch demo-noryvelle
 node scripts/preset-state.mjs hydrate noryvelle
@@ -109,7 +109,7 @@ Sau đó kiểm tra `git diff`, commit và push đúng branch demo. Không hydra
 
 ```text
 shared: improve product card sale badge
-omniselle: refine Gift Atelier selection state
+jovie: refine Gift Atelier selection state
 noryvelle: add editorial carry story section
 fix(shared): prevent cart drawer focus loss
 fix(noryvelle): correct bag material labels
@@ -121,7 +121,7 @@ Mỗi commit chỉ nên thuộc một phạm vi. Nếu một task vừa có shar
 
 - [ ] Đã đọc file này.
 - [ ] Đã kiểm tra `git status` và branch hiện tại.
-- [ ] Đã gắn nhãn `shared`, `omniselle` hoặc `noryvelle`.
+- [ ] Đã gắn nhãn `shared`, `jovie` hoặc `noryvelle`.
 - [ ] Không đụng repository cũ hoặc theme đang submit.
 - [ ] JSON đã vào đúng `listings/<preset>/`.
 - [ ] Section riêng có prefix preset rõ ràng.
@@ -137,7 +137,7 @@ Trước khi làm bất kỳ thay đổi nào, hãy đọc toàn bộ file
 docs/TEAM_PRESET_WORKFLOW.md và tuân thủ tuyệt đối.
 
 Trước khi sửa, hãy báo lại:
-1. Thay đổi này thuộc shared, omniselle hay noryvelle.
+1. Thay đổi này thuộc shared, jovie hay noryvelle.
 2. Các file dự kiến sửa.
 3. Branch phù hợp.
 

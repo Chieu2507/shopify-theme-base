@@ -1,10 +1,10 @@
-# Build brief — Gift Omniselle section for Omniselle
+# Build brief — Gift Jovie section for Jovie
 
 ## Mục tiêu
 
-Hãy build một Shopify OS 2.0 section signature tên **Gift Omniselle** cho theme Omniselle.
+Hãy build một Shopify OS 2.0 section signature tên **Gift Jovie** cho theme Jovie.
 
-Gift Omniselle là trải nghiệm tìm quà trang sức theo “câu chuyện”, không phải product quiz chung chung. Khách chọn người nhận, dịp tặng và yếu tố cá nhân hoá; section trả về một **Gift Edit** gồm copy theo ngữ cảnh, danh sách sản phẩm hoặc collection phù hợp, cùng CTA rõ ràng.
+Gift Jovie là trải nghiệm tìm quà trang sức theo “câu chuyện”, không phải product quiz chung chung. Khách chọn người nhận, dịp tặng và yếu tố cá nhân hoá; section trả về một **Gift Edit** gồm copy theo ngữ cảnh, danh sách sản phẩm hoặc collection phù hợp, cùng CTA rõ ràng.
 
 Tham khảo visual prototype: `docs/gift-atelier-prototype.html`.
 
@@ -80,7 +80,7 @@ Nếu không tìm được block khớp đủ ba lựa chọn, dùng một secti
 
 ### Preset
 
-- Preset name: `Gift Omniselle`
+- Preset name: `Gift Jovie`
 - Có sẵn tối thiểu 4 demo paths để merchant hiểu cách cấu hình.
 
 ## Data and merchandising direction
@@ -125,11 +125,11 @@ Tái sử dụng:
 - pattern tải JavaScript / custom element hiện có trong `assets/`
 - strings trong `locales/en.default.json` nếu có UI text cố định
 
-Không được sửa các section/template không liên quan. Thêm Gift Omniselle vào `templates/index.json` chỉ khi được yêu cầu riêng; section cần có preset để merchant tự thêm qua Theme Editor.
+Không được sửa các section/template không liên quan. Thêm Gift Jovie vào `templates/index.json` chỉ khi được yêu cầu riêng; section cần có preset để merchant tự thêm qua Theme Editor.
 
 ## Acceptance criteria
 
-- [ ] Merchant có thể thêm Gift Omniselle từ Theme Editor.
+- [ ] Merchant có thể thêm Gift Jovie từ Theme Editor.
 - [ ] Merchant cấu hình được Gift path không cần code.
 - [ ] Khách hoàn thành 3 bước trên desktop và mobile.
 - [ ] Mỗi lựa chọn map đúng tới một Gift path block.
@@ -151,4 +151,4 @@ Không được sửa các section/template không liên quan. Thêm Gift Omnise
 - Đồng bộ dữ liệu với app bên thứ ba.
 - Persisting câu trả lời qua nhiều session.
 
-Sau khi v1 được nghiệm thu, bước kế tiếp phù hợp là liên kết Gift Omniselle với PDP personalization và Build Your Stack, dùng cùng data model product/metafield.
+Sau khi v1 được nghiệm thu, bước kế tiếp phù hợp là liên kết Gift Jovie với PDP personalization và Build Your Stack, dùng cùng data model product/metafield.

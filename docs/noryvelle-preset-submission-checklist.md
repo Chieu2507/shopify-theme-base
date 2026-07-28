@@ -2,7 +2,7 @@
 
 > **Trạng thái cập nhật — 25/07/2026:** Đã push checkpoint build hoàn chỉnh preset
 > Noryvelle Bags và readback thành công trên Git-connected theme; chưa chuyển sang
-> QA chéo Omniselle ↔ Noryvelle. Trước đợt này đã build và push preset nền,
+> QA chéo Jovie ↔ Noryvelle. Trước đợt này đã build và push preset nền,
 > tạo install-state hai preset, populate demo store với 12 product/24 variant/48 ảnh,
 > upload video editorial và cấu hình đủ 9 storefront filter. Homepage, Carry Edit,
 > collection, PDP, sold-out PDP, search, cart, Journal và Theme Editor đã qua
@@ -12,9 +12,9 @@
 
 ## 1. Chốt mốc ổn định của preset Jewelry
 
-- [ ] Xác nhận Gift Omniselle, homepage Jewelry và PDP Jewelry đang ở trạng thái mong muốn.
+- [ ] Xác nhận Gift Jovie, homepage Jewelry và PDP Jewelry đang ở trạng thái mong muốn.
 - [x] Kiểm tra branch và các file chưa commit; chỉ stage phần thay đổi thuộc checkpoint này.
-- [x] Tạo checkpoint `168572f` (`docs: add Omniselle preset planning materials`) trên `main`; commit chỉ chứa bốn tài liệu kế hoạch, không có thay đổi theme code.
+- [x] Tạo checkpoint `168572f` (`docs: add Jovie preset planning materials`) trên `main`; commit chỉ chứa bốn tài liệu kế hoạch, không có thay đổi theme code.
 - [ ] Ghi lại branch hiện tại, cách deploy và URL demo store Jewelry.
 
 ## 2. Tạo branch cho preset mới
@@ -24,17 +24,17 @@ git switch -c preset-noryvelle
 ```
 
 - [x] Tạo và push branch `preset-noryvelle` từ checkpoint Jewelry; branch đang theo dõi `origin/preset-noryvelle`.
-- [x] Giữ nguyên codebase Omniselle hiện tại; không tạo Skeleton theme mới và không nhân bản repository.
+- [x] Giữ nguyên codebase Jovie hiện tại; không tạo Skeleton theme mới và không nhân bản repository.
 - [x] Dùng `sections/`, `snippets/` và `assets/` hiện có làm nền tảng dùng chung; chưa sửa source code ở bước khởi tạo này.
 - [x] Chỉ thêm section riêng cho Fashion khi logic hoặc nội dung thực sự chỉ dành cho Fashion: `carry-edit.liquid`.
 
 ## 3. Tạo demo store Fashion Bags
 
 - [x] Tạo development store `noryvelle-fashion` cho Fashion Bags.
-- [x] Kết nối GitHub repository `cassharper/omniselle-jewelry`, branch `preset-noryvelle` vào theme `omniselle-jewelry/preset-noryvelle` (ID `160312000735`).
+- [x] Kết nối GitHub repository `cassharper/jovie-jewelry`, branch `preset-noryvelle` vào theme `jovie-jewelry/preset-noryvelle` (ID `160312000735`).
 - [x] Ghi nhận trạng thái Shopify readback: theme có role `MAIN`, store là development store có password; không chạy mutation publish/unpublish.
 - [x] Không sửa demo store Jewelry trong lúc phát triển preset Fashion; mọi store mutation trong ledger đều nhắm `noryvelle-fashion`.
-- [x] Chỉ dùng asset Fashion có nguồn rõ ràng: bộ ảnh/video AI gốc Noryvelle, không sao chép trực tiếp media Omniselle.
+- [x] Chỉ dùng asset Fashion có nguồn rõ ràng: bộ ảnh/video AI gốc Noryvelle, không sao chép trực tiếp media Jovie.
 
 ## 4. Xác định trải nghiệm Noryvelle Bags trước khi code — đã chốt
 
@@ -67,7 +67,7 @@ Occasion → Bag silhouette → Capacity & carry mode → Color / hardware → C
 
 - [x] Tạo navigation Bags: sáu top-level `New arrivals`, `Bags`, `Work & travel`, `Carry Edit`, `Materials`, `Journal`; `Evening bags` và `Wallets & small leather goods` nằm trong mega menu `Bags`.
 - [x] Tạo homepage composition theo phong cách editorial bags, trong đó túi là catalog chính và trang sức/phụ kiện là phần hoàn thiện styling.
-- [x] Build `carry-edit.liquid` là section riêng cho Bags: chọn occasion, silhouette, sức chứa và finish để nhận bag edit phù hợp; không đổi nhãn hoặc dữ liệu Gift Omniselle theo cách làm sai ngữ nghĩa field.
+- [x] Build `carry-edit.liquid` là section riêng cho Bags: chọn occasion, silhouette, sức chứa và finish để nhận bag edit phù hợp; không đổi nhãn hoặc dữ liệu Gift Jovie theo cách làm sai ngữ nghĩa field.
 - [x] Hoàn thiện Carry Edit bằng weighted wildcard routing: 8 exact route + 8
   wildcard route, 400/400 tổ hợp có compatible result và cả 16 route reachable.
 - [x] Cấu hình Search & Discovery và readback trên storefront với 9 filter: Availability, Price, Bag silhouette, Capacity, Color, Hardware finish, Material, Occasions và Product type.
@@ -103,25 +103,25 @@ Occasion → Bag silhouette → Capacity & carry mode → Color / hardware → C
 
 ## 7. Tạo install state cho nhiều preset
 
-- [x] Tạo `listings/omniselle/templates/` cho install state Jewelry.
+- [x] Tạo `listings/jovie/templates/` cho install state Jewelry.
 - [x] Tạo `listings/noryvelle/templates/` cho install state Fashion.
 - [x] Chỉ thêm thư mục `sections/` riêng trong từng preset khi header/footer section group khác nhau.
 - [x] Giữ source section dùng chung ở ngoài `/listings`.
-- [x] Thêm named theme-style preset `Omniselle` và `Noryvelle` trong
+- [x] Thêm named theme-style preset `Jovie` và `Noryvelle` trong
   `config/settings_data.json`; không chứa resource/runtime setting.
 - [x] Noryvelle root templates và `listings/noryvelle` khớp byte-for-byte tại
   checkpoint build; install-state có 16 Carry Edit route.
 - [x] Readback Theme Editor của checkpoint build hoàn chỉnh: 16 Carry Edit block,
   Shop The Look đúng ba product và material story mới; Git integration
   `30 succeeded, 20 warnings, 0 failed`.
-- [ ] Chạy smoke-test độc lập Omniselle và đối chiếu `listings/omniselle` với Jewelry demo store trước khi merge release.
+- [ ] Chạy smoke-test độc lập Jovie và đối chiếu `listings/jovie` với Jewelry demo store trước khi merge release.
 
 ## 8. Test từng preset độc lập
 
-### Omniselle Jewelry
+### Jovie Jewelry
 
 - [ ] Home, collection, product, search và cart hoạt động với dữ liệu Jewelry thật.
-- [ ] Gift Omniselle map từng gift path đến đúng gift edit.
+- [ ] Gift Jovie map từng gift path đến đúng gift edit.
 - [ ] Copy, collection và personalization link của Jewelry đều đúng.
 
 ### Noryvelle Fashion Bags
@@ -134,7 +134,7 @@ Occasion → Bag silhouette → Capacity & carry mode → Color / hardware → C
 
 ### Cả hai preset
 
-- [ ] Kiểm tra desktop, mobile và Theme Editor cho cả hai preset. Noryvelle đã smoke desktop/mobile và Theme Editor; Omniselle còn chờ.
+- [ ] Kiểm tra desktop, mobile và Theme Editor cho cả hai preset. Noryvelle đã smoke desktop/mobile và Theme Editor; Jovie còn chờ.
 - [ ] Kiểm tra keyboard, focus, empty data, missing media, reduced motion và localization.
 - [x] Trong quá trình build, chỉ chạy các check/validation hẹp cần cho file vừa thay đổi.
 - [ ] Chỉ chạy full Theme Store submission verification khi cả hai preset đã hoàn thiện.
@@ -150,7 +150,7 @@ Occasion → Bag silhouette → Capacity & carry mode → Color / hardware → C
 - [ ] Chỉ merge vào release branch khi hai demo store và hai install state đã khớp.
 - [ ] Cập nhật version và release notes.
 - [ ] Package một ZIP chứa cả hai preset.
-- [ ] Submit một Theme Store submission, nhưng điền listing information và demo-store URL riêng cho Omniselle và Noryvelle.
+- [ ] Submit một Theme Store submission, nhưng điền listing information và demo-store URL riêng cho Jovie và Noryvelle.
 
 ## Ghi nhận bài học sau milestone
 

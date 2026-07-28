@@ -1,8 +1,8 @@
-# Omniselle — Theme Submission Optimization Plan
+# Jovie — Theme Submission Optimization Plan
 
 ## Objective
 
-Resolve the current submission, performance, accessibility, and release-quality findings while preserving the existing Omniselle UI, UX, merchant settings, and section behaviour.
+Resolve the current submission, performance, accessibility, and release-quality findings while preserving the existing Jovie UI, UX, merchant settings, and section behaviour.
 
 ## Guardrails
 
@@ -31,7 +31,7 @@ Resolve the current submission, performance, accessibility, and release-quality 
 
 - Remove the unused `hello-world` section and its demo asset.
 - Confirm no template, section group, or preset references it first.
-- Replace the Skeleton README with Omniselle documentation as a separate release-hygiene task.
+- Replace the Skeleton README with Jovie documentation as a separate release-hygiene task.
 
 ### 3. Add the Contact page H1
 
@@ -180,8 +180,8 @@ Resolve the current submission, performance, accessibility, and release-quality 
 
 - Remove production debug logging.
 - Remove or use orphaned snippets.
-- Replace Skeleton repository documentation with Omniselle setup, section architecture, deployment, and QA instructions.
-- Verify theme metadata (author, documentation URL, support URL) belongs to the Omniselle release owner.
+- Replace Skeleton repository documentation with Jovie setup, section architecture, deployment, and QA instructions.
+- Verify theme metadata (author, documentation URL, support URL) belongs to the Jovie release owner.
 
 ## Recommended execution order
 
@@ -199,6 +199,6 @@ Resolve the current submission, performance, accessibility, and release-quality 
 
 ## Submission baseline
 
-Shopify Theme Store requirements require all mandatory criteria to pass. The published performance baseline is an average Lighthouse Performance score of at least 60 and Accessibility score of at least 90 across Home, Collection, and Product pages on desktop and mobile. The Omniselle release target should remain higher than this minimum.
+Shopify Theme Store requirements require all mandatory criteria to pass. The published performance baseline is an average Lighthouse Performance score of at least 60 and Accessibility score of at least 90 across Home, Collection, and Product pages on desktop and mobile. The Jovie release target should remain higher than this minimum.
 
 Source: <https://shopify.dev/docs/storefronts/themes/store/requirements>

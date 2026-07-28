@@ -669,7 +669,7 @@ changeLightboxSlide(delta) {
     const section = document.querySelector('[data-recently-viewed]');
     const handle = this.dataset.productHandle;
     if (!section || !handle) return;
-    const storageKey = 'omniselle:recently-viewed';
+    const storageKey = 'jovie:recently-viewed';
     let handles = [];
     try { handles = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch { handles = []; }
     handles = [handle, ...handles.filter((item) => item !== handle)].slice(0, 6);
@@ -961,7 +961,7 @@ changeLightboxSlide(delta) {
       this.dispatch('product:add:success', { item, cart, button: sourceButton || primaryButton, image: featuredImage, imageUrl: featuredImage?.currentSrc || featuredImage?.src });
     } catch (error) {
       if (error.name === 'AbortError') return;
-      console.error('[Omniselle] Add to cart failed', {
+      console.error('[Jovie] Add to cart failed', {
         error,
         variantId: this.variant?.id,
         payload: error.payload || null,
@@ -1035,7 +1035,7 @@ changeLightboxSlide(delta) {
       window.location.assign('/checkout');
     } catch (error) {
       if (error.name === 'AbortError') return;
-      console.error('[Omniselle] Buy now failed', {
+      console.error('[Jovie] Buy now failed', {
         error,
         variantId: this.variant?.id,
         payload: error.payload || null,

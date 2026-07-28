@@ -2,10 +2,10 @@
   <br>
     <img src="./assets/shoppy-x-ray.svg" alt="logo" width="200">
   <br>
-  Omniselle Theme — Multi-preset source
+  Jovie Theme — Multi-preset source
 </h1>
 
-Source repository cho Omniselle và Noryvelle. Bản Omniselle đang submit ở repository cũ không được thay đổi từ repository này.
+Source repository cho Jovie và Noryvelle. Bản Jovie đang submit ở repository cũ không được thay đổi từ repository này.
 
 <p align="center">
   <a href="./LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
@@ -29,7 +29,7 @@ If you use VS Code:
 Tạo file `shopify.theme.toml` từ `shopify.theme.toml.example`, sau đó preview đúng preset:
 
 ```bash
-shopify theme dev --environment omniselle
+shopify theme dev --environment jovie
 shopify theme dev --environment noryvelle
 ```
 

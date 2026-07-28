@@ -1,7 +1,7 @@
 # Shopify Theme Learning Loop
 
 Tài liệu này lưu các bài học có thể tái sử dụng từ quá trình build, tối ưu và QA
-Omniselle. Đây không phải lịch sử thay đổi của một theme cụ thể. Mục tiêu là giúp
+Jovie. Đây không phải lịch sử thay đổi của một theme cụ thể. Mục tiêu là giúp
 Codex build theme hoặc preset tiếp theo nhanh hơn, ít regression hơn và không phải
 khám phá lại các quyết định đã được kiểm chứng.
 
@@ -9,7 +9,7 @@ khám phá lại các quyết định đã được kiểm chứng.
 
 - Đọc phần **Core loop** trước khi bắt đầu một theme, preset hoặc page family mới.
 - Chỉ đọc playbook liên quan khi task chạm đúng lĩnh vực đó.
-- Ưu tiên profile, design system và code hiện tại của project hơn ví dụ Omniselle.
+- Ưu tiên profile, design system và code hiện tại của project hơn ví dụ Jovie.
 - Không copy cứng theme ID, product handle, collection handle hoặc nội dung demo.
 - Sau mỗi milestone, chỉ bổ sung bài học đã có bằng chứng từ code, storefront,
   Theme Editor, thiết bị thật hoặc audit hợp lệ.
@@ -531,12 +531,12 @@ thuyết cần kiểm chứng, không đưa vào quy tắc mặc định.
 
 ### 2026-07-25 — Logo fallback dùng chung không được hard-code asset của một preset
 
-- Context: Header dùng chung cho Omniselle và Noryvelle; Noryvelle để Theme Settings
+- Context: Header dùng chung cho Jovie và Noryvelle; Noryvelle để Theme Settings
   logo trống và dùng text `Noryvelle` trong logo block.
 - Symptom: storefront hiện biểu tượng ảnh hỏng, trong khi Theme Editor vẫn báo
   `Logo – Noryvelle`; tám top-level link còn làm navigation xuống hai dòng.
 - Root cause: nhánh fallback của `header.liquid` gọi hai asset
-  `omniselle-wordmark-*.png` không tồn tại và khiến text block không bao giờ được
+  `jovie-wordmark-*.png` không tồn tại và khiến text block không bao giờ được
   render; ba mega-menu block match `Shop` trong khi menu thật dùng `Bags`; hai
   top-level link trùng nội dung child menu cộng với gap 24px/logo width 170px vượt
   phần grid dành cho navigation.

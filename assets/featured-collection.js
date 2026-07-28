@@ -100,7 +100,7 @@ class FeaturedCollection extends HTMLElement {
 
     let handles = [];
     try {
-      const stored = JSON.parse(localStorage.getItem('omniselle:recently-viewed') || '[]');
+      const stored = JSON.parse(localStorage.getItem('jovie:recently-viewed') || '[]');
       handles = Array.isArray(stored) ? stored : [];
     } catch (_) {}
 

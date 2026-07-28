@@ -6,8 +6,8 @@
 - Công cụ tạo ảnh: OpenAI built-in image generation.
 - Mỗi `master.png` là file nguồn gốc của một thiết kế sản phẩm. Các file `*-front.png` và `*-interior.png` là crop không phá huỷ từ master tương ứng.
 - Video editorial và contact sheet trong `editorial/` là media gốc dành riêng cho trải nghiệm Carry Edit của Noryvelle.
-- Không sử dụng trực tiếp ảnh sản phẩm của Omniselle. Những ảnh đó có thể chứa logo, nhận diện thương hiệu hoặc provenance chưa phù hợp với preset Bags.
-- Mối liên hệ giữa Omniselle và Noryvelle chỉ được giữ ở art direction dùng chung: nền ivory ấm, ánh sáng mềm, bố cục editorial và cảm giác premium. Không sao chép pixel hoặc chuyển ảnh Jewelry thành ảnh Bags.
+- Không sử dụng trực tiếp ảnh sản phẩm của Jovie. Những ảnh đó có thể chứa logo, nhận diện thương hiệu hoặc provenance chưa phù hợp với preset Bags.
+- Mối liên hệ giữa Jovie và Noryvelle chỉ được giữ ở art direction dùng chung: nền ivory ấm, ánh sáng mềm, bố cục editorial và cảm giác premium. Không sao chép pixel hoặc chuyển ảnh Jewelry thành ảnh Bags.
 - AI asset không được xem là bằng chứng về sản phẩm vật lý, nhà cung cấp, chất liệu, kích thước hoặc quyền nhãn hiệu. Những thông tin này phải được quản lý riêng trong dữ liệu demo.
 
 ## 2. Cấu trúc thư mục chuẩn
@@ -143,7 +143,7 @@ Không được phép:
 - Bán hoặc phát hành các ảnh này như một gói stock image độc lập.
 - Dùng master sheet hoặc contact sheet làm product image trên storefront.
 - Đưa ảnh demo vào package theme phát hành nếu quy trình submission không cho phép hoặc provenance không được giữ kèm.
-- Tái sử dụng trực tiếp ảnh Jewelry của Omniselle cho Noryvelle, hoặc ngược lại, khi chưa kiểm tra logo, quyền sử dụng và sự phù hợp ngành hàng.
+- Tái sử dụng trực tiếp ảnh Jewelry của Jovie cho Noryvelle, hoặc ngược lại, khi chưa kiểm tra logo, quyền sử dụng và sự phù hợp ngành hàng.
 - Dùng media cho thương hiệu bên thứ ba mà không thực hiện lại kiểm tra provenance và phạm vi quyền sử dụng.
 
 ## 7. Checklist trước khi upload

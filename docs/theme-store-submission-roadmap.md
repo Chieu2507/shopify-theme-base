@@ -1,10 +1,10 @@
-# Omniselle — Theme Store submission roadmap
+# Jovie — Theme Store submission roadmap
 
-> Mục tiêu: biến Omniselle thành một theme có khác biệt **ở cấp độ trải nghiệm và kiến trúc**, đủ rõ ràng để trình bày khi submit Shopify Theme Store. Không xem việc đổi màu, font, animation hoặc thêm vài section là điểm khác biệt cốt lõi.
+> Mục tiêu: biến Jovie thành một theme có khác biệt **ở cấp độ trải nghiệm và kiến trúc**, đủ rõ ràng để trình bày khi submit Shopify Theme Store. Không xem việc đổi màu, font, animation hoặc thêm vài section là điểm khác biệt cốt lõi.
 
 ## Định vị đề xuất
 
-**Omniselle** là theme editorial commerce cho fine jewelry, personalized jewelry và meaningful gifting. Theme giúp merchant chuyển cảm hứng thị giác thành hành trình mua hàng rõ ràng qua khám phá theo dịp tặng quà, sản phẩm cá nhân hoá và các bộ trang sức có thể phối cùng nhau.
+**Jovie** là theme editorial commerce cho fine jewelry, personalized jewelry và meaningful gifting. Theme giúp merchant chuyển cảm hứng thị giác thành hành trình mua hàng rõ ràng qua khám phá theo dịp tặng quà, sản phẩm cá nhân hoá và các bộ trang sức có thể phối cùng nhau.
 
 ### Điểm khác biệt cần xây thành hệ thống
 
@@ -13,7 +13,7 @@
 3. **Personalization workflow** — engraving, gift message, packaging, lead time và chính sách riêng của sản phẩm cá nhân hoá được hiển thị nhất quán.
 4. **Jewelry facts từ metafields** — thông tin metal, stone, dimension, chain length, care, certification và size được chuẩn hoá, tái dùng trên PDP, cards, collection và finder.
 
-Các hệ thống trên phải cùng dùng một data model và xuất hiện ở nhiều template. Đây là phần làm Omniselle khó tái tạo chỉ bằng cách chỉnh setting của một theme khác.
+Các hệ thống trên phải cùng dùng một data model và xuất hiện ở nhiều template. Đây là phần làm Jovie khó tái tạo chỉ bằng cách chỉnh setting của một theme khác.
 
 ---
 
@@ -24,10 +24,10 @@ Các hệ thống trên phải cùng dùng một data model và xuất hiện �
 - [ ] Chỉ chọn một tập merchant chính: **fine jewelry và personalized gifting**.
 - [ ] Viết một câu value proposition: “From meaningful gift discovery to a finished jewelry stack.”
 - [ ] Chọn 2 preset có use case khác nhau:
-  - [ ] `Omniselle`: fine jewelry / editorial collections.
+  - [ ] `Jovie`: fine jewelry / editorial collections.
   - [ ] `Heirloom`: personalized gifts / engraving / milestones.
 - [ ] Không dùng “Jewelry”, “Fashion”, “Shopify”, tên công ty hay tên tính năng làm tên preset/theme.
-- [ ] Kiểm tra `Omniselle` và `Heirloom` không trùng tên theme/preset đang có trên Theme Store trước khi upload.
+- [ ] Kiểm tra `Jovie` và `Heirloom` không trùng tên theme/preset đang có trên Theme Store trước khi upload.
 
 ### 0.2 Dọn package và demo state
 
@@ -199,7 +199,7 @@ Trên PDP, merchant chọn các product tương thích thông qua `custom.compat
 
 ## Phase 6 — Preset, art direction và content system
 
-### Omniselle preset
+### Jovie preset
 
 - [ ] Hướng “quiet luxury / editorial fine jewelry”.
 - [ ] Dùng collection edit, shop-the-look, campaign banners và gemstone stories.
@@ -217,7 +217,7 @@ Trên PDP, merchant chọn các product tương thích thông qua `custom.compat
 - [ ] Chỉ thêm animation, gradient, blur hoặc shape divider.
 - [ ] Chỉ gom các section phổ biến như testimonials, countdown, gallery và newsletter.
 
-**Done khi:** nhìn 2 preset đã khác use case và customer journey, nhưng vẫn nhận ra cùng một design system Omniselle.
+**Done khi:** nhìn 2 preset đã khác use case và customer journey, nhưng vẫn nhận ra cùng một design system Jovie.
 
 ---
 
@@ -242,7 +242,7 @@ Shopify yêu cầu theme phải có khác biệt mang tính thiết kế/chức 
 
 ## Copy cho submission form (dùng sau khi hoàn thành signature features)
 
-> Omniselle is an editorial commerce theme designed for fine jewelry and meaningful gifting. It combines a high-fashion storytelling system with product-led discovery: gift-led product finding, shoppable lookbooks, curated collection edits, and campaign merchandising help merchants turn visual inspiration into a clear path to purchase.
+> Jovie is an editorial commerce theme designed for fine jewelry and meaningful gifting. It combines a high-fashion storytelling system with product-led discovery: gift-led product finding, shoppable lookbooks, curated collection edits, and campaign merchandising help merchants turn visual inspiration into a clear path to purchase.
 >
 > Its jewelry-specific product experience connects material, gemstone, personalization, and compatibility data across product discovery and purchase. Shoppers can find a meaningful piece by occasion or recipient, build a coordinated stack, and add personalized details with clear lead-time and care information. The flexible OS 2.0 system gives merchants a refined editorial presentation without sacrificing practical, data-driven merchandising.
 

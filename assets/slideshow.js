@@ -3,7 +3,7 @@ import A11y from './swiper-12.2.0-a11y.min.mjs';
 import Navigation from './swiper-12.2.0-navigation.min.mjs';
 import Parallax from './swiper-12.2.0-parallax.min.mjs';
 
-class OmniselleSlideshow extends HTMLElement {
+class JovieSlideshow extends HTMLElement {
   connectedCallback() {
     this.slider = this.querySelector('[data-slideshow-slider]');
     this.previousButton = this.querySelector('[data-slideshow-previous]');
@@ -200,6 +200,6 @@ class OmniselleSlideshow extends HTMLElement {
   }
 }
 
-if (!customElements.get('omniselle-slideshow')) {
-  customElements.define('omniselle-slideshow', OmniselleSlideshow);
+if (!customElements.get('jovie-slideshow')) {
+  customElements.define('jovie-slideshow', JovieSlideshow);
 }
