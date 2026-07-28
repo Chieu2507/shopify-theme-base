@@ -18,13 +18,9 @@
     {% # Inlined CSS Variables %}
     {% render 'css-variables' %}
 
+    {{ 'base.css' | asset_url | stylesheet_tag: preload: true }}
     {% if request.page_type == 'index' and request.design_mode == false %}
-      {{ 'base.css' | asset_url | preload_tag: as: 'style' }}
-      <link rel="stylesheet" href="{{ 'base.css' | asset_url }}" media="print" onload="this.media='all'">
-      <noscript>{{ 'base.css' | asset_url | stylesheet_tag }}</noscript>
       <link rel="stylesheet" href="{{ 'section-header-critical-2.css' | asset_url }}" media="print" onload="this.media='all'">
-    {% else %}
-      {{ 'base.css' | asset_url | stylesheet_tag: preload: true }}
     {% endif %}
     {% if settings.cart_drawer_enabled %}
       {{ 'cart-drawer.css' | asset_url | stylesheet_tag }}
@@ -83,10 +79,12 @@
       {% sections 'footer-group' %}
       {% if settings.cart_drawer_enabled %}
         {% render 'cart-drawer' %}
+        <script
+          src="{{ 'cart-drawer-loader.js' | asset_url }}"
+          data-cart-drawer-module="{{ 'cart-drawer.js' | asset_url }}"
+          defer
+        ></script>
       {% endif %}
     {% endunless %}
-    {% if settings.cart_drawer_enabled %}
-      <script src="{{ 'cart-drawer.js' | asset_url }}" defer></script>
-    {% endif %}
   </body>
 </html>
