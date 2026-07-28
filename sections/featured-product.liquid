@@ -3,9 +3,6 @@
 {% render 'swiper-stylesheet', defer_on_home: true %}
 
 {% assign featured_product = section.settings.product %}
-{% if featured_product == blank and request.visual_preview_mode %}
-  {% assign featured_product = collections['all'].products.first %}
-{% endif %}
 
 {% if featured_product != blank %}
   {% assign form_id = 'product-form-' | append: section.id %}
@@ -39,9 +36,49 @@
     <script type="application/json" data-product-media>{{ featured_product.media | json }}</script>
     <p class="visually-hidden" data-product-status role="status" aria-live="polite"></p>
   </product-page>
-{% elsif request.design_mode %}
-  <div class="featured-product__empty section-spacing" style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;">
-    {{ 'featured_product.select_product' | t }}
+{% elsif request.design_mode or request.visual_preview_mode %}
+  <div
+    class="product-page featured-product featured-product--placeholder color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+    style="--product-layout-gap: {{ section.settings.desktop_gap }}px; --product-media-width: {{ section.settings.media_width }}%; --product-mobile-gap: {{ section.settings.mobile_gap }}px; --section-padding-top: min({{ section.settings.padding_top }}px, 48px); --section-padding-bottom: min({{ section.settings.padding_bottom }}px, 48px); --section-padding-top-mobile: min({{ section.settings.padding_top }}px, 32px); --section-padding-bottom-mobile: min({{ section.settings.padding_bottom }}px, 32px);"
+  >
+    <div class="featured-product__inner section-spacing{% if section.settings.section_width == 'page' %} featured-product__inner--page{% endif %}">
+      <div class="featured-product__placeholder-layout">
+        <div class="featured-product__placeholder-media" aria-hidden="true">
+          {% render 'media-placeholder',
+            class_name: 'featured-product__placeholder-image',
+            asset_name: 'placeholder-image-product-1.svg',
+            loading: 'eager',
+            fetchpriority: 'high'
+          %}
+        </div>
+
+        <div class="featured-product__placeholder-details">
+          <p class="featured-product__placeholder-notice">{{ 'featured_product.select_product' | t }}</p>
+          <h2 class="product-title product-title--h2">{{ 'onboarding.product_title' | t }}</h2>
+          <div class="product-price product-price--medium">
+            <span class="product-price__current">{% render 'money', amount: 0 %}</span>
+          </div>
+
+          <div class="featured-product__placeholder-options" aria-hidden="true">
+            <span class="featured-product__placeholder-label"></span>
+            <div class="featured-product__placeholder-values">
+              <span class="featured-product__placeholder-value">S</span>
+              <span class="featured-product__placeholder-value">M</span>
+              <span class="featured-product__placeholder-value">L</span>
+            </div>
+          </div>
+
+          <div class="featured-product__placeholder-actions" aria-hidden="true">
+            <span class="featured-product__placeholder-quantity">
+              <span>−</span>
+              <span>1</span>
+              <span>+</span>
+            </span>
+            <span class="product-buy-buttons__add">{{ 'product.add_to_cart' | t }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
   </div>
 {% endif %}
 
