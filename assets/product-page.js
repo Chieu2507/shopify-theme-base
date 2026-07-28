@@ -21,7 +21,7 @@ class ProductPage extends HTMLElement {
     this.bindGalleryInteractions();
     this.bindGalleryResponsiveness();
     this.bindGalleryLifecycle();
-    this.initializeAccordions();
+    this.initializeExpandableContent();
     if (this.productContext !== 'quick-view') {
       this.initializeRecommendations();
       this.initializeRecentlyViewed();
@@ -604,29 +604,29 @@ changeLightboxSlide(delta) {
     });
   }
 
-  initializeAccordions() {
-    this.querySelectorAll('[data-accordion-content]').forEach((content) => {
-      const details = content.closest('details');
-      const toggle = details?.querySelector('[data-accordion-toggle]');
+  initializeExpandableContent() {
+    this.querySelectorAll('[data-expandable-content]').forEach((content) => {
+      const expandable = content.closest('[data-expandable]');
+      const toggle = expandable?.querySelector('[data-expandable-toggle]');
       const update = () => {
         const maxHeight = Number(content.dataset.maxHeight || 240);
         const isOverflowing = content.scrollHeight > maxHeight + 1;
-        details?.classList.toggle('product-accordion--overflowing', isOverflowing);
+        expandable?.classList.toggle('is-overflowing', isOverflowing);
         if (toggle) {
           toggle.hidden = !isOverflowing;
           if (!isOverflowing) {
             content.classList.remove('is-expanded');
             toggle.setAttribute('aria-expanded', 'false');
-            toggle.textContent = 'View more';
+            toggle.textContent = toggle.dataset.viewMoreLabel;
           }
         }
       };
       toggle?.addEventListener('click', () => {
         const expanded = content.classList.toggle('is-expanded');
         toggle.setAttribute('aria-expanded', String(expanded));
-        toggle.textContent = expanded ? 'View less' : 'View more';
+        toggle.textContent = expanded ? toggle.dataset.viewLessLabel : toggle.dataset.viewMoreLabel;
       }, { signal: this.signal });
-      details?.addEventListener('toggle', update, { signal: this.signal });
+      if (expandable?.matches('details')) expandable.addEventListener('toggle', update, { signal: this.signal });
       requestAnimationFrame(update);
     });
   }
