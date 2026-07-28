@@ -69,14 +69,14 @@ class GiftAtelier extends HTMLElement {
   }
 
   handleGiftAnchorClick(event) {
-    const link = event.target.closest?.('[data-gift-jovie-link]');
+    const link = event.target.closest?.('[data-gift-atelier-link]');
     if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
     const destination = new URL(link.href, window.location.href);
     if (
       destination.origin !== window.location.origin
       || destination.pathname !== window.location.pathname
-      || destination.hash !== '#gift-jovie'
+      || destination.hash !== '#gift-atelier'
     ) return;
 
     event.preventDefault();
@@ -93,7 +93,7 @@ class GiftAtelier extends HTMLElement {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const duration = Math.min(1050, Math.max(480, Math.round(distance * 0.45)));
 
-    window.history.pushState(null, '', '#gift-jovie');
+    window.history.pushState(null, '', '#gift-atelier');
     this.classList.remove('is-anchor-target');
     void this.offsetWidth;
     this.classList.add('is-anchor-target');

@@ -18,6 +18,7 @@ class ProductPage extends HTMLElement {
     this.bindSizeChart();
     this.bindStickyCart();
     this.initializeGallery();
+    this.initializeShopifyMedia();
     this.bindGalleryInteractions();
     this.bindGalleryResponsiveness();
     this.bindGalleryLifecycle();
@@ -66,7 +67,7 @@ class ProductPage extends HTMLElement {
     const dialog = this.querySelector('[data-size-chart-dialog]');
     if (!dialog) return;
     const panel = dialog.querySelector('.product-size-chart__panel');
-    const closeButton = dialog.querySelector('[data-size-chart-close]');
+    const closeButton = dialog.querySelector('.product-size-chart__close');
     this.closeSizeChart = () => {
       if (!dialog.classList.contains('is-open') || dialog.classList.contains('is-closing')) return;
       dialog.classList.add('is-closing');
@@ -74,11 +75,13 @@ class ProductPage extends HTMLElement {
         dialog.classList.remove('is-open', 'is-closing');
         dialog.setAttribute('aria-hidden', 'true');
         dialog.removeAttribute('scroll-lock');
+        this.sizeChartRestoreTarget?.focus?.({ preventScroll: true });
       }, { once: true, signal: this.signal });
     };
     this.querySelectorAll('[data-size-chart-open]').forEach((button) => {
       button.addEventListener('click', () => {
         if (!dialog.classList.contains('is-open')) {
+          this.sizeChartRestoreTarget = button;
           dialog.classList.remove('is-closing');
           dialog.classList.add('is-open');
           dialog.setAttribute('aria-hidden', 'false');
@@ -94,6 +97,24 @@ class ProductPage extends HTMLElement {
       if (event.key === 'Escape') {
         event.preventDefault();
         this.closeSizeChart();
+      }
+      if (event.key === 'Tab') {
+        const focusable = [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+          .filter((element) => element.getClientRects().length);
+        if (!focusable.length) {
+          event.preventDefault();
+          dialog.focus({ preventScroll: true });
+          return;
+        }
+        const first = focusable[0];
+        const last = focusable[focusable.length - 1];
+        if (event.shiftKey && (event.target === first || !dialog.contains(event.target))) {
+          event.preventDefault();
+          last.focus({ preventScroll: true });
+        } else if (!event.shiftKey && (event.target === last || !dialog.contains(event.target))) {
+          event.preventDefault();
+          first.focus({ preventScroll: true });
+        }
       }
     }, { signal: this.signal });
   }
@@ -147,6 +168,47 @@ class ProductPage extends HTMLElement {
     this.mainGallery = null;
     this.thumbnailGallery = null;
     this.galleryMode = null;
+  }
+
+  initializeShopifyMedia() {
+    const modelViewers = this.querySelectorAll('model-viewer');
+    const modelData = this.querySelector('[data-shopify-models]');
+    if (!modelViewers.length || !window.Shopify?.loadFeatures) return;
+    const setupShopifyXr = () => {
+      if (!modelData?.textContent) return;
+      if (!window.ShopifyXR?.addModels) {
+        document.addEventListener('shopify_xr_initialized', setupShopifyXr, { once: true });
+        return;
+      }
+      try {
+        window.ShopifyXR.addModels(JSON.parse(modelData.textContent));
+        window.ShopifyXR.setupXRElements?.();
+      } catch (parseError) {
+        console.warn('[Jovie] Unable to initialize Shopify XR models.', parseError);
+      }
+    };
+
+    window.Shopify.loadFeatures([
+      {
+        name: 'model-viewer-ui',
+        version: '1.0',
+        onLoad: (error) => {
+          if (error || !window.Shopify?.ModelViewerUI) return;
+          modelViewers.forEach((modelViewer) => {
+            if (modelViewer.dataset.modelViewerUiInitialized === 'true') return;
+            new window.Shopify.ModelViewerUI(modelViewer);
+            modelViewer.dataset.modelViewerUiInitialized = 'true';
+          });
+        }
+      },
+      {
+        name: 'shopify-xr',
+        version: '1.0',
+        onLoad: (error) => {
+          if (!error) setupShopifyXr();
+        }
+      }
+    ]);
   }
 
   initializeGallery(preferredMediaId = null) {
@@ -760,13 +822,13 @@ changeLightboxSlide(delta) {
     const button = this.querySelector('[data-add-to-cart]');
     const label = this.querySelector('[data-add-to-cart-label]');
     if (button) button.disabled = !available;
-    if (label) label.textContent = this.variant ? (available ? 'Add to cart' : 'Sold out') : 'Unavailable';
+    if (label) label.textContent = this.variant ? (available ? this.dataset.addToCartLabel : this.dataset.soldOutLabel) : this.dataset.unavailableLabel;
     const stickyButton = this.querySelector('[data-sticky-cart-add]');
     const stickyLabel = this.querySelector('[data-sticky-cart-label]');
     const stickyVariant = this.querySelector('[data-sticky-cart-variant]');
     const stickyImage = this.querySelector('[data-sticky-cart-image]');
     if (stickyButton) stickyButton.disabled = !available;
-    if (stickyLabel) stickyLabel.textContent = this.variant ? (available ? 'Add to cart' : 'Sold out') : 'Unavailable';
+    if (stickyLabel) stickyLabel.textContent = this.variant ? (available ? this.dataset.addToCartLabel : this.dataset.soldOutLabel) : this.dataset.unavailableLabel;
     if (stickyVariant) {
       const variantTitle = this.variant?.title || '';
       stickyVariant.textContent = variantTitle;
@@ -777,7 +839,13 @@ changeLightboxSlide(delta) {
       stickyImage.src = variantImage || stickyImage.dataset.fallbackSrc || stickyImage.src;
     }
     const inventory = this.querySelector('[data-inventory-message]');
-    if (inventory) inventory.textContent = !this.variant ? 'Unavailable' : available ? (this.variant.inventory_management && this.variant.inventory_quantity > 0 && this.variant.inventory_quantity <= 10 ? `Only ${this.variant.inventory_quantity} left` : 'In stock') : 'Sold out';
+    if (inventory) inventory.textContent = !this.variant
+      ? this.dataset.unavailableLabel
+      : available
+        ? (this.variant.inventory_management && this.variant.inventory_quantity > 0 && this.variant.inventory_quantity <= 10
+          ? this.dataset.onlyItemsLeftLabel.replace('[count]', this.variant.inventory_quantity)
+          : this.dataset.inStockLabel)
+        : this.dataset.soldOutLabel;
     const onSale = Number(this.variant?.compare_at_price) > Number(this.variant?.price);
     this.querySelector('[data-product-badge-sale]')?.toggleAttribute('hidden', !onSale);
     this.querySelector('[data-product-badge-sold-out]')?.toggleAttribute('hidden', available);
@@ -940,13 +1008,13 @@ changeLightboxSlide(delta) {
       button.setAttribute('aria-busy', 'true');
     });
     this.clearInventoryWarning();
-    this.setStatus('Adding to cart…');
+    this.setStatus(this.dataset.addingToCartLabel);
     this.dispatch('product:add:start', { variant: this.variant });
     try {
       const response = await fetch(window.routes?.cart_add_url || '/cart/add.js', { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: new FormData(this.form), signal: this.signal });
       const item = await response.json();
       if (!response.ok) {
-        const error = new Error(item.description || item.message || 'Unable to add this item to your cart.');
+        const error = new Error(item.description || item.message || this.dataset.addToCartError);
         error.payload = item;
         error.status = response.status;
         error.url = response.url;

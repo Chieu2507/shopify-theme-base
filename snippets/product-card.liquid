@@ -94,6 +94,15 @@
         assign color_option = option
         break
       endif
+      for option_value in option.values
+        if option_value.swatch.color != blank or option_value.swatch.image != blank
+          assign color_option = option
+          break
+        endif
+      endfor
+      if color_option != blank
+        break
+      endif
     endfor
   endif
 
@@ -214,6 +223,7 @@
           {% liquid
             assign swatch_key = value.name | handleize
             assign swatch_color = blank
+            assign swatch_image_url = blank
             assign value_variant = value.variant
             assign variant_price_text = value_variant.price | money
             assign variant_compare_at_price_text = value_variant.compare_at_price | money
@@ -267,6 +277,9 @@
             if value.swatch.color != blank
               assign swatch_color = value.swatch.color | color_to_hex
             endif
+            if value.swatch.image != blank
+              assign swatch_image_url = value.swatch.image | image_url: width: 96
+            endif
 
             if swatch_color == blank
               case swatch_key
@@ -303,7 +316,7 @@
               data-swatch-label="{{ value.name | escape }}"
               aria-label="{{ color_option.name | escape }}: {{ value.name | escape }}"
             >
-              <span aria-hidden="true"{% if swatch_color != blank %} style="--product-card-swatch-color: {{ swatch_color }};"{% endif %}></span>
+              <span aria-hidden="true"{% if swatch_color != blank or swatch_image_url != blank %} style="{% if swatch_color != blank %}--product-card-swatch-color: {{ swatch_color }};{% endif %}{% if swatch_image_url != blank %} background-image: url('{{ swatch_image_url }}'); background-size: cover; background-position: center;{% endif %}"{% endif %}></span>
             </button>
           </li>
         {% endfor %}

@@ -52,7 +52,13 @@
               </a>
               <div class="cart-page__item-info">
                 <h2 class="cart-page__item-title"><a href="{{ item.url }}">{{ item.product.title | escape }}</a></h2>
-                {% unless item.product.has_only_default_variant %}<p class="cart-page__item-variant">{{ item.variant.title | escape }}</p>{% endunless %}
+                {% unless item.product.has_only_default_variant %}
+                  <dl class="cart-page__item-options">
+                    {% for option in item.options_with_values %}
+                      <div><dt>{{ option.name | escape }}:</dt><dd>{{ option.value | escape }}</dd></div>
+                    {% endfor %}
+                  </dl>
+                {% endunless %}
                 {% if item.selling_plan_allocation != blank %}<p class="cart-page__item-selling-plan">{{ item.selling_plan_allocation.selling_plan.name | escape }}</p>{% endif %}
                 {% if item.properties != empty %}<dl class="cart-page__item-properties">{% for property in item.properties %}{% assign property_first_char = property.first | slice: 0 %}{% unless property.last == blank or property_first_char == '_' %}<div><dt>{{ property.first | escape }}:</dt><dd>{{ property.last | escape }}</dd></div>{% endunless %}{% endfor %}</dl>{% endif %}
                 <a class="cart-page__remove" href="{{ item.url_to_remove }}">{{ section.settings.remove_label | escape }}</a>
@@ -60,9 +66,17 @@
                 <input class="cart-page__quantity" id="Quantity-{{ section.id }}-{{ forloop.index }}" type="number" name="updates[]" value="{{ item.quantity }}" min="0" aria-label="{{ section.settings.quantity_label | escape }}: {{ item.product.title | escape }}">
               </div>
               <div class="cart-page__item-price">
+                <small class="cart-page__item-unit">{{ 'cart.unit_price' | t }}: {% render 'money', amount: item.final_price %}</small>
                 {% if item.original_line_price != item.final_line_price %}<s>{% render 'money', amount: item.original_line_price %}</s>{% endif %}
                 <span>{% render 'money', amount: item.final_line_price %}</span>
                 {% if item.unit_price_measurement != blank %}<small class="cart-page__item-unit-price">{% render 'money', amount: item.unit_price %} / {{ item.unit_price_measurement.reference_value }}{{ item.unit_price_measurement.reference_unit }}</small>{% endif %}
+                {% if item.line_level_discount_allocations.size > 0 %}
+                  <ul class="cart-page__item-discounts" role="list">
+                    {% for discount in item.line_level_discount_allocations %}
+                      <li><span>{{ discount.discount_application.title | escape }}</span><span>-{% render 'money', amount: discount.amount %}</span></li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
               </div>
             </article>
           {% endfor %}
@@ -72,7 +86,7 @@
         <aside class="cart-page__summary" aria-labelledby="CartSummaryHeading-{{ section.id }}">
           <div class="cart-page__summary-header">
             <h2 id="CartSummaryHeading-{{ section.id }}">{{ section.settings.summary_heading | escape }}</h2>
-            <span class="cart-page__summary-count">{{ cart.item_count }} {% if cart.item_count == 1 %}item{% else %}items{% endif %}</span>
+            <span class="cart-page__summary-count">{{ 'cart.item_count' | t: count: cart.item_count }}</span>
           </div>
 
           <div class="cart-page__summary-totals">
@@ -104,12 +118,18 @@
             {% endif %}
 
             <div class="cart-page__summary-row cart-page__summary-row--total">
-              <strong>Total</strong>
+              <strong>{{ 'cart.total' | t }}</strong>
               <strong>{% render 'money', amount: cart.total_price %}</strong>
             </div>
           </div>
 
-          <p class="cart-page__tax-note">{{ tax_note | escape }}</p>
+          <p class="cart-page__tax-note">
+            {% if cart.taxes_included %}
+              {{ 'cart.taxes_included' | t }}
+            {% else %}
+              {{ tax_note | escape }}
+            {% endif %}
+          </p>
 
           {% if has_checkout_block %}
             {% for block in section.blocks %}
@@ -174,15 +194,18 @@
   .cart-page__item-info { min-width: 0; }
   .cart-page__item-title { margin: 0; font-size: 20px; line-height: 1.15; }
   .cart-page__item-title a { color: inherit; text-decoration: none; }
-  .cart-page__item-variant, .cart-page__item-properties, .cart-page__item-variant + .cart-page__item-properties { margin-top: 8px; color: var(--color-text); font-size: var(--font-caption); }
+  .cart-page__item-options, .cart-page__item-properties { margin-top: 8px; color: var(--color-text); font-size: var(--font-caption); }
+  .cart-page__item-options div, .cart-page__item-properties div { display: flex; gap: 5px; }
+  .cart-page__item-options dt, .cart-page__item-options dd, .cart-page__item-properties dt, .cart-page__item-properties dd { margin: 0; }
   .cart-page__item-selling-plan { margin: 8px 0 0; color: var(--color-text); font-size: var(--font-caption); }
-  .cart-page__item-properties div { display: flex; gap: 5px; }
-  .cart-page__item-properties dt, .cart-page__item-properties dd { margin: 0; }
   .cart-page__remove { display: inline-block; margin-top: 22px; color: inherit; font-size: var(--font-caption); text-underline-offset: 3px; }
   .cart-page__quantity-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .cart-page__quantity { display: block; width: 58px; min-height: var(--control-height); margin-top: 14px; padding: 6px 8px; border: 1px solid var(--color-variant-border); border-radius: var(--style-border-radius-inputs); background: transparent; color: inherit; text-align: center; }
   .cart-page__item-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 15px; white-space: nowrap; }
   .cart-page__item-price s { color: var(--color-text); font-size: 12px; }
+  .cart-page__item-unit { color: var(--color-text); font-size: 12px; }
+  .cart-page__item-discounts { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; color: var(--color-text); font-size: 12px; list-style: none; }
+  .cart-page__item-discounts li { display: flex; justify-content: flex-end; gap: 10px; }
   .cart-page__item-unit-price { color: var(--color-text); font-size: 12px; }
   .cart-page__update { margin-top: 16px; padding: 0; border: 0; background: transparent; color: inherit; font-size: var(--font-caption); text-decoration: underline; text-underline-offset: 3px; cursor: pointer; }
   .cart-page__summary { position: sticky; top: calc(var(--header-height, 0px) + 24px); padding: clamp(24px, 3vw, 36px); border: 1px solid var(--color-variant-border); background: var(--color-variant-component-background); }

@@ -7,6 +7,12 @@
       {% assign option_is_size = false %}
       {% if option_name contains 'size' %}{% assign option_is_size = true %}{% endif %}
       {% if option_name contains 'color' %}{% assign option_is_color = true %}{% elsif option_name contains 'metal' %}{% assign option_is_color = true %}{% elsif option_name contains 'tone' %}{% assign option_is_color = true %}{% elsif option_name contains 'finish' %}{% assign option_is_color = true %}{% endif %}
+      {% for value in option.values %}
+        {% if value.swatch.color != blank or value.swatch.image != blank %}
+          {% assign option_is_color = true %}
+          {% break %}
+        {% endif %}
+      {% endfor %}
       {% assign picker_type = block.settings.picker_type | default: 'button' %}
       {% assign option_is_swatch = false %}
       {% if picker_type == 'button' and block.settings.enable_color_swatches and option_is_color %}{% assign option_is_swatch = true %}{% endif %}

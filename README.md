@@ -32,6 +32,22 @@ Tạo file `shopify.theme.toml` từ `shopify.theme.toml.example`, sau đó prev
 shopify theme dev --environment development
 ```
 
+### Theme Store package
+
+Source JSON keeps demo-store images, products, collections, articles, menus, and brand fallback assets so the demo remains complete. Create a submission ZIP from a temporary sanitized copy:
+
+```bash
+node scripts/package-theme-store.mjs
+```
+
+The command writes `release/jovie-theme-store.zip` and a SHA-256 report beside it. It removes demo-store resource bindings only from the staged copy, runs Theme Check, verifies the ZIP structure, and leaves the source theme unchanged.
+
+Use a custom output path when needed:
+
+```bash
+node scripts/package-theme-store.mjs --output release/jovie-theme-store-1.0.0.zip
+```
+
 ## Theme architecture
 
 ```bash

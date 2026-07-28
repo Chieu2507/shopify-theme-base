@@ -11,8 +11,10 @@
       this.status = this.querySelector('[data-cart-drawer-status]');
       this.loading = this.querySelector('[data-cart-drawer-loading]');
       this.message = this.querySelector('[data-cart-drawer-message]');
+      this.discounts = this.querySelector('[data-cart-drawer-discounts]');
       this.total = this.querySelector('[data-cart-drawer-total]');
       this.checkoutTotal = this.querySelector('[data-cart-drawer-checkout-total]');
+      this.taxNote = this.querySelector('[data-cart-drawer-tax-note]');
       this.recommendations = this.querySelector('[data-cart-drawer-recommendations]');
       this.recommendationList = this.querySelector('[data-cart-drawer-recommendation-list]');
       this.recommendationDots = this.querySelector('[data-cart-drawer-recommendation-dots]');
@@ -78,7 +80,28 @@
       this.recommendationList?.addEventListener('scroll', () => this.updateRecommendationDot(), { passive: true, signal });
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && this.isOpen) this.close();
+        if (event.key === 'Tab' && this.isOpen) this.trapFocus(event);
       }, { signal });
+    }
+
+    trapFocus(event) {
+      if (!this.panel) return;
+      const focusable = [...this.panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => element.getClientRects().length);
+      if (!focusable.length) {
+        event.preventDefault();
+        this.panel.focus({ preventScroll: true });
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (event.target === first || !this.panel.contains(event.target))) {
+        event.preventDefault();
+        last.focus({ preventScroll: true });
+      } else if (!event.shiftKey && (event.target === last || !this.panel.contains(event.target))) {
+        event.preventDefault();
+        first.focus({ preventScroll: true });
+      }
     }
 
     async open(trigger = null) {
@@ -113,10 +136,10 @@
     async refresh() {
       if (this.busy) return;
       this.busy = true;
-      this.setStatus('Updating cart…');
+      this.setStatus(this.dataset.updatingLabel);
       try {
         const response = await fetch('/cart.js', { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
-        if (!response.ok) throw new Error(`Unable to load cart (${response.status}).`);
+        if (!response.ok) throw new Error(this.dataset.cartUnavailableLabel);
         const cart = await response.json();
         this.currency = cart.currency || this.currency;
         this.renderCart(cart);
@@ -142,6 +165,8 @@
       const total = this.formatMoney(cart.total_price);
       if (this.total) this.total.textContent = total;
       if (this.checkoutTotal) this.checkoutTotal.textContent = total;
+      if (this.taxNote) this.taxNote.textContent = cart.taxes_included ? this.dataset.taxesIncludedLabel : this.dataset.taxesNoteLabel;
+      this.renderDiscounts(cart);
       const note = this.querySelector('[data-cart-drawer-note]');
       if (note && document.activeElement !== note) note.value = cart.note || '';
     }
@@ -150,6 +175,10 @@
       this.items.innerHTML = `<p class="cart-drawer__empty">${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</p>`;
       this.footer.hidden = true;
       this.recommendations.hidden = true;
+      if (this.discounts) {
+        this.discounts.hidden = true;
+        this.discounts.replaceChildren();
+      }
     }
 
     updateHeaderCount(cart) {
@@ -172,7 +201,8 @@
       const image = item.image
         ? `<img src="${this.escape(item.image)}" alt="${this.escape(item.product_title)}" loading="lazy">`
         : '<span class="cart-drawer__image-placeholder" aria-hidden="true"></span>';
-      const variant = item.product_has_only_default_variant ? '' : `<p class="cart-drawer__item-variant">${this.escape(item.variant_title)}</p>`;
+      const options = item.product_has_only_default_variant ? '' : (item.options_with_values || []).map((option) => `<div><dt>${this.escape(option.name)}:</dt><dd>${this.escape(option.value)}</dd></div>`).join('');
+      const variant = options ? `<dl class="cart-drawer__item-options">${options}</dl>` : '';
       const sellingPlan = item.selling_plan_allocation?.selling_plan?.name ? `<p class="cart-drawer__item-selling-plan">${this.escape(item.selling_plan_allocation.selling_plan.name)}</p>` : '';
       const originalLinePrice = Number(item.original_line_price ?? item.line_price ?? 0);
       const finalLinePrice = Number(item.final_line_price ?? item.line_price ?? 0);
@@ -180,20 +210,23 @@
       const price = isSale
         ? `<s class="cart-drawer__item-price-compare">${this.formatMoney(originalLinePrice)}</s><span class="cart-drawer__item-price-current">${this.formatMoney(finalLinePrice)}</span>`
         : `<span class="cart-drawer__item-price-current">${this.formatMoney(finalLinePrice)}</span>`;
+      const finalUnitPrice = `<small class="cart-drawer__item-final-price">${this.escape(this.dataset.unitPriceLabel)}: ${this.formatMoney(item.final_price)}</small>`;
       const unitPrice = item.unit_price_measurement ? `<small class="cart-drawer__item-unit-price">${this.formatMoney(item.unit_price)} / ${this.escape(item.unit_price_measurement.reference_value)}${this.escape(item.unit_price_measurement.reference_unit)}</small>` : '';
+      const discounts = (item.line_level_discount_allocations || []).map((discount) => `<li><span>${this.escape(discount.discount_application?.title || discount.title || '')}</span><span>−${this.formatMoney(discount.amount)}</span></li>`).join('');
       return `<article class="cart-drawer__item" data-cart-line="${this.escape(item.key)}">
         <a class="cart-drawer__item-media" href="${this.escape(item.url)}">${image}</a>
         <div class="cart-drawer__item-info">
           <h3 class="cart-drawer__item-title"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
           ${variant}
           ${sellingPlan}
-          <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
+          <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${finalUnitPrice}${price}${unitPrice}</p>
+          ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
           <div class="cart-drawer__quantity">
             <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${Math.max(0, item.quantity - 1)}">−</button>
             <span aria-live="polite">${item.quantity}</span>
             <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${item.quantity + 1}">+</button>
           </div>
-          <button class="cart-drawer__remove" type="button" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">Remove</button>
+          <button class="cart-drawer__remove" type="button" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${this.escape(this.dataset.removeLabel)}</button>
         </div>
       </article>`;
     }
@@ -201,13 +234,13 @@
     async changeLine(line, quantity) {
       if (!line || !Number.isFinite(quantity)) return;
       try {
-        this.setStatus('Updating cart…');
+        this.setStatus(this.dataset.updatingLabel);
         const response = await fetch('/cart/change.js', {
           method: 'POST',
           headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           body: JSON.stringify({ id: line, quantity })
         });
-        if (!response.ok) throw new Error(`Unable to update cart (${response.status}).`);
+        if (!response.ok) throw new Error(this.dataset.cartUpdateErrorLabel);
         await this.refresh();
       } catch (error) {
         console.error('[Jovie] Cart drawer line update failed', error);
@@ -221,7 +254,7 @@
       const variantId = button?.dataset.variantId;
       if (!variantId || button.disabled) return;
       button.disabled = true;
-      button.textContent = 'Adding…';
+      button.textContent = this.dataset.addingLabel;
       try {
         const formData = new FormData();
         formData.set('id', variantId);
@@ -229,14 +262,14 @@
         const response = await fetch('/cart/add.js', { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: formData });
         if (!response.ok) {
           const payload = await response.json().catch(() => ({}));
-          throw new Error(payload.description || payload.message || 'Unable to add this product.');
+          throw new Error(payload.description || payload.message || this.dataset.relatedProductErrorLabel);
         }
         await this.refresh();
       } catch (error) {
         console.error('[Jovie] Related product add failed', error);
         this.setMessage(error.message, true);
         button.disabled = false;
-        button.textContent = 'Add to cart';
+        button.textContent = this.dataset.addToCartLabel;
       }
     }
 
@@ -294,7 +327,7 @@
       const image = product.featured_image || product.images?.[0];
       return `<article class="cart-drawer__recommendation">
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="lazy">` : ''}</a>
-        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(product.price)}</p><button type="button" class="cart-drawer__text-button" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}">Add to cart</button></div>
+        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(product.price)}</p><button type="button" class="cart-drawer__text-button" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}">${this.escape(this.dataset.addToCartLabel)}</button></div>
       </article>`;
     }
 
@@ -304,10 +337,10 @@
       const code = input?.value.trim();
       if (!code) return;
       try {
-        this.setStatus('Applying discount…');
+        this.setStatus(this.dataset.applyingDiscountLabel);
         const response = await fetch(`/discount/${encodeURIComponent(code)}?redirect=/cart`, { credentials: 'same-origin', redirect: 'follow' });
-        if (!response.ok) throw new Error('Unable to apply discount code.');
-        this.setMessage('Discount code applied.');
+        if (!response.ok) throw new Error(this.dataset.discountErrorLabel);
+        this.setMessage(this.dataset.discountAppliedLabel);
         await this.refresh();
       } catch (error) {
         console.error('[Jovie] Discount code failed', error);
@@ -320,10 +353,10 @@
     async saveNote() {
       const note = this.querySelector('[data-cart-drawer-note]')?.value || '';
       try {
-        this.setStatus('Saving note…');
+        this.setStatus(this.dataset.savingNoteLabel);
         const response = await fetch('/cart/update.js', { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ note }) });
-        if (!response.ok) throw new Error('Unable to save order note.');
-        this.setMessage('Order note saved.');
+        if (!response.ok) throw new Error(this.dataset.noteErrorLabel);
+        this.setMessage(this.dataset.noteSavedLabel);
       } catch (error) {
         console.error('[Jovie] Order note failed', error);
         this.setMessage(error.message, true);
@@ -338,6 +371,13 @@
         this.status.hidden = true;
       }
       if (this.loading) this.loading.hidden = !message;
+    }
+
+    renderDiscounts(cart) {
+      if (!this.discounts) return;
+      const discounts = cart.cart_level_discount_applications || [];
+      this.discounts.innerHTML = discounts.map((discount) => `<li><span>${this.escape(discount.title)}</span><span>−${this.formatMoney(discount.total_allocated_amount)}</span></li>`).join('');
+      this.discounts.hidden = discounts.length === 0;
     }
 
     setMessage(message, isError = false) {

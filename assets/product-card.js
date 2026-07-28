@@ -43,7 +43,7 @@ const addVariantToCart = async (variantId, source, image, form) => {
     });
     const item = await response.json();
     if (!response.ok) {
-      const error = new Error(item.description || item.message || 'Unable to add this item to your cart.');
+      const error = new Error(item.description || item.message || window.theme?.strings?.addToCartError || 'Unable to add this item to your cart.');
       error.payload = item;
       error.status = response.status;
       error.url = response.url;
