@@ -2,10 +2,10 @@
   <br>
     <img src="./assets/shoppy-x-ray.svg" alt="logo" width="200">
   <br>
-  Jovie Theme — Multi-preset source
+  Jovie Theme
 </h1>
 
-Source repository cho Jovie và Noryvelle. Bản Jovie đang submit ở repository cũ không được thay đổi từ repository này.
+Source repository cho Jovie theme.
 
 <p align="center">
   <a href="./LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
@@ -26,14 +26,11 @@ If you use VS Code:
 
 ### Preview
 
-Tạo file `shopify.theme.toml` từ `shopify.theme.toml.example`, sau đó preview đúng preset:
+Tạo file `shopify.theme.toml` từ `shopify.theme.toml.example`, sau đó preview theme:
 
 ```bash
-shopify theme dev --environment jovie
-shopify theme dev --environment noryvelle
+shopify theme dev --environment development
 ```
-
-Xem [quy trình hai preset](./docs/multi-preset-development.md) trước khi chỉnh trực tiếp trong Shopify.
 
 ## Theme architecture
 
