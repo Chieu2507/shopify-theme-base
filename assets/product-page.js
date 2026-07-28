@@ -1000,7 +1000,8 @@ changeLightboxSlide(delta) {
       if (cart.item_count > 0) {
         const nextCount = count || document.createElement('span');
         nextCount.className = 'header__cart-count';
-        nextCount.setAttribute('aria-label', `Cart contains ${cart.item_count} items`);
+        const countLabel = cartLink.dataset.cartCountLabel?.replace('__count__', String(cart.item_count));
+        if (countLabel) nextCount.setAttribute('aria-label', countLabel);
         nextCount.textContent = cart.item_count;
         if (!count) cartLink.append(nextCount);
         nextCount.classList.remove('is-updated');

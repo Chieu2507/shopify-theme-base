@@ -11,13 +11,17 @@
   assign heading_tag = block.settings.heading_tag | default: 'h2'
   assign subheading_tag = block.settings.subheading_tag | default: 'p'
   assign open_in_new_tab = block.settings.open_in_new_tab
+  assign block_link_label = block.settings.heading | default: block.settings.subheading
+  if block_link_label == blank
+    assign block_link_label = 'accessibility.view_story' | t
+  endif
 %}
 
 {% if block.settings.block_link != blank %}
   <a
     class="horizontal-banners__block-link"
     href="{{ block.settings.block_link }}"
-    aria-label="{{ block.settings.heading | default: block.settings.subheading | default: 'View story' | escape }}"
+    aria-label="{{ block_link_label | escape }}"
     {% if open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
   ></a>
 {% endif %}

@@ -24,6 +24,10 @@
                   assign media_role = 'foreground'
                 endif
                 assign media_alt = block.settings.alt | default: block.settings.image.alt
+                assign media_aria_label = media_alt
+                if media_aria_label == blank
+                  assign media_aria_label = 'accessibility.view_image' | t
+                endif
                 assign placeholder_asset = 'placeholder-image-default-1.svg'
                 if media_role == 'foreground'
                   assign placeholder_asset = 'placeholder-image-default-2.svg'
@@ -34,7 +38,7 @@
                   href="{{ block.settings.link }}"
                   class="image-with-text__media image-with-text__media--{{ media_role }} image-with-text__media--{{ block.settings.desktop_image_ratio }} image-with-text__media--mobile-{{ block.settings.mobile_image_ratio }}"
                   style="--image-with-text-focal-point: {{ block.settings.focal_point }};"
-                  aria-label="{{ media_alt | default: 'View image' | escape }}"
+                  aria-label="{{ media_aria_label | escape }}"
                   {{ block.shopify_attributes }}
                 >
               {% else %}

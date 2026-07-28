@@ -60,8 +60,8 @@ class CollectionList extends HTMLElement {
     const gap = device === 'mobile' ? 8 : configuredGap;
     const showPagination = device !== 'mobile' && this.dataset.showPagination === 'true' && Boolean(this.pagination);
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
-    const previousMessage = this.previousButton?.getAttribute('aria-label') || 'Previous item';
-    const nextMessage = this.nextButton?.getAttribute('aria-label') || 'Next item';
+    const previousMessage = this.previousButton?.getAttribute('aria-label') || '';
+    const nextMessage = this.nextButton?.getAttribute('aria-label') || '';
 
     this.swiper = new Swiper(this.slider, {
       modules: [A11y, Navigation, Pagination],

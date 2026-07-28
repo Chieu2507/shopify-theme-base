@@ -158,7 +158,8 @@
         if (cart.item_count > 0) {
           const nextCount = count || document.createElement('span');
           nextCount.className = 'header__cart-count';
-          nextCount.setAttribute('aria-label', `Cart contains ${cart.item_count} items`);
+          const countLabel = cartLink.dataset.cartCountLabel?.replace('__count__', String(cart.item_count));
+          if (countLabel) nextCount.setAttribute('aria-label', countLabel);
           nextCount.textContent = cart.item_count;
           if (!count) cartLink.append(nextCount);
         } else {
@@ -185,9 +186,9 @@
           ${variant}
           <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}</p>
           <div class="cart-drawer__quantity">
-            <button type="button" aria-label="Decrease quantity" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${Math.max(0, item.quantity - 1)}">−</button>
+            <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${Math.max(0, item.quantity - 1)}">−</button>
             <span aria-live="polite">${item.quantity}</span>
-            <button type="button" aria-label="Increase quantity" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${item.quantity + 1}">+</button>
+            <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${item.quantity + 1}">+</button>
           </div>
           <button class="cart-drawer__remove" type="button" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">Remove</button>
         </div>
@@ -254,7 +255,10 @@
           return;
         }
         this.recommendationList.innerHTML = products.slice(0, limit).map((product) => this.recommendationTemplate(product)).join('');
-        this.recommendationDots.innerHTML = products.slice(0, limit).map((_, index) => `<button type="button" class="cart-drawer__recommendation-dot" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="Go to related product ${index + 1}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`).join('');
+        this.recommendationDots.innerHTML = products.slice(0, limit).map((_, index) => {
+          const label = (this.dataset.relatedProductLabel || '').replace('__index__', String(index + 1));
+          return `<button type="button" class="cart-drawer__recommendation-dot" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="${this.escape(label)}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`;
+        }).join('');
         this.recommendations.hidden = false;
       } catch (error) {
         this.recommendations.hidden = true;

@@ -17,6 +17,7 @@
   <video-banner
     class="video-banner video-banner--{{ section.settings.content_position }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.autoplay %} video-banner--autoplay{% endif %}"
     style="--video-banner-height-desktop: {{ section.settings.height_desktop }}px; --video-banner-height-tablet: {{ section.settings.height_tablet }}px; --video-banner-height-mobile: {{ section.settings.height_mobile }}px; --video-banner-content-width: {{ section.settings.content_width }}px; --video-banner-content-padding: {{ section.settings.content_padding }}px; --video-banner-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};"
+    data-deferred-module="{{ 'section-video-banner.js' | asset_url }}"
   >
     <div class="video-banner__inner">
       {% if video_block != blank %}
@@ -320,42 +321,6 @@
   }
 {% endstylesheet %}
 
-{% javascript %}
-  if (!customElements.get('video-banner')) {
-    class VideoBanner extends HTMLElement {
-      connectedCallback() {
-        this.video = this.querySelector('video');
-        this.playButton = this.querySelector('[data-video-banner-play]');
-        if (!this.video || !this.playButton) return;
-
-        this.handlePlayClick = this.playVideo.bind(this);
-        this.handlePlay = () => this.classList.add('is-playing');
-        this.handlePause = () => this.classList.remove('is-playing');
-        this.playButton.addEventListener('click', this.handlePlayClick);
-        this.video.addEventListener('play', this.handlePlay);
-        this.video.addEventListener('pause', this.handlePause);
-        this.video.addEventListener('ended', this.handlePause);
-      }
-
-      disconnectedCallback() {
-        if (!this.video || !this.playButton) return;
-        this.playButton.removeEventListener('click', this.handlePlayClick);
-        this.video.removeEventListener('play', this.handlePlay);
-        this.video.removeEventListener('pause', this.handlePause);
-        this.video.removeEventListener('ended', this.handlePause);
-      }
-
-      playVideo() {
-        const playRequest = this.video.play();
-        if (playRequest && typeof playRequest.catch === 'function') {
-          playRequest.catch(() => this.classList.remove('is-playing'));
-        }
-      }
-    }
-
-    customElements.define('video-banner', VideoBanner);
-  }
-{% endjavascript %}
 
 {% schema %}
 {

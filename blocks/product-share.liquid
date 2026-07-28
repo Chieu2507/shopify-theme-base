@@ -3,9 +3,13 @@
 {% assign share_title = product.title | strip_html %}
 {% assign encoded_share_url = share_url | url_encode %}
 {% assign encoded_share_title = share_title | url_encode %}
+{% assign share_label = block.settings.label %}
+{% if share_label == blank %}
+  {% assign share_label = 'product_share.share' | t %}
+{% endif %}
 <section class="product-share" {{ block.shopify_attributes }}>
-  <p class="product-share__label">{{ block.settings.label | default: 'Share' | escape }}</p>
-  <ul class="product-share__icons" role="list" aria-label="Share this product">
+  <p class="product-share__label">{{ share_label | escape }}</p>
+  <ul class="product-share__icons" role="list" aria-label="{{ 'product_share.label' | t | escape }}">
     {% assign share_networks = 'facebook,instagram,pinterest,tiktok' | split: ',' %}
     {% for network in share_networks %}
       {% case network %}
@@ -18,8 +22,9 @@
         {% when 'tiktok' %}
           {% assign share_link = 'https://www.tiktok.com/' %}
       {% endcase %}
+      {% assign network_label = network | capitalize %}
       <li>
-        <a class="product-share__icon" href="{{ share_link }}" target="_blank" rel="noopener noreferrer" aria-label="Share on {{ network | capitalize }}">
+        <a class="product-share__icon" href="{{ share_link }}" target="_blank" rel="noopener noreferrer" aria-label="{{ 'product_share.network' | t: network: network_label | escape }}">
           <img src="{{ 'social-' | append: network | append: '.png' | asset_url }}" alt="" width="20" height="20" loading="lazy">
         </a>
       </li>

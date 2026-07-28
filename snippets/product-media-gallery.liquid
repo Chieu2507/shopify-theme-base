@@ -1,6 +1,6 @@
 <div class="product-gallery product-gallery--{{ block.settings.desktop_layout }} product-gallery--grid-{{ block.settings.grid_layout | default: 'editorial' }} product-gallery--zoom-{{ block.settings.image_zoom | default: 'open_lightbox' }}{% if block.settings.desktop_layout == 'carousel' %} product-gallery--thumbs-{{ block.settings.carousel_thumbnails }}{% endif %} product-gallery--mobile-thumbnails-{{ block.settings.show_mobile_thumbnails }} product-gallery--ratio-{{ block.settings.media_ratio }} product-gallery--mobile-ratio-{{ block.settings.mobile_media_ratio }}" data-image-zoom="{{ block.settings.image_zoom | default: 'open_lightbox' }}" style="--gallery-columns: {% if product.media.size == 1 %}1{% else %}{{ block.settings.grid_columns | default: 2 }}{% endif %}; --gallery-gap: {{ block.settings.gap }}px; --gallery-fit: {{ block.settings.media_fit }}; --gallery-thumbnail-size: {{ block.settings.thumbnail_size }}px; --gallery-thumbnail-gap: {{ block.settings.thumbnail_gap }}px;" {{ block.shopify_attributes }} data-product-gallery>
   {% if block.settings.desktop_layout != 'carousel' %}
-    <div class="product-gallery__desktop" aria-label="{{ product.title | escape }} media">
+    <div class="product-gallery__desktop" aria-label="{{ 'product_gallery.label' | t: product: product.title | escape }}">
       {% for media in product.media %}
         {% render 'product-media', media: media, product: product, layout: 'grid', zoom_mode: block.settings.image_zoom %}
       {% endfor %}
@@ -24,10 +24,10 @@
     </div>
     {% if product.media.size > 1 %}
       {% if block.settings.desktop_layout == 'carousel' or block.settings.show_mobile_thumbnails %}
-        <div class="swiper product-gallery__thumbnails" data-product-thumbnail-gallery aria-label="Product media thumbnails">
+        <div class="swiper product-gallery__thumbnails" data-product-thumbnail-gallery aria-label="{{ 'product_gallery.media_thumbnails' | t | escape }}">
           <div class="swiper-wrapper">
             {% for media in product.media %}
-              <button class="swiper-slide product-gallery__thumbnail" type="button" data-media-thumbnail data-media-id="{{ media.id }}" aria-label="View media {{ forloop.index }}">
+              <button class="swiper-slide product-gallery__thumbnail" type="button" data-media-thumbnail data-media-id="{{ media.id }}" aria-label="{{ 'product_gallery.view_media' | t: index: forloop.index | escape }}">
                 {% render 'product-media-thumbnail', media: media %}
               </button>
             {% endfor %}

@@ -18,6 +18,7 @@
 <footer
   class="footer color-scheme color-{{ section.settings.color_scheme.id }} full-width"
   style="--footer-padding-top: {{ section.settings.padding_top }}px; --footer-padding-bottom: {{ section.settings.padding_bottom }}px; --footer-column-gap: {{ section.settings.column_gap }}px;"
+  data-deferred-module="{{ 'section-footer.js' | asset_url }}"
 >
   <div class="footer__inner{% if section.settings.section_width == 'page' %} footer__inner--page{% endif %}">
     {% if newsletter_count > 0 or menu_count > 0 %}
@@ -222,27 +223,6 @@
 
 
 
-{% javascript %}
-  if (!customElements.get('footer-localization')) {
-    class FooterLocalization extends HTMLElement {
-      connectedCallback() {
-        this.onChange = this.handleChange.bind(this);
-        this.addEventListener('change', this.onChange);
-      }
-
-      disconnectedCallback() {
-        this.removeEventListener('change', this.onChange);
-      }
-
-      handleChange(event) {
-        if (!event.target.matches('[data-footer-localization-select]')) return;
-        event.target.form.submit();
-      }
-    }
-
-    customElements.define('footer-localization', FooterLocalization);
-  }
-{% endjavascript %}
 
 {% schema %}
 {

@@ -68,8 +68,8 @@ class TestimonialsSlider extends HTMLElement {
         : false,
       a11y: {
         enabled: true,
-        prevSlideMessage: 'Previous testimonial',
-        nextSlideMessage: 'Next testimonial',
+        prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
+        nextSlideMessage: this.nextButton?.getAttribute('aria-label') || '',
         slideRole: null,
       },
     });

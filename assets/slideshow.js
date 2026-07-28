@@ -82,8 +82,8 @@ class JovieSlideshow extends HTMLElement {
       },
       a11y: {
         enabled: true,
-        prevSlideMessage: this.previousButton?.getAttribute('aria-label') || 'Previous slide',
-        nextSlideMessage: this.nextButton?.getAttribute('aria-label') || 'Next slide',
+        prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
+        nextSlideMessage: this.nextButton?.getAttribute('aria-label') || '',
         slideRole: 'group',
       },
       breakpoints: {
