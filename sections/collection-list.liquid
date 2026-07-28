@@ -12,6 +12,25 @@
       assign collection_card_count = collection_card_count | plus: 1
     endif
   endfor
+
+  assign split_height_desktop = 768
+  assign split_height_tablet = 480
+  case section.settings.height_desktop
+    when 'small'
+      assign split_height_desktop = 600
+      assign split_height_tablet = 400
+    when 'large'
+      assign split_height_desktop = 920
+      assign split_height_tablet = 560
+  endcase
+
+  assign split_height_mobile = 360
+  case section.settings.height_mobile
+    when 'small'
+      assign split_height_mobile = 280
+    when 'large'
+      assign split_height_mobile = 480
+  endcase
 %}
 
 {% if collection_card_count > 0 %}
@@ -26,7 +45,7 @@
     data-columns-tablet="{{ section.settings.columns_desktop }}"
     data-columns-mobile="{{ section.settings.columns_mobile }}"
     data-show-pagination="{{ section.settings.show_pagination }}"
-    style="--collection-list-columns-desktop: {{ section.settings.columns_desktop }}; --collection-list-columns-tablet: {{ section.settings.columns_desktop }}; --collection-list-columns-mobile: {{ section.settings.columns_mobile }}; --collection-list-column-gap: {{ section.settings.column_gap }}px; --collection-list-header-gap: {{ section.settings.header_gap }}px; --collection-list-card-gap: {{ section.settings.card_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --collection-list-height-desktop: {{ section.settings.height_desktop }}px; --collection-list-height-tablet: {{ section.settings.height_tablet }}px; --collection-list-height-mobile: {{ section.settings.height_mobile }}px;"
+    style="--collection-list-columns-desktop: {{ section.settings.columns_desktop }}; --collection-list-columns-tablet: {{ section.settings.columns_desktop }}; --collection-list-columns-mobile: {{ section.settings.columns_mobile }}; --collection-list-column-gap: {{ section.settings.column_gap }}px; --collection-list-header-gap: {{ section.settings.header_gap }}px; --collection-list-card-gap: {{ section.settings.card_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --collection-list-height-desktop: {{ split_height_desktop }}px; --collection-list-height-tablet: {{ split_height_tablet }}px; --collection-list-height-mobile: {{ split_height_mobile }}px;"
   >
     <div class="collection-list__inner section-spacing{% if section.settings.section_width == 'page' %} collection-list__inner--page{% endif %}">
       {% assign has_prioritized_collection_image = false %}
@@ -58,12 +77,10 @@
               assign card_link = card_collection.url
               assign card_product_count = card_collection.all_products_count
               assign card_overlay_opacity = block.settings.overlay_opacity | divided_by: 100.0
-              if section.settings.layout != 'split-promotions' and block.settings.text_color == blank and card_overlay_opacity < 0.45
+              if section.settings.layout != 'split-promotions' and card_overlay_opacity < 0.45
                 assign card_overlay_opacity = 0.45
               endif
-              assign card_overlay_base = block.settings.overlay_color | default: '#000000'
-              assign card_overlay_color = card_overlay_base | color_modify: 'alpha', card_overlay_opacity
-
+              assign card_overlay_color = '#000000' | color_modify: 'alpha', card_overlay_opacity
 
               if card_image == blank and card_collection != blank
                 assign card_image = card_collection.image
@@ -78,6 +95,11 @@
               endif
               if card_title == blank
                 assign card_title = 'collection_list.collection' | t
+              endif
+
+              assign card_color_scheme = section.settings.color_scheme
+              if block.settings.override_color_scheme and block.settings.color_scheme != blank
+                assign card_color_scheme = block.settings.color_scheme
               endif
 
               assign card_alt = card_image.alt | default: card_title
@@ -111,14 +133,14 @@
             <li class="collection-list__item{% if section.settings.layout == 'grid' %} swiper-slide{% endif %}" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
               {% if card_link != blank and section.settings.layout != 'split-promotions' %}
                 <a
-                  class="collection-list__card collection-list__card--{{ section.settings.layout }}"
+                  class="collection-list__card collection-list__card--{{ section.settings.layout }} color-scheme color-{{ card_color_scheme.id }}"
                   href="{{ card_link }}"
-                  style="--collection-list-image-position: {{ block.settings.focal_point }}; --collection-list-overlay-color: {{ card_overlay_color }};{% if block.settings.text_color != blank %} --collection-list-text-color: {{ block.settings.text_color }};{% endif %}{% if block.settings.button_color != blank %} --collection-list-button-color: {{ block.settings.button_color }};{% endif %}"
+                  style="--collection-list-image-position: {{ block.settings.focal_point }}; --collection-list-overlay-color: {{ card_overlay_color }};"
                 >
               {% else %}
                 <div
-                  class="collection-list__card collection-list__card--{{ section.settings.layout }}"
-                  style="--collection-list-image-position: {{ block.settings.focal_point }}; --collection-list-overlay-color: {{ card_overlay_color }};{% if block.settings.text_color != blank %} --collection-list-text-color: {{ block.settings.text_color }};{% endif %}{% if block.settings.button_color != blank %} --collection-list-button-color: {{ block.settings.button_color }};{% endif %}"
+                  class="collection-list__card collection-list__card--{{ section.settings.layout }} color-scheme color-{{ card_color_scheme.id }}"
+                  style="--collection-list-image-position: {{ block.settings.focal_point }}; --collection-list-overlay-color: {{ card_overlay_color }};"
                 >
               {% endif %}
 
@@ -147,11 +169,11 @@
                     {% if block.settings.eyebrow != blank %}
                       <span class="collection-list__eyebrow">{{ block.settings.eyebrow | escape }}</span>
                     {% endif %}
-                    <{{ block.settings.heading_tag }} class="collection-list__promotion-heading collection-list__promotion-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} jovie-heading--{{ block.settings.heading_size }}">
+                    <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__promotion-heading collection-list__promotion-heading--{{ section.settings.card_heading_size | default: 'h3' }} heading--{{ section.settings.card_heading_size | default: 'h3' }} jovie-heading--{{ section.settings.card_heading_size | default: 'h3' }}">
                       {{ card_title | escape }}
-                    </{{ block.settings.heading_tag }}>
+                    </{{ section.settings.card_heading_tag | default: 'h3' }}>
                     {% if block.settings.button_label != blank and card_link != blank %}
-                      <a class="collection-list__button button button--tertiary" href="{{ card_link }}">
+                      <a class="collection-list__button button button--{{ block.settings.button_style | default: 'tertiary' }}" href="{{ card_link }}">
                         {{ block.settings.button_label | escape }}
                       </a>
                     {% endif %}
@@ -220,8 +242,61 @@
   "max_blocks": 7,
   "settings": [
     {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        {
+          "value": "grid",
+          "label": "Grid"
+        },
+        {
+          "value": "split-promotions",
+          "label": "Split promotions"
+        }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "page",
+          "label": "Page width"
+        }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "range",
+      "id": "column_gap",
+      "min": 0,
+      "max": 48,
+      "step": 4,
+      "unit": "px",
+      "label": "Column gap",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "header_gap",
+      "min": 0,
+      "max": 80,
+      "step": 4,
+      "unit": "px",
+      "label": "Header gap",
+      "default": 48
+    },
+    {
       "type": "header",
-      "content": "Layout"
+      "content": "Grid",
+      "visible_if": "{{ section.settings.layout == 'grid' }}"
     },
     {
       "type": "select",
@@ -292,6 +367,10 @@
       "visible_if": "{{ section.settings.layout == 'grid' }}"
     },
     {
+      "type": "header",
+      "content": "Cards"
+    },
+    {
       "type": "select",
       "id": "image_ratio",
       "label": "Image ratio",
@@ -309,7 +388,8 @@
           "label": "Landscape"
         }
       ],
-      "default": "portrait"
+      "default": "portrait",
+      "visible_if": "{{ section.settings.layout == 'grid' }}"
     },
     {
       "type": "select",
@@ -333,26 +413,6 @@
     },
     {
       "type": "range",
-      "id": "column_gap",
-      "min": 0,
-      "max": 48,
-      "step": 4,
-      "unit": "px",
-      "label": "Column gap",
-      "default": 12
-    },
-    {
-      "type": "range",
-      "id": "header_gap",
-      "min": 16,
-      "max": 80,
-      "step": 4,
-      "unit": "px",
-      "label": "Header gap",
-      "default": 48
-    },
-    {
-      "type": "range",
       "id": "card_gap",
       "min": 8,
       "max": 40,
@@ -363,76 +423,120 @@
     },
     {
       "type": "select",
-      "id": "layout",
-      "label": "Layout",
+      "id": "card_heading_size",
+      "label": "Heading size",
       "options": [
         {
-          "value": "grid",
-          "label": "Grid"
+          "value": "h1",
+          "label": "XX-large"
         },
         {
-          "value": "split-promotions",
-          "label": "Split promotions"
+          "value": "h2",
+          "label": "X-large"
+        },
+        {
+          "value": "h3",
+          "label": "Large"
+        },
+        {
+          "value": "h4",
+          "label": "Medium"
+        },
+        {
+          "value": "h5",
+          "label": "Small"
+        },
+        {
+          "value": "h6",
+          "label": "X-small"
         }
       ],
-      "default": "grid"
+      "default": "h3",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
       "type": "select",
-      "id": "section_width",
-      "label": "Section width",
+      "id": "card_heading_tag",
+      "label": "HTML Tag",
       "options": [
         {
-          "value": "full",
-          "label": "Full width"
+          "value": "h1",
+          "label": "H1"
         },
         {
-          "value": "page",
-          "label": "Page width"
+          "value": "h2",
+          "label": "H2"
+        },
+        {
+          "value": "h3",
+          "label": "H3"
+        },
+        {
+          "value": "h4",
+          "label": "H4"
+        },
+        {
+          "value": "h5",
+          "label": "H5"
+        },
+        {
+          "value": "h6",
+          "label": "H6"
         }
       ],
-      "default": "full"
+      "default": "h3",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
       "type": "header",
-      "content": "Split promotion heights"
+      "content": "Split promotion heights",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
-      "type": "range",
+      "type": "select",
       "id": "height_desktop",
-      "min": 400,
-      "max": 960,
-      "step": 8,
-      "unit": "px",
       "label": "Desktop height",
-      "default": 768,
+      "options": [
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ],
+      "default": "medium",
       "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
-      "type": "range",
-      "id": "height_tablet",
-      "min": 320,
-      "max": 720,
-      "step": 8,
-      "unit": "px",
-      "label": "Tablet height",
-      "default": 480,
-      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
-    },
-    {
-      "type": "range",
+      "type": "select",
       "id": "height_mobile",
-      "min": 240,
-      "max": 600,
-      "step": 8,
-      "unit": "px",
       "label": "Mobile card height",
-      "default": 360,
+      "options": [
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ],
+      "default": "medium",
       "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
       "type": "header",
-      "content": "Section padding"
+      "content": "Spacing"
     },
     {
       "type": "range",
@@ -554,9 +658,84 @@
       "name": "Collection card",
       "settings": [
         {
+          "type": "header",
+          "content": "Content"
+        },
+        {
           "type": "collection",
           "id": "collection",
           "label": "Collection"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Custom title"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_product_count",
+          "label": "Show product count",
+          "info": "Uses the selected collection's total product count.",
+          "default": true,
+          "visible_if": "{{ section.settings.layout == 'grid' }}"
+        },
+        {
+          "type": "text",
+          "id": "eyebrow",
+          "label": "Eyebrow",
+          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label",
+          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "CTA",
+          "options": [
+            {
+              "value": "primary",
+              "label": "Primary"
+            },
+            {
+              "value": "secondary",
+              "label": "Secondary"
+            },
+            {
+              "value": "tertiary",
+              "label": "Tertiary"
+            }
+          ],
+          "default": "tertiary",
+          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+        },
+        {
+          "type": "select",
+          "id": "content_position",
+          "label": "Text vertical position",
+          "options": [
+            {
+              "value": "top",
+              "label": "Top"
+            },
+            {
+              "value": "center",
+              "label": "Center"
+            },
+            {
+              "value": "bottom",
+              "label": "Bottom"
+            }
+          ],
+          "default": "bottom",
+          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+        },
+        {
+          "type": "header",
+          "content": "Media"
         },
         {
           "type": "image_picker",
@@ -608,140 +787,26 @@
           "default": "center center"
         },
         {
-          "type": "text",
-          "id": "title",
-          "label": "Custom title"
+          "type": "header",
+          "content": "Appearance"
+        },
+        {
+          "type": "checkbox",
+          "id": "override_color_scheme",
+          "label": "Use custom color scheme",
+          "info": "Overrides the Collection list color scheme for this card.",
+          "default": false
+        },
+        {
+          "type": "color_scheme",
+          "id": "color_scheme",
+          "label": "Color scheme",
+          "default": "scheme-1",
+          "visible_if": "{{ block.settings.override_color_scheme }}"
         },
         {
           "type": "header",
           "content": "Overlay text on image"
-        },
-        {
-          "type": "checkbox",
-          "id": "show_product_count",
-          "label": "Show product count",
-          "info": "Uses the selected collection's total product count.",
-          "default": true,
-          "visible_if": "{{ section.settings.layout == 'grid' }}"
-        },
-        {
-          "type": "text",
-          "id": "eyebrow",
-          "label": "Eyebrow",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
-        },
-        {
-          "type": "text",
-          "id": "button_label",
-          "label": "Button label",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
-        },
-        {
-          "type": "select",
-          "id": "content_position",
-          "label": "Text vertical position",
-          "options": [
-            {
-              "value": "top",
-              "label": "Top"
-            },
-            {
-              "value": "center",
-              "label": "Center"
-            },
-            {
-              "value": "bottom",
-              "label": "Bottom"
-            }
-          ],
-          "default": "bottom",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
-        },
-        {
-          "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
-          "options": [
-            {
-              "value": "h1",
-              "label": "XX-large"
-            },
-            {
-              "value": "h2",
-              "label": "X-large"
-            },
-            {
-              "value": "h3",
-              "label": "Large"
-            },
-            {
-              "value": "h4",
-              "label": "Medium"
-            },
-            {
-              "value": "h5",
-              "label": "Small"
-            },
-            {
-              "value": "h6",
-              "label": "X-small"
-            }
-          ],
-          "default": "h3",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
-        },
-        {
-          "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
-          "options": [
-            {
-              "value": "h1",
-              "label": "H1"
-            },
-            {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
-            }
-          ],
-          "default": "h3",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
-        },
-        {
-          "type": "header",
-          "content": "Colors"
-        },
-        {
-          "type": "color",
-          "id": "text_color",
-          "label": "Text"
-        },
-        {
-          "type": "color",
-          "id": "button_color",
-          "label": "CTA",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
-        },
-        {
-          "type": "color",
-          "id": "overlay_color",
-          "label": "Overlay"
         },
         {
           "type": "range",
@@ -787,6 +852,13 @@
     {
       "name": "Collection list split promotions",
       "category": "Collections",
+      "settings": {
+        "layout": "split-promotions",
+        "height_desktop": "medium",
+        "height_mobile": "medium",
+        "card_heading_size": "h3",
+        "card_heading_tag": "h3"
+      },
       "blocks": [
         {
           "type": "collection_card",
