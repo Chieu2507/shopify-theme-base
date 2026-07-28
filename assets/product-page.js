@@ -60,7 +60,6 @@ class ProductPage extends HTMLElement {
     this.querySelectorAll('[data-quantity-increase], [data-quantity-decrease]').forEach((button) => button.addEventListener('click', () => this.changeQuantity(button.hasAttribute('data-quantity-increase') ? 1 : -1), { signal: this.signal }));
     this.querySelector('[data-quantity-input]')?.addEventListener('change', () => this.normalizeQuantity(), { signal: this.signal });
     this.form?.addEventListener('submit', (event) => this.addToCart(event), { signal: this.signal });
-    this.querySelector('[data-buy-now]')?.addEventListener('click', () => this.buyNow(), { signal: this.signal });
   }
 
   bindSizeChart() {
@@ -762,10 +761,6 @@ changeLightboxSlide(delta) {
     const label = this.querySelector('[data-add-to-cart-label]');
     if (button) button.disabled = !available;
     if (label) label.textContent = this.variant ? (available ? 'Add to cart' : 'Sold out') : 'Unavailable';
-    const buyNow = this.querySelector('[data-buy-now]');
-    const buyNowLabel = this.querySelector('[data-buy-now-label]');
-    if (buyNow) buyNow.disabled = !available;
-    if (buyNowLabel) buyNowLabel.textContent = this.variant ? (available ? 'Buy it now' : 'Sold out') : 'Unavailable';
     const stickyButton = this.querySelector('[data-sticky-cart-add]');
     const stickyLabel = this.querySelector('[data-sticky-cart-label]');
     const stickyVariant = this.querySelector('[data-sticky-cart-variant]');
@@ -1013,38 +1008,6 @@ changeLightboxSlide(delta) {
       } else count?.remove();
     });
     return cart;
-  }
-
-  async buyNow() {
-    if (!this.variant?.available || !this.form) return;
-    this.normalizeQuantity();
-    const button = this.querySelector('[data-buy-now]');
-    button.disabled = true;
-    this.clearInventoryWarning();
-    this.setStatus('Preparing checkout…');
-    try {
-      const response = await fetch(window.routes?.cart_add_url || '/cart/add.js', { method: 'POST', headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: new FormData(this.form), signal: this.signal });
-      const item = await response.json();
-      if (!response.ok) {
-        const error = new Error(item.description || item.message || 'Unable to start checkout.');
-        error.payload = item;
-        error.status = response.status;
-        error.url = response.url;
-        throw error;
-      }
-      window.location.assign('/checkout');
-    } catch (error) {
-      if (error.name === 'AbortError') return;
-      console.error('[Jovie] Buy now failed', {
-        error,
-        variantId: this.variant?.id,
-        payload: error.payload || null,
-      });
-      const availableQuantity = await this.resolveAvailableStock(error.payload);
-      if (availableQuantity !== null) this.showInventoryWarning(availableQuantity);
-      this.setStatus(error.message, true);
-      if (this.isConnected) button.disabled = false;
-    }
   }
 
   async resolveAvailableStock(payload = {}) {
