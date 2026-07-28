@@ -11,6 +11,28 @@
   assign before_image = before_block.settings.image
   assign after_image = after_block.settings.image
   assign comparison_ratio = before_image.aspect_ratio | default: 1.333333
+
+  assign page_width_pixels = settings.max_page_width | remove: 'rem' | times: 16
+  assign desktop_page_margin = settings.page_margin_desktop | at_least: settings.min_page_margin
+  assign tablet_page_margin = settings.page_margin_tablet | at_least: settings.min_page_margin
+  assign mobile_page_margin = settings.page_margin_mobile | at_least: settings.min_page_margin
+  assign desktop_horizontal_margin = desktop_page_margin | times: 2
+  assign tablet_horizontal_margin = tablet_page_margin | times: 2
+  assign mobile_horizontal_margin = mobile_page_margin | times: 2
+  assign comparison_max_width = page_width_pixels | minus: desktop_horizontal_margin
+  capture comparison_image_sizes
+    echo '(min-width: '
+    echo page_width_pixels
+    echo 'px) '
+    echo comparison_max_width
+    echo 'px, (min-width: 990px) calc(100vw - '
+    echo desktop_horizontal_margin
+    echo 'px), (min-width: 750px) calc(100vw - '
+    echo tablet_horizontal_margin
+    echo 'px), calc(100vw - '
+    echo mobile_horizontal_margin
+    echo 'px)'
+  endcapture
 %}
 
 <section
@@ -55,7 +77,7 @@
             {% if before_block.settings.mobile_image != blank %}
               <source media="(max-width: 749px)" srcset="{{ before_block.settings.mobile_image | image_url: width: 1200 }}">
             {% endif %}
-            {% render 'responsive-image', image: before_image, max_width: 2400, widths: '480, 750, 1100, 1500, 1920, 2400', sizes: '(min-width: 990px) 52vw, 100vw', class: 'image-comparison__image', loading: 'lazy', alt: before_block.settings.image_alt %}
+            {% render 'responsive-image', image: before_image, max_width: 2400, widths: '480, 750, 1100, 1500, 1920, 2400', sizes: comparison_image_sizes, class: 'image-comparison__image', loading: 'lazy', alt: before_block.settings.image_alt %}
           </picture>
         {% else %}
           {% render 'media-placeholder', class_name: 'image-comparison__placeholder', asset_name: 'placeholder-image-default-1.svg' %}
@@ -69,7 +91,7 @@
             {% if after_block.settings.mobile_image != blank %}
               <source media="(max-width: 749px)" srcset="{{ after_block.settings.mobile_image | image_url: width: 1200 }}">
             {% endif %}
-            {% render 'responsive-image', image: after_image, max_width: 2400, widths: '480, 750, 1100, 1500, 1920, 2400', sizes: '(min-width: 990px) 52vw, 100vw', class: 'image-comparison__image', loading: 'lazy', alt: after_block.settings.image_alt %}
+            {% render 'responsive-image', image: after_image, max_width: 2400, widths: '480, 750, 1100, 1500, 1920, 2400', sizes: comparison_image_sizes, class: 'image-comparison__image', loading: 'lazy', alt: after_block.settings.image_alt %}
           </picture>
         {% else %}
           {% render 'media-placeholder', class_name: 'image-comparison__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
