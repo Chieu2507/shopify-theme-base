@@ -55,6 +55,8 @@ class ProductPage extends HTMLElement {
     this.galleryResizeObserver?.disconnect();
     this.stickyCartObserver?.disconnect();
     this.stickyCartFooterObserver?.disconnect();
+    this.stickyCartResizeObserver?.disconnect();
+    this.updateBackToTopClearance?.();
     document.removeEventListener('shopify:section:load', this.onSectionLoad);
   }
 
@@ -110,6 +112,7 @@ class ProductPage extends HTMLElement {
     };
     this.closeSizeChart = () => {
       if (!dialog.classList.contains('is-open') || dialog.classList.contains('is-closing')) return;
+      resetHandleDrag();
       dialog.classList.add('is-closing');
       panel?.addEventListener('animationend', completeClose, { once: true, signal: this.signal });
     };
@@ -137,6 +140,8 @@ class ProductPage extends HTMLElement {
         distance: 0
       };
       panel.classList.remove('is-handle-settling', 'is-handle-closing');
+      panel.style.transform = 'translate3d(0, 0, 0)';
+      panel.style.opacity = '1';
       panel.classList.add('is-handle-dragging');
       panel.style.removeProperty('transition');
       panel.style.removeProperty('opacity');
@@ -171,7 +176,6 @@ class ProductPage extends HTMLElement {
         panel.style.transform = 'translate3d(0, 0, 0)';
         panel.style.opacity = '1';
       });
-      handleDragTimer = window.setTimeout(resetHandleDrag, 240);
     };
     if ('PointerEvent' in window) {
       handle?.addEventListener('pointerdown', startHandleDrag, { signal: this.signal });
@@ -249,11 +253,23 @@ class ProductPage extends HTMLElement {
     }, { signal: this.signal });
     this.stickyCartPassedBuyButtons = false;
     this.stickyCartFooterVisible = false;
+    this.updateBackToTopClearance = () => {
+      const visibleStickyCart = document.querySelector('[data-sticky-cart].is-visible');
+      if (!visibleStickyCart) {
+        document.documentElement.style.removeProperty('--sticky-cart-clearance');
+        return;
+      }
+      const clearance = Math.ceil(visibleStickyCart.getBoundingClientRect().height) + 16;
+      document.documentElement.style.setProperty('--sticky-cart-clearance', `${clearance}px`);
+    };
     const updateStickyCartVisibility = () => {
       const shouldShow = this.stickyCartPassedBuyButtons && !this.stickyCartFooterVisible;
       sticky.classList.toggle('is-visible', shouldShow);
       sticky.setAttribute('aria-hidden', shouldShow ? 'false' : 'true');
+      this.updateBackToTopClearance();
     };
+    this.stickyCartResizeObserver = new ResizeObserver(this.updateBackToTopClearance);
+    this.stickyCartResizeObserver.observe(sticky);
     this.stickyCartObserver = new IntersectionObserver(([entry]) => {
       this.stickyCartPassedBuyButtons = !entry.isIntersecting && entry.boundingClientRect.bottom < 0;
       updateStickyCartVisibility();

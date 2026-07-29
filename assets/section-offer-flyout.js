@@ -205,6 +205,8 @@ if (!customElements.get('offer-flyout')) {
         distance: 0,
       };
       this.dialog.classList.remove('is-handle-settling', 'is-handle-closing');
+      this.dialog.style.transform = 'translate3d(0, 0, 0)';
+      this.dialog.style.opacity = '1';
       this.dialog.classList.add('is-handle-dragging');
       this.dialog.style.removeProperty('transition');
       this.dialog.style.removeProperty('opacity');
@@ -264,7 +266,6 @@ if (!customElements.get('offer-flyout')) {
         this.dialog.style.transform = 'translate3d(0, 0, 0)';
         this.dialog.style.opacity = '1';
       });
-      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), 240);
     }
 
     resetHandleDrag() {

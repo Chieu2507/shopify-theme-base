@@ -257,14 +257,15 @@
 
     {% if section.settings.enable_filtering and collection.filters.size > 0 %}
       <dialog
-        class="main-collection__filter-dialog"
+        class="main-collection__filter-dialog modal-drag-target"
         id="CollectionFilters-{{ section.id }}"
         aria-labelledby="CollectionFiltersTitle-{{ section.id }}"
         scroll-lock
         data-collection-filter-dialog
       >
-        <span class="main-collection__filter-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
+        <span class="main-collection__filter-backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
         <form class="main-collection__filter-form" action="{{ collection.url }}" method="get">
+          <div class="quick-view__handle main-collection__filter-handle" data-collection-filter-handle aria-hidden="true"></div>
           <header class="main-collection__filter-header">
             <h2 id="CollectionFiltersTitle-{{ section.id }}">{{ 'collection.filters' | t }}</h2>
             <button class="main-collection__filter-close modal-close-button close-icon" type="button" aria-label="{{ 'collection.close_filters' | t | escape }}" data-collection-filter-close></button>
@@ -990,39 +991,8 @@
     overflow: visible;
   }
 
-  .main-collection__filter-dialog::backdrop {
-    background: rgb(0 0 0 / 0.32);
-    backdrop-filter: blur(4px);
-    -webkit-backdrop-filter: blur(4px);
-  }
-
-  html.collection-filter-backdrop-cursor,
-  html.collection-filter-backdrop-cursor body,
-  html.collection-filter-backdrop-cursor .main-collection__filter-dialog::backdrop {
-    cursor: none !important;
-  }
-
-  .main-collection__filter-backdrop-pointer {
-    position: absolute;
-    z-index: 12;
-    top: var(--main-collection-filter-pointer-y, 0);
-    left: var(--main-collection-filter-pointer-x, 0);
-    width: 64px;
-    height: 64px;
-    opacity: 0;
-    visibility: hidden;
-    pointer-events: none;
-    transform: translate(-50%, -50%) scale(.68);
-    transition: opacity 160ms ease, transform 220ms cubic-bezier(.22, 1, .36, 1), visibility 0s linear 220ms;
-    will-change: transform, opacity;
-  }
-
-  .main-collection__filter-backdrop-pointer.is-visible {
-    opacity: 1;
-    visibility: visible;
-    transform: translate(-50%, -50%) scale(1);
-    transition-delay: 0s;
-  }
+  .main-collection__filter-dialog::backdrop { background: color-mix(in srgb, var(--color-heading) 30%, transparent); backdrop-filter: blur(10px) saturate(.9); -webkit-backdrop-filter: blur(10px) saturate(.9); }
+  html.modal-backdrop-cursor .main-collection__filter-dialog::backdrop { cursor: none !important; }
 
   .main-collection__filter-dialog[open]:not(.is-closing) {
     animation: main-collection-filter-drawer-in 280ms cubic-bezier(.22, 1, .36, 1) both;
@@ -1064,7 +1034,7 @@
   .main-collection__filter-form {
     display: grid;
     height: 100%;
-    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-rows: auto auto minmax(0, 1fr) auto;
   }
 
   .main-collection__filter-body {
@@ -1073,12 +1043,16 @@
   }
 
   .main-collection__filter-header {
+    position: sticky;
+    z-index: 1;
+    top: 0;
     display: flex;
     min-height: 64px;
     align-items: center;
     justify-content: space-between;
     padding-inline: 24px;
     border-bottom: 1px solid var(--color-variant-border);
+    background: var(--color-background);
   }
 
   .main-collection__filter-header h2 {
@@ -1091,6 +1065,8 @@
     width: 18px;
     height: 18px;
   }
+
+  .main-collection__filter-handle { display: none; }
 
   .main-collection__active-filters {
     display: flex;
@@ -1575,6 +1551,32 @@
     .main-collection__pagination {
       min-height: 72px;
     }
+
+    .main-collection__filter-dialog {
+      position: fixed;
+      inset: auto 0 0;
+      width: 100vw;
+      height: 85dvh;
+      max-height: 85dvh;
+      margin: 0;
+      overflow: visible;
+      border-radius: 14px 14px 0 0;
+      background: transparent;
+      box-shadow: 0 -14px 42px rgb(0 0 0 / 12%);
+      transform: translateY(100%);
+    }
+
+    .main-collection__filter-form { overflow: hidden; border-radius: inherit; background: var(--color-background); }
+    .main-collection__filter-dialog[open]:not(.is-closing) { transform: translateY(0); }
+    .main-collection__filter-dialog[open]:not(.is-closing) { animation-name: main-collection-filter-drawer-in-mobile; }
+    .main-collection__filter-dialog.is-closing { animation-name: main-collection-filter-drawer-out-mobile; }
+    .main-collection__filter-handle { display: grid; width: 100%; height: 28px; place-items: center; background: var(--color-background); cursor: grab; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
+    .main-collection__filter-handle::before { width: 48px; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--color-heading) 14%, transparent); content: ''; }
+    .main-collection__filter-dialog.is-handle-dragging .main-collection__filter-handle { cursor: grabbing; }
+    .main-collection__filter-header { min-height: 64px; }
+
+    @keyframes main-collection-filter-drawer-in-mobile { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes main-collection-filter-drawer-out-mobile { from { transform: translateY(0); } to { transform: translateY(100%); } }
   }
 
   @media (prefers-reduced-motion: reduce) {

@@ -1,4 +1,11 @@
 (() => {
+  document.addEventListener('click', (event) => {
+    const handle = event.target instanceof Element ? event.target.closest('.quick-view__handle') : null;
+    if (!handle) return;
+    event.preventDefault();
+    event.stopImmediatePropagation();
+  }, true);
+
   class ModalBackdropPointer {
     constructor({ root, panel, pointer, isOpen, cursorClass = 'modal-backdrop-cursor', pointerX = '--modal-backdrop-pointer-x', pointerY = '--modal-backdrop-pointer-y', relativeToRoot = false, isDisabled = () => false }) {
       this.root = root;

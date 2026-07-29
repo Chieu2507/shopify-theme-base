@@ -247,33 +247,77 @@ if (!customElements.get('collection-facets')) {
       this.classList.add('is-enhanced');
       this.sectionId = this.dataset.sectionId;
       this.dialog = this.querySelector('[data-collection-filter-dialog]');
+      this.filterPanel = this.dialog?.querySelector('.main-collection__filter-form');
       this.backdropPointer = this.dialog?.querySelector('.main-collection__filter-backdrop-pointer');
-
-      this.onBackdropPointerMove = (event) => {
-        if (!this.dialog?.open || this.dialog.classList.contains('is-closing')) {
-          this.hideBackdropPointer();
-          return;
-        }
-
-        const rect = this.dialog.getBoundingClientRect();
-        const insidePanel = event.clientX >= rect.left
-          && event.clientX <= rect.right
-          && event.clientY >= rect.top
-          && event.clientY <= rect.bottom;
-        const showPointer = !insidePanel;
-
-        document.documentElement.classList.toggle('collection-filter-backdrop-cursor', showPointer);
-        if (!this.backdropPointer) return;
-
-        this.backdropPointer.style.setProperty('--main-collection-filter-pointer-x', `${event.clientX - rect.left}px`);
-        this.backdropPointer.style.setProperty('--main-collection-filter-pointer-y', `${event.clientY - rect.top}px`);
-        this.backdropPointer.classList.toggle('is-visible', showPointer);
-      };
+      this.mobileDialog = window.matchMedia('(max-width: 749px)');
+      this.backdropInteraction = this.dialog && window.SpinelModalBackdropPointer
+        ? new window.SpinelModalBackdropPointer({
+          root: this.dialog,
+          panel: this.filterPanel,
+          pointer: this.backdropPointer,
+          isOpen: () => this.dialog.open && !this.dialog.classList.contains('is-closing'),
+          relativeToRoot: true,
+        })
+        : null;
       this.onDialogCancel = (event) => {
         event.preventDefault();
         this.closeDialog();
       };
       this.onDialogClose = () => this.hideBackdropPointer();
+
+      this.resetHandleDrag = () => {
+        window.clearTimeout(this.handleDragTimer);
+        this.handleDragTimer = null;
+        if (this.handleDrag) {
+          try { this.handleDrag.handle.releasePointerCapture(this.handleDrag.pointerId); } catch (_) {}
+        }
+        this.handleDrag = null;
+        this.dialog?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
+        this.dialog?.style.removeProperty('transform');
+        this.dialog?.style.removeProperty('opacity');
+        this.dialog?.style.removeProperty('transition');
+      };
+      this.onHandlePointerDown = (event) => {
+        const handle = event.target.closest('[data-collection-filter-handle]');
+        if (!handle || !this.dialog?.open || !this.mobileDialog.matches || !event.isPrimary || event.button > 0 || this.dialog.classList.contains('is-closing')) return;
+        event.preventDefault();
+        this.handleDrag = { handle, pointerId: event.pointerId, startY: event.clientY, lastY: event.clientY, lastTime: performance.now(), velocity: 0, distance: 0 };
+        this.dialog.style.transform = 'translate3d(0, 0, 0)';
+        this.dialog.style.opacity = '1';
+        this.dialog.classList.add('is-handle-dragging');
+        handle.setPointerCapture?.(event.pointerId);
+      };
+      this.onHandlePointerMove = (event) => {
+        const drag = this.handleDrag;
+        if (!drag || event.pointerId !== drag.pointerId) return;
+        event.preventDefault();
+        const distance = Math.max(0, event.clientY - drag.startY);
+        const now = performance.now();
+        drag.velocity = Math.max(0, (event.clientY - drag.lastY) / Math.max(1, now - drag.lastTime));
+        drag.lastY = event.clientY;
+        drag.lastTime = now;
+        drag.distance = distance;
+        this.dialog.style.transform = `translate3d(0, ${distance}px, 0)`;
+        this.dialog.style.opacity = String(Math.max(.35, 1 - distance / Math.max(1, this.dialog.offsetHeight)));
+      };
+      this.onHandlePointerUp = (event) => {
+        const drag = this.handleDrag;
+        if (!drag || event.pointerId !== drag.pointerId) return;
+        const shouldClose = drag.distance > Math.max(96, this.dialog.offsetHeight * .18) || drag.velocity > .75;
+        try { drag.handle.releasePointerCapture(event.pointerId); } catch (_) {}
+        this.handleDrag = null;
+        this.dialog.classList.remove('is-handle-dragging');
+        if (shouldClose) {
+          this.dialog.classList.add('is-handle-closing');
+          this.dialog.style.transform = `translate3d(0, ${Math.max(window.innerHeight, this.dialog.offsetHeight + 60)}px, 0)`;
+          this.dialog.style.opacity = '0';
+          this.handleDragTimer = window.setTimeout(() => this.finishCloseDialog(), 240);
+          return;
+        }
+        this.dialog.classList.add('is-handle-settling');
+        this.dialog.style.transform = 'translate3d(0, 0, 0)';
+        this.dialog.style.opacity = '1';
+      };
 
       this.onClick = (event) => {
         if (event.target.closest('[data-collection-filter-open]')) {
@@ -345,7 +389,10 @@ if (!customElements.get('collection-facets')) {
       this.addEventListener('submit', this.onSubmit);
       this.dialog?.addEventListener('cancel', this.onDialogCancel);
       this.dialog?.addEventListener('close', this.onDialogClose);
-      document.addEventListener('mousemove', this.onBackdropPointerMove, { passive: true });
+      this.dialog?.addEventListener('pointerdown', this.onHandlePointerDown);
+      this.dialog?.addEventListener('pointermove', this.onHandlePointerMove);
+      this.dialog?.addEventListener('pointerup', this.onHandlePointerUp);
+      this.dialog?.addEventListener('pointercancel', this.onHandlePointerUp);
       window.addEventListener('popstate', this.onPopState);
       document.addEventListener('shopify:section:unload', this.onSectionUnload);
     }
@@ -357,23 +404,28 @@ if (!customElements.get('collection-facets')) {
       this.removeEventListener('submit', this.onSubmit);
       this.dialog?.removeEventListener('cancel', this.onDialogCancel);
       this.dialog?.removeEventListener('close', this.onDialogClose);
-      document.removeEventListener('mousemove', this.onBackdropPointerMove);
+      this.dialog?.removeEventListener('pointerdown', this.onHandlePointerDown);
+      this.dialog?.removeEventListener('pointermove', this.onHandlePointerMove);
+      this.dialog?.removeEventListener('pointerup', this.onHandlePointerUp);
+      this.dialog?.removeEventListener('pointercancel', this.onHandlePointerUp);
       window.removeEventListener('popstate', this.onPopState);
       document.removeEventListener('shopify:section:unload', this.onSectionUnload);
       window.clearTimeout(this.priceTimer);
+      this.resetHandleDrag?.();
+      this.backdropInteraction?.destroy();
       this.hideBackdropPointer();
       this.finishCloseDialog();
       this.requestController?.abort();
     }
 
     hideBackdropPointer() {
-      document.documentElement.classList.remove('collection-filter-backdrop-cursor');
-      this.backdropPointer?.classList.remove('is-visible');
+      this.backdropInteraction?.hide();
     }
 
     closeDialog() {
       if (!this.dialog?.open) return Promise.resolve();
       if (this.closePromise) return this.closePromise;
+      this.resetHandleDrag?.();
       this.hideBackdropPointer();
 
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
@@ -394,6 +446,7 @@ if (!customElements.get('collection-facets')) {
       this.closeTimer = null;
       if (this.dialog?.open) this.dialog.close();
       this.dialog?.classList.remove('is-closing');
+      this.resetHandleDrag?.();
       this.hideBackdropPointer();
       const resolve = this.resolveClose;
       this.resolveClose = null;
@@ -464,7 +517,12 @@ if (!customElements.get('collection-facets')) {
           currentToolbar.replaceWith(nextToolbar);
           currentProducts.replaceWith(nextProducts);
           this.dialog.replaceChildren(...Array.from(nextDialog.childNodes));
+          this.filterPanel = this.dialog.querySelector('.main-collection__filter-form');
           this.backdropPointer = this.dialog.querySelector('.main-collection__filter-backdrop-pointer');
+          if (this.backdropInteraction) {
+            this.backdropInteraction.panel = this.filterPanel;
+            this.backdropInteraction.pointer = this.backdropPointer;
+          }
           nextProducts.dispatchEvent(new CustomEvent('collection:products-loaded', { bubbles: true }));
 
           window.requestAnimationFrame(() => {

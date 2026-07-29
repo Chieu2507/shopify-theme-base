@@ -161,6 +161,8 @@
         distance: 0
       };
       this.panel.classList.remove('is-handle-settling', 'is-handle-closing');
+      this.panel.style.transform = 'translate3d(0, 0, 0)';
+      this.panel.style.opacity = '1';
       this.panel.classList.add('is-handle-dragging');
       this.panel.style.removeProperty('transition');
       this.panel.style.removeProperty('opacity');
@@ -203,7 +205,6 @@
         this.panel.style.transform = 'translate3d(0, 0, 0)';
         this.panel.style.opacity = '1';
       });
-      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), 240);
     }
 
     closeFromHandle() {
@@ -258,6 +259,7 @@
 
     close() {
       if (!this.isOpen) return;
+      this.resetHandleDrag();
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
