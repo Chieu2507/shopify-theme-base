@@ -71,20 +71,121 @@ class ProductPage extends HTMLElement {
     if (!dialog) return;
     const panel = dialog.querySelector('.product-size-chart__panel');
     const closeButton = dialog.querySelector('.product-size-chart__close');
+    const handle = dialog.querySelector('[data-size-chart-handle]');
+    const mobileSizeChart = window.matchMedia('(max-width: 989px)');
+    let handleDrag = null;
+    let handleDragTimer = null;
+    const resetHandleDrag = () => {
+      window.clearTimeout(handleDragTimer);
+      handleDragTimer = null;
+      if (handleDrag) {
+        try { handle?.releasePointerCapture(handleDrag.pointerId); } catch (_) {}
+      }
+      handleDrag = null;
+      panel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
+      panel?.style.removeProperty('transform');
+      panel?.style.removeProperty('opacity');
+      panel?.style.removeProperty('transition');
+    };
+    const completeClose = () => {
+      dialog.classList.remove('is-open', 'is-closing');
+      dialog.setAttribute('aria-hidden', 'true');
+      dialog.removeAttribute('scroll-lock');
+      resetHandleDrag();
+      this.sizeChartRestoreTarget?.focus?.({ preventScroll: true });
+    };
     this.closeSizeChart = () => {
       if (!dialog.classList.contains('is-open') || dialog.classList.contains('is-closing')) return;
       dialog.classList.add('is-closing');
-      panel?.addEventListener('animationend', () => {
-        dialog.classList.remove('is-open', 'is-closing');
-        dialog.setAttribute('aria-hidden', 'true');
-        dialog.removeAttribute('scroll-lock');
-        this.sizeChartRestoreTarget?.focus?.({ preventScroll: true });
-      }, { once: true, signal: this.signal });
+      panel?.addEventListener('animationend', completeClose, { once: true, signal: this.signal });
     };
+    const closeFromHandle = () => {
+      if (!dialog.classList.contains('is-open') || dialog.classList.contains('is-closing')) return;
+      dialog.classList.add('is-closing');
+      panel?.classList.add('is-handle-closing');
+      if (!panel) return;
+      panel.style.opacity = '1';
+      requestAnimationFrame(() => {
+        panel.style.transform = `translate3d(0, ${Math.max(window.innerHeight, panel.offsetHeight + 60)}px, 0)`;
+        panel.style.opacity = '0';
+      });
+      window.setTimeout(completeClose, 240);
+    };
+    const startHandleDrag = (event) => {
+      if (!panel || !handle || !dialog.classList.contains('is-open') || !mobileSizeChart.matches || !event.isPrimary || event.button > 0 || dialog.classList.contains('is-closing')) return;
+      window.clearTimeout(handleDragTimer);
+      handleDrag = {
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        lastY: event.clientY,
+        lastTime: performance.now(),
+        velocity: 0,
+        distance: 0
+      };
+      panel.classList.remove('is-handle-settling', 'is-handle-closing');
+      panel.classList.add('is-handle-dragging');
+      panel.style.removeProperty('transition');
+      panel.style.removeProperty('opacity');
+      try { handle.setPointerCapture(event.pointerId); } catch (_) {}
+      event.preventDefault();
+    };
+    const moveHandleDrag = (event) => {
+      if (!handleDrag || event.pointerId !== handleDrag.pointerId || !panel) return;
+      const now = performance.now();
+      const elapsed = Math.max(now - handleDrag.lastTime, 1);
+      const movement = event.clientY - handleDrag.lastY;
+      handleDrag.velocity = movement / elapsed;
+      handleDrag.lastY = event.clientY;
+      handleDrag.lastTime = now;
+      handleDrag.distance = Math.max(0, event.clientY - handleDrag.startY);
+      panel.style.transform = `translate3d(0, ${handleDrag.distance}px, 0)`;
+      event.preventDefault();
+    };
+    const endHandleDrag = (event, cancelled = false) => {
+      if (!handleDrag || event.pointerId !== handleDrag.pointerId || !panel) return;
+      try { handle?.releasePointerCapture(event.pointerId); } catch (_) {}
+      const closeDistance = Math.min(140, panel.getBoundingClientRect().height * 0.2);
+      const shouldClose = !cancelled && (handleDrag.distance >= closeDistance || (handleDrag.distance >= 32 && handleDrag.velocity > 0.55));
+      handleDrag = null;
+      panel.classList.remove('is-handle-dragging');
+      if (shouldClose) {
+        closeFromHandle();
+        return;
+      }
+      panel.classList.add('is-handle-settling');
+      requestAnimationFrame(() => {
+        panel.style.transform = 'translate3d(0, 0, 0)';
+        panel.style.opacity = '1';
+      });
+      handleDragTimer = window.setTimeout(resetHandleDrag, 240);
+    };
+    if ('PointerEvent' in window) {
+      handle?.addEventListener('pointerdown', startHandleDrag, { signal: this.signal });
+      handle?.addEventListener('pointermove', moveHandleDrag, { signal: this.signal });
+      handle?.addEventListener('pointerup', endHandleDrag, { signal: this.signal });
+      handle?.addEventListener('pointercancel', (event) => endHandleDrag(event, true), { signal: this.signal });
+    } else {
+      const touchEvent = (event, callback) => {
+        const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === handleDrag?.pointerId) || event.changedTouches[0];
+        if (!touch) return;
+        callback({
+          isPrimary: true,
+          button: 0,
+          pointerId: touch.identifier,
+          clientY: touch.clientY,
+          preventDefault: () => event.preventDefault()
+        });
+      };
+      handle?.addEventListener('touchstart', (event) => touchEvent(event, startHandleDrag), { passive: false, signal: this.signal });
+      handle?.addEventListener('touchmove', (event) => touchEvent(event, moveHandleDrag), { passive: false, signal: this.signal });
+      handle?.addEventListener('touchend', (event) => touchEvent(event, endHandleDrag), { signal: this.signal });
+      handle?.addEventListener('touchcancel', (event) => touchEvent(event, (touch) => endHandleDrag(touch, true)), { signal: this.signal });
+    }
     this.querySelectorAll('[data-size-chart-open]').forEach((button) => {
       button.addEventListener('click', () => {
         if (!dialog.classList.contains('is-open')) {
           this.sizeChartRestoreTarget = button;
+          resetHandleDrag();
           dialog.classList.remove('is-closing');
           dialog.classList.add('is-open');
           dialog.setAttribute('aria-hidden', 'false');

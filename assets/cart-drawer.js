@@ -6,6 +6,7 @@
       this.backdrop = this.querySelector('[data-cart-drawer-close]');
       this.backdropPointer = this.querySelector('.cart-drawer__backdrop-pointer');
       this.panel = this.querySelector('.cart-drawer__panel');
+      this.handle = this.querySelector('[data-cart-drawer-handle]');
       this.items = this.querySelector('[data-cart-drawer-items]');
       this.footer = this.querySelector('[data-cart-drawer-footer]');
       this.status = this.querySelector('[data-cart-drawer-status]');
@@ -22,6 +23,9 @@
       this.isOpen = false;
       this.busy = false;
       this.lastFocusedElement = null;
+      this.handleDrag = null;
+      this.handleDragTimer = null;
+      this.mobileDrawer = window.matchMedia('(max-width: 989px)');
       this.bind();
       this.renderEmpty();
       this.handleProductAdd = (event) => {
@@ -84,6 +88,17 @@
       }, { signal });
       this.querySelector('[data-cart-drawer-save-note]')?.addEventListener('click', () => this.saveNote(), { signal });
       this.recommendationList?.addEventListener('scroll', () => this.updateRecommendationDot(), { passive: true, signal });
+      if ('PointerEvent' in window) {
+        this.handle?.addEventListener('pointerdown', (event) => this.startHandleDrag(event), { signal });
+        this.handle?.addEventListener('pointermove', (event) => this.moveHandleDrag(event), { signal });
+        this.handle?.addEventListener('pointerup', (event) => this.endHandleDrag(event), { signal });
+        this.handle?.addEventListener('pointercancel', (event) => this.endHandleDrag(event, true), { signal });
+      } else {
+        this.handle?.addEventListener('touchstart', (event) => this.startTouchHandleDrag(event), { passive: false, signal });
+        this.handle?.addEventListener('touchmove', (event) => this.moveTouchHandleDrag(event), { passive: false, signal });
+        this.handle?.addEventListener('touchend', (event) => this.endTouchHandleDrag(event), { signal });
+        this.handle?.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
+      }
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && this.isOpen) this.close();
         if (event.key === 'Tab' && this.isOpen) this.trapFocus(event);
@@ -110,9 +125,136 @@
       }
     }
 
+    startTouchHandleDrag(event) {
+      const touch = event.changedTouches[0];
+      if (!touch) return;
+      this.startHandleDrag({
+        isPrimary: true,
+        button: 0,
+        pointerId: touch.identifier,
+        clientY: touch.clientY,
+        preventDefault: () => event.preventDefault()
+      });
+    }
+
+    moveTouchHandleDrag(event) {
+      const drag = this.handleDrag;
+      if (!drag) return;
+      const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === drag.pointerId);
+      if (!touch) return;
+      this.moveHandleDrag({
+        pointerId: touch.identifier,
+        clientY: touch.clientY,
+        preventDefault: () => event.preventDefault()
+      });
+    }
+
+    endTouchHandleDrag(event, cancelled = false) {
+      const drag = this.handleDrag;
+      if (!drag) return;
+      const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === drag.pointerId);
+      if (!touch) return;
+      this.endHandleDrag({ pointerId: touch.identifier }, cancelled);
+    }
+
+    startHandleDrag(event) {
+      if (!this.panel || !this.handle || !this.isOpen || !this.mobileDrawer.matches || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
+
+      window.clearTimeout(this.handleDragTimer);
+      this.handleDrag = {
+        pointerId: event.pointerId,
+        startY: event.clientY,
+        lastY: event.clientY,
+        lastTime: performance.now(),
+        velocity: 0,
+        distance: 0
+      };
+      this.panel.classList.remove('is-handle-settling', 'is-handle-closing');
+      this.panel.classList.add('is-handle-dragging');
+      this.panel.style.removeProperty('transition');
+      this.panel.style.removeProperty('opacity');
+      try { this.handle.setPointerCapture(event.pointerId); } catch (_) {}
+      event.preventDefault();
+    }
+
+    moveHandleDrag(event) {
+      const drag = this.handleDrag;
+      if (!drag || event.pointerId !== drag.pointerId) return;
+
+      const now = performance.now();
+      const elapsed = Math.max(now - drag.lastTime, 1);
+      const movement = event.clientY - drag.lastY;
+      drag.velocity = movement / elapsed;
+      drag.lastY = event.clientY;
+      drag.lastTime = now;
+      drag.distance = Math.max(0, event.clientY - drag.startY);
+      this.panel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+      event.preventDefault();
+    }
+
+    endHandleDrag(event, cancelled = false) {
+      const drag = this.handleDrag;
+      if (!drag || event.pointerId !== drag.pointerId) return;
+
+      try { this.handle?.releasePointerCapture(event.pointerId); } catch (_) {}
+      const closeDistance = Math.min(140, this.panel.getBoundingClientRect().height * 0.2);
+      const shouldClose = !cancelled && (drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55));
+      this.handleDrag = null;
+      this.panel.classList.remove('is-handle-dragging');
+
+      if (shouldClose) {
+        this.closeFromHandle();
+        return;
+      }
+
+      this.panel.classList.add('is-handle-settling');
+      requestAnimationFrame(() => {
+        this.panel.style.transform = 'translate3d(0, 0, 0)';
+        this.panel.style.opacity = '1';
+      });
+      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), 240);
+    }
+
+    closeFromHandle() {
+      if (!this.isOpen) return;
+      this.isOpen = false;
+      this.classList.remove('is-open');
+      this.classList.add('is-closing');
+      document.documentElement.classList.remove('cart-drawer-open', 'cart-drawer-backdrop-cursor');
+      this.backdropPointer?.classList.remove('is-visible');
+      document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
+      this.lastFocusedElement?.focus?.({ preventScroll: true });
+      this.panel.classList.add('is-handle-closing');
+      this.panel.style.opacity = '1';
+      requestAnimationFrame(() => {
+        this.panel.style.transform = `translate3d(0, ${Math.max(window.innerHeight, this.panel.offsetHeight + 60)}px, 0)`;
+        this.panel.style.opacity = '0';
+      });
+      window.clearTimeout(this.closeTimer);
+      this.closeTimer = window.setTimeout(() => {
+        this.hidden = true;
+        this.classList.remove('is-closing');
+        this.resetHandleDrag();
+      }, 240);
+    }
+
+    resetHandleDrag() {
+      window.clearTimeout(this.handleDragTimer);
+      this.handleDragTimer = null;
+      if (this.handleDrag) {
+        try { this.handle?.releasePointerCapture(this.handleDrag.pointerId); } catch (_) {}
+      }
+      this.handleDrag = null;
+      this.panel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
+      this.panel?.style.removeProperty('transform');
+      this.panel?.style.removeProperty('opacity');
+      this.panel?.style.removeProperty('transition');
+    }
+
     async open(trigger = null) {
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
+      this.resetHandleDrag();
       this.hidden = false;
       this.isOpen = true;
       this.classList.remove('is-closing');
