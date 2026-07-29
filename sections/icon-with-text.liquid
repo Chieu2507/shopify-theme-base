@@ -11,6 +11,12 @@
     style="--section-padding-top: {{ section.settings.padding_top | default: 10 }}px; --section-padding-bottom: {{ section.settings.padding_bottom | default: 64 }}px; --icon-with-text-column-gap: {{ section.settings.column_gap | default: 28 }}px; --icon-with-text-row-gap: {{ section.settings.row_gap | default: 40 }}px; --icon-with-text-content-gap: {{ section.settings.content_gap | default: 24 }}px; --icon-with-text-columns-desktop: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-tablet: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-mobile: {{ section.settings.columns_mobile | default: 1 }};{% if section.settings.background_color != blank %} --icon-with-text-background: {{ section.settings.background_color }};{% endif %}"
   >
     <div class="icon-with-text__inner section-spacing">
+      {% if section.settings.heading != blank %}
+        <header class="icon-with-text__header">
+          <h2 class="icon-with-text__section-heading jovie-heading--h2">{{ section.settings.heading | escape }}</h2>
+        </header>
+      {% endif %}
+
       {% if header_count > 0 %}
         <header class="icon-with-text__header">
           {% for block in section.blocks %}
@@ -38,6 +44,11 @@
         <div class="icon-with-text__list" role="list">
             {% for block in section.blocks %}
               {% if block.type == 'item' %}
+                {% assign item_heading = block.settings.title | default: block.settings.heading %}
+                {% assign item_anchor = block.settings.anchor_id | handleize %}
+                {% if item_anchor != blank %}
+                  <a class="icon-with-text__item-link" href="#{{ item_anchor }}">
+                {% endif %}
                 <div class="icon-with-text__item icon-with-text__item--{{ section.settings.item_style | default: 'default' }}" role="listitem" {{ block.shopify_attributes }}>
                   <div class="icon-with-text__icon" aria-hidden="true">
                     {% if block.settings.icon != blank %}
@@ -65,9 +76,9 @@
                   </div>
 
                   <div class="icon-with-text__content">
-                    {% if block.settings.heading != blank %}
+                    {% if item_heading != blank %}
                       <{{ section.settings.heading_tag }} class="icon-with-text__heading jovie-heading--{{ section.settings.heading_size | default: 'h4' }} heading--{{ section.settings.heading_size | default: 'h4' }}">
-                        {{ block.settings.heading | escape }}
+                        {{ item_heading | escape }}
                       </{{ section.settings.heading_tag }}>
                     {% endif %}
 
@@ -78,6 +89,9 @@
                     {% endif %}
                   </div>
                 </div>
+                {% if item_anchor != blank %}
+                  </a>
+                {% endif %}
               {% endif %}
             {% endfor %}
         </div>
@@ -101,6 +115,15 @@
     ]
   },
   "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "Heading"
+    },
     {
       "type": "header",
       "content": "Grid layout"
@@ -443,6 +466,18 @@
           "id": "heading",
           "label": "Heading",
           "default": "Quality That Lasts"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Title",
+          "info": "Overrides the heading when set."
+        },
+        {
+          "type": "text",
+          "id": "anchor_id",
+          "label": "FAQ anchor ID",
+          "info": "Links this item to a matching FAQ group anchor."
         },
         {
           "type": "richtext",
