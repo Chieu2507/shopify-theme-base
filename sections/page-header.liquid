@@ -25,14 +25,12 @@
   class="page-header full-width page-header--align-{{ section.settings.content_alignment }}{% if section.settings.section_width == 'full' %} page-header--content-full{% endif %}{% if section.settings.image != blank %} page-header--has-image{% endif %}"
   style="--page-header-padding-top: {{ section.settings.padding_top }}px; --page-header-padding-bottom: {{ section.settings.padding_bottom }}px; --page-header-padding-top-mobile: {{ section.settings.padding_top_mobile }}px; --page-header-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px; --page-header-overlay-opacity: {{ section.settings.image_overlay_opacity | divided_by: 100.0 }};"
 >
-  <div class="page-header__media" aria-hidden="true">
-    {% if section.settings.image != blank %}
+  {% if section.settings.image != blank %}
+    <div class="page-header__media" aria-hidden="true">
       {% render 'responsive-picture', image: section.settings.image, mobile_image: section.settings.mobile_image, max_width: 2400, mobile_max_width: 1400, widths: '640, 960, 1200, 1600, 2000, 2400', mobile_widths: '480, 640, 750, 960, 1200, 1400', sizes: '100vw', class: 'page-header__image', loading: 'eager', fetchpriority: 'high', decorative: true %}
-    {% else %}
-      {% render 'media-placeholder', class_name: 'page-header__placeholder', asset_name: 'placeholder-image-default-2.svg', loading: 'eager', fetchpriority: 'high' %}
-    {% endif %}
-    <span class="page-header__overlay"></span>
-  </div>
+      <span class="page-header__overlay"></span>
+    </div>
+  {% endif %}
 
   <div class="page-header__inner">
     {% if section.settings.show_breadcrumbs %}
@@ -51,9 +49,9 @@
 
 {% stylesheet %}
   .page-header { position: relative; isolation: isolate; color: var(--color-text); }
-  .page-header__media, .page-header__image, .page-header__placeholder, .page-header__overlay { position: absolute; inset: 0; }
+  .page-header__media, .page-header__image, .page-header__overlay { position: absolute; inset: 0; }
   .page-header__media { z-index: -1; overflow: hidden; }
-  .page-header__image, .page-header__placeholder { width: 100%; height: 100%; object-fit: cover; }
+  .page-header__image { width: 100%; height: 100%; object-fit: cover; }
   .page-header__overlay { background: rgb(0 0 0 / var(--page-header-overlay-opacity)); }
   .page-header__inner { position: relative; width: min(100%, var(--page-width)); margin-inline: auto; padding: var(--page-header-padding-top) var(--page-margin) var(--page-header-padding-bottom); }
   .page-header--content-full .page-header__inner { width: 100%; }
