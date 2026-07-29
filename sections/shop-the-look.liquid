@@ -2,9 +2,15 @@
 
 {% liquid
   assign product_block_count = 0
+  assign mobile_media_aspect_ratio = 1
+  assign media_settings_captured = false
   for block in section.blocks
     if block.type == 'product_hotspot'
       assign product_block_count = product_block_count | plus: 1
+    endif
+    if block.type == 'media' and media_settings_captured == false
+      assign mobile_media_aspect_ratio = block.settings.mobile_image.aspect_ratio | default: block.settings.image.aspect_ratio | default: 1
+      assign media_settings_captured = true
     endif
   endfor
 %}
@@ -13,78 +19,94 @@
   <shop-the-look
     data-deferred-module="{{ 'shop-the-look.js' | asset_url }}"
     class="shop-the-look color-scheme color-{{ section.settings.color_scheme.id }} full-width shop-the-look--media-{{ section.settings.media_position }}"
-    style="--shop-the-look-height: {{ section.settings.height_desktop }}px; --shop-the-look-height-mobile: {{ section.settings.height_mobile }}px; --shop-the-look-content-padding: {{ section.settings.content_padding }}px; --shop-the-look-product-image-size: {{ section.settings.product_image_size }}px;"
+    style="--shop-the-look-height: {{ section.settings.height_desktop }}px; --shop-the-look-height-mobile: {{ section.settings.height_mobile }}px; --shop-the-look-content-padding: {{ section.settings.content_padding }}px; --shop-the-look-product-image-size: {{ section.settings.product_image_size }}px; --shop-the-look-mobile-media-ratio: {{ mobile_media_aspect_ratio }};"
   >
     <div class="shop-the-look__layout">
       <div class="shop-the-look__media-column">
-        {% assign media_rendered = false %}
-        {% for block in section.blocks %}
-          {% if block.type == 'media' and media_rendered == false %}
-            {% liquid
-              assign editorial_image = block.settings.image | default: block.settings.mobile_image
-              assign editorial_image_style = 'object-position: ' | append: block.settings.focal_point
-              assign editorial_image_alt = editorial_image.alt
-              if editorial_image_alt == blank
-                assign editorial_image_alt = 'shop_the_look.editorial_image' | t
-              endif
-            %}
-            <div class="shop-the-look__media" {{ block.shopify_attributes }}>
-              {% if editorial_image != blank %}
-                {% render 'responsive-picture',
-                  image: editorial_image,
-                  mobile_image: block.settings.mobile_image,
-                  max_width: 1920,
-                  mobile_max_width: 960,
-                  widths: '480, 720, 960, 1200, 1440, 1920',
-                  mobile_widths: '360, 480, 640, 750, 960',
-                  sizes: '(min-width: 990px) 50vw, 100vw',
-                  class: 'shop-the-look__editorial-image',
-                  loading: 'lazy',
-                  alt: editorial_image_alt,
-                  style: editorial_image_style
-                %}
-              {% else %}
-                {% render 'media-placeholder', class_name: 'shop-the-look__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
-              {% endif %}
-            </div>
-            {% assign media_rendered = true %}
-          {% endif %}
-        {% endfor %}
-
-        {% unless media_rendered %}
-          <div class="shop-the-look__media">
-            {% render 'media-placeholder', class_name: 'shop-the-look__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
-          </div>
-        {% endunless %}
-
-        <div class="shop-the-look__hotspots" role="tablist" aria-label="{{ 'shop_the_look.products' | t | escape }}">
-          {% assign hotspot_index = 0 %}
+        <div class="shop-the-look__visual">
+          {% assign media_rendered = false %}
           {% for block in section.blocks %}
-            {% if block.type == 'product_hotspot' %}
+            {% if block.type == 'media' and media_rendered == false %}
               {% liquid
-                assign hotspot_label = block.settings.product.title
-                if hotspot_label == blank
-                  assign hotspot_label = 'shop_the_look.product' | t
+                assign editorial_image = block.settings.image | default: block.settings.mobile_image
+                assign editorial_image_alt = editorial_image.alt
+                assign mobile_focal_point = block.settings.mobile_focal_point
+                if block.settings.mobile_image == blank or mobile_focal_point == blank
+                  assign mobile_focal_point = block.settings.focal_point
+                endif
+                capture editorial_image_style
+                  echo '--shop-the-look-desktop-focal-point: ' | append: block.settings.focal_point | append: '; '
+                  echo '--shop-the-look-mobile-focal-point: ' | append: mobile_focal_point | append: ';'
+                endcapture
+                if editorial_image_alt == blank
+                  assign editorial_image_alt = 'shop_the_look.editorial_image' | t
                 endif
               %}
-              <button
-                class="shop-the-look__hotspot"
-                type="button"
-                role="tab"
-                id="ShopTheLookHotspot-{{ section.id }}-{{ block.id }}"
-                aria-controls="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
-                aria-label="{{ 'shop_the_look.select_product' | t: product: hotspot_label | escape }}"
-                aria-selected="{% if hotspot_index == 0 %}true{% else %}false{% endif %}"
-                tabindex="{% if hotspot_index == 0 %}0{% else %}-1{% endif %}"
-                style="--hotspot-x: {{ block.settings.horizontal_position }}%; --hotspot-y: {{ block.settings.vertical_position }}%;"
-                data-shop-the-look-hotspot
-                data-block-id="{{ block.id }}"
-              >
-                <span aria-hidden="true"></span>
-              </button>
-              {% assign hotspot_index = hotspot_index | plus: 1 %}
+              <div class="shop-the-look__media" {{ block.shopify_attributes }}>
+                {% if editorial_image != blank %}
+                  {% render 'responsive-picture',
+                    image: editorial_image,
+                    mobile_image: block.settings.mobile_image,
+                    mobile_breakpoint: 989,
+                    max_width: 1920,
+                    mobile_max_width: 1200,
+                    widths: '480, 720, 960, 1200, 1440, 1920',
+                    mobile_widths: '360, 480, 640, 750, 960, 1200',
+                    sizes: '(min-width: 990px) 50vw, 100vw',
+                    class: 'shop-the-look__editorial-image',
+                    loading: 'lazy',
+                    alt: editorial_image_alt,
+                    style: editorial_image_style
+                  %}
+                {% else %}
+                  {% render 'media-placeholder', class_name: 'shop-the-look__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
+                {% endif %}
+              </div>
+              {% assign media_rendered = true %}
             {% endif %}
           {% endfor %}
+
+          {% unless media_rendered %}
+            <div class="shop-the-look__media">
+              {% render 'media-placeholder', class_name: 'shop-the-look__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
+            </div>
+          {% endunless %}
+
+          <div class="shop-the-look__hotspots" role="tablist" aria-label="{{ 'shop_the_look.products' | t | escape }}">
+            {% assign hotspot_index = 0 %}
+            {% for block in section.blocks %}
+              {% if block.type == 'product_hotspot' %}
+                {% liquid
+                  assign hotspot_label = block.settings.product.title
+                  assign mobile_hotspot_x = block.settings.horizontal_position
+                  assign mobile_hotspot_y = block.settings.vertical_position
+                  if block.settings.enable_mobile_position
+                    assign mobile_hotspot_x = block.settings.mobile_horizontal_position
+                    assign mobile_hotspot_y = block.settings.mobile_vertical_position
+                  endif
+                  if hotspot_label == blank
+                    assign hotspot_label = 'shop_the_look.product' | t
+                  endif
+                %}
+                <button
+                  class="shop-the-look__hotspot"
+                  type="button"
+                  role="tab"
+                  id="ShopTheLookHotspot-{{ section.id }}-{{ block.id }}"
+                  aria-controls="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
+                  aria-label="{{ 'shop_the_look.select_product' | t: product: hotspot_label | escape }}"
+                  aria-selected="{% if hotspot_index == 0 %}true{% else %}false{% endif %}"
+                  tabindex="{% if hotspot_index == 0 %}0{% else %}-1{% endif %}"
+                  style="--hotspot-x: {{ block.settings.horizontal_position }}%; --hotspot-y: {{ block.settings.vertical_position }}%; --hotspot-mobile-x: {{ mobile_hotspot_x }}%; --hotspot-mobile-y: {{ mobile_hotspot_y }}%;"
+                  data-shop-the-look-hotspot
+                  data-block-id="{{ block.id }}"
+                >
+                  <span aria-hidden="true"></span>
+                </button>
+                {% assign hotspot_index = hotspot_index | plus: 1 %}
+              {% endif %}
+            {% endfor %}
+          </div>
         </div>
 
         <div class="shop-the-look__mobile-preview" aria-live="polite" aria-atomic="true">
@@ -316,7 +338,7 @@
           "type": "image_picker",
           "id": "mobile_image",
           "label": "Mobile image",
-          "info": "Uses the main image when left blank."
+          "info": "Recommended when the desktop crop does not fit the mobile layout. Uses the main image when left blank."
         },
         {
           "type": "text",
@@ -324,6 +346,13 @@
           "label": "Focal point",
           "default": "center center",
           "info": "CSS object-position, for example: 50% 40%"
+        },
+        {
+          "type": "text",
+          "id": "mobile_focal_point",
+          "label": "Mobile focal point",
+          "default": "center center",
+          "info": "Applied only when a mobile image is selected."
         }
       ]
     },
@@ -450,6 +479,32 @@
           "step": 1,
           "unit": "%",
           "label": "Vertical position",
+          "default": 58
+        },
+        {
+          "type": "checkbox",
+          "id": "enable_mobile_position",
+          "label": "Use a separate mobile position",
+          "default": false
+        },
+        {
+          "type": "range",
+          "id": "mobile_horizontal_position",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "label": "Mobile horizontal position",
+          "default": 60
+        },
+        {
+          "type": "range",
+          "id": "mobile_vertical_position",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "label": "Mobile vertical position",
           "default": 58
         }
       ]

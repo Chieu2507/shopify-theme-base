@@ -6,6 +6,7 @@
   @param {image} [mobile_image] - Mobile-specific image.
   @param {number} [max_width] - Largest desktop generated image width.
   @param {number} [mobile_max_width] - Largest mobile generated image width.
+  @param {number} [mobile_breakpoint] - Largest viewport width that uses the mobile source.
   @param {string} [widths] - Desktop responsive source widths.
   @param {string} [mobile_widths] - Mobile responsive source widths.
   @param {string} [sizes] - Image sizes attribute.
@@ -22,12 +23,13 @@
 {% liquid
   assign responsive_mobile_max_width = mobile_max_width | default: max_width
   assign responsive_mobile_widths = mobile_widths | default: widths | default: responsive_mobile_max_width
+  assign responsive_mobile_breakpoint = mobile_breakpoint | default: 749
 %}
 
 {% if mobile_image != blank %}
   <picture>
     <source
-      media="(max-width: 749px)"
+      media="(max-width: {{ responsive_mobile_breakpoint }}px)"
       srcset="
         {% assign responsive_width_values = responsive_mobile_widths | split: ',' %}
         {% for responsive_width in responsive_width_values %}
