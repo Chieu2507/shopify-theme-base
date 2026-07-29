@@ -29,7 +29,8 @@ class GiftSpinel extends HTMLElement {
     window.clearTimeout(this.transitionTimer);
     window.clearTimeout(this.anchorTimer);
     window.cancelAnimationFrame(this.initializeFrame);
-    window.cancelAnimationFrame(this.centerScrollFrame);
+    window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
+    document.documentElement.classList.remove('gift-spinel-layout-changing');
     this.isBound = false;
   }
 
@@ -37,10 +38,26 @@ class GiftSpinel extends HTMLElement {
     this.panelAnimations?.forEach((animation) => animation.cancel());
     this.panelAnimations = [];
     this.isPanelTransitioning = false;
+    window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
+    document.documentElement.classList.remove('gift-spinel-layout-changing');
     if (!this.finder) return;
     this.finder.style.removeProperty('height');
     this.finder.style.removeProperty('overflow');
     this.finder.style.removeProperty('will-change');
+  }
+
+  disableScrollAnchoring() {
+    window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
+    document.documentElement.classList.add('gift-spinel-layout-changing');
+  }
+
+  releaseScrollAnchoring() {
+    window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
+    this.scrollAnchorReleaseFrame = window.requestAnimationFrame(() => {
+      this.scrollAnchorReleaseFrame = window.requestAnimationFrame(() => {
+        document.documentElement.classList.remove('gift-spinel-layout-changing');
+      });
+    });
   }
 
   initialize() {
@@ -164,8 +181,9 @@ class GiftSpinel extends HTMLElement {
     const delay = reduceMotion ? 0 : 120;
     this.transitionTimer = window.setTimeout(() => {
       if (reduceMotion) {
+        this.disableScrollAnchoring();
         this.showResult();
-        this.scheduleGiftSpinelCenter(this.result);
+        this.releaseScrollAnchoring();
         return;
       }
 
@@ -236,48 +254,19 @@ class GiftSpinel extends HTMLElement {
     return Math.ceil(Math.max(panelHeight, introMinHeight));
   }
 
-  centerGiftSpinelPanel(panel) {
-    if (!panel || !this.isConnected) return;
-
-    const header = document.querySelector('[data-header]');
-    const headerBottom = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
-    const viewportTop = headerBottom + 20;
-    const viewportHeight = Math.max(1, window.innerHeight - viewportTop - 24);
-    const panelRect = panel.getBoundingClientRect();
-    const visiblePanelHeight = Math.min(panelRect.height, viewportHeight * .65);
-    const panelFocusPoint = panelRect.top + visiblePanelHeight / 2;
-    const viewportCenter = viewportTop + viewportHeight / 2;
-    if (Math.abs(panelFocusPoint - viewportCenter) < 72) return;
-
-    const targetTop = window.scrollY + panelFocusPoint - viewportCenter;
-    const maxScrollTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
-    const scrollTop = Math.max(0, Math.min(targetTop, maxScrollTop));
-
-    if (Math.abs(window.scrollY - scrollTop) < 2) return;
-    window.scrollTo({
-      top: scrollTop,
-      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
-    });
-  }
-
-  scheduleGiftSpinelCenter(panel) {
-    window.cancelAnimationFrame(this.centerScrollFrame);
-    this.centerScrollFrame = window.requestAnimationFrame(() => {
-      this.centerScrollFrame = window.requestAnimationFrame(() => this.centerGiftSpinelPanel(panel));
-    });
-  }
-
   transitionToResult() {
     if (this.isPanelTransitioning) return;
 
     const path = this.findMatchingPath();
     if (!this.finder || this.questions.hidden || !path) {
+      this.disableScrollAnchoring();
       this.showResult(path);
-      this.scheduleGiftSpinelCenter(this.result);
+      this.releaseScrollAnchoring();
       return;
     }
 
     this.isPanelTransitioning = true;
+    this.disableScrollAnchoring();
     const startHeight = this.finder.getBoundingClientRect().height;
     this.finder.style.height = `${startHeight}px`;
     this.finder.style.overflow = 'hidden';
@@ -307,7 +296,7 @@ class GiftSpinel extends HTMLElement {
           { height: `${targetHeight}px` },
         ],
         {
-          duration: 360,
+          duration: 320,
           easing: 'cubic-bezier(.22, 1, .36, 1)',
           fill: 'forwards',
         },
@@ -328,7 +317,7 @@ class GiftSpinel extends HTMLElement {
           this.finder.style.removeProperty('height');
           this.isPanelTransitioning = false;
           this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
-          this.scheduleGiftSpinelCenter(this.result);
+          this.releaseScrollAnchoring();
         });
       });
     });
@@ -340,12 +329,14 @@ class GiftSpinel extends HTMLElement {
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion || !this.finder || this.result.hidden) {
+      this.disableScrollAnchoring();
       this.resetRecipientView();
-      this.scheduleGiftSpinelCenter(this.questions);
+      this.releaseScrollAnchoring();
       return;
     }
 
     this.isPanelTransitioning = true;
+    this.disableScrollAnchoring();
     const startHeight = this.finder.getBoundingClientRect().height;
     const outgoingPanel = this.result.firstElementChild || this.result;
     this.finder.style.height = `${startHeight}px`;
@@ -377,7 +368,7 @@ class GiftSpinel extends HTMLElement {
           { height: `${targetHeight}px` },
         ],
         {
-          duration: 360,
+          duration: 320,
           easing: 'cubic-bezier(.22, 1, .36, 1)',
           fill: 'forwards',
         },
@@ -410,7 +401,7 @@ class GiftSpinel extends HTMLElement {
           this.finder.style.removeProperty('height');
           this.isPanelTransitioning = false;
           this.question.focus({ preventScroll: true });
-          this.scheduleGiftSpinelCenter(this.questions);
+          this.releaseScrollAnchoring();
         });
       });
     });
