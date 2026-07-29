@@ -19,7 +19,7 @@
     <div class="gift-spinel__inner">
       <div
         class="gift-spinel__intro"
-        style="--gift-spinel-overlay-color: {{ section.settings.image_overlay_color }}; --gift-spinel-overlay-opacity: {{ section.settings.image_overlay_opacity | divided_by: 100.0 }};"
+        style="--gift-spinel-card-color: {{ section.settings.image_overlay_color }}; --gift-spinel-card-reflection: {{ section.settings.intro_card_reflection | divided_by: 100.0 }};"
         {% if section.settings.heading != blank %}aria-labelledby="GiftSpinelTitle-{{ section.id }}"{% endif %}
       >
         <div class="gift-spinel__intro-media" aria-hidden="true">
@@ -35,7 +35,7 @@
             %}
           {% endif %}
         </div>
-        <div class="gift-spinel__intro-content">
+        <div class="gift-spinel__intro-content{% if section.settings.enable_intro_card %} gift-spinel__intro-content--card{% endif %}">
           {% if section.settings.eyebrow != blank %}
             <p class="gift-spinel__eyebrow">{{ section.settings.eyebrow | escape }}</p>
           {% endif %}
@@ -171,8 +171,10 @@
     { "type": "header", "content": "Editorial image" },
     { "type": "image_picker", "id": "image", "label": "Image", "info": "Select an image for this section." },
     { "type": "select", "id": "image_position", "label": "Image column position", "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }], "default": "left", "info": "Changes the desktop column position. On mobile, the image is shown first." },
-    { "type": "color", "id": "image_overlay_color", "label": "Image text overlay color", "default": "#F3F1EE" },
-    { "type": "range", "id": "image_overlay_opacity", "label": "Image text overlay opacity", "min": 0, "max": 100, "step": 5, "unit": "%", "default": 65, "info": "Controls the gradient behind the editorial text." },
+    { "type": "header", "content": "Text card" },
+    { "type": "checkbox", "id": "enable_intro_card", "label": "Show text card", "default": true },
+    { "type": "color", "id": "image_overlay_color", "label": "Card color", "default": "#F3F1EE" },
+    { "type": "range", "id": "intro_card_reflection", "label": "Mirror reflection", "min": 0, "max": 100, "step": 5, "unit": "%", "default": 25, "info": "Controls the soft reflective sheen on the text card.", "visible_if": "{{ section.settings.enable_intro_card }}" },
     { "type": "text", "id": "concierge_label", "label": "Interaction label", "default": "Gift finder" },
     { "type": "header", "content": "Recipient choices" },
     { "type": "text", "id": "question_recipient", "label": "Question", "default": "Who are you shopping for?" },

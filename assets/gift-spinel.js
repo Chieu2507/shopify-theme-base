@@ -164,6 +164,7 @@ class GiftSpinel extends HTMLElement {
     this.transitionTimer = window.setTimeout(() => {
       if (reduceMotion) {
         this.showResult();
+        window.requestAnimationFrame(() => this.centerGiftSpinelPanel(this.result));
         return;
       }
 
@@ -234,12 +235,34 @@ class GiftSpinel extends HTMLElement {
     return Math.ceil(Math.max(panelHeight, introMinHeight));
   }
 
+  centerGiftSpinelPanel(panel) {
+    if (!panel || !this.isConnected) return;
+
+    const header = document.querySelector('[data-header]');
+    const headerBottom = header ? Math.max(0, header.getBoundingClientRect().bottom) : 0;
+    const viewportTop = headerBottom + 20;
+    const viewportHeight = Math.max(1, window.innerHeight - viewportTop - 24);
+    const panelRect = panel.getBoundingClientRect();
+    const visiblePanelHeight = Math.min(panelRect.height, viewportHeight * .65);
+    const panelFocusPoint = panelRect.top + visiblePanelHeight / 2;
+    const targetTop = window.scrollY + panelFocusPoint - (viewportTop + viewportHeight / 2);
+    const maxScrollTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+    const scrollTop = Math.max(0, Math.min(targetTop, maxScrollTop));
+
+    if (Math.abs(window.scrollY - scrollTop) < 2) return;
+    window.scrollTo({
+      top: scrollTop,
+      behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth',
+    });
+  }
+
   transitionToResult() {
     if (this.isPanelTransitioning) return;
 
     const path = this.findMatchingPath();
     if (!this.finder || this.questions.hidden || !path) {
       this.showResult(path);
+      window.requestAnimationFrame(() => this.centerGiftSpinelPanel(this.result));
       return;
     }
 
@@ -294,6 +317,7 @@ class GiftSpinel extends HTMLElement {
           this.finder.style.removeProperty('height');
           this.isPanelTransitioning = false;
           this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
+          this.centerGiftSpinelPanel(this.result);
         });
       });
     });
@@ -306,6 +330,7 @@ class GiftSpinel extends HTMLElement {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion || !this.finder || this.result.hidden) {
       this.resetRecipientView();
+      window.requestAnimationFrame(() => this.centerGiftSpinelPanel(this.questions));
       return;
     }
 
@@ -374,6 +399,7 @@ class GiftSpinel extends HTMLElement {
           this.finder.style.removeProperty('height');
           this.isPanelTransitioning = false;
           this.question.focus({ preventScroll: true });
+          this.centerGiftSpinelPanel(this.questions);
         });
       });
     });
