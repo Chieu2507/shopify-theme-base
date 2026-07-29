@@ -1,8 +1,17 @@
 {% render 'section-stylesheet', asset: 'section-gift-spinel.css', inline_on_home: true %}
 
+{% liquid
+  assign image_column_position = section.settings.image_position
+  if image_column_position contains 'right'
+    assign image_column_position = 'right'
+  else
+    assign image_column_position = 'left'
+  endif
+%}
+
 <gift-spinel
   id="gift-spinel"
-  class="gift-spinel gift-spinel--layout-{{ section.settings.layout_ratio }} gift-spinel--choices-{{ section.settings.choice_style }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width gift-spinel--full{% endif %}"
+  class="gift-spinel gift-spinel--layout-{{ section.settings.layout_ratio }} gift-spinel--image-{{ image_column_position }} gift-spinel--choices-{{ section.settings.choice_style }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width gift-spinel--full{% endif %}"
   data-deferred-module="{{ 'gift-spinel.js' | asset_url }}"
   style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --gift-spinel-product-columns: {{ section.settings.product_columns }};"
 >
@@ -10,7 +19,7 @@
     <div class="gift-spinel__inner">
       <div
         class="gift-spinel__intro"
-        style="--gift-spinel-image-position: {{ section.settings.image_position }}; --gift-spinel-overlay-color: {{ section.settings.image_overlay_color }}; --gift-spinel-overlay-opacity: {{ section.settings.image_overlay_opacity | divided_by: 100.0 }};"
+        style="--gift-spinel-overlay-color: {{ section.settings.image_overlay_color }}; --gift-spinel-overlay-opacity: {{ section.settings.image_overlay_opacity | divided_by: 100.0 }};"
         {% if section.settings.heading != blank %}aria-labelledby="GiftSpinelTitle-{{ section.id }}"{% endif %}
       >
         <div class="gift-spinel__intro-media" aria-hidden="true">
@@ -22,8 +31,7 @@
               sizes: '(min-width: 990px) 42vw, 100vw',
               class: 'gift-spinel__intro-image',
               loading: 'lazy',
-              decorative: true,
-              style: 'object-position: var(--gift-spinel-image-position);'
+              decorative: true
             %}
           {% else %}
             <img
@@ -189,7 +197,7 @@
     { "type": "richtext", "id": "intro", "label": "Intro text", "default": "<p>Choose who you are shopping for and we will show you a ready-to-gift jewelry edit.</p>" },
     { "type": "header", "content": "Editorial image" },
     { "type": "image_picker", "id": "image", "label": "Image", "info": "Uses the built-in gifting artwork when empty." },
-    { "type": "select", "id": "image_position", "label": "Image position", "options": [{ "value": "left center", "label": "Left" }, { "value": "center center", "label": "Center" }, { "value": "right center", "label": "Right" }], "default": "right center" },
+    { "type": "select", "id": "image_position", "label": "Image column position", "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }], "default": "left", "info": "Changes the desktop column position. On mobile, the image is shown first." },
     { "type": "color", "id": "image_overlay_color", "label": "Overlay color", "default": "#000000" },
     { "type": "range", "id": "image_overlay_opacity", "label": "Overlay opacity", "min": 0, "max": 80, "step": 5, "unit": "%", "default": 0 },
     { "type": "text", "id": "concierge_label", "label": "Interaction label", "default": "Gift finder" },
