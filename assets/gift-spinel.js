@@ -37,25 +37,19 @@ class GiftSpinel extends HTMLElement {
     this.status = this.querySelector('[data-gift-spinel-status]');
     this.question = this.querySelector('[data-gift-spinel-question]');
     this.choices = this.querySelector('[data-gift-spinel-choices]');
-    this.stepCount = this.querySelector('[data-gift-spinel-step-count]');
-    this.selectionSummary = this.querySelector('[data-gift-spinel-selection-summary]');
-    this.backButton = this.querySelector('[data-gift-spinel-back]');
-    this.progress = Array.from(this.querySelectorAll('[data-gift-spinel-progress]'));
     this.paths = Array.from(this.querySelectorAll('template[data-gift-spinel-path]'));
     this.fallbackPath = this.querySelector('template[data-gift-spinel-fallback]');
-    this.steps = this.readSteps();
+    this.options = this.readOptions();
 
-    if (!this.questions || !this.result || !this.question || !this.choices || !this.steps.length) return;
+    if (!this.questions || !this.result || !this.question || !this.choices || !this.options.length) return;
 
     window.clearTimeout(this.transitionTimer);
-    this.answers = {};
-    this.currentStep = 0;
-    this.classList.remove('is-engaged');
+    this.recipient = undefined;
     this.questions.hidden = false;
     this.result.hidden = true;
     this.result.replaceChildren();
     if (this.status) this.status.textContent = '';
-    this.renderStep();
+    this.resetChoices();
   }
 
   scheduleInitialize() {
@@ -103,144 +97,68 @@ class GiftSpinel extends HTMLElement {
     this.anchorTimer = window.setTimeout(() => this.classList.remove('is-anchor-target'), reduceMotion ? 0 : duration);
   }
 
-  readSteps() {
+  readOptions() {
     try {
-      return JSON.parse(this.querySelector('[data-gift-spinel-steps]')?.textContent || '[]');
+      return JSON.parse(this.querySelector('[data-gift-spinel-options]')?.textContent || '[]');
     } catch (error) {
       return [];
     }
   }
 
-  renderStep(moveFocus = false) {
-    const step = this.steps[this.currentStep];
-    if (!step || !this.question || !this.choices) return this.showResult();
-
-    const prefix = this.dataset.stepPrefix || 'Step';
-    const separator = this.dataset.stepSeparator || 'of';
-    this.stepCount.textContent = `${prefix} ${this.currentStep + 1} ${separator} ${this.steps.length}`;
-    this.question.textContent = step.question;
-    this.choices.replaceChildren(...step.answers.map((answer) => this.createChoice(answer)));
-    this.renderSelectionSummary();
-    if (this.backButton) this.backButton.hidden = this.currentStep === 0;
-    this.progress.forEach((item, index) => item.classList.toggle('is-active', index <= this.currentStep));
-    if (moveFocus) this.question.focus();
-  }
-
-  createChoice(answer) {
-    const button = document.createElement('button');
-    button.type = 'button';
-    button.className = 'gift-spinel__choice';
-    button.dataset.giftSpinelChoice = answer.value;
-    button.textContent = answer.label;
-    button.setAttribute('aria-pressed', 'false');
-    return button;
+  resetChoices() {
+    this.choices.querySelectorAll('[data-gift-spinel-choice]').forEach((button) => {
+      button.classList.remove('is-selected');
+      button.setAttribute('aria-pressed', 'false');
+      button.disabled = false;
+    });
   }
 
   handleClick(event) {
     const choice = event.target.closest('[data-gift-spinel-choice]');
     if (choice && this.contains(choice)) {
-      this.selectChoice(choice);
+      this.selectRecipient(choice);
       return;
     }
-    const restart = event.target.closest('[data-gift-spinel-restart]');
-    if (restart && this.contains(restart)) this.restart();
-    const back = event.target.closest('[data-gift-spinel-back]');
-    if (back && this.contains(back)) this.goBack();
-  }
 
-  renderSelectionSummary() {
-    if (!this.selectionSummary) return;
-    const selectedAnswers = this.steps
-      .slice(0, this.currentStep)
-      .map((step) => this.answers[step.key])
-      .filter(Boolean);
-    this.selectionSummary.replaceChildren(...selectedAnswers.map((answer) => {
-      const item = document.createElement('span');
-      item.textContent = answer.label;
-      return item;
-    }));
-    this.selectionSummary.hidden = selectedAnswers.length === 0;
-  }
-
-  goBack() {
-    if (this.currentStep === 0) return;
-    window.clearTimeout(this.transitionTimer);
-    const previousStep = this.currentStep - 1;
-    this.steps.slice(previousStep).forEach((step) => delete this.answers[step.key]);
-    this.currentStep = previousStep;
-    this.renderStep(true);
+    const change = event.target.closest('[data-gift-spinel-change]');
+    if (change && this.contains(change)) this.changeRecipient();
   }
 
   handleBlockSelect(event) {
     const path = this.paths.find((item) => item.dataset.blockId === event.detail?.blockId);
     if (!path) return;
-    this.answers = {
-      recipient: this.answerFor(path.dataset.recipient, 'recipient'),
-      occasion: this.answerFor(path.dataset.occasion, 'occasion'),
-      personal_touch: this.answerFor(path.dataset.personalTouch, 'personal_touch'),
-    };
+    this.recipient = this.optionFor(path.dataset.recipient);
     this.showResult(path);
   }
 
-  answerFor(value, stepKey) {
-    if (value === 'any') return undefined;
-    const step = this.steps.find((item) => item.key === stepKey);
-    const answer = step?.answers.find((item) => item.value === value);
-    return answer || { value, label: value };
+  optionFor(value) {
+    return this.options.find((option) => option.value === value) || { value, label: value };
   }
 
-  selectChoice(choice) {
-    const step = this.steps[this.currentStep];
-    if (!step || choice.disabled) return;
-    this.answers[step.key] = {
-      value: choice.dataset.giftSpinelChoice,
-      label: choice.textContent,
-    };
-    this.classList.add('is-engaged');
-    this.choices.querySelectorAll('button').forEach((button) => {
+  selectRecipient(choice) {
+    if (choice.disabled) return;
+    this.recipient = this.optionFor(choice.dataset.giftSpinelChoice);
+    this.choices.querySelectorAll('[data-gift-spinel-choice]').forEach((button) => {
       const selected = button === choice;
       button.classList.toggle('is-selected', selected);
       button.setAttribute('aria-pressed', String(selected));
       button.disabled = true;
     });
-    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 170;
-    this.transitionTimer = window.setTimeout(() => {
-      this.currentStep += 1;
-      if (this.currentStep < this.steps.length) this.renderStep(true);
-      else this.showResult();
-    }, delay);
+
+    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 120;
+    this.transitionTimer = window.setTimeout(() => this.showResult(), delay);
   }
 
   findMatchingPath() {
-    const matches = this.paths.filter((path) => (
-      path.dataset.recipient === this.answers.recipient?.value
-      && (path.dataset.occasion === 'any' || path.dataset.occasion === this.answers.occasion?.value)
-      && (path.dataset.personalTouch === 'any' || path.dataset.personalTouch === this.answers.personal_touch?.value)
-    ));
-
-    return matches.sort((first, second) => this.pathSpecificity(second) - this.pathSpecificity(first))[0] || this.fallbackPath;
-  }
-
-  pathSpecificity(path) {
-    return ['recipient', 'occasion', 'personalTouch'].reduce((score, key) => (
-      score + (path.dataset[key] === 'any' ? 0 : 1)
-    ), 0);
+    return this.paths.find((path) => path.dataset.recipient === this.recipient?.value) || this.fallbackPath;
   }
 
   replaceTokens(root) {
-    const values = {
-      '{recipient}': this.answers.recipient?.label || '',
-      '{occasion}': this.answers.occasion?.label || '',
-      '{personal_touch}': this.answers.personal_touch?.label || '',
-    };
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
     nodes.forEach((node) => {
-      node.nodeValue = Object.entries(values).reduce(
-        (text, [token, value]) => text.replaceAll(token, value),
-        node.nodeValue,
-      );
+      node.nodeValue = node.nodeValue.replaceAll('{recipient}', this.recipient?.label || '');
     });
   }
 
@@ -252,17 +170,17 @@ class GiftSpinel extends HTMLElement {
       if (this.status) this.status.textContent = '';
       return;
     }
+
     const content = path.content.cloneNode(true);
     this.replaceTokens(content);
     const chips = content.querySelector('[data-gift-spinel-chips]');
-    if (chips) {
-      Object.values(this.answers).forEach((answer) => {
-        const chip = document.createElement('span');
-        chip.className = 'gift-spinel__chip';
-        chip.textContent = answer.label;
-        chips.append(chip);
-      });
+    if (chips && this.recipient) {
+      const chip = document.createElement('span');
+      chip.className = 'gift-spinel__chip';
+      chip.textContent = this.recipient.label;
+      chips.append(chip);
     }
+
     this.questions.hidden = true;
     this.result.replaceChildren(content);
     this.result.hidden = false;
@@ -276,16 +194,15 @@ class GiftSpinel extends HTMLElement {
     this.result.querySelector('[data-gift-spinel-result-heading]')?.focus();
   }
 
-  restart() {
+  changeRecipient() {
     window.clearTimeout(this.transitionTimer);
-    this.answers = {};
-    this.currentStep = 0;
-    this.classList.remove('is-engaged');
+    this.recipient = undefined;
     this.result.hidden = true;
     this.result.replaceChildren();
     if (this.status) this.status.textContent = '';
     this.questions.hidden = false;
-    this.renderStep(true);
+    this.resetChoices();
+    this.question.focus();
   }
 }
 
