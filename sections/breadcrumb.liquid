@@ -1,5 +1,8 @@
 {% liquid
-  assign current_label = collection.title
+  assign current_label = page.title
+  if request.page_type == 'collection'
+    assign current_label = collection.title
+  endif
   if section.settings.current_label_source == 'custom' and section.settings.current_label != blank
     assign current_label = section.settings.current_label
   endif
@@ -127,7 +130,7 @@
   "tag": "section",
   "class": "section-breadcrumb",
   "enabled_on": {
-    "templates": ["collection"]
+    "templates": ["collection", "page"]
   },
   "settings": [
     {
@@ -199,6 +202,7 @@
       "label": "Current page label",
       "options": [
         { "value": "collection", "label": "Collection title" },
+        { "value": "page", "label": "Page title" },
         { "value": "custom", "label": "Custom text" }
       ],
       "default": "collection"

@@ -6,21 +6,15 @@
 %}
 
 <section
-  class="contact-form color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} contact-form--full full-width{% endif %}"
-  style="--contact-form-height-desktop: {{ section.settings.height_desktop }}px; --contact-form-height-tablet: {{ section.settings.height_tablet }}px; --contact-form-height-mobile: {{ section.settings.height_mobile }}px; --contact-form-media-width: {{ section.settings.media_width }}%; --contact-form-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};"
+  class="contact-form{% if section.settings.section_width == 'full' %} contact-form--full full-width{% endif %}"
+  style="--contact-form-height-desktop: {{ section.settings.height_desktop }}px; --contact-form-height-tablet: {{ section.settings.height_tablet }}px; --contact-form-height-mobile: {{ section.settings.height_mobile }}px; --contact-form-media-width: {{ section.settings.media_width }}%; --contact-form-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }}; --contact-form-padding-top: {{ section.settings.padding_top }}px; --contact-form-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
   <div class="contact-form__inner">
-    <h1 class="visually-hidden">{{ page.title | escape }}</h1>
-    {% if section.settings.show_breadcrumbs %}
-      <nav class="contact-form__breadcrumbs" aria-label="{{ 'accessibility.breadcrumb' | t | escape }}">
-        <a href="{{ routes.root_url }}">{{ section.settings.breadcrumb_home | escape }}</a>
-        <span aria-hidden="true">/</span>
-        <span>{{ section.settings.breadcrumb_current | default: page.title | escape }}</span>
-      </nav>
-    {% endif %}
-
     <div class="contact-form__layout">
-      <div class="contact-form__media">
+      <div
+        class="contact-form__media color-scheme color-{{ section.settings.media_color_scheme.id }}"
+        style="--contact-form-media-padding: {{ section.settings.media_padding }}px; --contact-form-media-padding-mobile: {{ section.settings.media_padding | divided_by: 2 }}px;"
+      >
         {% if section.settings.image != blank %}
           {% render 'responsive-image',
             image: section.settings.image,
@@ -38,8 +32,8 @@
 
         {% if studio_block != blank %}
           <div class="contact-form__studio" {{ studio_block.shopify_attributes }}>
-            {% if studio_block.settings.title != blank %}
-              <h2 class="contact-form__studio-title">{{ studio_block.settings.title | escape }}</h2>
+            {% if studio_block.settings.heading != blank %}
+              <{{ studio_block.settings.heading_tag | default: 'h2' }} class="contact-form__studio-title jovie-heading--{{ studio_block.settings.heading_size | default: 'h3' }}">{{ studio_block.settings.heading | escape }}</{{ studio_block.settings.heading_tag | default: 'h2' }}>
             {% endif %}
             <div class="contact-form__studio-details">
               {% if studio_block.settings.address != blank %}<p>{{ studio_block.settings.address | escape }}</p>{% endif %}
@@ -55,7 +49,10 @@
         {% endif %}
       </div>
 
-      <div class="contact-form__content">
+      <div
+        class="contact-form__content color-scheme color-{{ section.settings.content_color_scheme.id }}"
+        style="--contact-form-content-padding: {{ section.settings.content_padding }}px; --contact-form-content-padding-mobile: {{ section.settings.content_padding | divided_by: 2 }}px;"
+      >
         {% if intro_block != blank %}
           <div class="contact-form__intro" {{ intro_block.shopify_attributes }}>
             {% if intro_block.settings.eyebrow != blank %}
@@ -64,8 +61,8 @@
             {% if intro_block.settings.heading != blank %}
               <{{ intro_block.settings.heading_tag | default: 'h2' }} class="contact-form__heading spinel-heading--{{ intro_block.settings.heading_size | default: 'xl' }} heading--{{ intro_block.settings.heading_size | default: 'xl' }}">{{ intro_block.settings.heading | escape }}</{{ intro_block.settings.heading_tag | default: 'h2' }}>
             {% endif %}
-            {% if intro_block.settings.description != blank %}
-              <p class="contact-form__description">{{ intro_block.settings.description | escape }}</p>
+            {% if intro_block.settings.text != blank %}
+              <div class="contact-form__description content-text jovie-text--{{ intro_block.settings.text_size | default: 'medium' }} content-text--{{ intro_block.settings.text_size | default: 'medium' }} rte">{{ intro_block.settings.text }}</div>
             {% endif %}
           </div>
         {% endif %}
@@ -119,7 +116,7 @@
 
 {% stylesheet %}
   .contact-form {
-    background: var(--gradient-background, var(--color-background));
+    padding-block: var(--contact-form-padding-top) var(--contact-form-padding-bottom);
   }
 
   .contact-form__inner {
@@ -131,27 +128,6 @@
     width: 100%;
   }
 
-  .contact-form__breadcrumbs {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 8px;
-    min-height: 42px;
-    padding-inline: var(--page-margin);
-    color: var(--color-text);
-    font-size: var(--font-caption);
-  }
-
-  .contact-form__breadcrumbs a {
-    color: inherit;
-    text-decoration: none;
-  }
-
-  .contact-form__breadcrumbs a:hover {
-    text-decoration: underline;
-    text-underline-offset: 3px;
-  }
-
   .contact-form__layout {
     display: grid;
     min-height: var(--contact-form-height-desktop);
@@ -160,10 +136,14 @@
 
   .contact-form__media {
     position: relative;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-end;
     min-height: var(--contact-form-height-desktop);
+    padding: var(--contact-form-media-padding);
     overflow: hidden;
     background: var(--color-variant-component-background);
-    color: #fff;
+    color: var(--color-foreground);
   }
 
   .contact-form__image,
@@ -189,26 +169,19 @@
   }
 
   .contact-form__studio {
-    position: absolute;
+    position: relative;
     z-index: 1;
-    right: clamp(24px, 5vw, 80px);
-    bottom: clamp(24px, 5vw, 64px);
-    left: clamp(24px, 5vw, 80px);
   }
 
   .contact-form__studio-title {
     margin: 0 0 10px;
     color: inherit;
-    font-family: var(--font-body--family);
-    font-size: clamp(22px, 2vw, 30px);
-    font-weight: 400;
-    line-height: 1.15;
   }
 
   .contact-form__studio-details {
     display: grid;
     gap: 2px;
-    color: rgb(255 255 255 / 88%);
+    color: color-mix(in srgb, currentcolor 88%, transparent);
     font-size: var(--font-caption);
     line-height: 1.5;
   }
@@ -224,8 +197,8 @@
     justify-content: center;
     margin-top: 22px;
     padding: 0 18px;
-    border: 1px solid rgb(255 255 255 / 80%);
-    color: #fff;
+    border: 1px solid currentcolor;
+    color: inherit;
     font-size: 10px;
     letter-spacing: .08em;
     text-decoration: none;
@@ -236,7 +209,7 @@
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: clamp(32px, 5vw, 88px);
+    padding: var(--contact-form-content-padding);
     background: var(--gradient-background, var(--color-background));
   }
 
@@ -257,16 +230,11 @@
   .contact-form__heading {
     margin: 0;
     color: var(--color-heading);
-    font-size: var(--font-h3-size);
-    line-height: var(--font-h3-line-height);
-    text-transform: none;
   }
 
   .contact-form__description {
     margin: 8px auto 0;
     color: var(--color-text);
-    font-size: var(--font-caption);
-    line-height: 1.5;
   }
 
   .contact-form__form {
@@ -357,10 +325,6 @@
   }
 
   @media screen and (max-width: 749px) {
-    .contact-form__breadcrumbs {
-      min-height: 36px;
-    }
-
     .contact-form__layout {
       display: block;
       min-height: 0;
@@ -368,10 +332,11 @@
 
     .contact-form__media {
       min-height: var(--contact-form-height-mobile);
+      padding: var(--contact-form-media-padding-mobile);
     }
 
     .contact-form__content {
-      padding: 48px var(--page-margin) 56px;
+      padding: var(--contact-form-content-padding-mobile);
     }
 
     .contact-form__fields {
@@ -392,19 +357,13 @@
   "class": "section-contact-form",
   "settings": [
     {
+      "type": "header",
+      "content": "Media column"
+    },
+    {
       "type": "image_picker",
       "id": "image",
       "label": "Studio image"
-    },
-    {
-      "type": "range",
-      "id": "media_width",
-      "min": 35,
-      "max": 65,
-      "step": 1,
-      "unit": "%",
-      "label": "Image width",
-      "default": 50
     },
     {
       "type": "range",
@@ -447,22 +406,24 @@
       "default": 520
     },
     {
-      "type": "checkbox",
-      "id": "show_breadcrumbs",
-      "label": "Show breadcrumbs",
-      "default": true
+      "type": "color_scheme",
+      "id": "media_color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-3"
     },
     {
-      "type": "text",
-      "id": "breadcrumb_home",
-      "label": "Breadcrumb home label",
-      "default": "Home"
+      "type": "range",
+      "id": "media_padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding",
+      "default": 64
     },
     {
-      "type": "text",
-      "id": "breadcrumb_current",
-      "label": "Breadcrumb current label",
-      "default": "Contact us"
+      "type": "header",
+      "content": "Form column"
     },
     {
       "type": "text",
@@ -475,6 +436,22 @@
       "id": "success_message",
       "label": "Success message",
       "default": "Thanks for contacting us. We will be in touch shortly."
+    },
+    {
+      "type": "color_scheme",
+      "id": "content_color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2"
+    },
+    {
+      "type": "range",
+      "id": "content_padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Padding",
+      "default": 80
     },
     {
       "type": "header",
@@ -497,26 +474,73 @@
       "default": "page"
     },
     {
-      "type": "header",
-      "content": "Appearance"
+      "type": "range",
+      "id": "media_width",
+      "min": 35,
+      "max": 65,
+      "step": 1,
+      "unit": "%",
+      "label": "Image width",
+      "default": 50
     },
     {
-      "type": "color_scheme",
-      "id": "color_scheme",
-      "label": "Color scheme",
-      "default": "scheme-2"
+      "type": "header",
+      "content": "Section spacing"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 64
     }
   ],
   "blocks": [
     {
       "type": "studio_details",
       "name": "Studio details",
+      "limit": 1,
       "settings": [
         {
+          "type": "header",
+          "content": "Studio heading"
+        },
+        {
           "type": "text",
-          "id": "title",
-          "label": "Title",
+          "id": "heading",
+          "label": "Heading",
           "default": "Sydney Studio"
+        },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [{ "value": "h1", "label": "XX-large" }, { "value": "h2", "label": "X-large" }, { "value": "h3", "label": "Large" }, { "value": "h4", "label": "Medium" }, { "value": "h5", "label": "Small" }, { "value": "h6", "label": "X-small" }],
+          "default": "h3"
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "HTML Tag",
+          "options": [{ "value": "h1", "label": "H1" }, { "value": "h2", "label": "H2" }, { "value": "h3", "label": "H3" }, { "value": "h4", "label": "H4" }, { "value": "h5", "label": "H5" }, { "value": "h6", "label": "H6" }],
+          "default": "h2"
+        },
+        {
+          "type": "header",
+          "content": "Contact details"
         },
         {
           "type": "text",
@@ -537,6 +561,10 @@
           "default": "Mon-Sat: 10:00-20:00"
         },
         {
+          "type": "header",
+          "content": "Appointment link"
+        },
+        {
           "type": "text",
           "id": "button_label",
           "label": "Appointment button label",
@@ -552,7 +580,12 @@
     {
       "type": "form_intro",
       "name": "Form introduction",
+      "limit": 1,
       "settings": [
+        {
+          "type": "header",
+          "content": "Content"
+        },
         {
           "type": "text",
           "id": "eyebrow",
@@ -630,10 +663,17 @@
           "default": "h2"
         },
         {
-          "type": "textarea",
-          "id": "description",
-          "label": "Description",
-          "default": "Submit the contact form and our team will be in touch shortly."
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Submit the contact form and our team will be in touch shortly.</p>"
+        },
+        {
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "options": [{ "value": "x-large", "label": "X-large" }, { "value": "large", "label": "Large" }, { "value": "medium", "label": "Medium" }, { "value": "small", "label": "Small" }, { "value": "x-small", "label": "X-small" }],
+          "default": "medium"
         }
       ]
     },
@@ -696,7 +736,8 @@
       "category": "Blog & pages",
       "settings": {
         "section_width": "full",
-        "color_scheme": "scheme-2",
+        "media_color_scheme": "scheme-3",
+        "content_color_scheme": "scheme-2",
         "media_width": 50
       },
       "blocks": [
