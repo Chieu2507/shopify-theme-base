@@ -55,7 +55,7 @@ class CollectionList extends HTMLElement {
   createSlider(device) {
     if (!this.slider?.querySelector('.swiper-slide')) return;
 
-    const columns = device === 'mobile' ? 1.2 : Number.parseInt(this.dataset[`columns${this.capitalize(device)}`], 10) || 1;
+    const columns = Number.parseInt(this.dataset[`columns${this.capitalize(device)}`], 10) || 1;
     const configuredGap = Number.parseFloat(getComputedStyle(this).getPropertyValue('--collection-list-column-gap')) || 0;
     const gap = device === 'mobile' ? 8 : configuredGap;
     const showPagination = device !== 'mobile' && this.dataset.showPagination === 'true' && Boolean(this.pagination);

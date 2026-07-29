@@ -2,7 +2,8 @@
 
 {% liquid
   assign first_slide = section.blocks | first
-  assign desktop_ratio = first_slide.settings.image.aspect_ratio | default: 1.7778
+  assign first_slide_image = first_slide.settings.image | default: first_slide.settings.mobile_image
+  assign desktop_ratio = first_slide_image.aspect_ratio | default: 1.7778
   assign mobile_ratio = first_slide.settings.mobile_image.aspect_ratio | default: desktop_ratio
   assign slide_count = section.blocks.size
   assign is_double_slide = false
@@ -46,7 +47,8 @@
         {% liquid
           assign slide_collection = block.settings.collection
           assign slide_url = block.settings.button_1_link
-          assign slide_image_alt = block.settings.image.alt
+          assign slide_image = block.settings.image | default: block.settings.mobile_image
+          assign slide_image_alt = slide_image.alt
           if slide_image_alt == blank
             assign slide_image_alt = block.settings.heading | strip_html
           endif
@@ -88,7 +90,7 @@
           {{ block.shopify_attributes }}
         >
           <div class="slideshow__media" data-swiper-parallax-x="100%">
-            {% if block.settings.image != blank %}
+            {% if slide_image != blank %}
               <picture>
                 {% if block.settings.mobile_image != blank %}
                   <source
@@ -104,7 +106,7 @@
                   >
                 {% endif %}
                 {{
-                  block.settings.image
+                  slide_image
                   | image_url: width: 2400
                   | image_tag:
                     widths: '750, 960, 1200, 1600, 1920, 2400',
