@@ -24,7 +24,7 @@ Tổng quan lần quét này: **49 section**, **42 theme block**, **16 JSON temp
 
 ### Điểm cần lưu ý khi tái sử dụng
 
-- <code>sections/faq.liquid:103</code> có dấu phẩy thừa ở phần tử cuối của mảng block settings. Bộ quét phải chuẩn hoá mới đọc được schema; nên sửa trước khi dùng làm nguồn chuẩn.
+- Lần quét ban đầu phát hiện dấu phẩy thừa tại <code>sections/faq.liquid:103</code>. Lỗi JSON này đã được sửa sau khi tạo tài liệu; nếu tái sử dụng một commit cũ hơn, cần kiểm tra lại schema FAQ.
 - Hai setting global `logo` và `favicon` chưa có giá trị trong `settings_data.current`; đây là trạng thái hợp lệ nếu merchant chưa chọn ảnh.
 - `content_for_index` xuất hiện trong dữ liệu hiện tại nhưng không phải input trong `settings_schema.json`; đây là dữ liệu hệ thống/di sản, không nên đưa vào thư viện option.
 - Một số ID giống nhau nhưng dùng type hoặc hệ giá trị khác nhau: `heading`, `text`, `alignment`, `section_width`, `height_desktop`, `height_mobile`, `content_position`, `media_ratio`. Khi xây theme sau nên chọn một contract duy nhất cho từng ID.
