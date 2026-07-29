@@ -42,19 +42,54 @@
 .gift-spinel--layout-editorial .gift-spinel__inner { grid-template-columns: minmax(0, 1.15fr) minmax(420px, .85fr); }
 .gift-spinel--layout-finder .gift-spinel__inner { grid-template-columns: minmax(0, .82fr) minmax(460px, 1.18fr); }
 
-.gift-spinel__intro,
-.gift-spinel__finder {
+.gift-spinel__finder,
+.gift-spinel__intro-content {
   padding-block: var(--section-padding-top) var(--section-padding-bottom);
   padding-inline: clamp(32px, 6vw, 88px);
 }
 
 .gift-spinel__intro {
+  position: relative;
   display: flex;
   min-height: calc(350px + var(--section-padding-top) + var(--section-padding-bottom));
-  flex-direction: column;
-  justify-content: center;
+  overflow: hidden;
+  align-items: flex-end;
   background: color-mix(in srgb, var(--color-background) 88%, var(--color-variant-component-background));
   border-inline-end: 1px solid color-mix(in srgb, var(--color-heading) 14%, transparent);
+  isolation: isolate;
+}
+
+.gift-spinel__intro::after {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  background:
+    linear-gradient(180deg, transparent 35%, color-mix(in srgb, var(--color-background) 86%, transparent) 100%),
+    linear-gradient(90deg, color-mix(in srgb, var(--color-background) 48%, transparent), transparent 68%);
+  content: '';
+  pointer-events: none;
+}
+
+.gift-spinel__intro-media {
+  position: absolute;
+  z-index: 0;
+  inset: 0;
+}
+
+.gift-spinel__intro-image {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: var(--gift-spinel-image-position, right center);
+  transform: scale(1.002);
+}
+
+.gift-spinel__intro-content {
+  position: relative;
+  z-index: 2;
+  width: 100%;
+  text-shadow: 0 1px 20px color-mix(in srgb, var(--color-background) 40%, transparent);
 }
 
 .gift-spinel__finder {
@@ -87,7 +122,7 @@
   letter-spacing: var(--font-heading-letter-spacing);
 }
 
-.gift-spinel__heading { font-size: clamp(42px, 5vw, 76px); line-height: .98; }
+.gift-spinel__heading { max-width: 8ch; font-size: clamp(42px, 5vw, 76px); line-height: .98; }
 .gift-spinel__question { font-size: clamp(30px, 3vw, 46px); line-height: 1.04; }
 .gift-spinel__result-heading { font-size: clamp(36px, 4vw, 56px); line-height: 1; }
 .gift-spinel__question:focus,
@@ -113,6 +148,8 @@
   margin-top: 12px;
   font-size: var(--font-body-small);
 }
+
+.gift-spinel__intro-copy + .gift-spinel__question { margin-top: 30px; }
 
 .gift-spinel__finder {
   display: flex;
@@ -308,7 +345,7 @@
     min-width: 0;
   }
   .gift-spinel__intro {
-    min-height: 0;
+    min-height: clamp(380px, 64vw, 560px);
     border-inline-end: 0;
     border-block-end: 1px solid color-mix(in srgb, var(--color-heading) 14%, transparent);
   }
@@ -322,19 +359,25 @@
 }
 
 @media screen and (max-width: 749px) {
-  .gift-spinel__intro,
-  .gift-spinel__finder {
+  .gift-spinel__finder,
+  .gift-spinel__intro-content {
     min-width: 0;
     padding-block: calc(var(--section-padding-top) * 0.75) calc(var(--section-padding-bottom) * 0.75);
     padding-inline: clamp(20px, 5.5vw, 28px);
   }
-  .gift-spinel__intro { justify-content: flex-start; }
+  .gift-spinel__intro { min-height: clamp(380px, 96vw, 520px); }
+  .gift-spinel__intro::after {
+    background:
+      linear-gradient(180deg, transparent 28%, color-mix(in srgb, var(--color-background) 88%, transparent) 100%),
+      linear-gradient(90deg, color-mix(in srgb, var(--color-background) 34%, transparent), transparent 72%);
+  }
   .gift-spinel__finder { min-height: 0; }
   .gift-spinel__heading { font-size: clamp(38px, 10vw, 48px); line-height: 1; }
   .gift-spinel__question { font-size: clamp(28px, 7.5vw, 34px); }
   .gift-spinel__result-heading { font-size: clamp(32px, 9vw, 42px); }
   .gift-spinel__intro-copy,
   .gift-spinel__result-copy { margin-top: 18px; font-size: var(--font-body-base); line-height: 1.5; }
+  .gift-spinel__intro-copy + .gift-spinel__question { margin-top: 26px; }
   .gift-spinel__question-hint { margin-top: 10px; font-size: var(--font-body-small); }
   .gift-spinel__step-meta { gap: 10px; font-size: 10px; }
   .gift-spinel__choices { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin-top: 20px; }

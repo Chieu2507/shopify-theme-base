@@ -8,16 +8,38 @@
 >
   <div class="gift-spinel__spacing section-spacing">
     <div class="gift-spinel__inner">
-      <div class="gift-spinel__intro"{% if section.settings.heading != blank %} aria-labelledby="GiftSpinelTitle-{{ section.id }}"{% endif %}>
-      {% if section.settings.eyebrow != blank %}
-        <p class="gift-spinel__eyebrow">{{ section.settings.eyebrow | escape }}</p>
-      {% endif %}
-      {% if section.settings.heading != blank %}
-        <h2 class="gift-spinel__heading" id="GiftSpinelTitle-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
-      {% endif %}
-      {% if section.settings.intro != blank %}
-        <div class="gift-spinel__intro-copy rte">{{ section.settings.intro }}</div>
-      {% endif %}
+      <div class="gift-spinel__intro" style="--gift-spinel-image-position: {{ section.settings.image_position }};"{% if section.settings.heading != blank %} aria-labelledby="GiftSpinelTitle-{{ section.id }}"{% endif %}>
+        <div class="gift-spinel__intro-media" aria-hidden="true">
+          {% if section.settings.image != blank %}
+            {% render 'responsive-image',
+              image: section.settings.image,
+              max_width: 1800,
+              widths: '480, 640, 750, 960, 1200, 1500, 1800',
+              sizes: '(min-width: 990px) 42vw, 100vw',
+              class: 'gift-spinel__intro-image',
+              loading: 'lazy',
+              decorative: true,
+              style: 'object-position: var(--gift-spinel-image-position);'
+            %}
+          {% else %}
+            <img
+              class="gift-spinel__intro-image"
+              src="{{ 'gift-spinel-editorial.jpg' | asset_url }}"
+              width="1122"
+              height="1402"
+              loading="lazy"
+              alt=""
+            >
+          {% endif %}
+        </div>
+        <div class="gift-spinel__intro-content">
+          {% if section.settings.eyebrow != blank %}
+            <p class="gift-spinel__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+          {% endif %}
+          {% if section.settings.heading != blank %}
+            <h2 class="gift-spinel__heading" id="GiftSpinelTitle-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
+          {% endif %}
+        </div>
       </div>
 
       <div class="gift-spinel__finder">
@@ -26,6 +48,9 @@
             <span>{{ 'gift_spinel.quick_choice' | t }}</span>
             <span>{{ section.settings.concierge_label | escape }}</span>
           </div>
+          {% if section.settings.intro != blank %}
+            <div class="gift-spinel__intro-copy rte">{{ section.settings.intro }}</div>
+          {% endif %}
           <h3 class="gift-spinel__question" id="GiftSpinelQuestion-{{ section.id }}" data-gift-spinel-question tabindex="-1">{{ section.settings.question_recipient | escape }}</h3>
           <p class="gift-spinel__question-hint" id="GiftSpinelHint-{{ section.id }}">{{ 'gift_spinel.choose_hint' | t }}</p>
           <div class="gift-spinel__choices" data-gift-spinel-choices role="group" aria-labelledby="GiftSpinelQuestion-{{ section.id }}" aria-describedby="GiftSpinelHint-{{ section.id }}">
@@ -158,6 +183,9 @@
     { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "Gifting, made simple" },
     { "type": "text", "id": "heading", "label": "Heading", "default": "Find their gift." },
     { "type": "richtext", "id": "intro", "label": "Intro text", "default": "<p>Choose who you are shopping for and we will show you a ready-to-gift jewelry edit.</p>" },
+    { "type": "header", "content": "Editorial image" },
+    { "type": "image_picker", "id": "image", "label": "Image", "info": "Uses the built-in gifting artwork when empty." },
+    { "type": "select", "id": "image_position", "label": "Image position", "options": [{ "value": "left center", "label": "Left" }, { "value": "center center", "label": "Center" }, { "value": "right center", "label": "Right" }], "default": "right center" },
     { "type": "text", "id": "concierge_label", "label": "Interaction label", "default": "Gift finder" },
     { "type": "header", "content": "Recipient choices" },
     { "type": "text", "id": "question_recipient", "label": "Question", "default": "Who are you shopping for?" },
