@@ -35,7 +35,7 @@ const loadProductCardFeatures = () => {
       })
       .catch((error) => {
         productCardFeatures = null;
-        console.error('[Jovie] Product card interactions failed to load.', error);
+        console.error('[Spinel] Product card interactions failed to load.', error);
         throw error;
       });
   }
@@ -79,5 +79,5 @@ document.addEventListener('shopify:section:load', (event) => initializeForScope(
 document.addEventListener('collection:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
 document.addEventListener('featured-collection:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
 document.addEventListener('product-featured-collection:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
-document.addEventListener('gift-jovie:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
+document.addEventListener('gift-spinel:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
 document.addEventListener('carry-edit:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));

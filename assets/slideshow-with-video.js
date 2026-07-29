@@ -2,7 +2,7 @@ import Swiper from './swiper-12.2.0.min.mjs';
 import A11y from './swiper-12.2.0-a11y.min.mjs';
 import Parallax from './swiper-12.2.0-parallax.min.mjs';
 
-class JovieSlideshow extends HTMLElement {
+class SpinelSlideshow extends HTMLElement {
   connectedCallback() {
     this.slider = this.querySelector('[data-slideshow-slider]');
     this.paginationButtons = Array.from(this.querySelectorAll('[data-slideshow-pagination-button]'));
@@ -361,6 +361,6 @@ class JovieSlideshow extends HTMLElement {
   }
 }
 
-if (!customElements.get('jovie-slideshow-video')) {
-  customElements.define('jovie-slideshow-video', JovieSlideshow);
+if (!customElements.get('spinel-slideshow-video')) {
+  customElements.define('spinel-slideshow-video', SpinelSlideshow);
 }

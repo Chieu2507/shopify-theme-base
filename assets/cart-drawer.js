@@ -147,7 +147,7 @@
         await this.loadRecommendations(cart);
         document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true, detail: { cart } }));
       } catch (error) {
-        console.error('[Jovie] Cart drawer refresh failed', error);
+        console.error('[Spinel] Cart drawer refresh failed', error);
         this.setMessage(error.message, true);
       } finally {
         this.busy = false;
@@ -243,7 +243,7 @@
         if (!response.ok) throw new Error(this.dataset.cartUpdateErrorLabel);
         await this.refresh();
       } catch (error) {
-        console.error('[Jovie] Cart drawer line update failed', error);
+        console.error('[Spinel] Cart drawer line update failed', error);
         this.setMessage(error.message, true);
       } finally {
         this.setStatus('');
@@ -266,7 +266,7 @@
         }
         await this.refresh();
       } catch (error) {
-        console.error('[Jovie] Related product add failed', error);
+        console.error('[Spinel] Related product add failed', error);
         this.setMessage(error.message, true);
         button.disabled = false;
         button.textContent = this.dataset.addToCartLabel;
@@ -343,7 +343,7 @@
         this.setMessage(this.dataset.discountAppliedLabel);
         await this.refresh();
       } catch (error) {
-        console.error('[Jovie] Discount code failed', error);
+        console.error('[Spinel] Discount code failed', error);
         this.setMessage(error.message, true);
       } finally {
         this.setStatus('');
@@ -358,7 +358,7 @@
         if (!response.ok) throw new Error(this.dataset.noteErrorLabel);
         this.setMessage(this.dataset.noteSavedLabel);
       } catch (error) {
-        console.error('[Jovie] Order note failed', error);
+        console.error('[Spinel] Order note failed', error);
         this.setMessage(error.message, true);
       } finally {
         this.setStatus('');

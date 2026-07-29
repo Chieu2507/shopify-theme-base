@@ -1,6 +1,6 @@
 (() => {
-  if (window.__jovieCartFeedbackInitialized) return;
-  window.__jovieCartFeedbackInitialized = true;
+  if (window.__spinelCartFeedbackInitialized) return;
+  window.__spinelCartFeedbackInitialized = true;
 
   const animateFrom = (source, image, imageUrl) => {
     if (!source) return;
@@ -64,7 +64,7 @@
     });
   };
 
-  window.JovieCartFeedback = { animateFrom, updateCartCount };
+  window.SpinelCartFeedback = { animateFrom, updateCartCount };
   document.addEventListener('cart:updated', (event) => updateCartCount(event.detail?.cart));
   document.addEventListener('product:add:success', (event) => animateFrom(event.detail?.button, event.detail?.image, event.detail?.imageUrl));
   document.addEventListener('cart:add:success', (event) => animateFrom(event.detail?.button, event.detail?.image, event.detail?.imageUrl));

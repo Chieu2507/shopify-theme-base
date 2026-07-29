@@ -184,7 +184,7 @@ class ProductPage extends HTMLElement {
         window.ShopifyXR.addModels(JSON.parse(modelData.textContent));
         window.ShopifyXR.setupXRElements?.();
       } catch (parseError) {
-        console.warn('[Jovie] Unable to initialize Shopify XR models.', parseError);
+        console.warn('[Spinel] Unable to initialize Shopify XR models.', parseError);
       }
     };
 
@@ -730,7 +730,7 @@ changeLightboxSlide(delta) {
     const section = document.querySelector('[data-recently-viewed]');
     const handle = this.dataset.productHandle;
     if (!section || !handle) return;
-    const storageKey = 'jovie:recently-viewed';
+    const storageKey = 'spinel:recently-viewed';
     let handles = [];
     try { handles = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch { handles = []; }
     handles = [handle, ...handles.filter((item) => item !== handle)].slice(0, 6);
@@ -1037,7 +1037,7 @@ changeLightboxSlide(delta) {
       this.dispatch('product:add:success', { item, cart, button: sourceButton || primaryButton, image: featuredImage, imageUrl: featuredImage?.currentSrc || featuredImage?.src });
     } catch (error) {
       if (error.name === 'AbortError') return;
-      console.error('[Jovie] Add to cart failed', {
+      console.error('[Spinel] Add to cart failed', {
         error,
         variantId: this.variant?.id,
         payload: error.payload || null,

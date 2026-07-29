@@ -27,7 +27,7 @@
         })
         .catch((error) => {
           modulePromise = null;
-          console.error('[Jovie] Cart drawer failed to load.', error);
+          console.error('[Spinel] Cart drawer failed to load.', error);
           throw error;
         });
     }

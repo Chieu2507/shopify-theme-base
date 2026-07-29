@@ -2,10 +2,10 @@
   <br>
     <img src="./assets/shoppy-x-ray.svg" alt="logo" width="200">
   <br>
-  Jovie Theme
+  Spinel Theme
 </h1>
 
-Source repository cho Jovie theme.
+Source repository cho Spinel theme.
 
 <p align="center">
   <a href="./LICENSE.md"><img src="https://img.shields.io/badge/License-MIT-green.svg" alt="License"></a>
@@ -40,12 +40,12 @@ Source JSON keeps demo-store images, products, collections, articles, menus, and
 node scripts/package-theme-store.mjs
 ```
 
-The command writes `release/jovie-theme-store.zip` and a SHA-256 report beside it. It removes demo-store resource bindings only from the staged copy, runs Theme Check, verifies the ZIP structure, and leaves the source theme unchanged.
+The command writes `release/spinel-theme-store.zip` and a SHA-256 report beside it. It removes demo-store resource bindings only from the staged copy, runs Theme Check, verifies the ZIP structure, and leaves the source theme unchanged.
 
 Use a custom output path when needed:
 
 ```bash
-node scripts/package-theme-store.mjs --output release/jovie-theme-store-1.0.0.zip
+node scripts/package-theme-store.mjs --output release/spinel-theme-store-1.0.0.zip
 ```
 
 ## Theme architecture

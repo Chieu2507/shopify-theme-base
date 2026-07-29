@@ -60,7 +60,7 @@ const addVariantToCart = async (variantId, source, image, form) => {
     window.setTimeout(() => source.classList.remove('is-added'), 1400);
     return item;
   } catch (error) {
-    console.error('[Jovie] Product card add to cart failed', {
+    console.error('[Spinel] Product card add to cart failed', {
       error,
       variantId,
       productHandle: source.closest('[data-product-card]')?.dataset.productHandle || null,
@@ -470,7 +470,7 @@ const initializeProductCardVariants = (root = document) => {
 };
 
 const initializeProductCards = () => {
-  window.JovieQuickView ||= new QuickViewModal();
+  window.SpinelQuickView ||= new QuickViewModal();
   initializeProductCardVariants();
 };
 
@@ -481,8 +481,8 @@ document.addEventListener('click', (event) => {
   const trigger = event.target.closest('[data-product-card-quick-view-open]');
   if (!trigger) return;
   event.preventDefault();
-  window.JovieQuickView ||= new QuickViewModal();
-  window.JovieQuickView.open(trigger.dataset.productCardQuickViewUrl, trigger);
+  window.SpinelQuickView ||= new QuickViewModal();
+  window.SpinelQuickView.open(trigger.dataset.productCardQuickViewUrl, trigger);
 });
 document.addEventListener('shopify:section:load', (event) => initializeProductCardVariants(event.target));
 document.addEventListener('collection:products-loaded', (event) => {
@@ -494,7 +494,7 @@ document.addEventListener('featured-collection:products-loaded', (event) => {
 document.addEventListener('product-featured-collection:products-loaded', (event) => {
   initializeProductCardVariants(event.detail?.panel || event.target);
 });
-document.addEventListener('gift-jovie:products-loaded', (event) => {
+document.addEventListener('gift-spinel:products-loaded', (event) => {
   const panel = event.detail?.panel || event.target;
   initializeProductCardVariants(panel);
   panel.querySelectorAll('[data-product-card]').forEach((card) => {

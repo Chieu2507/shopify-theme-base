@@ -1,5 +1,5 @@
-if (!window.JovieSearchInputControls) {
-  window.JovieSearchInputControls = true;
+if (!window.SpinelSearchInputControls) {
+  window.SpinelSearchInputControls = true;
 
   const syncSearchClearButton = (input) => {
     const clearButton = input.closest('[data-search-form]')?.querySelector('[data-search-clear]');

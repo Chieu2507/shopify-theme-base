@@ -36,7 +36,7 @@ function readArgument(name, fallback) {
   return value;
 }
 
-const outputPath = resolve(themeRoot, readArgument('--output', 'release/jovie-theme-store.zip'));
+const outputPath = resolve(themeRoot, readArgument('--output', 'release/spinel-theme-store.zip'));
 const reportPath = outputPath.replace(/\.zip$/i, '') + '.report.json';
 const skipThemeCheck = args.includes('--skip-theme-check');
 
@@ -151,7 +151,7 @@ async function sanitizeDemoFavicon(stagingRoot) {
   const fallback = `    {% if settings.favicon != blank %}
       <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
     {% else %}
-      <link rel="icon" type="image/png" href="{{ 'jovie-favicon.png' | asset_url }}">
+      <link rel="icon" type="image/png" href="{{ 'spinel-favicon.png' | asset_url }}">
     {% endif %}`;
   const replacement = `    {% if settings.favicon != blank %}
       <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
@@ -160,7 +160,7 @@ async function sanitizeDemoFavicon(stagingRoot) {
   await writeFile(layoutPath, source.replace(fallback, replacement));
   recordReplacement(file, 'faviconFallback');
 
-  const assetPath = join(stagingRoot, 'assets', 'jovie-favicon.png');
+  const assetPath = join(stagingRoot, 'assets', 'spinel-favicon.png');
   if (existsSync(assetPath)) {
     await rm(assetPath);
     recordReplacement(relative(stagingRoot, assetPath), 'demoAssets');
@@ -199,7 +199,7 @@ async function verifyStaging(stagingRoot) {
     const file = relative(stagingRoot, filePath);
     const content = await readFile(filePath);
     if (content.includes(Buffer.from('shopify://shop_images/'))) findings.push(`${file}: contains shopify://shop_images`);
-    if (content.includes(Buffer.from('jovie-favicon.png'))) findings.push(`${file}: contains jovie-favicon.png`);
+    if (content.includes(Buffer.from('spinel-favicon.png'))) findings.push(`${file}: contains spinel-favicon.png`);
   }
   if (findings.length) throw new Error(`Forbidden demo resources remain:\n${findings.join('\n')}`);
   report.checks.forbiddenResources = 'passed';
@@ -236,7 +236,7 @@ async function createPackage(stagingRoot) {
   await writeFile(reportPath, JSON.stringify(report, null, 2) + '\n');
 }
 
-const stagingParent = await mkdtemp(join(tmpdir(), 'jovie-theme-store-'));
+const stagingParent = await mkdtemp(join(tmpdir(), 'spinel-theme-store-'));
 const stagingRoot = join(stagingParent, 'theme');
 
 try {

@@ -1,5 +1,5 @@
-if (!window.JovieHeaderMenus) {
-  window.JovieHeaderMenus = true;
+if (!window.SpinelHeaderMenus) {
+  window.SpinelHeaderMenus = true;
   const megaMenuAnimations = new WeakMap();
   const cartFeedbackHeaderStates = new WeakMap();
   let transparentHeaderFrame = 0;
