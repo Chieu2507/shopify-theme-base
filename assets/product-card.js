@@ -517,10 +517,3 @@ document.addEventListener('gift-spinel:products-loaded', (event) => {
     card.productCardVariants?.loadSecondaryImage();
   });
 });
-document.addEventListener('carry-edit:products-loaded', (event) => {
-  const panel = event.detail?.panel || event.target;
-  initializeProductCardVariants(panel);
-  panel.querySelectorAll('[data-product-card]').forEach((card) => {
-    card.productCardVariants?.loadSecondaryImage();
-  });
-});

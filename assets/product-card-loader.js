@@ -80,4 +80,3 @@ document.addEventListener('collection:products-loaded', (event) => initializeFor
 document.addEventListener('featured-collection:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
 document.addEventListener('product-featured-collection:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
 document.addEventListener('gift-spinel:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
-document.addEventListener('carry-edit:products-loaded', (event) => initializeForScope(event.detail?.panel || event.target));
