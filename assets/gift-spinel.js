@@ -29,6 +29,7 @@ class GiftSpinel extends HTMLElement {
     window.clearTimeout(this.transitionTimer);
     window.clearTimeout(this.anchorTimer);
     window.cancelAnimationFrame(this.initializeFrame);
+    window.cancelAnimationFrame(this.centerScrollFrame);
     this.isBound = false;
   }
 
@@ -164,7 +165,7 @@ class GiftSpinel extends HTMLElement {
     this.transitionTimer = window.setTimeout(() => {
       if (reduceMotion) {
         this.showResult();
-        window.requestAnimationFrame(() => this.centerGiftSpinelPanel(this.result));
+        this.scheduleGiftSpinelCenter(this.result);
         return;
       }
 
@@ -245,7 +246,10 @@ class GiftSpinel extends HTMLElement {
     const panelRect = panel.getBoundingClientRect();
     const visiblePanelHeight = Math.min(panelRect.height, viewportHeight * .65);
     const panelFocusPoint = panelRect.top + visiblePanelHeight / 2;
-    const targetTop = window.scrollY + panelFocusPoint - (viewportTop + viewportHeight / 2);
+    const viewportCenter = viewportTop + viewportHeight / 2;
+    if (Math.abs(panelFocusPoint - viewportCenter) < 72) return;
+
+    const targetTop = window.scrollY + panelFocusPoint - viewportCenter;
     const maxScrollTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
     const scrollTop = Math.max(0, Math.min(targetTop, maxScrollTop));
 
@@ -256,13 +260,20 @@ class GiftSpinel extends HTMLElement {
     });
   }
 
+  scheduleGiftSpinelCenter(panel) {
+    window.cancelAnimationFrame(this.centerScrollFrame);
+    this.centerScrollFrame = window.requestAnimationFrame(() => {
+      this.centerScrollFrame = window.requestAnimationFrame(() => this.centerGiftSpinelPanel(panel));
+    });
+  }
+
   transitionToResult() {
     if (this.isPanelTransitioning) return;
 
     const path = this.findMatchingPath();
     if (!this.finder || this.questions.hidden || !path) {
       this.showResult(path);
-      window.requestAnimationFrame(() => this.centerGiftSpinelPanel(this.result));
+      this.scheduleGiftSpinelCenter(this.result);
       return;
     }
 
@@ -317,7 +328,7 @@ class GiftSpinel extends HTMLElement {
           this.finder.style.removeProperty('height');
           this.isPanelTransitioning = false;
           this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
-          this.centerGiftSpinelPanel(this.result);
+          this.scheduleGiftSpinelCenter(this.result);
         });
       });
     });
@@ -330,7 +341,7 @@ class GiftSpinel extends HTMLElement {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     if (reduceMotion || !this.finder || this.result.hidden) {
       this.resetRecipientView();
-      window.requestAnimationFrame(() => this.centerGiftSpinelPanel(this.questions));
+      this.scheduleGiftSpinelCenter(this.questions);
       return;
     }
 
@@ -399,7 +410,7 @@ class GiftSpinel extends HTMLElement {
           this.finder.style.removeProperty('height');
           this.isPanelTransitioning = false;
           this.question.focus({ preventScroll: true });
-          this.centerGiftSpinelPanel(this.questions);
+          this.scheduleGiftSpinelCenter(this.questions);
         });
       });
     });
