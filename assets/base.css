@@ -68,6 +68,34 @@ html.scroll-locked body {
   transform: translateY(0);
 }
 
+.modal-backdrop-pointer {
+  position: absolute;
+  z-index: 2;
+  top: var(--modal-backdrop-pointer-y, 0px);
+  left: var(--modal-backdrop-pointer-x, 0px);
+  width: 64px;
+  height: 64px;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transform: translate(-50%, -50%) scale(.68);
+  transition: opacity 160ms ease, transform 220ms cubic-bezier(.22, 1, .36, 1), visibility 0s linear 220ms;
+  will-change: transform, opacity;
+}
+
+.modal-backdrop-pointer.is-visible {
+  opacity: 1;
+  visibility: visible;
+  transform: translate(-50%, -50%) scale(1);
+  transition-delay: 0s;
+}
+
+html.modal-backdrop-cursor,
+html.modal-backdrop-cursor body,
+html.modal-backdrop-cursor .modal-backdrop {
+  cursor: none !important;
+}
+
 img,
 picture,
 video,
@@ -190,6 +218,54 @@ h6 {
 :is(.rte, .text-block, .content-text) :is(strong, b) {
   font-synthesis: weight !important;
   font-weight: 700 !important;
+}
+
+/* Shopify renders /policies/* outside the page template. Mirror the default
+ * Page content container and vertical rhythm for its platform-owned markup. */
+.shopify-policy__container {
+  width: min(100%, 800px);
+  box-sizing: border-box;
+  margin-inline: auto;
+  padding: 40px var(--page-margin) 64px;
+  color: var(--color-text);
+}
+
+.shopify-policy__title > h1 {
+  margin: 0;
+  color: var(--color-heading);
+}
+
+.shopify-policy__body {
+  margin-top: 18px;
+}
+
+.shopify-policy__body > * {
+  margin-top: 0;
+}
+
+.shopify-policy__body > * + * {
+  margin-top: 18px;
+}
+
+.shopify-policy__body :is(h2, h3, h4, h5, h6) {
+  margin: 32px 0 0;
+  color: var(--color-heading);
+}
+
+.shopify-policy__body :is(p, ul, ol) {
+  margin: 18px 0 0;
+  line-height: var(--body-line-height);
+}
+
+.shopify-policy__body li + li {
+  margin-top: 8px;
+}
+
+@media screen and (max-width: 749px) {
+  .shopify-policy__container {
+    padding-top: 0;
+    padding-bottom: 40px;
+  }
 }
 
 .icon-with-text--icon-small { --icon-with-text-icon-size: 28px; }

@@ -38,34 +38,25 @@
 
     disconnectedCallback() {
       this.abortController?.abort();
+      this.backdropInteraction?.destroy();
       document.documentElement.classList.remove('cart-drawer-open');
-      document.documentElement.classList.remove('cart-drawer-backdrop-cursor');
     }
 
     bind() {
       this.abortController = new AbortController();
       const { signal } = this.abortController;
+      this.backdropInteraction = new window.SpinelModalBackdropPointer({
+        root: this,
+        panel: this.panel,
+        pointer: this.backdropPointer,
+        isOpen: () => this.isOpen,
+      });
       document.addEventListener('click', (event) => {
         const trigger = event.target.closest('[data-cart-drawer-open]');
         if (!trigger) return;
         event.preventDefault();
         this.open(trigger);
       }, { signal });
-      document.addEventListener('mousemove', (event) => {
-        if (!this.isOpen) return;
-        const rect = this.panel?.getBoundingClientRect();
-        const isOverPanel = rect
-          && event.clientX >= rect.left
-          && event.clientX <= rect.right
-          && event.clientY >= rect.top
-          && event.clientY <= rect.bottom;
-        const isOverBackdrop = !isOverPanel;
-        document.documentElement.classList.toggle('cart-drawer-backdrop-cursor', isOverBackdrop);
-        if (!this.backdropPointer) return;
-        this.backdropPointer.style.setProperty('--cart-drawer-pointer-x', `${event.clientX}px`);
-        this.backdropPointer.style.setProperty('--cart-drawer-pointer-y', `${event.clientY}px`);
-        this.backdropPointer.classList.toggle('is-visible', isOverBackdrop);
-      }, { passive: true, signal });
       this.addEventListener('click', (event) => {
         if (event.target.closest('[data-cart-drawer-close]')) {
           event.preventDefault();
@@ -220,8 +211,8 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
-      document.documentElement.classList.remove('cart-drawer-open', 'cart-drawer-backdrop-cursor');
-      this.backdropPointer?.classList.remove('is-visible');
+      document.documentElement.classList.remove('cart-drawer-open');
+      this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
       this.lastFocusedElement?.focus?.({ preventScroll: true });
       this.panel.classList.add('is-handle-closing');
@@ -271,8 +262,7 @@
       this.classList.remove('is-open');
       this.classList.add('is-closing');
       document.documentElement.classList.remove('cart-drawer-open');
-      document.documentElement.classList.remove('cart-drawer-backdrop-cursor');
-      this.backdropPointer?.classList.remove('is-visible');
+      this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
       this.lastFocusedElement?.focus?.({ preventScroll: true });
       this.closeTimer = window.setTimeout(() => {

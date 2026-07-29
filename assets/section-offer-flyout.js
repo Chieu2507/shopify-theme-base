@@ -26,6 +26,18 @@ if (!customElements.get('offer-flyout')) {
 
       if (!this.dialog || !this.tab || !this.openButton) return;
 
+      this.backdropInteraction = new window.SpinelModalBackdropPointer({
+        root: this.dialog,
+        panel: this.panel,
+        pointer: this.backdropPointer,
+        isOpen: () => this.dialog.open,
+        cursorClass: 'quick-view-backdrop-cursor',
+        pointerX: '--quick-view-pointer-x',
+        pointerY: '--quick-view-pointer-y',
+        relativeToRoot: true,
+        isDisabled: () => this.mobileModal.matches,
+      });
+
       this.onOpenClick = () => this.open(this.openButton, true);
       this.onDismissClick = () => {
         this.tabDismissed = true;
@@ -43,31 +55,13 @@ if (!customElements.get('offer-flyout')) {
         window.clearTimeout(this.closeTimer);
         this.resetHandleDrag();
         this.dialog.classList.remove('is-closing');
-        this.setBackdropCursor(false);
+        this.backdropInteraction?.hide();
         if (this.rememberOnClose) this.rememberDisplay();
         this.rememberOnClose = false;
         this.tabUnlocked = true;
         this.syncTabVisibility();
         this.returnFocus?.focus({ preventScroll: true });
         this.returnFocus = null;
-      };
-      this.onMouseMove = (event) => {
-        if (!this.dialog.open || !this.panel) return;
-        if (this.mobileModal.matches) {
-          this.setBackdropCursor(false);
-          return;
-        }
-        const panelRect = this.panel.getBoundingClientRect();
-        const overBackdrop =
-          event.clientX < panelRect.left ||
-          event.clientX > panelRect.right ||
-          event.clientY < panelRect.top ||
-          event.clientY > panelRect.bottom;
-        this.setBackdropCursor(overBackdrop, event);
-      };
-      this.onPointerLeaveViewport = () => this.setBackdropCursor(false);
-      this.onViewportMouseOut = (event) => {
-        if (!event.relatedTarget) this.setBackdropCursor(false);
       };
       this.onSectionSelect = (event) => {
         if (event.detail?.sectionId === this.dataset.sectionId) this.open(null, false);
@@ -97,10 +91,6 @@ if (!customElements.get('offer-flyout')) {
       this.dialog.addEventListener('click', this.onDialogClick);
       this.dialog.addEventListener('cancel', this.onDialogCancel);
       this.dialog.addEventListener('close', this.onDialogClose);
-      document.addEventListener('mousemove', this.onMouseMove, { passive: true });
-      document.addEventListener('mouseleave', this.onPointerLeaveViewport);
-      window.addEventListener('mouseout', this.onViewportMouseOut);
-      window.addEventListener('blur', this.onPointerLeaveViewport);
       document.addEventListener('shopify:section:select', this.onSectionSelect);
       document.addEventListener('shopify:block:select', this.onBlockSelect);
       this.form?.addEventListener('submit', this.onFormSubmit);
@@ -139,10 +129,7 @@ if (!customElements.get('offer-flyout')) {
       this.dialog?.removeEventListener('click', this.onDialogClick);
       this.dialog?.removeEventListener('cancel', this.onDialogCancel);
       this.dialog?.removeEventListener('close', this.onDialogClose);
-      document.removeEventListener('mousemove', this.onMouseMove);
-      document.removeEventListener('mouseleave', this.onPointerLeaveViewport);
-      window.removeEventListener('mouseout', this.onViewportMouseOut);
-      window.removeEventListener('blur', this.onPointerLeaveViewport);
+      this.backdropInteraction?.destroy();
       document.removeEventListener('shopify:section:select', this.onSectionSelect);
       document.removeEventListener('shopify:block:select', this.onBlockSelect);
       this.form?.removeEventListener('submit', this.onFormSubmit);
@@ -157,7 +144,7 @@ if (!customElements.get('offer-flyout')) {
       window.clearTimeout(this.closeTimer);
       window.clearTimeout(this.showTimer);
       this.resetHandleDrag();
-      this.setBackdropCursor(false);
+      this.backdropInteraction?.hide();
     }
 
     startTouchHandleDrag(event) {
@@ -375,24 +362,6 @@ if (!customElements.get('offer-flyout')) {
       this.tab.setAttribute('aria-hidden', String(!visible));
     }
 
-    setBackdropCursor(visible, event) {
-      document.documentElement.classList.toggle('quick-view-backdrop-cursor', visible);
-      if (!this.backdropPointer) return;
-
-      if (visible && event) {
-        const dialogRect = this.dialog.getBoundingClientRect();
-        this.backdropPointer.style.setProperty(
-          '--quick-view-pointer-x',
-          `${event.clientX - dialogRect.left}px`,
-        );
-        this.backdropPointer.style.setProperty(
-          '--quick-view-pointer-y',
-          `${event.clientY - dialogRect.top}px`,
-        );
-      }
-
-      this.backdropPointer.classList.toggle('is-visible', visible);
-    }
   }
 
   customElements.define('offer-flyout', OfferFlyout);

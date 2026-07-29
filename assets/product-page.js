@@ -41,6 +41,10 @@ class ProductPage extends HTMLElement {
   disconnectedCallback() {
     if (this.lightbox?.classList.contains('is-open')) this.closeLightbox();
     else document.documentElement.classList.remove('product-lightbox-open');
+    this.sizeChartBackdropInteraction?.destroy();
+    this.sizeChartBackdropInteraction = null;
+    this.sizeChartDialog?.remove();
+    this.sizeChartDialog = null;
     this.abortController?.abort();
     if (this.galleryMediaQuery?.removeListener && this.galleryMediaChange) this.galleryMediaQuery.removeListener(this.galleryMediaChange);
     if (this.galleryRefreshFrame) cancelAnimationFrame(this.galleryRefreshFrame);
@@ -69,9 +73,18 @@ class ProductPage extends HTMLElement {
   bindSizeChart() {
     const dialog = this.querySelector('[data-size-chart-dialog]');
     if (!dialog) return;
+    this.sizeChartDialog = dialog;
+    document.body.append(dialog);
     const panel = dialog.querySelector('.product-size-chart__panel');
     const closeButton = dialog.querySelector('.product-size-chart__close');
     const handle = dialog.querySelector('[data-size-chart-handle]');
+    const backdropPointer = dialog.querySelector('.product-size-chart__backdrop-pointer');
+    this.sizeChartBackdropInteraction = new window.SpinelModalBackdropPointer({
+      root: dialog,
+      panel,
+      pointer: backdropPointer,
+      isOpen: () => dialog.classList.contains('is-open'),
+    });
     const mobileSizeChart = window.matchMedia('(max-width: 989px)');
     let handleDrag = null;
     let handleDragTimer = null;
@@ -91,6 +104,7 @@ class ProductPage extends HTMLElement {
       dialog.classList.remove('is-open', 'is-closing');
       dialog.setAttribute('aria-hidden', 'true');
       dialog.removeAttribute('scroll-lock');
+      this.sizeChartBackdropInteraction?.hide();
       resetHandleDrag();
       this.sizeChartRestoreTarget?.focus?.({ preventScroll: true });
     };
@@ -194,7 +208,7 @@ class ProductPage extends HTMLElement {
         }
       }, { signal: this.signal });
     });
-    this.querySelectorAll('[data-size-chart-close]').forEach((button) => {
+    dialog.querySelectorAll('[data-size-chart-close]').forEach((button) => {
       button.addEventListener('click', this.closeSizeChart, { signal: this.signal });
     });
     dialog.addEventListener('keydown', (event) => {
