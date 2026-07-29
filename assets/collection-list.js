@@ -56,6 +56,7 @@ class CollectionList extends HTMLElement {
     if (!this.slider?.querySelector('.swiper-slide')) return;
 
     const columns = Number.parseInt(this.dataset[`columns${this.capitalize(device)}`], 10) || 1;
+    const slidesPerView = device === 'mobile' && columns === 1 ? 1.2 : columns;
     const configuredGap = Number.parseFloat(getComputedStyle(this).getPropertyValue('--collection-list-column-gap')) || 0;
     const gap = device === 'mobile' ? 8 : configuredGap;
     const showPagination = device !== 'mobile' && this.dataset.showPagination === 'true' && Boolean(this.pagination);
@@ -65,11 +66,11 @@ class CollectionList extends HTMLElement {
 
     this.swiper = new Swiper(this.slider, {
       modules: [A11y, Navigation, Pagination],
-      slidesPerView: columns,
+      slidesPerView,
       spaceBetween: gap,
       speed: this.reduceMotion.matches ? 0 : 360,
       watchOverflow: true,
-      grabCursor: slideCount > columns,
+      grabCursor: slideCount > slidesPerView,
       navigation: {
         prevEl: this.previousButton,
         nextEl: this.nextButton,
