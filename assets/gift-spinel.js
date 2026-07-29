@@ -25,13 +25,27 @@ class GiftSpinel extends HTMLElement {
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     document.removeEventListener('shopify:section:load', this.onSectionLoad);
     this.editorObserver?.disconnect();
+    this.cancelPanelTransition();
     window.clearTimeout(this.transitionTimer);
     window.clearTimeout(this.anchorTimer);
     window.cancelAnimationFrame(this.initializeFrame);
     this.isBound = false;
   }
 
+  cancelPanelTransition() {
+    this.panelAnimations?.forEach((animation) => animation.cancel());
+    this.panelAnimations = [];
+    this.isPanelTransitioning = false;
+    if (!this.finder) return;
+    this.finder.style.removeProperty('height');
+    this.finder.style.removeProperty('overflow');
+    this.finder.style.removeProperty('will-change');
+  }
+
   initialize() {
+    this.cancelPanelTransition();
+    this.finder = this.querySelector('.gift-spinel__finder');
+    this.intro = this.querySelector('.gift-spinel__intro');
     this.questions = this.querySelector('[data-gift-spinel-questions]');
     this.result = this.querySelector('[data-gift-spinel-result]');
     this.status = this.querySelector('[data-gift-spinel-status]');
@@ -191,18 +205,101 @@ class GiftSpinel extends HTMLElement {
         detail: { panel: this.result },
       }),
     );
-    this.result.querySelector('[data-gift-spinel-result-heading]')?.focus();
+    this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
   }
 
-  changeRecipient() {
-    window.clearTimeout(this.transitionTimer);
+  resetRecipientView(shouldFocus = true) {
     this.recipient = undefined;
     this.result.hidden = true;
     this.result.replaceChildren();
     if (this.status) this.status.textContent = '';
     this.questions.hidden = false;
     this.resetChoices();
-    this.question.focus();
+    if (shouldFocus) this.question.focus({ preventScroll: true });
+  }
+
+  changeRecipient() {
+    if (this.isPanelTransitioning) return;
+    window.clearTimeout(this.transitionTimer);
+
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduceMotion || !this.finder || this.result.hidden) {
+      this.resetRecipientView();
+      return;
+    }
+
+    this.isPanelTransitioning = true;
+    const startHeight = this.finder.getBoundingClientRect().height;
+    const outgoingPanel = this.result.firstElementChild || this.result;
+    this.finder.style.height = `${startHeight}px`;
+    this.finder.style.overflow = 'hidden';
+    this.finder.style.willChange = 'height';
+
+    const exitAnimation = outgoingPanel.animate(
+      [
+        { opacity: 1, transform: 'translateY(0)' },
+        { opacity: 0, transform: 'translateY(-8px)' },
+      ],
+      {
+        duration: 160,
+        easing: 'cubic-bezier(.4, 0, 1, 1)',
+        fill: 'forwards',
+      },
+    );
+    this.panelAnimations = [exitAnimation];
+
+    exitAnimation.finished.catch(() => null).then(() => {
+      if (!this.isPanelTransitioning) return;
+
+      this.resetRecipientView(false);
+      const finderStyle = window.getComputedStyle(this.finder);
+      const verticalPadding = Number.parseFloat(finderStyle.paddingTop) + Number.parseFloat(finderStyle.paddingBottom);
+      const questionHeight = this.questions.getBoundingClientRect().height + verticalPadding;
+      const introMinHeight = this.intro ? Number.parseFloat(window.getComputedStyle(this.intro).minHeight) || 0 : 0;
+      const targetHeight = Math.ceil(Math.max(questionHeight, introMinHeight));
+
+      const resizeAnimation = this.finder.animate(
+        [
+          { height: `${startHeight}px` },
+          { height: `${targetHeight}px` },
+        ],
+        {
+          duration: 360,
+          easing: 'cubic-bezier(.22, 1, .36, 1)',
+          fill: 'forwards',
+        },
+      );
+      const enterAnimation = this.questions.animate(
+        [
+          { opacity: 0, transform: 'translateY(10px)' },
+          { opacity: 1, transform: 'translateY(0)' },
+        ],
+        {
+          duration: 280,
+          delay: 50,
+          easing: 'cubic-bezier(.22, 1, .36, 1)',
+          fill: 'both',
+        },
+      );
+      this.panelAnimations = [resizeAnimation, enterAnimation];
+
+      Promise.allSettled([resizeAnimation.finished, enterAnimation.finished]).then(() => {
+        if (!this.isPanelTransitioning) return;
+
+        this.finder.style.height = `${targetHeight}px`;
+        this.panelAnimations.forEach((animation) => animation.cancel());
+        this.panelAnimations = [];
+        this.finder.style.removeProperty('overflow');
+        this.finder.style.removeProperty('will-change');
+
+        window.requestAnimationFrame(() => {
+          if (!this.isPanelTransitioning) return;
+          this.finder.style.removeProperty('height');
+          this.isPanelTransitioning = false;
+          this.question.focus({ preventScroll: true });
+        });
+      });
+    });
   }
 }
 
