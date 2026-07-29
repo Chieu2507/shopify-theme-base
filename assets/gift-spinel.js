@@ -159,8 +159,16 @@ class GiftSpinel extends HTMLElement {
       button.disabled = true;
     });
 
-    const delay = window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 120;
-    this.transitionTimer = window.setTimeout(() => this.showResult(), delay);
+    const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    const delay = reduceMotion ? 0 : 120;
+    this.transitionTimer = window.setTimeout(() => {
+      if (reduceMotion) {
+        this.showResult();
+        return;
+      }
+
+      this.transitionToResult();
+    }, delay);
   }
 
   findMatchingPath() {
@@ -176,7 +184,7 @@ class GiftSpinel extends HTMLElement {
     });
   }
 
-  showResult(preferredPath) {
+  showResult(preferredPath, shouldFocus = true) {
     const path = preferredPath || this.findMatchingPath();
     if (!path || !this.result) {
       this.questions.hidden = false;
@@ -205,7 +213,7 @@ class GiftSpinel extends HTMLElement {
         detail: { panel: this.result },
       }),
     );
-    this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
+    if (shouldFocus) this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
   }
 
   resetRecipientView(shouldFocus = true) {
@@ -216,6 +224,79 @@ class GiftSpinel extends HTMLElement {
     this.questions.hidden = false;
     this.resetChoices();
     if (shouldFocus) this.question.focus({ preventScroll: true });
+  }
+
+  getFinderTargetHeight(panel) {
+    const finderStyle = window.getComputedStyle(this.finder);
+    const verticalPadding = Number.parseFloat(finderStyle.paddingTop) + Number.parseFloat(finderStyle.paddingBottom);
+    const panelHeight = panel.getBoundingClientRect().height + verticalPadding;
+    const introMinHeight = this.intro ? Number.parseFloat(window.getComputedStyle(this.intro).minHeight) || 0 : 0;
+    return Math.ceil(Math.max(panelHeight, introMinHeight));
+  }
+
+  transitionToResult() {
+    if (this.isPanelTransitioning) return;
+
+    const path = this.findMatchingPath();
+    if (!this.finder || this.questions.hidden || !path) {
+      this.showResult(path);
+      return;
+    }
+
+    this.isPanelTransitioning = true;
+    const startHeight = this.finder.getBoundingClientRect().height;
+    this.finder.style.height = `${startHeight}px`;
+    this.finder.style.overflow = 'hidden';
+    this.finder.style.willChange = 'height';
+
+    const exitAnimation = this.questions.animate(
+      [
+        { opacity: 1, transform: 'translateY(0)' },
+        { opacity: 0, transform: 'translateY(-8px)' },
+      ],
+      {
+        duration: 160,
+        easing: 'cubic-bezier(.4, 0, 1, 1)',
+        fill: 'forwards',
+      },
+    );
+    this.panelAnimations = [exitAnimation];
+
+    exitAnimation.finished.catch(() => null).then(() => {
+      if (!this.isPanelTransitioning) return;
+
+      this.showResult(path, false);
+      const targetHeight = this.getFinderTargetHeight(this.result);
+      const resizeAnimation = this.finder.animate(
+        [
+          { height: `${startHeight}px` },
+          { height: `${targetHeight}px` },
+        ],
+        {
+          duration: 360,
+          easing: 'cubic-bezier(.22, 1, .36, 1)',
+          fill: 'forwards',
+        },
+      );
+      this.panelAnimations.push(resizeAnimation);
+
+      resizeAnimation.finished.catch(() => null).then(() => {
+        if (!this.isPanelTransitioning) return;
+
+        this.finder.style.height = `${targetHeight}px`;
+        this.panelAnimations.forEach((animation) => animation.cancel());
+        this.panelAnimations = [];
+        this.finder.style.removeProperty('overflow');
+        this.finder.style.removeProperty('will-change');
+
+        window.requestAnimationFrame(() => {
+          if (!this.isPanelTransitioning) return;
+          this.finder.style.removeProperty('height');
+          this.isPanelTransitioning = false;
+          this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
+        });
+      });
+    });
   }
 
   changeRecipient() {
@@ -252,11 +333,7 @@ class GiftSpinel extends HTMLElement {
       if (!this.isPanelTransitioning) return;
 
       this.resetRecipientView(false);
-      const finderStyle = window.getComputedStyle(this.finder);
-      const verticalPadding = Number.parseFloat(finderStyle.paddingTop) + Number.parseFloat(finderStyle.paddingBottom);
-      const questionHeight = this.questions.getBoundingClientRect().height + verticalPadding;
-      const introMinHeight = this.intro ? Number.parseFloat(window.getComputedStyle(this.intro).minHeight) || 0 : 0;
-      const targetHeight = Math.ceil(Math.max(questionHeight, introMinHeight));
+      const targetHeight = this.getFinderTargetHeight(this.questions);
 
       const resizeAnimation = this.finder.animate(
         [
