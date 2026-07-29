@@ -18,8 +18,8 @@
     endcase
   endfor
 
-  assign announcement_dots_space_desktop = announcement_item_count | times: 19 | plus: 62
-  assign announcement_dots_space_mobile = announcement_item_count | times: 13 | plus: 52
+  assign announcement_dots_space_desktop = announcement_item_count | times: 19 | plus: 28
+  assign announcement_dots_space_mobile = announcement_item_count | times: 13 | plus: 16
 %}
 
 {% if section.blocks.size > 0 %}
@@ -64,7 +64,7 @@
       {% endfor %}
 
       {% if announcement_item_count > 0 %}
-        <div class="announcement-bar__content{% if section.settings.text_behavior == 'rotate' and announcement_item_count > 1 %} announcement-bar__content--with-rotation-control{% endif %}">
+        <div class="announcement-bar__content{% if section.settings.text_behavior == 'rotate' and announcement_item_count > 1 %} announcement-bar__content--with-controls{% endif %}">
           <div class="announcement-bar__messages" aria-live="polite">
             {% assign announcement_item_index = 0 %}
             {% for block in section.blocks %}
@@ -133,23 +133,6 @@
                   <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m6.5 3 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
                 </button>
               </nav>
-              <button
-                class="announcement-bar__rotation-toggle"
-                type="button"
-                data-announcement-rotation-toggle
-                data-pause-label="{{ 'announcement_bar.pause_rotation' | t | escape }}"
-                data-play-label="{{ 'announcement_bar.play_rotation' | t | escape }}"
-                aria-label="{{ 'announcement_bar.pause_rotation' | t | escape }}"
-                aria-pressed="false"
-                hidden
-              >
-                <svg data-announcement-pause-icon viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                  <path d="M5 3v10M11 3v10" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.5"/>
-                </svg>
-                <svg data-announcement-play-icon viewBox="0 0 16 16" aria-hidden="true" focusable="false" hidden>
-                  <path d="m5 3 7 5-7 5V3Z" fill="currentColor"/>
-                </svg>
-              </button>
             </div>
           {% endif %}
         </div>
@@ -205,12 +188,12 @@
     justify-content: center;
   }
 
-  .announcement-bar__content--with-rotation-control .announcement-bar__messages {
+  .announcement-bar__content--with-controls .announcement-bar__messages {
     box-sizing: border-box;
-    padding-inline: 86px;
+    padding-inline: 52px;
   }
 
-  .announcement-bar--navigator-dots .announcement-bar__content--with-rotation-control .announcement-bar__messages {
+  .announcement-bar--navigator-dots .announcement-bar__content--with-controls .announcement-bar__messages {
     padding-inline: var(--announcement-dots-space-desktop);
   }
 
@@ -230,47 +213,6 @@
 
   .announcement-bar__link {
     text-underline-offset: 3px;
-  }
-
-  .announcement-bar__rotation-toggle {
-    position: absolute;
-    z-index: 3;
-    top: 50%;
-    right: 58px;
-    display: grid;
-    width: 24px;
-    height: 24px;
-    flex: 0 0 auto;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: transparent;
-    color: inherit;
-    cursor: pointer;
-    opacity: 0.8;
-    place-items: center;
-    pointer-events: auto;
-    transform: translateY(-50%);
-    transition: opacity 160ms ease;
-  }
-
-  .announcement-bar__rotation-toggle[hidden],
-  .announcement-bar__rotation-toggle svg[hidden] {
-    display: none;
-  }
-
-  .announcement-bar__rotation-toggle:hover {
-    opacity: 1;
-  }
-
-  .announcement-bar__rotation-toggle:focus-visible {
-    outline: 2px solid currentcolor;
-    outline-offset: 2px;
-  }
-
-  .announcement-bar__rotation-toggle svg {
-    width: 14px;
-    height: 14px;
   }
 
   .announcement-bar__controls {
@@ -353,12 +295,7 @@
 
   .announcement-bar--navigator-dots .announcement-bar__navigator-dots {
     grid-column: 3;
-    margin-right: 58px;
     justify-self: end;
-  }
-
-  .announcement-bar--navigator-dots .announcement-bar__rotation-toggle {
-    right: 24px;
   }
 
   .announcement-bar__countdown {
@@ -415,11 +352,11 @@
       overflow: hidden;
     }
 
-    .announcement-bar__content--with-rotation-control .announcement-bar__messages {
-      padding-inline: 72px;
+    .announcement-bar__content--with-controls .announcement-bar__messages {
+      padding-inline: 36px;
     }
 
-    .announcement-bar--navigator-dots .announcement-bar__content--with-rotation-control .announcement-bar__messages {
+    .announcement-bar--navigator-dots .announcement-bar__content--with-controls .announcement-bar__messages {
       padding-inline: var(--announcement-dots-space-mobile);
     }
 
@@ -439,18 +376,13 @@
     .announcement-bar__navigator-dots { gap: 2px; }
     .announcement-bar__navigator-dot { width: 11px; }
     .announcement-bar__navigator-dot[aria-current='true'] span { width: 11px; }
-    .announcement-bar__rotation-toggle { right: 44px; }
-    .announcement-bar--navigator-dots .announcement-bar__navigator-dots { margin-right: 46px; }
-    .announcement-bar--navigator-dots .announcement-bar__rotation-toggle { right: 12px; }
     .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__navigator-arrow { display: grid; }
     .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__navigator-dots { display: none; }
-    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__rotation-toggle { right: 44px; }
-    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__content--with-rotation-control .announcement-bar__messages { padding-inline: 72px; }
+    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__content--with-controls .announcement-bar__messages { padding-inline: 36px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
     .announcement-bar__social > *,
-    .announcement-bar__rotation-toggle,
     .announcement-bar__navigator-arrow,
     .announcement-bar__navigator-dot span,
     .announcement-bar__item {

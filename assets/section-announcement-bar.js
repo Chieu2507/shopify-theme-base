@@ -2,17 +2,13 @@ if (!customElements.get('announcement-bar')) {
   class AnnouncementBar extends HTMLElement {
     connectedCallback() {
       this.items = Array.from(this.querySelectorAll('[data-announcement-item]'));
-      this.rotationToggle = this.querySelector('[data-announcement-rotation-toggle]');
       this.navigator = this.querySelector('[data-announcement-navigator]');
       this.navigatorDots = Array.from(this.querySelectorAll('[data-announcement-index]'));
       this.countdowns = Array.from(this.querySelectorAll('[data-announcement-countdown]'));
-      this.pauseIcon = this.querySelector('[data-announcement-pause-icon]');
-      this.playIcon = this.querySelector('[data-announcement-play-icon]');
       this.index = Math.max(0, this.items.findIndex((item) => !item.hidden));
       this.interval = Number(this.dataset.interval) || 5000;
       this.motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.reduceMotion = this.motionPreference.matches;
-      this.isPausedByUser = false;
       this.isPointerInside = false;
       this.hasFocusWithin = false;
       this.itemAnimation = null;
@@ -21,7 +17,6 @@ if (!customElements.get('announcement-bar')) {
       this.onMouseLeave = this.handleMouseLeave.bind(this);
       this.onFocusIn = this.handleFocusIn.bind(this);
       this.onFocusOut = this.handleFocusOut.bind(this);
-      this.onRotationToggle = this.handleRotationToggle.bind(this);
       this.onNavigatorClick = this.handleNavigatorClick.bind(this);
       this.onMotionPreferenceChange = this.handleMotionPreferenceChange.bind(this);
       this.onVisibilityChange = this.handleVisibilityChange.bind(this);
@@ -29,14 +24,12 @@ if (!customElements.get('announcement-bar')) {
       this.addEventListener('mouseleave', this.onMouseLeave);
       this.addEventListener('focusin', this.onFocusIn);
       this.addEventListener('focusout', this.onFocusOut);
-      this.rotationToggle?.addEventListener('click', this.onRotationToggle);
       this.navigator?.addEventListener('click', this.onNavigatorClick);
       this.motionPreference.addEventListener('change', this.onMotionPreferenceChange);
       document.addEventListener('shopify:block:select', this.onBlockSelect);
       document.addEventListener('visibilitychange', this.onVisibilityChange);
       this.updateCountdowns();
       this.startCountdowns();
-      this.updateRotationControl();
       this.updateNavigator();
       this.startRotation();
     }
@@ -49,7 +42,6 @@ if (!customElements.get('announcement-bar')) {
       this.removeEventListener('mouseleave', this.onMouseLeave);
       this.removeEventListener('focusin', this.onFocusIn);
       this.removeEventListener('focusout', this.onFocusOut);
-      this.rotationToggle?.removeEventListener('click', this.onRotationToggle);
       this.navigator?.removeEventListener('click', this.onNavigatorClick);
       this.motionPreference.removeEventListener('change', this.onMotionPreferenceChange);
       document.removeEventListener('shopify:block:select', this.onBlockSelect);
@@ -63,7 +55,6 @@ if (!customElements.get('announcement-bar')) {
         this.dataset.behavior !== 'rotate' ||
         this.items.length < 2 ||
         this.reduceMotion ||
-        this.isPausedByUser ||
         this.isPointerInside ||
         this.hasFocusWithin ||
         document.hidden
@@ -153,16 +144,6 @@ if (!customElements.get('announcement-bar')) {
       this.startRotation();
     }
 
-    handleRotationToggle() {
-      this.isPausedByUser = !this.isPausedByUser;
-      if (this.isPausedByUser) {
-        this.stopRotation();
-      } else {
-        this.startRotation();
-      }
-      this.updateRotationControl();
-    }
-
     handleNavigatorClick(event) {
       const control = event.target.closest('[data-announcement-index], [data-announcement-step]');
       if (!control || !this.navigator?.contains(control)) return;
@@ -183,22 +164,6 @@ if (!customElements.get('announcement-bar')) {
       } else {
         this.startRotation();
       }
-      this.updateRotationControl();
-    }
-
-    updateRotationControl() {
-      if (!this.rotationToggle) return;
-      const canRotate = this.dataset.behavior === 'rotate' && this.items.length > 1 && !this.reduceMotion;
-      this.rotationToggle.hidden = !canRotate;
-      if (!canRotate) return;
-
-      this.rotationToggle.setAttribute('aria-pressed', String(this.isPausedByUser));
-      this.rotationToggle.setAttribute(
-        'aria-label',
-        this.isPausedByUser ? this.rotationToggle.dataset.playLabel : this.rotationToggle.dataset.pauseLabel
-      );
-      if (this.pauseIcon) this.pauseIcon.hidden = this.isPausedByUser;
-      if (this.playIcon) this.playIcon.hidden = !this.isPausedByUser;
     }
 
     updateNavigator() {
