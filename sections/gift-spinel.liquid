@@ -132,37 +132,19 @@
     </template>
   {% endfor %}
 
-  {% liquid
-    assign fallback_primary_link = section.settings.fallback_primary_link
-    if fallback_primary_link == blank and section.settings.fallback_collection != blank
-      assign fallback_primary_link = section.settings.fallback_collection.url
-    endif
-    assign fallback_products = section.settings.fallback_products
-    if fallback_products == blank and section.settings.fallback_collection != blank
-      assign fallback_products = section.settings.fallback_collection.products
-    endif
-  %}
-  <template data-gift-spinel-fallback>
+  <template data-gift-spinel-placeholder>
     <div class="gift-spinel__result-content">
-      {% if section.settings.fallback_badge != blank %}<p class="gift-spinel__result-kicker">{{ section.settings.fallback_badge | escape }}</p>{% else %}<p class="gift-spinel__result-kicker">{{ 'gift_spinel.curated_edit' | t }}</p>{% endif %}
-      <h3 class="gift-spinel__result-heading" data-gift-spinel-result-heading tabindex="-1">{{ section.settings.fallback_heading | escape }}</h3>
-      {% if section.settings.fallback_copy != blank %}<div class="gift-spinel__result-copy rte" data-gift-spinel-result-copy>{{ section.settings.fallback_copy }}</div>{% endif %}
       <div class="gift-spinel__result-tools">
         <div class="gift-spinel__chips" data-gift-spinel-chips></div>
         <button class="gift-spinel__change" type="button" data-gift-spinel-change>{{ 'gift_spinel.change_recipient' | t }}</button>
       </div>
-      <div class="gift-spinel__actions">
-        {% render 'cta', label: section.settings.fallback_primary_label, url: fallback_primary_link, style: 'primary' %}
-      </div>
-      {% if fallback_products != blank %}
-        <ul class="gift-spinel__products" role="list">
-          {% for product in fallback_products limit: section.settings.products_to_show %}
-            <li class="gift-spinel__product">
-              {% render 'product-card', product: product, show_media_actions: true, enable_quick_view: true %}
-            </li>
-          {% endfor %}
-        </ul>
-      {% endif %}
+      <ul class="gift-spinel__products" role="list">
+        {% for placeholder_number in (1..section.settings.products_to_show) %}
+          <li class="gift-spinel__product">
+            {% render 'product-card', placeholder_index: placeholder_number %}
+          </li>
+        {% endfor %}
+      </ul>
     </div>
   </template>
 
@@ -198,15 +180,6 @@
     { "type": "text", "id": "recipient_mother", "label": "Mother option", "default": "Mum" },
     { "type": "text", "id": "recipient_friend", "label": "Friend option", "default": "A friend" },
     { "type": "text", "id": "recipient_myself", "label": "Myself option", "default": "Myself" },
-    { "type": "header", "content": "Fallback gift edit" },
-    { "type": "paragraph", "content": "Shown when no gift edit has been configured for the selected recipient." },
-    { "type": "collection", "id": "fallback_collection", "label": "Fallback collection", "info": "Supplies product cards and the primary link when no fallback product list or link is selected." },
-    { "type": "product_list", "id": "fallback_products", "label": "Fallback products", "limit": 6, "info": "Takes priority over the fallback collection." },
-    { "type": "text", "id": "fallback_heading", "label": "Fallback heading", "default": "A thoughtful edit, chosen with care." },
-    { "type": "richtext", "id": "fallback_copy", "label": "Fallback copy", "default": "<p>Considered pieces selected to make the moment feel personal.</p>" },
-    { "type": "text", "id": "fallback_badge", "label": "Fallback badge", "default": "Your curated gift edit" },
-    { "type": "text", "id": "fallback_primary_label", "label": "Fallback CTA label", "default": "Explore this gift edit" },
-    { "type": "url", "id": "fallback_primary_link", "label": "Fallback CTA link", "info": "Uses the fallback collection when empty." },
     { "type": "header", "content": "Product cards" },
     { "type": "range", "id": "products_to_show", "label": "Products to show", "min": 3, "max": 6, "step": 1, "default": 3 },
     { "type": "select", "id": "product_columns", "label": "Desktop product columns", "options": [{ "value": "2", "label": "2 columns" }, { "value": "3", "label": "3 columns" }], "default": "3" },

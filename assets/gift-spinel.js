@@ -38,7 +38,7 @@ class GiftSpinel extends HTMLElement {
     this.question = this.querySelector('[data-gift-spinel-question]');
     this.choices = this.querySelector('[data-gift-spinel-choices]');
     this.paths = Array.from(this.querySelectorAll('template[data-gift-spinel-path]'));
-    this.fallbackPath = this.querySelector('template[data-gift-spinel-fallback]');
+    this.placeholderPath = this.querySelector('template[data-gift-spinel-placeholder]');
     this.options = this.readOptions();
 
     if (!this.questions || !this.result || !this.question || !this.choices || !this.options.length) return;
@@ -150,7 +150,7 @@ class GiftSpinel extends HTMLElement {
   }
 
   findMatchingPath() {
-    return this.paths.find((path) => path.dataset.recipient === this.recipient?.value) || this.fallbackPath;
+    return this.paths.find((path) => path.dataset.recipient === this.recipient?.value) || this.placeholderPath;
   }
 
   replaceTokens(root) {
