@@ -5,6 +5,25 @@ if (!customElements.get('review-parallax')) {
       this.viewport = this.querySelector('[data-review-viewport]');
       this.header = this.querySelector('.review-parallax__header');
       this.cards = Array.from(this.querySelectorAll('[data-review-card]'));
+      this.cards.forEach((card, index) => {
+        const lane = index % 3;
+        const laneIndex = Math.floor(index / 3);
+        const rowStart = laneIndex * 8 + lane * 2 + 1;
+        const laneMotion = [
+          { begin: 25, end: -10 },
+          { begin: -25, end: 0 },
+          { begin: 20, end: -10 },
+        ][lane];
+
+        card.classList.add(`review-parallax__card--lane-${lane}`);
+        card.style.setProperty('--review-row-start', rowStart);
+        card.style.setProperty('--review-order', index);
+        card.dataset.reviewLane = lane;
+        card.dataset.reviewLaneIndex = laneIndex;
+        card.dataset.reviewIndex = index;
+        card.dataset.reviewBegin = laneMotion.begin;
+        card.dataset.reviewEnd = laneMotion.end;
+      });
       this.cardOffsets = new Map(this.cards.map((card) => [card, 0]));
       this.mobileQuery = window.matchMedia('(max-width: 989px)');
       this.reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -98,7 +117,9 @@ if (!customElements.get('review-parallax')) {
 
     selectBlock(event) {
       if (event.detail?.sectionId !== this.dataset.sectionId || !this.classList.contains('is-scroll-linked')) return;
-      const card = this.querySelector(`[data-review-card][data-block-id="${CSS.escape(event.detail.blockId)}"]`)
+      const selectedElement = event.target instanceof Element ? event.target : null;
+      const card = selectedElement?.closest('[data-review-card]')
+        || this.querySelector(`[data-review-card][data-block-id="${CSS.escape(event.detail.blockId)}"]`)
         || this.querySelector(`[data-review-card][data-review-index="${CSS.escape(event.detail.blockId)}"]`);
       if (!card) return;
 

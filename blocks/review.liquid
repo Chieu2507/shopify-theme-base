@@ -1,0 +1,88 @@
+{% doc %}
+  Renders a review card with an image and nested content blocks.
+
+  @example
+  {% content_for 'block', type: 'review', id: 'review' %}
+{% enddoc %}
+
+<article
+  class="review-parallax__card"
+  data-review-card
+  data-block-id="{{ block.id }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="review-parallax__media">
+    {% if block.settings.image != blank %}
+      {% render 'responsive-image',
+        image: block.settings.image,
+        max_width: 600,
+        widths: '260, 390, 520, 600',
+        sizes: '(min-width: 990px) 260px, min(75vw, 292px)',
+        class: 'review-parallax__image',
+        alt: block.settings.image_alt,
+        loading: 'lazy'
+      %}
+    {% else %}
+      {% render 'media-placeholder', class_name: 'review-parallax__placeholder', asset_name: 'placeholder-image-default-5.svg' %}
+    {% endif %}
+  </div>
+
+  <div class="review-parallax__content">
+    {% content_for 'blocks' %}
+  </div>
+</article>
+
+{% schema %}
+{
+  "name": "Review card",
+  "max_blocks": 2,
+  "blocks": [
+    {
+      "type": "text"
+    },
+    {
+      "type": "heading"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "Image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "text",
+      "id": "image_alt",
+      "label": "Image alt text"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Review card",
+      "blocks": [
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Amazing look and quality! The piece is beautiful, fits perfectly, and feels exceptionally made.</p>",
+            "text_size": "medium",
+            "alignment": "left"
+          }
+        },
+        {
+          "type": "heading",
+          "settings": {
+            "heading": "Tony S.",
+            "heading_size": "h6",
+            "heading_tag": "h6",
+            "alignment": "left"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
