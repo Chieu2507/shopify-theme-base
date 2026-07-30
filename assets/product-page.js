@@ -2,12 +2,54 @@ import { A11y, Pagination, Swiper, Thumbs } from './swiper-loader.js';
 import EffectFade from './swiper-12.2.0-effect-fade.min.mjs';
 import './cart-feedback.js';
 
+if (!window.__spinelProductEditorScrollGuard) {
+  window.__spinelProductEditorScrollGuard = true;
+  const sectionScrollPositions = new Map();
+  const restoreScrollPosition = (scrollTop) => {
+    [0, 50, 180, 450].forEach((delay) => {
+      window.setTimeout(() => window.scrollTo({ top: scrollTop, behavior: 'auto' }), delay);
+    });
+  };
+  const getProductPage = (target, sectionId) => {
+    if (target instanceof Element) {
+      if (target.matches('product-page')) return target;
+      const parentProductPage = target.closest('product-page');
+      if (parentProductPage) return parentProductPage;
+      const productPage = target.querySelector('product-page');
+      if (productPage) return productPage;
+    }
+    return sectionId ? document.querySelector(`product-page[data-section-id="${CSS.escape(sectionId)}"]`) : null;
+  };
+  const getSectionId = (event, productPage) => event.detail?.sectionId || productPage?.dataset.sectionId;
+
+  document.addEventListener('shopify:section:unload', (event) => {
+    if (!window.Shopify?.designMode) return;
+    const productPage = getProductPage(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, productPage);
+    if (sectionId) sectionScrollPositions.set(sectionId, window.scrollY);
+  }, true);
+
+  document.addEventListener('shopify:section:load', (event) => {
+    if (!window.Shopify?.designMode) return;
+    const productPage = getProductPage(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, productPage);
+    const scrollTop = sectionId ? sectionScrollPositions.get(sectionId) : undefined;
+    if (!Number.isFinite(scrollTop)) return;
+    sectionScrollPositions.delete(sectionId);
+    restoreScrollPosition(scrollTop);
+  }, true);
+
+  document.addEventListener('shopify:block:select', (event) => {
+    if (!window.Shopify?.designMode || !getProductPage(event.target, event.detail?.sectionId)) return;
+    restoreScrollPosition(window.scrollY);
+  }, true);
+}
+
 class ProductPage extends HTMLElement {
   connectedCallback() {
     this.abortController = new AbortController();
     this.signal = this.abortController.signal;
     this.sectionId = this.dataset.sectionId;
-    this.restoreEditorScrollPosition();
     this.form = this.querySelector('[data-product-form]') || this.querySelector('[data-payment-terms-form]');
     this.status = this.querySelector('[data-product-status]');
     this.inventoryWarning = this.querySelector('[data-product-inventory-warning]');
@@ -60,22 +102,10 @@ class ProductPage extends HTMLElement {
     this.stickyCartResizeObserver?.disconnect();
     this.updateBackToTopClearance?.();
     document.removeEventListener('shopify:section:load', this.onSectionLoad);
-    document.removeEventListener('shopify:section:unload', this.onSectionUnload);
   }
 
   readJson(selector) {
     try { return JSON.parse(this.querySelector(selector)?.textContent || '[]'); } catch { return []; }
-  }
-
-  restoreEditorScrollPosition() {
-    if (!window.Shopify?.designMode || !this.sectionId) return;
-    const scrollPositions = window.__spinelEditorProductScrollPositions;
-    const scrollTop = scrollPositions?.get(this.sectionId);
-    if (!Number.isFinite(scrollTop)) return;
-    scrollPositions.delete(this.sectionId);
-    requestAnimationFrame(() => {
-      requestAnimationFrame(() => window.scrollTo({ top: scrollTop, behavior: 'auto' }));
-    });
   }
 
   bind() {
@@ -776,13 +806,7 @@ changeLightboxSlide(delta) {
     this.onSectionLoad = (event) => {
       if (event.target === this || event.target?.contains(this)) this.refreshGallery(true);
     };
-    this.onSectionUnload = (event) => {
-      if (!window.Shopify?.designMode || !this.sectionId || !(event.target === this || event.target?.contains(this))) return;
-      window.__spinelEditorProductScrollPositions ||= new Map();
-      window.__spinelEditorProductScrollPositions.set(this.sectionId, window.scrollY);
-    };
     document.addEventListener('shopify:section:load', this.onSectionLoad);
-    document.addEventListener('shopify:section:unload', this.onSectionUnload);
     this.galleryObserver = new MutationObserver(() => this.refreshGallery());
     this.galleryObserver.observe(this, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     if ('ResizeObserver' in window && this.galleryNode) {
