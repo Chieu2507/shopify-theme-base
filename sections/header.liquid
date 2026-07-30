@@ -120,18 +120,35 @@
                       assign mega_columns = mega_menu_block.settings.columns | plus: 0
                       assign links_per_column = mega_menu_links.size | plus: mega_columns | minus: 1 | divided_by: mega_columns
                       assign promotion_count = 0
-                      for promotion_block in section.blocks
-                        if promotion_block.type == 'mega_menu_promo' and promotion_block.settings.menu_item != blank
-                          assign promotion_menu_items = promotion_block.settings.menu_item | split: ';'
-                          for promotion_menu_item in promotion_menu_items
-                            assign promotion_menu_item_name = promotion_menu_item | strip
-                            if promotion_menu_item_name == link.title
-                              assign promotion_count = promotion_count | plus: 1
-                              break
-                            endif
-                          endfor
-                        endif
-                      endfor
+                      assign has_promotion_1 = false
+                      assign has_promotion_2 = false
+
+                      if mega_menu_block.settings.promotion_1_image != blank
+                        assign has_promotion_1 = true
+                      elsif mega_menu_block.settings.promotion_1_heading != blank
+                        assign has_promotion_1 = true
+                      elsif mega_menu_block.settings.promotion_1_text != blank
+                        assign has_promotion_1 = true
+                      elsif mega_menu_block.settings.promotion_1_link_label != blank
+                        assign has_promotion_1 = true
+                      endif
+
+                      if mega_menu_block.settings.promotion_2_image != blank
+                        assign has_promotion_2 = true
+                      elsif mega_menu_block.settings.promotion_2_heading != blank
+                        assign has_promotion_2 = true
+                      elsif mega_menu_block.settings.promotion_2_text != blank
+                        assign has_promotion_2 = true
+                      elsif mega_menu_block.settings.promotion_2_link_label != blank
+                        assign has_promotion_2 = true
+                      endif
+
+                      if has_promotion_1
+                        assign promotion_count = promotion_count | plus: 1
+                      endif
+                      if has_promotion_2
+                        assign promotion_count = promotion_count | plus: 1
+                      endif
                     %}
                     <div class="header__mega-panel" {{ mega_menu_block.shopify_attributes }}>
                       <div class="header__mega-inner{% if promotion_count == 0 %} header__mega-inner--links-only{% endif %}">
@@ -171,38 +188,36 @@
                         {% endif %}
                         {% if promotion_count > 0 %}
                           <div class="header__mega-promotions">
-                            {% assign rendered_promotion_count = 0 %}
-                            {% for block in section.blocks %}
-                              {% liquid
-                                assign promotion_matches_link = false
-                                if block.type == 'mega_menu_promo' and block.settings.menu_item != blank
-                                  assign promotion_menu_items = block.settings.menu_item | split: ';'
-                                  for promotion_menu_item in promotion_menu_items
-                                    assign promotion_menu_item_name = promotion_menu_item | strip
-                                    if promotion_menu_item_name == link.title
-                                      assign promotion_matches_link = true
-                                      break
-                                    endif
-                                  endfor
-                                endif
-                              %}
-                              {% if promotion_matches_link and rendered_promotion_count < 2 %}
-                                {% assign rendered_promotion_count = rendered_promotion_count | plus: 1 %}
-                                <article class="header__mega-promo" {{ block.shopify_attributes }}>
-                                  {% if block.settings.image != blank %}
-                                    {% assign promotion_image_alt = block.settings.image.alt | default: block.settings.heading %}
-                                    {% render 'responsive-image', image: block.settings.image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_image_alt %}
-                                  {% else %}
-                                    {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
-                                  {% endif %}
-                                  <div class="header__mega-promo-content">
-                                    {% if block.settings.heading != blank %}<{{ block.settings.heading_tag | default: 'h3' }} class="header__mega-promo-title spinel-heading--{{ block.settings.heading_size | default: 'medium' }} heading--{{ block.settings.heading_size | default: 'medium' }}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}>{% endif %}
-                                    {% if block.settings.text != blank %}<p>{{ block.settings.text | escape }}</p>{% endif %}
-                                    {% if block.settings.link_label != blank and block.settings.link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ block.settings.link }}">{{ block.settings.link_label | escape }}</a>{% endif %}
-                                  </div>
-                                </article>
-                              {% endif %}
-                            {% endfor %}
+                            {% if has_promotion_1 %}
+                              <article class="header__mega-promo">
+                                {% if mega_menu_block.settings.promotion_1_image != blank %}
+                                  {% assign promotion_1_image_alt = mega_menu_block.settings.promotion_1_image.alt | default: mega_menu_block.settings.promotion_1_heading %}
+                                  {% render 'responsive-image', image: mega_menu_block.settings.promotion_1_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_1_image_alt %}
+                                {% else %}
+                                  {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
+                                {% endif %}
+                                <div class="header__mega-promo-content">
+                                  {% if mega_menu_block.settings.promotion_1_heading != blank %}<{{ mega_menu_block.settings.promotion_1_heading_tag | default: 'h3' }} class="header__mega-promo-title spinel-heading--{{ mega_menu_block.settings.promotion_1_heading_size | default: 'medium' }} heading--{{ mega_menu_block.settings.promotion_1_heading_size | default: 'medium' }}">{{ mega_menu_block.settings.promotion_1_heading | escape }}</{{ mega_menu_block.settings.promotion_1_heading_tag | default: 'h3' }}>{% endif %}
+                                  {% if mega_menu_block.settings.promotion_1_text != blank %}<p>{{ mega_menu_block.settings.promotion_1_text | escape }}</p>{% endif %}
+                                  {% if mega_menu_block.settings.promotion_1_link_label != blank and mega_menu_block.settings.promotion_1_link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ mega_menu_block.settings.promotion_1_link }}">{{ mega_menu_block.settings.promotion_1_link_label | escape }}</a>{% endif %}
+                                </div>
+                              </article>
+                            {% endif %}
+                            {% if has_promotion_2 %}
+                              <article class="header__mega-promo">
+                                {% if mega_menu_block.settings.promotion_2_image != blank %}
+                                  {% assign promotion_2_image_alt = mega_menu_block.settings.promotion_2_image.alt | default: mega_menu_block.settings.promotion_2_heading %}
+                                  {% render 'responsive-image', image: mega_menu_block.settings.promotion_2_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_2_image_alt %}
+                                {% else %}
+                                  {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
+                                {% endif %}
+                                <div class="header__mega-promo-content">
+                                  {% if mega_menu_block.settings.promotion_2_heading != blank %}<{{ mega_menu_block.settings.promotion_2_heading_tag | default: 'h3' }} class="header__mega-promo-title spinel-heading--{{ mega_menu_block.settings.promotion_2_heading_size | default: 'medium' }} heading--{{ mega_menu_block.settings.promotion_2_heading_size | default: 'medium' }}">{{ mega_menu_block.settings.promotion_2_heading | escape }}</{{ mega_menu_block.settings.promotion_2_heading_tag | default: 'h3' }}>{% endif %}
+                                  {% if mega_menu_block.settings.promotion_2_text != blank %}<p>{{ mega_menu_block.settings.promotion_2_text | escape }}</p>{% endif %}
+                                  {% if mega_menu_block.settings.promotion_2_link_label != blank and mega_menu_block.settings.promotion_2_link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ mega_menu_block.settings.promotion_2_link }}">{{ mega_menu_block.settings.promotion_2_link_label | escape }}</a>{% endif %}
+                                </div>
+                              </article>
+                            {% endif %}
                           </div>
                         {% endif %}
                       </div>
@@ -611,113 +626,119 @@
             }
           ],
           "default": "3"
-        }
-      ]
-    },
-    {
-      "type": "mega_menu_promo",
-      "name": "Mega menu promotion",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Mega menu promotion"
         },
         {
-          "type": "text",
-          "id": "menu_item",
-          "label": "Top-level menu item",
-          "info": "Enter one or more matching top-level menu item titles, separated by semicolons (for example: Collection;Shop)."
+          "type": "header",
+          "content": "Promotion 1"
         },
         {
           "type": "image_picker",
-          "id": "image",
+          "id": "promotion_1_image",
           "label": "Image"
         },
         {
           "type": "text",
-          "id": "heading",
-          "label": "Heading",
-          "default": "Featured collection"
+          "id": "promotion_1_heading",
+          "label": "Heading"
         },
         {
           "type": "select",
-          "id": "heading_size",
+          "id": "promotion_1_heading_size",
           "label": "Heading size",
           "options": [
-            {
-              "value": "h1",
-              "label": "XX-large"
-            },
-            {
-              "value": "h2",
-              "label": "X-large"
-            },
-            {
-              "value": "h3",
-              "label": "Large"
-            },
-            {
-              "value": "h4",
-              "label": "Medium"
-            },
-            {
-              "value": "h5",
-              "label": "Small"
-            },
-            {
-              "value": "h6",
-              "label": "X-small"
-            }
+            { "value": "h1", "label": "XX-large" },
+            { "value": "h2", "label": "X-large" },
+            { "value": "h3", "label": "Large" },
+            { "value": "h4", "label": "Medium" },
+            { "value": "h5", "label": "Small" },
+            { "value": "h6", "label": "X-small" }
           ],
           "default": "h4"
         },
         {
           "type": "select",
-          "id": "heading_tag",
+          "id": "promotion_1_heading_tag",
           "label": "HTML Tag",
           "options": [
-            {
-              "value": "h1",
-              "label": "H1"
-            },
-            {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
-            }
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" },
+            { "value": "h5", "label": "H5" },
+            { "value": "h6", "label": "H6" }
           ],
           "default": "h3"
         },
         {
           "type": "textarea",
-          "id": "text",
-          "label": "Text",
-          "default": "Explore our latest pieces."
+          "id": "promotion_1_text",
+          "label": "Text"
         },
         {
           "type": "text",
-          "id": "link_label",
-          "label": "Link label",
-          "default": "Shop now"
+          "id": "promotion_1_link_label",
+          "label": "Link label"
         },
         {
           "type": "url",
-          "id": "link",
+          "id": "promotion_1_link",
+          "label": "Link"
+        },
+        {
+          "type": "header",
+          "content": "Promotion 2"
+        },
+        {
+          "type": "image_picker",
+          "id": "promotion_2_image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "promotion_2_heading",
+          "label": "Heading"
+        },
+        {
+          "type": "select",
+          "id": "promotion_2_heading_size",
+          "label": "Heading size",
+          "options": [
+            { "value": "h1", "label": "XX-large" },
+            { "value": "h2", "label": "X-large" },
+            { "value": "h3", "label": "Large" },
+            { "value": "h4", "label": "Medium" },
+            { "value": "h5", "label": "Small" },
+            { "value": "h6", "label": "X-small" }
+          ],
+          "default": "h4"
+        },
+        {
+          "type": "select",
+          "id": "promotion_2_heading_tag",
+          "label": "HTML Tag",
+          "options": [
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" },
+            { "value": "h5", "label": "H5" },
+            { "value": "h6", "label": "H6" }
+          ],
+          "default": "h3"
+        },
+        {
+          "type": "textarea",
+          "id": "promotion_2_text",
+          "label": "Text"
+        },
+        {
+          "type": "text",
+          "id": "promotion_2_link_label",
+          "label": "Link label"
+        },
+        {
+          "type": "url",
+          "id": "promotion_2_link",
           "label": "Link"
         }
       ]
@@ -729,38 +750,23 @@
       "category": "Theme layout",
       "blocks": [
         {
-          "type": "logo"
-        },
-        {
           "type": "mega_menu",
           "settings": {
             "menu_item": "Collection",
             "column_heading": "",
-            "columns": "3"
-          }
-        },
-        {
-          "type": "mega_menu_promo",
-          "settings": {
-            "menu_item": "Collection",
-            "heading": "New Arrivals",
-            "heading_size": "h4",
-            "heading_tag": "h3",
-            "text": "Discover the latest pieces, selected for everyday use and lasting style.",
-            "link_label": "SHOP NEW ARRIVALS",
-            "link": "/collections/new-arrivals"
-          }
-        },
-        {
-          "type": "mega_menu_promo",
-          "settings": {
-            "menu_item": "Collection",
-            "heading": "Best Sellers",
-            "heading_size": "h4",
-            "heading_tag": "h3",
-            "text": "Explore customer favorites loved for their exceptional craftsmanship and lasting beauty.",
-            "link_label": "SHOP BEST SELLERS",
-            "link": "/collections/best-sellers"
+            "columns": "3",
+            "promotion_1_heading": "New Arrivals",
+            "promotion_1_heading_size": "h4",
+            "promotion_1_heading_tag": "h3",
+            "promotion_1_text": "Discover the latest pieces, selected for everyday use and lasting style.",
+            "promotion_1_link_label": "SHOP NEW ARRIVALS",
+            "promotion_1_link": "/collections/new-arrivals",
+            "promotion_2_heading": "Best Sellers",
+            "promotion_2_heading_size": "h4",
+            "promotion_2_heading_tag": "h3",
+            "promotion_2_text": "Explore customer favorites loved for their exceptional craftsmanship and lasting beauty.",
+            "promotion_2_link_label": "SHOP BEST SELLERS",
+            "promotion_2_link": "/collections/best-sellers"
           }
         }
       ]
