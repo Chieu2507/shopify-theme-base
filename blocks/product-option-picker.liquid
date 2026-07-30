@@ -3,11 +3,18 @@
 {% if template.suffix != blank %}{% assign form_id = form_id | append: '-' | append: template.suffix %}{% endif %}
 {% unless product.has_only_default_variant %}
   <div class="product-option-picker" {{ block.shopify_attributes }} data-product-options>
+    {% assign size_option_names = block.settings.size_option_names | default: 'size, kích thước, taille, größe, groesse, taglia, tamaño, tamanho, размер' | split: ',' %}
     {% for option in product.options_with_values %}
       {% assign option_name = option.name | downcase | strip %}
       {% assign option_is_color = false %}
       {% assign option_is_size = false %}
-      {% if option_name contains 'size' %}{% assign option_is_size = true %}{% endif %}
+      {% for size_option_name in size_option_names %}
+        {% assign size_option_name = size_option_name | downcase | strip %}
+        {% if size_option_name != blank and option_name contains size_option_name %}
+          {% assign option_is_size = true %}
+          {% break %}
+        {% endif %}
+      {% endfor %}
       {% if option_name contains 'color' %}{% assign option_is_color = true %}{% elsif option_name contains 'metal' %}{% assign option_is_color = true %}{% elsif option_name contains 'tone' %}{% assign option_is_color = true %}{% elsif option_name contains 'finish' %}{% assign option_is_color = true %}{% endif %}
       {% for value in option.values %}
         {% if value.swatch.color != blank or value.swatch.image != blank %}
@@ -161,6 +168,13 @@
       "id": "enable_size_chart",
       "label": "Enable size chart",
       "default": false
+    },
+    {
+      "type": "text",
+      "id": "size_option_names",
+      "label": "Size option names",
+      "default": "size, kích thước, taille, größe, groesse, taglia, tamaño, tamanho, размер",
+      "info": "Comma-separated option names that should show the size guide."
     },
     {
       "type": "text",
