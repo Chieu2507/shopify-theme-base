@@ -5,13 +5,12 @@
 {% liquid
   assign country_form_id = 'HeaderCountrySelector-' | append: section.id
   assign mobile_country_form_id = 'HeaderMobileCountrySelector-' | append: section.id
-  assign logo_block = section.blocks | where: 'type', 'logo' | first
-  assign logo_image = settings.logo
-  assign logo_width_desktop = logo_block.settings.width_desktop | default: 170
-  assign logo_width_mobile = logo_block.settings.width_mobile | default: 120
+  assign logo_image = settings.logo | default: settings.logo_mobile
+  assign logo_image_mobile = settings.logo_mobile | default: logo_image
+  assign logo_width_desktop = 170
+  assign logo_width_mobile = 120
   assign navigation_menu = section.settings.menu
   assign menu_links = navigation_menu.links
-  assign gift_spinel_menu_item = section.settings.gift_spinel_menu_item | default: 'Gifts' | strip
   assign header_color_scheme = section.settings.color_scheme
   assign transparent_header_enabled = false
   assign has_menu = false
@@ -50,18 +49,18 @@
 %}
 
 <header
-  class="header header--burger-{{ settings.navigation_burger_icon }} header--drawer-{{ settings.navigation_menu_drawer_style }} header--dropdown-{{ settings.navigation_dropdown_icon }}{% if settings.navigation_underline_active_link %} header--underline-active{% endif %} color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if section.settings.show_border or template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}"
+  class="header header--logo-{{ section.settings.header_layout }} header--burger-{{ settings.navigation_burger_icon }} header--drawer-{{ settings.navigation_menu_drawer_style }} header--dropdown-{{ settings.navigation_dropdown_icon }}{% if settings.navigation_underline_active_link %} header--underline-active{% endif %} color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if section.settings.show_border or template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}"
   style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px;"
   data-sticky-behavior="{{ section.settings.sticky_behavior }}"
-  data-mega-menu-animation="{{ section.settings.mega_menu_animation }}"
-  data-mega-menu-animation-duration="{{ section.settings.mega_menu_animation_duration }}"
+  data-mega-menu-animation="slide_down"
+  data-mega-menu-animation-duration="250"
   data-transparent-header="{{ transparent_header_enabled }}"
   data-default-color-class="color-{{ section.settings.color_scheme.id }}"
   data-transparent-color-class="color-{{ section.settings.transparent_color_scheme.id }}"
   data-deferred-module="{{ 'section-header.js' | asset_url }}"
   data-header
 >
-  <div class="header__inner{% if section.settings.section_width == 'page' %} header__inner--contained{% endif %}">
+  <div class="header__inner">
     {% if has_menu or has_mobile_utilities %}
       <details class="header__menu-disclosure" data-open-label="{{ 'header.open_menu' | t | escape }}" data-close-label="{{ 'header.close_menu' | t | escape }}">
         <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}">
@@ -80,12 +79,6 @@
             {% liquid
               assign badge_block = nil
               assign mega_menu_block = nil
-              assign is_gift_spinel_link = false
-              assign menu_link_url = link.url
-              if gift_spinel_menu_item != blank and link.title == gift_spinel_menu_item
-                assign is_gift_spinel_link = true
-                assign menu_link_url = routes.root_url | append: '#gift-spinel'
-              endif
               for block in section.blocks
                 if block.type == 'menu_badge' and block.settings.menu_item != blank and block.settings.menu_item == link.title
                   assign badge_block = block
@@ -110,13 +103,10 @@
               if link.links != blank or mega_menu_block != nil
                 assign has_submenu = true
               endif
-              if is_gift_spinel_link
-                assign has_submenu = false
-              endif
             %}
             <li class="header__menu-item{% if has_submenu %} header__menu-item--has-children{% endif %}{% if mega_menu_block != nil and has_submenu %} header__menu-item--mega{% endif %}">
               {% if has_submenu %}
-                <details class="header__submenu-disclosure{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% endif %}">
+                <details class="header__submenu-disclosure{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% if mega_menu_block.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% endif %}">
                   <summary class="header__menu-link{% if link.child_active %} header__menu-link--active{% endif %}">
                     <span>{{ link.title | escape }}</span>
                     {% if settings.navigation_dropdown_icon == 'plus' and mega_menu_block == nil %}
@@ -235,9 +225,8 @@
               {% else %}
                 <a
                   class="header__menu-link{% if link.current %} header__menu-link--active{% endif %}"
-                  href="{{ menu_link_url }}"
-                  {% if is_gift_spinel_link %}data-gift-spinel-link{% endif %}
-                  {% if link.current and is_gift_spinel_link == false %}aria-current="page"{% endif %}
+                  href="{{ link.url }}"
+                  {% if link.current %}aria-current="page"{% endif %}
                 >
                   {{ link.title | escape }}
                 </a>
@@ -322,48 +311,25 @@
       </nav>
     {% endif %}
 
-    {% if logo_block != nil or logo_image != blank %}
-      <div
-        class="header__logo"
-        style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px;"
-        {{ logo_block.shopify_attributes }}
-      >
+    <div
+      class="header__logo"
+      style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px;"
+    >
         <a href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
           {% if logo_image != blank %}
-            {{
-              logo_image
-              | image_url: width: 600
-              | image_tag:
-                class: 'header__logo-image header__logo-image--dark',
-                widths: '120, 180, 240, 360, 480, 600',
-                sizes: '(max-width: 749px) var(--header-logo-width-mobile), var(--header-logo-width)',
-                alt: logo_image.alt | default: shop.name,
-                loading: 'eager'
-            }}
-            {{
-              logo_image
-              | image_url: width: 600
-              | image_tag:
-                class: 'header__logo-image header__logo-image--light',
-                widths: '120, 180, 240, 360, 480, 600',
-                sizes: '(max-width: 749px) var(--header-logo-width-mobile), var(--header-logo-width)',
-                alt: logo_image.alt | default: shop.name,
-                loading: 'eager'
-            }}
-          {% elsif logo_block != nil %}
-            <span class="header__logo-text">{{ logo_block.settings.text | default: shop.name | escape }}</span>
+            <picture class="header__logo-image header__logo-image--dark">
+              {% if logo_image_mobile != blank %}<source media="(max-width: 899px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
+              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 899px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
+            </picture>
+            <picture class="header__logo-image header__logo-image--light">
+              {% if logo_image_mobile != blank %}<source media="(max-width: 899px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
+              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 899px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
+            </picture>
           {% else %}
-            <span class="header__logo-text">{{ logo_block.settings.text | default: shop.name | escape }}</span>
+            <span class="header__logo-text">{{ shop.name | escape }}</span>
           {% endif %}
         </a>
-      </div>
-    {% else %}
-      <div class="header__logo header__logo--fallback">
-        <a href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
-          <span class="header__logo-text">{{ shop.name | escape }}</span>
-        </a>
-      </div>
-    {% endif %}
+    </div>
 
     <div class="header__actions">
       {% if section.settings.show_localization %}
@@ -426,7 +392,7 @@
       {% endif %}
 
       {% if section.settings.show_cart %}
-        <a class="header__action header__cart" href="{{ routes.cart_url }}" aria-label="{{ 'header.cart' | t | escape }}" data-cart-count-label="{{ 'header.cart_count' | t: count: '__count__' | escape }}"{% if settings.cart_drawer_enabled %} data-cart-drawer-open aria-controls="CartDrawer" aria-expanded="false"{% endif %}>
+        <a class="header__action header__cart" href="{{ routes.cart_url }}" aria-label="{{ 'header.cart' | t | escape }}" data-cart-count-label="{{ 'header.cart_count' | t: count: '__count__' | escape }}"{% if settings.cart_action == 'drawer' %} data-cart-drawer-open aria-controls="CartDrawer" aria-expanded="false"{% endif %}>
           {% render 'icon', name: 'bag' %}
           {% if cart.item_count > 0 %}
             <span class="header__cart-count" aria-label="{{ 'header.cart_count' | t: count: cart.item_count | escape }}">
@@ -495,7 +461,11 @@
   "settings": [
     {
       "type": "header",
-      "content": "Header"
+      "content": "General"
+    },
+    {
+      "type": "paragraph",
+      "content": "Edit your logo in [theme settings](https://admin.shopify.com/store/omnise-themes-omniselle/themes/191561531764/editor?context=theme&category=gid%3A%2F%2Fshopify%2FOnlineStoreThemeSettingsCategory%2FLogo%3Ftheme_id%3D191561531764%26first_setting_id%3Dlogo)."
     },
     {
       "type": "link_list",
@@ -504,11 +474,14 @@
       "default": "main-menu"
     },
     {
-      "type": "text",
-      "id": "gift_spinel_menu_item",
-      "label": "Gift Spinel menu item title",
-      "default": "Gifts",
-      "info": "A matching top-level menu item links to the Gift Spinel section on the home page."
+      "type": "select",
+      "id": "header_layout",
+      "label": "Header layout",
+      "options": [
+        { "value": "left", "label": "Logo left" },
+        { "value": "center", "label": "Logo center" }
+      ],
+      "default": "center"
     },
     {
       "type": "select",
@@ -535,47 +508,13 @@
     },
     { "type": "checkbox", "id": "show_border", "label": "Show bottom border", "default": false },
     { "type": "range", "id": "height_desktop", "min": 64, "max": 112, "step": 2, "unit": "px", "label": "Desktop height", "default": 84 },
-    { "type": "range", "id": "height_mobile", "min": 52, "max": 84, "step": 2, "unit": "px", "label": "Tablet and mobile height", "default": 60 },
-    { "type": "header", "content": "Mega menu animation" },
-    {
-      "type": "select",
-      "id": "mega_menu_animation",
-      "label": "Animation style",
-      "options": [
-        { "value": "none", "label": "None" },
-        { "value": "fade", "label": "Fade" },
-        { "value": "slide_down", "label": "Slide down" },
-        { "value": "scale", "label": "Soft scale" }
-      ],
-      "default": "slide_down"
-    },
-    { "type": "range", "id": "mega_menu_animation_duration", "min": 100, "max": 500, "step": 50, "unit": "ms", "label": "Animation speed", "default": 250 },
+    { "type": "range", "id": "height_mobile", "min": 52, "max": 84, "step": 2, "unit": "px", "label": "Mobile height", "default": 60 },
     { "type": "header", "content": "Actions" },
     { "type": "checkbox", "id": "show_search", "label": "Show search", "default": true },
     { "type": "checkbox", "id": "show_localization", "label": "Show country and currency", "default": true },
     { "type": "checkbox", "id": "show_country_flag", "label": "Show country flag", "default": true },
     { "type": "checkbox", "id": "show_account", "label": "Show account", "default": true },
     { "type": "checkbox", "id": "show_cart", "label": "Show cart", "default": true },
-    {
-      "type": "header",
-      "content": "Layout"
-    },
-    {
-      "type": "select",
-      "id": "section_width",
-      "label": "Section width",
-      "options": [
-        {
-          "value": "full",
-          "label": "Full width"
-        },
-        {
-          "value": "page",
-          "label": "Page width"
-        }
-      ],
-      "default": "full"
-    },
     {
       "type": "header",
       "content": "Appearance"
@@ -595,43 +534,6 @@
     }
   ],
   "blocks": [
-    {
-      "type": "logo",
-      "name": "Logo",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Logo"
-        },
-        {
-          "type": "text",
-          "id": "text",
-          "label": "Logo text",
-          "info": "Used when Theme settings → Brand → Default logo is blank."
-        },
-        {
-          "type": "range",
-          "id": "width_desktop",
-          "min": 80,
-          "max": 280,
-          "step": 10,
-          "unit": "px",
-          "label": "Desktop width",
-          "default": 170
-        },
-        {
-          "type": "range",
-          "id": "width_mobile",
-          "min": 70,
-          "max": 180,
-          "step": 10,
-          "unit": "px",
-          "label": "Tablet and mobile width",
-          "default": 120
-        }
-      ]
-    },
     {
       "type": "menu_badge",
       "name": "Menu badge",
@@ -673,6 +575,16 @@
           "id": "menu",
           "label": "Mega menu links",
           "info": "Optional. Uses the top-level item's child links when empty."
+        },
+        {
+          "type": "select",
+          "id": "dropdown_trigger",
+          "label": "Dropdown menu trigger",
+          "options": [
+            { "value": "click", "label": "Click" },
+            { "value": "hover", "label": "Hover" }
+          ],
+          "default": "hover"
         },
         {
           "type": "text",
