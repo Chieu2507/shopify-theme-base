@@ -11,15 +11,7 @@
     <div class="review-parallax__scene" data-review-scene>
       <div class="review-parallax__viewport" data-review-viewport>
         <div class="review-parallax__header-track" data-review-header-track>
-          <header class="review-parallax__header">
-            {% if section.settings.eyebrow != blank %}
-              <p class="review-parallax__eyebrow">{{ section.settings.eyebrow | escape }}</p>
-            {% endif %}
-
-            {% if section.settings.heading != blank %}
-              <{{ section.settings.heading_tag }} class="review-parallax__heading">{{ section.settings.heading | escape }}</{{ section.settings.heading_tag }}>
-            {% endif %}
-          </header>
+          {% content_for 'block', type: '_review-header', id: 'review_header' %}
         </div>
 
         <div class="review-parallax__reviews" data-review-list>
@@ -40,33 +32,6 @@
     "groups": ["header", "footer"]
   },
   "settings": [
-    {
-      "type": "header",
-      "content": "Content"
-    },
-    {
-      "type": "text",
-      "id": "eyebrow",
-      "label": "Eyebrow",
-      "default": "What customers say"
-    },
-    {
-      "type": "textarea",
-      "id": "heading",
-      "label": "Heading",
-      "default": "Over 500\nHappy Reviews"
-    },
-    {
-      "type": "select",
-      "id": "heading_tag",
-      "label": "Heading tag",
-      "options": [
-        {"value": "h1", "label": "H1"},
-        {"value": "h2", "label": "H2"},
-        {"value": "h3", "label": "H3"}
-      ],
-      "default": "h2"
-    },
     {
       "type": "header",
       "content": "Scroll animation"
@@ -112,6 +77,9 @@
   ],
   "blocks": [
     {
+      "type": "_review-header"
+    },
+    {
       "type": "review"
     }
   ],
@@ -120,6 +88,30 @@
       "name": "Review parallax",
       "category": "Brand trust",
       "blocks": [
+        {
+          "type": "_review-header",
+          "id": "review_header",
+          "static": true,
+          "blocks": [
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>What customers say</p>",
+                "text_size": "small",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "Over 500 Happy Reviews",
+                "heading_size": "h1",
+                "heading_tag": "h2",
+                "alignment": "center"
+              }
+            }
+          ]
+        },
         {
           "type": "review",
           "blocks": [
