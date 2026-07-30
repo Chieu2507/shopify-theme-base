@@ -3,31 +3,32 @@
 
   const root = document.documentElement;
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const desktopPointer = window.matchMedia('(min-width: 990px) and (hover: hover) and (pointer: fine)');
+  const desktopViewport = window.matchMedia('(min-width: 768px)');
   const scrollableOverflow = /^(auto|scroll|overlay)$/;
-  const nativeScrollSelector = 'dialog[open], [scroll-lock][open], [scroll-lock].is-open, [data-smooth-scroll-native], input, textarea, select, option, [contenteditable="true"]';
-  const damping = 0.14;
+  const nativeScrollSelector = 'dialog, [data-scrollable], .drawer, .modal, [role="dialog"], .search__form, [scroll-lock], [data-smooth-scroll-native], input, textarea, select, option, [contenteditable="true"]';
+  const lerp = 0.25;
+  const dampingRate = 60 * lerp;
+  const userAgent = window.navigator.userAgent.toLowerCase();
+  const isSafari = userAgent.includes('safari') && !userAgent.includes('chrome') && !userAgent.includes('android');
   let destination = window.scrollY;
   let renderedPosition = window.scrollY;
-  let frame = 0;
-  let lastFrameTime = 0;
+  let isAnimating = false;
+  let lastFrameTime = window.performance.now();
 
   const getMaximumScroll = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 
   const cancel = () => {
-    if (frame) window.cancelAnimationFrame(frame);
-    frame = 0;
-    lastFrameTime = 0;
+    isAnimating = false;
     destination = window.scrollY;
     renderedPosition = window.scrollY;
   };
 
   const isActive = () => (
-    desktopPointer.matches
+    desktopViewport.matches
     && !reducedMotion.matches
+    && !isSafari
     && !root.classList.contains('scroll-locked')
-    && !window.Shopify?.designMode
   );
 
   const canNestedElementScroll = (target, delta) => {
@@ -53,41 +54,38 @@
 
   const normalizeDelta = (event) => {
     let delta = event.deltaY;
-    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) delta *= 16;
+    if (event.deltaMode === WheelEvent.DOM_DELTA_LINE) delta *= 100 / 6;
     if (event.deltaMode === WheelEvent.DOM_DELTA_PAGE) delta *= window.innerHeight;
-    const limit = clamp(window.innerHeight * 0.32, 160, 320);
-    return clamp(delta, -limit, limit);
+    return delta;
   };
 
   const update = (time) => {
+    const elapsed = clamp(time - lastFrameTime, 0, 64) / 1000;
+    lastFrameTime = time;
+
     if (!isActive()) {
       cancel();
-      return;
+    } else if (isAnimating) {
+      const maximumScroll = getMaximumScroll();
+      destination = clamp(destination, 0, maximumScroll);
+      const distance = destination - renderedPosition;
+
+      if (Math.round(renderedPosition) === destination) {
+        renderedPosition = destination;
+        isAnimating = false;
+      } else {
+        const easing = 1 - Math.exp(-dampingRate * elapsed);
+        renderedPosition += distance * easing;
+      }
+
+      window.scrollTo({
+        top: renderedPosition,
+        left: window.scrollX,
+        behavior: 'instant'
+      });
     }
 
-    const maximumScroll = getMaximumScroll();
-    destination = clamp(destination, 0, maximumScroll);
-    const current = window.scrollY;
-    const distance = destination - current;
-
-    if (Math.abs(distance) <= 0.5) {
-      renderedPosition = destination;
-      window.scrollTo({ top: destination, left: window.scrollX, behavior: 'auto' });
-      frame = 0;
-      lastFrameTime = 0;
-      return;
-    }
-
-    const elapsed = lastFrameTime ? clamp(time - lastFrameTime, 8, 48) : 16.67;
-    const easing = 1 - Math.pow(1 - damping, elapsed / 16.67);
-    lastFrameTime = time;
-    renderedPosition = current + distance * easing;
-    window.scrollTo({
-      top: renderedPosition,
-      left: window.scrollX,
-      behavior: 'auto'
-    });
-    frame = window.requestAnimationFrame(update);
+    window.requestAnimationFrame(update);
   };
 
   const onWheel = (event) => {
@@ -111,18 +109,21 @@
     if (delta > 0 && current >= maximumScroll && destination >= maximumScroll) return;
 
     event.preventDefault();
-    if (!frame) destination = current;
-    destination = clamp(destination + delta, 0, maximumScroll);
-    if (!frame) frame = window.requestAnimationFrame(update);
+    if (!isAnimating) {
+      destination = current;
+      renderedPosition = current;
+    }
+    destination = clamp(Math.round(destination + delta), 0, maximumScroll);
+    isAnimating = true;
   };
 
   window.addEventListener('wheel', onWheel, { passive: false });
   window.addEventListener('scroll', () => {
-    if (frame && Math.abs(window.scrollY - renderedPosition) > 2) {
+    if (isAnimating && Math.abs(window.scrollY - renderedPosition) > 2) {
       cancel();
       return;
     }
-    if (!frame) {
+    if (!isAnimating) {
       destination = window.scrollY;
       renderedPosition = window.scrollY;
     }
@@ -134,7 +135,10 @@
   window.addEventListener('hashchange', cancel);
   window.addEventListener('popstate', cancel);
   window.addEventListener('pagehide', cancel);
+  document.addEventListener('shopify:section:select', cancel);
+  document.addEventListener('shopify:block:select', cancel);
   reducedMotion.addEventListener?.('change', cancel);
-  desktopPointer.addEventListener?.('change', cancel);
+  desktopViewport.addEventListener?.('change', cancel);
   window.SpinelSmoothScroll = { cancel };
+  window.requestAnimationFrame(update);
 })();
