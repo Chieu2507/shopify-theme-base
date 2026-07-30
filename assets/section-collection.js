@@ -422,6 +422,24 @@ if (!customElements.get('collection-facets')) {
       this.backdropInteraction?.hide();
     }
 
+    updateFilterGroups(nextDialog) {
+      const currentGroups = Array.from(this.dialog.querySelectorAll('.main-collection__filter-group'));
+      const nextGroups = Array.from(nextDialog.querySelectorAll('.main-collection__filter-group'));
+
+      currentGroups.forEach((currentGroup, index) => {
+        const nextGroup = nextGroups[index];
+        if (!nextGroup) return;
+
+        const currentSummary = currentGroup.firstElementChild;
+        Array.from(currentGroup.children).forEach((child) => {
+          if (child !== currentSummary) child.remove();
+        });
+        Array.from(nextGroup.children).forEach((child) => {
+          if (child !== nextGroup.firstElementChild) currentGroup.append(child.cloneNode(true));
+        });
+      });
+    }
+
     closeDialog() {
       if (!this.dialog?.open) return Promise.resolve();
       if (this.closePromise) return this.closePromise;
@@ -516,7 +534,23 @@ if (!customElements.get('collection-facets')) {
 
           currentToolbar.replaceWith(nextToolbar);
           currentProducts.replaceWith(nextProducts);
-          this.dialog.replaceChildren(...Array.from(nextDialog.childNodes));
+          const currentHeader = this.dialog.querySelector('.main-collection__filter-header');
+          const nextHeader = nextDialog.querySelector('.main-collection__filter-header');
+          const currentActiveFilters = this.dialog.querySelector('.main-collection__active-filters');
+          const nextActiveFilters = nextDialog.querySelector('.main-collection__active-filters');
+          const currentFooter = this.dialog.querySelector('.main-collection__filter-footer');
+          const nextFooter = nextDialog.querySelector('.main-collection__filter-footer');
+
+          if (currentHeader && nextHeader) currentHeader.replaceWith(nextHeader);
+          if (currentActiveFilters && nextActiveFilters) {
+            currentActiveFilters.replaceWith(nextActiveFilters);
+          } else if (currentActiveFilters) {
+            currentActiveFilters.remove();
+          } else if (nextActiveFilters) {
+            this.dialog.querySelector('.main-collection__filter-body')?.prepend(nextActiveFilters);
+          }
+          if (currentFooter && nextFooter) currentFooter.replaceWith(nextFooter);
+          this.updateFilterGroups(nextDialog);
           this.filterPanel = this.dialog.querySelector('.main-collection__filter-form');
           this.backdropPointer = this.dialog.querySelector('.main-collection__filter-backdrop-pointer');
           if (this.backdropInteraction) {

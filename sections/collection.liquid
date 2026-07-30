@@ -189,7 +189,7 @@
                 {% endif %}
               {% endif %}
             {% endfor %}
-            <label id="CollectionSortLabel-{{ section.id }}" for="CollectionSort-{{ section.id }}">{{ sort_label }}</label>
+            <label id="CollectionSortLabel-{{ section.id }}" for="CollectionSort-{{ section.id }}">{{ sort_label }}:</label>
             <collection-sort-select class="main-collection__sort-select-wrap">
               <select
                 id="CollectionSort-{{ section.id }}"
@@ -299,9 +299,7 @@
                 <details class="main-collection__mobile-sort main-collection__filter-group" open>
                   <summary>
                     <span>{{ sort_label }}</span>
-                    <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
-                      <path d="M2 6h8" stroke="currentColor" stroke-linecap="round"/>
-                    </svg>
+                    {% render 'icon', name: 'chevron-down' %}
                   </summary>
                   <fieldset class="main-collection__sort-options">
                     <legend class="visually-hidden">{{ sort_label }}</legend>
@@ -325,9 +323,7 @@
                 <details class="main-collection__filter-group" open>
                 <summary>
                   <span>{{ filter.label | escape }}</span>
-                  <svg viewBox="0 0 12 12" aria-hidden="true" focusable="false">
-                    <path d="M2 6h8" stroke="currentColor" stroke-linecap="round"/>
-                  </svg>
+                  {% render 'icon', name: 'chevron-down' %}
                 </summary>
 
                 {% if filter.type == 'price_range' %}
@@ -1032,14 +1028,19 @@
   }
 
   .main-collection__filter-form {
-    display: grid;
+    display: flex;
+    flex-direction: column;
     height: 100%;
-    grid-template-rows: auto auto minmax(0, 1fr) auto;
+    min-height: 0;
+    overflow: hidden;
   }
 
   .main-collection__filter-body {
+    flex: 1 1 auto;
     min-height: 0;
+    overflow-x: hidden;
     overflow-y: auto;
+    overscroll-behavior: contain;
   }
 
   .main-collection__filter-header {
@@ -1190,13 +1191,13 @@
   }
 
   .main-collection__filter-group summary svg {
-    width: 12px;
-    height: 12px;
+    width: 16px;
+    height: 16px;
     transition: transform 180ms ease;
   }
 
-  .main-collection__filter-group:not([open]) summary svg {
-    transform: rotate(90deg);
+  .main-collection__filter-group[open] summary svg {
+    transform: rotate(180deg);
   }
 
   .main-collection__filter-values {
@@ -1432,11 +1433,24 @@
   }
 
   .main-collection__filter-footer {
-    display: grid;
-    gap: 8px;
+    position: sticky;
+    z-index: 2;
+    bottom: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 16px;
+    flex: 0 0 auto;
     padding: 16px 24px;
     border-top: 1px solid var(--color-variant-border);
     background: var(--color-background);
+  }
+
+  .main-collection__filter-footer .button {
+    width: 100%;
+    flex: 0 0 auto;
+    text-align: center;
   }
 
   @media screen and (min-width: 750px) {
@@ -1566,7 +1580,7 @@
       transform: translateY(100%);
     }
 
-    .main-collection__filter-form { overflow: hidden; border-radius: inherit; background: var(--color-background); }
+    .main-collection__filter-form { border-radius: inherit; background: var(--color-background); }
     .main-collection__filter-dialog[open]:not(.is-closing) { transform: translateY(0); }
     .main-collection__filter-dialog[open]:not(.is-closing) { animation-name: main-collection-filter-drawer-in-mobile; }
     .main-collection__filter-dialog.is-closing { animation-name: main-collection-filter-drawer-out-mobile; }
