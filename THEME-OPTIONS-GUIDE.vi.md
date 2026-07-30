@@ -756,16 +756,16 @@ Không dùng autoplay interval theo kiểu slideshow; marquee nên dùng speed c
 
 Section settings:
 
-- Layout.
-- Content alignment.
-- Gap.
-- Section frame.
+- Layout: section width và column gap giữa nội dung, timer và CTA.
+- Mobile: mobile alignment và row gap khi layout chuyển thành một cột.
+- Section padding: top/bottom padding.
+- Appearance: color scheme.
 
 Blocks:
 
 - Heading.
 - Text.
-- Countdown: end datetime, unit labels, completion behavior.
+- Countdown: end datetime, completion behavior/message, unit labels, accessibility label.
 - Button.
 
 Datetime nên dùng một format duy nhất và tài liệu hoá timezone.
