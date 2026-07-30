@@ -55,8 +55,9 @@ class FeaturedCollection extends HTMLElement {
     }
     if (existing) existing.destroy(true, true);
 
-    const productGap = Number.parseFloat(getComputedStyle(this).getPropertyValue('--featured-collection-product-gap')) || 0;
-    const mobileProductGap = 8;
+    const styles = getComputedStyle(this);
+    const columnGap = Number.parseFloat(styles.getPropertyValue('--featured-collection-column-gap')) || 0;
+    const mobileColumnGap = Number.parseFloat(styles.getPropertyValue('--featured-collection-mobile-column-gap')) || 0;
     const desktopColumns = Number.parseInt(this.dataset.desktopColumns, 10) || 4;
     const mobileColumns = Number.parseInt(this.dataset.mobileColumns, 10) || 1;
     const tabletColumns = this.classList.contains('featured-collection--has-promotion') ? 1 : Math.min(desktopColumns, 2);
@@ -65,7 +66,7 @@ class FeaturedCollection extends HTMLElement {
     const swiper = new Swiper(carousel, {
       modules: [A11y, Navigation],
       slidesPerView: slidesWithPreview(mobileColumns),
-      spaceBetween: mobileProductGap,
+      spaceBetween: mobileColumnGap,
       speed: this.reduceMotion ? 0 : 360,
       watchOverflow: true,
       navigation: {
@@ -74,8 +75,8 @@ class FeaturedCollection extends HTMLElement {
       },
       a11y: { enabled: true, slideRole: 'listitem' },
       breakpoints: {
-        750: { slidesPerView: slidesWithPreview(tabletColumns), spaceBetween: productGap },
-        990: { slidesPerView: slidesWithPreview(desktopColumns), spaceBetween: productGap },
+        750: { slidesPerView: slidesWithPreview(tabletColumns), spaceBetween: columnGap },
+        990: { slidesPerView: slidesWithPreview(desktopColumns), spaceBetween: columnGap },
       },
     });
     swiper.on('update resize slideChange transitionEnd', () => this.updateProgress(panel, swiper));
