@@ -1,0 +1,203 @@
+{% render 'section-stylesheet', asset: 'section-review-parallax.css', defer_on_home: true %}
+
+{% if section.blocks.size > 0 %}
+  <review-parallax
+    class="review-parallax color-scheme color-{{ section.settings.color_scheme.id }}"
+    data-deferred-module="{{ 'review-parallax.js' | asset_url }}"
+    data-section-id="{{ section.id }}"
+    data-enable-scroll="{{ section.settings.enable_scroll }}"
+    data-scroll-distance="{{ section.settings.scroll_distance }}"
+    style="--review-stage-height: {{ section.settings.desktop_height }}px; --review-stage-height-mobile: {{ section.settings.mobile_height }}px;"
+  >
+    <div class="review-parallax__scene" data-review-scene>
+      <div class="review-parallax__viewport" data-review-viewport>
+        <header class="review-parallax__header">
+          {% if section.settings.eyebrow != blank %}
+            <p class="review-parallax__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+          {% endif %}
+
+          {% if section.settings.heading != blank %}
+            <{{ section.settings.heading_tag }} class="review-parallax__heading">{{ section.settings.heading | escape }}</{{ section.settings.heading_tag }}>
+          {% endif %}
+        </header>
+
+        <div class="review-parallax__reviews" data-review-list>
+          {% for block in section.blocks %}
+            {% liquid
+              assign review_lane = forloop.index0 | modulo: 3
+              assign review_lane_index = forloop.index0 | divided_by: 3
+            %}
+            <article
+              class="review-parallax__card review-parallax__card--lane-{{ review_lane }}"
+              style="--review-lane-index: {{ review_lane_index }}; --review-order: {{ forloop.index0 }};"
+              data-review-card
+              data-block-id="{{ block.id }}"
+              data-review-lane="{{ review_lane }}"
+              data-review-lane-index="{{ review_lane_index }}"
+              data-review-index="{{ forloop.index0 }}"
+              {{ block.shopify_attributes }}
+            >
+              <div class="review-parallax__media">
+                {% if block.settings.image != blank %}
+                  {% render 'responsive-image',
+                    image: block.settings.image,
+                    max_width: 600,
+                    widths: '260, 390, 520, 600',
+                    sizes: '(min-width: 990px) 260px, min(75vw, 292px)',
+                    class: 'review-parallax__image',
+                    alt: block.settings.image_alt,
+                    loading: 'lazy'
+                  %}
+                {% else %}
+                  {% render 'media-placeholder', class_name: 'review-parallax__placeholder', asset_name: 'placeholder-image-default-5.svg' %}
+                {% endif %}
+              </div>
+
+              {% if block.settings.quote != blank %}
+                <p class="review-parallax__quote">{{ block.settings.quote | escape }}</p>
+              {% endif %}
+
+              {% if block.settings.author != blank %}
+                <p class="review-parallax__author">{{ block.settings.author | escape }}</p>
+              {% endif %}
+            </article>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </review-parallax>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Review parallax",
+  "tag": "section",
+  "class": "section-review-parallax",
+  "max_blocks": 8,
+  "disabled_on": {
+    "groups": ["header", "footer"]
+  },
+  "settings": [
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "What customers say"
+    },
+    {
+      "type": "textarea",
+      "id": "heading",
+      "label": "Heading",
+      "default": "Over 500\nHappy Reviews"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Heading tag",
+      "options": [
+        {"value": "h1", "label": "H1"},
+        {"value": "h2", "label": "H2"},
+        {"value": "h3", "label": "H3"}
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "header",
+      "content": "Scroll animation"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_scroll",
+      "label": "Animate reviews on scroll",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "scroll_distance",
+      "min": 140,
+      "max": 360,
+      "step": 20,
+      "unit": "px",
+      "label": "Scroll distance per review",
+      "default": 240,
+      "visible_if": "{{ section.settings.enable_scroll }}"
+    },
+    {
+      "type": "range",
+      "id": "desktop_height",
+      "min": 700,
+      "max": 980,
+      "step": 20,
+      "unit": "px",
+      "label": "Desktop stage height",
+      "default": 860
+    },
+    {
+      "type": "range",
+      "id": "mobile_height",
+      "min": 560,
+      "max": 780,
+      "step": 20,
+      "unit": "px",
+      "label": "Mobile stage height",
+      "default": 680
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-2"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "review",
+      "name": "Review",
+      "settings": [
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image"
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Image alt text"
+        },
+        {
+          "type": "textarea",
+          "id": "quote",
+          "label": "Review",
+          "default": "Amazing look and quality! The piece is beautiful, fits perfectly, and feels exceptionally made."
+        },
+        {
+          "type": "text",
+          "id": "author",
+          "label": "Author",
+          "default": "Tony S."
+        }
+      ]
+    }
+  ],
+  "presets": [
+    {
+      "name": "Review parallax",
+      "category": "Brand trust",
+      "blocks": [
+        {"type": "review"},
+        {"type": "review"},
+        {"type": "review"},
+        {"type": "review"},
+        {"type": "review"},
+        {"type": "review"},
+        {"type": "review"},
+        {"type": "review"}
+      ]
+    }
+  ]
+}
+{% endschema %}
