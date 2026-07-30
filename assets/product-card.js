@@ -277,6 +277,7 @@ class QuickViewModal {
 
     try {
       const quickViewSection = await this.fetchQuickViewSection(url, this.requestController.signal);
+      this.removeEditorMetadata(quickViewSection);
       this.content.replaceChildren(quickViewSection.cloneNode(true));
       this.dialog.classList.remove('is-loading');
       this.dialog.removeAttribute('aria-busy');
@@ -331,6 +332,16 @@ class QuickViewModal {
     responseTemplate.innerHTML = html;
     const quickView = responseTemplate.content.querySelector('[data-quick-view]');
     return quickView?.closest('.shopify-section') || quickView || null;
+  }
+
+  removeEditorMetadata(section) {
+    if (!window.Shopify?.designMode || !section) return;
+    section.querySelectorAll('[data-shopify-editor-section], [data-shopify-editor-block]').forEach((element) => {
+      element.removeAttribute('data-shopify-editor-section');
+      element.removeAttribute('data-shopify-editor-block');
+    });
+    section.removeAttribute('data-shopify-editor-section');
+    section.removeAttribute('data-shopify-editor-block');
   }
 
   loadProductPage() {

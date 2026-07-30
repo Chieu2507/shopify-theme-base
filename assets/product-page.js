@@ -7,6 +7,7 @@ class ProductPage extends HTMLElement {
     this.abortController = new AbortController();
     this.signal = this.abortController.signal;
     this.sectionId = this.dataset.sectionId;
+    this.restoreEditorScrollPosition();
     this.form = this.querySelector('[data-product-form]') || this.querySelector('[data-payment-terms-form]');
     this.status = this.querySelector('[data-product-status]');
     this.inventoryWarning = this.querySelector('[data-product-inventory-warning]');
@@ -41,10 +42,11 @@ class ProductPage extends HTMLElement {
   disconnectedCallback() {
     if (this.lightbox?.classList.contains('is-open')) this.closeLightbox();
     else document.documentElement.classList.remove('product-lightbox-open');
-    this.sizeChartBackdropInteraction?.destroy();
-    this.sizeChartBackdropInteraction = null;
-    this.sizeChartDialog?.remove();
-    this.sizeChartDialog = null;
+    this.productPanelDialogs?.forEach(({ dialog, backdropInteraction }) => {
+      backdropInteraction?.destroy();
+      dialog.remove();
+    });
+    this.productPanelDialogs = [];
     this.abortController?.abort();
     if (this.galleryMediaQuery?.removeListener && this.galleryMediaChange) this.galleryMediaQuery.removeListener(this.galleryMediaChange);
     if (this.galleryRefreshFrame) cancelAnimationFrame(this.galleryRefreshFrame);
@@ -58,10 +60,22 @@ class ProductPage extends HTMLElement {
     this.stickyCartResizeObserver?.disconnect();
     this.updateBackToTopClearance?.();
     document.removeEventListener('shopify:section:load', this.onSectionLoad);
+    document.removeEventListener('shopify:section:unload', this.onSectionUnload);
   }
 
   readJson(selector) {
     try { return JSON.parse(this.querySelector(selector)?.textContent || '[]'); } catch { return []; }
+  }
+
+  restoreEditorScrollPosition() {
+    if (!window.Shopify?.designMode || !this.sectionId) return;
+    const scrollPositions = window.__spinelEditorProductScrollPositions;
+    const scrollTop = scrollPositions?.get(this.sectionId);
+    if (!Number.isFinite(scrollTop)) return;
+    scrollPositions.delete(this.sectionId);
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => window.scrollTo({ top: scrollTop, behavior: 'auto' }));
+    });
   }
 
   bind() {
@@ -73,23 +87,27 @@ class ProductPage extends HTMLElement {
   }
 
   bindSizeChart() {
-    const dialog = this.querySelector('[data-size-chart-dialog]');
-    if (!dialog) return;
-    this.sizeChartDialog = dialog;
+    this.productPanelDialogs = [];
+    this.querySelectorAll('[data-product-panel-dialog]').forEach((dialog) => this.bindProductPanelDialog(dialog));
+  }
+
+  bindProductPanelDialog(dialog) {
     document.body.append(dialog);
     const panel = dialog.querySelector('.product-size-chart__panel');
     const closeButton = dialog.querySelector('.product-size-chart__close');
     const handle = dialog.querySelector('[data-size-chart-handle]');
     const backdropPointer = dialog.querySelector('.product-size-chart__backdrop-pointer');
-    this.sizeChartBackdropInteraction = new window.SpinelModalBackdropPointer({
+    const backdropInteraction = new window.SpinelModalBackdropPointer({
       root: dialog,
       panel,
       pointer: backdropPointer,
       isOpen: () => dialog.classList.contains('is-open'),
     });
+    this.productPanelDialogs.push({ dialog, backdropInteraction });
     const mobileSizeChart = window.matchMedia('(max-width: 989px)');
     let handleDrag = null;
     let handleDragTimer = null;
+    let restoreTarget = null;
     const resetHandleDrag = () => {
       window.clearTimeout(handleDragTimer);
       handleDragTimer = null;
@@ -106,11 +124,12 @@ class ProductPage extends HTMLElement {
       dialog.classList.remove('is-open', 'is-closing');
       dialog.setAttribute('aria-hidden', 'true');
       dialog.removeAttribute('scroll-lock');
-      this.sizeChartBackdropInteraction?.hide();
+      if (dialog.open) dialog.close();
+      backdropInteraction.hide();
       resetHandleDrag();
-      this.sizeChartRestoreTarget?.focus?.({ preventScroll: true });
+      restoreTarget?.focus?.({ preventScroll: true });
     };
-    this.closeSizeChart = () => {
+    const closeDialog = () => {
       if (!dialog.classList.contains('is-open') || dialog.classList.contains('is-closing')) return;
       resetHandleDrag();
       dialog.classList.add('is-closing');
@@ -199,12 +218,14 @@ class ProductPage extends HTMLElement {
       handle?.addEventListener('touchend', (event) => touchEvent(event, endHandleDrag), { signal: this.signal });
       handle?.addEventListener('touchcancel', (event) => touchEvent(event, (touch) => endHandleDrag(touch, true)), { signal: this.signal });
     }
-    this.querySelectorAll('[data-size-chart-open]').forEach((button) => {
+    this.querySelectorAll('[data-product-panel-open]').forEach((button) => {
+      if (button.getAttribute('aria-controls') !== dialog.id) return;
       button.addEventListener('click', () => {
         if (!dialog.classList.contains('is-open')) {
-          this.sizeChartRestoreTarget = button;
+          restoreTarget = button;
           resetHandleDrag();
           dialog.classList.remove('is-closing');
+          if (!dialog.open) dialog.showModal();
           dialog.classList.add('is-open');
           dialog.setAttribute('aria-hidden', 'false');
           dialog.setAttribute('scroll-lock', '');
@@ -212,13 +233,17 @@ class ProductPage extends HTMLElement {
         }
       }, { signal: this.signal });
     });
-    dialog.querySelectorAll('[data-size-chart-close]').forEach((button) => {
-      button.addEventListener('click', this.closeSizeChart, { signal: this.signal });
+    dialog.querySelectorAll('[data-product-panel-close]').forEach((button) => {
+      button.addEventListener('click', closeDialog, { signal: this.signal });
     });
+    dialog.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      closeDialog();
+    }, { signal: this.signal });
     dialog.addEventListener('keydown', (event) => {
       if (event.key === 'Escape') {
         event.preventDefault();
-        this.closeSizeChart();
+        closeDialog();
       }
       if (event.key === 'Tab') {
         const focusable = [...dialog.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
@@ -751,7 +776,13 @@ changeLightboxSlide(delta) {
     this.onSectionLoad = (event) => {
       if (event.target === this || event.target?.contains(this)) this.refreshGallery(true);
     };
+    this.onSectionUnload = (event) => {
+      if (!window.Shopify?.designMode || !this.sectionId || !(event.target === this || event.target?.contains(this))) return;
+      window.__spinelEditorProductScrollPositions ||= new Map();
+      window.__spinelEditorProductScrollPositions.set(this.sectionId, window.scrollY);
+    };
     document.addEventListener('shopify:section:load', this.onSectionLoad);
+    document.addEventListener('shopify:section:unload', this.onSectionUnload);
     this.galleryObserver = new MutationObserver(() => this.refreshGallery());
     this.galleryObserver.observe(this, { childList: true, subtree: true, attributes: true, attributeFilter: ['class'] });
     if ('ResizeObserver' in window && this.galleryNode) {
