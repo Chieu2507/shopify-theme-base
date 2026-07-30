@@ -30,7 +30,19 @@
       this.renderEmpty();
       this.handleProductAdd = (event) => {
         if (!event.detail?.item) return;
-        this.open(event.detail.button || null);
+        const sourceButton = event.detail.button || null;
+        const quickViewModal = sourceButton?.closest?.('[data-quick-view]')
+          ? document.querySelector('[data-quick-view-modal]')
+          : null;
+
+        if (!quickViewModal?.open) {
+          this.open(sourceButton);
+          return;
+        }
+
+        const openAfterQuickViewClose = () => this.open(sourceButton);
+        quickViewModal.addEventListener('close', openAfterQuickViewClose, { once: true });
+        if (!quickViewModal.classList.contains('is-closing')) window.SpinelQuickView?.close();
       };
       document.addEventListener('product:add:success', this.handleProductAdd, { signal: this.abortController?.signal });
       document.addEventListener('cart:add:success', this.handleProductAdd, { signal: this.abortController?.signal });

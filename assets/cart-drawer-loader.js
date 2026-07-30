@@ -54,8 +54,20 @@
 
   function handleProductAdd(event) {
     if (!event.detail?.item || customElements.get('cart-drawer')) return;
-    load()
-      .then((drawer) => drawer?.open(event.detail.button || null))
+    const sourceButton = event.detail.button || null;
+    const quickViewModal = sourceButton?.closest?.('[data-quick-view]')
+      ? document.querySelector('[data-quick-view-modal]')
+      : null;
+    const waitForQuickViewClose = quickViewModal?.open
+      ? new Promise((resolve) => {
+          quickViewModal.addEventListener('close', resolve, { once: true });
+          if (!quickViewModal.classList.contains('is-closing')) window.SpinelQuickView?.close();
+        })
+      : Promise.resolve();
+
+    waitForQuickViewClose
+      .then(() => load())
+      .then((drawer) => drawer?.open(sourceButton))
       .catch(() => {});
   }
 
