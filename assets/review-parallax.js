@@ -5,7 +5,7 @@ if (!customElements.get('review-parallax')) {
       this.viewport = this.querySelector('[data-review-viewport]');
       this.header = this.querySelector('.review-parallax__header');
       this.cards = Array.from(this.querySelectorAll('[data-review-card]'));
-      this.scrollDistance = Number.parseFloat(this.dataset.scrollDistance) || 240;
+      this.cardOffsets = new Map(this.cards.map((card) => [card, 0]));
       this.mobileQuery = window.matchMedia('(max-width: 989px)');
       this.reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.handleScroll = this.handleScroll.bind(this);
@@ -17,6 +17,8 @@ if (!customElements.get('review-parallax')) {
 
       this.resizeObserver = new ResizeObserver(this.handleResize);
       this.resizeObserver.observe(this.viewport);
+      this.resizeObserver.observe(this.header);
+      this.cards.forEach((card) => this.resizeObserver.observe(card));
       this.mobileQuery.addEventListener('change', this.handleModeChange);
       this.reduceMotionQuery.addEventListener('change', this.handleModeChange);
       window.visualViewport?.addEventListener('resize', this.handleResize);
@@ -38,9 +40,10 @@ if (!customElements.get('review-parallax')) {
     setup() {
       window.removeEventListener('scroll', this.handleScroll);
       this.classList.remove('is-scroll-linked');
-      this.scene.style.removeProperty('--review-scene-height');
-      this.style.removeProperty('--review-heading-offset');
-      this.style.removeProperty('--review-scroll-offset');
+      this.cards.forEach((card) => {
+        card.style.removeProperty('--review-card-offset');
+        this.cardOffsets.set(card, 0);
+      });
 
       const canLinkScroll = this.dataset.enableScroll === 'true'
         && !this.reduceMotionQuery.matches
@@ -56,24 +59,6 @@ if (!customElements.get('review-parallax')) {
     measure() {
       if (!this.classList.contains('is-scroll-linked')) return;
 
-      const configuredHeight = Number.parseFloat(getComputedStyle(this).getPropertyValue(
-        '--review-stage-height',
-      ));
-      this.activeHeight = Math.min(window.innerHeight, configuredHeight || this.viewport.offsetHeight);
-      this.style.setProperty('--review-active-height', `${this.activeHeight}px`);
-
-      const headerTop = Number.parseFloat(getComputedStyle(this.header).top) || 0;
-      const mirroredHeaderTop = Math.max(headerTop, this.activeHeight - headerTop - this.header.offsetHeight);
-      this.headingTravel = mirroredHeaderTop - headerTop;
-
-      this.cardStep = Math.min(868, Math.max(720, this.clientWidth * 0.61));
-      this.steps = Math.max(...this.cards.map((card) => Number.parseInt(card.dataset.reviewLaneIndex, 10) || 0));
-      this.style.setProperty('--review-card-step', `${this.cardStep}px`);
-
-      this.travel = this.cardStep * this.steps;
-      this.scrollRange = Math.max(180, this.scrollDistance * this.steps);
-      this.pinOffset = Math.max(0, Number.parseFloat(getComputedStyle(this.viewport).top) || 0);
-      this.scene.style.setProperty('--review-scene-height', `${this.activeHeight + this.scrollRange}px`);
       this.update();
     }
 
@@ -88,10 +73,27 @@ if (!customElements.get('review-parallax')) {
     update() {
       if (!this.classList.contains('is-scroll-linked')) return;
 
-      const progress = Math.min(1, Math.max(0, (this.pinOffset - this.scene.getBoundingClientRect().top) / this.scrollRange));
-      const easedProgress = progress * progress * (3 - 2 * progress);
-      this.style.setProperty('--review-heading-offset', `${(this.headingTravel * easedProgress).toFixed(2)}px`);
-      this.style.setProperty('--review-scroll-offset', `${(this.travel * progress).toFixed(2)}px`);
+      const viewportHeight = document.documentElement.clientHeight;
+      const cardUpdates = this.cards.map((card) => {
+        const previousOffset = this.cardOffsets.get(card) || 0;
+        const rect = card.getBoundingClientRect();
+        const cardHeight = rect.height;
+        const baseTop = rect.top - previousOffset;
+        const begin = (Number.parseFloat(card.dataset.reviewBegin) || 0) * cardHeight / 100;
+        const end = (Number.parseFloat(card.dataset.reviewEnd) || 0) * cardHeight / 100;
+        const range = viewportHeight + cardHeight + end - begin;
+        const progress = range > 0
+          ? Math.min(1, Math.max(0, (viewportHeight - baseTop - begin) / range))
+          : 0;
+        const offset = begin + (end - begin) * progress;
+
+        return { card, offset };
+      });
+
+      cardUpdates.forEach(({ card, offset }) => {
+        this.cardOffsets.set(card, offset);
+        card.style.setProperty('--review-card-offset', `${offset.toFixed(2)}px`);
+      });
     }
 
     selectBlock(event) {
@@ -100,10 +102,11 @@ if (!customElements.get('review-parallax')) {
         || this.querySelector(`[data-review-card][data-review-index="${CSS.escape(event.detail.blockId)}"]`);
       if (!card) return;
 
-      const index = Number.parseInt(card.dataset.reviewLaneIndex, 10);
-      const progress = this.steps ? index / this.steps : 0;
-      const sceneTop = this.scene.getBoundingClientRect().top + window.scrollY;
-      window.scrollTo({ top: sceneTop - this.pinOffset + progress * this.scrollRange, behavior: 'smooth' });
+      const offset = this.cardOffsets.get(card) || 0;
+      const rect = card.getBoundingClientRect();
+      const baseTop = rect.top + window.scrollY - offset;
+      const centeredTop = baseTop - (document.documentElement.clientHeight - rect.height) / 2;
+      window.scrollTo({ top: centeredTop, behavior: 'smooth' });
     }
   }
 

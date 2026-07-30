@@ -6,35 +6,52 @@
     data-deferred-module="{{ 'review-parallax.js' | asset_url }}"
     data-section-id="{{ section.id }}"
     data-enable-scroll="{{ section.settings.enable_scroll }}"
-    data-scroll-distance="{{ section.settings.scroll_distance }}"
-    style="--review-stage-height: {{ section.settings.desktop_height }}px; --review-mobile-cards-per-view: {{ section.settings.mobile_cards_per_view }}; --review-mobile-rows: {{ section.settings.mobile_rows }};"
+    style="--review-mobile-cards-per-view: {{ section.settings.mobile_cards_per_view }}; --review-mobile-rows: {{ section.settings.mobile_rows }};"
   >
     <div class="review-parallax__scene" data-review-scene>
       <div class="review-parallax__viewport" data-review-viewport>
-        <header class="review-parallax__header">
-          {% if section.settings.eyebrow != blank %}
-            <p class="review-parallax__eyebrow">{{ section.settings.eyebrow | escape }}</p>
-          {% endif %}
+        <div class="review-parallax__header-track" data-review-header-track>
+          <header class="review-parallax__header">
+            {% if section.settings.eyebrow != blank %}
+              <p class="review-parallax__eyebrow">{{ section.settings.eyebrow | escape }}</p>
+            {% endif %}
 
-          {% if section.settings.heading != blank %}
-            <{{ section.settings.heading_tag }} class="review-parallax__heading">{{ section.settings.heading | escape }}</{{ section.settings.heading_tag }}>
-          {% endif %}
-        </header>
+            {% if section.settings.heading != blank %}
+              <{{ section.settings.heading_tag }} class="review-parallax__heading">{{ section.settings.heading | escape }}</{{ section.settings.heading_tag }}>
+            {% endif %}
+          </header>
+        </div>
 
         <div class="review-parallax__reviews" data-review-list>
           {% for block in section.blocks %}
             {% liquid
               assign review_lane = forloop.index0 | modulo: 3
               assign review_lane_index = forloop.index0 | divided_by: 3
+              assign review_row_start = review_lane_index | times: 8
+              assign review_lane_row = review_lane | times: 2 | plus: 1
+              assign review_row_start = review_row_start | plus: review_lane_row
+
+              if review_lane == 0
+                assign review_begin = 25
+                assign review_end = -10
+              elsif review_lane == 1
+                assign review_begin = -25
+                assign review_end = 0
+              else
+                assign review_begin = 20
+                assign review_end = -10
+              endif
             %}
             <article
               class="review-parallax__card review-parallax__card--lane-{{ review_lane }}"
-              style="--review-lane-index: {{ review_lane_index }}; --review-order: {{ forloop.index0 }};"
+              style="--review-row-start: {{ review_row_start }}; --review-order: {{ forloop.index0 }};"
               data-review-card
               data-block-id="{{ block.id }}"
               data-review-lane="{{ review_lane }}"
               data-review-lane-index="{{ review_lane_index }}"
               data-review-index="{{ forloop.index0 }}"
+              data-review-begin="{{ review_begin }}"
+              data-review-end="{{ review_end }}"
               {{ block.shopify_attributes }}
             >
               <div class="review-parallax__media">
@@ -114,27 +131,6 @@
       "id": "enable_scroll",
       "label": "Animate reviews on scroll",
       "default": true
-    },
-    {
-      "type": "range",
-      "id": "scroll_distance",
-      "min": 140,
-      "max": 360,
-      "step": 20,
-      "unit": "px",
-      "label": "Scroll distance per review",
-      "default": 240,
-      "visible_if": "{{ section.settings.enable_scroll }}"
-    },
-    {
-      "type": "range",
-      "id": "desktop_height",
-      "min": 700,
-      "max": 980,
-      "step": 20,
-      "unit": "px",
-      "label": "Desktop stage height",
-      "default": 860
     },
     {
       "type": "header",
