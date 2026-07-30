@@ -88,7 +88,7 @@
 
 <section
   class="main-collection color-scheme color-{{ section.settings.color_scheme.id }} full-width"
-  style="--main-collection-columns-desktop: {{ section.settings.columns_desktop }}; --main-collection-columns-tablet: {{ section.settings.columns_desktop }}; --main-collection-columns-mobile: {{ section.settings.columns_mobile }}; --main-collection-product-gap: {{ section.settings.product_gap }}px; --main-collection-header-padding-top: {{ section.settings.header_padding_top }}px; --main-collection-header-padding-bottom: {{ section.settings.header_padding_bottom }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  style="--main-collection-columns-desktop: {{ section.settings.columns_desktop }}; --main-collection-columns-tablet: {{ section.settings.columns_desktop }}; --main-collection-columns-mobile: {{ section.settings.columns_mobile }}; --main-collection-column-gap: {{ section.settings.column_gap | default: 4 }}px; --main-collection-row-gap: {{ section.settings.row_gap | default: 4 }}px; --main-collection-mobile-column-gap: {{ section.settings.mobile_column_gap | default: 4 }}px; --main-collection-mobile-row-gap: {{ section.settings.mobile_row_gap | default: 4 }}px; --main-collection-header-padding-top: {{ section.settings.header_padding_top }}px; --main-collection-header-padding-bottom: {{ section.settings.header_padding_bottom }}px; --section-padding-top: {{ section.settings.padding_top | default: 0 }}px; --section-padding-bottom: {{ section.settings.padding_bottom | default: 56 }}px;"
   data-deferred-module="{{ 'section-collection.js' | asset_url }}"
 >
   {% if collection.image != blank %}
@@ -828,7 +828,8 @@
     display: grid;
     margin: 0;
     padding: 0;
-    gap: var(--main-collection-product-gap);
+    column-gap: var(--main-collection-column-gap);
+    row-gap: var(--main-collection-row-gap);
     grid-template-columns: repeat(var(--main-collection-columns-desktop), minmax(0, 1fr));
     list-style: none;
   }
@@ -1532,9 +1533,11 @@
       display: none;
     }
 
-    .main-collection__grid {
-      grid-template-columns: repeat(var(--main-collection-columns-mobile), minmax(0, 1fr));
-    }
+  .main-collection__grid {
+    grid-template-columns: repeat(var(--main-collection-columns-mobile), minmax(0, 1fr));
+    column-gap: var(--main-collection-mobile-column-gap);
+    row-gap: var(--main-collection-mobile-row-gap);
+  }
 
     .main-collection__promotion-card {
       min-height: 220px;
@@ -1716,29 +1719,33 @@
       "default": 4
     },
     {
-      "type": "select",
-      "id": "columns_mobile",
-      "label": "Mobile columns",
-      "options": [
-        {
-          "value": "1",
-          "label": "1 column"
-        },
-        {
-          "value": "2",
-          "label": "2 columns"
-        }
-      ],
-      "default": "2"
-    },
-    {
       "type": "range",
-      "id": "product_gap",
+      "id": "column_gap",
       "min": 0,
       "max": 24,
       "step": 4,
       "unit": "px",
-      "label": "Product gap",
+      "label": "Column gap",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "row_gap",
+      "min": 0,
+      "max": 24,
+      "step": 4,
+      "unit": "px",
+      "label": "Row gap",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "promotion_after",
+      "min": 2,
+      "max": 12,
+      "step": 1,
+      "label": "Promotion position",
+      "info": "Choose the product position after which the promotion card appears in the grid.",
       "default": 4
     },
     {
@@ -1766,12 +1773,43 @@
       "default": true
     },
     {
+      "type": "header",
+      "content": "Mobile"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Mobile columns",
+      "options": [
+        {
+          "value": "1",
+          "label": "1 column"
+        },
+        {
+          "value": "2",
+          "label": "2 columns"
+        }
+      ],
+      "default": "2"
+    },
+    {
       "type": "range",
-      "id": "promotion_after",
-      "min": 2,
-      "max": 12,
-      "step": 1,
-      "label": "Show promotion after product",
+      "id": "mobile_column_gap",
+      "min": 0,
+      "max": 24,
+      "step": 4,
+      "unit": "px",
+      "label": "Mobile column gap",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "mobile_row_gap",
+      "min": 0,
+      "max": 24,
+      "step": 4,
+      "unit": "px",
+      "label": "Mobile row gap",
       "default": 4
     },
     {
@@ -1780,12 +1818,22 @@
     },
     {
       "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 0
+    },
+    {
+      "type": "range",
       "id": "padding_bottom",
       "min": 0,
       "max": 120,
       "step": 4,
       "unit": "px",
-      "label": "Desktop bottom padding",
+      "label": "Bottom padding",
       "default": 56
     },
     {
