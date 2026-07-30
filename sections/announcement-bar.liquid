@@ -26,7 +26,7 @@
   <announcement-bar
     class="announcement-bar announcement-bar--navigator-{{ section.settings.navigator_style }}{% if announcement_item_count > 4 %} announcement-bar--many-items{% endif %} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
     style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px; --announcement-bar-font-weight: {{ section.settings.font_weight }}; --announcement-dots-space-desktop: {{ announcement_dots_space_desktop }}px; --announcement-dots-space-mobile: {{ announcement_dots_space_mobile }}px;"
-    data-behavior="{{ section.settings.text_behavior }}"
+    data-behavior="{% if section.settings.enable_rotation %}rotate{% else %}show_all{% endif %}"
     data-interval="{{ section.settings.autoplay_interval | times: 1000 }}"
     data-deferred-module="{{ 'section-announcement-bar.js' | asset_url }}"
     aria-label="{{ 'announcement_bar.announcement' | t | escape }}"
@@ -64,7 +64,7 @@
       {% endfor %}
 
       {% if announcement_item_count > 0 %}
-        <div class="announcement-bar__content{% if section.settings.text_behavior == 'rotate' and announcement_item_count > 1 %} announcement-bar__content--with-controls{% endif %}">
+        <div class="announcement-bar__content{% if section.settings.enable_rotation and announcement_item_count > 1 %} announcement-bar__content--with-controls{% endif %}">
           <div class="announcement-bar__messages" aria-live="polite">
             {% assign announcement_item_index = 0 %}
             {% for block in section.blocks %}
@@ -75,7 +75,7 @@
                       class="announcement-bar__item"
                       data-announcement-item
                       data-block-id="{{ block.id }}"
-                      {% if announcement_item_index > 0 and section.settings.text_behavior == 'rotate' %}hidden{% endif %}
+                      {% if announcement_item_index > 0 and section.settings.enable_rotation %}hidden{% endif %}
                       {{ block.shopify_attributes }}
                     >
                       {{ block.settings.text }}
@@ -91,7 +91,7 @@
                       data-announcement-item
                       data-block-id="{{ block.id }}"
                       {% if block.settings.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
-                      {% if announcement_item_index > 0 and section.settings.text_behavior == 'rotate' %}hidden{% endif %}
+                      {% if announcement_item_index > 0 and section.settings.enable_rotation %}hidden{% endif %}
                       {{ block.shopify_attributes }}
                     >
                       {{ block.settings.label | escape }}
@@ -106,7 +106,7 @@
                       data-announcement-item
                       data-block-id="{{ block.id }}"
                       data-announcement-countdown="{{ block.settings.end_at | escape }}"
-                      {% if announcement_item_index > 0 and section.settings.text_behavior == 'rotate' %}hidden{% endif %}
+                      {% if announcement_item_index > 0 and section.settings.enable_rotation %}hidden{% endif %}
                       {{ block.shopify_attributes }}
                     >
                       {% if block.settings.label != blank %}<span>{{ block.settings.label | escape }}</span>{% endif %}
@@ -118,7 +118,7 @@
             {% endfor %}
           </div>
 
-          {% if section.settings.text_behavior == 'rotate' and announcement_item_count > 1 %}
+          {% if section.settings.enable_rotation and announcement_item_count > 1 %}
             <div class="announcement-bar__controls">
               <nav class="announcement-bar__navigator" aria-label="{{ 'announcement_bar.slide_navigation' | t | escape }}" data-announcement-navigator>
                 <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="-1" aria-label="{{ 'announcement_bar.previous_slide' | t | escape }}">
@@ -296,6 +296,7 @@
   .announcement-bar--navigator-dots .announcement-bar__navigator-dots {
     grid-column: 3;
     justify-self: end;
+    margin-right: 24px;
   }
 
   .announcement-bar__countdown {
@@ -379,6 +380,7 @@
     .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__navigator-arrow { display: grid; }
     .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__navigator-dots { display: none; }
     .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__content--with-controls .announcement-bar__messages { padding-inline: 36px; }
+    .announcement-bar--navigator-dots .announcement-bar__navigator-dots { margin-right: 12px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -402,20 +404,10 @@
       "content": "Behavior"
     },
     {
-      "type": "select",
-      "id": "text_behavior",
-      "label": "Text block behavior",
-      "options": [
-        {
-          "value": "rotate",
-          "label": "Rotate"
-        },
-        {
-          "value": "show_all",
-          "label": "Show all"
-        }
-      ],
-      "default": "rotate"
+      "type": "checkbox",
+      "id": "enable_rotation",
+      "label": "Rotate",
+      "default": true
     },
     {
       "type": "range",
@@ -426,7 +418,7 @@
       "unit": "s",
       "label": "Autoplay interval",
       "default": 5,
-      "visible_if": "{{ section.settings.text_behavior == 'rotate' }}"
+      "visible_if": "{{ section.settings.enable_rotation }}"
     },
     {
       "type": "select",
@@ -437,7 +429,7 @@
         { "value": "dots", "label": "Dots" }
       ],
       "default": "arrows",
-      "visible_if": "{{ section.settings.text_behavior == 'rotate' }}"
+      "visible_if": "{{ section.settings.enable_rotation }}"
     },
     {
       "type": "select",
