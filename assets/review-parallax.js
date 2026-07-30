@@ -3,6 +3,7 @@ if (!customElements.get('review-parallax')) {
     connectedCallback() {
       this.scene = this.querySelector('[data-review-scene]');
       this.viewport = this.querySelector('[data-review-viewport]');
+      this.header = this.querySelector('.review-parallax__header');
       this.cards = Array.from(this.querySelectorAll('[data-review-card]'));
       this.scrollDistance = Number.parseFloat(this.dataset.scrollDistance) || 240;
       this.mobileQuery = window.matchMedia('(max-width: 989px)');
@@ -38,6 +39,7 @@ if (!customElements.get('review-parallax')) {
       window.removeEventListener('scroll', this.handleScroll);
       this.classList.remove('is-scroll-linked');
       this.scene.style.removeProperty('--review-scene-height');
+      this.style.removeProperty('--review-heading-offset');
       this.style.removeProperty('--review-scroll-offset');
 
       const canLinkScroll = this.dataset.enableScroll === 'true'
@@ -59,6 +61,10 @@ if (!customElements.get('review-parallax')) {
       ));
       this.activeHeight = Math.min(window.innerHeight, configuredHeight || this.viewport.offsetHeight);
       this.style.setProperty('--review-active-height', `${this.activeHeight}px`);
+
+      const headerTop = Number.parseFloat(getComputedStyle(this.header).top) || 0;
+      const centeredHeaderTop = Math.max(headerTop, (this.activeHeight - this.header.offsetHeight) / 2);
+      this.headingTravel = centeredHeaderTop - headerTop;
 
       this.cardStep = Math.min(868, Math.max(720, this.clientWidth * 0.61));
       this.steps = Math.max(...this.cards.map((card) => Number.parseInt(card.dataset.reviewLaneIndex, 10) || 0));
@@ -83,6 +89,8 @@ if (!customElements.get('review-parallax')) {
       if (!this.classList.contains('is-scroll-linked')) return;
 
       const progress = Math.min(1, Math.max(0, (this.pinOffset - this.scene.getBoundingClientRect().top) / this.scrollRange));
+      const easedProgress = progress * progress * (3 - 2 * progress);
+      this.style.setProperty('--review-heading-offset', `${(this.headingTravel * easedProgress).toFixed(2)}px`);
       this.style.setProperty('--review-scroll-offset', `${(this.travel * progress).toFixed(2)}px`);
     }
 

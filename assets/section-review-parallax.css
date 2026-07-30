@@ -1,5 +1,6 @@
 .review-parallax {
   --review-card-step: 868px;
+  --review-heading-offset: 0px;
   --review-scroll-offset: 0px;
 
   display: block;
@@ -149,8 +150,9 @@
   left: 50%;
   z-index: 0;
   margin: 0;
-  transform: translateX(-50%);
+  transform: translate3d(-50%, var(--review-heading-offset), 0);
   pointer-events: none;
+  will-change: transform;
 }
 
 .review-parallax.is-scroll-linked .review-parallax__reviews {
@@ -204,6 +206,10 @@
     margin-bottom: 32px;
   }
 
+  .review-parallax__heading {
+    font-size: min(var(--font-h1-size), 12vw);
+  }
+
   .review-parallax__reviews {
     display: flex;
     gap: 16px;
@@ -225,22 +231,29 @@
   .review-parallax__card--lane-2 {
     width: auto;
     min-height: 0;
-    flex: 0 0 min(70vw, 520px);
+    flex: 0 0 min(82vw, 520px);
     justify-self: auto;
     scroll-snap-align: start;
     scroll-snap-stop: always;
   }
+
+  .review-parallax--mobile-cards-2 .review-parallax__card,
+  .review-parallax--mobile-cards-2 .review-parallax__card--lane-1,
+  .review-parallax--mobile-cards-2 .review-parallax__card--lane-2 {
+    flex-basis: calc((100vw - var(--page-margin) * 2 - 16px) / 2);
+  }
 }
 
-@media screen and (max-width: 599px) {
-  .review-parallax__card,
-  .review-parallax__card--lane-1,
-  .review-parallax__card--lane-2 {
-    flex-basis: 82vw;
+@media screen and (min-width: 600px) and (max-width: 989px) {
+  .review-parallax--mobile-cards-1 .review-parallax__card,
+  .review-parallax--mobile-cards-1 .review-parallax__card--lane-1,
+  .review-parallax--mobile-cards-1 .review-parallax__card--lane-2 {
+    flex-basis: min(70vw, 520px);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .review-parallax__header,
   .review-parallax__card {
     will-change: auto;
   }
