@@ -42,6 +42,7 @@ if (!customElements.get('review-parallax')) {
 
       const canLinkScroll = this.dataset.enableScroll === 'true'
         && !this.reduceMotionQuery.matches
+        && !this.mobileQuery.matches
         && CSS.supports('position', 'sticky');
       if (!canLinkScroll) return;
 
@@ -53,27 +54,18 @@ if (!customElements.get('review-parallax')) {
     measure() {
       if (!this.classList.contains('is-scroll-linked')) return;
 
-      this.isMobile = this.mobileQuery.matches;
       const configuredHeight = Number.parseFloat(getComputedStyle(this).getPropertyValue(
-        this.isMobile ? '--review-stage-height-mobile' : '--review-stage-height',
+        '--review-stage-height',
       ));
       this.activeHeight = Math.min(window.innerHeight, configuredHeight || this.viewport.offsetHeight);
       this.style.setProperty('--review-active-height', `${this.activeHeight}px`);
 
-      if (this.isMobile) {
-        const tallestCard = Math.max(...this.cards.map((card) => card.offsetHeight));
-        this.cardStep = tallestCard + 32;
-        this.steps = this.cards.length - 1;
-        this.style.setProperty('--review-mobile-card-step', `${this.cardStep}px`);
-      } else {
-        this.cardStep = Math.min(868, Math.max(720, this.clientWidth * 0.61));
-        this.steps = Math.max(...this.cards.map((card) => Number.parseInt(card.dataset.reviewLaneIndex, 10) || 0));
-        this.style.setProperty('--review-card-step', `${this.cardStep}px`);
-      }
+      this.cardStep = Math.min(868, Math.max(720, this.clientWidth * 0.61));
+      this.steps = Math.max(...this.cards.map((card) => Number.parseInt(card.dataset.reviewLaneIndex, 10) || 0));
+      this.style.setProperty('--review-card-step', `${this.cardStep}px`);
 
       this.travel = this.cardStep * this.steps;
-      const distancePerStep = this.isMobile ? Math.max(120, this.scrollDistance * 0.72) : this.scrollDistance;
-      this.scrollRange = Math.max(180, distancePerStep * this.steps);
+      this.scrollRange = Math.max(180, this.scrollDistance * this.steps);
       this.pinOffset = Math.max(0, Number.parseFloat(getComputedStyle(this.viewport).top) || 0);
       this.scene.style.setProperty('--review-scene-height', `${this.activeHeight + this.scrollRange}px`);
       this.update();
@@ -100,9 +92,7 @@ if (!customElements.get('review-parallax')) {
         || this.querySelector(`[data-review-card][data-review-index="${CSS.escape(event.detail.blockId)}"]`);
       if (!card) return;
 
-      const index = this.isMobile
-        ? Number.parseInt(card.dataset.reviewIndex, 10)
-        : Number.parseInt(card.dataset.reviewLaneIndex, 10);
+      const index = Number.parseInt(card.dataset.reviewLaneIndex, 10);
       const progress = this.steps ? index / this.steps : 0;
       const sceneTop = this.scene.getBoundingClientRect().top + window.scrollY;
       window.scrollTo({ top: sceneTop - this.pinOffset + progress * this.scrollRange, behavior: 'smooth' });

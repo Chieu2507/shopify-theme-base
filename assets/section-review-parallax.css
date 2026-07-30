@@ -1,6 +1,5 @@
 .review-parallax {
   --review-card-step: 868px;
-  --review-mobile-card-step: 462px;
   --review-scroll-offset: 0px;
 
   display: block;
@@ -70,7 +69,6 @@
 .review-parallax__card {
   display: flex;
   width: min(100%, 292px);
-  min-height: 430px;
   flex-direction: column;
   padding: 16px;
   border-radius: var(--radius-card);
@@ -123,8 +121,7 @@
 }
 
 .review-parallax__author {
-  margin-top: auto;
-  padding-top: 12px;
+  margin-top: 12px;
   color: currentcolor;
   font-family: var(--font-heading--family);
   font-size: var(--font-body-small);
@@ -150,7 +147,7 @@
   position: absolute;
   top: clamp(54px, 7.08vw, 101px);
   left: 50%;
-  z-index: 2;
+  z-index: 0;
   margin: 0;
   transform: translateX(-50%);
   pointer-events: none;
@@ -168,7 +165,6 @@
   z-index: 1;
   width: 292px;
   max-width: calc(100% - var(--page-margin) * 2);
-  min-height: 430px;
   margin: 0;
   will-change: transform;
 }
@@ -196,63 +192,51 @@
 
 @media screen and (max-width: 989px) {
   .review-parallax__scene {
-    padding-block: 56px;
+    padding: 56px 0;
+  }
+
+  .review-parallax__viewport {
+    width: 100%;
+  }
+
+  .review-parallax__header {
+    width: min(calc(100% - var(--page-margin) * 2), 32rem);
+    margin-bottom: 32px;
   }
 
   .review-parallax__reviews {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    display: flex;
+    gap: 16px;
+    padding-inline: var(--page-margin);
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-padding-inline: var(--page-margin);
+    scroll-snap-type: x mandatory;
+    scrollbar-width: none;
+    -webkit-overflow-scrolling: touch;
   }
 
-  .review-parallax.is-scroll-linked .review-parallax__viewport {
-    height: var(--review-active-height);
-  }
-
-  .review-parallax.is-scroll-linked .review-parallax__header {
-    top: 44px;
-    width: min(100% - var(--page-margin) * 2, 24rem);
-  }
-
-  .review-parallax.is-scroll-linked .review-parallax__heading {
-    font-size: var(--font-h2-size);
-    letter-spacing: var(--font-h2-letter-spacing);
-    line-height: var(--font-h2-line-height);
-    text-transform: var(--font-h2-text-case);
-  }
-
-  .review-parallax.is-scroll-linked .review-parallax__card,
-  .review-parallax.is-scroll-linked .review-parallax__card--lane-0,
-  .review-parallax.is-scroll-linked .review-parallax__card--lane-1,
-  .review-parallax.is-scroll-linked .review-parallax__card--lane-2 {
-    --review-card-top: 206px;
-
-    right: auto;
-    left: 50%;
-    width: min(292px, calc(100% - var(--page-margin) * 2));
-    min-height: 430px;
-    transform: translate3d(-50%, calc(var(--review-order) * var(--review-mobile-card-step) - var(--review-scroll-offset)), 0);
-  }
-}
-
-@media screen and (max-width: 599px) {
-  .review-parallax__reviews {
-    grid-template-columns: minmax(0, 1fr);
+  .review-parallax__reviews::-webkit-scrollbar {
+    display: none;
   }
 
   .review-parallax__card,
   .review-parallax__card--lane-1,
   .review-parallax__card--lane-2 {
-    justify-self: center;
+    width: auto;
+    min-height: 0;
+    flex: 0 0 min(70vw, 520px);
+    justify-self: auto;
+    scroll-snap-align: start;
+    scroll-snap-stop: always;
   }
+}
 
-  .review-parallax.is-scroll-linked .review-parallax__header {
-    top: 36px;
-  }
-
-  .review-parallax.is-scroll-linked .review-parallax__card,
-  .review-parallax.is-scroll-linked .review-parallax__card--lane-0,
-  .review-parallax.is-scroll-linked .review-parallax__card--lane-1,
-  .review-parallax.is-scroll-linked .review-parallax__card--lane-2 {
-    --review-card-top: 176px;
+@media screen and (max-width: 599px) {
+  .review-parallax__card,
+  .review-parallax__card--lane-1,
+  .review-parallax__card--lane-2 {
+    flex-basis: 82vw;
   }
 }
 
