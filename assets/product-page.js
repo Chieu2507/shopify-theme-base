@@ -5,8 +5,48 @@ import './cart-feedback.js';
 if (!window.__spinelProductEditorScrollGuard) {
   window.__spinelProductEditorScrollGuard = true;
   const sectionScrollPositions = new Map();
+  const pendingScrollRestorations = new Map();
+  let editorScrollLock = null;
+  const lockEditorScroll = (scrollTop) => {
+    if (editorScrollLock || !document.body) return;
+    const bodyStyle = document.body.style;
+    editorScrollLock = {
+      position: bodyStyle.position,
+      top: bodyStyle.top,
+      width: bodyStyle.width,
+    };
+    bodyStyle.position = 'fixed';
+    bodyStyle.top = `-${scrollTop}px`;
+    bodyStyle.width = '100%';
+  };
+  const unlockEditorScroll = (scrollTop) => {
+    if (!editorScrollLock || !document.body) return;
+    const bodyStyle = document.body.style;
+    bodyStyle.position = editorScrollLock.position;
+    bodyStyle.top = editorScrollLock.top;
+    bodyStyle.width = editorScrollLock.width;
+    editorScrollLock = null;
+    window.scrollTo({ top: scrollTop, behavior: 'auto' });
+  };
   const restoreScrollPosition = (scrollTop) => {
-    window.requestAnimationFrame(() => window.scrollTo({ top: scrollTop, behavior: 'auto' }));
+    const restore = () => window.scrollTo({ top: scrollTop, behavior: 'auto' });
+    let frame = 0;
+    const restoreAfterLayout = () => {
+      restore();
+      if (frame++ < 3) window.requestAnimationFrame(restoreAfterLayout);
+    };
+    restoreAfterLayout();
+    window.setTimeout(restore, 100);
+    window.setTimeout(restore, 300);
+  };
+  const scheduleScrollRestoration = (sectionId, scrollTop) => {
+    pendingScrollRestorations.set(sectionId, scrollTop);
+    restoreScrollPosition(scrollTop);
+    window.setTimeout(() => {
+      if (pendingScrollRestorations.get(sectionId) === scrollTop) pendingScrollRestorations.delete(sectionId);
+    }, 1000);
+    window.setTimeout(() => unlockEditorScroll(scrollTop), 500);
+    window.setTimeout(() => unlockEditorScroll(scrollTop), 1500);
   };
   const getProductPage = (target, sectionId) => {
     if (target instanceof Element) {
@@ -24,7 +64,11 @@ if (!window.__spinelProductEditorScrollGuard) {
     if (!window.Shopify?.designMode) return;
     const productPage = getProductPage(event.target, event.detail?.sectionId);
     const sectionId = getSectionId(event, productPage);
-    if (sectionId) sectionScrollPositions.set(sectionId, window.scrollY);
+    if (sectionId) {
+      const scrollTop = window.scrollY;
+      sectionScrollPositions.set(sectionId, scrollTop);
+      lockEditorScroll(scrollTop);
+    }
   }, true);
 
   document.addEventListener('shopify:section:load', (event) => {
@@ -34,7 +78,15 @@ if (!window.__spinelProductEditorScrollGuard) {
     const scrollTop = sectionId ? sectionScrollPositions.get(sectionId) : undefined;
     if (!Number.isFinite(scrollTop)) return;
     sectionScrollPositions.delete(sectionId);
-    restoreScrollPosition(scrollTop);
+    scheduleScrollRestoration(sectionId, scrollTop);
+  }, true);
+
+  document.addEventListener('shopify:block:select', (event) => {
+    if (!window.Shopify?.designMode) return;
+    const sectionId = event.detail?.sectionId;
+    const scrollTop = sectionId ? pendingScrollRestorations.get(sectionId) : undefined;
+    if (!Number.isFinite(scrollTop)) return;
+    window.requestAnimationFrame(() => restoreScrollPosition(scrollTop));
   }, true);
 
 }
