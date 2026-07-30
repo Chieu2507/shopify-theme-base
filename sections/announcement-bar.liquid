@@ -7,62 +7,20 @@
         if block.settings.text != blank
           assign announcement_item_count = announcement_item_count | plus: 1
         endif
-      when 'link'
-        if block.settings.label != blank and block.settings.url != blank
-          assign announcement_item_count = announcement_item_count | plus: 1
-        endif
-      when 'countdown_timer'
-        if block.settings.end_at != blank
-          assign announcement_item_count = announcement_item_count | plus: 1
-        endif
     endcase
   endfor
-
-  assign announcement_dots_space_desktop = announcement_item_count | times: 19 | plus: 28
-  assign announcement_dots_space_mobile = announcement_item_count | times: 13 | plus: 16
 %}
 
 {% if section.blocks.size > 0 %}
   <announcement-bar
-    class="announcement-bar announcement-bar--navigator-{{ section.settings.navigator_style }}{% if announcement_item_count > 4 %} announcement-bar--many-items{% endif %} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
-    style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px; --announcement-bar-font-weight: {{ section.settings.font_weight }}; --announcement-dots-space-desktop: {{ announcement_dots_space_desktop }}px; --announcement-dots-space-mobile: {{ announcement_dots_space_mobile }}px;"
+    class="announcement-bar color-scheme color-{{ section.settings.color_scheme.id }} full-width"
+    style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px;"
     data-behavior="{% if section.settings.enable_rotation %}rotate{% else %}show_all{% endif %}"
     data-interval="{{ section.settings.autoplay_interval | times: 1000 }}"
     data-deferred-module="{{ 'section-announcement-bar.js' | asset_url }}"
     aria-label="{{ 'announcement_bar.announcement' | t | escape }}"
   >
     <div class="announcement-bar__inner{% if section.settings.section_width == 'page' %} announcement-bar__inner--contained{% endif %}">
-      {% for block in section.blocks %}
-        {% if block.type == 'social_links' %}
-          {% if block.settings.facebook_url != blank or block.settings.instagram_url != blank or block.settings.pinterest_url != blank %}
-            <div
-              class="announcement-bar__social"
-              role="group"
-              aria-label="{{ 'announcement_bar.social_links' | t | escape }}"
-              {{ block.shopify_attributes }}
-            >
-              {% if block.settings.facebook_url != blank %}
-                <a href="{{ block.settings.facebook_url }}" aria-label="{{ 'announcement_bar.facebook' | t | escape }}">
-                  {% render 'social-icon', name: 'facebook', variant: 'announcement' %}
-                </a>
-              {% endif %}
-
-              {% if block.settings.instagram_url != blank %}
-                <a href="{{ block.settings.instagram_url }}" aria-label="{{ 'announcement_bar.instagram' | t | escape }}">
-                  {% render 'social-icon', name: 'instagram', variant: 'announcement' %}
-                </a>
-              {% endif %}
-
-              {% if block.settings.pinterest_url != blank %}
-                <a href="{{ block.settings.pinterest_url }}" aria-label="{{ 'announcement_bar.pinterest' | t | escape }}">
-                  {% render 'social-icon', name: 'pinterest', variant: 'announcement' %}
-                </a>
-              {% endif %}
-            </div>
-          {% endif %}
-        {% endif %}
-      {% endfor %}
-
       {% if announcement_item_count > 0 %}
         <div class="announcement-bar__content{% if section.settings.enable_rotation and announcement_item_count > 1 %} announcement-bar__content--with-controls{% endif %}">
           <div class="announcement-bar__messages" aria-live="polite">
@@ -72,7 +30,7 @@
                 {% when 'text_slide' %}
                   {% if block.settings.text != blank %}
                     <div
-                      class="announcement-bar__item"
+                      class="announcement-bar__item spinel-text--{{ block.settings.text_size | default: 'small' }}"
                       data-announcement-item
                       data-block-id="{{ block.id }}"
                       {% if announcement_item_index > 0 and section.settings.enable_rotation %}hidden{% endif %}
@@ -83,37 +41,6 @@
                     {% assign announcement_item_index = announcement_item_index | plus: 1 %}
                   {% endif %}
 
-                {% when 'link' %}
-                  {% if block.settings.label != blank and block.settings.url != blank %}
-                    <a
-                      class="announcement-bar__item announcement-bar__link"
-                      href="{{ block.settings.url }}"
-                      data-announcement-item
-                      data-block-id="{{ block.id }}"
-                      {% if block.settings.open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
-                      {% if announcement_item_index > 0 and section.settings.enable_rotation %}hidden{% endif %}
-                      {{ block.shopify_attributes }}
-                    >
-                      {{ block.settings.label | escape }}
-                    </a>
-                    {% assign announcement_item_index = announcement_item_index | plus: 1 %}
-                  {% endif %}
-
-                {% when 'countdown_timer' %}
-                  {% if block.settings.end_at != blank %}
-                    <div
-                      class="announcement-bar__item announcement-bar__countdown"
-                      data-announcement-item
-                      data-block-id="{{ block.id }}"
-                      data-announcement-countdown="{{ block.settings.end_at | escape }}"
-                      {% if announcement_item_index > 0 and section.settings.enable_rotation %}hidden{% endif %}
-                      {{ block.shopify_attributes }}
-                    >
-                      {% if block.settings.label != blank %}<span>{{ block.settings.label | escape }}</span>{% endif %}
-                      <time data-countdown-output>{{ 'announcement_bar.countdown_pending' | t }}</time>
-                    </div>
-                    {% assign announcement_item_index = announcement_item_index | plus: 1 %}
-                  {% endif %}
               {% endcase %}
             {% endfor %}
           </div>
@@ -124,11 +51,6 @@
                 <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="-1" aria-label="{{ 'announcement_bar.previous_slide' | t | escape }}">
                   <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m9.5 3-5 5 5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
                 </button>
-                <span class="announcement-bar__navigator-dots">
-                  {% for item_number in (1..announcement_item_count) %}
-                    <button class="announcement-bar__navigator-dot" type="button" data-announcement-index="{{ forloop.index0 }}" aria-label="{{ 'announcement_bar.go_to_slide' | t: index: item_number | escape }}"{% if forloop.first %} aria-current="true"{% endif %}><span></span></button>
-                  {% endfor %}
-                </span>
                 <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="1" aria-label="{{ 'announcement_bar.next_slide' | t | escape }}">
                   <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false"><path d="m6.5 3 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.5"/></svg>
                 </button>
@@ -153,7 +75,6 @@
     color: var(--color-text);
     font-family: var(--font-body--family);
     font-size: var(--font-caption);
-    font-weight: var(--announcement-bar-font-weight);
   }
 
   .announcement-bar__inner {
@@ -193,10 +114,6 @@
     padding-inline: 52px;
   }
 
-  .announcement-bar--navigator-dots .announcement-bar__content--with-controls .announcement-bar__messages {
-    padding-inline: var(--announcement-dots-space-desktop);
-  }
-
   .announcement-bar[data-behavior='rotate'] .announcement-bar__item[hidden] {
     display: none;
   }
@@ -209,10 +126,6 @@
 
   .announcement-bar__item p {
     display: inline;
-  }
-
-  .announcement-bar__link {
-    text-underline-offset: 3px;
   }
 
   .announcement-bar__controls {
@@ -232,16 +145,7 @@
     pointer-events: none;
   }
 
-  .announcement-bar__navigator-dots {
-    display: inline-flex;
-    grid-column: 2;
-    align-items: center;
-    gap: 4px;
-    pointer-events: auto;
-  }
-
-  .announcement-bar__navigator-arrow,
-  .announcement-bar__navigator-dot {
+  .announcement-bar__navigator-arrow {
     display: grid;
     padding: 0;
     border: 0;
@@ -270,67 +174,9 @@
 
   .announcement-bar__navigator-arrow svg { width: 16px; height: 16px; }
 
-  .announcement-bar__navigator-dot { width: 15px; height: 22px; }
-  .announcement-bar__navigator-dot span {
-    display: block;
-    width: 4px;
-    height: 4px;
-    border-radius: 999px;
-    background: currentcolor;
-    opacity: 0.42;
-    transition: width 220ms cubic-bezier(0.22, 1, 0.36, 1), opacity 180ms ease;
-  }
-
-  .announcement-bar__navigator-dot[aria-current='true'] span { width: 16px; opacity: 1; }
-
-  .announcement-bar__navigator-arrow:focus-visible,
-  .announcement-bar__navigator-dot:focus-visible {
+  .announcement-bar__navigator-arrow:focus-visible {
     outline: 2px solid currentcolor;
     outline-offset: 2px;
-  }
-
-  .announcement-bar--navigator-dots .announcement-bar__navigator-arrow,
-  .announcement-bar--navigator-arrows .announcement-bar__navigator-dots,
-  .announcement-bar--navigator-both .announcement-bar__navigator-dots { display: none; }
-
-  .announcement-bar--navigator-dots .announcement-bar__navigator-dots {
-    grid-column: 3;
-    justify-self: end;
-    margin-right: 24px;
-  }
-
-  .announcement-bar__countdown {
-    display: flex;
-    align-items: center;
-    gap: 6px;
-  }
-
-  .announcement-bar__social {
-    display: flex;
-    grid-column: 1;
-    grid-row: 1;
-    align-items: center;
-    gap: 16px;
-    justify-self: start;
-  }
-
-  .announcement-bar__social > * {
-    display: grid;
-    width: 13px;
-    height: 13px;
-    place-items: center;
-    color: inherit;
-    opacity: 0.8;
-    transition: opacity 160ms ease;
-  }
-
-  .announcement-bar__social a:hover {
-    opacity: 1;
-  }
-
-  .announcement-bar__social svg {
-    width: 100%;
-    height: 100%;
   }
 
   @media (max-width: 749px) {
@@ -357,36 +203,19 @@
       padding-inline: 36px;
     }
 
-    .announcement-bar--navigator-dots .announcement-bar__content--with-controls .announcement-bar__messages {
-      padding-inline: var(--announcement-dots-space-mobile);
-    }
-
     .announcement-bar__item {
       overflow: hidden;
       text-overflow: ellipsis;
-    }
-
-    .announcement-bar__social {
-      display: none;
     }
 
     .announcement-bar__navigator-arrow { width: 24px; height: 24px; }
     .announcement-bar__navigator-arrow svg { width: 14px; height: 14px; }
     .announcement-bar__navigator-arrow:first-child { margin-left: 12px; }
     .announcement-bar__navigator-arrow:last-child { margin-right: 12px; }
-    .announcement-bar__navigator-dots { gap: 2px; }
-    .announcement-bar__navigator-dot { width: 11px; }
-    .announcement-bar__navigator-dot[aria-current='true'] span { width: 11px; }
-    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__navigator-arrow { display: grid; }
-    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__navigator-dots { display: none; }
-    .announcement-bar--navigator-dots.announcement-bar--many-items .announcement-bar__content--with-controls .announcement-bar__messages { padding-inline: 36px; }
-    .announcement-bar--navigator-dots .announcement-bar__navigator-dots { margin-right: 12px; }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .announcement-bar__social > *,
     .announcement-bar__navigator-arrow,
-    .announcement-bar__navigator-dot span,
     .announcement-bar__item {
       transition: none;
     }
@@ -419,37 +248,6 @@
       "label": "Autoplay interval",
       "default": 5,
       "visible_if": "{{ section.settings.enable_rotation }}"
-    },
-    {
-      "type": "select",
-      "id": "navigator_style",
-      "label": "Navigator style",
-      "options": [
-        { "value": "arrows", "label": "Arrows at sides" },
-        { "value": "dots", "label": "Dots" }
-      ],
-      "default": "arrows",
-      "visible_if": "{{ section.settings.enable_rotation }}"
-    },
-    {
-      "type": "select",
-      "id": "font_weight",
-      "label": "Font weight",
-      "options": [
-        {
-          "value": "400",
-          "label": "Regular"
-        },
-        {
-          "value": "500",
-          "label": "Medium"
-        },
-        {
-          "value": "600",
-          "label": "Semi bold"
-        }
-      ],
-      "default": "400"
     },
     {
       "type": "range",
@@ -504,32 +302,6 @@
   ],
   "blocks": [
     {
-      "type": "social_links",
-      "name": "Social links",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Social links"
-        },
-        {
-          "type": "url",
-          "id": "facebook_url",
-          "label": "Facebook URL"
-        },
-        {
-          "type": "url",
-          "id": "instagram_url",
-          "label": "Instagram URL"
-        },
-        {
-          "type": "url",
-          "id": "pinterest_url",
-          "label": "Pinterest URL"
-        }
-      ]
-    },
-    {
       "type": "text_slide",
       "name": "Text slide",
       "settings": [
@@ -542,55 +314,19 @@
           "id": "text",
           "label": "Text",
           "default": "Free shipping worldwide on orders over $150 USD"
-        }
-      ]
-    },
-    {
-      "type": "link",
-      "name": "Link",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Link"
         },
         {
-          "type": "text",
-          "id": "label",
-          "label": "Label",
-          "default": "Shop now"
-        },
-        {
-          "type": "url",
-          "id": "url",
-          "label": "Link"
-        },
-        {
-          "type": "checkbox",
-          "id": "open_in_new_tab",
-          "label": "Open in a new tab",
-          "default": false
-        }
-      ]
-    },
-    {
-      "type": "countdown_timer",
-      "name": "Countdown timer",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Countdown timer"
-        },
-        {
-          "type": "text",
-          "id": "label",
-          "label": "Label",
-          "default": "Offer ends in"
-        },
-        {
-          "type": "text",
-          "id": "end_at",
-          "label": "End date and time",
-          "info": "Use ISO 8601 format, for example 2026-12-31T23:59:59Z"
+          "type": "select",
+          "id": "text_size",
+          "label": "Text size",
+          "options": [
+            { "value": "x-large", "label": "X-large" },
+            { "value": "large", "label": "Large" },
+            { "value": "medium", "label": "Medium" },
+            { "value": "small", "label": "Small" },
+            { "value": "x-small", "label": "X-small" }
+          ],
+          "default": "small"
         }
       ]
     }
@@ -600,10 +336,6 @@
       "name": "Announcement bar",
       "category": "Marketing",
       "blocks": [
-        {
-          "type": "social_links",
-          "settings": {}
-        },
         { "type": "text_slide" }
       ]
     }

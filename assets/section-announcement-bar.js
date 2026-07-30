@@ -3,8 +3,6 @@ if (!customElements.get('announcement-bar')) {
     connectedCallback() {
       this.items = Array.from(this.querySelectorAll('[data-announcement-item]'));
       this.navigator = this.querySelector('[data-announcement-navigator]');
-      this.navigatorDots = Array.from(this.querySelectorAll('[data-announcement-index]'));
-      this.countdowns = Array.from(this.querySelectorAll('[data-announcement-countdown]'));
       this.index = Math.max(0, this.items.findIndex((item) => !item.hidden));
       this.interval = Number(this.dataset.interval) || 5000;
       this.motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -28,16 +26,12 @@ if (!customElements.get('announcement-bar')) {
       this.motionPreference.addEventListener('change', this.onMotionPreferenceChange);
       document.addEventListener('shopify:block:select', this.onBlockSelect);
       document.addEventListener('visibilitychange', this.onVisibilityChange);
-      this.updateCountdowns();
-      this.startCountdowns();
-      this.updateNavigator();
       this.startRotation();
     }
 
     disconnectedCallback() {
       this.stopRotation();
       this.itemAnimation?.cancel();
-      window.clearInterval(this.countdownTimer);
       this.removeEventListener('mouseenter', this.onMouseEnter);
       this.removeEventListener('mouseleave', this.onMouseLeave);
       this.removeEventListener('focusin', this.onFocusIn);
@@ -46,7 +40,6 @@ if (!customElements.get('announcement-bar')) {
       this.motionPreference.removeEventListener('change', this.onMotionPreferenceChange);
       document.removeEventListener('shopify:block:select', this.onBlockSelect);
       document.removeEventListener('visibilitychange', this.onVisibilityChange);
-      this.stopCountdowns();
     }
 
     startRotation() {
@@ -67,25 +60,11 @@ if (!customElements.get('announcement-bar')) {
       this.rotationTimer = null;
     }
 
-    startCountdowns() {
-      this.stopCountdowns();
-      if (!this.countdowns.length || document.hidden) return;
-      this.countdownTimer = window.setInterval(() => this.updateCountdowns(), 1000);
-    }
-
-    stopCountdowns() {
-      window.clearInterval(this.countdownTimer);
-      this.countdownTimer = null;
-    }
-
     handleVisibilityChange() {
       if (document.hidden) {
         this.stopRotation();
-        this.stopCountdowns();
         return;
       }
-      this.updateCountdowns();
-      this.startCountdowns();
       this.startRotation();
     }
 
@@ -93,7 +72,6 @@ if (!customElements.get('announcement-bar')) {
       if (!this.items.length) return;
       const nextIndex = (index + this.items.length) % this.items.length;
       if (nextIndex === this.index) {
-        this.updateNavigator();
         return;
       }
       this.itemAnimation?.cancel();
@@ -101,8 +79,6 @@ if (!customElements.get('announcement-bar')) {
       this.items.forEach((item, itemIndex) => {
         item.hidden = itemIndex !== this.index;
       });
-      this.updateNavigator();
-
       const nextItem = this.items[this.index];
       if (!this.reduceMotion && typeof nextItem.animate === 'function') {
         this.itemAnimation = nextItem.animate([
@@ -145,14 +121,10 @@ if (!customElements.get('announcement-bar')) {
     }
 
     handleNavigatorClick(event) {
-      const control = event.target.closest('[data-announcement-index], [data-announcement-step]');
+      const control = event.target.closest('[data-announcement-step]');
       if (!control || !this.navigator?.contains(control)) return;
       this.stopRotation();
-      if (control.dataset.announcementIndex !== undefined) {
-        this.showItem(Number(control.dataset.announcementIndex));
-      } else {
-        this.showItem(this.index + Number(control.dataset.announcementStep));
-      }
+      this.showItem(this.index + Number(control.dataset.announcementStep));
       this.startRotation();
     }
 
@@ -166,29 +138,6 @@ if (!customElements.get('announcement-bar')) {
       }
     }
 
-    updateNavigator() {
-      this.navigatorDots.forEach((dot, dotIndex) => {
-        if (dotIndex === this.index) {
-          dot.setAttribute('aria-current', 'true');
-        } else {
-          dot.removeAttribute('aria-current');
-        }
-      });
-    }
-
-    updateCountdowns() {
-      this.countdowns.forEach((countdown) => {
-        const output = countdown.querySelector('[data-countdown-output]');
-        const endTime = new Date(countdown.dataset.announcementCountdown).getTime();
-        if (!output || Number.isNaN(endTime)) return;
-        const remaining = Math.max(0, endTime - Date.now());
-        const days = Math.floor(remaining / 86400000);
-        const hours = Math.floor((remaining % 86400000) / 3600000);
-        const minutes = Math.floor((remaining % 3600000) / 60000);
-        const seconds = Math.floor((remaining % 60000) / 1000);
-        output.textContent = `${days}d ${hours}h ${minutes}m ${seconds}s`;
-      });
-    }
   }
 
   customElements.define('announcement-bar', AnnouncementBar);

@@ -454,18 +454,13 @@ Section settings:
 
 - Text behavior.
 - Autoplay interval.
-- Navigation style.
-- Font weight.
 - Desktop/mobile height.
 - Section width.
 - Color scheme.
 
 Inline blocks:
 
-- `text_slide`: text.
-- `link`: label, URL, open in new tab.
-- `countdown`: label, end datetime.
-- `social_links`: URL theo platform.
+- `text_slide`: text, text size.
 
 Preset tối thiểu:
 
