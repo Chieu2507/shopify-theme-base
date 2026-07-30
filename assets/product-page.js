@@ -6,9 +6,7 @@ if (!window.__spinelProductEditorScrollGuard) {
   window.__spinelProductEditorScrollGuard = true;
   const sectionScrollPositions = new Map();
   const restoreScrollPosition = (scrollTop) => {
-    [0, 50, 180, 450].forEach((delay) => {
-      window.setTimeout(() => window.scrollTo({ top: scrollTop, behavior: 'auto' }), delay);
-    });
+    window.requestAnimationFrame(() => window.scrollTo({ top: scrollTop, behavior: 'auto' }));
   };
   const getProductPage = (target, sectionId) => {
     if (target instanceof Element) {
@@ -39,10 +37,6 @@ if (!window.__spinelProductEditorScrollGuard) {
     restoreScrollPosition(scrollTop);
   }, true);
 
-  document.addEventListener('shopify:block:select', (event) => {
-    if (!window.Shopify?.designMode || !getProductPage(event.target, event.detail?.sectionId)) return;
-    restoreScrollPosition(window.scrollY);
-  }, true);
 }
 
 class ProductPage extends HTMLElement {
