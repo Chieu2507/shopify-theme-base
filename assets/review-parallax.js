@@ -63,8 +63,8 @@ if (!customElements.get('review-parallax')) {
       this.style.setProperty('--review-active-height', `${this.activeHeight}px`);
 
       const headerTop = Number.parseFloat(getComputedStyle(this.header).top) || 0;
-      const centeredHeaderTop = Math.max(headerTop, (this.activeHeight - this.header.offsetHeight) / 2);
-      this.headingTravel = centeredHeaderTop - headerTop;
+      const mirroredHeaderTop = Math.max(headerTop, this.activeHeight - headerTop - this.header.offsetHeight);
+      this.headingTravel = mirroredHeaderTop - headerTop;
 
       this.cardStep = Math.min(868, Math.max(720, this.clientWidth * 0.61));
       this.steps = Math.max(...this.cards.map((card) => Number.parseInt(card.dataset.reviewLaneIndex, 10) || 0));
