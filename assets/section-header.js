@@ -4,7 +4,6 @@ if (!window.SpinelHeaderMenus) {
   const megaMenuHoverTimers = new WeakMap();
   const cartFeedbackHeaderStates = new WeakMap();
   let transparentHeaderFrame = 0;
-  const isMobileAccordionAnimation = (type) => type === 'mobile_accordion' || type === 'mobile_mega_accordion';
 
   const syncHeaderMenuScrollLock = () => {
     const isMobile = window.matchMedia('(max-width: 899px)').matches;
@@ -137,9 +136,7 @@ if (!window.SpinelHeaderMenus) {
           ? details.querySelector(':scope > .header__submenu-nested')
           : details.querySelector(':scope > .header__submenu');
     const type = isMobileAccordion
-      ? isMegaMenu
-        ? 'mobile_mega_accordion'
-        : 'mobile_accordion'
+      ? 'mobile_accordion'
       : isNestedMenu
       ? 'slide_right'
       : isDesktopMegaMenu
@@ -148,7 +145,7 @@ if (!window.SpinelHeaderMenus) {
           ? 'reveal_clip'
           : 'slide_down';
     const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10);
-    const duration = type === 'mobile_mega_accordion' ? 320 : isMobileAccordion ? 280 : isTopLevelMenu ? Math.max(configuredDuration, 480) : configuredDuration;
+    const duration = isMobileAccordion ? 280 : isTopLevelMenu ? Math.max(configuredDuration, 480) : configuredDuration;
     const delay = isMobileAccordion ? 0 : isTopLevelMenu ? 90 : 0;
     return { panel, type, duration, delay };
   };
@@ -156,25 +153,19 @@ if (!window.SpinelHeaderMenus) {
   const getMegaMenuFrames = (type, opening, panel, currentHeightOverride) => {
     let frames;
 
-    if (isMobileAccordionAnimation(type)) {
+    if (type === 'mobile_accordion') {
       const expandedHeight = Math.max(panel?.scrollHeight || 0, panel?.getBoundingClientRect().height || 0);
       const currentHeight = Math.max(0, currentHeightOverride ?? panel?.getBoundingClientRect().height ?? expandedHeight);
       const collapsedHeight = Math.max(0, currentHeightOverride ?? 0);
-      const startFrame = {
-        height: `${opening ? collapsedHeight : currentHeight}px`,
-        opacity: 1,
-        overflow: 'hidden'
-      };
-      const endFrame = {
-        height: `${opening ? expandedHeight : 0}px`,
-        opacity: 1,
-        overflow: 'hidden'
-      };
-      if (type === 'mobile_mega_accordion') {
-        startFrame.translate = opening ? '0 -6px' : '0 0';
-        endFrame.translate = opening ? '0 0' : '0 -6px';
-      }
-      frames = [startFrame, endFrame];
+      frames = opening
+        ? [
+            { height: `${collapsedHeight}px`, opacity: 1, overflow: 'hidden' },
+            { height: `${expandedHeight}px`, opacity: 1, overflow: 'hidden' }
+          ]
+        : [
+            { height: `${currentHeight}px`, opacity: 1, overflow: 'hidden' },
+            { height: '0px', opacity: 1, overflow: 'hidden' }
+          ];
       return frames;
     } else if (type === 'reveal_down') {
       frames = [{ translate: '0 -100%' }, { translate: '0 0' }];
@@ -201,7 +192,7 @@ if (!window.SpinelHeaderMenus) {
     if (!panel || type === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const existingAnimation = megaMenuAnimations.get(details);
-    const currentHeight = existingAnimation && isMobileAccordionAnimation(type)
+    const currentHeight = existingAnimation && type === 'mobile_accordion'
       ? panel.getBoundingClientRect().height
       : undefined;
     existingAnimation?.cancel();
@@ -226,7 +217,7 @@ if (!window.SpinelHeaderMenus) {
 
     const { panel, type, duration } = getMegaMenuAnimation(details);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const currentHeight = isMobileAccordionAnimation(type) ? panel?.getBoundingClientRect().height : undefined;
+    const currentHeight = type === 'mobile_accordion' ? panel?.getBoundingClientRect().height : undefined;
     megaMenuAnimations.get(details)?.cancel();
 
     if (details.matches('.header__submenu-disclosure')) {
