@@ -2,19 +2,35 @@ const deferredStylesheets = document.querySelectorAll('[data-deferred-section-st
 const loadedStylesheetUrls = new Set(
   [...document.querySelectorAll('link[rel="stylesheet"][href]')].map((link) => link.href),
 );
+const scrollRestoration = window.SpinelScrollRestoration;
 
-const loadStylesheet = (link) => {
-  if (!link.dataset.href) return;
+const loadStylesheet = (link) => new Promise((resolve) => {
+  if (!link.dataset.href) {
+    resolve();
+    return;
+  }
+
   const href = new URL(link.dataset.href, document.baseURI).href;
   if (loadedStylesheetUrls.has(href)) {
     link.remove();
+    resolve();
     return;
   }
+
+  let settled = false;
+  const complete = () => {
+    if (settled) return;
+    settled = true;
+    resolve();
+  };
+
   loadedStylesheetUrls.add(href);
+  link.addEventListener('load', complete, { once: true });
+  link.addEventListener('error', complete, { once: true });
   link.rel = 'stylesheet';
   link.href = link.dataset.href;
   link.removeAttribute('data-href');
-};
+});
 
 const loadRemainingStylesheets = () => {
   const load = () => deferredStylesheets.forEach(loadStylesheet);
@@ -25,7 +41,24 @@ const loadRemainingStylesheets = () => {
   }
 };
 
-if (!('IntersectionObserver' in window)) {
+const restoreHomepageScroll = () => {
+  if (!scrollRestoration?.shouldRestore || !scrollRestoration.position) return;
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => {
+      window.scrollTo({
+        top: scrollRestoration.position.top,
+        left: scrollRestoration.position.left,
+        behavior: 'auto'
+      });
+      window.dispatchEvent(new Event('spinel:scroll-restored'));
+    });
+  });
+};
+
+if (scrollRestoration?.shouldRestore) {
+  Promise.all([...deferredStylesheets].map(loadStylesheet)).then(restoreHomepageScroll);
+} else if (!('IntersectionObserver' in window)) {
   deferredStylesheets.forEach(loadStylesheet);
 } else {
   const sectionLinks = new Map();

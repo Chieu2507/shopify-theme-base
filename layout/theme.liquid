@@ -13,10 +13,69 @@
   <head>
     <script>
       document.documentElement.classList.remove('no-js');
+      {% if request.page_type == 'index' and request.design_mode == false %}
+        const scrollRestorationKey = `spinel-homepage-scroll:${window.location.pathname}${window.location.search}`;
+        let savedScrollPosition;
+
+        try {
+          savedScrollPosition = JSON.parse(window.sessionStorage.getItem(scrollRestorationKey) || 'null');
+        } catch (error) {
+          savedScrollPosition = null;
+        }
+
+        const navigationEntry = window.performance.getEntriesByType?.('navigation')[0];
+        const shouldRestoreHomepageScroll =
+          ['reload', 'back_forward'].includes(navigationEntry?.type)
+          && Number.isFinite(savedScrollPosition?.top)
+          && Number.isFinite(savedScrollPosition?.left);
+
+        window.SpinelScrollRestoration = {
+          position: savedScrollPosition,
+          shouldRestore: shouldRestoreHomepageScroll
+        };
+
+        if (shouldRestoreHomepageScroll && 'scrollRestoration' in window.history) {
+          window.history.scrollRestoration = 'manual';
+        }
+
+        window.addEventListener('pagehide', () => {
+          try {
+            window.sessionStorage.setItem(
+              scrollRestorationKey,
+              JSON.stringify({ left: window.scrollX, top: window.scrollY })
+            );
+          } catch (error) {
+          }
+        });
+      {% endif %}
       {% if page_transition_enabled %}
+        let pageTransitionDomReady = false;
+        let pageTransitionScrollRestored = !window.SpinelScrollRestoration?.shouldRestore;
+        let pageTransitionRevealed = false;
+
+        const revealPageTransition = () => {
+          if (!pageTransitionDomReady || !pageTransitionScrollRestored || pageTransitionRevealed) return;
+          pageTransitionRevealed = true;
+          document.documentElement.classList.add('page-transition-dom-ready');
+          window.dispatchEvent(new Event('spinel:page-transition-reveal'));
+        };
+
+        const forcePageTransitionReveal = () => {
+          pageTransitionScrollRestored = true;
+          revealPageTransition();
+        };
+
         document.documentElement.classList.add('page-transitions-enabled');
         document.addEventListener('DOMContentLoaded', () => {
-          document.documentElement.classList.add('page-transition-dom-ready');
+          pageTransitionDomReady = true;
+          revealPageTransition();
+        }, { once: true });
+        window.addEventListener('spinel:scroll-restored', () => {
+          pageTransitionScrollRestored = true;
+          revealPageTransition();
+        }, { once: true });
+        window.addEventListener('load', () => {
+          window.setTimeout(forcePageTransitionReveal, 4000);
         }, { once: true });
       {% endif %}
     </script>

@@ -32,11 +32,9 @@
     if (event.target === transition && event.propertyName === 'opacity') hide();
   });
 
-  if (root.classList.contains('page-transition-dom-ready')) {
-    reveal();
-  } else {
-    document.addEventListener('DOMContentLoaded', reveal, { once: true });
-  }
+  window.addEventListener('spinel:page-transition-reveal', reveal, { once: true });
+
+  if (root.classList.contains('page-transition-dom-ready')) reveal();
 
   window.addEventListener('pageshow', (event) => {
     if (event.persisted) hide();
