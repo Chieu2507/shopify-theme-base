@@ -6,9 +6,15 @@
   const bodyStyles = ['position', 'top', 'right', 'left', 'width', 'overflow'];
   let locked = false;
   let scrollY = 0;
+  let scrollbarWidth = 0;
   let savedStyles = {};
 
   const hasOpenLock = () => Boolean(document.querySelector('[scroll-lock][open], [scroll-lock].is-open'));
+
+  const measureScrollbarWidth = () => {
+    if (!locked) scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+    return scrollbarWidth;
+  };
 
   const lock = () => {
     if (locked) return;
@@ -19,9 +25,9 @@
     Object.assign(body.style, {
       position: 'fixed',
       top: `-${scrollY}px`,
-      right: '0',
+      right: `${scrollbarWidth}px`,
       left: '0',
-      width: '100%',
+      width: `calc(100% - ${scrollbarWidth}px)`,
       overflow: 'hidden'
     });
   };
@@ -50,7 +56,10 @@
     childList: true,
     subtree: true
   });
+  document.addEventListener('click', measureScrollbarWidth, true);
+  window.addEventListener('resize', measureScrollbarWidth);
   window.addEventListener('pageshow', update);
-  window.themeScrollLock = { update };
+  window.themeScrollLock = { update, measure: measureScrollbarWidth };
+  measureScrollbarWidth();
   update();
 })();
