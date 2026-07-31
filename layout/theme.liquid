@@ -5,7 +5,7 @@
 {% endif %}
 {% assign page_transition_enabled = false %}
 {% unless is_quick_view_template or request.design_mode %}
-  {% if settings.page_transition == 'fade' %}
+  {% if settings.enable_page_transitions %}
     {% assign page_transition_enabled = true %}
   {% endif %}
 {% endunless %}
@@ -15,23 +15,9 @@
       document.documentElement.classList.remove('no-js');
       {% if page_transition_enabled %}
         document.documentElement.classList.add('page-transitions-enabled');
-        const pageTransitionMode =
-          'onpageswap' in window && 'onpagereveal' in window && CSS.supports('view-transition-name: root')
-            ? 'page-transitions-native'
-            : 'page-transitions-fallback';
-        document.documentElement.classList.add(pageTransitionMode);
-
-        if (pageTransitionMode === 'page-transitions-fallback') {
-          try {
-            const transitionDestination = sessionStorage.getItem('spinel-page-transition-destination');
-            sessionStorage.removeItem('spinel-page-transition-destination');
-            if (transitionDestination === window.location.href) {
-              document.documentElement.classList.add('page-transition-arriving');
-            }
-          } catch (error) {
-            // Storage can be unavailable in privacy-restricted browsing contexts.
-          }
-        }
+        document.addEventListener('DOMContentLoaded', () => {
+          document.documentElement.classList.add('page-transition-dom-ready');
+        }, { once: true });
       {% endif %}
     </script>
 
@@ -47,7 +33,35 @@
     {% render 'css-variables' %}
 
     {% if page_transition_enabled %}
-      <style>@view-transition { navigation: auto; }</style>
+      <style>
+        .page-transitions-enabled .page-transition {
+          position: fixed;
+          z-index: 2147483000;
+          inset: 0;
+          display: block;
+          margin: 0;
+          background: {{ settings.page_transition_color | default: '#000000' }};
+          opacity: 1;
+          visibility: visible;
+          pointer-events: auto;
+          transition: opacity {{ settings.page_transition_duration | default: 1000 }}ms ease;
+        }
+
+        .page-transitions-enabled.page-transition-dom-ready .page-transition {
+          opacity: 0;
+          pointer-events: none;
+        }
+
+        .page-transitions-enabled .page-transition.is-hidden {
+          display: none;
+        }
+
+        @media (prefers-reduced-motion: reduce) {
+          .page-transitions-enabled .page-transition {
+            transition-duration: 0ms;
+          }
+        }
+      </style>
     {% endif %}
 
     {{ 'base.css' | asset_url | stylesheet_tag: preload: true }}
@@ -104,7 +118,7 @@
 
   <body class="template-{{ request.page_type | handle }}{% if is_quick_view_template %} template-quick-view{% endif %}{% if request.design_mode %} shopify-design-mode{% endif %}">
     {% if page_transition_enabled %}
-      <div class="page-transition" data-page-transition aria-hidden="true"></div>
+      {% render 'page-transition' %}
     {% endif %}
 
     {% unless is_quick_view_template %}

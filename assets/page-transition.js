@@ -2,107 +2,43 @@
   const transition = document.querySelector('[data-page-transition]');
   const root = document.documentElement;
 
-  if (
-    !transition ||
-    window.Shopify?.designMode ||
-    !root.classList.contains('page-transitions-fallback')
-  ) {
+  if (!transition || window.Shopify?.designMode || !root.classList.contains('page-transitions-enabled')) {
     return;
   }
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const transitionDuration = 180;
-  let isNavigating = false;
+  const transitionDuration = Number.parseInt(transition.dataset.pageTransitionDuration, 10) || 0;
+  let safetyTimeout;
 
-  const show = () => {
-    transition.classList.remove('is-ready');
-    transition.classList.add('is-leaving');
+  const hide = () => {
+    window.clearTimeout(safetyTimeout);
+    transition.classList.add('is-hidden');
+  };
+
+  const scheduleSafetyFallback = () => {
+    safetyTimeout = window.setTimeout(hide, transitionDuration + 150);
   };
 
   const reveal = () => {
-    isNavigating = false;
-    root.classList.remove('page-transition-arriving');
-    transition.classList.remove('is-leaving');
-    transition.classList.add('is-ready');
-  };
-
-  const revealAfterInitialPaint = () => {
-    requestAnimationFrame(() => requestAnimationFrame(reveal));
-  };
-
-  const waitForFadeOut = () =>
-    new Promise((resolve) => {
-      if (reducedMotion.matches) {
-        resolve();
-        return;
-      }
-
-      const finish = () => {
-        window.clearTimeout(timeout);
-        transition.removeEventListener('transitionend', handleTransitionEnd);
-        resolve();
-      };
-      const handleTransitionEnd = (event) => {
-        if (event.propertyName === 'opacity') finish();
-      };
-      const timeout = window.setTimeout(finish, transitionDuration + 80);
-
-      transition.addEventListener('transitionend', handleTransitionEnd);
-    });
-
-  const isSamePageHashLink = (url) =>
-    url.pathname === window.location.pathname &&
-    url.search === window.location.search &&
-    Boolean(url.hash);
-
-  const shouldTransition = (link, event) => {
-    if (
-      event.defaultPrevented ||
-      event.button !== 0 ||
-      event.metaKey ||
-      event.ctrlKey ||
-      event.shiftKey ||
-      event.altKey ||
-      link.hasAttribute('download') ||
-      link.matches('[data-cart-drawer-open], [data-no-page-transition]') ||
-      (link.target && link.target !== '_self')
-    ) {
-      return false;
+    if (reducedMotion.matches) {
+      hide();
+      return;
     }
 
-    const rawHref = link.getAttribute('href');
-    if (!rawHref || rawHref === '#' || rawHref.startsWith('javascript:')) return false;
-
-    const url = new URL(link.href, window.location.href);
-
-    return (
-      ['http:', 'https:'].includes(url.protocol) &&
-      url.origin === window.location.origin &&
-      !isSamePageHashLink(url)
-    );
+    scheduleSafetyFallback();
   };
 
-  document.addEventListener('click', (event) => {
-    if (isNavigating) return;
-
-    const link = event.target.closest?.('a[href]');
-    if (!link || !shouldTransition(link, event)) return;
-
-    event.preventDefault();
-    isNavigating = true;
-    show();
-
-    waitForFadeOut().then(() => {
-      try {
-        sessionStorage.setItem('spinel-page-transition-destination', link.href);
-      } catch (error) {
-        // Storage can be unavailable in privacy-restricted browsing contexts.
-      }
-      window.location.assign(link.href);
-    });
+  transition.addEventListener('transitionend', (event) => {
+    if (event.target === transition && event.propertyName === 'opacity') hide();
   });
 
-  window.addEventListener('pageshow', revealAfterInitialPaint);
+  if (root.classList.contains('page-transition-dom-ready')) {
+    reveal();
+  } else {
+    document.addEventListener('DOMContentLoaded', reveal, { once: true });
+  }
 
-  revealAfterInitialPaint();
+  window.addEventListener('pageshow', (event) => {
+    if (event.persisted) hide();
+  });
 })();
