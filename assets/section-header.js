@@ -321,7 +321,7 @@ if (!window.SpinelHeaderMenus) {
   document.addEventListener('click', (event) => {
     const overlay = event.target.closest?.('[data-header-menu-overlay]');
     if (overlay) {
-      const header = overlay.closest('[data-header]');
+      const header = document.getElementById(overlay.dataset.headerMenuOverlay);
       header?.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => {
         closeMegaMenu(details);
       });
