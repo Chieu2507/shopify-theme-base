@@ -33,8 +33,6 @@
 
   if section.settings.show_localization
     assign has_mobile_utilities = true
-  elsif section.settings.show_account and shop.customer_accounts_enabled
-    assign has_mobile_utilities = true
   endif
 
   if localization.available_countries.size > 1
@@ -267,13 +265,6 @@
         </ul>
 
         <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
-          {% if section.settings.show_account and shop.customer_accounts_enabled %}
-            <a class="header__mobile-action" href="{{ routes.account_url }}">
-              <span class="header__mobile-action-icon" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
-              <span>{{ 'header.account' | t }}</span>
-            </a>
-          {% endif %}
-
           {% if section.settings.show_localization %}
             <div class="header__mobile-localization">
               {% if can_change_country %}
@@ -413,9 +404,9 @@
       {% endif %}
 
       {% if section.settings.show_account and shop.customer_accounts_enabled %}
-        <a class="header__action header__action--account" href="{{ routes.account_url }}" aria-label="{{ 'header.account' | t | escape }}">
-          {% render 'icon', name: 'account' %}
-        </a>
+        <shopify-account class="header__action header__action--account" menu="{{ section.settings.customer_account_menu }}">
+          <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
+        </shopify-account>
       {% endif %}
 
       {% if section.settings.show_cart %}
