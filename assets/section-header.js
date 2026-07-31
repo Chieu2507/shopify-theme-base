@@ -289,10 +289,15 @@ if (!window.SpinelHeaderMenus) {
 
     closeOtherHeaderSubmenus(details);
     positionHeaderSubmenu(details);
+    const responsiveHeader = details.closest('[data-transparent-header="true"], [data-floating-header="true"]');
+    if (responsiveHeader?.dataset.transparentHeader === 'true') {
+      responsiveHeader.classList.add('header--surface-visible');
+      setTransparentHeaderColorScheme(responsiveHeader, true);
+    }
     details.dataset.opening = 'true';
     details.open = true;
     syncHeaderMenuScrollLock();
-    if (details.closest('[data-transparent-header="true"], [data-floating-header="true"]')) {
+    if (responsiveHeader) {
       scheduleResponsiveHeaderSync();
     }
     animateMegaMenuOpen(details);
