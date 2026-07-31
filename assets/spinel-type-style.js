@@ -1,14 +1,14 @@
-class TypographyBlock extends HTMLElement {
+class SpinelTypeStyle extends HTMLElement {
   connectedCallback() {
     if (this.classList.contains('is-visible')) return;
 
     this.observer?.disconnect();
-    this.dataset.typographyReady = 'true';
-    const animation = this.dataset.typographyAnimation || 'none';
-    const highlight = this.dataset.typographyHighlight || 'none';
+    this.dataset.spinelReady = 'true';
+    const animation = this.dataset.spinelAnimation || 'none';
+    const emphasis = this.dataset.spinelEmphasis || 'none';
     const motionEnabled = this.dataset.motionEnabled === 'true';
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    const shouldAnimate = animation !== 'none' || highlight !== 'none';
+    const shouldAnimate = animation !== 'none' || emphasis !== 'none';
 
     if (!motionEnabled || reducedMotion || window.Shopify?.designMode || !shouldAnimate || !('IntersectionObserver' in window)) {
       this.classList.add('is-visible');
@@ -33,6 +33,6 @@ class TypographyBlock extends HTMLElement {
   }
 }
 
-if (!customElements.get('typography-block')) {
-  customElements.define('typography-block', TypographyBlock);
+if (!customElements.get('spinel-type-style')) {
+  customElements.define('spinel-type-style', SpinelTypeStyle);
 }

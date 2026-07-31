@@ -1,6 +1,5 @@
 {% doc %}
-  Renders the shared Heading and Text theme-block UI with preset or custom
-  typography, responsive layout, spacing, highlighting, and entrance motion.
+  Renders Spinel's shared type-style engine for Heading and Text blocks.
 
   @param {object} block - The theme block object.
   @param {string} content - Rich text to render.
@@ -9,7 +8,7 @@
   @param {string} default_font - Fallback custom font role.
 
   @example
-  {% render 'typography-block',
+  {% render 'spinel-type-style',
     block: block,
     content: block.settings.text,
     kind: 'text',
@@ -147,15 +146,24 @@
       assign font_size_mobile = '11px'
       assign line_height = '1.4'
     when 'custom'
-      if font_role == 'heading'
-        assign font_family = 'var(--font-heading--family)'
-        assign font_style = 'var(--font-heading--style)'
-        assign font_weight = 'var(--font-heading--weight)'
-      else
-        assign font_family = 'var(--font-body--family)'
-        assign font_style = 'var(--font-body--style)'
-        assign font_weight = 'var(--font-body--weight)'
-      endif
+      case font_role
+        when 'subheading'
+          assign font_family = 'var(--font-subheading--family)'
+          assign font_style = 'var(--font-subheading--style)'
+          assign font_weight = 'var(--font-subheading--weight)'
+        when 'heading'
+          assign font_family = 'var(--font-heading--family)'
+          assign font_style = 'var(--font-heading--style)'
+          assign font_weight = 'var(--font-heading--weight)'
+        when 'accent'
+          assign font_family = 'var(--font-accent--family)'
+          assign font_style = 'var(--font-accent--style)'
+          assign font_weight = 'var(--font-accent--weight)'
+        else
+          assign font_family = 'var(--font-body--family)'
+          assign font_style = 'var(--font-body--style)'
+          assign font_weight = 'var(--font-body--weight)'
+      endcase
 
       if block.settings.font_weight != blank
         if block.settings.font_weight != 'inherit'
@@ -208,7 +216,7 @@
 %}
 
 {% if content != blank %}
-  <typography-block
+  <spinel-type-style
     class="typography-block typography-block--{{ kind }} typography-block--preset-{{ preset }} typography-block--highlight-{{ highlight_style }}{% if block.settings.disable_line_break_mobile %} typography-block--disable-mobile-breaks{% endif %}"
     style="
       --typography-width: {{ width }};
@@ -233,8 +241,8 @@
       --typography-padding-right-mobile: {{ padding_right_mobile }}px;
       --typography-animation-delay: {{ animation_delay }}ms;
     "
-    data-typography-animation="{{ animation_type }}"
-    data-typography-highlight="{{ highlight_style }}"
+    data-spinel-animation="{{ animation_type }}"
+    data-spinel-emphasis="{{ highlight_style }}"
     data-motion-enabled="{{ settings.enable_motion }}"
     {{ block.shopify_attributes }}
   >
@@ -251,7 +259,7 @@
         {{ rendered_content }}
       </div>
     {% endif %}
-  </typography-block>
+  </spinel-type-style>
 {% endif %}
 
 {% stylesheet %}
@@ -259,11 +267,8 @@
     display: block;
     width: var(--typography-width);
     max-width: 100%;
-    padding:
-      var(--typography-padding-top)
-      var(--typography-padding-right)
-      var(--typography-padding-bottom)
-      var(--typography-padding-left);
+    padding-block: var(--typography-padding-top) var(--typography-padding-bottom);
+    padding-inline: var(--typography-padding-left) var(--typography-padding-right);
     color: var(--typography-color);
   }
 
@@ -344,12 +349,12 @@
     background-size: 100% 100%;
   }
 
-  .typography-block[data-typography-ready='true'][data-typography-animation='fade_in'],
-  .typography-block[data-typography-ready='true'][data-typography-animation='fade_up'],
-  .typography-block[data-typography-ready='true'][data-typography-animation='slide_in_left'],
-  .typography-block[data-typography-ready='true'][data-typography-animation='slide_in_right'],
-  .typography-block[data-typography-ready='true'][data-typography-animation='zoom_in'],
-  .typography-block[data-typography-ready='true'][data-typography-animation='zoom_out'] {
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='fade_in'],
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='fade_up'],
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='slide_in_left'],
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='slide_in_right'],
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='zoom_in'],
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='zoom_out'] {
     opacity: 0;
     transition:
       opacity 600ms ease,
@@ -357,27 +362,27 @@
     transition-delay: var(--typography-animation-delay);
   }
 
-  .typography-block[data-typography-ready='true'][data-typography-animation='fade_up'] {
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='fade_up'] {
     transform: translateY(24px);
   }
 
-  .typography-block[data-typography-ready='true'][data-typography-animation='slide_in_left'] {
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='slide_in_left'] {
     transform: translateX(-32px);
   }
 
-  .typography-block[data-typography-ready='true'][data-typography-animation='slide_in_right'] {
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='slide_in_right'] {
     transform: translateX(32px);
   }
 
-  .typography-block[data-typography-ready='true'][data-typography-animation='zoom_in'] {
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='zoom_in'] {
     transform: scale(0.94);
   }
 
-  .typography-block[data-typography-ready='true'][data-typography-animation='zoom_out'] {
+  .typography-block[data-spinel-ready='true'][data-spinel-animation='zoom_out'] {
     transform: scale(1.06);
   }
 
-  .typography-block[data-typography-ready='true'].is-visible {
+  .typography-block[data-spinel-ready='true'].is-visible {
     opacity: 1;
     transform: none;
   }
@@ -385,11 +390,8 @@
   @media screen and (max-width: 749px) {
     .typography-block {
       width: var(--typography-width-mobile);
-      padding:
-        var(--typography-padding-top-mobile)
-        var(--typography-padding-right-mobile)
-        var(--typography-padding-bottom-mobile)
-        var(--typography-padding-left-mobile);
+      padding-block: var(--typography-padding-top-mobile) var(--typography-padding-bottom-mobile);
+      padding-inline: var(--typography-padding-left-mobile) var(--typography-padding-right-mobile);
     }
 
     .typography-block:not(.typography-block--preset-default) .typography-block__content,
