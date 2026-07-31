@@ -15,57 +15,28 @@
         <header class="gallery__header">
           {% for block in section.blocks %}
             {% if block.type == 'header' %}
-              {% capture header_attributes %}{{ block.shopify_attributes }}{% endcapture %}
-              {% assign gallery_heading_class = 'gallery__heading spinel-heading--' | append: block.settings.heading_size %}
-              {% assign gallery_description_text = block.settings.text | strip_html | strip %}
-              {% assign has_gallery_title = false %}
-              {% if block.settings.subheading != blank or block.settings.heading != blank %}
-                {% assign has_gallery_title = true %}
-              {% endif %}
-              {% assign has_gallery_copy = has_gallery_title %}
-              {% if gallery_description_text != blank %}
-                {% assign has_gallery_copy = true %}
-              {% endif %}
-
-              <div class="section-header section-header--{{ block.settings.content_alignment }} gallery__header-content" {{ header_attributes }}>
-                {% if has_gallery_copy %}
-                  <div class="gallery__header-copy">
-                    {% if has_gallery_title %}
-                      <div class="gallery__header-title-group">
-                        {% if block.settings.subheading != blank %}
-                          <p class="section-header__eyebrow gallery__subheading content-text content-text--{{ block.settings.subheading_size }} gallery__subheading--{{ block.settings.subheading_size }}">
-                            {{ block.settings.subheading | escape }}
-                          </p>
-                        {% endif %}
-
-                        {% if block.settings.heading != blank %}
-                          <{{ block.settings.heading_tag }} class="section-header__heading {{ gallery_heading_class }}">
-                            {{ block.settings.heading | escape }}
-                          </{{ block.settings.heading_tag }}>
-                        {% endif %}
-                      </div>
-                    {% endif %}
-
-                    {% if gallery_description_text != blank %}
-                      <div class="section-header__text gallery__intro content-text content-text--{{ block.settings.text_size }} rte">
-                        {{ block.settings.text }}
-                      </div>
-                    {% endif %}
-                  </div>
-                {% endif %}
-
-                {% if block.settings.link_label != blank and block.settings.link != blank %}
-                  <div class="gallery__button-group">
-                    {% render 'cta',
-                      label: block.settings.link_label,
-                      url: block.settings.link,
-                      style: block.settings.button_style,
-                      class: 'gallery__view-all',
-                      open_in_new_tab: block.settings.button_open_in_new_tab
-                    %}
-                  </div>
-                {% endif %}
-              </div>
+              {% render 'section-header',
+                heading: block.settings.heading,
+                heading_tag: block.settings.heading_tag,
+                heading_size: block.settings.heading_size,
+                heading_class: 'gallery__heading spinel-heading--' | append: block.settings.heading_size,
+                eyebrow: block.settings.subheading,
+                eyebrow_class: 'gallery__subheading content-text content-text--' | append: block.settings.subheading_size | append: ' gallery__subheading--' | append: block.settings.subheading_size,
+                copy_class: 'gallery__header-copy',
+                title_group_class: 'gallery__header-title-group',
+                text: block.settings.text,
+                text_class: 'gallery__intro content-text content-text--' | append: block.settings.text_size,
+                action_label: block.settings.link_label,
+                action_url: block.settings.link,
+                action_style: block.settings.button_style,
+                action_class: 'gallery__view-all',
+                action_group_class: 'gallery__button-group',
+                action_open_in_new_tab: block.settings.button_open_in_new_tab,
+                alignment: block.settings.content_alignment,
+                class: 'gallery__header-content',
+                tag: 'div',
+                attributes: block.shopify_attributes
+              %}
             {% endif %}
           {% endfor %}
         </header>

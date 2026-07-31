@@ -21,23 +21,27 @@
         <header class="blog-posts__header">
           {% for block in section.blocks %}
             {% if block.type == 'header' %}
-              {% assign blog_header_text_class = 'blog-posts__intro content-text content-text--' | append: block.settings.text_size %}
-              {% capture header_attributes %}{{ block.shopify_attributes }}{% endcapture %}
               {% render 'section-header',
                 heading: block.settings.heading,
                 heading_tag: block.settings.heading_tag,
                 heading_size: block.settings.heading_size,
-                heading_class: 'blog-posts__heading',
+                heading_class: 'blog-posts__heading spinel-heading--' | append: block.settings.heading_size,
+                eyebrow: block.settings.subheading,
+                eyebrow_class: 'blog-posts__subheading content-text content-text--' | append: block.settings.subheading_size,
+                copy_class: 'blog-posts__header-copy',
+                title_group_class: 'blog-posts__header-title-group',
                 text: block.settings.text,
-                text_class: blog_header_text_class,
+                text_class: 'blog-posts__intro content-text content-text--' | append: block.settings.text_size,
                 action_label: block.settings.link_label,
                 action_url: block.settings.link,
-                action_style: 'text',
+                action_style: block.settings.button_style,
                 action_class: 'blog-posts__view-all',
-                alignment: 'center',
+                action_group_class: 'blog-posts__button-group',
+                action_open_in_new_tab: block.settings.button_open_in_new_tab,
+                alignment: block.settings.content_alignment,
                 class: 'blog-posts__header-content',
                 tag: 'div',
-                attributes: header_attributes
+                attributes: block.shopify_attributes
               %}
             {% endif %}
           {% endfor %}
@@ -510,10 +514,6 @@
       "limit": 1,
       "settings": [
         {
-          "type": "header",
-          "content": "Header"
-        },
-        {
           "type": "text",
           "id": "heading",
           "label": "Heading",
@@ -553,6 +553,17 @@
         },
         {
           "type": "select",
+          "id": "content_alignment",
+          "label": "Heading alignment",
+          "options": [
+            { "value": "left", "label": "Left" },
+            { "value": "center", "label": "Center" },
+            { "value": "right", "label": "Right" }
+          ],
+          "default": "center"
+        },
+        {
+          "type": "select",
           "id": "heading_tag",
           "label": "Heading tag",
           "options": [
@@ -584,15 +595,35 @@
           "default": "h2"
         },
         {
+          "type": "text",
+          "id": "subheading",
+          "label": "Subheading"
+        },
+        {
+          "type": "select",
+          "id": "subheading_size",
+          "label": "Subheading size",
+          "options": [
+            { "value": "x-large", "label": "X-large" },
+            { "value": "large", "label": "Large" },
+            { "value": "medium", "label": "Medium" },
+            { "value": "small", "label": "Small" },
+            { "value": "x-small", "label": "X-small" }
+          ],
+          "default": "medium",
+          "visible_if": "{{ block.settings.subheading != blank }}"
+        },
+        {
           "type": "richtext",
           "id": "text",
-          "label": "Text",
-          "default": "<p>Discover the latest updates, insights, and inspirations.</p>"
+          "label": "Description",
+          "default": "<p>Discover the latest updates, insights, and inspirations.</p>",
+          "visible_if": "{{ block.settings.text != blank }}"
         },
         {
           "type": "select",
           "id": "text_size",
-          "label": "Text size",
+          "label": "Description size",
           "options": [
             {
               "value": "x-large",
@@ -615,18 +646,40 @@
               "label": "X-small"
             }
           ],
-          "default": "medium"
+          "default": "medium",
+          "visible_if": "{{ block.settings.text != blank }}"
         },
         {
           "type": "text",
           "id": "link_label",
-          "label": "Link label",
-          "default": "View all"
+          "label": "Button label",
+          "default": "View all",
+          "info": "Leave the label blank to hide the button."
         },
         {
           "type": "url",
           "id": "link",
-          "label": "Link"
+          "label": "Button link",
+          "visible_if": "{{ block.settings.link_label != blank }}"
+        },
+        {
+          "type": "select",
+          "id": "button_style",
+          "label": "Button style",
+          "options": [
+            { "value": "primary", "label": "Primary" },
+            { "value": "secondary", "label": "Secondary" },
+            { "value": "tertiary", "label": "Tertiary" }
+          ],
+          "default": "tertiary",
+          "visible_if": "{{ block.settings.link_label != blank }}"
+        },
+        {
+          "type": "checkbox",
+          "id": "button_open_in_new_tab",
+          "label": "Open link in new tab",
+          "default": false,
+          "visible_if": "{{ block.settings.link_label != blank }}"
         }
       ]
     },
