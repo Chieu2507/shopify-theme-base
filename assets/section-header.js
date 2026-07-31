@@ -3,7 +3,30 @@ if (!window.SpinelHeaderMenus) {
   const megaMenuAnimations = new WeakMap();
   const megaMenuHoverTimers = new WeakMap();
   const cartFeedbackHeaderStates = new WeakMap();
+  let headerMenuScrollY = 0;
   let transparentHeaderFrame = 0;
+
+  const syncHeaderMenuScrollLock = () => {
+    const isMobile = window.matchMedia('(max-width: 899px)').matches;
+    const shouldLock = isMobile
+      ? Boolean(document.querySelector('.header__menu-disclosure[open]'))
+      : Boolean(document.querySelector('.header__submenu-disclosure[open]'));
+    const root = document.documentElement;
+    const isLocked = root.classList.contains('header-menu-scroll-locked');
+
+    if (shouldLock && !isLocked) {
+      headerMenuScrollY = window.scrollY;
+      root.style.setProperty('--header-menu-scroll-y', `${headerMenuScrollY}px`);
+      root.classList.add('header-menu-scroll-locked');
+      return;
+    }
+
+    if (!shouldLock && isLocked) {
+      root.classList.remove('header-menu-scroll-locked');
+      root.style.removeProperty('--header-menu-scroll-y');
+      window.scrollTo({ top: headerMenuScrollY, behavior: 'instant' });
+    }
+  };
 
   const setTransparentHeaderColorScheme = (header, showSurface) => {
     const defaultColorClass = header.dataset.defaultColorClass;
@@ -52,7 +75,10 @@ if (!window.SpinelHeaderMenus) {
 
   initializeResponsiveHeaders();
   window.addEventListener('scroll', scheduleResponsiveHeaderSync, { passive: true });
-  window.addEventListener('resize', scheduleResponsiveHeaderSync);
+  window.addEventListener('resize', () => {
+    scheduleResponsiveHeaderSync();
+    syncHeaderMenuScrollLock();
+  });
   document.addEventListener('shopify:section:load', (event) => initializeResponsiveHeaders(event.target));
 
   const revealHeaderForCartFeedback = (duration = 2200) => {
@@ -219,6 +245,10 @@ if (!window.SpinelHeaderMenus) {
       if (details.matches?.('.header__menu-disclosure')) {
         const toggle = details.querySelector(':scope > .header__menu-toggle');
         if (toggle) toggle.setAttribute('aria-label', details.open ? details.dataset.closeLabel : details.dataset.openLabel);
+      }
+
+      if (details.matches?.('.header__menu-disclosure, .header__submenu-disclosure, .header__submenu-nested-disclosure')) {
+        syncHeaderMenuScrollLock();
       }
 
       if (details.closest?.('[data-transparent-header="true"], [data-floating-header="true"]')) scheduleResponsiveHeaderSync();
