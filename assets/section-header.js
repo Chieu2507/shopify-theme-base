@@ -124,21 +124,27 @@ if (!window.SpinelHeaderMenus) {
   const getMegaMenuAnimation = (details) => {
     const header = details.closest('[data-header]');
     const isMegaMenu = details.matches('.header__submenu-disclosure--mega');
+    const isDesktopMegaMenu = isMegaMenu && window.matchMedia('(min-width: 900px)').matches;
     const isNestedMenu = details.matches('.header__submenu-nested-disclosure');
-    const panel = isMegaMenu
-      ? details.querySelector('.header__mega-panel')
+    const panel = isDesktopMegaMenu
+      ? details.querySelector('.header__mega-surface')
+      : isMegaMenu
+        ? details.querySelector('.header__mega-panel')
       : isNestedMenu
         ? details.querySelector(':scope > .header__submenu-nested')
         : details.querySelector(':scope > .header__submenu');
-    const type = isNestedMenu ? 'slide_right' : isMegaMenu ? header?.dataset.megaMenuAnimation || 'slide_down' : 'slide_down';
-    const duration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10);
+    const type = isNestedMenu ? 'slide_right' : isDesktopMegaMenu ? 'reveal_down' : isMegaMenu ? header?.dataset.megaMenuAnimation || 'slide_down' : 'slide_down';
+    const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10);
+    const duration = isDesktopMegaMenu ? Math.max(configuredDuration, 320) : configuredDuration;
     return { panel, type, duration };
   };
 
   const getMegaMenuFrames = (type, opening) => {
     let frames;
 
-    if (type === 'fade') {
+    if (type === 'reveal_down') {
+      frames = [{ translate: '0 -100%' }, { translate: '0 0' }];
+    } else if (type === 'fade') {
       frames = [{ opacity: 0 }, { opacity: 1 }];
     } else if (type === 'scale') {
       frames = [{ opacity: 0, scale: '0.98' }, { opacity: 1, scale: '1' }];
