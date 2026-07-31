@@ -453,7 +453,8 @@ if (!window.SpinelHeaderMenus) {
     const submenu = summary?.parentElement;
     if (submenu?.matches('.header__submenu-disclosure--mega.header__submenu-disclosure--hover') && supportsMegaMenuHover()) {
       event.preventDefault();
-      if (!submenu.open) openHeaderSubmenu(submenu);
+      if (submenu.open) closeMegaMenu(submenu);
+      else openHeaderSubmenu(submenu);
       return;
     }
 
