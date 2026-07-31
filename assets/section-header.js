@@ -131,34 +131,27 @@ if (!window.SpinelHeaderMenus) {
     const header = details.closest('[data-header]');
     const isMegaMenu = details.matches('.header__submenu-disclosure--mega');
     const isTopLevelMenu = details.matches('.header__submenu-disclosure');
-    const isDesktopMegaMenu = isMegaMenu && window.matchMedia('(min-width: 900px)').matches;
     const isNestedMenu = details.matches('.header__submenu-nested-disclosure');
     const isMobileAccordion = window.matchMedia('(max-width: 899px)').matches && (isTopLevelMenu || isNestedMenu);
-    const panel = isDesktopMegaMenu
-      ? details.querySelector('.header__mega-surface')
-      : isMegaMenu
-        ? details.querySelector('.header__mega-panel')
-        : isNestedMenu
-          ? details.querySelector(':scope > .header__submenu-nested')
-          : details.querySelector(':scope > .header__submenu');
+    const panel = isMegaMenu
+      ? details.querySelector('.header__mega-panel')
+      : isNestedMenu
+        ? details.querySelector(':scope > .header__submenu-nested')
+        : details.querySelector(':scope > .header__submenu');
     const type = isMobileAccordion
       ? 'mobile_accordion'
       : isNestedMenu
       ? 'cascading_flyout'
-      : isDesktopMegaMenu
-        ? 'reveal_down'
-        : isTopLevelMenu
-          ? 'cascading_root'
-          : 'slide_down';
+      : isTopLevelMenu
+        ? 'cascading_root'
+        : 'slide_down';
     const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10);
-    const isDesktopCascadingMenu = !isMobileAccordion && !isMegaMenu && (isTopLevelMenu || isNestedMenu);
+    const isDesktopCascadingMenu = !isMobileAccordion && (isTopLevelMenu || isNestedMenu);
     const duration = isMobileAccordion
       ? 280
       : isDesktopCascadingMenu
         ? 350
-        : isTopLevelMenu
-          ? Math.max(configuredDuration, 480)
-          : configuredDuration;
+        : configuredDuration;
     const delay = 0;
     const easing = isDesktopCascadingMenu ? headerMenuEasing : 'cubic-bezier(0.22, 1, 0.36, 1)';
     return { panel, type, duration, delay, easing };
@@ -181,8 +174,6 @@ if (!window.SpinelHeaderMenus) {
             { height: '0px', opacity: 1, overflow: 'hidden' }
           ];
       return frames;
-    } else if (type === 'reveal_down') {
-      frames = [{ translate: '0 -100%' }, { translate: '0 0' }];
     } else if (type === 'cascading_root') {
       frames = [{ opacity: 0, translate: '0 -30px' }, { opacity: 1, translate: '0 0' }];
     } else if (type === 'cascading_flyout') {
