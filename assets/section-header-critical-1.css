@@ -12,6 +12,13 @@
 .shopify-section:has(> .header--cart-feedback-visible) {
     z-index: 100;
   }
+html:has(.header__submenu-disclosure[open]),
+  html:has(.header__menu-disclosure[open]),
+  body:has(.header__submenu-disclosure[open]),
+  body:has(.header__menu-disclosure[open]) {
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
 .header {
     --header-icon-size: 20px;
     position: relative;
@@ -57,6 +64,40 @@
     position: fixed;
     inset: 0 0 auto;
     animation: header-transparent-surface-in 240ms cubic-bezier(.22, 1, .36, 1) both;
+  }
+@media (min-width: 900px) {
+    .shopify-section:has(> .header--floating) {
+      position: relative;
+      z-index: 21;
+      top: auto;
+      height: 0;
+    }
+
+    .header--floating {
+      --header-floating-margin: clamp(20px, 3.45vw, 50px);
+      position: absolute;
+      top: 30px;
+      left: var(--header-floating-margin);
+      width: calc(100% - (var(--header-floating-margin) * 2));
+      border-radius: 12px;
+      box-shadow: 0 12px 32px color-mix(in srgb, var(--color-shadow) 8%, transparent);
+      transition:
+        top 260ms cubic-bezier(.22, 1, .36, 1),
+        left 260ms cubic-bezier(.22, 1, .36, 1),
+        width 260ms cubic-bezier(.22, 1, .36, 1),
+        border-radius 260ms cubic-bezier(.22, 1, .36, 1),
+        box-shadow 260ms ease;
+    }
+
+    .header--floating.header--scrolled {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      border-radius: 0;
+      box-shadow: 0 10px 28px color-mix(in srgb, var(--color-shadow) 10%, transparent);
+      animation: header-transparent-surface-in 240ms cubic-bezier(.22, 1, .36, 1) both;
+    }
   }
 .header--cart-feedback-visible {
     position: fixed;
@@ -205,7 +246,7 @@
     .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__menu-link {
       height: 100%;
     }
-    .header:has(.header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open]) {
+    .header:has(.header__submenu-disclosure[open]) {
       box-shadow: 0 0 0 100vmax rgb(0 0 0 / 68%);
     }
     .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu {

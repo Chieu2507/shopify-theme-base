@@ -14,41 +14,46 @@ if (!window.SpinelHeaderMenus) {
     if (activeColorClass) header.classList.add(activeColorClass);
   };
 
-  const syncTransparentHeader = (header) => {
-    if (header.dataset.transparentHeader !== 'true') return;
+  const syncResponsiveHeader = (header) => {
+    const isFloatingHeader = header.dataset.floatingHeader === 'true';
+    const isTransparentHeader = header.dataset.transparentHeader === 'true';
+    if (!isFloatingHeader && !isTransparentHeader) return;
 
     const sectionWrapper = header.parentElement;
     const origin = sectionWrapper
       ? sectionWrapper.getBoundingClientRect().top + window.scrollY
       : header.getBoundingClientRect().top + window.scrollY;
     const isScrolled = window.scrollY > origin + 1;
+    header.classList.toggle('header--scrolled', isScrolled);
+
+    if (!isTransparentHeader) return;
+
     const hasOpenMenu = Boolean(header.querySelector('details[open]'));
     const showSurface = isScrolled || hasOpenMenu;
-    header.classList.toggle('header--scrolled', isScrolled);
     header.classList.toggle('header--surface-visible', showSurface);
     setTransparentHeaderColorScheme(header, showSurface);
   };
 
-  const syncTransparentHeaders = () => {
+  const syncResponsiveHeaders = () => {
     transparentHeaderFrame = 0;
-    document.querySelectorAll('[data-transparent-header="true"]').forEach(syncTransparentHeader);
+    document.querySelectorAll('[data-transparent-header="true"], [data-floating-header="true"]').forEach(syncResponsiveHeader);
   };
 
-  const scheduleTransparentHeaderSync = () => {
+  const scheduleResponsiveHeaderSync = () => {
     if (transparentHeaderFrame) return;
-    transparentHeaderFrame = window.requestAnimationFrame(syncTransparentHeaders);
+    transparentHeaderFrame = window.requestAnimationFrame(syncResponsiveHeaders);
   };
 
-  const initializeTransparentHeaders = (scope = document) => {
-    scope.querySelectorAll?.('[data-transparent-header="true"]').forEach((header) => {
-      syncTransparentHeader(header);
+  const initializeResponsiveHeaders = (scope = document) => {
+    scope.querySelectorAll?.('[data-transparent-header="true"], [data-floating-header="true"]').forEach((header) => {
+      syncResponsiveHeader(header);
     });
   };
 
-  initializeTransparentHeaders();
-  window.addEventListener('scroll', scheduleTransparentHeaderSync, { passive: true });
-  window.addEventListener('resize', scheduleTransparentHeaderSync);
-  document.addEventListener('shopify:section:load', (event) => initializeTransparentHeaders(event.target));
+  initializeResponsiveHeaders();
+  window.addEventListener('scroll', scheduleResponsiveHeaderSync, { passive: true });
+  window.addEventListener('resize', scheduleResponsiveHeaderSync);
+  document.addEventListener('shopify:section:load', (event) => initializeResponsiveHeaders(event.target));
 
   const revealHeaderForCartFeedback = (duration = 2200) => {
     document.querySelectorAll('[data-header]').forEach((header) => {
@@ -70,7 +75,7 @@ if (!window.SpinelHeaderMenus) {
       const timer = window.setTimeout(() => {
         header.classList.remove('header--cart-feedback-visible');
         if (sectionWrapper) sectionWrapper.style.minHeight = previousMinHeight;
-        if (header.dataset.transparentHeader === 'true') syncTransparentHeader(header);
+        if (header.dataset.transparentHeader === 'true' || header.dataset.floatingHeader === 'true') syncResponsiveHeader(header);
         cartFeedbackHeaderStates.delete(header);
       }, duration);
       cartFeedbackHeaderStates.set(header, { timer, previousMinHeight });
@@ -216,7 +221,7 @@ if (!window.SpinelHeaderMenus) {
         if (toggle) toggle.setAttribute('aria-label', details.open ? details.dataset.closeLabel : details.dataset.openLabel);
       }
 
-      if (details.closest?.('[data-transparent-header="true"]')) scheduleTransparentHeaderSync();
+      if (details.closest?.('[data-transparent-header="true"], [data-floating-header="true"]')) scheduleResponsiveHeaderSync();
 
       if (!details.matches?.('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]')) return;
 

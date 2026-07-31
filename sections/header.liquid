@@ -13,13 +13,16 @@
   assign navigation_menu = section.settings.menu
   assign menu_links = navigation_menu.links
   assign header_color_scheme = section.settings.color_scheme
+  assign floating_header_enabled = false
   assign transparent_header_enabled = false
   assign has_menu = false
   assign has_mobile_utilities = false
   assign can_change_country = false
 
   if template.name == 'index'
-    if section.settings.enable_transparent_header
+    if section.settings.enable_floating_header
+      assign floating_header_enabled = true
+    elsif section.settings.enable_transparent_header
       assign transparent_header_enabled = true
     endif
   endif
@@ -50,11 +53,12 @@
 %}
 
 <header
-  class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega header--dropdown-plus color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}"
+  class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega header--dropdown-plus color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}"
   style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px;"
   data-sticky-behavior="{{ section.settings.sticky_behavior }}"
   data-mega-menu-animation="slide_down"
   data-mega-menu-animation-duration="250"
+  data-floating-header="{{ floating_header_enabled }}"
   data-transparent-header="{{ transparent_header_enabled }}"
   data-default-color-class="color-{{ section.settings.color_scheme.id }}"
   data-transparent-color-class="color-{{ section.settings.transparent_color_scheme.id }}"
@@ -508,6 +512,13 @@
         { "value": "center", "label": "Logo center" }
       ],
       "default": "center"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_floating_header",
+      "label": "Enable floating header",
+      "info": "Shows an inset, rounded header on the home page. It becomes full width after scrolling.",
+      "default": false
     },
     {
       "type": "select",
