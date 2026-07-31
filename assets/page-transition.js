@@ -1,10 +1,17 @@
 (() => {
   const transition = document.querySelector('[data-page-transition]');
+  const root = document.documentElement;
 
-  if (!transition || window.Shopify?.designMode) return;
+  if (
+    !transition ||
+    window.Shopify?.designMode ||
+    !root.classList.contains('page-transitions-fallback')
+  ) {
+    return;
+  }
 
   const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-  const transitionDuration = 220;
+  const transitionDuration = 180;
   let isNavigating = false;
 
   const show = () => {
@@ -21,6 +28,26 @@
   const revealAfterInitialPaint = () => {
     requestAnimationFrame(() => requestAnimationFrame(reveal));
   };
+
+  const waitForFadeOut = () =>
+    new Promise((resolve) => {
+      if (reducedMotion.matches) {
+        resolve();
+        return;
+      }
+
+      const finish = () => {
+        window.clearTimeout(timeout);
+        transition.removeEventListener('transitionend', handleTransitionEnd);
+        resolve();
+      };
+      const handleTransitionEnd = (event) => {
+        if (event.propertyName === 'opacity') finish();
+      };
+      const timeout = window.setTimeout(finish, transitionDuration + 80);
+
+      transition.addEventListener('transitionend', handleTransitionEnd);
+    });
 
   const isSamePageHashLink = (url) =>
     url.pathname === window.location.pathname &&
@@ -64,8 +91,7 @@
     isNavigating = true;
     show();
 
-    const delay = reducedMotion.matches ? 0 : transitionDuration;
-    window.setTimeout(() => window.location.assign(link.href), delay);
+    waitForFadeOut().then(() => window.location.assign(link.href));
   });
 
   window.addEventListener('pagehide', show);
