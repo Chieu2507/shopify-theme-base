@@ -7,7 +7,7 @@ if (!window.SpinelHeaderMenus) {
   let transparentHeaderFrame = 0;
 
   const syncHeaderMenuScrollLock = () => {
-    const isMobile = window.matchMedia('(max-width: 899px)').matches;
+    const isMobile = window.matchMedia('(max-width: 1099px)').matches;
     const shouldLock = isMobile
       ? Boolean(document.querySelector('.header__menu-disclosure[open]'))
       : Boolean(document.querySelector('.header__submenu-disclosure[open]'));
@@ -209,7 +209,7 @@ if (!window.SpinelHeaderMenus) {
       .catch(() => {});
   };
 
-  const supportsMegaMenuHover = () => window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches;
+  const supportsMegaMenuHover = () => window.matchMedia('(min-width: 1100px) and (hover: hover) and (pointer: fine)').matches;
   const shouldAnimateHeaderSubmenu = (details) => details.matches(
     '.header__submenu-disclosure, .header__submenu-nested-disclosure'
   );
@@ -325,7 +325,7 @@ if (!window.SpinelHeaderMenus) {
     const header = details.closest('[data-header]');
     const mobileDrawer = header?.querySelector('.header__menu-disclosure');
     details.open = true;
-    if (mobileDrawer && window.matchMedia('(max-width: 899px)').matches) mobileDrawer.open = true;
+    if (mobileDrawer && window.matchMedia('(max-width: 1099px)').matches) mobileDrawer.open = true;
   });
 
   const headerSearchReturnFocus = new WeakMap();

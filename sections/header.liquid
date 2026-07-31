@@ -20,9 +20,9 @@
   assign can_change_country = false
 
   if template.name == 'index'
-    if section.settings.enable_floating_header
+    if section.settings.header_style == 'floating'
       assign floating_header_enabled = true
-    elsif section.settings.enable_transparent_header
+    elsif section.settings.header_style == 'transparent'
       assign transparent_header_enabled = true
     endif
   endif
@@ -190,7 +190,7 @@
                               <article class="header__mega-promo">
                                 {% if mega_menu_block.settings.promotion_1_image != blank %}
                                   {% assign promotion_1_image_alt = mega_menu_block.settings.promotion_1_image.alt | default: mega_menu_block.settings.promotion_1_heading %}
-                                  {% render 'responsive-image', image: mega_menu_block.settings.promotion_1_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_1_image_alt %}
+                                  {% render 'responsive-image', image: mega_menu_block.settings.promotion_1_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 1100px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_1_image_alt %}
                                 {% else %}
                                   {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
                                 {% endif %}
@@ -205,7 +205,7 @@
                               <article class="header__mega-promo">
                                 {% if mega_menu_block.settings.promotion_2_image != blank %}
                                   {% assign promotion_2_image_alt = mega_menu_block.settings.promotion_2_image.alt | default: mega_menu_block.settings.promotion_2_heading %}
-                                  {% render 'responsive-image', image: mega_menu_block.settings.promotion_2_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_2_image_alt %}
+                                  {% render 'responsive-image', image: mega_menu_block.settings.promotion_2_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 1100px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_2_image_alt %}
                                 {% else %}
                                   {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
                                 {% endif %}
@@ -338,12 +338,12 @@
         <a href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
           {% if logo_image != blank %}
             <picture class="header__logo-image header__logo-image--dark">
-              {% if logo_image_mobile != blank %}<source media="(max-width: 899px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
-              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 899px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
+              {% if logo_image_mobile != blank %}<source media="(max-width: 1099px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
+              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 1099px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
             </picture>
             <picture class="header__logo-image header__logo-image--light">
-              {% if logo_image_mobile != blank %}<source media="(max-width: 899px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
-              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 899px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
+              {% if logo_image_mobile != blank %}<source media="(max-width: 1099px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
+              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 1099px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
             </picture>
           {% else %}
             <span class="header__logo-text">{{ shop.name | escape }}</span>
@@ -510,11 +510,15 @@
       "default": "center"
     },
     {
-      "type": "checkbox",
-      "id": "enable_floating_header",
-      "label": "Enable floating header",
-      "info": "Shows an inset, rounded header on the home page. It becomes full width after scrolling.",
-      "default": false
+      "type": "select",
+      "id": "header_style",
+      "label": "Header style",
+      "options": [
+        { "value": "none", "label": "None" },
+        { "value": "floating", "label": "Floating" },
+        { "value": "transparent", "label": "Transparent" }
+      ],
+      "default": "none"
     },
     {
       "type": "select",
@@ -531,13 +535,6 @@
         }
       ],
       "default": "none"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_transparent_header",
-      "label": "Enable transparent header",
-      "info": "Overlays the header on the first section. Use a first section with a strong image or video background.",
-      "default": false
     },
     { "type": "range", "id": "height_desktop", "min": 64, "max": 112, "step": 2, "unit": "px", "label": "Desktop height", "default": 84 },
     { "type": "range", "id": "height_mobile", "min": 52, "max": 84, "step": 2, "unit": "px", "label": "Mobile height", "default": 60 },
@@ -569,14 +566,15 @@
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "Color scheme",
-      "default": "scheme-1"
+      "default": "scheme-1",
+      "visible_if": "{{ section.settings.header_style != 'transparent' }}"
     },
     {
       "type": "color_scheme",
       "id": "transparent_color_scheme",
       "label": "Transparent header color scheme",
       "default": "scheme-3",
-      "visible_if": "{{ section.settings.enable_transparent_header }}"
+      "visible_if": "{{ section.settings.header_style == 'transparent' }}"
     }
   ],
   "blocks": [
