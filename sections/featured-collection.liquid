@@ -47,25 +47,19 @@
               {% for block in section.blocks %}
                 {% case block.type %}
                   {% when 'heading' %}
-                    {% render 'spinel-type-style',
-                      block: block,
-                      content: block.settings.heading,
-                      kind: 'heading',
-                      default_preset: 'h2',
-                      default_font: 'heading',
-                      class_name: 'featured-collection__heading-block',
-                      content_class: 'featured-collection__heading'
-                    %}
+                    {% if block.settings.heading != blank %}
+                      <div class="featured-collection__heading-block" {{ block.shopify_attributes }}>
+                        <{{ block.settings.heading_tag }} class="featured-collection__heading spinel-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}">
+                          {{ block.settings.heading | escape }}
+                        </{{ block.settings.heading_tag }}>
+                      </div>
+                    {% endif %}
                   {% when 'text' %}
-                    {% render 'spinel-type-style',
-                      block: block,
-                      content: block.settings.text,
-                      kind: 'text',
-                      default_preset: 'paragraph',
-                      default_font: 'body',
-                      class_name: 'featured-collection__text',
-                      content_class: 'featured-collection__text-content'
-                    %}
+                    {% if block.settings.text != blank %}
+                      <div class="featured-collection__text text-block text-block--{{ block.settings.text_size | default: 'medium' }} rte" {{ block.shopify_attributes }}>
+                        {{ block.settings.text }}
+                      </div>
+                    {% endif %}
                 {% endcase %}
               {% endfor %}
             </div>
@@ -299,14 +293,8 @@
       "id": "section_width",
       "label": "Section width",
       "options": [
-        {
-          "value": "full",
-          "label": "Full width"
-        },
-        {
-          "value": "page",
-          "label": "Page width"
-        }
+        { "value": "full", "label": "Full width" },
+        { "value": "page", "label": "Page width" }
       ],
       "default": "full"
     },
@@ -338,14 +326,8 @@
       "id": "columns_mobile",
       "label": "Mobile columns",
       "options": [
-        {
-          "value": "1",
-          "label": "1 column"
-        },
-        {
-          "value": "2",
-          "label": "2 columns"
-        }
+        { "value": "1", "label": "1 column" },
+        { "value": "2", "label": "2 columns" }
       ],
       "default": "1"
     },
@@ -397,723 +379,77 @@
   "blocks": [
     {
       "type": "heading",
-      "name": "Spinel heading",
+      "name": "Heading",
       "limit": 1,
       "settings": [
         {
-          "type": "richtext",
-          "id": "heading",
-          "label": "t:typography_blocks.heading_content",
-          "default": "<h2>A considered edit</h2>"
-        },
-        {
           "type": "header",
-          "content": "t:typography_blocks.typography"
+          "content": "Heading"
+        },
+        { "type": "text", "id": "heading", "label": "Heading", "default": "A considered edit" },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            { "value": "h1", "label": "XX-large" },
+            { "value": "h2", "label": "X-large" },
+            { "value": "h3", "label": "Large" },
+            { "value": "h4", "label": "Medium" },
+            { "value": "h5", "label": "Small" },
+            { "value": "h6", "label": "X-small" }
+          ],
+          "default": "h2"
         },
         {
           "type": "select",
-          "id": "type_preset",
-          "label": "t:typography_blocks.preset",
+          "id": "heading_tag",
+          "label": "HTML Tag",
           "options": [
-            {
-              "value": "default",
-              "label": "t:typography_options.default"
-            },
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.support_preset"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            },
-            {
-              "value": "custom",
-              "label": "t:typography_options.custom"
-            }
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" },
+            { "value": "h5", "label": "H5" },
+            { "value": "h6", "label": "H6" }
           ],
-          "default": "default",
-          "info": "t:typography_blocks.preset_info"
-        },
-        {
-          "type": "select",
-          "id": "font",
-          "label": "t:typography_blocks.font",
-          "options": [
-            {
-              "value": "body",
-              "label": "t:typography_options.body"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.support_role"
-            },
-            {
-              "value": "heading",
-              "label": "t:typography_options.heading"
-            },
-            {
-              "value": "accent",
-              "label": "t:typography_options.accent"
-            }
-          ],
-          "default": "heading",
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "select",
-          "id": "font_weight",
-          "label": "t:typography_blocks.font_weight",
-          "options": [
-            {
-              "value": "inherit",
-              "label": "t:typography_options.inherit"
-            },
-            {
-              "value": "400",
-              "label": "t:typography_options.regular"
-            },
-            {
-              "value": "500",
-              "label": "t:typography_options.medium"
-            },
-            {
-              "value": "600",
-              "label": "t:typography_options.semibold"
-            },
-            {
-              "value": "700",
-              "label": "t:typography_options.bold"
-            }
-          ],
-          "default": "inherit",
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "range",
-          "id": "font_size",
-          "label": "t:typography_blocks.font_size",
-          "min": 8,
-          "max": 108,
-          "step": 1,
-          "unit": "px",
-          "default": 15,
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "range",
-          "id": "font_size_mobile",
-          "label": "t:typography_blocks.font_size_mobile",
-          "min": 8,
-          "max": 108,
-          "step": 1,
-          "unit": "px",
-          "default": 15,
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "select",
-          "id": "line_height",
-          "label": "t:typography_blocks.line_height",
-          "options": [
-            {
-              "value": "tight",
-              "label": "t:typography_options.tight"
-            },
-            {
-              "value": "normal",
-              "label": "t:typography_options.normal"
-            },
-            {
-              "value": "loose",
-              "label": "t:typography_options.loose"
-            }
-          ],
-          "default": "normal",
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "select",
-          "id": "color",
-          "label": "t:typography_blocks.color",
-          "options": [
-            {
-              "value": "text",
-              "label": "t:typography_options.text"
-            },
-            {
-              "value": "subtext",
-              "label": "t:typography_options.subtext"
-            }
-          ],
-          "default": "text"
-        },
-        {
-          "type": "checkbox",
-          "id": "disable_line_break_mobile",
-          "label": "t:typography_blocks.disable_line_break_mobile",
-          "default": false
-        },
-        {
-          "type": "header",
-          "content": "t:typography_blocks.layout"
-        },
-        {
-          "type": "select",
-          "id": "width",
-          "label": "t:typography_blocks.width",
-          "options": [
-            {
-              "value": "fit-content",
-              "label": "t:typography_options.fit"
-            },
-            {
-              "value": "100%",
-              "label": "t:typography_options.fill"
-            }
-          ],
-          "default": "fit-content"
-        },
-        {
-          "type": "select",
-          "id": "width_mobile",
-          "label": "t:typography_blocks.width_mobile",
-          "options": [
-            {
-              "value": "fit-content",
-              "label": "t:typography_options.fit"
-            },
-            {
-              "value": "100%",
-              "label": "t:typography_options.fill"
-            }
-          ],
-          "default": "fit-content"
+          "default": "h2"
         },
         {
           "type": "text_alignment",
           "id": "alignment",
-          "label": "t:typography_blocks.alignment",
-          "default": "center",
-          "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
-        },
-        {
-          "type": "header",
-          "content": "t:typography_blocks.padding"
-        },
-        {
-          "type": "range",
-          "id": "padding_top",
-          "label": "t:typography_blocks.top",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_bottom",
-          "label": "t:typography_blocks.bottom",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_left",
-          "label": "t:typography_blocks.left",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_right",
-          "label": "t:typography_blocks.right",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "mobile_scale",
-          "label": "t:typography_blocks.mobile_scale",
-          "min": 20,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "default": 100
-        },
-        {
-          "type": "header",
-          "content": "t:typography_blocks.emphasis"
-        },
-        {
-          "type": "paragraph",
-          "content": "t:typography_blocks.highlight_info"
-        },
-        {
-          "type": "select",
-          "id": "highlight_style",
-          "label": "t:typography_blocks.highlight_style",
-          "options": [
-            {
-              "value": "none",
-              "label": "t:typography_options.none"
-            },
-            {
-              "value": "wavy",
-              "label": "t:typography_options.wavy_underline"
-            },
-            {
-              "value": "solid",
-              "label": "t:typography_options.solid_background"
-            }
-          ],
-          "default": "none"
-        },
-        {
-          "type": "header",
-          "content": "t:typography_blocks.animation"
-        },
-        {
-          "type": "select",
-          "id": "animation_type",
-          "label": "t:typography_blocks.type",
-          "options": [
-            {
-              "value": "none",
-              "label": "t:typography_options.none"
-            },
-            {
-              "value": "fade_in",
-              "label": "t:typography_options.fade_in"
-            },
-            {
-              "value": "fade_up",
-              "label": "t:typography_options.fade_up"
-            },
-            {
-              "value": "slide_in_left",
-              "label": "t:typography_options.slide_in_left"
-            },
-            {
-              "value": "slide_in_right",
-              "label": "t:typography_options.slide_in_right"
-            },
-            {
-              "value": "zoom_in",
-              "label": "t:typography_options.zoom_in"
-            },
-            {
-              "value": "zoom_out",
-              "label": "t:typography_options.zoom_out"
-            }
-          ],
-          "default": "none"
-        },
-        {
-          "type": "range",
-          "id": "animation_delay",
-          "label": "t:typography_blocks.animation_delay",
-          "min": 0,
-          "max": 1000,
-          "step": 50,
-          "unit": "ms",
-          "default": 0,
-          "visible_if": "{{ block.settings.animation_type != 'none' }}"
+          "label": "Alignment",
+          "default": "center"
         }
       ]
     },
     {
       "type": "text",
-      "name": "Spinel text",
+      "name": "Text",
       "limit": 1,
       "settings": [
         {
+          "type": "header",
+          "content": "Text"
+        },
+        {
           "type": "richtext",
           "id": "text",
-          "label": "t:typography_blocks.text_content",
+          "label": "Text",
           "default": "<p>Bring together the pieces that best express your latest collection.</p>"
         },
         {
-          "type": "header",
-          "content": "t:typography_blocks.typography"
-        },
-        {
           "type": "select",
-          "id": "type_preset",
-          "label": "t:typography_blocks.preset",
+          "id": "text_size",
+          "label": "Text size",
           "options": [
-            {
-              "value": "default",
-              "label": "t:typography_options.default"
-            },
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.support_preset"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            },
-            {
-              "value": "custom",
-              "label": "t:typography_options.custom"
-            }
+            { "value": "x-large", "label": "X-large" },
+            { "value": "large", "label": "Large" },
+            { "value": "medium", "label": "Medium" },
+            { "value": "small", "label": "Small" },
+            { "value": "x-small", "label": "X-small" }
           ],
-          "default": "default",
-          "info": "t:typography_blocks.preset_info"
-        },
-        {
-          "type": "select",
-          "id": "font",
-          "label": "t:typography_blocks.font",
-          "options": [
-            {
-              "value": "body",
-              "label": "t:typography_options.body"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.support_role"
-            },
-            {
-              "value": "heading",
-              "label": "t:typography_options.heading"
-            },
-            {
-              "value": "accent",
-              "label": "t:typography_options.accent"
-            }
-          ],
-          "default": "body",
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "select",
-          "id": "font_weight",
-          "label": "t:typography_blocks.font_weight",
-          "options": [
-            {
-              "value": "inherit",
-              "label": "t:typography_options.inherit"
-            },
-            {
-              "value": "400",
-              "label": "t:typography_options.regular"
-            },
-            {
-              "value": "500",
-              "label": "t:typography_options.medium"
-            },
-            {
-              "value": "600",
-              "label": "t:typography_options.semibold"
-            },
-            {
-              "value": "700",
-              "label": "t:typography_options.bold"
-            }
-          ],
-          "default": "inherit",
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "range",
-          "id": "font_size",
-          "label": "t:typography_blocks.font_size",
-          "min": 8,
-          "max": 108,
-          "step": 1,
-          "unit": "px",
-          "default": 15,
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "range",
-          "id": "font_size_mobile",
-          "label": "t:typography_blocks.font_size_mobile",
-          "min": 8,
-          "max": 108,
-          "step": 1,
-          "unit": "px",
-          "default": 15,
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "select",
-          "id": "line_height",
-          "label": "t:typography_blocks.line_height",
-          "options": [
-            {
-              "value": "tight",
-              "label": "t:typography_options.tight"
-            },
-            {
-              "value": "normal",
-              "label": "t:typography_options.normal"
-            },
-            {
-              "value": "loose",
-              "label": "t:typography_options.loose"
-            }
-          ],
-          "default": "normal",
-          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-        },
-        {
-          "type": "select",
-          "id": "color",
-          "label": "t:typography_blocks.color",
-          "options": [
-            {
-              "value": "text",
-              "label": "t:typography_options.text"
-            },
-            {
-              "value": "subtext",
-              "label": "t:typography_options.subtext"
-            }
-          ],
-          "default": "text"
-        },
-        {
-          "type": "checkbox",
-          "id": "disable_line_break_mobile",
-          "label": "t:typography_blocks.disable_line_break_mobile",
-          "default": false
-        },
-        {
-          "type": "header",
-          "content": "t:typography_blocks.layout"
-        },
-        {
-          "type": "select",
-          "id": "width",
-          "label": "t:typography_blocks.width",
-          "options": [
-            {
-              "value": "fit-content",
-              "label": "t:typography_options.fit"
-            },
-            {
-              "value": "100%",
-              "label": "t:typography_options.fill"
-            }
-          ],
-          "default": "fit-content"
-        },
-        {
-          "type": "select",
-          "id": "width_mobile",
-          "label": "t:typography_blocks.width_mobile",
-          "options": [
-            {
-              "value": "fit-content",
-              "label": "t:typography_options.fit"
-            },
-            {
-              "value": "100%",
-              "label": "t:typography_options.fill"
-            }
-          ],
-          "default": "fit-content"
-        },
-        {
-          "type": "text_alignment",
-          "id": "alignment",
-          "label": "t:typography_blocks.alignment",
-          "default": "left",
-          "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
-        },
-        {
-          "type": "header",
-          "content": "t:typography_blocks.padding"
-        },
-        {
-          "type": "range",
-          "id": "padding_top",
-          "label": "t:typography_blocks.top",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_bottom",
-          "label": "t:typography_blocks.bottom",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_left",
-          "label": "t:typography_blocks.left",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_right",
-          "label": "t:typography_blocks.right",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "mobile_scale",
-          "label": "t:typography_blocks.mobile_scale",
-          "min": 20,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "default": 100
-        },
-        {
-          "type": "header",
-          "content": "t:typography_blocks.emphasis"
-        },
-        {
-          "type": "paragraph",
-          "content": "t:typography_blocks.highlight_info"
-        },
-        {
-          "type": "select",
-          "id": "highlight_style",
-          "label": "t:typography_blocks.highlight_style",
-          "options": [
-            {
-              "value": "none",
-              "label": "t:typography_options.none"
-            },
-            {
-              "value": "wavy",
-              "label": "t:typography_options.wavy_underline"
-            },
-            {
-              "value": "solid",
-              "label": "t:typography_options.solid_background"
-            }
-          ],
-          "default": "none"
-        },
-        {
-          "type": "header",
-          "content": "t:typography_blocks.animation"
-        },
-        {
-          "type": "select",
-          "id": "animation_type",
-          "label": "t:typography_blocks.type",
-          "options": [
-            {
-              "value": "none",
-              "label": "t:typography_options.none"
-            },
-            {
-              "value": "fade_in",
-              "label": "t:typography_options.fade_in"
-            },
-            {
-              "value": "fade_up",
-              "label": "t:typography_options.fade_up"
-            },
-            {
-              "value": "slide_in_left",
-              "label": "t:typography_options.slide_in_left"
-            },
-            {
-              "value": "slide_in_right",
-              "label": "t:typography_options.slide_in_right"
-            },
-            {
-              "value": "zoom_in",
-              "label": "t:typography_options.zoom_in"
-            },
-            {
-              "value": "zoom_out",
-              "label": "t:typography_options.zoom_out"
-            }
-          ],
-          "default": "none"
-        },
-        {
-          "type": "range",
-          "id": "animation_delay",
-          "label": "t:typography_blocks.animation_delay",
-          "min": 0,
-          "max": 1000,
-          "step": 50,
-          "unit": "ms",
-          "default": 0,
-          "visible_if": "{{ block.settings.animation_type != 'none' }}"
+          "default": "medium"
         }
       ]
     },
@@ -1126,47 +462,23 @@
           "type": "header",
           "content": "Promotion"
         },
-        {
-          "type": "image_picker",
-          "id": "image",
-          "label": "Image"
-        },
-        {
-          "type": "text",
-          "id": "heading",
-          "label": "Heading",
-          "default": "For Effortless Glow"
-        },
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "heading", "label": "Heading", "default": "For Effortless Glow" },
         {
           "type": "richtext",
           "id": "text",
           "label": "Text",
           "default": "<p>Radiant, versatile designs for everyday moments.</p>"
         },
-        {
-          "type": "text",
-          "id": "button_label",
-          "label": "Button label",
-          "default": "Shop now"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "Link"
-        },
+        { "type": "text", "id": "button_label", "label": "Button label", "default": "Shop now" },
+        { "type": "url", "id": "link", "label": "Link" },
         {
           "type": "select",
           "id": "position",
           "label": "Position",
           "options": [
-            {
-              "value": "before",
-              "label": "Before"
-            },
-            {
-              "value": "after",
-              "label": "After"
-            }
+            { "value": "before", "label": "Before" },
+            { "value": "after", "label": "After" }
           ],
           "default": "before"
         },
@@ -1175,23 +487,12 @@
           "id": "media_ratio",
           "label": "Image ratio",
           "options": [
-            {
-              "value": "portrait",
-              "label": "Portrait"
-            },
-            {
-              "value": "adapt",
-              "label": "Adapt"
-            }
+            { "value": "portrait", "label": "Portrait" },
+            { "value": "adapt", "label": "Adapt" }
           ],
           "default": "portrait"
         },
-        {
-          "type": "text_alignment",
-          "id": "focal_point",
-          "label": "Image focal point",
-          "default": "center"
-        },
+        { "type": "text_alignment", "id": "focal_point", "label": "Image focal point", "default": "center" },
         {
           "type": "range",
           "id": "overlay_opacity",
@@ -1213,24 +514,14 @@
           "type": "header",
           "content": "Collection tab"
         },
-        {
-          "type": "text",
-          "id": "label",
-          "label": "Tab label"
-        },
+        { "type": "text", "id": "label", "label": "Tab label" },
         {
           "type": "select",
           "id": "source",
           "label": "Product source",
           "options": [
-            {
-              "value": "collection",
-              "label": "Collection"
-            },
-            {
-              "value": "recently_viewed",
-              "label": "Recently viewed"
-            }
+            { "value": "collection", "label": "Collection" },
+            { "value": "recently_viewed", "label": "Recently viewed" }
           ],
           "default": "collection"
         },
@@ -1247,57 +538,21 @@
       "name": "Featured collection",
       "category": "Product discovery",
       "blocks": [
-        {
-          "type": "collection_tab",
-          "settings": {
-            "label": "Featured"
-          }
-        },
-        {
-          "type": "collection_tab",
-          "settings": {
-            "label": "New in"
-          }
-        },
-        {
-          "type": "collection_tab",
-          "settings": {
-            "label": "Best sellers"
-          }
-        }
+        { "type": "collection_tab", "settings": { "label": "Featured" } },
+        { "type": "collection_tab", "settings": { "label": "New in" } },
+        { "type": "collection_tab", "settings": { "label": "Best sellers" } }
       ]
     },
     {
       "name": "Featured collection with promotion",
       "category": "Product discovery",
       "blocks": [
-        {
-          "type": "heading"
-        },
-        {
-          "type": "text"
-        },
-        {
-          "type": "promotion"
-        },
-        {
-          "type": "collection_tab",
-          "settings": {
-            "label": "Featured"
-          }
-        },
-        {
-          "type": "collection_tab",
-          "settings": {
-            "label": "New in"
-          }
-        },
-        {
-          "type": "collection_tab",
-          "settings": {
-            "label": "Best sellers"
-          }
-        }
+        { "type": "heading" },
+        { "type": "text" },
+        { "type": "promotion" },
+        { "type": "collection_tab", "settings": { "label": "Featured" } },
+        { "type": "collection_tab", "settings": { "label": "New in" } },
+        { "type": "collection_tab", "settings": { "label": "Best sellers" } }
       ]
     }
   ]
