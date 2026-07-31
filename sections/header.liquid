@@ -116,7 +116,15 @@
                 <details class="header__submenu-disclosure{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
                   <summary class="header__menu-link{% if link.child_active %} header__menu-link--active{% endif %}">
                     <span>{{ link.title | escape }}</span>
-                    <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                    <span class="header__dropdown-icon header__dropdown-icon--chevron header__desktop-submenu-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                    <button
+                      type="button"
+                      class="header__mobile-submenu-trigger"
+                      data-header-mobile-submenu-trigger
+                      aria-label="Open {{ link.title | escape }}"
+                    >
+                      <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
+                    </button>
                   </summary>
                   {% if mega_menu_block != nil %}
                     {% liquid
@@ -155,6 +163,10 @@
                     %}
                     <div class="header__mega-panel header__mega-panel--text-{{ mega_menu_block.settings.text_size | default: 'medium' }}" {{ mega_menu_block.shopify_attributes }}>
                       <div class="header__mega-surface">
+                        <button type="button" class="header__mobile-submenu-back" data-header-mobile-submenu-back>
+                          <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'arrow-left' %}</span>
+                          <span>{{ link.title | escape }}</span>
+                        </button>
                         <div class="header__mega-inner{% if promotion_count == 0 %} header__mega-inner--links-only{% endif %}">
                           {% if mega_menu_links != blank %}
                             <div class="header__mega-navigation">
@@ -229,6 +241,12 @@
                     </div>
                   {% else %}
                     <ul class="header__submenu" role="list">
+                      <li class="header__mobile-submenu-header">
+                        <button type="button" class="header__mobile-submenu-back" data-header-mobile-submenu-back>
+                          <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'arrow-left' %}</span>
+                          <span>{{ link.title | escape }}</span>
+                        </button>
+                      </li>
                       {% for child_link in link.links %}
                         <li{% if child_link.links != blank %} class="header__submenu-item--has-children"{% endif %}>
                           {% if child_link.links != blank %}
