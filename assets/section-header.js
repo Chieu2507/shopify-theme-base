@@ -124,19 +124,27 @@ if (!window.SpinelHeaderMenus) {
   const getMegaMenuAnimation = (details) => {
     const header = details.closest('[data-header]');
     const isMegaMenu = details.matches('.header__submenu-disclosure--mega');
+    const isTopLevelMenu = details.matches('.header__submenu-disclosure');
     const isDesktopMegaMenu = isMegaMenu && window.matchMedia('(min-width: 900px)').matches;
     const isNestedMenu = details.matches('.header__submenu-nested-disclosure');
     const panel = isDesktopMegaMenu
       ? details.querySelector('.header__mega-surface')
       : isMegaMenu
         ? details.querySelector('.header__mega-panel')
-      : isNestedMenu
-        ? details.querySelector(':scope > .header__submenu-nested')
-        : details.querySelector(':scope > .header__submenu');
-    const type = isNestedMenu ? 'slide_right' : isDesktopMegaMenu ? 'reveal_down' : isMegaMenu ? header?.dataset.megaMenuAnimation || 'slide_down' : 'slide_down';
+        : isNestedMenu
+          ? details.querySelector(':scope > .header__submenu-nested')
+          : details.querySelector(':scope > .header__submenu');
+    const type = isNestedMenu
+      ? 'slide_right'
+      : isDesktopMegaMenu
+        ? 'reveal_down'
+        : isTopLevelMenu
+          ? 'reveal_clip'
+          : 'slide_down';
     const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10);
-    const duration = isDesktopMegaMenu ? Math.max(configuredDuration, 320) : configuredDuration;
-    return { panel, type, duration };
+    const duration = isTopLevelMenu ? Math.max(configuredDuration, 480) : configuredDuration;
+    const delay = isTopLevelMenu ? 90 : 0;
+    return { panel, type, duration, delay };
   };
 
   const getMegaMenuFrames = (type, opening) => {
@@ -144,6 +152,11 @@ if (!window.SpinelHeaderMenus) {
 
     if (type === 'reveal_down') {
       frames = [{ translate: '0 -100%' }, { translate: '0 0' }];
+    } else if (type === 'reveal_clip') {
+      frames = [
+        { opacity: 1, clipPath: 'inset(0 0 100% 0)', translate: '0 -8px' },
+        { opacity: 1, clipPath: 'inset(0 0 0 0)', translate: '0 0' }
+      ];
     } else if (type === 'fade') {
       frames = [{ opacity: 0 }, { opacity: 1 }];
     } else if (type === 'scale') {
@@ -158,12 +171,13 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const animateMegaMenuOpen = (details) => {
-    const { panel, type, duration } = getMegaMenuAnimation(details);
+    const { panel, type, duration, delay } = getMegaMenuAnimation(details);
     if (!panel || type === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     megaMenuAnimations.get(details)?.cancel();
     const animation = panel.animate(getMegaMenuFrames(type, true), {
       duration,
+      delay,
       easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
       fill: 'both'
     });
