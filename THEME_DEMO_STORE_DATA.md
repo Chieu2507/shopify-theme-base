@@ -19,6 +19,17 @@ Tài liệu này là nguồn dữ liệu chuẩn cho nội dung demo store Spine
 | Store currency | USD hoặc currency của primary market | `VERIFY` | Không hardcode `USD` nếu demo hỗ trợ market khác. |
 | Active promotion | Spinel Summer Edit | `VERIFY` | Chỉ bật campaign sau khi discount và thời hạn được tạo thật trong demo store. |
 
+### Demo-only contact profile
+
+Các thông tin dưới đây là dữ liệu hư cấu dùng để minh họa bố cục theme, không phải địa chỉ hoặc số điện thoại vận hành của doanh nghiệp. Trước khi gửi Theme Store, hãy thay bằng thông tin có quyền sử dụng hoặc xóa block này nếu demo không có studio thật.
+
+| Trường | Giá trị demo | Trạng thái |
+| --- | --- | --- |
+| Studio name | Spinel Atelier | `DEMO_ONLY` |
+| Address | 14 Mercer Lane, Melbourne VIC 3000 AU | `DEMO_ONLY` |
+| Phone | +61 3 7018 4826 | `DEMO_ONLY` |
+| Opening hours | Tuesday–Saturday: 10:00–18:00 | `DEMO_ONLY` |
+
 ## Policy registry
 
 Đây là bộ policy canonical mà mọi preset, section, block, snippet và nội dung demo phải dùng. Một policy chỉ được hiển thị như một claim cụ thể sau khi trạng thái của nó chuyển từ `VERIFY` sang `APPROVED`.
