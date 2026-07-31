@@ -93,9 +93,10 @@ if (!window.SpinelHeaderMenus) {
 
   const getMegaMenuAnimation = (details) => {
     const header = details.closest('[data-header]');
-    const panel = details.querySelector('.header__mega-panel');
-    const type = header?.dataset.megaMenuAnimation || 'slide_down';
-    const duration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10);
+    const isMegaMenu = details.matches('.header__submenu-disclosure--mega');
+    const panel = isMegaMenu ? details.querySelector('.header__mega-panel') : details.querySelector(':scope > .header__submenu');
+    const type = isMegaMenu ? header?.dataset.megaMenuAnimation || 'slide_down' : 'slide_down';
+    const duration = isMegaMenu ? Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10) : 250;
     return { panel, type, duration };
   };
 
@@ -165,6 +166,10 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const supportsMegaMenuHover = () => window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches;
+  const shouldAnimateHeaderSubmenu = (details) => details.matches('.header__submenu-disclosure--mega') || (
+    details.matches('.header__submenu-disclosure:not(.header__submenu-disclosure--mega)') &&
+    window.matchMedia('(max-width: 899px)').matches
+  );
 
   const clearMegaMenuHoverTimer = (details) => {
     const timer = megaMenuHoverTimers.get(details);
@@ -205,14 +210,14 @@ if (!window.SpinelHeaderMenus) {
 
       const header = details.closest('[data-header]');
       header?.querySelectorAll('.header__submenu-disclosure[open]').forEach((menu) => {
-        if (menu !== details && menu.matches('.header__submenu-disclosure--mega')) {
+        if (menu !== details && shouldAnimateHeaderSubmenu(menu)) {
           closeMegaMenu(menu);
         } else if (menu !== details) {
           menu.open = false;
         }
       });
 
-      if (details.matches('.header__submenu-disclosure--mega')) animateMegaMenuOpen(details);
+      if (shouldAnimateHeaderSubmenu(details)) animateMegaMenuOpen(details);
     },
     true
   );
@@ -224,7 +229,7 @@ if (!window.SpinelHeaderMenus) {
       event.preventDefault();
       return;
     }
-    if (megaMenu?.matches('.header__submenu-disclosure--mega[open]')) {
+    if (megaMenu?.matches('.header__submenu-disclosure[open]') && shouldAnimateHeaderSubmenu(megaMenu)) {
       event.preventDefault();
       closeMegaMenu(megaMenu);
       return;
@@ -233,7 +238,7 @@ if (!window.SpinelHeaderMenus) {
     document.querySelectorAll('[data-header]').forEach((header) => {
       if (header.contains(event.target)) return;
       header.querySelectorAll('details[open]').forEach((details) => {
-        if (details.matches('.header__submenu-disclosure--mega')) {
+        if (details.matches('.header__submenu-disclosure') && shouldAnimateHeaderSubmenu(details)) {
           closeMegaMenu(details);
         } else {
           details.open = false;
@@ -245,7 +250,7 @@ if (!window.SpinelHeaderMenus) {
   document.addEventListener('keydown', (event) => {
     if (event.key !== 'Escape') return;
     document.querySelectorAll('[data-header] details[open]').forEach((details) => {
-      if (details.matches('.header__submenu-disclosure--mega')) {
+      if (details.matches('.header__submenu-disclosure') && shouldAnimateHeaderSubmenu(details)) {
         closeMegaMenu(details);
       } else {
         details.open = false;
