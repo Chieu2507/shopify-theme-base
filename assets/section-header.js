@@ -171,8 +171,8 @@ if (!window.SpinelHeaderMenus) {
       frames = [{ translate: '0 -100%' }, { translate: '0 0' }];
     } else if (type === 'reveal_clip') {
       frames = [
-        { opacity: 1, clipPath: 'inset(0 0 100% 0)', translate: '0 -8px' },
-        { opacity: 1, clipPath: 'inset(0 0 0 0)', translate: '0 0' }
+        { opacity: 1, clipPath: 'inset(0 0 100% 0)' },
+        { opacity: 1, clipPath: 'inset(0 0 0 0)' }
       ];
     } else if (type === 'fade') {
       frames = [{ opacity: 0 }, { opacity: 1 }];
