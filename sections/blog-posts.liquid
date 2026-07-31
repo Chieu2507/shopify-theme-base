@@ -5,7 +5,7 @@
   assign header_count = section.blocks | where: 'type', 'header' | size
 
   for block in section.blocks
-    if block.type == 'article' and block.settings.article != blank
+    if block.type == 'article'
       assign article_count = article_count | plus: 1
     endif
   endfor
@@ -50,12 +50,45 @@
             {% if block.type == 'article' %}
               {% liquid
                 assign card_article = block.settings.article
-                assign card_image = card_article.image
-                assign card_title = block.settings.title | default: card_article.title | default: 'Article title'
-                assign card_excerpt = block.settings.excerpt | default: card_article.excerpt_or_content | default: 'Discover thoughtful stories, insights, and inspiration from our journal.'
-                assign card_url = card_article.url
-                assign card_tag = card_article.tags | first | default: 'Journal'
-                assign card_alt = card_image.alt | default: card_title
+                assign card_image = blank
+                assign card_article_title = blank
+                assign card_article_excerpt = blank
+                assign card_article_url = blank
+                assign card_article_tag = blank
+                assign card_article_published_at = blank
+                assign card_article_author = blank
+
+                if card_article != blank
+                  assign card_image = card_article.image
+                  assign card_article_title = card_article.title
+                  assign card_article_excerpt = card_article.excerpt_or_content
+                  assign card_article_url = card_article.url
+                  assign card_article_tag = card_article.tags | first
+                  assign card_article_published_at = card_article.published_at
+                  assign card_article_author = card_article.author
+                endif
+
+                assign card_title = block.settings.title | default: card_article_title | default: 'Example article'
+                assign card_excerpt = blank
+                if block.settings.excerpt != blank
+                  assign card_excerpt = block.settings.excerpt
+                elsif card_article_excerpt != blank
+                  assign card_excerpt = card_article_excerpt
+                endif
+                assign card_url = card_article_url
+                assign card_link_label = block.settings.link_label
+                assign card_cta_url = card_url
+                if card_cta_url == blank and card_link_label != blank
+                  assign card_cta_url = '#'
+                endif
+                assign card_tag = blank
+                if card_article != blank
+                  assign card_tag = card_article_tag | default: 'Journal'
+                endif
+                assign card_alt = card_title
+                if card_image != blank
+                  assign card_alt = card_image.alt | default: card_title
+                endif
                 assign card_media_ratio = section.settings.media_ratio
 
                 assign show_card_tag = section.settings.show_tags
@@ -65,35 +98,37 @@
                 assign card_excerpt_words = section.settings.excerpt_words
 
                 assign card_heading_tag = section.settings.heading_tag | default: 'h3'
-                assign card_link_label = block.settings.link_label
               %}
 
-              {% if card_article != blank %}
-                <article
-                  class="blog-posts__card blog-posts__card--media-{{ section.settings.media_position }} blog-posts__card--mobile-media-{{ section.settings.mobile_media_position }} blog-posts__card--align-{{ section.settings.content_alignment }} blog-posts__card--vertical-{{ section.settings.vertical_alignment }}{% unless section.settings.show_image %} blog-posts__card--no-media{% endunless %}"
-                  style="--blog-posts-card-image-position: center center;"
-                  {{ block.shopify_attributes }}
-                >
+              <article
+                class="blog-posts__card blog-posts__card--media-{{ section.settings.media_position }} blog-posts__card--mobile-media-{{ section.settings.mobile_media_position }} blog-posts__card--align-{{ section.settings.content_alignment }} blog-posts__card--vertical-{{ section.settings.vertical_alignment }}{% unless section.settings.show_image %} blog-posts__card--no-media{% endunless %}"
+                style="--blog-posts-card-image-position: center center;"
+                {{ block.shopify_attributes }}
+              >
                   <div class="blog-posts__card-content">
                     <div class="blog-posts__card-copy">
-                      {% if show_card_tag and card_tag != blank %}
+                      {% if card_article != blank and show_card_tag and card_tag != blank %}
                         <p class="blog-posts__tag">{{ card_tag | escape }}</p>
                       {% endif %}
 
                       <{{ card_heading_tag }} class="blog-posts__card-title spinel-heading--{{ section.settings.title_size }} heading--{{ section.settings.title_size }}">
-                        <a href="{{ card_url }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ card_title | escape }}</a>
+                        {% if card_url != blank %}
+                          <a href="{{ card_url }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ card_title | escape }}</a>
+                        {% else %}
+                          {{ card_title | escape }}
+                        {% endif %}
                       </{{ card_heading_tag }}>
 
-                      {% if show_card_date or show_card_author %}
+                      {% if card_article != blank and show_card_date or card_article != blank and show_card_author %}
                         <p class="blog-posts__metadata">
                           {% if show_card_date %}
-                            {{ card_article.published_at | time_tag: format: 'date' }}
+                            {{ card_article_published_at | time_tag: format: 'date' }}
                           {% endif %}
                           {% if show_card_date and show_card_author %}
                             <span aria-hidden="true"> · </span>
                           {% endif %}
                           {% if show_card_author %}
-                            <span>{{ card_article.author | escape }}</span>
+                            <span>{{ card_article_author | escape }}</span>
                           {% endif %}
                         </p>
                       {% endif %}
@@ -107,7 +142,7 @@
 
                     {% render 'cta',
                       label: card_link_label,
-                      url: card_url,
+                      url: card_cta_url,
                       style: section.settings.link_style,
                       class: 'blog-posts__read-more',
                       open_in_new_tab: section.settings.open_in_new_tab
@@ -134,8 +169,7 @@
                       </a>
                     </div>
                   {% endif %}
-                </article>
-              {% endif %}
+              </article>
             {% endif %}
           {% endfor %}
         </div>
@@ -614,8 +648,7 @@
         {
           "type": "textarea",
           "id": "excerpt",
-          "label": "Excerpt",
-          "placeholder": "Discover thoughtful stories, insights, and inspiration from our journal."
+          "label": "Excerpt"
         },
         {
           "type": "text",
