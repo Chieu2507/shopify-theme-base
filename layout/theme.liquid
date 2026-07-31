@@ -5,7 +5,12 @@
 {% endif %}
 <html class="no-js" lang="{{ request.locale.iso_code }}">
   <head>
-    <script>document.documentElement.classList.remove('no-js');</script>
+    <script>
+      document.documentElement.classList.remove('no-js');
+      {% unless is_quick_view_template or request.design_mode %}
+        document.documentElement.classList.add('page-transitions-enabled');
+      {% endunless %}
+    </script>
 
     {% if settings.heading_font.system? == false and settings.heading_font != settings.body_font %}
       {{ settings.heading_font | font_url | preload_tag: as: 'font', crossorigin: 'anonymous' }}
@@ -50,6 +55,9 @@
     </script>
     <script src="{{ 'section-color-scheme.js' | asset_url }}" defer></script>
     <script src="{{ 'scroll-lock.js' | asset_url }}" defer></script>
+    {% unless is_quick_view_template or request.design_mode %}
+      <script src="{{ 'page-transition.js' | asset_url }}" defer></script>
+    {% endunless %}
     {% if settings.enable_motion and settings.enable_smooth_scroll and is_quick_view_template == false %}
       <script src="{{ 'smooth-scroll.js' | asset_url }}" defer></script>
     {% endif %}
@@ -68,6 +76,10 @@
   </head>
 
   <body class="template-{{ request.page_type | handle }}{% if is_quick_view_template %} template-quick-view{% endif %}{% if request.design_mode %} shopify-design-mode{% endif %}">
+    {% unless is_quick_view_template or request.design_mode %}
+      <div class="page-transition" data-page-transition aria-hidden="true"></div>
+    {% endunless %}
+
     {% unless is_quick_view_template %}
       <a class="skip-link" href="#MainContent">{{ 'accessibility.skip_to_content' | t }}</a>
       {% sections 'header-group' %}

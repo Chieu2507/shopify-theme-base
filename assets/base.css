@@ -11,6 +11,48 @@ body {
   min-height: 100svh;
 }
 
+.page-transition {
+  display: none;
+}
+
+.page-transitions-enabled .page-transition {
+  position: fixed;
+  z-index: 2147483000;
+  inset: 0;
+  display: block;
+  background: #000;
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 220ms cubic-bezier(.7, 0, .2, 1),
+    visibility 0s linear 0s;
+  will-change: opacity;
+}
+
+.page-transitions-enabled .page-transition.is-ready {
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 220ms cubic-bezier(.7, 0, .2, 1),
+    visibility 0s linear 220ms;
+}
+
+.page-transitions-enabled .page-transition.is-leaving {
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto;
+  transition-delay: 0s;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .page-transitions-enabled .page-transition,
+  .page-transitions-enabled .page-transition.is-ready {
+    transition: none;
+  }
+}
+
 @supports (content-visibility: auto) {
   body.template-index:not(.shopify-design-mode) main > .shopify-section:nth-child(n + 4):not(:has(.featured-product)) {
     content-visibility: auto;
