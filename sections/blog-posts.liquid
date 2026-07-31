@@ -14,7 +14,7 @@
 {% if article_count > 0 or header_count > 0 %}
   <section
     class="blog-posts color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
-    style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --blog-posts-card-gap: {{ section.settings.card_gap }}px;"
+    style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --blog-posts-column-gap: {{ section.settings.column_gap | default: section.settings.card_gap }}px;"
   >
     <div class="blog-posts__inner section-spacing">
       {% if header_count > 0 %}
@@ -50,59 +50,28 @@
             {% if block.type == 'article' %}
               {% liquid
                 assign card_article = block.settings.article
-                assign card_image = block.settings.image | default: card_article.image
-                assign card_title = block.settings.title | default: card_article.title
-                assign card_excerpt = block.settings.excerpt | default: card_article.excerpt_or_content
-                assign card_url = block.settings.link | default: card_article.url
-                assign card_tag = block.settings.tag
-                if card_tag == blank
-                  assign card_tag = card_article.tags | first
-                endif
-                assign card_alt = block.settings.image_alt | default: card_image.alt | default: card_title
-                assign card_media_ratio = block.settings.media_ratio
-                if card_media_ratio == 'inherit'
-                  assign card_media_ratio = section.settings.media_ratio
-                endif
-
-                assign card_excerpt_words = block.settings.excerpt_words
-                if card_excerpt_words == blank or card_excerpt_words == 0
-                  assign card_excerpt_words = section.settings.excerpt_words
-                endif
+                assign card_image = card_article.image
+                assign card_title = block.settings.title | default: card_article.title | default: 'Article title'
+                assign card_excerpt = block.settings.excerpt | default: card_article.excerpt_or_content | default: 'Discover thoughtful stories, insights, and inspiration from our journal.'
+                assign card_url = card_article.url
+                assign card_tag = card_article.tags | first | default: 'Journal'
+                assign card_alt = card_image.alt | default: card_title
+                assign card_media_ratio = section.settings.media_ratio
 
                 assign show_card_tag = section.settings.show_tags
-                if block.settings.tag_visibility == 'show'
-                  assign show_card_tag = true
-                elsif block.settings.tag_visibility == 'hide'
-                  assign show_card_tag = false
-                endif
-
                 assign show_card_date = section.settings.show_date
-                if block.settings.date_visibility == 'show'
-                  assign show_card_date = true
-                elsif block.settings.date_visibility == 'hide'
-                  assign show_card_date = false
-                endif
-
                 assign show_card_author = section.settings.show_author
-                if block.settings.author_visibility == 'show'
-                  assign show_card_author = true
-                elsif block.settings.author_visibility == 'hide'
-                  assign show_card_author = false
-                endif
-
                 assign show_card_excerpt = true
-                if block.settings.excerpt_visibility == 'hide'
-                  assign show_card_excerpt = false
-                endif
+                assign card_excerpt_words = section.settings.excerpt_words
 
-                assign card_heading_tag = block.settings.heading_tag | default: 'h3'
+                assign card_heading_tag = section.settings.heading_tag | default: 'h3'
                 assign card_link_label = block.settings.link_label
               %}
 
               {% if card_article != blank %}
                 <article
-                  class="blog-posts__card blog-posts__card--media-{{ block.settings.media_position }} blog-posts__card--mobile-media-{{ block.settings.mobile_media_position }} blog-posts__card--align-{{ block.settings.content_alignment }} blog-posts__card--vertical-{{ block.settings.vertical_alignment }}{% unless block.settings.show_image %} blog-posts__card--no-media{% endunless %}"
-                  style="--blog-posts-card-media-width: {{ block.settings.media_width }}%; --blog-posts-card-content-width: {{ block.settings.content_width }}px; --blog-posts-card-image-position: {{ block.settings.image_position }};"
+                  class="blog-posts__card blog-posts__card--media-{{ section.settings.media_position }} blog-posts__card--mobile-media-{{ section.settings.mobile_media_position }} blog-posts__card--align-{{ section.settings.content_alignment }} blog-posts__card--vertical-{{ section.settings.vertical_alignment }}{% unless section.settings.show_image %} blog-posts__card--no-media{% endunless %}"
+                  style="--blog-posts-card-image-position: center center;"
                   {{ block.shopify_attributes }}
                 >
                   <div class="blog-posts__card-content">
@@ -111,8 +80,8 @@
                         <p class="blog-posts__tag">{{ card_tag | escape }}</p>
                       {% endif %}
 
-                      <{{ card_heading_tag }} class="blog-posts__card-title spinel-heading--{{ block.settings.title_size }} heading--{{ block.settings.title_size }}">
-                        <a href="{{ card_url }}"{% if block.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ card_title | escape }}</a>
+                      <{{ card_heading_tag }} class="blog-posts__card-title spinel-heading--{{ section.settings.title_size }} heading--{{ section.settings.title_size }}">
+                        <a href="{{ card_url }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ card_title | escape }}</a>
                       </{{ card_heading_tag }}>
 
                       {% if show_card_date or show_card_author %}
@@ -130,7 +99,7 @@
                       {% endif %}
 
                       {% if show_card_excerpt and card_excerpt != blank %}
-                        <div class="blog-posts__excerpt blog-posts__excerpt--{{ block.settings.excerpt_size }} rte">
+                        <div class="blog-posts__excerpt blog-posts__excerpt--{{ section.settings.excerpt_size }} rte">
                           {{ card_excerpt | strip_html | truncatewords: card_excerpt_words | escape }}
                         </div>
                       {% endif %}
@@ -139,15 +108,15 @@
                     {% render 'cta',
                       label: card_link_label,
                       url: card_url,
-                      style: block.settings.link_style,
+                      style: section.settings.link_style,
                       class: 'blog-posts__read-more',
-                      open_in_new_tab: block.settings.open_in_new_tab
+                      open_in_new_tab: section.settings.open_in_new_tab
                     %}
                   </div>
 
-                  {% if block.settings.show_image %}
+                  {% if section.settings.show_image %}
                     <div class="blog-posts__media blog-posts__media--{{ card_media_ratio }}">
-                      <a class="blog-posts__media-link" href="{{ card_url }}" tabindex="-1" aria-hidden="true"{% if block.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
+                        <a class="blog-posts__media-link" href="{{ card_url }}" tabindex="-1" aria-hidden="true"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
                         {% if card_image != blank %}
                           {% render 'responsive-image',
                             image: card_image,
@@ -186,27 +155,63 @@
   "settings": [
     {
       "type": "header",
-      "content": "Article cards"
+      "content": "Article layout"
     },
     {
       "type": "select",
-      "id": "media_ratio",
-      "label": "Image ratio",
+      "id": "content_alignment",
+      "label": "Alignment",
       "options": [
         {
-          "value": "landscape",
-          "label": "Landscape"
+          "value": "left",
+          "label": "Left"
         },
         {
-          "value": "square",
-          "label": "Square"
+          "value": "center",
+          "label": "Center"
         },
         {
-          "value": "portrait",
-          "label": "Portrait"
+          "value": "right",
+          "label": "Right"
         }
       ],
-      "default": "landscape"
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "vertical_alignment",
+      "label": "Position",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "bottom",
+          "label": "Bottom"
+        }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "media_position",
+      "label": "Desktop image position",
+      "options": [
+        {
+          "value": "right",
+          "label": "Right"
+        },
+        {
+          "value": "left",
+          "label": "Left"
+        }
+      ],
+      "default": "right"
     },
     {
       "type": "checkbox",
@@ -236,14 +241,168 @@
       "default": 28
     },
     {
-      "type": "range",
-      "id": "card_gap",
-      "min": 16,
-      "max": 64,
-      "step": 2,
-      "unit": "px",
-      "label": "Card spacing",
-      "default": 36
+      "type": "header",
+      "content": "Mobile Article layout"
+    },
+    {
+      "type": "select",
+      "id": "mobile_media_position",
+      "label": "Mobile image position",
+      "options": [
+        {
+          "value": "top",
+          "label": "Top"
+        },
+        {
+          "value": "bottom",
+          "label": "Bottom"
+        }
+      ],
+      "default": "top"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "label": "Show image",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Articles content"
+    },
+    {
+      "type": "select",
+      "id": "title_size",
+      "label": "Heading size",
+      "options": [
+        {
+          "value": "h1",
+          "label": "XX-large"
+        },
+        {
+          "value": "h2",
+          "label": "X-large"
+        },
+        {
+          "value": "h3",
+          "label": "Large"
+        },
+        {
+          "value": "h4",
+          "label": "Medium"
+        },
+        {
+          "value": "h5",
+          "label": "Small"
+        },
+        {
+          "value": "h6",
+          "label": "X-small"
+        }
+      ],
+      "default": "h4"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Heading tag",
+      "options": [
+        {
+          "value": "h1",
+          "label": "H1"
+        },
+        {
+          "value": "h2",
+          "label": "H2"
+        },
+        {
+          "value": "h3",
+          "label": "H3"
+        },
+        {
+          "value": "h4",
+          "label": "H4"
+        },
+        {
+          "value": "h5",
+          "label": "H5"
+        },
+        {
+          "value": "h6",
+          "label": "H6"
+        }
+      ],
+      "default": "h3"
+    },
+    {
+      "type": "select",
+      "id": "excerpt_size",
+      "label": "Excerpt size",
+      "options": [
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "x-small",
+          "label": "X-small"
+        }
+      ],
+      "default": "small"
+    },
+    {
+      "type": "select",
+      "id": "media_ratio",
+      "label": "Image ratio",
+      "options": [
+        {
+          "value": "landscape",
+          "label": "Landscape"
+        },
+        {
+          "value": "square",
+          "label": "Square"
+        },
+        {
+          "value": "portrait",
+          "label": "Portrait"
+        }
+      ],
+      "default": "landscape"
+    },
+    {
+      "type": "select",
+      "id": "link_style",
+      "label": "Button style",
+      "options": [
+        {
+          "value": "text",
+          "label": "Text link"
+        },
+        {
+          "value": "primary",
+          "label": "Primary button"
+        },
+        {
+          "value": "secondary",
+          "label": "Secondary button"
+        }
+      ],
+      "default": "text"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "Open links in a new tab",
+      "default": false
     },
     {
       "type": "header",
@@ -264,6 +423,16 @@
         }
       ],
       "default": "full"
+    },
+    {
+      "type": "range",
+      "id": "column_gap",
+      "min": 16,
+      "max": 64,
+      "step": 2,
+      "unit": "px",
+      "label": "Column gap",
+      "default": 36
     },
     {
       "type": "header",
@@ -351,7 +520,7 @@
         {
           "type": "select",
           "id": "heading_tag",
-          "label": "HTML Tag",
+          "label": "Heading tag",
           "options": [
             {
               "value": "h1",
@@ -432,408 +601,27 @@
       "name": "Article",
       "settings": [
         {
-          "type": "header",
-          "content": "Article"
-        },
-        {
           "type": "article",
           "id": "article",
           "label": "Article"
         },
         {
-          "type": "header",
-          "content": "Content overrides"
-        },
-        {
-          "type": "text",
-          "id": "tag",
-          "label": "Tag override"
-        },
-        {
           "type": "text",
           "id": "title",
-          "label": "Title override"
+          "label": "Title",
+          "placeholder": "Article title"
         },
         {
           "type": "textarea",
           "id": "excerpt",
-          "label": "Excerpt override"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "Link override"
-        },
-        {
-          "type": "header",
-          "content": "Metadata and excerpt"
-        },
-        {
-          "type": "select",
-          "id": "tag_visibility",
-          "label": "Tag visibility",
-          "options": [
-            {
-              "value": "inherit",
-              "label": "Use section setting"
-            },
-            {
-              "value": "show",
-              "label": "Show"
-            },
-            {
-              "value": "hide",
-              "label": "Hide"
-            }
-          ],
-          "default": "inherit"
-        },
-        {
-          "type": "select",
-          "id": "date_visibility",
-          "label": "Date visibility",
-          "options": [
-            {
-              "value": "inherit",
-              "label": "Use section setting"
-            },
-            {
-              "value": "show",
-              "label": "Show"
-            },
-            {
-              "value": "hide",
-              "label": "Hide"
-            }
-          ],
-          "default": "inherit"
-        },
-        {
-          "type": "select",
-          "id": "author_visibility",
-          "label": "Author visibility",
-          "options": [
-            {
-              "value": "inherit",
-              "label": "Use section setting"
-            },
-            {
-              "value": "show",
-              "label": "Show"
-            },
-            {
-              "value": "hide",
-              "label": "Hide"
-            }
-          ],
-          "default": "inherit"
-        },
-        {
-          "type": "select",
-          "id": "excerpt_visibility",
-          "label": "Excerpt visibility",
-          "options": [
-            {
-              "value": "show",
-              "label": "Show"
-            },
-            {
-              "value": "hide",
-              "label": "Hide"
-            }
-          ],
-          "default": "show"
-        },
-        {
-          "type": "range",
-          "id": "excerpt_words",
-          "min": 0,
-          "max": 60,
-          "step": 1,
-          "label": "Excerpt length",
-          "default": 0
-        },
-        {
-          "type": "paragraph",
-          "content": "Set excerpt length to 0 to use the section setting."
-        },
-        {
-          "type": "header",
-          "content": "Typography and alignment"
-        },
-        {
-          "type": "select",
-          "id": "title_size",
-          "label": "Heading size",
-          "options": [
-            {
-              "value": "h1",
-              "label": "XX-large"
-            },
-            {
-              "value": "h2",
-              "label": "X-large"
-            },
-            {
-              "value": "h3",
-              "label": "Large"
-            },
-            {
-              "value": "h4",
-              "label": "Medium"
-            },
-            {
-              "value": "h5",
-              "label": "Small"
-            },
-            {
-              "value": "h6",
-              "label": "X-small"
-            }
-          ],
-          "default": "h4"
-        },
-        {
-          "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
-          "options": [
-            {
-              "value": "h1",
-              "label": "H1"
-            },
-            {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
-            }
-          ],
-          "default": "h3"
-        },
-        {
-          "type": "select",
-          "id": "excerpt_size",
-          "label": "Excerpt size",
-          "options": [
-            {
-              "value": "large",
-              "label": "Large"
-            },
-            {
-              "value": "medium",
-              "label": "Medium"
-            },
-            {
-              "value": "small",
-              "label": "Small"
-            },
-            {
-              "value": "x-small",
-              "label": "X-small"
-            }
-          ],
-          "default": "small"
-        },
-        {
-          "type": "text_alignment",
-          "id": "content_alignment",
-          "label": "Content alignment",
-          "default": "left"
-        },
-        {
-          "type": "select",
-          "id": "vertical_alignment",
-          "label": "Vertical alignment",
-          "options": [
-            {
-              "value": "top",
-              "label": "Top"
-            },
-            {
-              "value": "center",
-              "label": "Center"
-            },
-            {
-              "value": "bottom",
-              "label": "Bottom"
-            }
-          ],
-          "default": "center"
-        },
-        {
-          "type": "range",
-          "id": "content_width",
-          "min": 360,
-          "max": 760,
-          "step": 4,
-          "unit": "px",
-          "label": "Content width",
-          "default": 736
-        },
-        {
-          "type": "header",
-          "content": "Image"
-        },
-        {
-          "type": "checkbox",
-          "id": "show_image",
-          "label": "Show image",
-          "default": true
-        },
-        {
-          "type": "image_picker",
-          "id": "image",
-          "label": "Image override"
-        },
-        {
-          "type": "text",
-          "id": "image_alt",
-          "label": "Image alt text"
-        },
-        {
-          "type": "select",
-          "id": "media_ratio",
-          "label": "Image ratio",
-          "options": [
-            {
-              "value": "inherit",
-              "label": "Use section setting"
-            },
-            {
-              "value": "landscape",
-              "label": "Landscape"
-            },
-            {
-              "value": "square",
-              "label": "Square"
-            },
-            {
-              "value": "portrait",
-              "label": "Portrait"
-            }
-          ],
-          "default": "inherit"
-        },
-        {
-          "type": "select",
-          "id": "image_position",
-          "label": "Image focal point",
-          "options": [
-            {
-              "value": "center center",
-              "label": "Center"
-            },
-            {
-              "value": "center top",
-              "label": "Top"
-            },
-            {
-              "value": "center bottom",
-              "label": "Bottom"
-            },
-            {
-              "value": "left center",
-              "label": "Left"
-            },
-            {
-              "value": "right center",
-              "label": "Right"
-            }
-          ],
-          "default": "center center"
-        },
-        {
-          "type": "select",
-          "id": "media_position",
-          "label": "Desktop image position",
-          "options": [
-            {
-              "value": "right",
-              "label": "Right"
-            },
-            {
-              "value": "left",
-              "label": "Left"
-            }
-          ],
-          "default": "right"
-        },
-        {
-          "type": "select",
-          "id": "mobile_media_position",
-          "label": "Mobile image position",
-          "options": [
-            {
-              "value": "top",
-              "label": "Top"
-            },
-            {
-              "value": "bottom",
-              "label": "Bottom"
-            }
-          ],
-          "default": "top"
-        },
-        {
-          "type": "range",
-          "id": "media_width",
-          "min": 30,
-          "max": 50,
-          "step": 2,
-          "unit": "%",
-          "label": "Desktop image width",
-          "default": 40
-        },
-        {
-          "type": "header",
-          "content": "Link"
+          "label": "Excerpt",
+          "placeholder": "Discover thoughtful stories, insights, and inspiration from our journal."
         },
         {
           "type": "text",
           "id": "link_label",
-          "label": "Link label",
+          "label": "Button label",
           "default": "Read more"
-        },
-        {
-          "type": "select",
-          "id": "link_style",
-          "label": "Link style",
-          "options": [
-            {
-              "value": "text",
-              "label": "Text link"
-            },
-            {
-              "value": "primary",
-              "label": "Primary button"
-            },
-            {
-              "value": "secondary",
-              "label": "Secondary button"
-            }
-          ],
-          "default": "text"
-        },
-        {
-          "type": "checkbox",
-          "id": "open_in_new_tab",
-          "label": "Open link in a new tab",
-          "default": false
         }
       ]
     }
