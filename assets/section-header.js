@@ -150,7 +150,7 @@ if (!window.SpinelHeaderMenus) {
     const duration = isMobileAccordion
       ? 280
       : isDesktopCascadingMenu
-        ? 500
+        ? 650
         : configuredDuration;
     const delay = 0;
     const easing = isDesktopCascadingMenu ? headerMenuEasing : 'cubic-bezier(0.22, 1, 0.36, 1)';
