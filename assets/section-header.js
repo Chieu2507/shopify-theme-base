@@ -3,6 +3,7 @@ if (!window.SpinelHeaderMenus) {
   const megaMenuAnimations = new WeakMap();
   const megaMenuHoverTimers = new WeakMap();
   const cartFeedbackHeaderStates = new WeakMap();
+  const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   let transparentHeaderFrame = 0;
 
   const syncHeaderMenuScrollLock = () => {
@@ -138,16 +139,24 @@ if (!window.SpinelHeaderMenus) {
     const type = isMobileAccordion
       ? 'mobile_accordion'
       : isNestedMenu
-      ? 'slide_right'
+      ? 'cascading_flyout'
       : isDesktopMegaMenu
         ? 'reveal_down'
         : isTopLevelMenu
-          ? 'reveal_clip'
+          ? 'cascading_root'
           : 'slide_down';
     const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10);
-    const duration = isMobileAccordion ? 280 : isTopLevelMenu ? Math.max(configuredDuration, 480) : configuredDuration;
-    const delay = isMobileAccordion ? 0 : isTopLevelMenu ? 90 : 0;
-    return { panel, type, duration, delay };
+    const isDesktopCascadingMenu = !isMobileAccordion && !isMegaMenu && (isTopLevelMenu || isNestedMenu);
+    const duration = isMobileAccordion
+      ? 280
+      : isDesktopCascadingMenu
+        ? 350
+        : isTopLevelMenu
+          ? Math.max(configuredDuration, 480)
+          : configuredDuration;
+    const delay = 0;
+    const easing = isDesktopCascadingMenu ? headerMenuEasing : 'cubic-bezier(0.22, 1, 0.36, 1)';
+    return { panel, type, duration, delay, easing };
   };
 
   const getMegaMenuFrames = (type, opening, panel, currentHeightOverride) => {
@@ -169,11 +178,10 @@ if (!window.SpinelHeaderMenus) {
       return frames;
     } else if (type === 'reveal_down') {
       frames = [{ translate: '0 -100%' }, { translate: '0 0' }];
-    } else if (type === 'reveal_clip') {
-      frames = [
-        { opacity: 1, clipPath: 'inset(0 0 100% 0)' },
-        { opacity: 1, clipPath: 'inset(0 0 0 0)' }
-      ];
+    } else if (type === 'cascading_root') {
+      frames = [{ opacity: 0, translate: '0 -30px' }, { opacity: 1, translate: '0 0' }];
+    } else if (type === 'cascading_flyout') {
+      frames = [{ opacity: 0, translate: '0 20px' }, { opacity: 1, translate: '0 0' }];
     } else if (type === 'fade') {
       frames = [{ opacity: 0 }, { opacity: 1 }];
     } else if (type === 'scale') {
@@ -188,7 +196,7 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const animateMegaMenuOpen = (details) => {
-    const { panel, type, duration, delay } = getMegaMenuAnimation(details);
+    const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
     if (!panel || type === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
 
     const existingAnimation = megaMenuAnimations.get(details);
@@ -199,7 +207,7 @@ if (!window.SpinelHeaderMenus) {
     const animation = panel.animate(getMegaMenuFrames(type, true, panel, currentHeight), {
       duration,
       delay,
-      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      easing,
       fill: 'both'
     });
     megaMenuAnimations.set(details, animation);
@@ -215,7 +223,7 @@ if (!window.SpinelHeaderMenus) {
   const closeMegaMenu = (details, immediate = false) => {
     if (!details.open || details.dataset.closing === 'true') return;
 
-    const { panel, type, duration } = getMegaMenuAnimation(details);
+    const { panel, type, duration, easing } = getMegaMenuAnimation(details);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const currentHeight = type === 'mobile_accordion' ? panel?.getBoundingClientRect().height : undefined;
     megaMenuAnimations.get(details)?.cancel();
@@ -229,13 +237,15 @@ if (!window.SpinelHeaderMenus) {
     if (immediate || !panel || type === 'none' || reduceMotion) {
       megaMenuAnimations.delete(details);
       details.open = false;
+      syncHeaderDisclosureAria(details);
       return;
     }
 
     details.dataset.closing = 'true';
+    syncHeaderDisclosureAria(details);
     const animation = panel.animate(getMegaMenuFrames(type, false, panel, currentHeight), {
       duration,
-      easing: 'cubic-bezier(0.22, 1, 0.36, 1)',
+      easing,
       fill: 'both'
     });
     megaMenuAnimations.set(details, animation);
@@ -245,6 +255,7 @@ if (!window.SpinelHeaderMenus) {
         megaMenuAnimations.delete(details);
         delete details.dataset.closing;
         details.open = false;
+        syncHeaderDisclosureAria(details);
         animation.cancel();
       })
       .catch(() => {});
@@ -254,6 +265,16 @@ if (!window.SpinelHeaderMenus) {
   const shouldAnimateHeaderSubmenu = (details) => details.matches(
     '.header__submenu-disclosure, .header__submenu-nested-disclosure'
   );
+
+  const syncHeaderDisclosureAria = (details) => {
+    const summary = details.querySelector(':scope > summary[aria-controls]');
+    if (!summary) return;
+    summary.setAttribute('aria-expanded', String(details.open && details.dataset.closing !== 'true'));
+  };
+
+  const initializeHeaderDisclosures = (scope = document) => {
+    scope.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(syncHeaderDisclosureAria);
+  };
 
   const clearMegaMenuHoverTimer = (details) => {
     const timer = megaMenuHoverTimers.get(details);
@@ -277,6 +298,21 @@ if (!window.SpinelHeaderMenus) {
     details.style.setProperty('--header-submenu-top', `${Math.max(0, headerRect.bottom - detailsRect.top)}px`);
   };
 
+  const positionNestedHeaderSubmenu = (details) => {
+    if (!details.matches('.header__submenu-nested-disclosure') || window.matchMedia('(max-width: 899px)').matches) {
+      delete details.dataset.flyoutReverse;
+      return;
+    }
+
+    delete details.dataset.flyoutReverse;
+    const panel = details.querySelector(':scope > .header__submenu-nested');
+    if (!panel) return;
+    const panelRect = panel.getBoundingClientRect();
+    const isRtl = getComputedStyle(details).direction === 'rtl';
+    const overflowsInlineEnd = isRtl ? panelRect.left < 20 : panelRect.right > window.innerWidth - 20;
+    if (overflowsInlineEnd) details.dataset.flyoutReverse = 'true';
+  };
+
   const closeOtherHeaderSubmenus = (details) => {
     const header = details.closest('[data-header]');
     const openMenus = details.matches('.header__submenu-nested-disclosure')
@@ -296,6 +332,7 @@ if (!window.SpinelHeaderMenus) {
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
       delete details.dataset.closing;
+      syncHeaderDisclosureAria(details);
       animateMegaMenuOpen(details);
       return;
     }
@@ -309,6 +346,8 @@ if (!window.SpinelHeaderMenus) {
     }
     details.dataset.opening = 'true';
     details.open = true;
+    syncHeaderDisclosureAria(details);
+    positionNestedHeaderSubmenu(details);
     syncHeaderMenuScrollLock();
     if (responsiveHeader) {
       scheduleResponsiveHeaderSync();
@@ -318,10 +357,18 @@ if (!window.SpinelHeaderMenus) {
 
   window.addEventListener('resize', () => {
     document.querySelectorAll('.header__submenu-disclosure[open]').forEach(positionHeaderSubmenu);
+    document.querySelectorAll('.header__submenu-nested-disclosure[open]').forEach(positionNestedHeaderSubmenu);
   });
 
   document.addEventListener('pointerover', (event) => {
     if (!supportsMegaMenuHover()) return;
+    const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
+    if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
+      clearMegaMenuHoverTimer(nestedDetails);
+      megaMenuHoverTimers.set(nestedDetails, window.setTimeout(() => openHeaderSubmenu(nestedDetails), 120));
+      return;
+    }
+
     const details = event.target.closest?.('.header__submenu-disclosure--mega.header__submenu-disclosure--hover');
     if (!details || details.contains(event.relatedTarget)) return;
 
@@ -330,6 +377,13 @@ if (!window.SpinelHeaderMenus) {
 
   document.addEventListener('pointerout', (event) => {
     if (!supportsMegaMenuHover()) return;
+    const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
+    if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
+      clearMegaMenuHoverTimer(nestedDetails);
+      megaMenuHoverTimers.set(nestedDetails, window.setTimeout(() => closeMegaMenu(nestedDetails), 180));
+      return;
+    }
+
     const details = event.target.closest?.('.header__submenu-disclosure--mega.header__submenu-disclosure--hover');
     if (!details || details.contains(event.relatedTarget)) return;
 
@@ -343,11 +397,18 @@ if (!window.SpinelHeaderMenus) {
       const details = event.target;
       if (details.matches?.('.header__menu-disclosure')) {
         const toggle = details.querySelector(':scope > .header__menu-toggle');
-        if (toggle) toggle.setAttribute('aria-label', details.open ? details.dataset.closeLabel : details.dataset.openLabel);
+        if (toggle) {
+          toggle.setAttribute('aria-label', details.open ? details.dataset.closeLabel : details.dataset.openLabel);
+          toggle.setAttribute('aria-expanded', String(details.open));
+        }
       }
 
       if (details.matches?.('.header__menu-disclosure, .header__submenu-disclosure, .header__submenu-nested-disclosure')) {
         syncHeaderMenuScrollLock();
+      }
+
+      if (details.matches?.('.header__submenu-disclosure, .header__submenu-nested-disclosure')) {
+        syncHeaderDisclosureAria(details);
       }
 
       if (details.closest?.('[data-transparent-header="true"], [data-floating-header="true"]')) scheduleResponsiveHeaderSync();
@@ -355,6 +416,7 @@ if (!window.SpinelHeaderMenus) {
       if (!details.matches?.('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]')) return;
 
       positionHeaderSubmenu(details);
+      positionNestedHeaderSubmenu(details);
       closeOtherHeaderSubmenus(details);
 
       if (details.dataset.opening === 'true') {
@@ -394,7 +456,8 @@ if (!window.SpinelHeaderMenus) {
     }
 
     document.querySelectorAll('[data-header]').forEach((header) => {
-      if (header.contains(event.target)) return;
+      const activeDisclosure = event.target.closest?.('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]');
+      if (activeDisclosure?.closest('[data-header]') === header) return;
       header.querySelectorAll('details[open]').forEach((details) => {
         if (details.matches('.header__submenu-disclosure, .header__submenu-nested-disclosure') && shouldAnimateHeaderSubmenu(details)) {
           closeMegaMenu(details);
@@ -406,15 +469,40 @@ if (!window.SpinelHeaderMenus) {
   });
 
   document.addEventListener('keydown', (event) => {
+    const summary = event.target.closest?.('summary[aria-controls]');
+    const disclosure = summary?.parentElement;
+
+    if (event.key === 'ArrowRight' && disclosure?.matches('.header__submenu-nested-disclosure') && supportsMegaMenuHover()) {
+      event.preventDefault();
+      openHeaderSubmenu(disclosure);
+      window.requestAnimationFrame(() => disclosure.querySelector(':scope > .header__submenu-nested a')?.focus());
+      return;
+    }
+
+    if (event.key === 'ArrowLeft' && event.target.closest?.('.header__submenu-nested-disclosure[open]') && supportsMegaMenuHover()) {
+      event.preventDefault();
+      const nestedDisclosure = event.target.closest('.header__submenu-nested-disclosure');
+      closeMegaMenu(nestedDisclosure);
+      nestedDisclosure.querySelector(':scope > summary')?.focus();
+      return;
+    }
+
     if (event.key !== 'Escape') return;
+    const focusTargets = [];
     document.querySelectorAll('[data-header] details[open]').forEach((details) => {
+      if (details.matches('.header__submenu-disclosure')) focusTargets.push(details.querySelector(':scope > summary'));
+      if (details.matches('.header__menu-disclosure')) focusTargets.push(details.querySelector(':scope > summary'));
       if (details.matches('.header__submenu-disclosure, .header__submenu-nested-disclosure') && shouldAnimateHeaderSubmenu(details)) {
         closeMegaMenu(details);
       } else {
         details.open = false;
       }
     });
+    focusTargets.find(Boolean)?.focus();
   });
+
+  initializeHeaderDisclosures();
+  document.addEventListener('shopify:section:load', (event) => initializeHeaderDisclosures(event.target));
 
   document.addEventListener('click', (event) => {
     const option = event.target.closest?.('[data-header-country-option]');

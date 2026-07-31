@@ -73,7 +73,7 @@
   <div class="header__inner">
     {% if has_menu or has_mobile_utilities %}
       <details class="header__menu-disclosure" data-open-label="{{ 'header.open_menu' | t | escape }}" data-close-label="{{ 'header.close_menu' | t | escape }}">
-        <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}">
+        <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}" aria-expanded="false" aria-controls="HeaderNavigation-{{ section.id }}">
           <span class="header__menu-icon header__menu-icon--open header__burger-lines" aria-hidden="true">
             <span></span>
             <span></span>
@@ -83,7 +83,7 @@
         </summary>
       </details>
 
-      <nav class="header__navigation" aria-label="{{ 'header.primary_navigation' | t | escape }}">
+      <nav id="HeaderNavigation-{{ section.id }}" class="header__navigation" aria-label="{{ 'header.primary_navigation' | t | escape }}">
         <ul class="header__menu" role="list">
           {% for link in menu_links %}
             {% liquid
@@ -106,6 +106,8 @@
               endfor
 
               assign mega_menu_links = link.links
+              assign top_menu_index = forloop.index
+              assign submenu_id = 'HeaderSubmenu-' | append: section.id | append: '-' | append: top_menu_index
               assign has_submenu = false
               if link.links != blank or mega_menu_block != nil
                 assign has_submenu = true
@@ -114,7 +116,7 @@
             <li class="header__menu-item{% if has_submenu %} header__menu-item--has-children{% endif %}{% if mega_menu_block != nil and has_submenu %} header__menu-item--mega{% endif %}">
               {% if has_submenu %}
                 <details class="header__submenu-disclosure{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
-                  <summary class="header__menu-link{% if link.child_active %} header__menu-link--active{% endif %}">
+                  <summary class="header__menu-link{% if link.child_active %} header__menu-link--active{% endif %}" aria-expanded="false" aria-controls="{{ submenu_id }}">
                     <span>{{ link.title | escape }}</span>
                     <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
                   </summary>
@@ -153,7 +155,7 @@
                         assign promotion_count = promotion_count | plus: 1
                       endif
                     %}
-                    <div class="header__mega-panel header__mega-panel--text-{{ mega_menu_block.settings.text_size | default: 'medium' }}" {{ mega_menu_block.shopify_attributes }}>
+                    <div id="{{ submenu_id }}" class="header__mega-panel header__mega-panel--text-{{ mega_menu_block.settings.text_size | default: 'medium' }}" {{ mega_menu_block.shopify_attributes }}>
                       <div class="header__mega-surface">
                         <div class="header__mega-inner{% if promotion_count == 0 %} header__mega-inner--links-only{% endif %}">
                           {% if mega_menu_links != blank %}
@@ -228,16 +230,17 @@
                       </div>
                     </div>
                   {% else %}
-                    <ul class="header__submenu" role="list">
+                    <ul id="{{ submenu_id }}" class="header__submenu" role="list">
                       {% for child_link in link.links %}
                         <li{% if child_link.links != blank %} class="header__submenu-item--has-children"{% endif %}>
                           {% if child_link.links != blank %}
+                            {% assign nested_submenu_id = submenu_id | append: '-' | append: forloop.index %}
                             <details class="header__submenu-nested-disclosure">
-                              <summary class="header__submenu-link header__mega-category-title{% if child_link.current %} header__submenu-link--active{% endif %}">
+                              <summary class="header__submenu-link header__mega-category-title{% if child_link.current %} header__submenu-link--active{% endif %}" aria-expanded="false" aria-controls="{{ nested_submenu_id }}">
                                 <span class="header__submenu-link-text">{{ child_link.title | escape }}</span>
                                 <span class="header__submenu-caret header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
                               </summary>
-                              <ul class="header__submenu-nested" role="list">
+                              <ul id="{{ nested_submenu_id }}" class="header__submenu-nested" role="list">
                                 {% for grandchild_link in child_link.links %}<li><a class="header__submenu-link{% if grandchild_link.current %} header__submenu-link--active{% endif %}" href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></a></li>{% endfor %}
                               </ul>
                             </details>
