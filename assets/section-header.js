@@ -11,8 +11,13 @@ if (!window.SpinelHeaderMenus) {
     const shouldLock = isMobile
       ? Boolean(document.querySelector('.header__menu-disclosure[open]'))
       : Boolean(document.querySelector('.header__submenu-disclosure[open]'));
+    const shouldShowOverlay = isMobile
+      ? Boolean(document.querySelector('.header__menu-disclosure[open]'))
+      : Boolean(document.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])'));
     const root = document.documentElement;
     const isLocked = root.classList.contains('header-menu-scroll-locked');
+
+    root.classList.toggle('header-menu-overlay-visible', shouldShowOverlay);
 
     if (shouldLock && !isLocked) {
       const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
@@ -238,11 +243,13 @@ if (!window.SpinelHeaderMenus) {
       megaMenuAnimations.delete(details);
       details.open = false;
       syncHeaderDisclosureAria(details);
+      syncHeaderMenuScrollLock();
       return;
     }
 
     details.dataset.closing = 'true';
     syncHeaderDisclosureAria(details);
+    syncHeaderMenuScrollLock();
     const animation = panel.animate(getMegaMenuFrames(type, false, panel, currentHeight), {
       duration,
       easing,
@@ -256,6 +263,7 @@ if (!window.SpinelHeaderMenus) {
         delete details.dataset.closing;
         details.open = false;
         syncHeaderDisclosureAria(details);
+        syncHeaderMenuScrollLock();
         animation.cancel();
       })
       .catch(() => {});
@@ -333,6 +341,7 @@ if (!window.SpinelHeaderMenus) {
       if (details.dataset.closing !== 'true') return;
       delete details.dataset.closing;
       syncHeaderDisclosureAria(details);
+      syncHeaderMenuScrollLock();
       animateMegaMenuOpen(details);
       return;
     }
