@@ -6,6 +6,8 @@
   @param {string} kind - Either "heading" or "text".
   @param {string} default_preset - Fallback typography preset.
   @param {string} default_font - Fallback custom font role.
+  @param {string} [class_name] - Optional section-specific class on the block wrapper.
+  @param {string} [content_class] - Optional section-specific class on the content wrapper.
 
   @example
   {% render 'spinel-type-style',
@@ -217,7 +219,7 @@
 
 {% if content != blank %}
   <spinel-type-style
-    class="typography-block typography-block--{{ kind }} typography-block--preset-{{ preset }} typography-block--highlight-{{ highlight_style }}{% if block.settings.disable_line_break_mobile %} typography-block--disable-mobile-breaks{% endif %}"
+    class="typography-block typography-block--{{ kind }} typography-block--preset-{{ preset }} typography-block--highlight-{{ highlight_style }}{% if block.settings.disable_line_break_mobile %} typography-block--disable-mobile-breaks{% endif %}{% if class_name != blank %} {{ class_name }}{% endif %}"
     style="
       --typography-width: {{ width }};
       --typography-width-mobile: {{ width_mobile }};
@@ -247,7 +249,7 @@
     {{ block.shopify_attributes }}
   >
     {% if kind == 'heading' %}
-      <div class="typography-block__content content-heading content-heading--{{ alignment }}">
+      <div class="typography-block__content content-heading content-heading--{{ alignment }}{% if content_class != blank %} {{ content_class }}{% endif %}">
         {% if is_legacy_heading %}
           <{{ legacy_heading_tag }}>{{ rendered_content }}</{{ legacy_heading_tag }}>
         {% else %}
@@ -255,7 +257,7 @@
         {% endif %}
       </div>
     {% else %}
-      <div class="typography-block__content text-block content-text content-text--{{ alignment }} rte">
+      <div class="typography-block__content text-block content-text content-text--{{ alignment }} rte{% if content_class != blank %} {{ content_class }}{% endif %}">
         {{ rendered_content }}
       </div>
     {% endif %}
