@@ -21,6 +21,7 @@
 
   const reveal = () => {
     isNavigating = false;
+    root.classList.remove('page-transition-arriving');
     transition.classList.remove('is-leaving');
     transition.classList.add('is-ready');
   };
@@ -91,10 +92,16 @@
     isNavigating = true;
     show();
 
-    waitForFadeOut().then(() => window.location.assign(link.href));
+    waitForFadeOut().then(() => {
+      try {
+        sessionStorage.setItem('spinel-page-transition-destination', link.href);
+      } catch (error) {
+        // Storage can be unavailable in privacy-restricted browsing contexts.
+      }
+      window.location.assign(link.href);
+    });
   });
 
-  window.addEventListener('pagehide', show);
   window.addEventListener('pageshow', revealAfterInitialPaint);
 
   revealAfterInitialPaint();
