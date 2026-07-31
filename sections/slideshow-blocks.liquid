@@ -1,0 +1,632 @@
+{% render 'section-stylesheet', asset: 'section-slideshow-critical.css', inline_on_home: true %}
+
+{% liquid
+  assign slide_blocks = section.blocks | where: 'type', '_slideshow-slide'
+  assign first_slide = slide_blocks | first
+  assign first_slide_image = first_slide.settings.image | default: first_slide.settings.mobile_image
+  assign desktop_ratio = first_slide_image.aspect_ratio | default: 1.7778
+  assign mobile_ratio = first_slide.settings.mobile_image.aspect_ratio | default: desktop_ratio
+  assign slide_count = slide_blocks.size
+  assign is_double_slide = false
+  if section.settings.slideshow_style == 'double'
+    assign is_double_slide = true
+    if slide_count < 2
+      assign slide_count = 2
+    endif
+  endif
+  assign slide_total = slide_count
+  if is_double_slide
+    assign slide_total = slide_count | minus: 1
+  endif
+  assign has_multiple_slides = false
+  if slide_count > 1
+    assign has_multiple_slides = true
+  endif
+%}
+
+<spinel-slideshow
+  class="slideshow slideshow--blocks color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.enable_image_zoom %} slideshow--image-zoom{% endif %} slideshow--style-{{ section.settings.slideshow_style }} slideshow--height-desktop-{{ section.settings.height_desktop }} slideshow--height-mobile-{{ section.settings.height_mobile }}"
+  style="
+    --slideshow-gap: {{ section.settings.slide_gap }}px;
+    --slideshow-desktop-ratio: {{ desktop_ratio }};
+    --slideshow-mobile-ratio: {{ mobile_ratio }};
+    --slideshow-arrow-color: {{ section.settings.arrow_color }};
+    --slideshow-arrow-background: {{ section.settings.arrow_background }};
+    --slideshow-progress-color: {{ section.settings.progress_color }};
+    --slideshow-progress-track-color: {{ section.settings.progress_track_color }};
+  "
+  data-section-id="{{ section.id }}"
+  data-desktop-style="{{ section.settings.slideshow_style }}"
+  data-autoplay="{{ section.settings.autoplay }}"
+  data-autoplay-delay="{{ section.settings.autoplay_delay }}"
+  data-slide-gap="{{ section.settings.slide_gap }}"
+  data-deferred-module="{{ 'slideshow.js' | asset_url }}"
+>
+  <div class="slideshow__viewport swiper" data-slideshow-slider>
+    <div class="slideshow__wrapper swiper-wrapper">
+      {% content_for 'blocks' %}
+
+      {% if is_double_slide and slide_blocks.size < 2 %}
+        <article
+          class="slideshow__slide slideshow__slide--default swiper-slide color-scheme color-scheme-3 slideshow__slide--desktop-bottom-left slideshow__slide--mobile-bottom-left slideshow__slide--align-left"
+          style="
+            --slideshow-overlay-color: #000000;
+            --slideshow-overlay-opacity: 0.3;
+            --slideshow-content-width: 520px;
+          "
+          data-block-id="default-double-slide"
+        >
+          <div class="slideshow__media" data-swiper-parallax-x="100%">
+            {% render 'media-placeholder',
+              class_name: 'slideshow__placeholder',
+              asset_name: 'placeholder-image-default-2.svg',
+              loading: 'eager',
+              fetchpriority: 'auto'
+            %}
+          </div>
+
+          <div class="slideshow__overlay" aria-hidden="true"></div>
+
+          <div
+            class="slideshow__content-positioner"
+            data-swiper-parallax-x="30%"
+            data-swiper-parallax-opacity="0"
+            data-swiper-parallax-duration="1000"
+          >
+            <div class="slideshow__content">
+              <h2 class="slideshow__heading heading spinel-heading--h2 heading--h2">
+                Elegant Jewelry Pieces
+              </h2>
+
+              <div class="slideshow__description content-text spinel-text--medium content-text--medium rte">
+                <p>Discover jewelry designed to bring a refined finish to every day.</p>
+              </div>
+
+              <div class="slideshow__buttons">
+                {% render 'cta',
+                  label: 'Shop all',
+                  url: routes.all_products_collection_url,
+                  style: 'primary',
+                  class: 'slideshow__button slideshow__button--size-medium slideshow__button--hover-standard'
+                %}
+              </div>
+            </div>
+          </div>
+        </article>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if has_multiple_slides %}
+    <div class="slideshow__controls">
+      <div class="slideshow__progress-group">
+        <p class="slideshow__counter" aria-live="polite">
+          <span data-slideshow-current>1</span><span aria-hidden="true"> / </span><span data-slideshow-total>{{ slide_total }}</span>
+        </p>
+        <span
+          class="slideshow__progress"
+          role="progressbar"
+          aria-label="{{ 'slideshow.progress' | t | escape }}"
+          aria-valuemin="1"
+          aria-valuemax="{{ slide_total }}"
+          aria-valuenow="1"
+          data-slideshow-progress
+        ><span class="slideshow__progress-bar" data-slideshow-progress-bar></span></span>
+      </div>
+      <div class="slideshow__arrows">
+        <button
+          class="slideshow__arrow slideshow__arrow--previous"
+          type="button"
+          aria-label="{{ 'slideshow.previous' | t | escape }}"
+          data-slideshow-previous
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="M12.5 4.5 7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+        <button
+          class="slideshow__arrow slideshow__arrow--next"
+          type="button"
+          aria-label="{{ 'slideshow.next' | t | escape }}"
+          data-slideshow-next
+        >
+          <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+            <path d="m7.5 4.5 5.5 5.5-5.5 5.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </button>
+      </div>
+    </div>
+  {% endif %}
+</spinel-slideshow>
+
+{% stylesheet %}
+  .slideshow--blocks .slideshow__content-card {
+    width: 100%;
+  }
+
+  .slideshow--blocks .slideshow__content-card .typography-block--text {
+    max-width: 62ch;
+  }
+
+  .slideshow--blocks
+    .slideshow__content-card
+    .spinel-group--flow-horizontal
+    > .spinel-group__content {
+    flex-wrap: wrap;
+  }
+
+  .slideshow--blocks
+    .slideshow__content-card
+    .spinel-group--flow-horizontal
+    .content-button {
+    width: auto;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-left
+    .slideshow__content-card,
+  .slideshow--blocks
+    .slideshow__slide--align-left
+    .slideshow__content-card
+    .spinel-group {
+    --spinel-group-cross: flex-start !important;
+    --spinel-group-cross-mobile: flex-start !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-center
+    .slideshow__content-card,
+  .slideshow--blocks
+    .slideshow__slide--align-center
+    .slideshow__content-card
+    .spinel-group {
+    --spinel-group-cross: center !important;
+    --spinel-group-cross-mobile: center !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-right
+    .slideshow__content-card,
+  .slideshow--blocks
+    .slideshow__slide--align-right
+    .slideshow__content-card
+    .spinel-group {
+    --spinel-group-cross: flex-end !important;
+    --spinel-group-cross-mobile: flex-end !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-left
+    .slideshow__content-card
+    .spinel-group--flow-horizontal {
+    --spinel-group-main: flex-start !important;
+    --spinel-group-main-mobile: flex-start !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-center
+    .slideshow__content-card
+    .spinel-group--flow-horizontal {
+    --spinel-group-main: center !important;
+    --spinel-group-main-mobile: center !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-right
+    .slideshow__content-card
+    .spinel-group--flow-horizontal {
+    --spinel-group-main: flex-end !important;
+    --spinel-group-main-mobile: flex-end !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-left
+    .slideshow__content-card
+    .typography-block {
+    --typography-alignment: left !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-center
+    .slideshow__content-card
+    .typography-block {
+    --typography-alignment: center !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-right
+    .slideshow__content-card
+    .typography-block {
+    --typography-alignment: right !important;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-left
+    .slideshow__content-card
+    .content-button {
+    justify-content: flex-start;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-center
+    .slideshow__content-card
+    .content-button {
+    justify-content: center;
+  }
+
+  .slideshow--blocks
+    .slideshow__slide--align-right
+    .slideshow__content-card
+    .content-button {
+    justify-content: flex-end;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Slideshow · Blocks",
+  "tag": "section",
+  "class": "section-slideshow",
+  "max_blocks": 8,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "slideshow_style",
+      "label": "Slideshow style",
+      "options": [
+        { "value": "single", "label": "Single slide" },
+        { "value": "double", "label": "Double slide" }
+      ],
+      "default": "single"
+    },
+    {
+      "type": "select",
+      "id": "height_desktop",
+      "label": "Slide height desktop",
+      "options": [
+        { "value": "adapt", "label": "Adapt" },
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" },
+        { "value": "xlarge", "label": "X-large" },
+        { "value": "full", "label": "Full screen" }
+      ],
+      "default": "large"
+    },
+    {
+      "type": "select",
+      "id": "height_mobile",
+      "label": "Slide height mobile",
+      "options": [
+        { "value": "adapt", "label": "Adapt" },
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" },
+        { "value": "xlarge", "label": "X-large" },
+        { "value": "full", "label": "Full screen" }
+      ],
+      "default": "large"
+    },
+    {
+      "type": "checkbox",
+      "id": "autoplay",
+      "label": "Enable autoplay",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "autoplay_delay",
+      "min": 1,
+      "max": 10,
+      "step": 1,
+      "unit": "s",
+      "label": "Time between slides",
+      "default": 5
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_image_zoom",
+      "label": "Enable image zoom animation",
+      "info": "Inactive images are enlarged and smoothly return to their original size when active.",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "slide_gap",
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "label": "Slide gap",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "Arrow icon color"
+    },
+    {
+      "type": "color",
+      "id": "arrow_color",
+      "label": "Icon color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "arrow_background",
+      "label": "Background",
+      "default": "#000000"
+    },
+    {
+      "type": "header",
+      "content": "Slide progress"
+    },
+    {
+      "type": "color",
+      "id": "progress_color",
+      "label": "Text and progress color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "color",
+      "id": "progress_track_color",
+      "label": "Progress track color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "header",
+      "content": "Theme settings"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "page", "label": "Page width" },
+        { "value": "full", "label": "Full width" }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "_slideshow-slide"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Slideshow · Blocks",
+      "category": "Banners",
+      "blocks": [
+        {
+          "type": "_slideshow-slide",
+          "settings": {
+            "image_alt": "Designed for every day",
+            "content_width": 520,
+            "content_alignment": "left",
+            "content_position": "bottom-left",
+            "content_position_mobile": "bottom-left",
+            "color_scheme": "scheme-3",
+            "overlay_color": "#000000",
+            "overlay_opacity": 30
+          },
+          "blocks": [
+            {
+              "type": "group",
+              "id": "content_card",
+              "static": true,
+              "settings": {
+                "block_style": "group",
+                "flow": "vertical",
+                "stack_alignment": "flex-start",
+                "stack_distribution": "flex-start",
+                "gap": 24,
+                "phone_flow": "vertical",
+                "phone_alignment": "flex-start",
+                "phone_distribution": "flex-start",
+                "gap_mobile": 20,
+                "desktop_width": "stretch",
+                "phone_width": "stretch"
+              },
+              "blocks": [
+                {
+                  "type": "group",
+                  "settings": {
+                    "block_style": "group",
+                    "flow": "vertical",
+                    "stack_alignment": "flex-start",
+                    "stack_distribution": "flex-start",
+                    "gap": 12,
+                    "phone_flow": "vertical",
+                    "phone_alignment": "flex-start",
+                    "phone_distribution": "flex-start",
+                    "gap_mobile": 12,
+                    "desktop_width": "stretch",
+                    "phone_width": "stretch"
+                  },
+                  "blocks": [
+                    {
+                      "type": "heading",
+                      "settings": {
+                        "heading": "<h1>Designed for every day</h1>",
+                        "type_preset": "h2",
+                        "color": "text",
+                        "width": "100%",
+                        "width_mobile": "100%",
+                        "alignment": "left"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "settings": {
+                        "text": "<p>Discover pieces designed to bring a refined finish to every day.</p>",
+                        "type_preset": "custom",
+                        "font": "body",
+                        "font_weight": "inherit",
+                        "font_size": 14,
+                        "font_size_mobile": 14,
+                        "line_height": "normal",
+                        "color": "subtext",
+                        "width": "100%",
+                        "width_mobile": "100%",
+                        "alignment": "left"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "group",
+                  "settings": {
+                    "block_style": "group",
+                    "flow": "horizontal",
+                    "row_alignment": "center",
+                    "row_distribution": "flex-start",
+                    "gap": 12,
+                    "phone_flow": "horizontal",
+                    "phone_alignment": "center",
+                    "phone_distribution": "flex-start",
+                    "gap_mobile": 12,
+                    "desktop_width": "stretch",
+                    "phone_width": "stretch"
+                  },
+                  "blocks": [
+                    {
+                      "type": "button",
+                      "settings": {
+                        "label": "Shop all",
+                        "link": "/collections/all",
+                        "style": "primary",
+                        "alignment": "left"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "_slideshow-slide",
+          "settings": {
+            "image_alt": "Made for every moment",
+            "content_width": 520,
+            "content_alignment": "left",
+            "content_position": "bottom-left",
+            "content_position_mobile": "bottom-left",
+            "color_scheme": "scheme-3",
+            "overlay_color": "#000000",
+            "overlay_opacity": 30
+          },
+          "blocks": [
+            {
+              "type": "group",
+              "id": "content_card",
+              "static": true,
+              "settings": {
+                "block_style": "group",
+                "flow": "vertical",
+                "stack_alignment": "flex-start",
+                "stack_distribution": "flex-start",
+                "gap": 24,
+                "phone_flow": "vertical",
+                "phone_alignment": "flex-start",
+                "phone_distribution": "flex-start",
+                "gap_mobile": 20,
+                "desktop_width": "stretch",
+                "phone_width": "stretch"
+              },
+              "blocks": [
+                {
+                  "type": "group",
+                  "settings": {
+                    "block_style": "group",
+                    "flow": "vertical",
+                    "stack_alignment": "flex-start",
+                    "stack_distribution": "flex-start",
+                    "gap": 12,
+                    "phone_flow": "vertical",
+                    "phone_alignment": "flex-start",
+                    "phone_distribution": "flex-start",
+                    "gap_mobile": 12,
+                    "desktop_width": "stretch",
+                    "phone_width": "stretch"
+                  },
+                  "blocks": [
+                    {
+                      "type": "heading",
+                      "settings": {
+                        "heading": "<h2>Made for every moment</h2>",
+                        "type_preset": "h2",
+                        "color": "text",
+                        "width": "100%",
+                        "width_mobile": "100%",
+                        "alignment": "left"
+                      }
+                    },
+                    {
+                      "type": "text",
+                      "settings": {
+                        "text": "<p>Timeless forms, thoughtful details, and a finish made to be worn your way.</p>",
+                        "type_preset": "custom",
+                        "font": "body",
+                        "font_weight": "inherit",
+                        "font_size": 14,
+                        "font_size_mobile": 14,
+                        "line_height": "normal",
+                        "color": "subtext",
+                        "width": "100%",
+                        "width_mobile": "100%",
+                        "alignment": "left"
+                      }
+                    }
+                  ]
+                },
+                {
+                  "type": "group",
+                  "settings": {
+                    "block_style": "group",
+                    "flow": "horizontal",
+                    "row_alignment": "center",
+                    "row_distribution": "flex-start",
+                    "gap": 12,
+                    "phone_flow": "horizontal",
+                    "phone_alignment": "center",
+                    "phone_distribution": "flex-start",
+                    "gap_mobile": 12,
+                    "desktop_width": "stretch",
+                    "phone_width": "stretch"
+                  },
+                  "blocks": [
+                    {
+                      "type": "button",
+                      "settings": {
+                        "label": "Discover more",
+                        "link": "/collections/all",
+                        "style": "primary",
+                        "alignment": "left"
+                      }
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

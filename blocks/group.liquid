@@ -1,125 +1,773 @@
 {% doc %}
-  Renders a group of blocks with configurable layout direction, gap and
-  alignment.
+  Renders Spinel's nestable Card / Group block.
 
-  All settings apply to only one dimension to reduce configuration complexity.
+  The block can act as a transparent layout group or as a card surface. It
+  accepts Spinel Heading, Subheading, Text, Button, Media and nested Card /
+  Group blocks.
 
-  This component is a wrapper concerned only with rendering its children in
-  the specified layout direction with appropriate padding and alignment.
+  @param {string} [class_name] - Optional class supplied by a static parent.
 
   @example
-  {% content_for 'block', type: 'group', id: 'group' %}
+  {% content_for 'block', type: 'group', id: 'content_group' %}
 {% enddoc %}
 
+{% liquid
+  assign block_style = block.settings.block_style | default: 'group'
+  assign flow = block.settings.flow | default: 'vertical'
+  assign phone_flow = block.settings.phone_flow | default: 'vertical'
+  assign desktop_width = block.settings.desktop_width | default: 'stretch'
+  assign phone_width = block.settings.phone_width | default: 'stretch'
+
+  assign width_value = '100%'
+  if desktop_width == 'natural'
+    assign width_value = 'fit-content'
+  elsif desktop_width == 'constrained'
+    assign width_value = 'min(100%, ' | append: block.settings.max_width | append: 'px)'
+  endif
+
+  assign phone_width_value = '100%'
+  if phone_width == 'natural'
+    assign phone_width_value = 'fit-content'
+  endif
+
+  assign desktop_main = block.settings.stack_distribution | default: 'flex-start'
+  assign desktop_cross = block.settings.stack_alignment | default: 'flex-start'
+  if flow == 'horizontal'
+    assign desktop_main = block.settings.row_distribution | default: 'flex-start'
+    assign desktop_cross = block.settings.row_alignment | default: 'center'
+  endif
+
+  assign phone_main = block.settings.phone_distribution | default: 'flex-start'
+  assign phone_cross = block.settings.phone_alignment | default: 'flex-start'
+
+  assign corner_radius = 0
+  case block.settings.corner_treatment
+    when 'soft'
+      assign corner_radius = 12
+    when 'rounded'
+      assign corner_radius = 24
+  endcase
+
+  assign link_label = block.settings.link_label
+  if link_label == blank
+    assign link_label = 'content_group.open' | t
+  endif
+%}
+
 <div
-  class="group {{ block.settings.layout_direction }}"
+  class="
+    spinel-group
+    spinel-group--{{ block_style }}
+    spinel-group--flow-{{ flow }}
+    spinel-group--phone-{{ phone_flow }}
+    spinel-group--outline-{{ block.settings.outline | default: 'none' }}
+    spinel-group--elevation-{{ block.settings.elevation | default: 'none' }}
+    {% if block_style == 'card' %}color-scheme color-{{ block.settings.color_scheme.id }}{% endif %}
+    {{ class_name }}
+  "
   style="
-    --padding: {{ block.settings.padding }}px;
-    --alignment: {{ block.settings.alignment }};
+    --spinel-group-width: {{ width_value }};
+    --spinel-group-width-mobile: {{ phone_width_value }};
+    --spinel-group-min-height: {{ block.settings.min_height | default: 0 }}px;
+    --spinel-group-gap: {{ block.settings.gap | default: 16 }}px;
+    --spinel-group-gap-mobile: {{ block.settings.gap_mobile | default: 12 }}px;
+    --spinel-group-main: {{ desktop_main }};
+    --spinel-group-cross: {{ desktop_cross }};
+    --spinel-group-main-mobile: {{ phone_main }};
+    --spinel-group-cross-mobile: {{ phone_cross }};
+    --spinel-group-padding-block: {{ block.settings.padding_vertical | default: 0 }}px;
+    --spinel-group-padding-inline: {{ block.settings.padding_horizontal | default: 0 }}px;
+    --spinel-group-padding-block-mobile: {{ block.settings.padding_vertical_mobile | default: 0 }}px;
+    --spinel-group-padding-inline-mobile: {{ block.settings.padding_horizontal_mobile | default: 0 }}px;
+    --spinel-group-radius: {{ corner_radius }}px;
+    --spinel-group-image-position: {{ block.settings.image_position | default: 'center center' }};
+    --spinel-group-tint: {{ block.settings.tint_strength | default: 0 | divided_by: 100.0 }};
   "
   {{ block.shopify_attributes }}
 >
-  {% content_for 'blocks' %}
+  {% if block_style == 'card' and block.settings.background_image != blank %}
+    <div class="spinel-group__media" aria-hidden="true">
+      {% render 'responsive-image',
+        image: block.settings.background_image,
+        max_width: 2000,
+        widths: '320, 480, 750, 960, 1200, 1600, 2000',
+        sizes: '100vw',
+        class: 'spinel-group__media-element',
+        decorative: true
+      %}
+      {% if block.settings.tint_strength > 0 %}
+        <span class="spinel-group__tint"></span>
+      {% endif %}
+    </div>
+  {% endif %}
+
+  {% if block_style == 'card' and block.settings.link != blank %}
+    <a
+      class="spinel-group__link"
+      href="{{ block.settings.link }}"
+      aria-label="{{ link_label | escape }}"
+      {% if block.settings.open_in_new_tab %}
+        target="_blank"
+        rel="noopener"
+      {% endif %}
+    ></a>
+  {% endif %}
+
+  <div class="spinel-group__content">
+    {% content_for 'blocks' %}
+  </div>
 </div>
 
 {% stylesheet %}
-  .group {
-    display: flex;
-    flex-wrap: nowrap;
+  .spinel-group {
+    position: relative;
+    display: block;
+    width: var(--spinel-group-width);
+    max-width: 100%;
+    min-height: var(--spinel-group-min-height);
+    border-radius: var(--spinel-group-radius);
+    isolation: isolate;
+  }
+
+  .spinel-group--card {
+    background: var(--gradient-background, var(--color-background));
+    color: var(--color-text);
+  }
+
+  .spinel-group--outline-subtle {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentcolor 16%, transparent);
+  }
+
+  .spinel-group--outline-defined {
+    box-shadow: inset 0 0 0 1px color-mix(in srgb, currentcolor 42%, transparent);
+  }
+
+  .spinel-group--elevation-soft {
+    filter: drop-shadow(0 8px 18px rgb(0 0 0 / 8%));
+  }
+
+  .spinel-group--elevation-raised {
+    filter: drop-shadow(0 18px 42px rgb(0 0 0 / 14%));
+  }
+
+  .spinel-group__media,
+  .spinel-group__link {
+    position: absolute;
+    inset: 0;
+    border-radius: inherit;
+  }
+
+  .spinel-group__media {
+    z-index: -1;
+    overflow: hidden;
+  }
+
+  .spinel-group__media-element {
     width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: var(--spinel-group-image-position);
   }
 
-  .group--horizontal {
-    flex-direction: row;
-    justify-content: space-between;
-    align-items: center;
-    padding: 0 var(--padding);
+  .spinel-group__tint {
+    position: absolute;
+    inset: 0;
+    background: rgb(0 0 0 / var(--spinel-group-tint));
   }
 
-  .group--vertical {
+  .spinel-group__link {
+    z-index: 1;
+  }
+
+  .spinel-group__content {
+    position: relative;
+    display: flex;
+    min-height: inherit;
+    align-items: var(--spinel-group-cross);
     flex-direction: column;
-    align-items: var(--alignment);
-    padding: var(--padding) 0;
+    gap: var(--spinel-group-gap);
+    justify-content: var(--spinel-group-main);
+    padding-block: var(--spinel-group-padding-block);
+    padding-inline: var(--spinel-group-padding-inline);
+  }
+
+  .spinel-group--flow-horizontal .spinel-group__content {
+    flex-direction: row;
+  }
+
+  .spinel-group__link ~ .spinel-group__content {
+    pointer-events: none;
+  }
+
+  .spinel-group__link ~ .spinel-group__content :is(a, button, input, textarea, select, video) {
+    position: relative;
+    z-index: 2;
+    pointer-events: auto;
+  }
+
+  @media (max-width: 749px) {
+    .spinel-group {
+      width: var(--spinel-group-width-mobile);
+    }
+
+    .spinel-group__content {
+      align-items: var(--spinel-group-cross-mobile);
+      gap: var(--spinel-group-gap-mobile);
+      justify-content: var(--spinel-group-main-mobile);
+      padding-block: var(--spinel-group-padding-block-mobile);
+      padding-inline: var(--spinel-group-padding-inline-mobile);
+    }
+
+    .spinel-group--phone-vertical .spinel-group__content {
+      flex-direction: column;
+    }
+
+    .spinel-group--phone-horizontal .spinel-group__content {
+      flex-direction: row;
+    }
   }
 {% endstylesheet %}
 
 {% schema %}
 {
-  "name": "t:general.group",
+  "name": "t:content_group.name",
+  "tag": null,
   "blocks": [
     {
-      "type": "@theme"
+      "type": "group"
+    },
+    {
+      "type": "heading"
+    },
+    {
+      "type": "subheading"
+    },
+    {
+      "type": "text"
+    },
+    {
+      "type": "button"
+    },
+    {
+      "type": "media"
+    },
+    {
+      "type": "@app"
     }
   ],
   "settings": [
     {
-      "type": "header",
-      "content": "t:general.group"
-    },
-    {
       "type": "select",
-      "id": "layout_direction",
-      "label": "t:labels.layout_direction",
-      "default": "group--vertical",
+      "id": "block_style",
+      "label": "t:content_group.block_style",
       "options": [
         {
-          "value": "group--horizontal",
-          "label": "t:options.direction.horizontal"
+          "value": "group",
+          "label": "t:content_group.group"
         },
         {
-          "value": "group--vertical",
-          "label": "t:options.direction.vertical"
+          "value": "card",
+          "label": "t:content_group.card"
         }
-      ]
+      ],
+      "default": "group"
     },
     {
-      "visible_if": "{{ block.settings.layout_direction == 'group--vertical' }}",
+      "type": "header",
+      "content": "t:content_group.arrangement"
+    },
+    {
       "type": "select",
-      "id": "alignment",
-      "label": "t:labels.alignment",
-      "default": "flex-start",
+      "id": "flow",
+      "label": "t:content_group.direction",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "t:content_group.stack"
+        },
+        {
+          "value": "horizontal",
+          "label": "t:content_group.row"
+        }
+      ],
+      "default": "vertical"
+    },
+    {
+      "type": "select",
+      "id": "stack_alignment",
+      "label": "t:content_group.alignment",
       "options": [
         {
           "value": "flex-start",
-          "label": "t:options.alignment.left"
+          "label": "t:content_group.left"
         },
         {
           "value": "center",
-          "label": "t:options.alignment.center"
+          "label": "t:content_group.center"
         },
         {
           "value": "flex-end",
-          "label": "t:options.alignment.right"
+          "label": "t:content_group.right"
+        },
+        {
+          "value": "stretch",
+          "label": "t:content_group.stretch"
         }
-      ]
+      ],
+      "default": "flex-start",
+      "visible_if": "{{ block.settings.flow == 'vertical' }}"
+    },
+    {
+      "type": "select",
+      "id": "stack_distribution",
+      "label": "t:content_group.position",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "t:content_group.top"
+        },
+        {
+          "value": "center",
+          "label": "t:content_group.center"
+        },
+        {
+          "value": "flex-end",
+          "label": "t:content_group.bottom"
+        },
+        {
+          "value": "space-between",
+          "label": "t:content_group.space_between"
+        }
+      ],
+      "default": "flex-start",
+      "visible_if": "{{ block.settings.flow == 'vertical' }}"
+    },
+    {
+      "type": "select",
+      "id": "row_distribution",
+      "label": "t:content_group.distribution",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "t:content_group.left"
+        },
+        {
+          "value": "center",
+          "label": "t:content_group.center"
+        },
+        {
+          "value": "flex-end",
+          "label": "t:content_group.right"
+        },
+        {
+          "value": "space-between",
+          "label": "t:content_group.space_between"
+        }
+      ],
+      "default": "flex-start",
+      "visible_if": "{{ block.settings.flow == 'horizontal' }}"
+    },
+    {
+      "type": "select",
+      "id": "row_alignment",
+      "label": "t:content_group.position",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "t:content_group.top"
+        },
+        {
+          "value": "center",
+          "label": "t:content_group.center"
+        },
+        {
+          "value": "flex-end",
+          "label": "t:content_group.bottom"
+        },
+        {
+          "value": "stretch",
+          "label": "t:content_group.stretch"
+        }
+      ],
+      "default": "center",
+      "visible_if": "{{ block.settings.flow == 'horizontal' }}"
     },
     {
       "type": "range",
-      "id": "padding",
-      "label": "t:labels.padding",
-      "default": 0,
+      "id": "gap",
+      "label": "t:content_group.gap",
       "min": 0,
-      "max": 200,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "header",
+      "content": "t:content_group.phone_layout"
+    },
+    {
+      "type": "select",
+      "id": "phone_flow",
+      "label": "t:content_group.direction",
+      "options": [
+        {
+          "value": "vertical",
+          "label": "t:content_group.stack"
+        },
+        {
+          "value": "horizontal",
+          "label": "t:content_group.row"
+        }
+      ],
+      "default": "vertical"
+    },
+    {
+      "type": "select",
+      "id": "phone_alignment",
+      "label": "t:content_group.alignment",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "t:content_group.left"
+        },
+        {
+          "value": "center",
+          "label": "t:content_group.center"
+        },
+        {
+          "value": "flex-end",
+          "label": "t:content_group.right"
+        },
+        {
+          "value": "stretch",
+          "label": "t:content_group.stretch"
+        }
+      ],
+      "default": "flex-start"
+    },
+    {
+      "type": "select",
+      "id": "phone_distribution",
+      "label": "t:content_group.distribution",
+      "options": [
+        {
+          "value": "flex-start",
+          "label": "t:content_group.start"
+        },
+        {
+          "value": "center",
+          "label": "t:content_group.center"
+        },
+        {
+          "value": "flex-end",
+          "label": "t:content_group.end"
+        },
+        {
+          "value": "space-between",
+          "label": "t:content_group.space_between"
+        }
+      ],
+      "default": "flex-start"
+    },
+    {
+      "type": "range",
+      "id": "gap_mobile",
+      "label": "t:content_group.gap_mobile",
+      "min": 0,
+      "max": 80,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "t:content_group.inner_space"
+    },
+    {
+      "type": "range",
+      "id": "padding_vertical",
+      "label": "t:content_group.vertical_space",
+      "min": 0,
+      "max": 160,
       "step": 2,
-      "unit": "px"
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_horizontal",
+      "label": "t:content_group.horizontal_space",
+      "min": 0,
+      "max": 160,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_vertical_mobile",
+      "label": "t:content_group.vertical_space_mobile",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_horizontal_mobile",
+      "label": "t:content_group.horizontal_space_mobile",
+      "min": 0,
+      "max": 120,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "t:content_group.card_design",
+      "visible_if": "{{ block.settings.block_style == 'card' }}"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:content_group.color_scheme",
+      "default": "scheme-1",
+      "visible_if": "{{ block.settings.block_style == 'card' }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "t:content_group.background_image",
+      "visible_if": "{{ block.settings.block_style == 'card' }}"
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "t:content_group.image_position",
+      "options": [
+        {
+          "value": "center center",
+          "label": "t:content_group.center"
+        },
+        {
+          "value": "center top",
+          "label": "t:content_group.top"
+        },
+        {
+          "value": "center bottom",
+          "label": "t:content_group.bottom"
+        },
+        {
+          "value": "left center",
+          "label": "t:content_group.left"
+        },
+        {
+          "value": "right center",
+          "label": "t:content_group.right"
+        }
+      ],
+      "default": "center center",
+      "visible_if": "{{ block.settings.block_style == 'card' and block.settings.background_image != blank }}"
+    },
+    {
+      "type": "range",
+      "id": "tint_strength",
+      "label": "t:content_group.tint_strength",
+      "min": 0,
+      "max": 80,
+      "step": 5,
+      "unit": "%",
+      "default": 0,
+      "visible_if": "{{ block.settings.block_style == 'card' and block.settings.background_image != blank }}"
+    },
+    {
+      "type": "select",
+      "id": "outline",
+      "label": "t:content_group.outline",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:content_group.none"
+        },
+        {
+          "value": "subtle",
+          "label": "t:content_group.subtle"
+        },
+        {
+          "value": "defined",
+          "label": "t:content_group.defined"
+        }
+      ],
+      "default": "none",
+      "visible_if": "{{ block.settings.block_style == 'card' }}"
+    },
+    {
+      "type": "select",
+      "id": "corner_treatment",
+      "label": "t:content_group.corners",
+      "options": [
+        {
+          "value": "square",
+          "label": "t:content_group.square"
+        },
+        {
+          "value": "soft",
+          "label": "t:content_group.soft"
+        },
+        {
+          "value": "rounded",
+          "label": "t:content_group.rounded"
+        }
+      ],
+      "default": "square",
+      "visible_if": "{{ block.settings.block_style == 'card' }}"
+    },
+    {
+      "type": "select",
+      "id": "elevation",
+      "label": "t:content_group.elevation",
+      "options": [
+        {
+          "value": "none",
+          "label": "t:content_group.none"
+        },
+        {
+          "value": "soft",
+          "label": "t:content_group.soft"
+        },
+        {
+          "value": "raised",
+          "label": "t:content_group.raised"
+        }
+      ],
+      "default": "none",
+      "visible_if": "{{ block.settings.block_style == 'card' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:content_group.container_size"
+    },
+    {
+      "type": "select",
+      "id": "desktop_width",
+      "label": "t:content_group.width",
+      "options": [
+        {
+          "value": "natural",
+          "label": "t:content_group.natural"
+        },
+        {
+          "value": "stretch",
+          "label": "t:content_group.stretch"
+        },
+        {
+          "value": "constrained",
+          "label": "t:content_group.constrained"
+        }
+      ],
+      "default": "stretch"
+    },
+    {
+      "type": "range",
+      "id": "max_width",
+      "label": "t:content_group.maximum_width",
+      "min": 240,
+      "max": 1600,
+      "step": 20,
+      "unit": "px",
+      "default": 720,
+      "visible_if": "{{ block.settings.desktop_width == 'constrained' }}"
+    },
+    {
+      "type": "select",
+      "id": "phone_width",
+      "label": "t:content_group.width_mobile",
+      "options": [
+        {
+          "value": "natural",
+          "label": "t:content_group.natural"
+        },
+        {
+          "value": "stretch",
+          "label": "t:content_group.stretch"
+        }
+      ],
+      "default": "stretch"
+    },
+    {
+      "type": "range",
+      "id": "min_height",
+      "label": "t:content_group.minimum_height",
+      "min": 0,
+      "max": 800,
+      "step": 10,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "header",
+      "content": "t:content_group.card_action",
+      "visible_if": "{{ block.settings.block_style == 'card' }}"
+    },
+    {
+      "type": "url",
+      "id": "link",
+      "label": "t:content_group.link",
+      "visible_if": "{{ block.settings.block_style == 'card' }}"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "t:content_group.link_label",
+      "default": "Open content",
+      "visible_if": "{{ block.settings.block_style == 'card' and block.settings.link != blank }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "t:content_group.open_in_new_tab",
+      "default": false,
+      "visible_if": "{{ block.settings.block_style == 'card' and block.settings.link != blank }}"
     }
   ],
   "presets": [
     {
-      "name": "t:general.column",
-      "category": "t:general.layout",
+      "name": "t:content_group.stack_preset",
+      "category": "t:content_group.category",
       "settings": {
-        "layout_direction": "group--vertical",
-        "alignment": "flex-start",
-        "padding": 0
+        "block_style": "group",
+        "flow": "vertical",
+        "gap": 16,
+        "phone_flow": "vertical",
+        "gap_mobile": 12
       }
     },
     {
-      "name": "t:general.row",
-      "category": "t:general.layout",
+      "name": "t:content_group.row_preset",
+      "category": "t:content_group.category",
       "settings": {
-        "layout_direction": "group--horizontal",
-        "padding": 0
+        "block_style": "group",
+        "flow": "horizontal",
+        "row_distribution": "space-between",
+        "row_alignment": "center",
+        "phone_flow": "vertical"
+      }
+    },
+    {
+      "name": "t:content_group.card_preset",
+      "category": "t:content_group.category",
+      "settings": {
+        "block_style": "card",
+        "flow": "vertical",
+        "gap": 16,
+        "padding_vertical": 24,
+        "padding_horizontal": 24,
+        "padding_vertical_mobile": 20,
+        "padding_horizontal_mobile": 20,
+        "corner_treatment": "soft",
+        "elevation": "soft"
       }
     }
   ]

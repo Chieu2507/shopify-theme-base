@@ -1,0 +1,307 @@
+{% doc %}
+  Renders one article card inside the theme-block blog posts section.
+{% enddoc %}
+
+{% liquid
+  assign card_article = block.settings.article
+  assign card_image = blank
+  assign card_article_title = blank
+  assign card_article_excerpt = blank
+  assign card_article_url = blank
+  assign card_article_tag = blank
+  assign card_article_published_at = blank
+  assign card_article_author = blank
+
+  if card_article != blank
+    assign card_image = card_article.image
+    assign card_article_title = card_article.title
+    assign card_article_excerpt = card_article.excerpt_or_content
+    assign card_article_url = card_article.url
+    assign card_article_tag = card_article.tags | first
+    assign card_article_published_at = card_article.published_at
+    assign card_article_author = card_article.author
+  endif
+
+  assign card_title = block.settings.title | default: card_article_title | default: 'Example article'
+  assign card_excerpt = blank
+  if block.settings.excerpt != blank
+    assign card_excerpt = block.settings.excerpt
+  elsif card_article_excerpt != blank
+    assign card_excerpt = card_article_excerpt
+  endif
+
+  assign card_url = card_article_url
+  assign card_cta_url = card_url
+  if card_cta_url == blank and block.settings.link_label != blank
+    assign card_cta_url = '#'
+  endif
+
+  assign card_tag = blank
+  if card_article != blank
+    assign card_tag = card_article_tag | default: 'Journal'
+  endif
+
+  assign card_alt = card_title
+  if card_image != blank
+    assign card_alt = card_image.alt | default: card_title
+  endif
+%}
+
+<article
+  class="blog-posts__card blog-posts__card--media-{{ block.settings.media_position }} blog-posts__card--mobile-media-{{ block.settings.mobile_media_position }} blog-posts__card--align-{{ block.settings.content_alignment }} blog-posts__card--vertical-{{ block.settings.vertical_alignment }}{% unless block.settings.show_image %} blog-posts__card--no-media{% endunless %}"
+  style="--blog-posts-card-image-position: center center;"
+  {{ block.shopify_attributes }}
+>
+  <div class="blog-posts__card-content">
+    <div class="blog-posts__card-copy">
+      {% if card_article != blank and block.settings.show_tags and card_tag != blank %}
+        <p class="blog-posts__tag">{{ card_tag | escape }}</p>
+      {% endif %}
+
+      <{{ block.settings.heading_tag }} class="blog-posts__card-title spinel-heading--{{ block.settings.title_size }} heading--{{ block.settings.title_size }}">
+        {% if card_url != blank %}
+          <a href="{{ card_url }}"{% if block.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
+            {{ card_title | escape }}
+          </a>
+        {% else %}
+          {{ card_title | escape }}
+        {% endif %}
+      </{{ block.settings.heading_tag }}>
+
+      {% if card_article != blank and block.settings.show_date or card_article != blank and block.settings.show_author %}
+        <p class="blog-posts__metadata">
+          {% if block.settings.show_date %}
+            {{ card_article_published_at | time_tag: format: 'date' }}
+          {% endif %}
+          {% if block.settings.show_date and block.settings.show_author %}
+            <span aria-hidden="true"> · </span>
+          {% endif %}
+          {% if block.settings.show_author %}
+            <span>{{ card_article_author | escape }}</span>
+          {% endif %}
+        </p>
+      {% endif %}
+
+      {% if card_excerpt != blank %}
+        <div class="blog-posts__excerpt blog-posts__excerpt--{{ block.settings.excerpt_size }} rte">
+          {{ card_excerpt | strip_html | truncatewords: block.settings.excerpt_words | escape }}
+        </div>
+      {% endif %}
+    </div>
+
+    {% render 'cta',
+      label: block.settings.link_label,
+      url: card_cta_url,
+      style: block.settings.link_style,
+      class: 'blog-posts__read-more',
+      open_in_new_tab: block.settings.open_in_new_tab
+    %}
+  </div>
+
+  {% if block.settings.show_image %}
+    <div class="blog-posts__media blog-posts__media--{{ block.settings.media_ratio }}">
+      <a class="blog-posts__media-link" href="{{ card_url }}" tabindex="-1" aria-hidden="true"{% if block.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
+        {% if card_image != blank %}
+          {% render 'responsive-image',
+            image: card_image,
+            max_width: 1200,
+            widths: '360, 480, 640, 800, 1000, 1200',
+            sizes: '(min-width: 990px) 34vw, (min-width: 750px) 42vw, calc(100vw - 32px)',
+            class: 'blog-posts__image media-cover',
+            loading: 'lazy',
+            alt: card_alt,
+            style: 'object-position: var(--blog-posts-card-image-position);'
+          %}
+        {% else %}
+          {% render 'media-placeholder', class_name: 'blog-posts__image media-cover', asset_name: 'placeholder-image-default-1.svg' %}
+        {% endif %}
+      </a>
+    </div>
+  {% endif %}
+</article>
+
+{% schema %}
+{
+  "name": "Article card",
+  "tag": null,
+  "settings": [
+    {
+      "type": "article",
+      "id": "article",
+      "label": "Article"
+    },
+    {
+      "type": "text",
+      "id": "title",
+      "label": "Custom title",
+      "placeholder": "Article title"
+    },
+    {
+      "type": "textarea",
+      "id": "excerpt",
+      "label": "Custom excerpt"
+    },
+    {
+      "type": "text",
+      "id": "link_label",
+      "label": "Button label",
+      "default": "Read more"
+    },
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_tags",
+      "label": "Show tags",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_date",
+      "label": "Show date",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_author",
+      "label": "Show author",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "excerpt_words",
+      "min": 10,
+      "max": 50,
+      "step": 1,
+      "label": "Excerpt length",
+      "default": 28
+    },
+    {
+      "type": "select",
+      "id": "title_size",
+      "label": "Heading size",
+      "options": [
+        { "value": "h1", "label": "XX-large" },
+        { "value": "h2", "label": "X-large" },
+        { "value": "h3", "label": "Large" },
+        { "value": "h4", "label": "Medium" },
+        { "value": "h5", "label": "Small" },
+        { "value": "h6", "label": "X-small" }
+      ],
+      "default": "h4"
+    },
+    {
+      "type": "select",
+      "id": "heading_tag",
+      "label": "Heading tag",
+      "options": [
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" }
+      ],
+      "default": "h3"
+    },
+    {
+      "type": "select",
+      "id": "excerpt_size",
+      "label": "Excerpt size",
+      "options": [
+        { "value": "large", "label": "Large" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "small", "label": "Small" },
+        { "value": "x-small", "label": "X-small" }
+      ],
+      "default": "small"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "content_alignment",
+      "label": "Alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "vertical_alignment",
+      "label": "Position",
+      "options": [
+        { "value": "top", "label": "Top" },
+        { "value": "center", "label": "Center" },
+        { "value": "bottom", "label": "Bottom" }
+      ],
+      "default": "center"
+    },
+    {
+      "type": "select",
+      "id": "media_position",
+      "label": "Desktop image position",
+      "options": [
+        { "value": "right", "label": "Right" },
+        { "value": "left", "label": "Left" }
+      ],
+      "default": "right"
+    },
+    {
+      "type": "select",
+      "id": "mobile_media_position",
+      "label": "Mobile image position",
+      "options": [
+        { "value": "top", "label": "Top" },
+        { "value": "bottom", "label": "Bottom" }
+      ],
+      "default": "top"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image",
+      "label": "Show image",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "media_ratio",
+      "label": "Image ratio",
+      "options": [
+        { "value": "landscape", "label": "Landscape" },
+        { "value": "square", "label": "Square" },
+        { "value": "portrait", "label": "Portrait" }
+      ],
+      "default": "landscape"
+    },
+    {
+      "type": "select",
+      "id": "link_style",
+      "label": "Button style",
+      "options": [
+        { "value": "text", "label": "Text link" },
+        { "value": "primary", "label": "Primary button" },
+        { "value": "secondary", "label": "Secondary button" }
+      ],
+      "default": "text"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "Open links in a new tab",
+      "default": false
+    }
+  ],
+  "presets": [
+    {
+      "name": "Article card"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,616 @@
+{% render 'section-stylesheet', asset: 'section-gift-spinel.css' %}
+
+{% liquid
+  assign image_column_position = section.settings.image_position
+  if image_column_position contains 'right'
+    assign image_column_position = 'right'
+  else
+    assign image_column_position = 'left'
+  endif
+
+  assign gift_paths = section.blocks | where: 'type', '_gift-spinel-path'
+%}
+
+{% capture intro_card_markup %}
+  {% content_for 'block', type: 'group', id: 'intro_card' %}
+{% endcapture %}
+{% assign intro_card_markup = intro_card_markup | strip %}
+
+{% capture finder_intro_markup %}
+  {% content_for 'block', type: 'group', id: 'finder_intro' %}
+{% endcapture %}
+{% assign finder_intro_markup = finder_intro_markup | strip %}
+
+{% liquid
+  assign intro_card_is_enabled = false
+  if intro_card_markup contains 'spinel-group--card'
+    assign intro_card_is_enabled = true
+  endif
+
+  assign has_finder_intro = false
+  if finder_intro_markup contains 'typography-block' or finder_intro_markup contains 'content-button'
+    assign has_finder_intro = true
+  endif
+%}
+
+<gift-spinel
+  id="gift-spinel"
+  class="gift-spinel gift-spinel--blocks gift-spinel--layout-{{ section.settings.layout_ratio }} gift-spinel--image-{{ image_column_position }} gift-spinel--choices-{{ section.settings.choice_style }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width gift-spinel--full{% endif %}"
+  data-deferred-module="{{ 'gift-spinel.js' | asset_url }}"
+  data-gift-path-count="{{ gift_paths.size }}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --gift-spinel-product-columns: {{ section.settings.product_columns }};"
+>
+  <div class="gift-spinel__spacing section-spacing">
+    <div class="gift-spinel__inner">
+      <div
+        class="gift-spinel__intro"
+        style="--gift-spinel-card-color: {{ section.settings.image_overlay_color }}; --gift-spinel-card-reflection: {{ section.settings.intro_card_reflection | divided_by: 100.0 }};"
+      >
+        <div class="gift-spinel__intro-media" aria-hidden="true">
+          {% if section.settings.image != blank %}
+            {% render 'responsive-image',
+              image: section.settings.image,
+              max_width: 1800,
+              widths: '480, 640, 750, 960, 1200, 1500, 1800',
+              sizes: '(min-width: 990px) 42vw, 100vw',
+              class: 'gift-spinel__intro-image',
+              loading: 'lazy',
+              decorative: true
+            %}
+          {% endif %}
+        </div>
+
+        <div class="gift-spinel__intro-content gift-spinel__intro-content--position-{{ section.settings.intro_card_position }}{% if intro_card_is_enabled %} gift-spinel__intro-content--card{% endif %}">
+          {{ intro_card_markup }}
+        </div>
+      </div>
+
+      <div class="gift-spinel__finder">
+        <div class="gift-spinel__questions" data-gift-spinel-questions>
+          <div class="gift-spinel__step-meta">
+            <span>{{ 'gift_spinel.quick_choice' | t }}</span>
+            <span>{{ section.settings.concierge_label | escape }}</span>
+          </div>
+
+          {% if has_finder_intro %}
+            <div class="gift-spinel__intro-copy rte">
+              {{ finder_intro_markup }}
+            </div>
+          {% endif %}
+
+          <h3
+            class="gift-spinel__question"
+            id="GiftSpinelQuestion-{{ section.id }}"
+            data-gift-spinel-question
+            tabindex="-1"
+          >
+            {{ section.settings.question_recipient | escape }}
+          </h3>
+          <p class="gift-spinel__question-hint" id="GiftSpinelHint-{{ section.id }}">
+            {{ 'gift_spinel.choose_hint' | t }}
+          </p>
+          <div
+            class="gift-spinel__choices"
+            data-gift-spinel-choices
+            role="group"
+            aria-labelledby="GiftSpinelQuestion-{{ section.id }}"
+            aria-describedby="GiftSpinelHint-{{ section.id }}"
+          >
+            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="partner" aria-pressed="false">
+              {{ section.settings.recipient_partner | escape }}
+            </button>
+            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="mother" aria-pressed="false">
+              {{ section.settings.recipient_mother | escape }}
+            </button>
+            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="friend" aria-pressed="false">
+              {{ section.settings.recipient_friend | escape }}
+            </button>
+            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="myself" aria-pressed="false">
+              {{ section.settings.recipient_myself | escape }}
+            </button>
+          </div>
+        </div>
+
+        <p class="visually-hidden" data-gift-spinel-status role="status" aria-live="polite"></p>
+        <div class="gift-spinel__result" data-gift-spinel-result hidden></div>
+      </div>
+    </div>
+  </div>
+
+  {% if gift_paths.size > 0 %}
+    {% content_for 'blocks' %}
+  {% endif %}
+
+  <template data-gift-spinel-placeholder>
+    <div class="gift-spinel__result-content">
+      <div class="gift-spinel__result-tools">
+        <div class="gift-spinel__chips" data-gift-spinel-chips></div>
+        <button class="gift-spinel__change" type="button" data-gift-spinel-change>
+          {{ 'gift_spinel.change_recipient' | t }}
+        </button>
+      </div>
+      <ul class="gift-spinel__products" role="list">
+        {% for placeholder_number in (1..section.settings.products_to_show) %}
+          <li class="gift-spinel__product">
+            {% render 'product-card', placeholder_index: placeholder_number %}
+          </li>
+        {% endfor %}
+      </ul>
+    </div>
+  </template>
+
+  <script type="application/json" data-gift-spinel-options>
+    [
+      { "value": "partner", "label": {{ section.settings.recipient_partner | json }} },
+      { "value": "mother", "label": {{ section.settings.recipient_mother | json }} },
+      { "value": "friend", "label": {{ section.settings.recipient_friend | json }} },
+      { "value": "myself", "label": {{ section.settings.recipient_myself | json }} }
+    ]
+  </script>
+</gift-spinel>
+
+{% stylesheet %}
+  .gift-spinel--blocks .gift-spinel__intro-content > .spinel-group,
+  .gift-spinel--blocks .gift-spinel__intro-copy > .spinel-group {
+    width: 100%;
+  }
+
+  .gift-spinel--blocks
+    .gift-spinel__intro-content
+    > .spinel-group--card {
+    border-radius: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .gift-spinel--blocks
+    .gift-spinel__intro-content
+    .typography-block--heading {
+    max-width: 10ch;
+    text-wrap: balance;
+  }
+
+  .gift-spinel--blocks
+    .gift-spinel__intro-content
+    .typography-block--heading[data-spinel-line-height='tight'] {
+    --typography-line-height: 0.94 !important;
+  }
+
+  .gift-spinel--blocks .gift-spinel__intro-copy {
+    max-width: 38rem;
+  }
+
+  .gift-spinel--blocks .gift-spinel__intro-copy .typography-block {
+    max-width: 100%;
+  }
+
+  @media screen and (max-width: 749px) {
+    .gift-spinel--blocks
+      .gift-spinel__intro-content
+      .typography-block--heading {
+      max-width: 11ch;
+    }
+
+    .gift-spinel--blocks
+      .gift-spinel__intro-content
+      .typography-block--heading[data-spinel-line-height='tight'] {
+      --typography-line-height: 0.96 !important;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Gift Spinel · Blocks",
+  "tag": "section",
+  "class": "section-gift-spinel",
+  "max_blocks": 6,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Editorial image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image",
+      "info": "Select an image for this section."
+    },
+    {
+      "type": "select",
+      "id": "image_position",
+      "label": "Image column position",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left",
+      "info": "Changes the desktop column position. On mobile, the gift finder is shown first and the image second."
+    },
+    {
+      "type": "header",
+      "content": "Text card"
+    },
+    {
+      "type": "color",
+      "id": "image_overlay_color",
+      "label": "Card color",
+      "default": "#F3F1EE"
+    },
+    {
+      "type": "select",
+      "id": "intro_card_position",
+      "label": "Card position",
+      "options": [
+        {
+          "value": "top-left",
+          "label": "Top left"
+        },
+        {
+          "value": "top-center",
+          "label": "Top center"
+        },
+        {
+          "value": "top-right",
+          "label": "Top right"
+        },
+        {
+          "value": "center-left",
+          "label": "Center left"
+        },
+        {
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "center-right",
+          "label": "Center right"
+        },
+        {
+          "value": "bottom-left",
+          "label": "Bottom left"
+        },
+        {
+          "value": "bottom-center",
+          "label": "Bottom center"
+        },
+        {
+          "value": "bottom-right",
+          "label": "Bottom right"
+        }
+      ],
+      "default": "top-left",
+      "info": "Controls the text card placement over the image."
+    },
+    {
+      "type": "range",
+      "id": "intro_card_reflection",
+      "label": "Mirror reflection",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 25,
+      "info": "Controls the soft reflective sheen on the text card when its Group style is Card."
+    },
+    {
+      "type": "text",
+      "id": "concierge_label",
+      "label": "Interaction label",
+      "default": "Gift finder"
+    },
+    {
+      "type": "header",
+      "content": "Recipient choices"
+    },
+    {
+      "type": "text",
+      "id": "question_recipient",
+      "label": "Question text",
+      "default": "Who are you shopping for?"
+    },
+    {
+      "type": "text",
+      "id": "recipient_partner",
+      "label": "Option 1",
+      "default": "My partner"
+    },
+    {
+      "type": "text",
+      "id": "recipient_mother",
+      "label": "Option 2",
+      "default": "Mum"
+    },
+    {
+      "type": "text",
+      "id": "recipient_friend",
+      "label": "Option 3",
+      "default": "A friend"
+    },
+    {
+      "type": "text",
+      "id": "recipient_myself",
+      "label": "Option 4",
+      "default": "Myself"
+    },
+    {
+      "type": "header",
+      "content": "Product cards"
+    },
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "label": "Products to show",
+      "min": 3,
+      "max": 6,
+      "step": 1,
+      "default": 3
+    },
+    {
+      "type": "select",
+      "id": "product_columns",
+      "label": "Desktop product columns",
+      "options": [
+        {
+          "value": "2",
+          "label": "2 columns"
+        },
+        {
+          "value": "3",
+          "label": "3 columns"
+        }
+      ],
+      "default": "3"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        {
+          "value": "page",
+          "label": "Page width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "page"
+    },
+    {
+      "type": "select",
+      "id": "layout_ratio",
+      "label": "Desktop panel ratio",
+      "options": [
+        {
+          "value": "balanced",
+          "label": "Balanced"
+        },
+        {
+          "value": "editorial",
+          "label": "Larger intro"
+        },
+        {
+          "value": "finder",
+          "label": "Larger gift finder"
+        }
+      ],
+      "default": "balanced"
+    },
+    {
+      "type": "select",
+      "id": "choice_style",
+      "label": "Choice style",
+      "options": [
+        {
+          "value": "outline",
+          "label": "Outlined cards"
+        },
+        {
+          "value": "soft",
+          "label": "Soft fill"
+        },
+        {
+          "value": "pill",
+          "label": "Rounded pills"
+        }
+      ],
+      "default": "outline"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Desktop top padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Desktop bottom padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 80
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "blocks": [
+    {
+      "type": "group"
+    },
+    {
+      "type": "_gift-spinel-path"
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "index"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Gift Spinel · Blocks",
+      "category": "Gifting",
+      "blocks": [
+        {
+          "type": "group",
+          "id": "intro_card",
+          "static": true,
+          "settings": {
+            "block_style": "card",
+            "flow": "vertical",
+            "stack_alignment": "flex-start",
+            "stack_distribution": "flex-start",
+            "gap": 14,
+            "phone_flow": "vertical",
+            "phone_alignment": "flex-start",
+            "phone_distribution": "flex-start",
+            "gap_mobile": 14,
+            "padding_vertical": 0,
+            "padding_horizontal": 0,
+            "padding_vertical_mobile": 0,
+            "padding_horizontal_mobile": 0,
+            "color_scheme": "scheme-1",
+            "outline": "none",
+            "corner_treatment": "square",
+            "elevation": "none",
+            "desktop_width": "stretch",
+            "phone_width": "stretch"
+          },
+          "blocks": [
+            {
+              "type": "subheading",
+              "settings": {
+                "text": "<p>Gifting, made simple</p>",
+                "type_preset": "subheading",
+                "color": "subtext",
+                "width": "fit-content",
+                "width_mobile": "fit-content"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h2>Find their gift.</h2>",
+                "type_preset": "custom",
+                "font": "heading",
+                "font_weight": "inherit",
+                "font_size": 60,
+                "font_size_mobile": 42,
+                "line_height": "tight",
+                "color": "text",
+                "width": "100%",
+                "width_mobile": "100%",
+                "alignment": "left"
+              }
+            }
+          ]
+        },
+        {
+          "type": "group",
+          "id": "finder_intro",
+          "static": true,
+          "settings": {
+            "block_style": "group",
+            "flow": "vertical",
+            "stack_alignment": "flex-start",
+            "stack_distribution": "flex-start",
+            "gap": 16,
+            "phone_flow": "vertical",
+            "phone_alignment": "stretch",
+            "phone_distribution": "flex-start",
+            "gap_mobile": 14,
+            "desktop_width": "stretch",
+            "phone_width": "stretch"
+          },
+          "blocks": [
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Choose who you are shopping for and we will show you a ready-to-gift jewelry edit.</p>",
+                "type_preset": "custom",
+                "font": "body",
+                "font_weight": "inherit",
+                "font_size": 18,
+                "font_size_mobile": 16,
+                "line_height": "normal",
+                "color": "subtext",
+                "width": "100%",
+                "width_mobile": "100%",
+                "alignment": "left"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "label": "",
+                "link": "",
+                "style": "tertiary",
+                "alignment": "left",
+                "open_in_new_tab": false
+              }
+            }
+          ]
+        },
+        {
+          "type": "_gift-spinel-path",
+          "settings": {
+            "recipient": "mother",
+            "heading": "A thoughtful edit for Mum.",
+            "featured_badge": "Chosen for Mum"
+          }
+        },
+        {
+          "type": "_gift-spinel-path",
+          "settings": {
+            "recipient": "partner",
+            "heading": "A keepsake for your shared story.",
+            "featured_badge": "Chosen for your partner"
+          }
+        },
+        {
+          "type": "_gift-spinel-path",
+          "settings": {
+            "recipient": "friend",
+            "heading": "A gift that feels like them.",
+            "featured_badge": "Chosen for a friend"
+          }
+        },
+        {
+          "type": "_gift-spinel-path",
+          "settings": {
+            "recipient": "myself",
+            "heading": "A piece to keep close.",
+            "featured_badge": "A gift to yourself"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

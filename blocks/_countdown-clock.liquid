@@ -1,0 +1,140 @@
+{% doc %}
+  Renders the fixed countdown clock used by the theme-block countdown section.
+
+  @example
+  {% content_for 'block', type: '_countdown-clock', id: 'countdown' %}
+{% enddoc %}
+
+{% liquid
+  assign countdown_is_configured = false
+  assign countdown_is_preview = false
+
+  if block.settings.end_at != blank
+    assign countdown_is_configured = true
+  elsif request.design_mode
+    assign countdown_is_preview = true
+  endif
+%}
+
+<countdown-timer
+  class="countdown-timer__timer"
+  {% if countdown_is_configured %}
+    data-end-at="{{ block.settings.end_at | escape }}"
+    data-completion-behavior="{{ block.settings.completion_behavior }}"
+  {% elsif countdown_is_preview %}
+    data-countdown-preview
+  {% else %}
+    hidden
+  {% endif %}
+  {{ block.shopify_attributes }}
+>
+  <time
+    class="countdown-timer__units"
+    {% if countdown_is_configured %}datetime="{{ block.settings.end_at | escape }}"{% endif %}
+    data-countdown-units
+    aria-label="{{ block.settings.aria_label | escape }}"
+  >
+    <span class="countdown-timer__unit">
+      <span class="countdown-timer__value" data-countdown-days>
+        {%- if countdown_is_preview %}02{% else %}00{% endif -%}
+      </span>
+      <span class="countdown-timer__label">{{ block.settings.days_label | escape }}</span>
+    </span>
+    <span class="countdown-timer__unit">
+      <span class="countdown-timer__value" data-countdown-hours>
+        {%- if countdown_is_preview %}16{% else %}00{% endif -%}
+      </span>
+      <span class="countdown-timer__label">{{ block.settings.hours_label | escape }}</span>
+    </span>
+    <span class="countdown-timer__unit">
+      <span class="countdown-timer__value" data-countdown-minutes>
+        {%- if countdown_is_preview %}23{% else %}00{% endif -%}
+      </span>
+      <span class="countdown-timer__label">{{ block.settings.minutes_label | escape }}</span>
+    </span>
+    <span class="countdown-timer__unit">
+      <span class="countdown-timer__value" data-countdown-seconds>
+        {%- if countdown_is_preview %}16{% else %}00{% endif -%}
+      </span>
+      <span class="countdown-timer__label">{{ block.settings.seconds_label | escape }}</span>
+    </span>
+  </time>
+  <p class="countdown-timer__complete" data-countdown-complete hidden aria-live="polite">
+    {{ block.settings.completion_message | escape }}
+  </p>
+</countdown-timer>
+
+{% schema %}
+{
+  "name": "Countdown clock",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Countdown"
+    },
+    {
+      "type": "text",
+      "id": "end_at",
+      "label": "End date and time",
+      "info": "Use ISO 8601 format, for example 2027-12-31T23:59:59+07:00"
+    },
+    {
+      "type": "select",
+      "id": "completion_behavior",
+      "label": "When countdown ends",
+      "options": [
+        {
+          "value": "message",
+          "label": "Show message"
+        },
+        {
+          "value": "hide",
+          "label": "Hide countdown"
+        }
+      ],
+      "default": "message"
+    },
+    {
+      "type": "text",
+      "id": "completion_message",
+      "label": "Completion message",
+      "default": "Spring Sale ended"
+    },
+    {
+      "type": "header",
+      "content": "Unit labels"
+    },
+    {
+      "type": "text",
+      "id": "days_label",
+      "label": "Days label",
+      "default": "Days"
+    },
+    {
+      "type": "text",
+      "id": "hours_label",
+      "label": "Hours label",
+      "default": "Hours"
+    },
+    {
+      "type": "text",
+      "id": "minutes_label",
+      "label": "Minutes label",
+      "default": "Minutes"
+    },
+    {
+      "type": "text",
+      "id": "seconds_label",
+      "label": "Seconds label",
+      "default": "Seconds"
+    },
+    {
+      "type": "text",
+      "id": "aria_label",
+      "label": "Accessibility label",
+      "default": "Spring Sale countdown"
+    }
+  ]
+}
+{% endschema %}

@@ -1,0 +1,461 @@
+{% render 'section-stylesheet', asset: 'section-image-comparison.css', defer_on_home: true %}
+
+{% liquid
+  assign before_block = section.blocks | where: 'id', 'before' | first
+  assign before_image = before_block.settings.image | default: before_block.settings.mobile_image
+  assign comparison_ratio = before_image.aspect_ratio | default: 1.333333
+
+  assign page_width_pixels = settings.max_page_width | remove: 'rem' | times: 16
+  assign desktop_page_margin = settings.page_margin_desktop | at_least: settings.min_page_margin
+  assign tablet_page_margin = settings.page_margin_tablet | at_least: settings.min_page_margin
+  assign mobile_page_margin = settings.page_margin_mobile | at_least: settings.min_page_margin
+  assign desktop_horizontal_margin = desktop_page_margin | times: 2
+  assign tablet_horizontal_margin = tablet_page_margin | times: 2
+  assign mobile_horizontal_margin = mobile_page_margin | times: 2
+  assign comparison_max_width = page_width_pixels | minus: desktop_horizontal_margin
+  capture comparison_image_sizes
+    echo '(min-width: '
+    echo page_width_pixels
+    echo 'px) '
+    echo comparison_max_width
+    echo 'px, (min-width: 990px) calc(100vw - '
+    echo desktop_horizontal_margin
+    echo 'px), (min-width: 750px) calc(100vw - '
+    echo tablet_horizontal_margin
+    echo 'px), calc(100vw - '
+    echo mobile_horizontal_margin
+    echo 'px)'
+  endcapture
+%}
+
+<section
+  class="image-comparison image-comparison--blocks color-scheme color-{{ section.settings.color_scheme.id }} image-comparison--{{ section.settings.layout }} full-width"
+  style="--image-comparison-ratio: {{ comparison_ratio }}; --image-comparison-height-desktop: {{ section.settings.desktop_height }}; --image-comparison-height-mobile: {{ section.settings.mobile_height }}; --image-comparison-layout-gap: {{ section.settings.layout_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="image-comparison__inner section-spacing">
+    <div class="image-comparison__content">
+      {% content_for 'block', type: 'group', id: 'header' %}
+    </div>
+
+    <image-comparison-slider
+      class="image-comparison__slider image-comparison__slider--{{ section.settings.layout }} image-comparison__slider--desktop-height-{{ section.settings.desktop_height }} image-comparison__slider--mobile-height-{{ section.settings.mobile_height }}"
+      style="--comparison-position: 20%;"
+      data-orientation="{{ section.settings.layout }}"
+      data-deferred-module="{{ 'section-image-comparison.js' | asset_url }}"
+      aria-label="{{ 'image_comparison.comparison_label' | t | escape }}"
+    >
+      {% content_for 'block',
+        type: '_image-comparison-panel',
+        id: 'before',
+        side: 'before',
+        image_sizes: comparison_image_sizes,
+        placeholder_asset: 'placeholder-image-default-1.svg'
+      %}
+
+      {% content_for 'block',
+        type: '_image-comparison-panel',
+        id: 'after',
+        side: 'after',
+        image_sizes: comparison_image_sizes,
+        placeholder_asset: 'placeholder-image-default-2.svg'
+      %}
+
+      <button
+        class="image-comparison__handle"
+        type="button"
+        data-image-comparison-handle
+        role="slider"
+        aria-label="{{ 'image_comparison.handle_label' | t | escape }}"
+        aria-valuemin="0"
+        aria-valuemax="100"
+        aria-valuenow="20"
+        aria-orientation="{% if section.settings.layout == 'vertical' %}vertical{% else %}horizontal{% endif %}"
+      >
+        <span class="visually-hidden" data-image-comparison-value>20%</span>
+        <svg viewBox="0 0 32 32" aria-hidden="true" focusable="false">
+          <path d="m11 9-7 7 7 7M21 9l7 7-7 7" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2"></path>
+        </svg>
+      </button>
+    </image-comparison-slider>
+  </div>
+</section>
+
+{% stylesheet %}
+  .image-comparison--blocks .image-comparison__content > .spinel-group {
+    width: 100%;
+  }
+
+  .image-comparison--blocks
+    .image-comparison__content:not(:has(.spinel-group__content > *)) {
+    display: none;
+  }
+
+  .image-comparison--blocks .image-comparison__overlay {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+  }
+
+  .image-comparison--blocks
+    .image-comparison__overlay:has(.typography-block, .content-button)
+    > .image-comparison__overlay-label {
+    display: none;
+  }
+
+  .image-comparison--blocks .image-comparison__overlay > .spinel-group {
+    width: 100%;
+  }
+
+  .image-comparison--blocks .image-comparison__overlay .typography-block {
+    color: inherit;
+  }
+
+  .image-comparison--blocks
+    .image-comparison__overlay
+    .typography-block__content,
+  .image-comparison--blocks
+    .image-comparison__overlay
+    .typography-block__content
+    :is(p, h1, h2, h3, h4, h5, h6) {
+    color: inherit !important;
+  }
+
+  .image-comparison--blocks
+    .image-comparison__overlay
+    .typography-block--heading[data-spinel-line-height='tight'] {
+    --typography-line-height: 1.12 !important;
+  }
+
+  .image-comparison--blocks .image-comparison__overlay .content-button {
+    pointer-events: auto;
+  }
+
+  .image-comparison--blocks
+    .image-comparison__overlay
+    .content-button
+    .button--tertiary {
+    padding-bottom: 4px;
+    border-bottom: 1px solid currentcolor;
+    color: inherit;
+    font-size: 13px;
+    letter-spacing: 0.04em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Image comparison · Blocks",
+  "tag": "section",
+  "class": "section-image-comparison",
+  "disabled_on": {
+    "groups": [
+      "header",
+      "footer"
+    ]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        {
+          "value": "horizontal",
+          "label": "Horizontal"
+        },
+        {
+          "value": "vertical",
+          "label": "Vertical"
+        }
+      ],
+      "default": "horizontal"
+    },
+    {
+      "type": "select",
+      "id": "desktop_height",
+      "label": "Desktop height",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "Adapt to first image"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "range",
+      "id": "layout_gap",
+      "min": 0,
+      "max": 120,
+      "step": 4,
+      "unit": "px",
+      "label": "Heading to image gap",
+      "default": 44
+    },
+    {
+      "type": "header",
+      "content": "Mobile layout"
+    },
+    {
+      "type": "select",
+      "id": "mobile_height",
+      "label": "Mobile height",
+      "options": [
+        {
+          "value": "adapt",
+          "label": "Adapt to first image"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "Section"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 72
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 72
+    }
+  ],
+  "blocks": [
+    {
+      "type": "group"
+    },
+    {
+      "type": "_image-comparison-panel"
+    }
+  ],
+  "enabled_on": {
+    "templates": [
+      "index"
+    ]
+  },
+  "presets": [
+    {
+      "name": "Image comparison · Blocks",
+      "category": "Banners",
+      "blocks": [
+        {
+          "type": "group",
+          "id": "header",
+          "static": true,
+          "settings": {
+            "block_style": "group",
+            "flow": "vertical",
+            "stack_alignment": "center",
+            "stack_distribution": "flex-start",
+            "gap": 16,
+            "phone_flow": "vertical",
+            "phone_alignment": "center",
+            "phone_distribution": "flex-start",
+            "gap_mobile": 16,
+            "desktop_width": "stretch",
+            "phone_width": "stretch"
+          },
+          "blocks": [
+            {
+              "type": "subheading",
+              "settings": {
+                "text": "<p>Crafted details</p>",
+                "type_preset": "subheading",
+                "color": "subtext",
+                "width": "100%",
+                "width_mobile": "100%",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h2>Image comparison</h2>",
+                "type_preset": "h2",
+                "color": "text",
+                "width": "100%",
+                "width_mobile": "100%",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Show how thoughtful details transform the final result.</p>",
+                "type_preset": "paragraph",
+                "color": "subtext",
+                "width": "100%",
+                "width_mobile": "100%",
+                "alignment": "center"
+              }
+            }
+          ]
+        },
+        {
+          "type": "_image-comparison-panel",
+          "id": "before",
+          "static": true,
+          "settings": {
+            "content_position": "end",
+            "text_color": "#FFFFFF"
+          },
+          "blocks": [
+            {
+              "type": "group",
+              "settings": {
+                "block_style": "group",
+                "flow": "vertical",
+                "stack_alignment": "flex-start",
+                "stack_distribution": "flex-start",
+                "gap": 6,
+                "phone_flow": "vertical",
+                "phone_alignment": "flex-start",
+                "phone_distribution": "flex-start",
+                "gap_mobile": 6,
+                "desktop_width": "stretch",
+                "phone_width": "stretch"
+              },
+              "blocks": [
+                {
+                  "type": "subheading",
+                  "settings": {
+                    "text": "<p>Before</p>",
+                    "type_preset": "subheading",
+                    "color": "text",
+                    "width": "fit-content",
+                    "width_mobile": "fit-content"
+                  }
+                },
+                {
+                  "type": "heading",
+                  "settings": {
+                    "heading": "<h3>Original detail</h3>",
+                    "type_preset": "custom",
+                    "font": "heading",
+                    "font_weight": "inherit",
+                    "font_size": 28,
+                    "font_size_mobile": 24,
+                    "line_height": "tight",
+                    "color": "text",
+                    "width": "fit-content",
+                    "width_mobile": "fit-content"
+                  }
+                }
+              ]
+            }
+          ]
+        },
+        {
+          "type": "_image-comparison-panel",
+          "id": "after",
+          "static": true,
+          "settings": {
+            "content_position": "end",
+            "text_color": "#FFFFFF"
+          },
+          "blocks": [
+            {
+              "type": "group",
+              "settings": {
+                "block_style": "group",
+                "flow": "vertical",
+                "stack_alignment": "flex-end",
+                "stack_distribution": "flex-start",
+                "gap": 6,
+                "phone_flow": "vertical",
+                "phone_alignment": "flex-end",
+                "phone_distribution": "flex-start",
+                "gap_mobile": 6,
+                "desktop_width": "stretch",
+                "phone_width": "stretch"
+              },
+              "blocks": [
+                {
+                  "type": "subheading",
+                  "settings": {
+                    "text": "<p>After</p>",
+                    "type_preset": "subheading",
+                    "color": "text",
+                    "width": "fit-content",
+                    "width_mobile": "fit-content",
+                    "alignment": "right"
+                  }
+                },
+                {
+                  "type": "heading",
+                  "settings": {
+                    "heading": "<h3>Refined finish</h3>",
+                    "type_preset": "custom",
+                    "font": "heading",
+                    "font_weight": "inherit",
+                    "font_size": 28,
+                    "font_size_mobile": 24,
+                    "line_height": "tight",
+                    "color": "text",
+                    "width": "fit-content",
+                    "width_mobile": "fit-content",
+                    "alignment": "right"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

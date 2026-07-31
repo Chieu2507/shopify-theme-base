@@ -1,0 +1,198 @@
+{% doc %}
+  Renders the fixed media slot for the theme-block-native image with text
+  section. The first Media child is the base image and the second is the
+  foreground image.
+
+  @example
+  {% content_for 'block', type: '_image-with-text-media-cluster', id: 'media_cluster' %}
+{% enddoc %}
+
+<div
+  class="image-with-text__media-collage image-with-text__media-collage--{{ block.settings.desktop_ratio }} image-with-text__media-collage--mobile-{{ block.settings.mobile_ratio }}"
+  style="--image-with-text-collage-ratio: {{ block.settings.adapt_ratio | divided_by: 100.0 }};"
+  {{ block.shopify_attributes }}
+>
+  {% content_for 'blocks' %}
+</div>
+
+{% stylesheet %}
+  .image-with-text__media-collage > .shopify-block {
+    position: absolute;
+    display: block;
+    min-width: 0;
+    overflow: hidden;
+    background: var(--color-variant-component-background);
+  }
+
+  .image-with-text__media-collage > .shopify-block:first-child {
+    inset: 0;
+    width: 100%;
+  }
+
+  .image-with-text__media-collage > .shopify-block:nth-child(2) {
+    z-index: 1;
+    top: 13.6%;
+    left: 0;
+    width: 46.1%;
+  }
+
+  .image-with-text__media-collage > .shopify-block:first-child > .content-media {
+    height: 100%;
+  }
+
+  .image-with-text__media-collage > .shopify-block:nth-child(2) > .content-media {
+    height: auto;
+  }
+
+  .image-with-text__media-collage .content-media__image,
+  .image-with-text__media-collage .content-media__placeholder {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  @media screen and (min-width: 990px) {
+    .image-with-text--media-count-2 .image-with-text__media-collage > .shopify-block {
+      position: relative;
+      inset: auto;
+      flex: none;
+    }
+
+    .image-with-text--media-count-2 .image-with-text__media-collage > .shopify-block:first-child {
+      width: calc(400 / 658 * 100%);
+    }
+
+    .image-with-text--media-count-2 .image-with-text__media-collage > .shopify-block:nth-child(2) {
+      position: absolute;
+      top: 50%;
+      right: auto;
+      left: 0;
+      width: calc(364 / 658 * 100%);
+      transform: translateY(-50%);
+    }
+  }
+
+  @media screen and (max-width: 989px) {
+    .image-with-text--media-count-2 .image-with-text__media-collage > .shopify-block {
+      position: relative;
+      inset: auto;
+      flex: none;
+    }
+
+    .image-with-text--media-count-2 .image-with-text__media-collage > .shopify-block:first-child {
+      width: calc(400 / 658 * 100%);
+    }
+
+    .image-with-text--media-count-2 .image-with-text__media-collage > .shopify-block:nth-child(2) {
+      position: absolute;
+      top: 50%;
+      right: auto;
+      left: 0;
+      width: calc(364 / 658 * 100%);
+      transform: translateY(-50%);
+    }
+  }
+
+  @media screen and (max-width: 749px) {
+    .image-with-text--media-count-2 .image-with-text__media-collage > .shopify-block:first-child {
+      width: calc(200 / 281 * 100%);
+    }
+
+    .image-with-text--media-count-2 .image-with-text__media-collage > .shopify-block:nth-child(2) {
+      width: calc(156 / 281 * 100%);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Media collage",
+  "tag": null,
+  "blocks": [
+    {
+      "type": "media"
+    }
+  ],
+  "settings": [
+    {
+      "type": "select",
+      "id": "desktop_ratio",
+      "label": "Desktop collage ratio",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Adapt"
+        },
+        {
+          "value": "portrait",
+          "label": "Portrait"
+        },
+        {
+          "value": "square",
+          "label": "Square"
+        },
+        {
+          "value": "landscape",
+          "label": "Landscape"
+        }
+      ],
+      "default": "portrait"
+    },
+    {
+      "type": "select",
+      "id": "mobile_ratio",
+      "label": "Phone collage ratio",
+      "options": [
+        {
+          "value": "auto",
+          "label": "Adapt"
+        },
+        {
+          "value": "portrait",
+          "label": "Portrait"
+        },
+        {
+          "value": "square",
+          "label": "Square"
+        },
+        {
+          "value": "landscape",
+          "label": "Landscape"
+        }
+      ],
+      "default": "portrait"
+    },
+    {
+      "type": "range",
+      "id": "adapt_ratio",
+      "label": "Adapt ratio",
+      "min": 50,
+      "max": 200,
+      "step": 5,
+      "unit": "%",
+      "default": 80,
+      "visible_if": "{{ block.settings.desktop_ratio == 'auto' or block.settings.mobile_ratio == 'auto' }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Media collage",
+      "blocks": [
+        {
+          "type": "media",
+          "settings": {
+            "ratio": "portrait"
+          }
+        },
+        {
+          "type": "media",
+          "settings": {
+            "ratio": "square"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
