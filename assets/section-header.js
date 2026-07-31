@@ -17,6 +17,7 @@ if (!window.SpinelHeaderMenus) {
       const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
       root.style.setProperty('--header-menu-scrollbar-width', `${scrollbarWidth}px`);
       root.classList.add('header-menu-scroll-locked');
+      window.SpinelSmoothScroll?.cancel();
       return;
     }
 
