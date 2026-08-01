@@ -6,6 +6,7 @@
 {% liquid
   assign country_form_id = 'HeaderCountrySelector-' | append: section.id
   assign mobile_country_form_id = 'HeaderMobileCountrySelector-' | append: section.id
+  assign mobile_language_form_id = 'HeaderMobileLanguageSelector-' | append: section.id
   assign logo_image = settings.logo | default: settings.logo_mobile
   assign logo_image_mobile = settings.logo_mobile | default: logo_image
   assign logo_width_desktop = 170
@@ -73,7 +74,7 @@
   <div class="header__inner">
     {% if has_menu or has_mobile_utilities %}
       <details class="header__menu-disclosure" data-open-label="{{ 'header.open_menu' | t | escape }}" data-close-label="{{ 'header.close_menu' | t | escape }}">
-        <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}" aria-expanded="false" aria-controls="HeaderNavigation-{{ section.id }}">
+        <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}" aria-expanded="false" aria-controls="HeaderMobileDrawer-{{ section.id }}">
           <span class="header__menu-icon header__menu-icon--open header__burger-lines" aria-hidden="true">
             <span></span>
             <span></span>
@@ -83,8 +84,29 @@
         </summary>
       </details>
 
-      <nav id="HeaderNavigation-{{ section.id }}" class="header__navigation" aria-label="{{ 'header.primary_navigation' | t | escape }}">
-        <ul class="header__menu" role="list">
+      <div
+        id="HeaderMobileDrawer-{{ section.id }}"
+        class="header__mobile-drawer"
+        data-header-mobile-drawer
+      >
+        <div class="header__mobile-drawer-surface">
+          <div class="header__mobile-drawer-header">
+            <span id="HeaderMobileDrawerTitle-{{ section.id }}" class="visually-hidden">{{ 'header.primary_navigation' | t }}</span>
+            <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+              {% if logo_image_mobile != blank %}
+                {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '120px', alt: shop.name, loading: 'eager' }}
+              {% else %}
+                <span class="header__logo-text">{{ shop.name | escape }}</span>
+              {% endif %}
+            </a>
+            <button class="header__mobile-drawer-close" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-mobile-close>
+              {% render 'icon', name: 'close' %}
+            </button>
+          </div>
+
+          <nav id="HeaderNavigation-{{ section.id }}" class="header__navigation" aria-label="{{ 'header.primary_navigation' | t | escape }}">
+            <div class="header__navigation-content">
+              <ul class="header__menu" role="list">
           {% for link in menu_links %}
             {% liquid
               assign badge_block = nil
@@ -115,9 +137,12 @@
             %}
             <li class="header__menu-item{% if has_submenu %} header__menu-item--has-children{% endif %}{% if mega_menu_block != nil and has_submenu %} header__menu-item--mega{% endif %}">
               {% if has_submenu %}
-                <details class="header__submenu-disclosure{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
-                  <summary class="header__menu-link{% if link.child_active %} header__menu-link--active{% endif %}" aria-expanded="false" aria-controls="{{ submenu_id }}">
-                    <span>{{ link.title | escape }}</span>
+                {% if link.url != blank %}
+                  <a class="header__mobile-menu-direct-link" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
+                {% endif %}
+                <details class="header__submenu-disclosure{% if link.url == blank %} header__submenu-disclosure--no-direct-link{% endif %}{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
+                  <summary class="header__menu-link{% if link.child_active %} header__menu-link--active{% endif %}" aria-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-open-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-close-label="{{ 'header.close_submenu' | t: item: link.title | escape }}" aria-expanded="false" aria-controls="{{ submenu_id }}">
+                    <span class="header__menu-link-title">{{ link.title | escape }}</span>
                     <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
                   </summary>
                   {% if mega_menu_block != nil %}
@@ -156,6 +181,10 @@
                       endif
                     %}
                     <div id="{{ submenu_id }}" class="header__mega-panel header__mega-panel--text-{{ mega_menu_block.settings.text_size | default: 'medium' }}" {{ mega_menu_block.shopify_attributes }}>
+                      <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: link.title | escape }}" data-header-mobile-back>
+                        <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
+                        <span>{{ link.title | escape }}</span>
+                      </button>
                       <div class="header__mega-surface">
                         <div class="header__mega-inner{% if promotion_count == 0 %} header__mega-inner--links-only{% endif %}">
                           {% if mega_menu_links != blank %}
@@ -231,6 +260,12 @@
                     </div>
                   {% else %}
                     <ul id="{{ submenu_id }}" class="header__submenu" role="list">
+                      <li class="header__mobile-submenu-back-item">
+                        <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: link.title | escape }}" data-header-mobile-back>
+                          <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
+                          <span>{{ link.title | escape }}</span>
+                        </button>
+                      </li>
                       {% for child_link in link.links %}
                         <li{% if child_link.links != blank %} class="header__submenu-item--has-children"{% endif %}>
                           {% if child_link.links != blank %}
@@ -240,8 +275,14 @@
                                 <span class="header__submenu-link-text">{{ child_link.title | escape }}</span>
                                 <span class="header__submenu-caret header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
                               </summary>
-                              <ul id="{{ nested_submenu_id }}" class="header__submenu-nested" role="list">
-                                {% for grandchild_link in child_link.links %}<li><a class="header__submenu-link{% if grandchild_link.current %} header__submenu-link--active{% endif %}" href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></a></li>{% endfor %}
+                            <ul id="{{ nested_submenu_id }}" class="header__submenu-nested" role="list">
+                              <li class="header__mobile-submenu-back-item">
+                                <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: child_link.title | escape }}" data-header-mobile-back>
+                                  <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
+                                  <span>{{ child_link.title | escape }}</span>
+                                </button>
+                              </li>
+                              {% for grandchild_link in child_link.links %}<li><a class="header__submenu-link{% if grandchild_link.current %} header__submenu-link--active{% endif %}" href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></a></li>{% endfor %}
                               </ul>
                             </details>
                           {% else %}
@@ -267,9 +308,15 @@
               {% endif %}
             </li>
           {% endfor %}
-        </ul>
+              </ul>
+            </div>
 
-        <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
+            <div class="header__mobile-drawer-bottom">
+              {% if section.settings.show_account and shop.customer_accounts_enabled %}
+                <a class="header__mobile-login" href="{{ routes.account_url }}">{{ 'header.login' | t }}</a>
+              {% endif %}
+
+              <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
           {% if section.settings.show_localization %}
             <div class="header__mobile-localization">
               {% if can_change_country %}
@@ -329,9 +376,50 @@
                 </div>
               {% endif %}
             </div>
-          {% endif %}
+                {% endif %}
+
+                {% if section.settings.show_localization and localization.available_languages.size > 1 %}
+                  <div class="header__mobile-language">
+                    <details class="header__localization-selector header__language-selector">
+                      <summary aria-label="{{ 'header.language' | t | escape }}">
+                        <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
+                        <span class="header__mobile-localization-copy">
+                          <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
+                          <span>{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+                        </span>
+                        <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                      </summary>
+                      <div class="header__localization-popover">
+                        {% form 'localization', id: mobile_language_form_id %}
+                          <div class="header__localization-select" data-header-language-picker>
+                            <input type="hidden" name="language_code" value="{{ localization.language.iso_code }}" data-header-language-input>
+                            <div class="header__localization-options" role="listbox" aria-label="{{ 'header.language' | t | escape }}">
+                              {% for language in localization.available_languages %}
+                                <button class="header__localization-option{% if language.iso_code == localization.language.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if language.iso_code == localization.language.iso_code %}true{% else %}false{% endif %}" data-header-language-option data-language-code="{{ language.iso_code }}">
+                                  <span>{{ language.endonym_name | default: language.name | escape }}</span>
+                                  {% if language.iso_code == localization.language.iso_code %}<span class="header__localization-option-check" aria-hidden="true">✓</span>{% endif %}
+                                </button>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        {% endform %}
+                      </div>
+                    </details>
+                  </div>
+                {% elsif section.settings.show_localization and localization.language != blank %}
+                  <div class="header__mobile-language header__mobile-language--static" aria-label="{{ 'header.language' | t | escape }}">
+                    <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
+                    <span class="header__mobile-localization-copy">
+                      <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
+                      <span>{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+                    </span>
+                  </div>
+                {% endif %}
+              </div>
+            </div>
+          </nav>
         </div>
-      </nav>
+      </div>
     {% endif %}
 
     <div
