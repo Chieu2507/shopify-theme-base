@@ -1,6 +1,8 @@
 if (!window.SpinelHeaderMenus) {
   window.SpinelHeaderMenus = true;
   const megaMenuAnimations = new WeakMap();
+  const mobileMegaMenuMotions = new WeakMap();
+  const mobileDrawerMotions = new WeakMap();
   const megaMenuHoverTimers = new WeakMap();
   const cartFeedbackHeaderStates = new WeakMap();
   const mobileMenuReturnFocus = new WeakMap();
@@ -8,6 +10,37 @@ if (!window.SpinelHeaderMenus) {
   let transparentHeaderFrame = 0;
 
   const isMobileHeaderViewport = () => window.matchMedia('(max-width: 899px)').matches;
+
+  const focusWithoutScroll = (target, scroller, savedScroll) => {
+    if (!target) return;
+    const pageX = window.scrollX;
+    const pageY = window.scrollY;
+    const scrollLeft = savedScroll?.left ?? scroller?.scrollLeft;
+    const scrollTop = savedScroll?.top ?? scroller?.scrollTop;
+    target.focus({ preventScroll: true });
+    if (scroller) {
+      scroller.scrollLeft = scrollLeft || 0;
+      scroller.scrollTop = scrollTop || 0;
+    }
+    if (window.scrollX !== pageX || window.scrollY !== pageY) window.scrollTo(pageX, pageY);
+  };
+
+  const getTransitionTotalMs = (element, propertyName) => {
+    if (!element) return 0;
+    const style = getComputedStyle(element);
+    const properties = style.transitionProperty.split(',').map((value) => value.trim());
+    const durations = style.transitionDuration.split(',').map((value) => value.trim());
+    const delays = style.transitionDelay.split(',').map((value) => value.trim());
+    const toMilliseconds = (value) => value.endsWith('ms')
+      ? Number.parseFloat(value)
+      : Number.parseFloat(value) * 1000;
+    return properties.reduce((maximum, property, index) => {
+      if (property !== propertyName && property !== 'all') return maximum;
+      const duration = toMilliseconds(durations[index % durations.length] || '0s');
+      const delay = toMilliseconds(delays[index % delays.length] || '0s');
+      return Math.max(maximum, duration + delay);
+    }, 0);
+  };
 
   const getMobileDrawer = (disclosure) => {
     const drawer = disclosure?.nextElementSibling;
@@ -20,6 +53,7 @@ if (!window.SpinelHeaderMenus) {
 
     const isOpen = isMobileHeaderViewport() && disclosure.open;
     drawer.dataset.open = String(isOpen);
+    if (drawer.dataset.motionState !== 'closing') drawer.dataset.motionState = isOpen ? 'open' : 'closed';
     if (isMobileHeaderViewport()) {
       drawer.setAttribute('role', 'dialog');
       drawer.setAttribute('aria-modal', 'true');
@@ -36,53 +70,111 @@ if (!window.SpinelHeaderMenus) {
 
     if (isOpen && focusDrawer) {
       mobileMenuReturnFocus.set(drawer, disclosure.querySelector(':scope > summary'));
-      window.requestAnimationFrame(() => drawer.querySelector('[data-header-mobile-close]')?.focus());
+      window.requestAnimationFrame(() => focusWithoutScroll(drawer.querySelector('[data-header-mobile-close]'), drawer));
     }
   };
 
-  const getMobileDrawerFocusables = (drawer) => Array.from(drawer.querySelectorAll(
-    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
-  )).filter((element) => element.offsetWidth > 0 || element.offsetHeight > 0 || element === document.activeElement);
+  const getActiveMobileDrawerPanel = (drawer) => {
+    const panels = Array.from(drawer.querySelectorAll(
+      '.header__submenu-disclosure[open] > :is(.header__submenu, .header__mega-panel), .header__submenu-nested-disclosure[open] > .header__submenu-nested'
+    ));
+    return panels.at(-1) || drawer;
+  };
+
+  const getMobileDrawerFocusables = (drawer) => {
+    const activePanel = getActiveMobileDrawerPanel(drawer);
+    const elements = Array.from(activePanel.querySelectorAll(
+      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+    ));
+    const closeButton = drawer.querySelector('[data-header-mobile-close]');
+    if (activePanel !== drawer && closeButton) {
+      const backIndex = elements.findIndex((element) => element.matches('[data-header-mobile-back]'));
+      elements.splice(backIndex + 1, 0, closeButton);
+    }
+    return elements.filter((element) => element.offsetWidth > 0 || element.offsetHeight > 0 || element === document.activeElement);
+  };
+
+  const clearMobileDrawerMotion = (disclosure) => {
+    const state = mobileDrawerMotions.get(disclosure);
+    if (!state) return;
+    window.clearTimeout(state.timer);
+    state.surface?.removeEventListener('transitionend', state.onTransitionEnd);
+    mobileDrawerMotions.delete(disclosure);
+  };
 
   const closeMobileMenu = (disclosure, restoreFocus = true) => {
-    if (!disclosure) return;
+    if (!disclosure || !disclosure.open) return;
     const header = disclosure.closest('[data-header]');
-    header?.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => {
-      closeMegaMenu(details, true);
-    });
-    disclosure.open = false;
-    syncMobileDrawer(disclosure);
+    const drawer = getMobileDrawer(disclosure);
+    const returnFocus = mobileMenuReturnFocus.get(drawer) || disclosure.querySelector(':scope > summary');
+    const finalize = () => {
+      header?.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => {
+        closeMegaMenu(details, true);
+      });
+      disclosure.open = false;
+      if (drawer) drawer.dataset.motionState = 'closed';
+      syncMobileDrawer(disclosure);
+      syncHeaderMenuScrollLock();
+      if (header) scheduleResponsiveHeaderSync();
+      if (restoreFocus) window.requestAnimationFrame(() => focusWithoutScroll(returnFocus));
+    };
+
+    if (!drawer || !isMobileHeaderViewport()) {
+      finalize();
+      return;
+    }
+
+    if (drawer.dataset.motionState === 'closing') return;
+    clearMobileDrawerMotion(disclosure);
+    drawer.dataset.motionState = 'closing';
     syncHeaderMenuScrollLock();
 
-    if (restoreFocus) {
-      const drawer = getMobileDrawer(disclosure);
-      window.requestAnimationFrame(() => (mobileMenuReturnFocus.get(drawer) || disclosure.querySelector(':scope > summary'))?.focus());
+    const surface = drawer.querySelector('.header__mobile-drawer-surface');
+    const finish = () => {
+      const state = mobileDrawerMotions.get(disclosure);
+      if (!state || state.finish !== finish) return;
+      clearMobileDrawerMotion(disclosure);
+      finalize();
+    };
+    const onTransitionEnd = (event) => {
+      if (event.target === surface && event.propertyName === 'transform') finish();
+    };
+    const state = { surface, finish, onTransitionEnd, timer: 0 };
+    mobileDrawerMotions.set(disclosure, state);
+    const duration = getTransitionTotalMs(surface, 'transform');
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches || duration === 0) {
+      window.queueMicrotask(finish);
+      return;
     }
+    surface?.addEventListener('transitionend', onTransitionEnd);
+    state.timer = window.setTimeout(finish, duration + 80);
   };
 
   const syncHeaderMenuScrollLock = () => {
     const isMobile = window.matchMedia('(max-width: 899px)').matches;
+    const openMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-open="true"]:not([data-motion-state="closing"])');
+    const closingMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-motion-state="closing"]');
     const shouldLock = isMobile
-      ? Boolean(document.querySelector('.header__menu-disclosure[open]'))
+      ? Boolean(openMobileDrawer || closingMobileDrawer)
       : Boolean(document.querySelector('.header__submenu-disclosure[open]'));
     const shouldShowOverlay = isMobile
-      ? Boolean(document.querySelector('.header__menu-disclosure[open]'))
+      ? Boolean(openMobileDrawer)
       : Boolean(document.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])'));
     const root = document.documentElement;
     const isLocked = root.classList.contains('header-menu-scroll-locked');
 
     root.classList.toggle('header-menu-overlay-visible', shouldShowOverlay);
+    root.classList.toggle('header-menu-overlay-closing', isMobile && Boolean(closingMobileDrawer));
+    root.classList.toggle('header-menu-scroll-locked', shouldLock);
+    document.body?.classList.toggle('header-menu-scroll-locked', shouldLock);
 
     if (shouldLock && !isLocked) {
       const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
       root.style.setProperty('--header-menu-scrollbar-width', `${scrollbarWidth}px`);
-      root.classList.add('header-menu-scroll-locked');
       window.SpinelSmoothScroll?.cancel();
-      return;
     }
 
     if (!shouldLock && isLocked) {
-      root.classList.remove('header-menu-scroll-locked');
       root.style.removeProperty('--header-menu-scrollbar-width');
     }
   };
@@ -137,7 +229,13 @@ if (!window.SpinelHeaderMenus) {
   window.addEventListener('resize', () => {
     scheduleResponsiveHeaderSync();
     syncHeaderMenuScrollLock();
-    document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => syncMobileDrawer(disclosure));
+    if (!isMobileHeaderViewport()) {
+      document.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => closeMegaMenu(details, true));
+    }
+    document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => {
+      if (!isMobileHeaderViewport()) mobileDrawerMotions.get(disclosure)?.finish();
+      syncMobileDrawer(disclosure);
+    });
   });
   document.addEventListener('shopify:section:load', (event) => initializeResponsiveHeaders(event.target));
 
@@ -255,9 +353,103 @@ if (!window.SpinelHeaderMenus) {
     return opening ? frames : frames.slice().reverse();
   };
 
-  const animateMegaMenuOpen = (details) => {
+  const runMobileMegaMenuMotion = (details, opening, focusAfterMotion = false) => {
     const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
-    if (!panel || type === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    const summary = details.querySelector(':scope > summary');
+    const scroller = details.parentElement?.closest('.header__submenu, .header__mega-panel, .header__submenu-nested, .header__navigation-content')
+      || details.closest('.header__navigation-content');
+    const savedScroll = {
+      left: scroller?.scrollLeft || 0,
+      top: scroller?.scrollTop || 0
+    };
+    const finalizeWithoutMotion = () => {
+      delete details.dataset.opening;
+      delete details.dataset.closing;
+      if (!opening) details.open = false;
+      syncHeaderDisclosureAria(details);
+      syncHeaderMenuScrollLock();
+      const target = opening ? panel?.querySelector('[data-header-mobile-back]') : summary;
+      if ((opening || focusAfterMotion) && !details.closest('[data-header-mobile-drawer][data-motion-state="closing"]')) {
+        window.queueMicrotask(() => focusWithoutScroll(target, scroller, savedScroll));
+      }
+    };
+
+    if (!panel || type !== 'mobile_slide' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      finalizeWithoutMotion();
+      return Promise.resolve(true);
+    }
+
+    let state = mobileMegaMenuMotions.get(details);
+    if (!state || state.panel !== panel || state.animation.playState === 'idle') {
+      state?.animation.cancel();
+      const animation = panel.animate(getMegaMenuFrames(type, true, panel), {
+        duration,
+        delay,
+        easing,
+        fill: 'both'
+      });
+      animation.pause();
+      state = {
+        animation,
+        panel,
+        revision: 0,
+        desiredOpen: opening,
+        scroller,
+        savedScroll
+      };
+      mobileMegaMenuMotions.set(details, state);
+      animation.currentTime = opening ? 0 : duration;
+    }
+
+    state.revision += 1;
+    state.desiredOpen = opening;
+    state.scroller = scroller;
+    state.savedScroll = savedScroll;
+    const revision = state.revision;
+    if (opening) {
+      details.dataset.opening = 'true';
+      delete details.dataset.closing;
+    } else {
+      details.dataset.closing = 'true';
+      delete details.dataset.opening;
+    }
+    syncHeaderDisclosureAria(details);
+    syncHeaderMenuScrollLock();
+    state.animation.playbackRate = opening ? 1 : -1;
+    state.animation.play();
+
+    return state.animation.finished
+      .then(() => {
+        const currentState = mobileMegaMenuMotions.get(details);
+        if (currentState !== state || state.revision !== revision || state.desiredOpen !== opening) return false;
+        delete details.dataset.opening;
+        delete details.dataset.closing;
+        if (opening) {
+          syncHeaderDisclosureAria(details);
+          syncHeaderMenuScrollLock();
+          if (focusAfterMotion && !details.closest('[data-header-mobile-drawer][data-motion-state="closing"]')) {
+            focusWithoutScroll(panel.querySelector('[data-header-mobile-back]'), state.scroller, state.savedScroll);
+          }
+          return true;
+        }
+
+        details.open = false;
+        syncHeaderDisclosureAria(details);
+        syncHeaderMenuScrollLock();
+        state.animation.cancel();
+        mobileMegaMenuMotions.delete(details);
+        if (focusAfterMotion && !details.closest('[data-header-mobile-drawer][data-motion-state="closing"]')) {
+          focusWithoutScroll(summary, state.scroller, state.savedScroll);
+        }
+        return true;
+      })
+      .catch(() => false);
+  };
+
+  const animateMegaMenuOpen = (details, focusAfterMotion = false) => {
+    const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
+    if (type === 'mobile_slide') return runMobileMegaMenuMotion(details, true, focusAfterMotion);
+    if (!panel || type === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve(false);
 
     const existingAnimation = megaMenuAnimations.get(details);
     const currentHeight = existingAnimation && type === 'mobile_accordion'
@@ -271,22 +463,22 @@ if (!window.SpinelHeaderMenus) {
       fill: 'both'
     });
     megaMenuAnimations.set(details, animation);
-    animation.finished
+    return animation.finished
       .then(() => {
-        if (megaMenuAnimations.get(details) !== animation) return;
+        if (megaMenuAnimations.get(details) !== animation) return false;
         megaMenuAnimations.delete(details);
         animation.cancel();
+        return true;
       })
-      .catch(() => {});
+      .catch(() => false);
   };
 
-  const closeMegaMenu = (details, immediate = false) => {
-    if (!details.open || details.dataset.closing === 'true') return;
+  const closeMegaMenu = (details, immediate = false, focusAfterMotion = false) => {
+    if (!details.open || (!immediate && details.dataset.closing === 'true')) return;
 
     const { panel, type, duration, easing } = getMegaMenuAnimation(details);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const currentHeight = type === 'mobile_accordion' ? panel?.getBoundingClientRect().height : undefined;
-    megaMenuAnimations.get(details)?.cancel();
 
     if (details.matches('.header__submenu-disclosure')) {
       details.querySelectorAll('.header__submenu-nested-disclosure[open]').forEach((nestedDetails) => {
@@ -295,13 +487,22 @@ if (!window.SpinelHeaderMenus) {
     }
 
     if (immediate || !panel || type === 'none' || reduceMotion) {
+      megaMenuAnimations.get(details)?.cancel();
       megaMenuAnimations.delete(details);
+      mobileMegaMenuMotions.get(details)?.animation.cancel();
+      mobileMegaMenuMotions.delete(details);
+      delete details.dataset.opening;
+      delete details.dataset.closing;
       details.open = false;
       syncHeaderDisclosureAria(details);
       syncHeaderMenuScrollLock();
+      if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       return;
     }
 
+    if (type === 'mobile_slide') return runMobileMegaMenuMotion(details, false, focusAfterMotion);
+
+    megaMenuAnimations.get(details)?.cancel();
     details.dataset.closing = 'true';
     syncHeaderDisclosureAria(details);
     syncHeaderMenuScrollLock();
@@ -320,6 +521,7 @@ if (!window.SpinelHeaderMenus) {
         syncHeaderDisclosureAria(details);
         syncHeaderMenuScrollLock();
         animation.cancel();
+        if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       })
       .catch(() => {});
   };
@@ -332,7 +534,7 @@ if (!window.SpinelHeaderMenus) {
   const syncHeaderDisclosureAria = (details) => {
     const summary = details.querySelector(':scope > summary[aria-controls]');
     if (!summary) return;
-    const isOpen = details.open && details.dataset.closing !== 'true';
+    const isOpen = details.open;
     summary.setAttribute('aria-expanded', String(isOpen));
     const stateLabel = isOpen ? summary.dataset.closeLabel : summary.dataset.openLabel;
     if (stateLabel) summary.setAttribute('aria-label', stateLabel);
@@ -397,10 +599,7 @@ if (!window.SpinelHeaderMenus) {
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
-      delete details.dataset.closing;
-      syncHeaderDisclosureAria(details);
-      syncHeaderMenuScrollLock();
-      animateMegaMenuOpen(details);
+      animateMegaMenuOpen(details, isMobileHeaderViewport());
       return;
     }
 
@@ -419,10 +618,7 @@ if (!window.SpinelHeaderMenus) {
     if (responsiveHeader) {
       scheduleResponsiveHeaderSync();
     }
-    animateMegaMenuOpen(details);
-    if (isMobileHeaderViewport()) {
-      window.requestAnimationFrame(() => details.querySelector(':scope > .header__submenu, :scope > .header__mega-panel, :scope > .header__submenu-nested')?.querySelector('[data-header-mobile-back]')?.focus());
-    }
+    animateMegaMenuOpen(details, isMobileHeaderViewport());
   };
 
   window.addEventListener('resize', () => {
@@ -490,10 +686,7 @@ if (!window.SpinelHeaderMenus) {
       positionNestedHeaderSubmenu(details);
       closeOtherHeaderSubmenus(details);
 
-      if (details.dataset.opening === 'true') {
-        delete details.dataset.opening;
-        return;
-      }
+      if (details.dataset.opening === 'true' || details.dataset.closing === 'true' || mobileMegaMenuMotions.has(details)) return;
       if (shouldAnimateHeaderSubmenu(details)) animateMegaMenuOpen(details);
     },
     true
@@ -510,8 +703,7 @@ if (!window.SpinelHeaderMenus) {
     if (mobileBackButton && isMobileHeaderViewport()) {
       const details = mobileBackButton.closest('.header__submenu-nested-disclosure, .header__submenu-disclosure');
       if (details) {
-        closeMegaMenu(details);
-        window.requestAnimationFrame(() => details.querySelector(':scope > summary')?.focus());
+        closeMegaMenu(details, false, true);
       }
       return;
     }
@@ -636,9 +828,11 @@ if (!window.SpinelHeaderMenus) {
 
   initializeHeaderDisclosures();
   document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => syncMobileDrawer(disclosure));
+  syncHeaderMenuScrollLock();
   document.addEventListener('shopify:section:load', (event) => {
     initializeHeaderDisclosures(event.target);
     event.target.querySelectorAll?.('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => syncMobileDrawer(disclosure));
+    syncHeaderMenuScrollLock();
   });
 
   document.addEventListener('click', (event) => {
