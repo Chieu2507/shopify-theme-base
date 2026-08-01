@@ -208,7 +208,11 @@ if (!window.SpinelHeaderMenus) {
         ? 650
         : configuredDuration;
     const delay = 0;
-    const easing = isDesktopCascadingMenu ? headerMenuEasing : 'cubic-bezier(0.22, 1, 0.36, 1)';
+    const easing = isMobileDrawerMenu
+      ? 'ease-in-out'
+      : isDesktopCascadingMenu
+        ? headerMenuEasing
+        : 'cubic-bezier(0.22, 1, 0.36, 1)';
     return { panel, type, duration, delay, easing };
   };
 
@@ -230,8 +234,10 @@ if (!window.SpinelHeaderMenus) {
           ];
       return frames;
     } else if (type === 'mobile_slide') {
-      const slideOffset = getComputedStyle(panel).direction === 'rtl' ? '-100%' : '100%';
-      frames = [{ opacity: 1, translate: `${slideOffset} 0` }, { opacity: 1, translate: '0 0' }];
+      const slideOffset = getComputedStyle(panel).direction === 'rtl'
+        ? 'translateX(-100%)'
+        : 'translateX(100%)';
+      frames = [{ opacity: 1, transform: slideOffset }, { opacity: 1, transform: 'translateX(0)' }];
     } else if (type === 'cascading_root') {
       frames = [{ opacity: 0, translate: '0 -30px' }, { opacity: 1, translate: '0 0' }];
     } else if (type === 'cascading_flyout') {
