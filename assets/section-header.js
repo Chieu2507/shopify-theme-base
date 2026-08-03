@@ -168,14 +168,26 @@ if (!window.SpinelHeaderMenus) {
     root.classList.toggle('header-menu-scroll-locked', shouldLock);
     document.body?.classList.toggle('header-menu-scroll-locked', shouldLock);
 
-    if (shouldLock && !isLocked) {
-      const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
-      root.style.setProperty('--header-menu-scrollbar-width', `${scrollbarWidth}px`);
-      window.SpinelSmoothScroll?.cancel();
+    if (shouldLock && !isLocked) window.SpinelSmoothScroll?.cancel();
+
+    const scrollLock = window.themeScrollLock;
+    if (scrollLock?.acquire) {
+      if (!isMobile && shouldLock) scrollLock.acquire('mega-menu', { mode: 'overflow' });
+      else scrollLock.release('mega-menu');
+
+      if (isMobile && shouldLock) scrollLock.acquire('mobile-menu', { mode: 'overflow' });
+      else scrollLock.release('mobile-menu');
+      return;
     }
 
-    if (!shouldLock && isLocked) {
-      root.style.removeProperty('--header-menu-scrollbar-width');
+    // Keep a safe fallback for a section that is initialized before the
+    // deferred shared controller has finished loading.
+    if (shouldLock && !isLocked) {
+      const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+      root.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+      root.style.setProperty('--header-menu-scrollbar-width', `${scrollbarWidth}px`);
+      document.body?.style.setProperty('overflow', 'hidden');
+      document.body?.style.setProperty('padding-right', 'var(--scrollbar-width)');
     }
   };
 
