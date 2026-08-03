@@ -118,21 +118,13 @@ Trong section schema, block dùng:
 
 Nếu đang chỉnh riêng Shop the look, tiếp tục dùng type `subheading` hiện tại để bảo toàn dữ liệu.
 
-`subheading` hiện là section-local block nên không thể dùng trực tiếp làm nested theme block bên trong `_section-header`. Khi cần Subheading có tên riêng và tái sử dụng ở nhiều Section header, hãy:
-
-1. Tạo `blocks/subheading.liquid` từ implementation của Shop the look.
-2. Giữ `"name": "Subheading"`.
-3. Render qua `typography-block` với `default_preset` và `default_font` là `subheading`.
-4. Cho phép `{ "type": "subheading" }` trong schema của Section header cần sử dụng.
-5. Không sao chép toàn bộ schema Subheading vào nhiều section mới.
-
-Trong thời gian chưa tách thành theme block riêng, có thể dùng block `text` với typography preset `subheading` nếu không bắt buộc Theme Editor hiển thị nhãn `Subheading`:
+`subheading` hiện là section-local block nên không thể dùng trực tiếp làm nested theme block bên trong `_section-header`. Với nested theme block, dùng preset `Subheading` của `blocks/heading.liquid`. Preset này vẫn tạo block type `heading`, dùng chung render logic và settings với Heading:
 
 ```json
 {
-  "type": "text",
+  "type": "heading",
   "settings": {
-    "text": "<p>What customers say</p>",
+    "heading": "<p>What customers say</p>",
     "type_preset": "subheading",
     "color": "subtext",
     "alignment": "center"
@@ -140,9 +132,9 @@ Trong thời gian chưa tách thành theme block riêng, có thể dùng block `
 }
 ```
 
-ID của block nên thể hiện đúng vai trò, ví dụ `review_header_subheading`, dù type vẫn là `text`.
+ID của block nên thể hiện đúng vai trò, ví dụ `review_header_subheading`, dù type vẫn là `heading`.
 
-Không dùng heading block để giả lập Subheading.
+Không tạo thêm file hoặc block type riêng cho Subheading.
 
 ### Quy tắc Heading
 
