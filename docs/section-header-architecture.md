@@ -68,7 +68,7 @@ Nếu nhiều block riêng dùng chung markup, tách markup lặp lại thành s
 
 Section header hỗ trợ ba vai trò nội dung:
 
-1. `Subheading`: nhãn nhỏ hoặc eyebrow phía trên heading.
+1. `Subheading`: nhãn nhỏ hoặc subheading phía trên heading.
 2. `Heading`: tiêu đề chính của section.
 3. `Text`: mô tả hoặc nội dung phụ.
 
@@ -86,7 +86,7 @@ Không bắt buộc phải có đủ cả ba. Preset chỉ thêm những block c
 
 Implementation Subheading hiện có nằm trực tiếp trong `sections/shop-the-look.liquid`. Đây không phải một file block riêng:
 
-- Block type nội bộ: `eyebrow`.
+- Block type nội bộ: `subheading`.
 - Tên hiển thị: `Subheading`.
 - Nội dung: `block.settings.text`.
 - Render qua snippet `typography-block`.
@@ -110,15 +110,15 @@ Trong section schema, block dùng:
 
 ```json
 {
-  "type": "eyebrow",
+  "type": "subheading",
   "name": "Subheading",
   "limit": 1
 }
 ```
 
-Nếu đang chỉnh riêng Shop the look, tiếp tục dùng type `eyebrow` hiện tại để bảo toàn dữ liệu.
+Nếu đang chỉnh riêng Shop the look, tiếp tục dùng type `subheading` hiện tại để bảo toàn dữ liệu.
 
-`eyebrow` hiện là section-local block nên không thể dùng trực tiếp làm nested theme block bên trong `_section-header`. Khi cần Subheading có tên riêng và tái sử dụng ở nhiều Section header, hãy:
+`subheading` hiện là section-local block nên không thể dùng trực tiếp làm nested theme block bên trong `_section-header`. Khi cần Subheading có tên riêng và tái sử dụng ở nhiều Section header, hãy:
 
 1. Tạo `blocks/subheading.liquid` từ implementation của Shop the look.
 2. Giữ `"name": "Subheading"`.
