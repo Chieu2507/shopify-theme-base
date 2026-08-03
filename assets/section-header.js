@@ -8,6 +8,7 @@ if (!window.SpinelHeaderMenus) {
   const mobileMenuReturnFocus = new WeakMap();
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   let transparentHeaderFrame = 0;
+  let headerScrollLockFallbackStyles = null;
 
   const isMobileHeaderViewport = () => window.matchMedia('(max-width: 899px)').matches;
 
@@ -163,31 +164,57 @@ if (!window.SpinelHeaderMenus) {
     const root = document.documentElement;
     const isLocked = root.classList.contains('header-menu-scroll-locked');
 
+    const body = document.body;
     root.classList.toggle('header-menu-overlay-visible', shouldShowOverlay);
     root.classList.toggle('header-menu-overlay-closing', isMobile && Boolean(closingMobileDrawer));
-    root.classList.toggle('header-menu-scroll-locked', shouldLock);
-    document.body?.classList.toggle('header-menu-scroll-locked', shouldLock);
 
     if (shouldLock && !isLocked) window.SpinelSmoothScroll?.cancel();
 
     const scrollLock = window.themeScrollLock;
-    if (scrollLock?.acquire) {
-      if (!isMobile && shouldLock) scrollLock.acquire('mega-menu', { mode: 'overflow' });
-      else scrollLock.release('mega-menu');
+    if (scrollLock?.acquire && headerScrollLockFallbackStyles) {
+      root.classList.remove('header-menu-scroll-locked');
+      body?.classList.remove('header-menu-scroll-locked');
+      body?.style.setProperty('overflow', headerScrollLockFallbackStyles.overflow);
+      body?.style.setProperty('padding-right', headerScrollLockFallbackStyles.paddingRight);
+      headerScrollLockFallbackStyles = null;
+    }
 
-      if (isMobile && shouldLock) scrollLock.acquire('mobile-menu', { mode: 'overflow' });
-      else scrollLock.release('mobile-menu');
+    if (shouldLock) {
+      if (scrollLock?.acquire) {
+        const owner = isMobile ? 'mobile-menu' : 'mega-menu';
+        const inactiveOwner = isMobile ? 'mega-menu' : 'mobile-menu';
+        scrollLock.acquire(owner, { mode: 'overflow' });
+        scrollLock.release(inactiveOwner);
+      } else {
+        const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+        root.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
+        root.style.setProperty('--header-menu-scrollbar-width', `${scrollbarWidth}px`);
+        headerScrollLockFallbackStyles ||= {
+          overflow: body?.style.getPropertyValue('overflow') || '',
+          paddingRight: body?.style.getPropertyValue('padding-right') || ''
+        };
+        body?.style.setProperty('overflow', 'hidden');
+        body?.style.setProperty('padding-right', 'var(--scrollbar-width)');
+      }
+
+      root.classList.add('header-menu-scroll-locked');
+      body?.classList.add('header-menu-scroll-locked');
       return;
     }
 
-    // Keep a safe fallback for a section that is initialized before the
-    // deferred shared controller has finished loading.
-    if (shouldLock && !isLocked) {
+    root.classList.remove('header-menu-scroll-locked');
+    body?.classList.remove('header-menu-scroll-locked');
+
+    if (scrollLock?.release) {
+      scrollLock.release('mega-menu');
+      scrollLock.release('mobile-menu');
+    } else if (headerScrollLockFallbackStyles) {
+      body?.style.setProperty('overflow', headerScrollLockFallbackStyles.overflow);
+      body?.style.setProperty('padding-right', headerScrollLockFallbackStyles.paddingRight);
+      headerScrollLockFallbackStyles = null;
       const scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
       root.style.setProperty('--scrollbar-width', `${scrollbarWidth}px`);
       root.style.setProperty('--header-menu-scrollbar-width', `${scrollbarWidth}px`);
-      document.body?.style.setProperty('overflow', 'hidden');
-      document.body?.style.setProperty('padding-right', 'var(--scrollbar-width)');
     }
   };
 
