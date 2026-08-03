@@ -61,17 +61,15 @@
           {% case block.type %}
             {% when 'heading' %}
               {% if block.settings.heading != blank %}
-                <div class="hero-banner__heading-block" {{ block.shopify_attributes }}>
-                  <{{ block.settings.heading_tag }} class="hero-banner__heading heading spinel-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}">
-                    {{ block.settings.heading | escape }}
-                  </{{ block.settings.heading_tag }}>
+                <div class="hero-banner__heading-block hero-banner__heading">
+                  {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h1', default_font: 'heading' %}
                 </div>
               {% endif %}
 
             {% when 'text' %}
               {% if block.settings.text != blank %}
-                <div class="hero-banner__text text-block text-block--{{ block.settings.text_size | default: 'medium' }} content-text spinel-text--{{ block.settings.text_size }} content-text--{{ block.settings.text_size }} rte" {{ block.shopify_attributes }}>
-                  {{ block.settings.text }}
+                <div class="hero-banner__text">
+                  {% render 'typography-block', block: block, content: block.settings.text, kind: 'text', default_preset: 'paragraph', default_font: 'body' %}
                 </div>
               {% endif %}
 
@@ -460,83 +458,103 @@
       "settings": [
         {
           "type": "header",
-          "content": "Heading"
+          "content": "t:typography_blocks.typography"
         },
         {
-          "type": "text",
+          "type": "richtext",
           "id": "heading",
-          "label": "Heading",
-          "default": "Designed for every day"
+          "label": "t:typography_blocks.text",
+          "default": "<h1>Designed for every day</h1>"
+        },
+        {
+          "type": "paragraph",
+          "content": "t:typography_blocks.highlight_info"
         },
         {
           "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
+          "id": "highlight_style",
+          "label": "t:typography_blocks.highlight_style",
           "options": [
             {
-              "value": "h1",
-              "label": "XX-large"
+              "value": "none",
+              "label": "t:typography_options.none"
             },
             {
-              "value": "h2",
-              "label": "X-large"
+              "value": "wavy",
+              "label": "t:typography_options.wavy_underline"
             },
             {
-              "value": "h3",
-              "label": "Large"
-            },
-            {
-              "value": "h4",
-              "label": "Medium"
-            },
-            {
-              "value": "h5",
-              "label": "Small"
-            },
-            {
-              "value": "h6",
-              "label": "X-small"
+              "value": "solid",
+              "label": "t:typography_options.solid_background"
             }
           ],
-          "default": "h1"
+          "default": "none"
         },
         {
           "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
           "options": [
             {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
               "value": "h1",
-              "label": "H1"
+              "label": "t:typography_options.h1"
             },
             {
               "value": "h2",
-              "label": "H2"
+              "label": "t:typography_options.h2"
             },
             {
               "value": "h3",
-              "label": "H3"
+              "label": "t:typography_options.h3"
             },
             {
               "value": "h4",
-              "label": "H4"
+              "label": "t:typography_options.h4"
             },
             {
               "value": "h5",
-              "label": "H5"
+              "label": "t:typography_options.h5"
             },
             {
               "value": "h6",
-              "label": "H6"
+              "label": "t:typography_options.h6"
             }
           ],
-          "default": "h1"
+          "default": "default"
         },
         {
-          "type": "text_alignment",
-          "id": "alignment",
-          "label": "Alignment",
-          "default": "left"
+          "type": "select",
+          "id": "color",
+          "label": "t:typography_blocks.color",
+          "options": [
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
         }
       ]
     },
@@ -547,41 +565,103 @@
       "settings": [
         {
           "type": "header",
-          "content": "Text"
+          "content": "t:typography_blocks.typography"
         },
         {
           "type": "richtext",
           "id": "text",
-          "label": "Text",
+          "label": "t:typography_blocks.text",
           "default": "<p>Find the perfect gift to honor someone special this festive season.</p>"
         },
         {
+          "type": "paragraph",
+          "content": "t:typography_blocks.highlight_info"
+        },
+        {
           "type": "select",
-          "id": "text_size",
-          "label": "Text size",
+          "id": "highlight_style",
+          "label": "t:typography_blocks.highlight_style",
           "options": [
             {
-              "value": "x-large",
-              "label": "X-large"
+              "value": "none",
+              "label": "t:typography_options.none"
             },
             {
-              "value": "large",
-              "label": "Large"
+              "value": "wavy",
+              "label": "t:typography_options.wavy_underline"
             },
             {
-              "value": "medium",
-              "label": "Medium"
-            },
-            {
-              "value": "small",
-              "label": "Small"
-            },
-            {
-              "value": "x-small",
-              "label": "X-small"
+              "value": "solid",
+              "label": "t:typography_options.solid_background"
             }
           ],
-          "default": "small"
+          "default": "none"
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
+          "options": [
+            {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
+              "value": "h1",
+              "label": "t:typography_options.h1"
+            },
+            {
+              "value": "h2",
+              "label": "t:typography_options.h2"
+            },
+            {
+              "value": "h3",
+              "label": "t:typography_options.h3"
+            },
+            {
+              "value": "h4",
+              "label": "t:typography_options.h4"
+            },
+            {
+              "value": "h5",
+              "label": "t:typography_options.h5"
+            },
+            {
+              "value": "h6",
+              "label": "t:typography_options.h6"
+            }
+          ],
+          "default": "default"
+        },
+        {
+          "type": "select",
+          "id": "color",
+          "label": "t:typography_blocks.color",
+          "options": [
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
         }
       ]
     },
