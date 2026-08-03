@@ -9,14 +9,14 @@
   assign has_collection_source = false
   for block in section.blocks
     case block.type
-      when 'collection_tab'
+      when 'featured-collection-tab'
         assign tab_count = tab_count | plus: 1
         if block.settings.source == 'recently_viewed'
           assign has_recently_viewed_source = true
         else
           assign has_collection_source = true
         endif
-      when 'promotion'
+      when 'featured-collection-promotion'
         assign promotion_block = block
         assign promotion_position = block.settings.position | default: 'before'
     endcase
@@ -49,7 +49,7 @@
           >
             {% assign tab_index = 0 %}
             {% for block in section.blocks %}
-              {% if block.type == 'collection_tab' %}
+              {% if block.type == 'featured-collection-tab' %}
                 {% liquid
                   assign tab_label = block.settings.label
                   if tab_label == blank and block.settings.source == 'recently_viewed'
@@ -138,7 +138,7 @@
             <div class="featured-collection__panels">
               {% assign panel_index = 0 %}
               {% for block in section.blocks %}
-                {% if block.type == 'collection_tab' %}
+                {% if block.type == 'featured-collection-tab' %}
                   <div
                     class="featured-collection__panel"
                     id="FeaturedCollectionPanel-{{ section.id }}-{{ block.id }}"
@@ -352,83 +352,10 @@
   ],
   "blocks": [
     {
-      "type": "promotion",
-      "name": "Promotion",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Promotion"
-        },
-        { "type": "image_picker", "id": "image", "label": "Image" },
-        { "type": "text", "id": "heading", "label": "Heading", "default": "For Effortless Glow" },
-        {
-          "type": "richtext",
-          "id": "text",
-          "label": "Text",
-          "default": "<p>Radiant, versatile designs for everyday moments.</p>"
-        },
-        { "type": "text", "id": "button_label", "label": "Button label", "default": "Shop now" },
-        { "type": "url", "id": "link", "label": "Link" },
-        {
-          "type": "select",
-          "id": "position",
-          "label": "Position",
-          "options": [
-            { "value": "before", "label": "Before" },
-            { "value": "after", "label": "After" }
-          ],
-          "default": "before"
-        },
-        {
-          "type": "select",
-          "id": "media_ratio",
-          "label": "Image ratio",
-          "options": [
-            { "value": "portrait", "label": "Portrait" },
-            { "value": "adapt", "label": "Adapt" }
-          ],
-          "default": "portrait"
-        },
-        { "type": "text_alignment", "id": "focal_point", "label": "Image focal point", "default": "center" },
-        {
-          "type": "range",
-          "id": "overlay_opacity",
-          "min": 0,
-          "max": 80,
-          "step": 5,
-          "unit": "%",
-          "label": "Overlay opacity",
-          "default": 40
-        }
-      ]
+      "type": "featured-collection-promotion"
     },
     {
-      "type": "collection_tab",
-      "name": "Collection tab",
-      "limit": 5,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Collection tab"
-        },
-        { "type": "text", "id": "label", "label": "Tab label" },
-        {
-          "type": "select",
-          "id": "source",
-          "label": "Product source",
-          "options": [
-            { "value": "collection", "label": "Collection" },
-            { "value": "recently_viewed", "label": "Recently viewed" }
-          ],
-          "default": "collection"
-        },
-        {
-          "type": "collection",
-          "id": "collection",
-          "label": "Collection"
-        }
-      ]
+      "type": "featured-collection-tab"
     }
   ],
   "presets": [
@@ -465,9 +392,9 @@
             }
           ]
         },
-        { "type": "collection_tab", "settings": { "label": "Featured" } },
-        { "type": "collection_tab", "settings": { "label": "New in" } },
-        { "type": "collection_tab", "settings": { "label": "Best sellers" } }
+        { "type": "featured-collection-tab", "settings": { "label": "Featured" } },
+        { "type": "featured-collection-tab", "settings": { "label": "New in" } },
+        { "type": "featured-collection-tab", "settings": { "label": "Best sellers" } }
       ]
     },
     {
@@ -503,10 +430,10 @@
             }
           ]
         },
-        { "type": "promotion" },
-        { "type": "collection_tab", "settings": { "label": "Featured" } },
-        { "type": "collection_tab", "settings": { "label": "New in" } },
-        { "type": "collection_tab", "settings": { "label": "Best sellers" } }
+        { "type": "featured-collection-promotion" },
+        { "type": "featured-collection-tab", "settings": { "label": "Featured" } },
+        { "type": "featured-collection-tab", "settings": { "label": "New in" } },
+        { "type": "featured-collection-tab", "settings": { "label": "Best sellers" } }
       ]
     }
   ]
