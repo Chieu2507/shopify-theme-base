@@ -727,25 +727,32 @@ Item block:
 
 Nếu icon vocabulary cố định, dùng `select`. Nếu merchant tải icon riêng, dùng `image_picker`. Không dùng cùng một ID `icon` cho cả hai type.
 
-### 9.14. Scrolling text
+### 9.14. Marquee
 
 Section settings:
 
-- Direction.
-- Speed.
-- Pause on hover.
-- Item gap.
-- Text style.
-- Color scheme.
 - Section width.
+- Space between marquees.
+- Section padding.
+- Color scheme.
 
-Text block:
+Marquee block:
 
+- Enable scrolling.
+- Direction, scrolling duration và pause on hover.
+- Item gap và vertical alignment.
+- Desktop/mobile height.
+- Color scheme riêng cho từng marquee.
+
+Nested content blocks:
+
+- Icon / image.
+- Heading.
 - Text.
-- Optional link.
-- Optional icon.
+- Subheading.
+- Button.
 
-Không dùng autoplay interval theo kiểu slideshow; marquee nên dùng speed contract riêng.
+Heading, Text và Subheading dùng chung typography system từ thư mục `blocks`. Không dùng autoplay interval theo kiểu slideshow; mỗi marquee dùng duration contract riêng.
 
 ### 9.15. Countdown
 
