@@ -1,230 +1,591 @@
-{% render 'section-stylesheet', asset: 'section-gift-spinel.css' %}
+{% render 'section-stylesheet', asset: 'section-featured-collection-critical.css', inline_on_home: true %}
+{% render 'swiper-stylesheet', defer_on_home: true %}
 
 {% liquid
-  assign image_column_position = section.settings.image_position
-  if image_column_position contains 'right'
-    assign image_column_position = 'right'
-  else
-    assign image_column_position = 'left'
-  endif
+  assign tab_count = 0
+  assign has_intro = false
+  assign promotion_block = blank
+  assign promotion_position = 'before'
+  assign has_recently_viewed_source = false
+  assign has_collection_source = false
+  for block in section.blocks
+    case block.type
+      when 'collection_tab'
+        assign tab_count = tab_count | plus: 1
+        if block.settings.source == 'recently_viewed'
+          assign has_recently_viewed_source = true
+        else
+          assign has_collection_source = true
+        endif
+      when 'heading', 'text'
+        assign has_intro = true
+      when 'editorial_image'
+        assign promotion_block = block
+        assign promotion_position = block.settings.position | default: 'before'
+    endcase
+  endfor
 %}
 
-<gift-spinel
-  id="gift-spinel"
-  class="gift-spinel gift-spinel--layout-{{ section.settings.layout_ratio }} gift-spinel--image-{{ image_column_position }} gift-spinel--choices-{{ section.settings.choice_style }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width gift-spinel--full{% endif %}"
-  data-deferred-module="{{ 'gift-spinel.js' | asset_url }}"
-  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --gift-spinel-product-columns: {{ section.settings.product_columns }};"
->
-  <div class="gift-spinel__spacing section-spacing">
-    <div class="gift-spinel__inner">
-      <div
-        class="gift-spinel__intro"
-        style="--gift-spinel-card-color: {{ section.settings.image_overlay_color }}; --gift-spinel-card-reflection: {{ section.settings.intro_card_reflection | divided_by: 100.0 }};"
-        {% if section.settings.heading != blank %}aria-labelledby="GiftSpinelTitle-{{ section.id }}"{% endif %}
-      >
-        <div class="gift-spinel__intro-media" aria-hidden="true">
-          {% if section.settings.image != blank %}
-            {% render 'responsive-image',
-              image: section.settings.image,
-              max_width: 1800,
-              widths: '480, 640, 750, 960, 1200, 1500, 1800',
-              sizes: '(min-width: 990px) 42vw, 100vw',
-              class: 'gift-spinel__intro-image',
-              loading: 'lazy',
-              decorative: true
+{% if section.blocks.size > 0 %}
+  <featured-collection
+    id="gift-spinel"
+    data-deferred-module="{{ 'featured-collection.js' | asset_url }}"
+    data-product-id="{{ product.id }}"
+    class="featured-collection featured-collection--slider color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if promotion_block != blank %} featured-collection--has-promotion featured-collection--promotion-{{ promotion_position }}{% endif %}"
+    data-desktop-columns="{{ section.settings.columns_desktop }}"
+    data-mobile-columns="{{ section.settings.columns_mobile }}"
+    data-has-recently-viewed-source="{{ has_recently_viewed_source }}"
+    data-design-mode="{{ request.design_mode }}"
+    data-products-to-show="{{ section.settings.products_to_show }}"
+    style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --featured-collection-column-gap: {{ section.settings.column_gap }}px; --featured-collection-mobile-column-gap: {{ section.settings.mobile_column_gap }}px; --featured-collection-columns: {{ section.settings.columns_desktop }}; scroll-margin-top: calc(var(--header-height, 84px) + 24px);"
+    {% if has_recently_viewed_source and has_collection_source == false and request.design_mode == false %}hidden{% endif %}
+  >
+    <div class="featured-collection__inner section-spacing{% if section.settings.section_width == 'page' %} featured-collection__inner--page{% endif %}">
+      {% if has_intro or tab_count > 1 %}
+        <div class="featured-collection__header{% if has_intro %} featured-collection__header--with-intro{% endif %}{% if has_intro and tab_count <= 1 %} featured-collection__header--centered{% endif %}">
+          {% if has_intro %}
+            <div class="featured-collection__intro">
+              {% for block in section.blocks %}
+                {% case block.type %}
+                  {% when 'heading' %}
+                    {% if block.settings.heading != blank %}
+                      <div class="featured-collection__heading-block" {{ block.shopify_attributes }}>
+                        <{{ block.settings.heading_tag }} class="featured-collection__heading spinel-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}">
+                          {{ block.settings.heading | escape }}
+                        </{{ block.settings.heading_tag }}>
+                      </div>
+                    {% endif %}
+                  {% when 'text' %}
+                    {% if block.settings.text != blank %}
+                      <div class="featured-collection__text">
+                        {% render 'typography-block',
+                          block: block,
+                          content: block.settings.text,
+                          kind: 'text',
+                          default_preset: 'paragraph',
+                          default_font: 'body'
+                        %}
+                      </div>
+                    {% endif %}
+                {% endcase %}
+              {% endfor %}
+            </div>
+          {% endif %}
+
+          {% if tab_count > 1 %}
+            <div
+              class="featured-collection__tabs"
+              role="tablist"
+              aria-label="{{ 'featured_collection.tabs' | t | escape }}"
+            >
+              {% assign tab_index = 0 %}
+              {% for block in section.blocks %}
+                {% if block.type == 'collection_tab' %}
+                  {% liquid
+                    assign tab_label = block.settings.label
+                    if tab_label == blank and block.settings.source == 'recently_viewed'
+                      assign tab_label = 'Recently viewed'
+                    endif
+                    if tab_label == blank
+                      assign tab_label = block.settings.collection.title
+                    endif
+                    if tab_label == blank
+                      assign tab_label = 'featured_collection.collection' | t
+                    endif
+                  %}
+                  <button
+                    class="featured-collection__tab"
+                    id="FeaturedCollectionTab-{{ section.id }}-{{ block.id }}"
+                    type="button"
+                    role="tab"
+                    aria-selected="{% if tab_index == 0 %}true{% else %}false{% endif %}"
+                    aria-controls="FeaturedCollectionPanel-{{ section.id }}-{{ block.id }}"
+                    tabindex="{% if tab_index == 0 %}0{% else %}-1{% endif %}"
+                    data-featured-collection-tab
+                    data-block-id="{{ block.id }}"
+                    data-featured-collection-source="{{ block.settings.source | default: 'collection' }}"
+                  >
+                    {{ tab_label | escape }}
+                  </button>
+                  {% assign tab_index = tab_index | plus: 1 %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
+
+      {% if promotion_block != blank or tab_count > 0 %}
+        <div class="featured-collection__body">
+          {% if promotion_block != blank %}
+            {% liquid
+              assign promotion_alt = promotion_block.settings.image.alt
+              assign promotion_overlay_opacity = promotion_block.settings.overlay_opacity | divided_by: 100.0
+              if promotion_overlay_opacity < 0.45
+                assign promotion_overlay_opacity = 0.45
+              endif
+              if promotion_alt == blank
+                assign promotion_alt = promotion_block.settings.heading
+              endif
             %}
-          {% endif %}
-        </div>
-        <div class="gift-spinel__intro-content gift-spinel__intro-content--position-{{ section.settings.intro_card_position }}{% if section.settings.enable_intro_card %} gift-spinel__intro-content--card{% endif %}">
-          {% if section.settings.subheading != blank %}
-            <p class="gift-spinel__subheading">{{ section.settings.subheading | escape }}</p>
-          {% endif %}
-          {% if section.settings.heading != blank %}
-            <h2 class="gift-spinel__heading" id="GiftSpinelTitle-{{ section.id }}">{{ section.settings.heading | escape }}</h2>
-          {% endif %}
-        </div>
-      </div>
-
-      <div class="gift-spinel__finder">
-        <div class="gift-spinel__questions" data-gift-spinel-questions>
-          <div class="gift-spinel__step-meta">
-            <span>{{ 'gift_spinel.quick_choice' | t }}</span>
-            <span>{{ section.settings.concierge_label | escape }}</span>
-          </div>
-          {% if section.settings.intro != blank %}
-            <div class="gift-spinel__intro-copy rte">{{ section.settings.intro }}</div>
-          {% endif %}
-          <h3 class="gift-spinel__question" id="GiftSpinelQuestion-{{ section.id }}" data-gift-spinel-question tabindex="-1">{{ section.settings.question_recipient | escape }}</h3>
-          <p class="gift-spinel__question-hint" id="GiftSpinelHint-{{ section.id }}">{{ 'gift_spinel.choose_hint' | t }}</p>
-          <div class="gift-spinel__choices" data-gift-spinel-choices role="group" aria-labelledby="GiftSpinelQuestion-{{ section.id }}" aria-describedby="GiftSpinelHint-{{ section.id }}">
-            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="partner" aria-pressed="false">{{ section.settings.recipient_partner | escape }}</button>
-            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="mother" aria-pressed="false">{{ section.settings.recipient_mother | escape }}</button>
-            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="friend" aria-pressed="false">{{ section.settings.recipient_friend | escape }}</button>
-            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="myself" aria-pressed="false">{{ section.settings.recipient_myself | escape }}</button>
-          </div>
-        </div>
-
-        <p class="visually-hidden" data-gift-spinel-status role="status" aria-live="polite"></p>
-        <div class="gift-spinel__result" data-gift-spinel-result hidden></div>
-
-      </div>
-    </div>
-  </div>
-
-  {% for block in section.blocks %}
-    {% liquid
-      assign path_primary_link = block.settings.primary_link
-      if path_primary_link == blank and block.settings.result_collection != blank
-        assign path_primary_link = block.settings.result_collection.url
-      endif
-      assign path_heading = block.settings.heading
-      assign path_copy = block.settings.copy
-      assign path_products = block.settings.result_products
-      if path_products == blank and block.settings.result_collection != blank
-        assign path_products = block.settings.result_collection.products
-      endif
-    %}
-    <template
-      data-gift-spinel-path
-      data-block-id="{{ block.id }}"
-      data-recipient="{{ block.settings.recipient }}"
-    >
-      <div class="gift-spinel__result-content" {{ block.shopify_attributes }}>
-        {% if block.settings.featured_badge != blank %}<p class="gift-spinel__result-kicker">{{ block.settings.featured_badge | escape }}</p>{% else %}<p class="gift-spinel__result-kicker">{{ 'gift_spinel.curated_edit' | t }}</p>{% endif %}
-        <h3 class="gift-spinel__result-heading" data-gift-spinel-result-heading tabindex="-1">{{ path_heading | escape }}</h3>
-        {% if path_copy != blank %}<div class="gift-spinel__result-copy rte" data-gift-spinel-result-copy>{{ path_copy }}</div>{% endif %}
-        <div class="gift-spinel__result-tools">
-          <div class="gift-spinel__chips" data-gift-spinel-chips></div>
-          <button class="gift-spinel__change" type="button" data-gift-spinel-change>{{ 'gift_spinel.change_recipient' | t }}</button>
-        </div>
-
-        <div class="gift-spinel__actions">
-          {% render 'cta', label: block.settings.primary_label, url: path_primary_link, style: 'primary' %}
-          {% if block.settings.show_personalization and block.settings.personalization_link != blank %}
-            {% render 'cta', label: block.settings.personalization_label, url: block.settings.personalization_link, style: 'tertiary' %}
-          {% endif %}
-        </div>
-
-        {% if path_products != blank %}
-          <ul class="gift-spinel__products" role="list">
-            {% for product in path_products limit: section.settings.products_to_show %}
-              <li class="gift-spinel__product">
-                {% render 'product-card',
-                  product: product,
-                  show_media_actions: true,
-                  enable_quick_view: true
+            <article
+              class="featured-collection__promotion featured-collection__promotion--{{ promotion_block.settings.media_ratio }}"
+              style="--featured-collection-promotion-focal-point: {{ promotion_block.settings.focal_point }}; --featured-collection-promotion-overlay: {{ promotion_overlay_opacity }};"
+              {{ promotion_block.shopify_attributes }}
+            >
+              <div class="featured-collection__promotion-media">
+                {% if promotion_block.settings.image != blank %}
+                  {% render 'responsive-image',
+                    image: promotion_block.settings.image,
+                    max_width: 1200,
+                    widths: '320, 480, 640, 800, 960, 1200',
+                    sizes: '(min-width: 990px) 25vw, (min-width: 750px) 33vw, 50vw',
+                    class: 'featured-collection__promotion-image',
+                    loading: 'lazy',
+                    alt: promotion_alt
+                  %}
+                {% else %}
+                  {% render 'media-placeholder', class_name: 'featured-collection__promotion-placeholder' %}
+                {% endif %}
+              </div>
+              <div class="featured-collection__promotion-overlay"></div>
+              <div class="featured-collection__promotion-content">
+                {% if promotion_block.settings.heading != blank %}
+                  <h3 class="featured-collection__promotion-heading">{{ promotion_block.settings.heading | escape }}</h3>
+                {% endif %}
+                {% if promotion_block.settings.text != blank %}
+                  <div class="featured-collection__promotion-text rte">{{ promotion_block.settings.text }}</div>
+                {% endif %}
+                {% render 'cta',
+                  label: promotion_block.settings.button_label,
+                  url: promotion_block.settings.link,
+                  style: 'primary',
+                  class: 'featured-collection__promotion-button'
                 %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <ul class="gift-spinel__products" role="list" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}">
-            {% for placeholder_number in (1..section.settings.products_to_show) %}
-              <li class="gift-spinel__product">
-                {% render 'product-card',
-                  placeholder_index: placeholder_number
-                %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      </div>
-    </template>
-  {% endfor %}
+              </div>
+            </article>
+          {% endif %}
 
-  <template data-gift-spinel-placeholder>
-    <div class="gift-spinel__result-content">
-      <div class="gift-spinel__result-tools">
-        <div class="gift-spinel__chips" data-gift-spinel-chips></div>
-        <button class="gift-spinel__change" type="button" data-gift-spinel-change>{{ 'gift_spinel.change_recipient' | t }}</button>
-      </div>
-      <ul class="gift-spinel__products" role="list">
-        {% for placeholder_number in (1..section.settings.products_to_show) %}
-          <li class="gift-spinel__product">
-            {% render 'product-card', placeholder_index: placeholder_number %}
-          </li>
-        {% endfor %}
-      </ul>
+          {% if tab_count > 0 %}
+            <div class="featured-collection__panels">
+              {% assign panel_index = 0 %}
+              {% for block in section.blocks %}
+                {% if block.type == 'collection_tab' %}
+                  <div
+                    class="featured-collection__panel"
+                    id="FeaturedCollectionPanel-{{ section.id }}-{{ block.id }}"
+                    role="tabpanel"
+                    aria-labelledby="FeaturedCollectionTab-{{ section.id }}-{{ block.id }}"
+                    data-featured-collection-panel
+                    data-block-id="{{ block.id }}"
+                    data-featured-collection-source="{{ block.settings.source | default: 'collection' }}"
+                    {% unless panel_index == 0 %}hidden{% endunless %}
+                    {{ block.shopify_attributes }}
+                  >
+                    <div class="featured-collection__carousel swiper" data-featured-collection-carousel>
+                      <ul class="featured-collection__products swiper-wrapper" role="list" data-featured-collection-scroller>
+                      {% if block.settings.source == 'recently_viewed' %}
+                        {% if request.design_mode %}
+                          {% for placeholder_index in (1..section.settings.products_to_show) %}
+                            <li class="featured-collection__product swiper-slide">
+                              {% render 'product-card',
+                                show_media_actions: true,
+                                enable_quick_view: true,
+                                placeholder_index: placeholder_index
+                              %}
+                            </li>
+                          {% endfor %}
+                        {% endif %}
+                      {% elsif block.settings.collection != blank and block.settings.collection.products_count > 0 %}
+                        {% for product in block.settings.collection.products limit: section.settings.products_to_show %}
+                          {% liquid
+                            assign card_loading = 'lazy'
+                            assign card_fetchpriority = 'auto'
+                            assign card_preload = false
+                            if section.index <= 3 and panel_index == 0 and forloop.first
+                              assign card_loading = 'eager'
+                              assign card_fetchpriority = 'high'
+                              assign card_preload = true
+                            endif
+                          %}
+                          <li class="featured-collection__product swiper-slide">
+                            {% render 'product-card',
+                              product: product,
+                              show_media_actions: true,
+                              enable_quick_view: true,
+                              loading: card_loading,
+                              fetchpriority: card_fetchpriority,
+                              preload: card_preload
+                            %}
+                          </li>
+                        {% endfor %}
+                      {% else %}
+                        {% for placeholder_index in (1..section.settings.products_to_show) %}
+                          <li class="featured-collection__product swiper-slide">
+                            {% render 'product-card',
+                              show_media_actions: true,
+                              enable_quick_view: true,
+                              placeholder_index: placeholder_index
+                            %}
+                          </li>
+                        {% endfor %}
+                      {% endif %}
+                      </ul>
+                    </div>
+
+                    <button
+                      class="featured-collection__carousel-button featured-collection__carousel-button--previous"
+                      type="button"
+                      aria-label="{{ 'featured_collection.previous_products' | t | escape }}"
+                      data-featured-collection-previous
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                        <path d="M14.5 5 7.5 12l7 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                    <button
+                      class="featured-collection__carousel-button featured-collection__carousel-button--next"
+                      type="button"
+                      aria-label="{{ 'featured_collection.next_products' | t | escape }}"
+                      data-featured-collection-next
+                    >
+                      <svg aria-hidden="true" viewBox="0 0 24 24" fill="none">
+                        <path d="m9.5 5 7 7-7 7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+                      </svg>
+                    </button>
+                    <div class="featured-collection__progress" aria-hidden="true">
+                      <span data-featured-collection-progress></span>
+                    </div>
+                  </div>
+                  {% assign panel_index = panel_index | plus: 1 %}
+                {% endif %}
+              {% endfor %}
+            </div>
+          {% endif %}
+        </div>
+      {% endif %}
     </div>
-  </template>
+  </featured-collection>
+{% endif %}
 
-  <script type="application/json" data-gift-spinel-options>
-    [
-      { "value": "partner", "label": {{ section.settings.recipient_partner | json }} },
-      { "value": "mother", "label": {{ section.settings.recipient_mother | json }} },
-      { "value": "friend", "label": {{ section.settings.recipient_friend | json }} },
-      { "value": "myself", "label": {{ section.settings.recipient_myself | json }} }
-    ]
-  </script>
-</gift-spinel>
+
+
 
 {% schema %}
 {
   "name": "Gift Spinel",
   "tag": "section",
   "class": "section-gift-spinel",
-  "max_blocks": 4,
+  "max_blocks": 8,
   "settings": [
     {
       "type": "header",
-      "content": "Content"
+      "content": "Products"
     },
-    { "type": "text", "id": "subheading", "label": "Subheading", "default": "Gifting, made simple" },
-    { "type": "text", "id": "heading", "label": "Heading", "default": "Find their gift." },
-    { "type": "richtext", "id": "intro", "label": "Intro text", "default": "<p>Choose who you are shopping for and we will show you a ready-to-gift jewelry edit.</p>" },
-    { "type": "header", "content": "Editorial image" },
-    { "type": "image_picker", "id": "image", "label": "Image", "info": "Select an image for this section." },
-    { "type": "select", "id": "image_position", "label": "Image column position", "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }], "default": "left", "info": "Changes the desktop column position. On mobile, the gift finder is shown first and the image second." },
-    { "type": "header", "content": "Text card" },
-    { "type": "checkbox", "id": "enable_intro_card", "label": "Show text card", "default": true },
-    { "type": "color", "id": "image_overlay_color", "label": "Card color", "default": "#F3F1EE" },
-    { "type": "select", "id": "intro_card_position", "label": "Card position", "options": [{ "value": "top-left", "label": "Top left" }, { "value": "top-center", "label": "Top center" }, { "value": "top-right", "label": "Top right" }, { "value": "center-left", "label": "Center left" }, { "value": "center", "label": "Center" }, { "value": "center-right", "label": "Center right" }, { "value": "bottom-left", "label": "Bottom left" }, { "value": "bottom-center", "label": "Bottom center" }, { "value": "bottom-right", "label": "Bottom right" }], "default": "top-left", "info": "Controls the text card placement over the image." },
-    { "type": "range", "id": "intro_card_reflection", "label": "Mirror reflection", "min": 0, "max": 100, "step": 5, "unit": "%", "default": 25, "info": "Controls the soft reflective sheen on the text card.", "visible_if": "{{ section.settings.enable_intro_card }}" },
-    { "type": "text", "id": "concierge_label", "label": "Interaction label", "default": "Gift finder" },
-    { "type": "header", "content": "Recipient choices" },
-    { "type": "text", "id": "question_recipient", "label": "Question text", "default": "Who are you shopping for?" },
-    { "type": "text", "id": "recipient_partner", "label": "Option 1", "default": "My partner" },
-    { "type": "text", "id": "recipient_mother", "label": "Option 2", "default": "Mum" },
-    { "type": "text", "id": "recipient_friend", "label": "Option 3", "default": "A friend" },
-    { "type": "text", "id": "recipient_myself", "label": "Option 4", "default": "Myself" },
-    { "type": "header", "content": "Product cards" },
-    { "type": "range", "id": "products_to_show", "label": "Products to show", "min": 3, "max": 6, "step": 1, "default": 3 },
-    { "type": "select", "id": "product_columns", "label": "Desktop product columns", "options": [{ "value": "2", "label": "2 columns" }, { "value": "3", "label": "3 columns" }], "default": "3" },
-    { "type": "header", "content": "Layout" },
-    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
-    { "type": "select", "id": "layout_ratio", "label": "Desktop panel ratio", "options": [{ "value": "balanced", "label": "Balanced" }, { "value": "editorial", "label": "Larger intro" }, { "value": "finder", "label": "Larger gift finder" }], "default": "balanced" },
-    { "type": "select", "id": "choice_style", "label": "Choice style", "options": [{ "value": "outline", "label": "Outlined cards" }, { "value": "soft", "label": "Soft fill" }, { "value": "pill", "label": "Rounded pills" }], "default": "outline" },
-    { "type": "range", "id": "padding_top", "label": "Desktop top padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 80 },
-    { "type": "range", "id": "padding_bottom", "label": "Desktop bottom padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 80 },
-    { "type": "header", "content": "Appearance" },
-    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" }
+    {
+      "type": "range",
+      "id": "products_to_show",
+      "min": 3,
+      "max": 12,
+      "step": 1,
+      "label": "Products to show",
+      "default": 4
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "full", "label": "Full width" },
+        { "value": "page", "label": "Page width" }
+      ],
+      "default": "full"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "label": "Desktop columns",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "column_gap",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "label": "Column gap",
+      "default": 12
+    },
+    {
+      "type": "header",
+      "content": "Mobile"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "Mobile columns",
+      "options": [
+        { "value": "1", "label": "1 column" },
+        { "value": "2", "label": "2 columns" }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "range",
+      "id": "mobile_column_gap",
+      "min": 0,
+      "max": 24,
+      "step": 2,
+      "unit": "px",
+      "label": "Mobile column gap",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Top padding",
+      "default": 80
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Bottom padding",
+      "default": 80
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    }
   ],
   "blocks": [
     {
-      "type": "gift_path",
-      "name": "Gift path",
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
       "settings": [
         {
           "type": "header",
-          "content": "Gift path"
+          "content": "Heading"
         },
-        { "type": "paragraph", "content": "Create one focused edit for each recipient option." },
-        { "type": "header", "content": "Recipient" },
-        { "type": "text", "id": "path_label", "label": "Internal path label", "default": "Recipient gift edit", "info": "Use a clear name such as Mother gift edit." },
-        { "type": "select", "id": "recipient", "label": "Recipient", "options": [{ "value": "partner", "label": "Partner" }, { "value": "mother", "label": "Mother" }, { "value": "friend", "label": "Friend" }, { "value": "myself", "label": "Myself" }], "default": "partner" },
-        { "type": "header", "content": "Products and destination" },
-        { "type": "collection", "id": "result_collection", "label": "Result collection", "info": "Supplies product cards and the primary link when no product list or link is selected." },
-        { "type": "product_list", "id": "result_products", "label": "Result products", "limit": 6, "info": "Takes priority over the result collection." },
-        { "type": "text", "id": "primary_label", "label": "Primary CTA label", "default": "Explore this gift edit" },
-        { "type": "url", "id": "primary_link", "label": "Primary CTA link", "info": "Uses the result collection when empty." },
-        { "type": "header", "content": "Result copy" },
-        { "type": "text", "id": "heading", "label": "Heading", "default": "A thoughtful edit, chosen with care.", "info": "Supports {recipient}." },
-        { "type": "richtext", "id": "copy", "label": "Copy", "default": "<p>Chosen for its quiet symbolism and made to become part of their everyday ritual.</p>", "info": "Supports {recipient}." },
-        { "type": "text", "id": "featured_badge", "label": "Featured badge", "default": "Your curated gift edit" },
-        { "type": "header", "content": "Personalization CTA" },
-        { "type": "checkbox", "id": "show_personalization", "label": "Show personalization CTA", "default": false },
-        { "type": "text", "id": "personalization_label", "label": "Personalization CTA label", "default": "Make it personal" },
-        { "type": "url", "id": "personalization_link", "label": "Personalization CTA link" }
+        { "type": "text", "id": "heading", "label": "Heading", "default": "A considered edit" },
+        {
+          "type": "select",
+          "id": "heading_size",
+          "label": "Heading size",
+          "options": [
+            { "value": "h1", "label": "XX-large" },
+            { "value": "h2", "label": "X-large" },
+            { "value": "h3", "label": "Large" },
+            { "value": "h4", "label": "Medium" },
+            { "value": "h5", "label": "Small" },
+            { "value": "h6", "label": "X-small" }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "select",
+          "id": "heading_tag",
+          "label": "HTML Tag",
+          "options": [
+            { "value": "h1", "label": "H1" },
+            { "value": "h2", "label": "H2" },
+            { "value": "h3", "label": "H3" },
+            { "value": "h4", "label": "H4" },
+            { "value": "h5", "label": "H5" },
+            { "value": "h6", "label": "H6" }
+          ],
+          "default": "h2"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "Alignment",
+          "default": "center"
+        }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Content card",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "header",
+          "content": "Content card"
+        },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Heading",
+          "default": "<p>Bring together the pieces that best express your latest collection.</p>"
+        },
+        {
+          "type": "paragraph",
+          "content": "t:typography_blocks.highlight_info"
+        },
+        {
+          "type": "select",
+          "id": "highlight_style",
+          "label": "Highlight style",
+          "options": [
+            { "value": "none", "label": "None" },
+            { "value": "wavy", "label": "Wavy underline" },
+            { "value": "solid", "label": "Solid background" }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "Preset",
+          "options": [
+            { "value": "default", "label": "Default" },
+            { "value": "paragraph", "label": "Paragraph" },
+            { "value": "subheading", "label": "Subheading" },
+            { "value": "h1", "label": "Heading 1" },
+            { "value": "h2", "label": "Heading 2" },
+            { "value": "h3", "label": "Heading 3" },
+            { "value": "h4", "label": "Heading 4" },
+            { "value": "h5", "label": "Heading 5" },
+            { "value": "h6", "label": "Heading 6" }
+          ],
+          "default": "default"
+        },
+        {
+          "type": "header",
+          "content": "Animation"
+        },
+        {
+          "type": "select",
+          "id": "animation_type",
+          "label": "Animation type",
+          "options": [
+            { "value": "none", "label": "None" },
+            { "value": "fade_in", "label": "Fade in" },
+            { "value": "fade_up", "label": "Fade up" },
+            { "value": "slide_in_left", "label": "Slide in left" },
+            { "value": "slide_in_right", "label": "Slide in right" },
+            { "value": "zoom_in", "label": "Zoom in" },
+            { "value": "zoom_out", "label": "Zoom out" }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "range",
+          "id": "animation_delay",
+          "label": "Animation delay",
+          "min": 0,
+          "max": 1000,
+          "step": 50,
+          "unit": "ms",
+          "default": 0,
+          "visible_if": "{{ block.settings.animation_type != 'none' }}"
+        }
+      ]
+    },
+    {
+      "type": "editorial_image",
+      "name": "Editorial image",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "header",
+          "content": "Editorial image"
+        },
+        { "type": "image_picker", "id": "image", "label": "Image" },
+        { "type": "text", "id": "heading", "label": "Heading", "default": "For Effortless Glow" },
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "Text",
+          "default": "<p>Radiant, versatile designs for everyday moments.</p>"
+        },
+        { "type": "text", "id": "button_label", "label": "Button label", "default": "Shop now" },
+        { "type": "url", "id": "link", "label": "Link" },
+        {
+          "type": "select",
+          "id": "position",
+          "label": "Position",
+          "options": [
+            { "value": "before", "label": "Before" },
+            { "value": "after", "label": "After" }
+          ],
+          "default": "before"
+        },
+        {
+          "type": "select",
+          "id": "media_ratio",
+          "label": "Image ratio",
+          "options": [
+            { "value": "portrait", "label": "Portrait" },
+            { "value": "adapt", "label": "Adapt" }
+          ],
+          "default": "portrait"
+        },
+        { "type": "text_alignment", "id": "focal_point", "label": "Image focal point", "default": "center" },
+        {
+          "type": "range",
+          "id": "overlay_opacity",
+          "min": 0,
+          "max": 80,
+          "step": 5,
+          "unit": "%",
+          "label": "Overlay opacity",
+          "default": 40
+        }
+      ]
+    },
+    {
+      "type": "collection_tab",
+      "name": "Collection tab",
+      "limit": 5,
+      "settings": [
+        {
+          "type": "header",
+          "content": "Collection tab"
+        },
+        { "type": "text", "id": "label", "label": "Tab label" },
+        {
+          "type": "select",
+          "id": "source",
+          "label": "Product source",
+          "options": [
+            { "value": "collection", "label": "Collection" },
+            { "value": "recently_viewed", "label": "Recently viewed" }
+          ],
+          "default": "collection"
+        },
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        }
       ]
     }
   ],
@@ -233,10 +594,21 @@
       "name": "Gift Spinel",
       "category": "Gifting",
       "blocks": [
-        { "type": "gift_path", "settings": { "recipient": "mother", "heading": "A thoughtful edit for Mum.", "featured_badge": "Chosen for Mum" } },
-        { "type": "gift_path", "settings": { "recipient": "partner", "heading": "A keepsake for your shared story.", "featured_badge": "Chosen for your partner" } },
-        { "type": "gift_path", "settings": { "recipient": "friend", "heading": "A gift that feels like them.", "featured_badge": "Chosen for a friend" } },
-        { "type": "gift_path", "settings": { "recipient": "myself", "heading": "A piece to keep close.", "featured_badge": "A gift to yourself" } }
+        { "type": "collection_tab", "settings": { "label": "Featured" } },
+        { "type": "collection_tab", "settings": { "label": "New in" } },
+        { "type": "collection_tab", "settings": { "label": "Best sellers" } }
+      ]
+    },
+    {
+      "name": "Gift Spinel with editorial image",
+      "category": "Gifting",
+      "blocks": [
+        { "type": "heading" },
+        { "type": "text" },
+        { "type": "editorial_image" },
+        { "type": "collection_tab", "settings": { "label": "Featured" } },
+        { "type": "collection_tab", "settings": { "label": "New in" } },
+        { "type": "collection_tab", "settings": { "label": "Best sellers" } }
       ]
     }
   ]
