@@ -241,8 +241,9 @@ if (!window.SpinelHeaderMenus) {
 
     if (!isTransparentHeader) return;
 
-    const hasOpenMenu = Boolean(header.querySelector('details[open]'));
-    const showSurface = isScrolled || hasOpenMenu;
+    const hasOpenDesktopMenu = !isMobileHeaderViewport()
+      && Boolean(header.querySelector('.header__submenu-disclosure[open]'));
+    const showSurface = isScrolled || hasOpenDesktopMenu;
     header.classList.toggle('header--surface-visible', showSurface);
     setTransparentHeaderColorScheme(header, showSurface);
   };
@@ -645,7 +646,7 @@ if (!window.SpinelHeaderMenus) {
     closeOtherHeaderSubmenus(details);
     positionHeaderSubmenu(details);
     const responsiveHeader = details.closest('[data-transparent-header="true"], [data-floating-header="true"]');
-    if (responsiveHeader?.dataset.transparentHeader === 'true') {
+    if (responsiveHeader?.dataset.transparentHeader === 'true' && !isMobileHeaderViewport()) {
       responsiveHeader.classList.add('header--surface-visible');
       setTransparentHeaderColorScheme(responsiveHeader, true);
     }
