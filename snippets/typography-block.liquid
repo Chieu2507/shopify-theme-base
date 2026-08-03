@@ -26,7 +26,25 @@
       assign preset = block.settings.heading_size
     elsif kind == 'text' and block.settings.text_size != blank
       assign preset = 'legacy_' | append: block.settings.text_size
+    else
+      assign preset = default_preset
     endif
+  endif
+
+  assign typo_class = ''
+  assign use_inline_typography = false
+  case preset
+    when 'paragraph'
+      assign typo_class = 'typo-p'
+    when 'subheading'
+      assign typo_class = 'typo-sub'
+    when 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+      assign typo_class = 'typo-' | append: preset
+    when 'custom'
+      assign use_inline_typography = true
+  endcase
+  if preset contains 'legacy_'
+    assign use_inline_typography = true
   endif
 
   assign font_role = block.settings.font | default: default_font
@@ -210,18 +228,20 @@
 
 {% if content != blank %}
   <typography-block
-    class="typography-block typography-block--{{ kind }} typography-block--preset-{{ preset }} typography-block--highlight-{{ highlight_style }}{% if block.settings.disable_line_break_mobile %} typography-block--disable-mobile-breaks{% endif %}"
+    class="typography-block typography-block--{{ kind }} typography-block--preset-{{ preset }}{% if typo_class != blank %} {{ typo_class }}{% endif %}{% if use_inline_typography %} typography-block--inline-typography{% endif %} typography-block--highlight-{{ highlight_style }}{% if block.settings.disable_line_break_mobile %} typography-block--disable-mobile-breaks{% endif %}"
     style="
       --typography-width: {{ width }};
       --typography-width-mobile: {{ width_mobile }};
-      --typography-font-family: {{ font_family }};
-      --typography-font-style: {{ font_style }};
-      --typography-font-weight: {{ font_weight }};
-      --typography-font-size: {{ font_size }};
-      --typography-font-size-mobile: {{ font_size_mobile }};
-      --typography-line-height: {{ line_height }};
-      --typography-letter-spacing: {{ letter_spacing }};
-      --typography-text-case: {{ text_case }};
+      {% if use_inline_typography %}
+        --typography-font-family: {{ font_family }};
+        --typography-font-style: {{ font_style }};
+        --typography-font-weight: {{ font_weight }};
+        --typography-font-size: {{ font_size }};
+        --typography-font-size-mobile: {{ font_size_mobile }};
+        --typography-line-height: {{ line_height }};
+        --typography-letter-spacing: {{ letter_spacing }};
+        --typography-text-case: {{ text_case }};
+      {% endif %}
       --typography-color: {{ color }};
       --typography-alignment: {{ alignment }};
       --typography-padding-top: {{ block.settings.padding_top | default: 0 }}px;
@@ -274,8 +294,22 @@
     text-align: var(--typography-alignment);
   }
 
-  .typography-block:not(.typography-block--preset-default) .typography-block__content,
-  .typography-block:not(.typography-block--preset-default)
+  .typography-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
+    .typography-block__content,
+  .typography-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
+    .typography-block__content
+    :is(p, h1, h2, h3, h4, h5, h6) {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    font-style: inherit !important;
+    font-weight: inherit !important;
+    letter-spacing: inherit !important;
+    line-height: inherit !important;
+    text-transform: inherit !important;
+  }
+
+  .typography-block--inline-typography .typography-block__content,
+  .typography-block--inline-typography
     .typography-block__content
     :is(p, h1, h2, h3, h4, h5, h6) {
     font-family: var(--typography-font-family) !important;
@@ -393,8 +427,8 @@
         var(--typography-padding-left-mobile);
     }
 
-    .typography-block:not(.typography-block--preset-default) .typography-block__content,
-    .typography-block:not(.typography-block--preset-default)
+    .typography-block--inline-typography .typography-block__content,
+    .typography-block--inline-typography
       .typography-block__content
       :is(p, h1, h2, h3, h4, h5, h6) {
       font-size: var(--typography-font-size-mobile) !important;
