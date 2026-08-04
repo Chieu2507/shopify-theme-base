@@ -1152,7 +1152,7 @@ changeLightboxSlide(delta) {
     if (inventory) inventory.textContent = !this.variant
       ? this.dataset.unavailableLabel
       : available
-        ? (this.variant.inventory_management && this.variant.inventory_quantity > 0 && this.variant.inventory_quantity <= 10
+        ? (this.variant.inventory_management && this.variant.inventory_policy !== 'continue' && this.variant.inventory_quantity > 0 && this.variant.inventory_quantity <= 10
           ? this.dataset.onlyItemsLeftLabel.replace('[count]', this.variant.inventory_quantity)
           : this.dataset.inStockLabel)
         : this.dataset.soldOutLabel;
