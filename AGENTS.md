@@ -67,6 +67,47 @@ Không đưa toàn bộ nội dung trực tiếp vào section chỉ vì cách đ
 Nếu bắt buộc phải dùng phương án thứ tư, phải nêu rõ lý do kỹ thuật trong phần
 bàn giao cuối cùng.
 
+### Nested theme blocks và static theme blocks
+
+- Theme block dùng chung được khai báo bằng file Liquid trong `blocks/`. Một
+  theme block có thể nhận theme block hoặc app block con thông qua thuộc tính
+  schema `blocks`, ví dụ `{ "type": "@theme" }` và `{ "type": "@app" }`.
+  Có thể thay `@theme` bằng type cụ thể để giới hạn block con được phép dùng.
+- Render các block con theo thứ tự được lưu trong JSON template bằng
+  `{% content_for 'blocks' %}`. Theme block được nesting tối đa 8 cấp, không
+  tính cấp section.
+- Theme block không khai báo local block trong schema như section block. Section
+  block chỉ dùng trong section chứa nó, chỉ hỗ trợ một cấp và không thể dùng
+  chung với theme block trong cùng section.
+- Khi merchant cần tự do thêm, xóa, nhân bản hoặc sắp xếp nội dung, dùng block
+  động với `{% content_for 'blocks' %}`. Khi một phần tử phải giữ quan hệ hoặc
+  vị trí cố định trong parent, dùng static theme block với:
+  `{% content_for "block", type: "<type>", id: "<id>" %}`.
+- Static block vẫn cho merchant chỉnh setting và ẩn block, nhưng không cho xóa,
+  nhân bản hoặc kéo-thả sắp xếp. Static block có thể render có điều kiện hoặc
+  trong vòng lặp, không tính vào giới hạn `max_blocks`.
+- `id` của static block là bắt buộc, phải là string literal và duy nhất trong
+  parent trực tiếp chứa block đó. Shopify không tự sinh ID; có thể dùng nhiều
+  static block cùng type nếu ID khác nhau.
+- Có thể truyền dữ liệu bổ sung cho static block ngay trong `content_for`, ví
+  dụ `color: "#111"`, sau đó block con đọc bằng cùng tên biến. Static block
+  cũng có quyền truy cập dynamic source như theme block thông thường.
+- Nếu static block được đặt trong điều kiện Liquid, Shopify hiển thị dấu hiệu
+  trạng thái điều kiện trong Theme Editor để merchant biết block có thể không
+  xuất hiện trên storefront.
+- Trong preset, static block cần thêm `"static": true` và đúng `"id"`. Nếu
+  không khai báo static block trong preset, Shopify vẫn thêm block đó khi tạo
+  preset bằng setting mặc định. Trong JSON data, static block có
+  `"static": true` và không nằm trong `block_order`; thứ tự được xác định bởi
+  vị trí render trong Liquid so với các block động.
+- Theme có tối đa 300 file `.liquid` trong `blocks/`; mọi file đều được tính,
+  kể cả file chưa được section hoặc template tham chiếu.
+
+Tham khảo Shopify Dev Docs: [Blocks](https://shopify.dev/docs/storefronts/themes/architecture/blocks),
+[Theme block schema](https://shopify.dev/docs/storefronts/themes/architecture/blocks/theme-blocks/schema),
+[Static blocks](https://shopify.dev/docs/storefronts/themes/architecture/blocks/theme-blocks/static-blocks)
+và [Theme limits](https://shopify.dev/docs/storefronts/themes/architecture/limits).
+
 ### Tái sử dụng bộ option chuẩn
 
 - `blocks/heading.liquid` là nguồn chuẩn cho bộ option của heading.
