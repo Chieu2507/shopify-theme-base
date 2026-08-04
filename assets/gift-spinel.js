@@ -159,7 +159,7 @@ class GiftSpinel extends HTMLElement {
   handleBlockSelect(event) {
     const path = this.paths.find((item) => item.dataset.blockId === event.detail?.blockId);
     if (!path) return;
-    this.recipient = this.optionFor(path.dataset.recipient);
+    this.recipient = this.optionFor(path.dataset.blockId);
     this.showResult(path);
   }
 
@@ -192,7 +192,11 @@ class GiftSpinel extends HTMLElement {
   }
 
   findMatchingPath() {
-    return this.paths.find((path) => path.dataset.recipient === this.recipient?.value) || this.placeholderPath;
+    return (
+      this.paths.find((path) => path.dataset.blockId === this.recipient?.value)
+      || this.paths.find((path) => path.dataset.recipient === this.recipient?.value)
+      || this.placeholderPath
+    );
   }
 
   replaceTokens(root) {

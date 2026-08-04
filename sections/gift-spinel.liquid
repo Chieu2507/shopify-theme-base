@@ -57,10 +57,19 @@
           <div class="gift-spinel__question gift-spinel__richtext gift-spinel__text--preset-{{ section.settings.question_recipient_preset }}" id="GiftSpinelQuestion-{{ section.id }}" data-gift-spinel-question tabindex="-1">{{ section.settings.question_recipient }}</div>
           <p class="gift-spinel__question-hint" id="GiftSpinelHint-{{ section.id }}">{{ 'gift_spinel.choose_hint' | t }}</p>
           <div class="gift-spinel__choices" data-gift-spinel-choices role="group" aria-labelledby="GiftSpinelQuestion-{{ section.id }}" aria-describedby="GiftSpinelHint-{{ section.id }}">
-            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="partner" aria-pressed="false">{{ section.settings.recipient_partner | escape }}</button>
-            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="mother" aria-pressed="false">{{ section.settings.recipient_mother | escape }}</button>
-            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="friend" aria-pressed="false">{{ section.settings.recipient_friend | escape }}</button>
-            <button class="gift-spinel__choice" type="button" data-gift-spinel-choice="myself" aria-pressed="false">{{ section.settings.recipient_myself | escape }}</button>
+            {% for block in section.blocks %}
+              {% liquid
+                assign choice_label = block.settings.recipient_label | default: block.settings.recipient
+              %}
+              <button
+                class="gift-spinel__choice"
+                type="button"
+                data-gift-spinel-choice="{{ block.id }}"
+                data-recipient="{{ block.settings.recipient | escape }}"
+                aria-pressed="false"
+                {{ block.shopify_attributes }}
+              >{{ choice_label | escape }}</button>
+            {% endfor %}
           </div>
         </div>
 
@@ -84,7 +93,7 @@
       data-block-id="{{ block.id }}"
       data-recipient="{{ block.settings.recipient }}"
     >
-      <div class="gift-spinel__result-content" {{ block.shopify_attributes }}>
+      <div class="gift-spinel__result-content">
         {% if block.settings.featured_badge != blank %}
           <div class="gift-spinel__result-kicker gift-spinel__richtext gift-spinel__text--preset-{{ block.settings.featured_badge_preset }}">{{ block.settings.featured_badge }}</div>
         {% else %}
@@ -149,10 +158,12 @@
 
   <script type="application/json" data-gift-spinel-options>
     [
-      { "value": "partner", "label": {{ section.settings.recipient_partner | json }} },
-      { "value": "mother", "label": {{ section.settings.recipient_mother | json }} },
-      { "value": "friend", "label": {{ section.settings.recipient_friend | json }} },
-      { "value": "myself", "label": {{ section.settings.recipient_myself | json }} }
+      {% for block in section.blocks %}
+        {% liquid
+          assign choice_label = block.settings.recipient_label | default: block.settings.recipient
+        %}
+        { "value": {{ block.id | json }}, "label": {{ choice_label | json }} }{% unless forloop.last %},{% endunless %}
+      {% endfor %}
     ]
   </script>
 </gift-spinel>
@@ -186,10 +197,6 @@
     { "type": "header", "content": "Recipient choices" },
     { "type": "richtext", "id": "question_recipient", "label": "Question text", "default": "<p>Who are you shopping for?</p>" },
     { "type": "select", "id": "question_recipient_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-    { "type": "text", "id": "recipient_partner", "label": "Option 1", "default": "My partner" },
-    { "type": "text", "id": "recipient_mother", "label": "Option 2", "default": "Mum" },
-    { "type": "text", "id": "recipient_friend", "label": "Option 3", "default": "A friend" },
-    { "type": "text", "id": "recipient_myself", "label": "Option 4", "default": "Myself" },
     { "type": "header", "content": "Product cards" },
     { "type": "range", "id": "products_to_show", "label": "Products to show", "min": 3, "max": 6, "step": 1, "default": 3 },
     { "type": "select", "id": "product_columns", "label": "Desktop product columns", "options": [{ "value": "2", "label": "2 columns" }, { "value": "3", "label": "3 columns" }], "default": "3" },
@@ -214,6 +221,7 @@
         { "type": "paragraph", "content": "Choose one collection for this recipient. Its products and URL are used automatically." },
         { "type": "header", "content": "Recipient" },
         { "type": "select", "id": "recipient", "label": "Recipient", "options": [{ "value": "partner", "label": "Partner" }, { "value": "mother", "label": "Mother" }, { "value": "friend", "label": "Friend" }, { "value": "myself", "label": "Myself" }], "default": "partner" },
+        { "type": "text", "id": "recipient_label", "label": "Display label", "default": "Gift recipient", "info": "Text shown on the recipient choice card." },
         { "type": "collection", "id": "collection", "label": "Collection", "info": "Supplies the product cards and primary CTA destination." },
         { "type": "header", "content": "Result content" },
         { "type": "text", "id": "primary_label", "label": "Primary CTA label", "default": "Explore this gift edit" },
@@ -235,10 +243,10 @@
       "name": "Gift Spinel",
       "category": "Gifting",
       "blocks": [
-        { "type": "gift_path", "settings": { "recipient": "mother", "heading": "<p>A thoughtful edit for Mum.</p>", "featured_badge": "<p>Chosen for Mum</p>" } },
-        { "type": "gift_path", "settings": { "recipient": "partner", "heading": "<p>A keepsake for your shared story.</p>", "featured_badge": "<p>Chosen for your partner</p>" } },
-        { "type": "gift_path", "settings": { "recipient": "friend", "heading": "<p>A gift that feels like them.</p>", "featured_badge": "<p>Chosen for a friend</p>" } },
-        { "type": "gift_path", "settings": { "recipient": "myself", "heading": "<p>A piece to keep close.</p>", "featured_badge": "<p>A gift to yourself</p>" } }
+        { "type": "gift_path", "settings": { "recipient": "mother", "recipient_label": "Mum", "heading": "<p>A thoughtful edit for Mum.</p>", "featured_badge": "<p>Chosen for Mum</p>" } },
+        { "type": "gift_path", "settings": { "recipient": "partner", "recipient_label": "My partner", "heading": "<p>A keepsake for your shared story.</p>", "featured_badge": "<p>Chosen for your partner</p>" } },
+        { "type": "gift_path", "settings": { "recipient": "friend", "recipient_label": "A friend", "heading": "<p>A gift that feels like them.</p>", "featured_badge": "<p>Chosen for a friend</p>" } },
+        { "type": "gift_path", "settings": { "recipient": "myself", "recipient_label": "Myself", "heading": "<p>A piece to keep close.</p>", "featured_badge": "<p>A gift to yourself</p>" } }
       ]
     }
   ]
