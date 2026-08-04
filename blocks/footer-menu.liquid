@@ -12,7 +12,15 @@
   endif
 %}
 
-<details class="footer-menu" data-footer-menu open {{ block.shopify_attributes }}>
+<details
+  class="footer-menu{% if block.settings.show_as_accordion_mobile %} footer-menu--accordion-mobile{% endif %}"
+  data-footer-menu
+  data-footer-mobile-accordion="{{ block.settings.show_as_accordion_mobile }}"
+  data-footer-default-open="{{ block.settings.open_accordions_by_default }}"
+  style="--footer-menu-max-width: {{ block.settings.maximum_width }}px;"
+  open
+  {{ block.shopify_attributes }}
+>
   <summary class="footer-menu__summary" aria-label="{{ menu_label | escape }}">
     <span class="footer-menu__heading">
       {% render 'typography-block',
@@ -69,6 +77,33 @@
       "id": "show_external_indicator",
       "label": "Show indicator for external links",
       "default": true
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "range",
+      "id": "maximum_width",
+      "label": "Maximum width",
+      "min": 120,
+      "max": 320,
+      "step": 10,
+      "unit": "px",
+      "default": 190
+    },
+    {
+      "type": "checkbox",
+      "id": "show_as_accordion_mobile",
+      "label": "Show as accordion on mobile",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "open_accordions_by_default",
+      "label": "Open accordions by default",
+      "default": false,
+      "visible_if": "{{ block.settings.show_as_accordion_mobile }}"
     },
     {
       "type": "header",

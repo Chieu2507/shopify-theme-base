@@ -25,9 +25,9 @@ if (!customElements.get('footer-house')) {
         if (selectedMenu && this.contains(selectedMenu)) selectedMenu.open = true;
       };
       this.handleMenuToggle = (event) => {
-        if (!this.mobileQuery.matches || !event.currentTarget.open) return;
+        if (!this.mobileQuery.matches || event.currentTarget.dataset.footerMobileAccordion !== 'true' || !event.currentTarget.open) return;
         this.menus.forEach((menu) => {
-          if (menu !== event.currentTarget) menu.open = false;
+          if (menu !== event.currentTarget && menu.dataset.footerMobileAccordion === 'true') menu.open = false;
         });
       };
 
@@ -56,7 +56,9 @@ if (!customElements.get('footer-house')) {
 
     syncMenuState() {
       this.menus.forEach((menu) => {
-        menu.open = !this.mobileQuery.matches;
+        const usesMobileAccordion = menu.dataset.footerMobileAccordion === 'true';
+        const opensByDefault = menu.dataset.footerDefaultOpen === 'true';
+        menu.open = !this.mobileQuery.matches || !usesMobileAccordion || opensByDefault;
       });
     }
   }
