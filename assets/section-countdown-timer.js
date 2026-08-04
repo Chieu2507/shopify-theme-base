@@ -82,7 +82,7 @@ if (!customElements.get('countdown-timer')) {
       this.stop();
       this.visibilityObserver?.disconnect();
 
-      if (this.dataset.completionBehavior === 'message') {
+      if (this.dataset.showCompletionMessage === 'true') {
         if (this.units) this.units.hidden = true;
         if (this.completeMessage) this.completeMessage.hidden = false;
       } else {
