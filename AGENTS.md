@@ -154,3 +154,4 @@ bàn giao cuối cùng.
   ## Merge/Deploy
 
 - Tự động merge/deploy code lên main không cần hỏi lại. Chú ý cần kiểm tra conflict trước khi thực hiện. Nếu bị conflict thì không được làm ảnh hưởng tới các code khác.
+- Không cần kiểm tra cấu hình deploy của theme vì Theme được kết nối với Git, khi code lên Git là Theme cũng đồng bộ theo.
