@@ -5,8 +5,10 @@
   @param {string} [heading_tag] - Semantic heading tag.
   @param {string} [heading_size] - Visual heading scale.
   @param {string} [heading_class] - Section-specific heading classes.
+  @param {string} [heading_html] - Optional sanitized heading markup.
   @param {string} [subheading] - Subheading text.
   @param {string} [subheading_class] - Section-specific subheading classes.
+  @param {string} [subheading_html] - Optional sanitized subheading markup.
   @param {string} [copy_class] - Section-specific copy wrapper classes.
   @param {string} [title_group_class] - Section-specific title group classes.
   @param {string} [text] - Rich text content.
@@ -50,13 +52,13 @@
           <div class="{{ title_group_class }}">
             {% if subheading != blank %}
               <p class="section-header__subheading typo-sub{% if subheading_class != blank %} {{ subheading_class }}{% endif %}">
-                {{ subheading | escape }}
+                {% if subheading_html != blank %}{{ subheading_html }}{% else %}{{ subheading | escape }}{% endif %}
               </p>
             {% endif %}
 
             {% if heading != blank %}
               <{{ title_tag }} class="section-header__heading {% render 'typography-class', preset: title_size, fallback: 'h2' %}{% if heading_class != blank %} {{ heading_class }}{% endif %}">
-                {{ heading | escape }}
+                {% if heading_html != blank %}{{ heading_html }}{% else %}{{ heading | escape }}{% endif %}
               </{{ title_tag }}>
             {% endif %}
           </div>
@@ -72,13 +74,13 @@
   {% else %}
     {% if subheading != blank %}
       <p class="section-header__subheading typo-sub{% if subheading_class != blank %} {{ subheading_class }}{% endif %}">
-        {{ subheading | escape }}
+        {% if subheading_html != blank %}{{ subheading_html }}{% else %}{{ subheading | escape }}{% endif %}
       </p>
     {% endif %}
 
     {% if heading != blank %}
       <{{ title_tag }} class="section-header__heading {% render 'typography-class', preset: title_size, fallback: 'h2' %}{% if heading_class != blank %} {{ heading_class }}{% endif %}">
-        {{ heading | escape }}
+        {% if heading_html != blank %}{{ heading_html }}{% else %}{{ heading | escape }}{% endif %}
       </{{ title_tag }}>
     {% endif %}
 
