@@ -1,254 +1,241 @@
 {% render 'section-stylesheet', asset: 'section-footer.css', defer_on_home: true %}
 
 {% liquid
-  assign newsletter_count = 0
-  assign menu_count = 0
   assign localization_form_id = 'FooterLocalizationForm-' | append: section.id
-
-  for block in section.blocks
-    if block.type == 'newsletter'
-      assign newsletter_count = newsletter_count | plus: 1
-    elsif block.type == 'menu'
-      assign menu_count = menu_count | plus: 1
-    endif
-  endfor
+  assign copyright_name = section.settings.copyright_name
+  if copyright_name == blank
+    assign copyright_name = shop.name
+  endif
 %}
 
-{% if section.blocks.size > 0 %}
-<footer
-  class="footer color-scheme color-{{ section.settings.color_scheme.id }} full-width"
-  style="--footer-padding-top: {{ section.settings.padding_top }}px; --footer-padding-bottom: {{ section.settings.padding_bottom }}px;"
+<footer-house
+  class="footer-house color-scheme color-{{ section.settings.color_scheme.id }} full-width"
   data-deferred-module="{{ 'section-footer.js' | asset_url }}"
 >
-  <div class="footer__inner footer__inner--page">
-    {% if newsletter_count > 0 or menu_count > 0 %}
-      <div class="footer__top{% if newsletter_count == 0 %} footer__top--menus-only{% endif %}">
-        {% for block in section.blocks %}
-          {% if block.type == 'newsletter' %}
-            <div class="footer__newsletter" {{ block.shopify_attributes }}>
-              {% if block.settings.heading != blank %}
-                <{{ block.settings.heading_tag | default: 'h2' }} class="footer__heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'lg' %}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h2' }}>
-              {% endif %}
+  <footer
+    class="footer"
+    style="
+      --footer-content-max-width: {{ section.settings.content_max_width }}px;
+      --footer-padding-inline: {{ section.settings.padding_inline }}px;
+      --footer-padding-inline-mobile: {{ section.settings.padding_inline_mobile }}px;
+      --footer-padding-top: {{ section.settings.padding_top }}px;
+      --footer-padding-bottom: {{ section.settings.padding_bottom }}px;
+    "
+  >
+    <div class="footer__inner">
+      <div class="footer__intro">
+        <section class="footer__newsletter">
+          <div class="footer__eyebrow footer__newsletter-eyebrow">
+            {% content_for 'block', type: 'heading', id: 'newsletter_eyebrow' %}
+          </div>
 
-              {% if block.settings.text != blank %}
-                <div class="footer__newsletter-text rte spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }}">{{ block.settings.text }}</div>
-              {% endif %}
+          <div class="footer__newsletter-heading">
+            {% content_for 'block', type: 'heading', id: 'newsletter_heading' %}
+          </div>
 
-              {% form 'customer', class: 'footer__newsletter-form' %}
-                <input type="hidden" name="contact[tags]" value="newsletter">
-                <div class="footer__newsletter-field">
-                  <label class="footer__visually-hidden" for="FooterNewsletter-{{ section.id }}-{{ block.id }}">
-                    {{ 'footer.email' | t }}
-                  </label>
-                  <input
-                    id="FooterNewsletter-{{ section.id }}-{{ block.id }}"
-                    type="email"
-                    name="contact[email]"
-                    value="{{ form.email | escape }}"
-                    autocomplete="email"
-                    autocorrect="off"
-                    autocapitalize="off"
-                    placeholder="{{ block.settings.placeholder | escape }}"
-                    aria-required="true"
-                    required
-                  >
-                  <button type="submit" aria-label="">
-                    <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
-                      <path d="M3 10h13M11 5l5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                    </svg>
-                  </button>
-                </div>
+          <div class="footer__newsletter-text">
+            {% content_for 'block', type: 'text', id: 'newsletter_text' %}
+          </div>
 
-                {% if form.posted_successfully? %}
-                  <p class="footer__form-message" tabindex="-1">{{ 'footer.newsletter_success' | t }}</p>
-                {% endif %}
+          <div class="footer__newsletter-form">
+            {% content_for 'block', type: 'newsletter-form', id: 'newsletter_form' %}
+          </div>
 
-                {% if form.errors %}
-                  <div class="footer__form-message footer__form-message--error" role="alert">
-                    {{ form.errors | default_errors }}
-                  </div>
-                {% endif %}
-              {% endform %}
+          <div class="footer__newsletter-note">
+            {% content_for 'block', type: 'text', id: 'newsletter_note' %}
+          </div>
+        </section>
 
-              {% if block.settings.disclaimer != blank %}
-                <div class="footer__disclaimer rte spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }}">{{ block.settings.disclaimer }}</div>
-              {% endif %}
+        <aside class="footer__appointment">
+          <span class="footer__appointment-ornament" aria-hidden="true">
+            {{ 'footer-house-mark-small.svg' | inline_asset_content }}
+          </span>
 
-              {% if block.settings.facebook_url != blank or block.settings.instagram_url != blank or block.settings.pinterest_url != blank or block.settings.tiktok_url != blank %}
-                <div class="footer__social" role="group" aria-label="{{ 'footer.social_links' | t | escape }}">
-                  {% if block.settings.facebook_url != blank %}
-                    <a href="{{ block.settings.facebook_url }}" aria-label="{{ 'announcement_bar.facebook' | t | escape }}">
-                      {% render 'social-icon', name: 'facebook' %}
-                    </a>
-                  {% endif %}
-                  {% if block.settings.instagram_url != blank %}
-                    <a href="{{ block.settings.instagram_url }}" aria-label="{{ 'announcement_bar.instagram' | t | escape }}">
-                      {% render 'social-icon', name: 'instagram' %}
-                    </a>
-                  {% endif %}
-                  {% if block.settings.pinterest_url != blank %}
-                    <a href="{{ block.settings.pinterest_url }}" aria-label="{{ 'announcement_bar.pinterest' | t | escape }}">
-                      {% render 'social-icon', name: 'pinterest' %}
-                    </a>
-                  {% endif %}
-                  {% if block.settings.tiktok_url != blank %}
-                    <a href="{{ block.settings.tiktok_url }}" aria-label="{{ 'footer.tiktok' | t | escape }}">
-                      {% render 'social-icon', name: 'tiktok' %}
-                    </a>
-                  {% endif %}
-                </div>
-              {% endif %}
-            </div>
-          {% endif %}
-        {% endfor %}
+          <div class="footer__eyebrow footer__appointment-eyebrow">
+            {% content_for 'block', type: 'heading', id: 'appointment_eyebrow' %}
+          </div>
 
-        {% if menu_count > 0 %}
-          <nav class="footer__menus" aria-label="{{ 'footer.navigation' | t | escape }}">
-            {% for block in section.blocks %}
-              {% if block.type == 'menu' %}
-                <div class="footer__menu" {{ block.shopify_attributes }}>
-                  {% liquid
-                    assign menu_heading = block.settings.heading
-                    if menu_heading == blank
-                      assign menu_heading = block.settings.menu.title
-                    endif
-                  %}
-                  {% if menu_heading != blank %}
-                    <{{ block.settings.heading_tag | default: 'h3' }} class="footer__menu-heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'medium' %}">{{ menu_heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}>
-                  {% endif %}
-                  {% if block.settings.menu != blank and block.settings.menu.links.size > 0 %}
-                    <ul role="list">
-                      {% for link in block.settings.menu.links %}
-                        <li><a href="{{ link.url }}">{{ link.title | escape }}</a></li>
-                      {% endfor %}
-                    </ul>
-                  {% endif %}
-                </div>
-              {% endif %}
-            {% endfor %}
-          </nav>
-        {% endif %}
+          <div class="footer__appointment-heading">
+            {% content_for 'block', type: 'heading', id: 'appointment_heading' %}
+          </div>
+
+          <div class="footer__appointment-text">
+            {% content_for 'block', type: 'text', id: 'appointment_text' %}
+          </div>
+
+          <div class="footer__appointment-action">
+            {% content_for 'block', type: 'button', id: 'appointment_button' %}
+          </div>
+        </aside>
       </div>
-    {% endif %}
 
-    {% for block in section.blocks %}
-      {% if block.type == 'wordmark' %}
-        {% liquid
-          assign wordmark = block.settings.text
-          if wordmark == blank
-            assign wordmark = shop.name
-          endif
-        %}
-        <div
-          class="footer__wordmark"
-          data-wordmark="{{ wordmark | escape }}"
-          style="--footer-wordmark-size-desktop: {{ block.settings.font_size_desktop | default: 164 }}px; --footer-wordmark-size-mobile: {{ block.settings.font_size_mobile | default: 72 }}px; --footer-wordmark-opacity: {{ block.settings.opacity | default: 6 | divided_by: 100.0 }};"
-          aria-hidden="true"
-          {{ block.shopify_attributes }}
-        ></div>
-      {% endif %}
-    {% endfor %}
+      <nav class="footer__menus" aria-label="{{ 'footer.navigation' | t | escape }}">
+        {% content_for 'blocks' %}
+      </nav>
 
-    <div class="footer__bottom">
-      <div class="footer__bottom-start">
-        {% for block in section.blocks %}
-          {% case block.type %}
-            {% when 'copyright' %}
-              <div class="footer__copyright" {{ block.shopify_attributes }}>
-                &copy; {{ 'now' | date: '%Y' }} {{ shop.name | escape }}{% if block.settings.text != blank %}. {{ block.settings.text | escape }}{% endif %}
-              </div>
+      <section class="footer__signature">
+        <div class="footer__eyebrow footer__signature-eyebrow">
+          {% content_for 'block', type: 'heading', id: 'signature_eyebrow' %}
+        </div>
 
-            {% when 'localization' %}
-              {% if localization.available_countries.size > 1 or localization.available_languages.size > 1 %}
-                <footer-localization class="footer__localization" {{ block.shopify_attributes }}>
-                  {% form 'localization', id: localization_form_id %}
-                    {% if block.settings.show_country_selector and localization.available_countries.size > 1 %}
-                      <label class="footer__visually-hidden" for="FooterCountry-{{ section.id }}">{{ 'footer.country_region' | t }}</label>
+        <div class="footer__signature-main">
+          <footer-wordmark class="footer__wordmark" data-footer-wordmark>
+            {% content_for 'block', type: 'heading', id: 'signature_wordmark' %}
+          </footer-wordmark>
+
+          <div class="footer__principles">
+            <span class="footer__principles-ornament" aria-hidden="true">
+              {{ 'footer-house-mark-large.svg' | inline_asset_content }}
+            </span>
+            {% content_for 'block', type: 'text', id: 'signature_principles' %}
+          </div>
+        </div>
+
+        <div class="footer__signature-tagline">
+          {% content_for 'block', type: 'text', id: 'signature_tagline' %}
+        </div>
+      </section>
+
+      <div class="footer__utility">
+        <div class="footer__utility-start">
+          {% if section.settings.location_label != blank or section.settings.show_country_selector or section.settings.show_language_selector %}
+            <footer-localization class="footer__localization">
+              {% form 'localization', id: localization_form_id %}
+                <div class="footer__region">
+                  {% if section.settings.location_label != blank %}
+                    <span>{{ section.settings.location_label | escape }}</span>
+                  {% endif %}
+
+                  {% if section.settings.show_country_selector %}
+                    {% if section.settings.location_label != blank %}<span class="footer__utility-divider" aria-hidden="true">/</span>{% endif %}
+                    {% if localization.available_countries.size > 1 %}
+                      <label class="visually-hidden" for="FooterCountry-{{ section.id }}">{{ 'footer.country_region' | t }}</label>
                       <span class="footer__localization-select">
                         <select id="FooterCountry-{{ section.id }}" name="country_code" data-footer-localization-select>
                           {% for country in localization.available_countries %}
                             <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>
-                              {{ country.currency.iso_code | escape }}
+                              {{ country.name | escape }} / {{ country.currency.iso_code | escape }}
                             </option>
                           {% endfor %}
                         </select>
                         <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
                       </span>
+                    {% else %}
+                      <span>{{ localization.country.name | escape }} / {{ localization.country.currency.iso_code | escape }}</span>
                     {% endif %}
+                  {% endif %}
 
-                    {% if block.settings.show_language_selector and localization.available_languages.size > 1 %}
-                      <label class="footer__visually-hidden" for="FooterLanguage-{{ section.id }}">{{ 'footer.language' | t }}</label>
-                      <span class="footer__localization-select">
-                        <select id="FooterLanguage-{{ section.id }}" name="locale_code" data-footer-localization-select>
-                          {% for language in localization.available_languages %}
-                            <option value="{{ language.iso_code }}" lang="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>
-                              {{ language.endonym_name | capitalize | escape }}
-                            </option>
-                          {% endfor %}
-                        </select>
-                        <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                      </span>
-                    {% endif %}
-                    <noscript><button type="submit">{{ 'footer.apply' | t }}</button></noscript>
-                  {% endform %}
-                </footer-localization>
-              {% endif %}
-          {% endcase %}
-        {% endfor %}
+                  {% if section.settings.show_language_selector and localization.available_languages.size > 1 %}
+                    <span class="footer__utility-divider" aria-hidden="true">/</span>
+                    <label class="visually-hidden" for="FooterLanguage-{{ section.id }}">{{ 'footer.language' | t }}</label>
+                    <span class="footer__localization-select">
+                      <select id="FooterLanguage-{{ section.id }}" name="locale_code" data-footer-localization-select>
+                        {% for language in localization.available_languages %}
+                          <option value="{{ language.iso_code }}" lang="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>
+                            {{ language.endonym_name | capitalize | escape }}
+                          </option>
+                        {% endfor %}
+                      </select>
+                      <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                    </span>
+                  {% endif %}
+                </div>
+                <noscript><button type="submit">{{ 'footer.apply' | t }}</button></noscript>
+              {% endform %}
+            </footer-localization>
+          {% endif %}
+        </div>
+
+        <div class="footer__copyright">
+          &copy; {{ copyright_name | escape }} {{ 'now' | date: '%Y' }}
+        </div>
+
+        <div class="footer__utility-end">
+          {% if section.settings.legal_menu != blank and section.settings.legal_menu.links.size > 0 %}
+            <nav class="footer__legal" aria-label="{{ 'footer.legal' | t | escape }}">
+              {% for link in section.settings.legal_menu.links %}
+                <a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
+              {% endfor %}
+            </nav>
+          {% elsif shop.policies.size > 0 %}
+            <nav class="footer__legal" aria-label="{{ 'footer.legal' | t | escape }}">
+              {% for policy in shop.policies %}
+                {% if policy.url != blank and policy.body != blank %}
+                  <a href="{{ policy.url }}">{{ policy.title | escape }}</a>
+                {% endif %}
+              {% endfor %}
+            </nav>
+          {% endif %}
+        </div>
       </div>
 
-      <div class="footer__bottom-end">
-        {% for block in section.blocks %}
-          {% case block.type %}
-            {% when 'legal_menu' %}
-              {% if block.settings.menu != blank and block.settings.menu.links.size > 0 %}
-                <nav class="footer__legal" aria-label="{{ 'footer.legal' | t | escape }}" {{ block.shopify_attributes }}>
-                  {% for link in block.settings.menu.links %}
-                    <a href="{{ link.url }}">{{ link.title | escape }}</a>
-                  {% endfor %}
-                </nav>
-              {% elsif shop.policies.size > 0 %}
-                <nav class="footer__legal" aria-label="{{ 'footer.legal' | t | escape }}" {{ block.shopify_attributes }}>
-                  {% for policy in shop.policies %}
-                    {% if policy.url != blank and policy.body != blank %}
-                      <a href="{{ policy.url }}">{{ policy.title | escape }}</a>
-                    {% endif %}
-                  {% endfor %}
-                </nav>
-              {% endif %}
+      {% if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 %}
+        <div class="footer__payments" aria-label="{{ 'footer.payment_methods' | t | escape }}">
+          {% for type in shop.enabled_payment_types %}
+            {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
+          {% endfor %}
+        </div>
+      {% endif %}
 
-            {% when 'payments' %}
-              {% if block.settings.show_payment_icons and shop.enabled_payment_types.size > 0 %}
-                <div class="footer__payment" aria-label="{{ 'footer.payment_methods' | t | escape }}" {{ block.shopify_attributes }}>
-                  {% for type in shop.enabled_payment_types %}
-                    {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
-                  {% endfor %}
-                </div>
-              {% endif %}
-          {% endcase %}
-        {% endfor %}
+      {% if section.settings.show_follow_on_shop %}
         <div class="footer__follow-on-shop">
           {{ shop | login_button: action: 'follow' }}
         </div>
-      </div>
+      {% endif %}
     </div>
-  </div>
-</footer>
-{% endif %}
-
-
-
+  </footer>
+</footer-house>
 
 {% schema %}
 {
   "name": "Footer",
   "tag": "section",
   "class": "section-footer",
-  "max_blocks": 10,
+  "max_blocks": 4,
   "settings": [
     {
       "type": "header",
-      "content": "Section padding"
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-5"
+    },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "range",
+      "id": "content_max_width",
+      "min": 1000,
+      "max": 2000,
+      "step": 20,
+      "unit": "px",
+      "label": "Content max width",
+      "default": 1800
+    },
+    {
+      "type": "range",
+      "id": "padding_inline",
+      "min": 20,
+      "max": 100,
+      "step": 4,
+      "unit": "px",
+      "label": "Horizontal padding",
+      "default": 64
+    },
+    {
+      "type": "range",
+      "id": "padding_inline_mobile",
+      "min": 12,
+      "max": 40,
+      "step": 2,
+      "unit": "px",
+      "label": "Horizontal padding on mobile",
+      "default": 20
     },
     {
       "type": "range",
@@ -264,385 +251,62 @@
       "type": "range",
       "id": "padding_bottom",
       "min": 0,
-      "max": 128,
+      "max": 96,
       "step": 4,
       "unit": "px",
       "label": "Bottom padding",
-      "default": 64
+      "default": 24
     },
     {
       "type": "header",
-      "content": "Appearance"
+      "content": "Store utilities"
     },
     {
-      "type": "color_scheme",
-      "id": "color_scheme",
-      "label": "Color scheme",
-      "default": "scheme-2"
+      "type": "text",
+      "id": "location_label",
+      "label": "Location label",
+      "default": "New York"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country_selector",
+      "label": "Show country/currency selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_language_selector",
+      "label": "Show language selector",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "copyright_name",
+      "label": "Copyright name",
+      "info": "Uses the shop name when left blank.",
+      "default": "SPINEL"
+    },
+    {
+      "type": "link_list",
+      "id": "legal_menu",
+      "label": "Legal menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_payment_icons",
+      "label": "Show payment icons",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_follow_on_shop",
+      "label": "Show Follow on Shop",
+      "default": false
     }
   ],
   "blocks": [
     {
-      "type": "newsletter",
-      "name": "Newsletter",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Newsletter"
-        },
-        {
-          "type": "text",
-          "id": "heading",
-          "label": "Heading",
-          "default": "Join Our Community"
-        },
-        {
-          "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
-          "options": [
-            {
-              "value": "h1",
-              "label": "XX-large"
-            },
-            {
-              "value": "h2",
-              "label": "X-large"
-            },
-            {
-              "value": "h3",
-              "label": "Large"
-            },
-            {
-              "value": "h4",
-              "label": "Medium"
-            },
-            {
-              "value": "h5",
-              "label": "Small"
-            },
-            {
-              "value": "h6",
-              "label": "X-small"
-            }
-          ],
-          "default": "h3"
-        },
-        {
-          "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
-          "options": [
-            {
-              "value": "h1",
-              "label": "H1"
-            },
-            {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
-            }
-          ],
-          "default": "h2"
-        },
-        {
-          "type": "richtext",
-          "id": "text",
-          "label": "Text",
-          "default": "<p>Join our newsletter to stay up to date on features and releases.</p>"
-        },
-        {
-          "type": "select",
-          "id": "text_size",
-          "label": "Text size",
-          "options": [
-            {
-              "value": "x-large",
-              "label": "X-large"
-            },
-            {
-              "value": "large",
-              "label": "Large"
-            },
-            {
-              "value": "medium",
-              "label": "Medium"
-            },
-            {
-              "value": "small",
-              "label": "Small"
-            },
-            {
-              "value": "x-small",
-              "label": "X-small"
-            }
-          ],
-          "default": "medium"
-        },
-        {
-          "type": "text",
-          "id": "placeholder",
-          "label": "Email placeholder",
-          "default": "Enter your email"
-        },
-        {
-          "type": "richtext",
-          "id": "disclaimer",
-          "label": "Disclaimer",
-          "default": "<p>By subscribing, you agree to our Terms of Service and Privacy Policy.</p>"
-        },
-        {
-          "type": "header",
-          "content": "Social links"
-        },
-        {
-          "type": "url",
-          "id": "facebook_url",
-          "label": "Facebook URL"
-        },
-        {
-          "type": "url",
-          "id": "instagram_url",
-          "label": "Instagram URL"
-        },
-        {
-          "type": "url",
-          "id": "pinterest_url",
-          "label": "Pinterest URL"
-        },
-        {
-          "type": "url",
-          "id": "tiktok_url",
-          "label": "TikTok URL"
-        }
-      ]
-    },
-    {
-      "type": "menu",
-      "name": "Menu column",
-      "limit": 4,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Menu column"
-        },
-        {
-          "type": "text",
-          "id": "heading",
-          "label": "Heading"
-        },
-        {
-          "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
-          "options": [
-            {
-              "value": "h1",
-              "label": "XX-large"
-            },
-            {
-              "value": "h2",
-              "label": "X-large"
-            },
-            {
-              "value": "h3",
-              "label": "Large"
-            },
-            {
-              "value": "h4",
-              "label": "Medium"
-            },
-            {
-              "value": "h5",
-              "label": "Small"
-            },
-            {
-              "value": "h6",
-              "label": "X-small"
-            }
-          ],
-          "default": "h4"
-        },
-        {
-          "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
-          "options": [
-            {
-              "value": "h1",
-              "label": "H1"
-            },
-            {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
-            }
-          ],
-          "default": "h3"
-        },
-        {
-          "type": "link_list",
-          "id": "menu",
-          "label": "Menu",
-          "default": "footer"
-        }
-      ]
-    },
-    {
-      "type": "wordmark",
-      "name": "Large wordmark",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Large wordmark"
-        },
-        {
-          "type": "text",
-          "id": "text",
-          "label": "Text",
-          "info": "Uses the shop name when left blank."
-        },
-        {
-          "type": "header",
-          "content": "Typography"
-        },
-        {
-          "type": "range",
-          "id": "opacity",
-          "label": "Text opacity",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "default": 6
-        },
-        {
-          "type": "range",
-          "id": "font_size_desktop",
-          "label": "Desktop font size",
-          "min": 48,
-          "max": 240,
-          "step": 2,
-          "unit": "px",
-          "default": 164
-        },
-        {
-          "type": "range",
-          "id": "font_size_mobile",
-          "label": "Mobile font size",
-          "min": 32,
-          "max": 160,
-          "step": 2,
-          "unit": "px",
-          "default": 72
-        }
-      ]
-    },
-    {
-      "type": "copyright",
-      "name": "Copyright",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Copyright"
-        },
-        {
-          "type": "text",
-          "id": "text",
-          "label": "Additional text",
-          "default": "All Rights Reserved"
-        }
-      ]
-    },
-    {
-      "type": "localization",
-      "name": "Localization",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Localization"
-        },
-        {
-          "type": "checkbox",
-          "id": "show_country_selector",
-          "label": "Show country/currency selector",
-          "default": true
-        },
-        {
-          "type": "checkbox",
-          "id": "show_language_selector",
-          "label": "Show language selector",
-          "default": true
-        }
-      ]
-    },
-    {
-      "type": "legal_menu",
-      "name": "Legal links",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Legal links"
-        },
-        {
-          "type": "link_list",
-          "id": "menu",
-          "label": "Menu",
-          "default": "footer"
-        }
-      ]
-    },
-    {
-      "type": "payments",
-      "name": "Payment methods",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Payment methods"
-        },
-        {
-          "type": "checkbox",
-          "id": "show_payment_icons",
-          "label": "Show payment icons",
-          "default": true
-        }
-      ]
+      "type": "footer-menu"
     }
   ],
   "presets": [
@@ -651,40 +315,211 @@
       "category": "Theme layout",
       "blocks": [
         {
-          "type": "newsletter"
-        },
-        {
-          "type": "menu",
+          "type": "heading",
+          "id": "newsletter_eyebrow",
+          "static": true,
           "settings": {
-            "heading": "About Us"
+            "heading": "<p>PRIVATE NOTES / OCCASIONAL LETTERS</p>",
+            "type_preset": "subheading",
+            "color": "subtext"
           }
         },
         {
-          "type": "menu",
+          "type": "heading",
+          "id": "newsletter_heading",
+          "static": true,
           "settings": {
-            "heading": "Help"
+            "heading": "<h2>Keep close to<br>what endures.</h2>",
+            "type_preset": "h1"
           }
         },
         {
-          "type": "menu",
+          "type": "text",
+          "id": "newsletter_text",
+          "static": true,
           "settings": {
-            "heading": "Shop"
+            "text": "<p>Private notes on new stones, atelier work and appointments—sent only when there is something worth sharing.</p>",
+            "type_preset": "paragraph",
+            "color": "subtext"
           }
         },
         {
-          "type": "wordmark"
+          "type": "newsletter-form",
+          "id": "newsletter_form",
+          "static": true,
+          "settings": {
+            "email_label": "Email address",
+            "email_placeholder": "YOUR EMAIL ADDRESS",
+            "hide_label": true,
+            "show_required_marker": false,
+            "button_label": "JOIN THE LIST",
+            "button_style": "primary",
+            "form_layout": "inline",
+            "success_message": "Thank you for subscribing."
+          }
         },
         {
-          "type": "copyright"
+          "type": "text",
+          "id": "newsletter_note",
+          "static": true,
+          "settings": {
+            "text": "<p>OCCASIONAL LETTERS. UNSUBSCRIBE AT ANY TIME.</p>",
+            "type_preset": "subheading",
+            "color": "subtext"
+          }
         },
         {
-          "type": "localization"
+          "type": "heading",
+          "id": "appointment_eyebrow",
+          "static": true,
+          "settings": {
+            "heading": "<p>PRIVATE APPOINTMENTS</p>",
+            "type_preset": "subheading",
+            "color": "subtext"
+          }
         },
         {
-          "type": "legal_menu"
+          "type": "heading",
+          "id": "appointment_heading",
+          "static": true,
+          "settings": {
+            "heading": "<h2>Discover Spinel,<br>one stone at a time.</h2>",
+            "type_preset": "h2"
+          }
         },
         {
-          "type": "payments"
+          "type": "text",
+          "id": "appointment_text",
+          "static": true,
+          "settings": {
+            "text": "<p>Explore stones, proportions and settings with the house in a more personal conversation.</p>",
+            "type_preset": "paragraph",
+            "color": "subtext"
+          }
+        },
+        {
+          "type": "button",
+          "id": "appointment_button",
+          "static": true,
+          "settings": {
+            "label": "BOOK AN APPOINTMENT",
+            "link": "/pages/contact",
+            "style": "tertiary",
+            "icon": "arrow-right"
+          }
+        },
+        {
+          "type": "footer-menu",
+          "settings": {
+            "menu": "footer-shop",
+            "show_external_indicator": true
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "id": "heading",
+              "static": true,
+              "settings": {
+                "heading": "<h3>SHOP</h3>",
+                "type_preset": "subheading"
+              }
+            }
+          ]
+        },
+        {
+          "type": "footer-menu",
+          "settings": {
+            "menu": "footer-about",
+            "show_external_indicator": true
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "id": "heading",
+              "static": true,
+              "settings": {
+                "heading": "<h3>THE HOUSE</h3>",
+                "type_preset": "subheading"
+              }
+            }
+          ]
+        },
+        {
+          "type": "footer-menu",
+          "settings": {
+            "menu": "footer-help",
+            "show_external_indicator": true
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "id": "heading",
+              "static": true,
+              "settings": {
+                "heading": "<h3>CLIENT CARE</h3>",
+                "type_preset": "subheading"
+              }
+            }
+          ]
+        },
+        {
+          "type": "footer-menu",
+          "settings": {
+            "menu": "footer",
+            "show_external_indicator": true
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "id": "heading",
+              "static": true,
+              "settings": {
+                "heading": "<h3>CONNECT</h3>",
+                "type_preset": "subheading"
+              }
+            }
+          ]
+        },
+        {
+          "type": "heading",
+          "id": "signature_eyebrow",
+          "static": true,
+          "settings": {
+            "heading": "<p>THE HOUSE OF SPINEL / NEW YORK</p>",
+            "type_preset": "subheading",
+            "color": "subtext"
+          }
+        },
+        {
+          "type": "heading",
+          "id": "signature_wordmark",
+          "static": true,
+          "settings": {
+            "heading": "<p>SPINEL</p>",
+            "type_preset": "h1",
+            "width": "100%",
+            "width_mobile": "100%"
+          }
+        },
+        {
+          "type": "text",
+          "id": "signature_principles",
+          "static": true,
+          "settings": {
+            "text": "<p>NATURAL STONES<br>SCULPTURAL GOLD<br>MADE WITH INTENT</p>",
+            "type_preset": "subheading",
+            "color": "subtext"
+          }
+        },
+        {
+          "type": "text",
+          "id": "signature_tagline",
+          "static": true,
+          "settings": {
+            "text": "<p>OBJECTS OF COLOUR, CHARACTER AND CONSEQUENCE.</p>",
+            "type_preset": "subheading",
+            "color": "subtext"
+          }
         }
       ]
     }

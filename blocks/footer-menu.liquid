@@ -1,0 +1,85 @@
+{% doc %}
+  Renders a footer navigation column with a static reusable heading block.
+
+  @example
+  {% content_for 'block', type: 'footer-menu', id: 'footer_menu' %}
+{% enddoc %}
+
+{% liquid
+  assign menu_label = block.settings.menu.title
+  if menu_label == blank
+    assign menu_label = 'footer.menu' | t
+  endif
+%}
+
+<details class="footer-menu" data-footer-menu open {{ block.shopify_attributes }}>
+  <summary class="footer-menu__summary" aria-label="{{ menu_label | escape }}">
+    <span class="footer-menu__heading">
+      {% content_for 'block', type: 'heading', id: 'heading' %}
+    </span>
+    <span class="footer-menu__toggle" aria-hidden="true">
+      {% render 'icon', name: 'chevron-down' %}
+    </span>
+  </summary>
+
+  <div class="footer-menu__content">
+    {% if block.settings.menu != blank and block.settings.menu.links.size > 0 %}
+      <ul class="footer-menu__links" role="list">
+        {% for link in block.settings.menu.links %}
+          <li>
+            <a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>
+              <span>{{ link.title | escape }}</span>
+              {% if block.settings.show_external_indicator and link.url contains 'http' %}
+                <span class="footer-menu__external" aria-hidden="true">↗</span>
+              {% endif %}
+            </a>
+          </li>
+        {% endfor %}
+      </ul>
+    {% elsif request.design_mode %}
+      <p class="footer-menu__empty">{{ 'footer.choose_menu' | t }}</p>
+    {% endif %}
+  </div>
+</details>
+
+{% schema %}
+{
+  "name": "Footer menu",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Menu"
+    },
+    {
+      "type": "link_list",
+      "id": "menu",
+      "label": "Menu",
+      "default": "footer"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_external_indicator",
+      "label": "Show indicator for external links",
+      "default": true
+    }
+  ],
+  "presets": [
+    {
+      "name": "Footer menu",
+      "category": "Theme layout",
+      "blocks": [
+        {
+          "type": "heading",
+          "id": "heading",
+          "static": true,
+          "settings": {
+            "heading": "<h3>Menu</h3>",
+            "type_preset": "subheading"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
