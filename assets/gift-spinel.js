@@ -163,21 +163,19 @@ class GiftSpinel extends HTMLElement {
     this.recipient = this.optionFor(path.dataset.blockId);
     this.disableScrollAnchoring();
     this.showResult(path, false);
-    this.scrollToEditorBlock(path);
+    this.scrollToEditorBlock();
     this.releaseScrollAnchoring();
   }
 
-  scrollToEditorBlock(path) {
+  scrollToEditorBlock() {
     if (this.dataset.editorMode !== 'true' || !this.result) return;
 
     window.cancelAnimationFrame(this.editorScrollFrame);
     this.editorScrollFrame = window.requestAnimationFrame(() => {
-      this.editorScrollFrame = null;
-      const blockId = path.dataset.blockId;
-      const blockContent = Array.from(this.result.querySelectorAll('[data-gift-spinel-result-block]')).find(
-        (element) => element.dataset.giftSpinelResultBlock === blockId,
-      );
-      blockContent?.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      this.editorScrollFrame = window.requestAnimationFrame(() => {
+        this.editorScrollFrame = null;
+        this.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      });
     });
   }
 
