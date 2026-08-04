@@ -160,7 +160,7 @@ class GiftSpinel extends HTMLElement {
     const path = this.paths.find((item) => item.dataset.blockId === event.detail?.blockId);
     if (!path) return;
     this.recipient = this.optionFor(path.dataset.blockId);
-    this.showResult(path);
+    this.showResult(path, false);
   }
 
   optionFor(value) {
