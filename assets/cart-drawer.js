@@ -30,6 +30,10 @@
       this.renderEmpty();
       this.handleProductAdd = (event) => {
         if (!event.detail?.item) return;
+        if (this.dataset.autoOpen === 'false') {
+          if (event.detail.cart) this.syncCart(event.detail.cart);
+          return;
+        }
         const sourceButton = event.detail.button || null;
         const quickViewModal = sourceButton?.closest?.('[data-quick-view]')
           ? document.querySelector('[data-quick-view-modal]')
@@ -325,7 +329,10 @@
     }
 
     renderEmpty() {
-      this.items.innerHTML = `<p class="cart-drawer__empty">${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</p>`;
+      const emptyLink = this.dataset.emptyLink
+        ? `<a class="cart-drawer__empty-link button button--primary" href="${this.escape(this.dataset.emptyLink)}">${this.escape(this.dataset.emptyLinkLabel || 'Continue shopping')}</a>`
+        : '';
+      this.items.innerHTML = `<div class="cart-drawer__empty"><p>${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</p>${emptyLink}</div>`;
       this.footer.hidden = true;
       this.recommendations.hidden = true;
       if (this.discounts) {
