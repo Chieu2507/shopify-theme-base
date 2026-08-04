@@ -168,7 +168,7 @@ class GiftSpinel extends HTMLElement {
   }
 
   scrollToEditorBlock() {
-    if (this.dataset.editorMode !== 'true' || !this.result) return;
+    if (!this.result) return;
 
     window.cancelAnimationFrame(this.editorScrollFrame);
     this.editorScrollFrame = window.requestAnimationFrame(() => {
