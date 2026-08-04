@@ -2,15 +2,10 @@
 
 {% liquid
   assign product_block_count = 0
-  assign mobile_media_aspect_ratio = 1
-  assign media_settings_captured = false
+  assign mobile_media_aspect_ratio = section.settings.mobile_image.aspect_ratio | default: section.settings.image.aspect_ratio | default: 1
   for block in section.blocks
     if block.type == 'product_hotspot'
       assign product_block_count = product_block_count | plus: 1
-    endif
-    if block.type == 'media' and media_settings_captured == false
-      assign mobile_media_aspect_ratio = block.settings.mobile_image.aspect_ratio | default: block.settings.image.aspect_ratio | default: 1
-      assign media_settings_captured = true
     endif
   endfor
 %}
@@ -24,53 +19,41 @@
     <div class="shop-the-look__layout">
       <div class="shop-the-look__media-column">
         <div class="shop-the-look__visual">
-          {% assign media_rendered = false %}
-          {% for block in section.blocks %}
-            {% if block.type == 'media' and media_rendered == false %}
-              {% liquid
-                assign editorial_image = block.settings.image | default: block.settings.mobile_image
-                assign editorial_image_alt = editorial_image.alt
-                assign mobile_focal_point = block.settings.mobile_focal_point
-                if block.settings.mobile_image == blank or mobile_focal_point == blank
-                  assign mobile_focal_point = block.settings.focal_point
-                endif
-                capture editorial_image_style
-                  echo '--shop-the-look-desktop-focal-point: ' | append: block.settings.focal_point | append: '; '
-                  echo '--shop-the-look-mobile-focal-point: ' | append: mobile_focal_point | append: ';'
-                endcapture
-                if editorial_image_alt == blank
-                  assign editorial_image_alt = 'shop_the_look.editorial_image' | t
-                endif
+          {% liquid
+            assign editorial_image = section.settings.image | default: section.settings.mobile_image
+            assign editorial_image_alt = editorial_image.alt
+            assign mobile_focal_point = section.settings.mobile_focal_point
+            if section.settings.mobile_image == blank or mobile_focal_point == blank
+              assign mobile_focal_point = section.settings.focal_point
+            endif
+            capture editorial_image_style
+              echo '--shop-the-look-desktop-focal-point: ' | append: section.settings.focal_point | append: '; '
+              echo '--shop-the-look-mobile-focal-point: ' | append: mobile_focal_point | append: ';'
+            endcapture
+            if editorial_image_alt == blank
+              assign editorial_image_alt = 'shop_the_look.editorial_image' | t
+            endif
+          %}
+          <div class="shop-the-look__media">
+            {% if editorial_image != blank %}
+              {% render 'responsive-picture',
+                image: editorial_image,
+                mobile_image: section.settings.mobile_image,
+                mobile_breakpoint: 989,
+                max_width: 1920,
+                mobile_max_width: 1200,
+                widths: '480, 720, 960, 1200, 1440, 1920',
+                mobile_widths: '360, 480, 640, 750, 960, 1200',
+                sizes: '(min-width: 990px) 50vw, 100vw',
+                class: 'shop-the-look__editorial-image',
+                loading: 'lazy',
+                alt: editorial_image_alt,
+                style: editorial_image_style
               %}
-              <div class="shop-the-look__media" {{ block.shopify_attributes }}>
-                {% if editorial_image != blank %}
-                  {% render 'responsive-picture',
-                    image: editorial_image,
-                    mobile_image: block.settings.mobile_image,
-                    mobile_breakpoint: 989,
-                    max_width: 1920,
-                    mobile_max_width: 1200,
-                    widths: '480, 720, 960, 1200, 1440, 1920',
-                    mobile_widths: '360, 480, 640, 750, 960, 1200',
-                    sizes: '(min-width: 990px) 50vw, 100vw',
-                    class: 'shop-the-look__editorial-image',
-                    loading: 'lazy',
-                    alt: editorial_image_alt,
-                    style: editorial_image_style
-                  %}
-                {% else %}
-                  {% render 'media-placeholder', class_name: 'shop-the-look__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
-                {% endif %}
-              </div>
-              {% assign media_rendered = true %}
-            {% endif %}
-          {% endfor %}
-
-          {% unless media_rendered %}
-            <div class="shop-the-look__media">
+            {% else %}
               {% render 'media-placeholder', class_name: 'shop-the-look__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
-            </div>
-          {% endunless %}
+            {% endif %}
+          </div>
 
           <div class="shop-the-look__hotspots" role="tablist" aria-label="{{ 'shop_the_look.products' | t | escape }}">
             {% assign hotspot_index = 0 %}
@@ -163,30 +146,32 @@
       </div>
 
       <div class="shop-the-look__content-column">
-        <div class="shop-the-look__header">
-          {% for block in section.blocks %}
-            {% case block.type %}
-              {% when 'subheading' %}
-                {% if block.settings.text != blank %}
-                  <div class="shop-the-look__subheading">
-                    {% render 'typography-block',
-                      block: block,
-                      content: block.settings.text,
-                      kind: 'text',
-                      default_preset: 'subheading',
-                      default_font: 'subheading'
-                    %}
-                  </div>
-                {% endif %}
-              {% when 'heading' %}
-                {% if block.settings.heading != blank %}
-                  <div class="shop-the-look__heading">
-                    {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
-                  </div>
-                {% endif %}
-            {% endcase %}
-          {% endfor %}
-        </div>
+        <header class="section-header shop-the-look__header">
+          <div class="shop-the-look__header-content">
+            {% for block in section.blocks %}
+              {% case block.type %}
+                {% when 'subheading' %}
+                  {% if block.settings.text != blank %}
+                    <div class="shop-the-look__subheading">
+                      {% render 'typography-block',
+                        block: block,
+                        content: block.settings.text,
+                        kind: 'text',
+                        default_preset: 'subheading',
+                        default_font: 'subheading'
+                      %}
+                    </div>
+                  {% endif %}
+                {% when 'heading' %}
+                  {% if block.settings.heading != blank %}
+                    <div class="shop-the-look__heading">
+                      {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+                    </div>
+                  {% endif %}
+              {% endcase %}
+            {% endfor %}
+          </div>
+        </header>
 
         <div class="shop-the-look__spotlight">
           {% if product_block_count > 1 %}
@@ -262,12 +247,41 @@
   "settings": [
     {
       "type": "header",
+      "content": "Editorial image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "Image"
+    },
+    {
+      "type": "image_picker",
+      "id": "mobile_image",
+      "label": "Mobile image",
+      "info": "Recommended when the desktop crop does not fit the mobile layout. Uses the main image when left blank."
+    },
+    {
+      "type": "text",
+      "id": "focal_point",
+      "label": "Focal point",
+      "default": "center center",
+      "info": "CSS object-position, for example: 50% 40%"
+    },
+    {
+      "type": "text",
+      "id": "mobile_focal_point",
+      "label": "Mobile focal point",
+      "default": "center center",
+      "info": "Applied only when a mobile image is selected."
+    },
+    {
+      "type": "header",
       "content": "Layout"
     },
     {
       "type": "select",
       "id": "media_position",
-      "label": "Desktop media position",
+      "label": "Editorial image position",
       "options": [
         {
           "value": "left",
@@ -336,42 +350,6 @@
     }
   ],
   "blocks": [
-    {
-      "type": "media",
-      "name": "Editorial image",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Editorial image"
-        },
-        {
-          "type": "image_picker",
-          "id": "image",
-          "label": "Image"
-        },
-        {
-          "type": "image_picker",
-          "id": "mobile_image",
-          "label": "Mobile image",
-          "info": "Recommended when the desktop crop does not fit the mobile layout. Uses the main image when left blank."
-        },
-        {
-          "type": "text",
-          "id": "focal_point",
-          "label": "Focal point",
-          "default": "center center",
-          "info": "CSS object-position, for example: 50% 40%"
-        },
-        {
-          "type": "text",
-          "id": "mobile_focal_point",
-          "label": "Mobile focal point",
-          "default": "center center",
-          "info": "Applied only when a mobile image is selected."
-        }
-      ]
-    },
     {
       "type": "subheading",
       "name": "Subheading",
@@ -756,9 +734,6 @@
       "name": "Shop the look",
       "category": "Product discovery",
       "blocks": [
-        {
-          "type": "media"
-        },
         {
           "type": "subheading"
         },
