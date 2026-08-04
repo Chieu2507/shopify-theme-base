@@ -921,6 +921,7 @@ if (!window.SpinelHeaderMenus) {
     const link = document.createElement('a');
     link.className = className;
     link.href = url;
+    link.setAttribute('role', 'option');
     if (label) link.textContent = label;
     return link;
   };
@@ -946,6 +947,7 @@ if (!window.SpinelHeaderMenus) {
 
     const grid = document.createElement('div');
     grid.className = 'header-search-modal__product-grid';
+    grid.setAttribute('role', 'listbox');
     products.slice(0, 6).forEach((product) => {
       const card = createHeaderSearchLink('', product.url, 'header-search-modal__product');
       if (product.image) {
@@ -977,6 +979,7 @@ if (!window.SpinelHeaderMenus) {
 
     const grid = document.createElement('div');
     grid.className = 'header-search-modal__collection-grid';
+    grid.setAttribute('role', 'listbox');
     collections.slice(0, 6).forEach((collection) => {
       const card = createHeaderSearchLink('', collection.url, 'header-search-modal__collection');
       if (collection.image) {
@@ -1004,12 +1007,16 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const setHeaderSearchTab = (dialog, tabName) => {
+    const input = dialog.querySelector('[data-header-search-input]');
     dialog.querySelectorAll('[data-header-search-tab]').forEach((tab) => {
       const isActive = tab.dataset.headerSearchTab === tabName;
       tab.setAttribute('aria-selected', String(!tab.hidden && isActive));
+      tab.tabIndex = !tab.hidden && isActive ? 0 : -1;
     });
     dialog.querySelectorAll('[data-header-search-panel]').forEach((panel) => {
-      panel.hidden = panel.dataset.headerSearchPanel !== tabName;
+      const isActive = panel.dataset.headerSearchPanel === tabName;
+      panel.hidden = !isActive;
+      if (isActive && input) input.setAttribute('aria-controls', panel.id);
     });
   };
 
@@ -1018,6 +1025,7 @@ if (!window.SpinelHeaderMenus) {
     window.clearTimeout(headerSearchTimers.get(dialog));
     dialog.querySelector('[data-header-search-predictive]')?.setAttribute('hidden', '');
     dialog.querySelector('[data-header-search-navigation]')?.removeAttribute('hidden');
+    dialog.querySelector('[data-header-search-input]')?.setAttribute('aria-expanded', 'false');
   };
 
   const requestHeaderPredictiveSearch = (input) => {
@@ -1084,6 +1092,7 @@ if (!window.SpinelHeaderMenus) {
         }
         dialog.querySelector('[data-header-search-navigation]')?.setAttribute('hidden', '');
         dialog.querySelector('[data-header-search-predictive]')?.removeAttribute('hidden');
+        input.setAttribute('aria-expanded', 'true');
       } catch (error) {
         if (error.name !== 'AbortError') clearHeaderPredictiveSearch(dialog);
       }
@@ -1134,6 +1143,28 @@ if (!window.SpinelHeaderMenus) {
   document.addEventListener('click', (event) => {
     const tab = event.target.closest?.('[data-header-search-tab]');
     if (tab) setHeaderSearchTab(tab.closest('[data-header-search-modal]'), tab.dataset.headerSearchTab);
+  });
+
+  document.addEventListener('keydown', (event) => {
+    const tab = event.target.closest?.('[data-header-search-tab]');
+    if (!tab) return;
+
+    const dialog = tab.closest('[data-header-search-modal]');
+    const visibleTabs = [...dialog.querySelectorAll('[data-header-search-tab]:not([hidden])')];
+    const currentIndex = visibleTabs.indexOf(tab);
+    if (currentIndex < 0) return;
+
+    let nextIndex;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % visibleTabs.length;
+    else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + visibleTabs.length) % visibleTabs.length;
+    else if (event.key === 'Home') nextIndex = 0;
+    else if (event.key === 'End') nextIndex = visibleTabs.length - 1;
+    else return;
+
+    event.preventDefault();
+    const nextTab = visibleTabs[nextIndex];
+    setHeaderSearchTab(dialog, nextTab.dataset.headerSearchTab);
+    nextTab.focus();
   });
 
   document.addEventListener('click', (event) => {

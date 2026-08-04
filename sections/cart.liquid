@@ -42,7 +42,7 @@
         </div>
       </div>
     {% else %}
-      <form action="{{ routes.cart_url }}" method="post" id="{{ cart_form_id }}" class="cart-page__form">
+      {% form 'cart', cart, id: cart_form_id, class: 'cart-page__form' %}
         <div class="cart-page__items">
           <div class="cart-page__items-heading"><span>{{ section.settings.items_label | escape }}</span><span>{{ section.settings.price_label | escape }}</span></div>
           {% for item in cart.items %}
@@ -69,10 +69,11 @@
                 <input class="cart-page__quantity" id="Quantity-{{ section.id }}-{{ forloop.index }}" type="number" name="updates[]" value="{{ item.quantity }}" min="0" aria-label="{{ section.settings.quantity_label | escape }}: {{ item.product.title | escape }}">
               </div>
               <div class="cart-page__item-price">
-                <small class="cart-page__item-unit">{{ 'cart.unit_price' | t }}: {% render 'money', amount: item.final_price %}</small>
                 {% if item.original_line_price != item.final_line_price %}<s>{% render 'money', amount: item.original_line_price %}</s>{% endif %}
                 <span>{% render 'money', amount: item.final_line_price %}</span>
-                {% if item.unit_price_measurement != blank %}<small class="cart-page__item-unit-price">{% render 'money', amount: item.unit_price %} / {{ item.unit_price_measurement.reference_value }}{{ item.unit_price_measurement.reference_unit }}</small>{% endif %}
+                {% if item.unit_price_measurement != blank and item.unit_price != blank %}
+                  <small class="cart-page__item-unit-price">{{ item.unit_price | unit_price_with_measurement: item.unit_price_measurement }}</small>
+                {% endif %}
                 {% if item.line_level_discount_allocations.size > 0 %}
                   <ul class="cart-page__item-discounts" role="list">
                     {% for discount in item.line_level_discount_allocations %}
@@ -191,7 +192,7 @@
           {% endfor %}
           <a class="cart-page__clear" href="{{ routes.cart_clear_url }}">{{ section.settings.clear_label | escape }}</a>
         </aside>
-      </form>
+      {% endform %}
     {% endif %}
   </div>
 </section>
@@ -224,7 +225,6 @@
   .cart-page__quantity { display: block; width: 58px; min-height: var(--control-height); margin-top: 14px; padding: 6px 8px; border: 1px solid var(--color-variant-border); border-radius: var(--style-border-radius-inputs); background: transparent; color: inherit; text-align: center; }
   .cart-page__item-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-family: var(--cart-price-font-family, var(--font-body--family)); font-size: 15px; font-style: var(--cart-price-font-style, normal); font-weight: var(--cart-price-font-weight, 400); white-space: nowrap; }
   .cart-page__item-price s { color: var(--color-text); font-size: 12px; }
-  .cart-page__item-unit { color: var(--color-text); font-size: 12px; }
   .cart-page__item-discounts { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; color: var(--color-text); font-size: 12px; list-style: none; }
   .cart-page__item-discounts li { display: flex; justify-content: flex-end; gap: 10px; }
   .cart-page__item-unit-price { color: var(--color-text); font-size: 12px; }

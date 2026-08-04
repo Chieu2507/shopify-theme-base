@@ -175,7 +175,7 @@ và [Theme limits](https://shopify.dev/docs/storefronts/themes/architecture/limi
    ngoại lệ so với bộ option chuẩn và kết quả validation.
 
 ## Kiểm tra tính hợp lệ của Shopify theme
-<!-- 
+<!--
 - Không tự động chạy Validator hoặc Theme Check trừ khi tôi yêu cầu. Nếu được yêu cầu thì làm theo các phần ở dưới. -->
 - Chạy validator dùng chung bằng `scripts/validate-theme-8gb.sh` từ thư mục
   gốc của workspace.
