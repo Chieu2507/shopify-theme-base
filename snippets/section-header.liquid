@@ -5,8 +5,10 @@
   @param {string} [heading_tag] - Semantic heading tag.
   @param {string} [heading_size] - Visual heading scale.
   @param {string} [heading_class] - Section-specific heading classes.
-  @param {string} [eyebrow] - Eyebrow text.
-  @param {string} [eyebrow_class] - Section-specific eyebrow classes.
+  @param {string} [heading_html] - Optional sanitized heading markup.
+  @param {string} [subheading] - Subheading text.
+  @param {string} [subheading_class] - Section-specific subheading classes.
+  @param {string} [subheading_html] - Optional sanitized subheading markup.
   @param {string} [copy_class] - Section-specific copy wrapper classes.
   @param {string} [title_group_class] - Section-specific title group classes.
   @param {string} [text] - Rich text content.
@@ -30,7 +32,7 @@
   assign title_size = heading_size | default: 'h2'
   assign text_content = text | strip_html | strip
   assign has_title = false
-  if eyebrow != blank or heading != blank
+  if subheading != blank or heading != blank
     assign has_title = true
   endif
   assign has_copy = has_title
@@ -48,15 +50,15 @@
       <div class="{{ copy_class }}">
         {% if has_title %}
           <div class="{{ title_group_class }}">
-            {% if eyebrow != blank %}
-              <p class="section-header__eyebrow{% if eyebrow_class != blank %} {{ eyebrow_class }}{% endif %}">
-                {{ eyebrow | escape }}
+            {% if subheading != blank %}
+              <p class="section-header__subheading typo-sub{% if subheading_class != blank %} {{ subheading_class }}{% endif %}">
+                {% if subheading_html != blank %}{{ subheading_html }}{% else %}{{ subheading | escape }}{% endif %}
               </p>
             {% endif %}
 
             {% if heading != blank %}
-              <{{ title_tag }} class="section-header__heading heading--{{ title_size }}{% if heading_class != blank %} {{ heading_class }}{% endif %}">
-                {{ heading | escape }}
+              <{{ title_tag }} class="section-header__heading {% render 'typography-class', preset: title_size, fallback: 'h2' %}{% if heading_class != blank %} {{ heading_class }}{% endif %}">
+                {% if heading_html != blank %}{{ heading_html }}{% else %}{{ heading | escape }}{% endif %}
               </{{ title_tag }}>
             {% endif %}
           </div>
@@ -70,15 +72,15 @@
       </div>
     {% endif %}
   {% else %}
-    {% if eyebrow != blank %}
-      <p class="section-header__eyebrow{% if eyebrow_class != blank %} {{ eyebrow_class }}{% endif %}">
-        {{ eyebrow | escape }}
+    {% if subheading != blank %}
+      <p class="section-header__subheading typo-sub{% if subheading_class != blank %} {{ subheading_class }}{% endif %}">
+        {% if subheading_html != blank %}{{ subheading_html }}{% else %}{{ subheading | escape }}{% endif %}
       </p>
     {% endif %}
 
     {% if heading != blank %}
-      <{{ title_tag }} class="section-header__heading heading--{{ title_size }}{% if heading_class != blank %} {{ heading_class }}{% endif %}">
-        {{ heading | escape }}
+      <{{ title_tag }} class="section-header__heading {% render 'typography-class', preset: title_size, fallback: 'h2' %}{% if heading_class != blank %} {{ heading_class }}{% endif %}">
+        {% if heading_html != blank %}{{ heading_html }}{% else %}{{ heading | escape }}{% endif %}
       </{{ title_tag }}>
     {% endif %}
 

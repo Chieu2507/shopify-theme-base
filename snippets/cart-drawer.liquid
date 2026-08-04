@@ -1,17 +1,28 @@
-{% assign cart_drawer_scheme = 'scheme-1' %}
+{% liquid
+  assign cart_drawer_scheme = settings.cart_drawer_color_scheme.id | default: 'scheme-1'
+  assign cart_drawer_width = settings.cart_drawer_width | default: 450
+  assign cart_price_font = settings.cart_price_font | default: 'subheading'
+  assign cart_title_case = settings.cart_product_title_case | default: 'none'
+  assign cart_image_radius = settings.cart_image_radius | default: 0
+  assign empty_cart_link = settings.cart_drawer_empty_link | default: routes.all_products_collection_url
+%}
 <cart-drawer
   id="CartDrawer"
   class="cart-drawer color-scheme color-{{ cart_drawer_scheme }}"
   scroll-lock
+  data-scroll-lock-owner="cart-drawer"
   data-cart-drawer
-  style="--cart-drawer-width: 450px;"
+  style="--cart-drawer-width: {{ cart_drawer_width }}px; --cart-product-title-case: {{ cart_title_case }}; --cart-price-font-family: var(--font-{{ cart_price_font }}--family); --cart-price-font-style: var(--font-{{ cart_price_font }}--style); --cart-price-font-weight: var(--font-{{ cart_price_font }}--weight); --cart-image-radius: {{ cart_image_radius }}px;"
   data-currency="{{ cart.currency.iso_code | default: shop.currency }}"
   data-cart-update-url="{{ routes.cart_update_url }}.js"
-  data-recommendations-enabled="true"
-  data-recommendations-limit="4"
-  data-discount-enabled="true"
-  data-order-note-enabled="true"
+  data-auto-open="{{ settings.cart_auto_open }}"
+  data-recommendations-enabled="{{ settings.cart_drawer_show_recommendations }}"
+  data-recommendations-limit="{{ settings.cart_drawer_recommendations_limit | default: 4 }}"
+  data-discount-enabled="{{ settings.cart_drawer_show_discount }}"
+  data-order-note-enabled="{{ settings.cart_drawer_show_note }}"
   data-empty-label="{{ 'cart_drawer.empty' | t | default: 'Your cart is empty' | escape }}"
+  data-empty-link="{{ empty_cart_link | escape }}"
+  data-empty-link-label="{{ 'cart_drawer.continue_shopping' | t | default: 'Continue shopping' | escape }}"
   data-decrease-quantity-label="{{ 'quantity.decrease' | t | escape }}"
   data-increase-quantity-label="{{ 'quantity.increase' | t | escape }}"
   data-related-product-label="{{ 'cart_drawer.related_product' | t: index: '__index__' | escape }}"
@@ -38,7 +49,7 @@
   <aside class="cart-drawer__panel modal-drag-target" role="dialog" aria-modal="true" aria-labelledby="CartDrawerTitle" tabindex="-1">
     <div class="quick-view__handle cart-drawer__handle" data-cart-drawer-handle aria-hidden="true"></div>
     <header class="cart-drawer__header">
-      <h2 id="CartDrawerTitle" class="cart-drawer__title">{{ 'cart_drawer.title' | t | default: 'Cart' | escape }}</h2>
+      <h2 id="CartDrawerTitle" class="cart-drawer__title typo-h2">{{ 'cart_drawer.title' | t | default: 'Cart' | escape }}</h2>
       <button class="cart-drawer__close modal-close-button close-icon" type="button" aria-label="{{ 'cart_drawer.close' | t | default: 'Close cart' | escape }}" data-cart-drawer-close></button>
     </header>
 
@@ -48,7 +59,7 @@
       <div class="cart-drawer__items" data-cart-drawer-items></div>
       <section class="cart-drawer__recommendations" data-cart-drawer-recommendations hidden aria-labelledby="CartDrawerRecommendationsTitle">
         <div class="cart-drawer__section-heading">
-          <h3 id="CartDrawerRecommendationsTitle">{{ 'cart_drawer.complete_with' | t | default: 'Complete with' | escape }}</h3>
+          <h3 id="CartDrawerRecommendationsTitle" class="typo-h3">{{ 'cart_drawer.complete_with' | t | default: 'Complete with' | escape }}</h3>
           <div class="cart-drawer__recommendation-dots" data-cart-drawer-recommendation-dots aria-hidden="true"></div>
         </div>
         <div class="cart-drawer__recommendation-list" data-cart-drawer-recommendation-list></div>
@@ -56,8 +67,8 @@
     </div>
 
     <footer class="cart-drawer__footer" data-cart-drawer-footer hidden>
-      {% if true %}
-        <details class="cart-drawer__note">
+      {% if settings.cart_drawer_show_note %}
+        <details class="cart-drawer__note"{% if settings.cart_drawer_note_expanded %} open{% endif %}>
           <summary>{{ 'cart_drawer.order_note' | t | default: 'Add order note' | escape }}</summary>
           <textarea rows="3" data-cart-drawer-note aria-label="{{ 'cart_drawer.order_note' | t | default: 'Add order note' | escape }}" placeholder="{{ 'cart_drawer.note_placeholder' | t | default: 'Add a note to your order' | escape }}"></textarea>
           <button type="button" class="cart-drawer__text-button" data-cart-drawer-save-note>{{ 'cart_drawer.save_note' | t | default: 'Save note' | escape }}</button>
@@ -72,7 +83,7 @@
         {% endif %}
       </p>
       <ul class="cart-drawer__discounts" data-cart-drawer-discounts role="list" hidden></ul>
-      {% if true %}
+      {% if settings.cart_drawer_show_discount %}
         <form class="cart-drawer__discount" data-cart-drawer-discount>
           <label class="visually-hidden" for="CartDrawerDiscount">{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}</label>
           <input id="CartDrawerDiscount" type="text" name="discount" autocomplete="off" placeholder="{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}" aria-describedby="CartDrawerMessage">
@@ -82,7 +93,7 @@
       <p id="CartDrawerMessage" class="cart-drawer__message" data-cart-drawer-message role="status" aria-live="polite" hidden></p>
       <div class="cart-drawer__total"><span>{{ 'cart_drawer.total' | t | default: 'Total' | escape }}</span><strong data-cart-drawer-total></strong></div>
       <a class="cart-drawer__checkout" href="{{ routes.checkout_url | default: '/checkout' }}" data-cart-drawer-checkout>{{ 'cart_drawer.checkout' | t | default: 'Checkout' | escape }}<span aria-hidden="true"> · </span><span data-cart-drawer-checkout-total></span></a>
-      {% if additional_checkout_buttons %}
+      {% if settings.cart_show_accelerated_checkout and additional_checkout_buttons %}
         <div class="cart-drawer__additional-checkout-buttons">
           {{ content_for_additional_checkout_buttons }}
         </div>

@@ -24,9 +24,9 @@
           {% case block.type %}
             {% when 'heading' %}
               {% if block.settings.heading != blank %}
-                <{{ block.settings.heading_tag }} class="newsletter-section__heading newsletter-section__heading--{{ block.settings.heading_size }} spinel-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}" {{ block.shopify_attributes }}>
-                  {{ block.settings.heading | escape }}
-                </{{ block.settings.heading_tag }}>
+                <div class="newsletter-section__heading">
+                  {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+                </div>
               {% endif %}
 
             {% when 'line' %}
@@ -36,8 +36,8 @@
 
             {% when 'text' %}
               {% if block.settings.text != blank %}
-                <div class="newsletter-section__text newsletter-section__text--{{ block.settings.text_size }} text-block text-block--{{ block.settings.text_size | default: 'small' }} rte" {{ block.shopify_attributes }}>
-                  {{ block.settings.text }}
+                <div class="newsletter-section__text">
+                  {% render 'typography-block', block: block, content: block.settings.text, kind: 'text', default_preset: 'paragraph', default_font: 'body' %}
                 </div>
               {% endif %}
 
@@ -286,9 +286,9 @@
   .newsletter-section__label {
     color: var(--color-heading);
     font-size: var(--font-caption);
-    letter-spacing: var(--font-eyebrow-letter-spacing);
-    line-height: var(--font-eyebrow-line-height);
-    text-transform: var(--font-eyebrow-text-case);
+    letter-spacing: var(--font-subheading-letter-spacing);
+    line-height: var(--font-subheading-line-height);
+    text-transform: var(--font-subheading-text-case);
   }
 
   .newsletter-section__field input {
@@ -429,38 +429,80 @@
       "settings": [
         {
           "type": "header",
-          "content": "Heading"
+          "content": "t:typography_blocks.typography"
         },
-        { "type": "text", "id": "heading", "label": "Heading", "default": "Opening soon" },
         {
-          "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
-          "options": [
-            { "value": "h1", "label": "XX-large" },
-            { "value": "h2", "label": "X-large" },
-            { "value": "h3", "label": "Large" },
-            { "value": "h4", "label": "Medium" },
-            { "value": "h5", "label": "Small" },
-            { "value": "h6", "label": "X-small" }
-          ],
-          "default": "h2"
+          "type": "richtext",
+          "id": "heading",
+          "label": "t:typography_blocks.text",
+          "default": "<h2>Opening soon</h2>"
         },
         {
           "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
           "options": [
-            { "value": "h1", "label": "H1" },
-            { "value": "h2", "label": "H2" },
-            { "value": "h3", "label": "H3" },
-            { "value": "h4", "label": "H4" },
-            { "value": "h5", "label": "H5" },
-            { "value": "h6", "label": "H6" }
+            {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
+              "value": "h1",
+              "label": "t:typography_options.h1"
+            },
+            {
+              "value": "h2",
+              "label": "t:typography_options.h2"
+            },
+            {
+              "value": "h3",
+              "label": "t:typography_options.h3"
+            },
+            {
+              "value": "h4",
+              "label": "t:typography_options.h4"
+            },
+            {
+              "value": "h5",
+              "label": "t:typography_options.h5"
+            },
+            {
+              "value": "h6",
+              "label": "t:typography_options.h6"
+            }
           ],
-          "default": "h2"
+          "default": "default"
         },
-        { "type": "text_alignment", "id": "alignment", "label": "Alignment", "default": "left" }
+        {
+          "type": "select",
+          "id": "color",
+          "label": "t:typography_blocks.color",
+          "options": [
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
+        }
       ]
     },
     {
@@ -484,10 +526,80 @@
       "settings": [
         {
           "type": "header",
-          "content": "Text"
+          "content": "t:typography_blocks.typography"
         },
-        { "type": "richtext", "id": "text", "label": "Text", "default": "<p>Be the first to know when we launch.</p>" },
-        { "type": "select", "id": "text_size", "label": "Text size", "options": [{ "value": "small", "label": "Small" }, { "value": "body", "label": "Body" }, { "value": "large", "label": "Large" }], "default": "small" }
+        {
+          "type": "richtext",
+          "id": "text",
+          "label": "t:typography_blocks.text",
+          "default": "<p>Be the first to know when we launch.</p>"
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
+          "options": [
+            {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
+              "value": "h1",
+              "label": "t:typography_options.h1"
+            },
+            {
+              "value": "h2",
+              "label": "t:typography_options.h2"
+            },
+            {
+              "value": "h3",
+              "label": "t:typography_options.h3"
+            },
+            {
+              "value": "h4",
+              "label": "t:typography_options.h4"
+            },
+            {
+              "value": "h5",
+              "label": "t:typography_options.h5"
+            },
+            {
+              "value": "h6",
+              "label": "t:typography_options.h6"
+            }
+          ],
+          "default": "default"
+        },
+        {
+          "type": "select",
+          "id": "color",
+          "label": "t:typography_blocks.color",
+          "options": [
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
+        }
       ]
     },
     {

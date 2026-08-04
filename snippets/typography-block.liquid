@@ -1,0 +1,409 @@
+{% doc %}
+  Renders the shared Heading and Text theme-block UI with preset typography,
+  responsive layout, spacing, and entrance motion. Existing
+  saved blocks that used the removed custom preset remain renderable.
+
+  @param {object} block - The theme block object.
+  @param {string} content - Rich text to render.
+  @param {string} kind - Either "heading" or "text".
+  @param {string} default_preset - Fallback typography preset.
+  @param {string} default_font - Fallback font role for legacy saved settings.
+  @param {boolean} [include_shopify_attributes] - Whether to attach editor attributes to the rendered typography block.
+
+  @example
+  {% render 'typography-block',
+    block: block,
+    content: block.settings.text,
+    kind: 'text',
+    default_preset: 'paragraph',
+    default_font: 'body'
+  %}
+{% enddoc %}
+
+{% liquid
+  assign preset = block.settings.type_preset | default: default_preset
+  if preset == 'default'
+    if kind == 'heading' and block.settings.heading_size != blank
+      assign preset = block.settings.heading_size
+    elsif kind == 'text' and block.settings.text_size != blank
+      assign preset = 'legacy_' | append: block.settings.text_size
+    else
+      assign preset = default_preset
+    endif
+  endif
+
+  assign typo_class = ''
+  assign use_inline_typography = false
+  case preset
+    when 'paragraph'
+      assign typo_class = 'typo-p'
+    when 'subheading'
+      assign typo_class = 'typo-sub'
+    when 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
+      assign typo_class = 'typo-' | append: preset
+    when 'custom'
+      assign use_inline_typography = true
+  endcase
+  if preset contains 'legacy_'
+    assign use_inline_typography = true
+  endif
+
+  assign font_role = block.settings.font | default: default_font
+  assign font_family = 'var(--font-body--family)'
+  assign font_style = 'var(--font-body--style)'
+  assign font_weight = 'var(--font-body--weight)'
+  assign font_size = 'var(--font-body-base)'
+  assign font_size_mobile = 'var(--font-body-base)'
+  assign line_height = 'var(--body-line-height)'
+  assign letter_spacing = 'var(--body-letter-spacing)'
+  assign text_case = 'none'
+  assign legacy_heading_tag = block.settings.heading_tag | default: 'h2'
+
+  case preset
+    when 'subheading'
+      assign font_family = 'var(--font-subheading-preset--family)'
+      assign font_style = 'var(--font-subheading-preset--style)'
+      assign font_weight = 'var(--font-subheading-preset--weight)'
+      assign font_size = 'var(--font-subheading-size)'
+      assign font_size_mobile = 'var(--font-subheading-size)'
+      assign line_height = 'var(--font-subheading-line-height)'
+      assign letter_spacing = 'var(--font-subheading-letter-spacing)'
+      assign text_case = 'var(--font-subheading-text-case)'
+    when 'h1'
+      assign font_family = 'var(--font-h1--family)'
+      assign font_style = 'var(--font-h1--style)'
+      assign font_weight = 'var(--font-h1--weight)'
+      assign font_size = 'var(--font-h1-size)'
+      assign font_size_mobile = 'var(--font-h1-size)'
+      assign line_height = 'var(--font-h1-line-height)'
+      assign letter_spacing = 'var(--font-h1-letter-spacing)'
+      assign text_case = 'var(--font-h1-text-case)'
+    when 'h2'
+      assign font_family = 'var(--font-h2--family)'
+      assign font_style = 'var(--font-h2--style)'
+      assign font_weight = 'var(--font-h2--weight)'
+      assign font_size = 'var(--font-h2-size)'
+      assign font_size_mobile = 'var(--font-h2-size)'
+      assign line_height = 'var(--font-h2-line-height)'
+      assign letter_spacing = 'var(--font-h2-letter-spacing)'
+      assign text_case = 'var(--font-h2-text-case)'
+    when 'h3'
+      assign font_family = 'var(--font-h3--family)'
+      assign font_style = 'var(--font-h3--style)'
+      assign font_weight = 'var(--font-h3--weight)'
+      assign font_size = 'var(--font-h3-size)'
+      assign font_size_mobile = 'var(--font-h3-size)'
+      assign line_height = 'var(--font-h3-line-height)'
+      assign letter_spacing = 'var(--font-h3-letter-spacing)'
+      assign text_case = 'var(--font-h3-text-case)'
+    when 'h4'
+      assign font_family = 'var(--font-h4--family)'
+      assign font_style = 'var(--font-h4--style)'
+      assign font_weight = 'var(--font-h4--weight)'
+      assign font_size = 'var(--font-h4-size)'
+      assign font_size_mobile = 'var(--font-h4-size)'
+      assign line_height = 'var(--font-h4-line-height)'
+      assign letter_spacing = 'var(--font-h4-letter-spacing)'
+      assign text_case = 'var(--font-h4-text-case)'
+    when 'h5'
+      assign font_family = 'var(--font-h5--family)'
+      assign font_style = 'var(--font-h5--style)'
+      assign font_weight = 'var(--font-h5--weight)'
+      assign font_size = 'var(--font-h5-size)'
+      assign font_size_mobile = 'var(--font-h5-size)'
+      assign line_height = 'var(--font-h5-line-height)'
+      assign letter_spacing = 'var(--font-h5-letter-spacing)'
+      assign text_case = 'var(--font-h5-text-case)'
+    when 'h6'
+      assign font_family = 'var(--font-h6--family)'
+      assign font_style = 'var(--font-h6--style)'
+      assign font_weight = 'var(--font-h6--weight)'
+      assign font_size = 'var(--font-h6-size)'
+      assign font_size_mobile = 'var(--font-h6-size)'
+      assign line_height = 'var(--font-h6-line-height)'
+      assign letter_spacing = 'var(--font-h6-letter-spacing)'
+      assign text_case = 'var(--font-h6-text-case)'
+    when 'paragraph'
+      assign font_family = 'var(--font-paragraph--family)'
+      assign font_style = 'var(--font-paragraph--style)'
+      assign font_weight = 'var(--font-paragraph--weight)'
+      assign font_size = 'var(--font-body-base)'
+      assign font_size_mobile = 'var(--font-body-base)'
+      assign line_height = 'var(--body-line-height)'
+      assign letter_spacing = 'var(--body-letter-spacing)'
+    when 'legacy_x-large'
+      assign font_family = 'var(--font-paragraph--family)'
+      assign font_style = 'var(--font-paragraph--style)'
+      assign font_weight = 'var(--font-paragraph--weight)'
+      assign font_size = 'var(--font-body-large)'
+      assign font_size_mobile = 'var(--font-body-large)'
+      assign line_height = '1.5'
+    when 'legacy_large'
+      assign font_family = 'var(--font-paragraph--family)'
+      assign font_style = 'var(--font-paragraph--style)'
+      assign font_weight = 'var(--font-paragraph--weight)'
+      assign font_size = 'var(--font-body-base)'
+      assign font_size_mobile = 'var(--font-body-base)'
+      assign line_height = '1.5'
+    when 'legacy_medium'
+      assign font_family = 'var(--font-paragraph--family)'
+      assign font_style = 'var(--font-paragraph--style)'
+      assign font_weight = 'var(--font-paragraph--weight)'
+      assign font_size = 'var(--font-body-small)'
+      assign font_size_mobile = 'var(--font-body-small)'
+      assign line_height = '1.5'
+    when 'legacy_small'
+      assign font_family = 'var(--font-paragraph--family)'
+      assign font_style = 'var(--font-paragraph--style)'
+      assign font_weight = 'var(--font-paragraph--weight)'
+      assign font_size = 'var(--font-caption)'
+      assign font_size_mobile = 'var(--font-caption)'
+      assign line_height = '1.45'
+    when 'legacy_x-small'
+      assign font_family = 'var(--font-paragraph--family)'
+      assign font_style = 'var(--font-paragraph--style)'
+      assign font_weight = 'var(--font-paragraph--weight)'
+      assign font_size = '11px'
+      assign font_size_mobile = '11px'
+      assign line_height = '1.4'
+    when 'custom'
+      if font_role == 'heading'
+        assign font_family = 'var(--font-heading--family)'
+        assign font_style = 'var(--font-heading--style)'
+        assign font_weight = 'var(--font-heading--weight)'
+      else
+        assign font_family = 'var(--font-body--family)'
+        assign font_style = 'var(--font-body--style)'
+        assign font_weight = 'var(--font-body--weight)'
+      endif
+
+      if block.settings.font_weight != blank
+        if block.settings.font_weight != 'inherit'
+          assign font_weight = block.settings.font_weight
+        endif
+      endif
+
+      assign font_size = block.settings.font_size | default: 15 | append: 'px'
+      assign font_size_mobile = block.settings.font_size_mobile | default: 15 | append: 'px'
+      assign custom_line_height = block.settings.line_height | default: 'normal'
+      assign line_height = 'var(--leading-' | append: custom_line_height | append: ')'
+  endcase
+
+  assign color = 'var(--color-heading)'
+  if block.settings.color == 'subtext'
+    assign color = 'var(--color-text)'
+  endif
+
+  assign width = block.settings.width | default: 'fit-content'
+  assign width_mobile = block.settings.width_mobile | default: width
+  assign alignment = block.settings.alignment | default: 'left'
+  assign padding_scale = block.settings.mobile_scale | default: 100 | divided_by: 100.0
+  assign padding_top_mobile = block.settings.padding_top | default: 0 | times: padding_scale
+  assign padding_bottom_mobile = block.settings.padding_bottom | default: 0 | times: padding_scale
+  assign padding_left_mobile = block.settings.padding_left | default: 0 | times: padding_scale
+  assign padding_right_mobile = block.settings.padding_right | default: 0 | times: padding_scale
+  assign animation_type = block.settings.animation_type | default: 'none'
+  assign animation_delay = block.settings.animation_delay | default: 0
+  assign rendered_content = content
+  if block.settings.disable_line_break_mobile
+    assign line_break_markup = '<span class="typography-block__line-break"><br></span>'
+    assign rendered_content = rendered_content | replace: '<br>', line_break_markup
+    assign rendered_content = rendered_content | replace: '<br/>', line_break_markup
+    assign rendered_content = rendered_content | replace: '<br />', line_break_markup
+  endif
+
+  assign has_block_markup = false
+  if content contains '<p' or content contains '<h1' or content contains '<h2' or content contains '<h3'
+    assign has_block_markup = true
+  elsif content contains '<h4' or content contains '<h5' or content contains '<h6'
+    assign has_block_markup = true
+  elsif content contains '<ul' or content contains '<ol' or content contains '<blockquote'
+    assign has_block_markup = true
+  endif
+  assign is_legacy_heading = false
+  if kind == 'heading' and has_block_markup == false
+    assign is_legacy_heading = true
+  endif
+%}
+
+{% if content != blank %}
+  <typography-block
+    class="typography-block typography-block--{{ kind }} typography-block--preset-{{ preset }}{% if typo_class != blank %} {{ typo_class }}{% endif %}{% if use_inline_typography %} typography-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} typography-block--disable-mobile-breaks{% endif %}"
+    style="
+      --typography-width: {{ width }};
+      --typography-width-mobile: {{ width_mobile }};
+      {% if use_inline_typography %}
+        --typography-font-family: {{ font_family }};
+        --typography-font-style: {{ font_style }};
+        --typography-font-weight: {{ font_weight }};
+        --typography-font-size: {{ font_size }};
+        --typography-font-size-mobile: {{ font_size_mobile }};
+        --typography-line-height: {{ line_height }};
+        --typography-letter-spacing: {{ letter_spacing }};
+        --typography-text-case: {{ text_case }};
+      {% endif %}
+      --typography-color: {{ color }};
+      --typography-alignment: {{ alignment }};
+      --typography-padding-top: {{ block.settings.padding_top | default: 0 }}px;
+      --typography-padding-bottom: {{ block.settings.padding_bottom | default: 0 }}px;
+      --typography-padding-left: {{ block.settings.padding_left | default: 0 }}px;
+      --typography-padding-right: {{ block.settings.padding_right | default: 0 }}px;
+      --typography-padding-top-mobile: {{ padding_top_mobile }}px;
+      --typography-padding-bottom-mobile: {{ padding_bottom_mobile }}px;
+      --typography-padding-left-mobile: {{ padding_left_mobile }}px;
+      --typography-padding-right-mobile: {{ padding_right_mobile }}px;
+      --typography-animation-delay: {{ animation_delay }}ms;
+    "
+    data-typography-animation="{{ animation_type }}"
+    data-motion-enabled="{{ settings.enable_motion }}"
+    {% if include_shopify_attributes != false %}{{ block.shopify_attributes }}{% endif %}
+  >
+    {% if kind == 'heading' %}
+      <div class="typography-block__content content-heading content-heading--{{ alignment }}">
+        {% if is_legacy_heading %}
+          <{{ legacy_heading_tag }}>{{ rendered_content }}</{{ legacy_heading_tag }}>
+        {% else %}
+          {{ rendered_content }}
+        {% endif %}
+      </div>
+    {% else %}
+      <div class="typography-block__content text-block content-text content-text--{{ alignment }} rte">
+        {{ rendered_content }}
+      </div>
+    {% endif %}
+  </typography-block>
+{% endif %}
+
+{% stylesheet %}
+  .typography-block {
+    display: block;
+    width: var(--typography-width);
+    max-width: 100%;
+    padding:
+      var(--typography-padding-top)
+      var(--typography-padding-right)
+      var(--typography-padding-bottom)
+      var(--typography-padding-left);
+    color: var(--typography-color);
+  }
+
+  .typography-block__content,
+  .typography-block__content :is(p, h1, h2, h3, h4, h5, h6) {
+    color: inherit !important;
+    text-align: var(--typography-alignment);
+  }
+
+  .typography-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
+    .typography-block__content,
+  .typography-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
+    .typography-block__content
+    :is(p, h1, h2, h3, h4, h5, h6) {
+    font-family: inherit !important;
+    font-size: inherit !important;
+    font-style: inherit !important;
+    font-weight: inherit !important;
+    letter-spacing: inherit !important;
+    line-height: inherit !important;
+    text-transform: inherit !important;
+  }
+
+  .typography-block--inline-typography .typography-block__content,
+  .typography-block--inline-typography
+    .typography-block__content
+    :is(p, h1, h2, h3, h4, h5, h6) {
+    font-family: var(--typography-font-family) !important;
+    font-size: var(--typography-font-size) !important;
+    font-synthesis: weight;
+    font-style: var(--typography-font-style) !important;
+    font-weight: var(--typography-font-weight) !important;
+    letter-spacing: var(--typography-letter-spacing) !important;
+    line-height: var(--typography-line-height) !important;
+    text-transform: var(--typography-text-case) !important;
+  }
+
+  .typography-block__content {
+    margin: 0;
+    text-wrap: pretty;
+  }
+
+  .typography-block__content > :first-child {
+    margin-block-start: 0;
+  }
+
+  .typography-block__content > :last-child {
+    margin-block-end: 0;
+  }
+
+  .typography-block[data-typography-ready='true'][data-typography-animation='fade_in'],
+  .typography-block[data-typography-ready='true'][data-typography-animation='fade_up'],
+  .typography-block[data-typography-ready='true'][data-typography-animation='slide_in_left'],
+  .typography-block[data-typography-ready='true'][data-typography-animation='slide_in_right'],
+  .typography-block[data-typography-ready='true'][data-typography-animation='zoom_in'],
+  .typography-block[data-typography-ready='true'][data-typography-animation='zoom_out'] {
+    opacity: 0;
+    transition:
+      opacity 600ms ease,
+      transform 700ms cubic-bezier(0.22, 1, 0.36, 1);
+    transition-delay: var(--typography-animation-delay);
+  }
+
+  .typography-block[data-typography-ready='true'][data-typography-animation='fade_up'] {
+    transform: translateY(24px);
+  }
+
+  .typography-block[data-typography-ready='true'][data-typography-animation='slide_in_left'] {
+    transform: translateX(-32px);
+  }
+
+  .typography-block[data-typography-ready='true'][data-typography-animation='slide_in_right'] {
+    transform: translateX(32px);
+  }
+
+  .typography-block[data-typography-ready='true'][data-typography-animation='zoom_in'] {
+    transform: scale(0.94);
+  }
+
+  .typography-block[data-typography-ready='true'][data-typography-animation='zoom_out'] {
+    transform: scale(1.06);
+  }
+
+  .typography-block[data-typography-ready='true'].is-visible {
+    opacity: 1;
+    transform: none;
+  }
+
+  @media screen and (max-width: 749px) {
+    .typography-block {
+      width: var(--typography-width-mobile);
+      padding:
+        var(--typography-padding-top-mobile)
+        var(--typography-padding-right-mobile)
+        var(--typography-padding-bottom-mobile)
+        var(--typography-padding-left-mobile);
+    }
+
+    .typography-block--inline-typography .typography-block__content,
+    .typography-block--inline-typography
+      .typography-block__content
+      :is(p, h1, h2, h3, h4, h5, h6) {
+      font-size: var(--typography-font-size-mobile) !important;
+    }
+
+    .typography-block--disable-mobile-breaks .typography-block__line-break br {
+      display: none;
+    }
+
+    .typography-block--disable-mobile-breaks .typography-block__line-break::after {
+      content: ' ';
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .typography-block {
+      opacity: 1 !important;
+      transform: none !important;
+      transition: none !important;
+    }
+
+  }
+{% endstylesheet %}

@@ -29,6 +29,7 @@
     && !reducedMotion.matches
     && !isSafari
     && !root.classList.contains('scroll-locked')
+    && !root.classList.contains('header-menu-scroll-locked')
   );
 
   const canNestedElementScroll = (target, delta) => {

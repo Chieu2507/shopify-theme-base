@@ -1,107 +1,144 @@
 {% doc %}
-  Renders a reusable heading theme block.
+  Renders a reusable heading theme block with preset typography.
 
   @example
   {% content_for 'block', type: 'heading', id: 'heading' %}
 {% enddoc %}
 
-{% if block.settings.heading != blank %}
-  <{{ block.settings.heading_tag }}
-    class="content-heading spinel-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}"
-    {{ block.shopify_attributes }}
-  >
-    {{ block.settings.heading }}
-  </{{ block.settings.heading_tag }}>
-{% endif %}
+{% render 'typography-block',
+  block: block,
+  content: block.settings.heading,
+  kind: 'heading',
+  default_preset: 'h2',
+  default_font: 'heading'
+%}
 
 {% schema %}
 {
-  "name": "Heading",
+  "name": "t:typography_blocks.heading",
+  "tag": null,
   "settings": [
     {
       "type": "header",
-      "content": "Heading"
+      "content": "t:typography_blocks.typography"
     },
     {
-      "type": "inline_richtext",
+      "type": "richtext",
       "id": "heading",
-      "label": "Heading",
-      "default": "Tell your story"
+      "label": "t:typography_blocks.text",
+      "default": "t:typography_defaults.heading"
     },
     {
       "type": "select",
-      "id": "heading_size",
-      "label": "Heading size",
+      "id": "type_preset",
+      "label": "t:typography_blocks.preset",
       "options": [
-        {
-          "value": "h1",
-          "label": "XX-large"
-        },
-        {
-          "value": "h2",
-          "label": "X-large"
-        },
-        {
-          "value": "h3",
-          "label": "Large"
-        },
-        {
-          "value": "h4",
-          "label": "Medium"
-        },
-        {
-          "value": "h5",
-          "label": "Small"
-        },
-        {
-          "value": "h6",
-          "label": "X-small"
-        }
+        { "value": "default", "label": "t:typography_options.default" },
+        { "value": "paragraph", "label": "t:typography_options.paragraph" },
+        { "value": "subheading", "label": "t:typography_options.subheading" },
+        { "value": "h1", "label": "t:typography_options.h1" },
+        { "value": "h2", "label": "t:typography_options.h2" },
+        { "value": "h3", "label": "t:typography_options.h3" },
+        { "value": "h4", "label": "t:typography_options.h4" },
+        { "value": "h5", "label": "t:typography_options.h5" },
+        { "value": "h6", "label": "t:typography_options.h6" }
       ],
-      "default": "h2"
+      "default": "default"
     },
     {
       "type": "select",
-      "id": "heading_tag",
-      "label": "HTML Tag",
+      "id": "color",
+      "label": "t:typography_blocks.color",
       "options": [
-        {
-          "value": "h1",
-          "label": "H1"
-        },
-        {
-          "value": "h2",
-          "label": "H2"
-        },
-        {
-          "value": "h3",
-          "label": "H3"
-        },
-        {
-          "value": "h4",
-          "label": "H4"
-        },
-        {
-          "value": "h5",
-          "label": "H5"
-        },
-        {
-          "value": "h6",
-          "label": "H6"
-        }
+        { "value": "text", "label": "t:typography_options.text" },
+        { "value": "subtext", "label": "t:typography_options.subtext" }
       ],
-      "default": "h2"
+      "default": "text"
+    },
+    {
+      "type": "checkbox",
+      "id": "disable_line_break_mobile",
+      "label": "t:typography_blocks.disable_line_break_mobile",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:typography_blocks.layout"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:typography_blocks.width",
+      "options": [
+        { "value": "fit-content", "label": "t:typography_options.fit" },
+        { "value": "100%", "label": "t:typography_options.fill" }
+      ],
+      "default": "fit-content"
+    },
+    {
+      "type": "select",
+      "id": "width_mobile",
+      "label": "t:typography_blocks.width_mobile",
+      "options": [
+        { "value": "fit-content", "label": "t:typography_options.fit" },
+        { "value": "100%", "label": "t:typography_options.fill" }
+      ],
+      "default": "fit-content"
     },
     {
       "type": "text_alignment",
       "id": "alignment",
-      "label": "Alignment",
-      "default": "left"
+      "label": "t:typography_blocks.alignment",
+      "default": "left",
+      "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:typography_blocks.animation"
+    },
+    {
+      "type": "select",
+      "id": "animation_type",
+      "label": "t:typography_blocks.type",
+      "options": [
+        { "value": "none", "label": "t:typography_options.none" },
+        { "value": "fade_in", "label": "t:typography_options.fade_in" },
+        { "value": "fade_up", "label": "t:typography_options.fade_up" },
+        { "value": "slide_in_left", "label": "t:typography_options.slide_in_left" },
+        { "value": "slide_in_right", "label": "t:typography_options.slide_in_right" },
+        { "value": "zoom_in", "label": "t:typography_options.zoom_in" },
+        { "value": "zoom_out", "label": "t:typography_options.zoom_out" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "range",
+      "id": "animation_delay",
+      "label": "t:typography_blocks.animation_delay",
+      "min": 0,
+      "max": 1000,
+      "step": 50,
+      "unit": "ms",
+      "default": 0,
+      "visible_if": "{{ block.settings.animation_type != 'none' }}"
     }
   ],
   "presets": [
     {
-      "name": "Heading"
+      "name": "t:typography_blocks.heading",
+      "category": "t:typography_blocks.basic",
+      "settings": {
+        "heading": "t:typography_defaults.heading",
+        "type_preset": "default"
+      }
+    },
+    {
+      "name": "t:names.subheading",
+      "category": "t:typography_blocks.basic",
+      "settings": {
+        "heading": "t:typography_defaults.subheading",
+        "type_preset": "subheading"
+      }
     }
   ]
 }

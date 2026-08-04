@@ -161,14 +161,134 @@
     "name": "Cart",
     "settings": [
       {
+        "type": "header",
+        "content": "Cart behavior"
+      },
+      {
         "type": "select",
         "id": "cart_action",
-        "label": "Type",
+        "label": "Cart opens as",
         "options": [
           { "value": "page", "label": "Page" },
           { "value": "drawer", "label": "Drawer" }
         ],
         "default": "drawer"
+      },
+      {
+        "type": "color_scheme",
+        "id": "cart_drawer_color_scheme",
+        "label": "Color scheme",
+        "default": "scheme-1",
+        "visible_if": "{{ settings.cart_action == 'drawer' }}"
+      },
+      {
+        "type": "range",
+        "id": "cart_drawer_width",
+        "label": "Desktop drawer width",
+        "min": 360,
+        "max": 600,
+        "step": 10,
+        "unit": "px",
+        "default": 450,
+        "visible_if": "{{ settings.cart_action == 'drawer' }}"
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_auto_open",
+        "label": "Open drawer after adding a product",
+        "default": true,
+        "visible_if": "{{ settings.cart_action == 'drawer' }}"
+      },
+      {
+        "type": "header",
+        "content": "Product display"
+      },
+      {
+        "type": "select",
+        "id": "cart_product_title_case",
+        "label": "Product title case",
+        "options": [
+          { "value": "none", "label": "Original" },
+          { "value": "uppercase", "label": "Uppercase" }
+        ],
+        "default": "none"
+      },
+      {
+        "type": "select",
+        "id": "cart_price_font",
+        "label": "Price font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "subheading"
+      },
+      {
+        "type": "range",
+        "id": "cart_image_radius",
+        "label": "Product image corners",
+        "min": 0,
+        "max": 24,
+        "step": 2,
+        "unit": "px",
+        "default": 0
+      },
+      {
+        "type": "header",
+        "content": "Drawer tools"
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_drawer_show_note",
+        "label": "Show order note",
+        "default": true,
+        "visible_if": "{{ settings.cart_action == 'drawer' }}"
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_drawer_note_expanded",
+        "label": "Keep order note expanded",
+        "default": false,
+        "visible_if": "{{ settings.cart_action == 'drawer' and settings.cart_drawer_show_note }}"
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_drawer_show_discount",
+        "label": "Show discount code field",
+        "default": true,
+        "visible_if": "{{ settings.cart_action == 'drawer' }}"
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_show_accelerated_checkout",
+        "label": "Show accelerated checkout buttons",
+        "default": true
+      },
+      {
+        "type": "checkbox",
+        "id": "cart_drawer_show_recommendations",
+        "label": "Show product suggestions",
+        "default": true,
+        "visible_if": "{{ settings.cart_action == 'drawer' }}"
+      },
+      {
+        "type": "range",
+        "id": "cart_drawer_recommendations_limit",
+        "label": "Number of product suggestions",
+        "min": 2,
+        "max": 6,
+        "step": 1,
+        "default": 4,
+        "visible_if": "{{ settings.cart_action == 'drawer' and settings.cart_drawer_show_recommendations }}"
+      },
+      {
+        "type": "url",
+        "id": "cart_drawer_empty_link",
+        "label": "Empty cart shopping link",
+        "default": "/collections/all",
+        "visible_if": "{{ settings.cart_action == 'drawer' }}"
       }
     ]
   },
@@ -177,7 +297,7 @@
     "settings": [
       {
         "type": "paragraph",
-        "content": "Set the global font families first, then tune the semantic HTML text styles used across the theme."
+        "content": "Choose the four font families, then assign one to each heading level and paragraphs below."
       },
       {
         "type": "header",
@@ -185,19 +305,43 @@
       },
       {
         "type": "font_picker",
-        "id": "heading_font",
-        "default": "oranienbaum_n4",
-        "label": "Heading font"
+        "id": "body_font",
+        "default": "figtree_n4",
+        "label": "Body"
       },
       {
         "type": "font_picker",
-        "id": "body_font",
+        "id": "subheading_font",
         "default": "figtree_n4",
-        "label": "Body font"
+        "label": "Subheading"
+      },
+      {
+        "type": "font_picker",
+        "id": "heading_font",
+        "default": "oranienbaum_n4",
+        "label": "Heading"
+      },
+      {
+        "type": "font_picker",
+        "id": "accent_font",
+        "default": "oranienbaum_n4",
+        "label": "Accent"
       },
       {
         "type": "header",
-        "content": "Heading 1 (h1)"
+        "content": "Heading 1"
+      },
+      {
+        "type": "select",
+        "id": "h1_font",
+        "label": "Font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "heading"
       },
       {
         "type": "select",
@@ -321,7 +465,19 @@
       },
       {
         "type": "header",
-        "content": "Heading 2 (h2)"
+        "content": "Heading 2"
+      },
+      {
+        "type": "select",
+        "id": "h2_font",
+        "label": "Font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "heading"
       },
       {
         "type": "select",
@@ -445,7 +601,19 @@
       },
       {
         "type": "header",
-        "content": "Heading 3 (h3)"
+        "content": "Heading 3"
+      },
+      {
+        "type": "select",
+        "id": "h3_font",
+        "label": "Font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "heading"
       },
       {
         "type": "select",
@@ -569,7 +737,19 @@
       },
       {
         "type": "header",
-        "content": "Heading 4 (h4)"
+        "content": "Heading 4"
+      },
+      {
+        "type": "select",
+        "id": "h4_font",
+        "label": "Font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "heading"
       },
       {
         "type": "select",
@@ -691,7 +871,19 @@
       },
       {
         "type": "header",
-        "content": "Heading 5 (h5)"
+        "content": "Heading 5"
+      },
+      {
+        "type": "select",
+        "id": "h5_font",
+        "label": "Font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "heading"
       },
       {
         "type": "select",
@@ -813,7 +1005,19 @@
       },
       {
         "type": "header",
-        "content": "Heading 6 (h6)"
+        "content": "Heading 6"
+      },
+      {
+        "type": "select",
+        "id": "h6_font",
+        "label": "Font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "heading"
       },
       {
         "type": "select",
@@ -931,7 +1135,19 @@
       },
       {
         "type": "header",
-        "content": "Paragraph (p)"
+        "content": "Paragraph"
+      },
+      {
+        "type": "select",
+        "id": "paragraph_font",
+        "label": "Font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "body"
       },
       {
         "type": "select",
@@ -1079,11 +1295,23 @@
       },
       {
         "type": "header",
-        "content": "Eyebrow"
+        "content": "Subheading"
       },
       {
         "type": "select",
-        "id": "spinel_eyebrow_size_desktop",
+        "id": "subheading_preset_font",
+        "label": "Font",
+        "options": [
+          { "value": "body", "label": "Body" },
+          { "value": "subheading", "label": "Subheading" },
+          { "value": "heading", "label": "Heading" },
+          { "value": "accent", "label": "Accent" }
+        ],
+        "default": "subheading"
+      },
+      {
+        "type": "select",
+        "id": "spinel_subheading_size_desktop",
         "label": "Desktop size",
         "options": [
           {
@@ -1119,7 +1347,7 @@
       },
       {
         "type": "select",
-        "id": "spinel_eyebrow_size_mobile",
+        "id": "spinel_subheading_size_mobile",
         "label": "Mobile size",
         "options": [
           {
@@ -1155,7 +1383,7 @@
       },
       {
         "type": "select",
-        "id": "spinel_eyebrow_line_height",
+        "id": "spinel_subheading_line_height",
         "label": "Line height",
         "options": [
           { "value": "150", "label": "150%" },
@@ -1176,7 +1404,7 @@
       },
       {
         "type": "select",
-        "id": "spinel_eyebrow_tracking",
+        "id": "spinel_subheading_tracking",
         "label": "Letter spacing",
         "options": [
           { "value": "2", "label": "2px" },
@@ -1197,7 +1425,7 @@
       },
       {
         "type": "select",
-        "id": "spinel_eyebrow_case",
+        "id": "spinel_subheading_case",
         "label": "Text case",
         "options": [
           {
@@ -1761,6 +1989,28 @@
       },
       {
         "type": "checkbox",
+        "id": "enable_page_transitions",
+        "label": "t:labels.enable_page_transitions",
+        "default": true
+      },
+      {
+        "type": "color",
+        "id": "page_transition_color",
+        "label": "t:labels.page_transition_color",
+        "default": "#000000"
+      },
+      {
+        "type": "range",
+        "id": "page_transition_duration",
+        "min": 0,
+        "max": 1500,
+        "step": 100,
+        "unit": "ms",
+        "label": "t:labels.page_transition_duration",
+        "default": 1000
+      },
+      {
+        "type": "checkbox",
         "id": "enable_smooth_scroll",
         "label": "Enable smooth page scrolling",
         "info": "Adds gentle inertia to mouse-wheel scrolling on desktop. Touch devices and reduced-motion preferences use native scrolling.",
@@ -1779,6 +2029,61 @@
         "step": 4,
         "label": "Results per page",
         "default": 20
+      }
+    ]
+  },
+  {
+    "name": "Footer",
+    "settings": [
+      {
+        "type": "url",
+        "id": "facebook_url",
+        "label": "Facebook"
+      },
+      {
+        "type": "url",
+        "id": "instagram_url",
+        "label": "Instagram"
+      },
+      {
+        "type": "url",
+        "id": "youtube_url",
+        "label": "YouTube"
+      },
+      {
+        "type": "url",
+        "id": "tiktok_url",
+        "label": "TikTok"
+      },
+      {
+        "type": "url",
+        "id": "x_url",
+        "label": "X / Twitter"
+      },
+      {
+        "type": "url",
+        "id": "snapchat_url",
+        "label": "Snapchat"
+      },
+      {
+        "type": "url",
+        "id": "pinterest_url",
+        "label": "Pinterest"
+      },
+      {
+        "type": "url",
+        "id": "tumblr_url",
+        "label": "Tumblr"
+      },
+      {
+        "type": "url",
+        "id": "vimeo_url",
+        "label": "Vimeo"
+      },
+      {
+        "type": "url",
+        "id": "linkedin_url",
+        "label": "LinkedIn"
       }
     ]
   }

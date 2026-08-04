@@ -3,7 +3,7 @@ if (!customElements.get('review-parallax')) {
     connectedCallback() {
       this.scene = this.querySelector('[data-review-scene]');
       this.viewport = this.querySelector('[data-review-viewport]');
-      this.header = this.querySelector('.review-parallax__header');
+      this.header = this.querySelector('.section-header-block');
       this.cards = Array.from(this.querySelectorAll('[data-review-card]'));
       this.cards.forEach((card, index) => {
         const lane = index % 3;

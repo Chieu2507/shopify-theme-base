@@ -51,17 +51,9 @@
       {% assign has_prioritized_collection_image = false %}
       {% for block in section.blocks %}
         {% if block.type == 'heading' and block.settings.heading != blank %}
-          {% capture header_attributes %}{{ block.shopify_attributes }}{% endcapture %}
-          {% render 'section-header',
-            heading: block.settings.heading,
-            heading_tag: block.settings.heading_tag,
-            heading_size: block.settings.heading_size,
-            heading_class: 'collection-list__heading',
-            alignment: block.settings.alignment,
-            class: 'collection-list__header',
-            tag: 'div',
-            attributes: header_attributes
-          %}
+          <div class="collection-list__header collection-list__heading">
+            {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+          </div>
         {% endif %}
       {% endfor %}
 
@@ -166,10 +158,10 @@
                 {% if section.settings.layout == 'split-promotions' %}
                   <span class="collection-list__overlay" aria-hidden="true"></span>
                   <div class="collection-list__content collection-list__content--{{ section.settings.card_alignment }} collection-list__content--position-{{ block.settings.content_position }}">
-                    {% if block.settings.eyebrow != blank %}
-                      <span class="collection-list__eyebrow">{{ block.settings.eyebrow | escape }}</span>
+                    {% if block.settings.subheading != blank %}
+                      <span class="collection-list__subheading typo-sub">{{ block.settings.subheading | escape }}</span>
                     {% endif %}
-                    <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__promotion-heading collection-list__promotion-heading--{{ section.settings.card_heading_size | default: 'h3' }} heading--{{ section.settings.card_heading_size | default: 'h3' }} spinel-heading--{{ section.settings.card_heading_size | default: 'h3' }}">
+                    <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__promotion-heading collection-list__promotion-heading--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">
                       {{ card_title | escape }}
                     </{{ section.settings.card_heading_tag | default: 'h3' }}>
                     {% if block.settings.button_label != blank and card_link != blank %}
@@ -181,7 +173,7 @@
                 {% else %}
                   <span class="collection-list__overlay" aria-hidden="true"></span>
                   <span class="collection-list__content collection-list__content--{{ section.settings.card_alignment }} collection-list__content--position-bottom">
-                    <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__title collection-list__title--{{ section.settings.card_heading_size | default: 'h3' }} heading--{{ section.settings.card_heading_size | default: 'h3' }} spinel-heading--{{ section.settings.card_heading_size | default: 'h3' }}">
+                    <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__title collection-list__title--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">
                       {{ card_title | escape }}
                     </{{ section.settings.card_heading_tag | default: 'h3' }}>
                     {% if block.settings.show_product_count != false and card_collection != blank %}
@@ -581,83 +573,79 @@
       "settings": [
         {
           "type": "header",
-          "content": "Heading"
+          "content": "t:typography_blocks.typography"
         },
         {
-          "type": "text",
+          "type": "richtext",
           "id": "heading",
-          "label": "Heading",
-          "default": "Shop By Category"
+          "label": "t:typography_blocks.text",
+          "default": "<h2>Shop By Category</h2>"
         },
         {
           "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
           "options": [
             {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
               "value": "h1",
-              "label": "XX-large"
+              "label": "t:typography_options.h1"
             },
             {
               "value": "h2",
-              "label": "X-large"
+              "label": "t:typography_options.h2"
             },
             {
               "value": "h3",
-              "label": "Large"
+              "label": "t:typography_options.h3"
             },
             {
               "value": "h4",
-              "label": "Medium"
+              "label": "t:typography_options.h4"
             },
             {
               "value": "h5",
-              "label": "Small"
+              "label": "t:typography_options.h5"
             },
             {
               "value": "h6",
-              "label": "X-small"
+              "label": "t:typography_options.h6"
             }
           ],
-          "default": "h2"
+          "default": "default"
         },
         {
           "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
+          "id": "color",
+          "label": "t:typography_blocks.color",
           "options": [
             {
-              "value": "h1",
-              "label": "H1"
+              "value": "text",
+              "label": "t:typography_options.text"
             },
             {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
             }
           ],
-          "default": "h2"
+          "default": "text"
         },
         {
-          "type": "text_alignment",
-          "id": "alignment",
-          "label": "Alignment",
-          "default": "center"
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
         }
       ]
     },
@@ -689,8 +677,8 @@
         },
         {
           "type": "text",
-          "id": "eyebrow",
-          "label": "Eyebrow",
+          "id": "subheading",
+          "label": "Subheading",
           "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
         },
         {
@@ -871,7 +859,7 @@
         {
           "type": "collection_card",
           "settings": {
-            "eyebrow": "Featured collection",
+            "subheading": "Featured collection",
             "title": "The signature edit",
             "button_label": "Shop all",
             "overlay_opacity": 0

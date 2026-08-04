@@ -2,13 +2,13 @@
 {% render 'swiper-stylesheet', defer_on_home: true %}
 
 {% liquid
-  assign eyebrow_block = blank
+  assign subheading_block = blank
   assign heading_block = blank
   assign collection_block = blank
   for block in section.blocks
     case block.type
-      when 'eyebrow'
-        assign eyebrow_block = block
+      when 'subheading'
+        assign subheading_block = block
       when 'heading'
         assign heading_block = block
       when 'collection'
@@ -25,7 +25,7 @@
   assign show_editor_skeleton = false
   assign should_render = false
 
-  if eyebrow_block != blank and eyebrow_block.settings.text != blank
+  if subheading_block != blank and subheading_block.settings.text != blank
     assign has_header_content = true
   elsif heading_block != blank and heading_block.settings.heading != blank
     assign has_header_content = true
@@ -90,14 +90,20 @@
     <div class="product-featured-collection__inner section-spacing{% if section.settings.section_width == 'page' %} product-featured-collection__inner--page{% endif %}">
       {% if has_header_content %}
         <div class="product-featured-collection__header product-featured-collection__header--{{ section.settings.header_alignment | default: 'center' }}">
-          {% if eyebrow_block != blank and eyebrow_block.settings.text != blank %}
-            <p class="product-featured-collection__eyebrow" {{ eyebrow_block.shopify_attributes }}>{{ eyebrow_block.settings.text | escape }}</p>
+          {% if subheading_block != blank and subheading_block.settings.text != blank %}
+            <div class="product-featured-collection__subheading">
+              {% render 'typography-block',
+                block: subheading_block,
+                content: subheading_block.settings.text,
+                kind: 'text',
+                default_preset: 'subheading',
+                default_font: 'subheading'
+              %}
+            </div>
           {% endif %}
           {% if heading_block != blank and heading_block.settings.heading != blank %}
-            <div class="product-featured-collection__heading-block" {{ heading_block.shopify_attributes }}>
-              <{{ heading_block.settings.heading_tag }} class="product-featured-collection__heading spinel-heading--{{ heading_block.settings.heading_size }} heading--{{ heading_block.settings.heading_size }} content-heading--{{ section.settings.header_alignment | default: 'center' }}">
-                {{ heading_block.settings.heading | escape }}
-              </{{ heading_block.settings.heading_tag }}>
+            <div class="product-featured-collection__heading-block product-featured-collection__heading">
+              {% render 'typography-block', block: heading_block, content: heading_block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
             </div>
           {% endif %}
         </div>
@@ -201,7 +207,7 @@
     text-align: right;
   }
 
-  .product-featured-collection__eyebrow {
+  .product-featured-collection__subheading {
     margin: 0;
     color: var(--color-text);
   }
@@ -624,8 +630,14 @@
       "id": "columns_mobile",
       "label": "Mobile columns",
       "options": [
-        { "value": "1", "label": "1 column" },
-        { "value": "2", "label": "2 columns" }
+        {
+          "value": "1",
+          "label": "1 column"
+        },
+        {
+          "value": "2",
+          "label": "2 columns"
+        }
       ],
       "default": "1"
     },
@@ -634,8 +646,14 @@
       "id": "section_width",
       "label": "Section width",
       "options": [
-        { "value": "full", "label": "Full width" },
-        { "value": "page", "label": "Page width" }
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "page",
+          "label": "Page width"
+        }
       ],
       "default": "full"
     },
@@ -686,19 +704,233 @@
   ],
   "blocks": [
     {
-      "type": "eyebrow",
-      "name": "Eyebrow",
+      "type": "subheading",
+      "name": "Subheading",
       "limit": 1,
       "settings": [
         {
-          "type": "header",
-          "content": "Eyebrow"
+          "type": "richtext",
+          "id": "text",
+          "label": "Subheading",
+          "default": "<p>Curated for your style</p>"
         },
         {
-          "type": "text",
-          "id": "text",
-          "label": "Text",
-          "default": "Curated for your style"
+          "type": "header",
+          "content": "t:typography_blocks.typography"
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
+          "options": [
+            {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
+              "value": "h1",
+              "label": "t:typography_options.h1"
+            },
+            {
+              "value": "h2",
+              "label": "t:typography_options.h2"
+            },
+            {
+              "value": "h3",
+              "label": "t:typography_options.h3"
+            },
+            {
+              "value": "h4",
+              "label": "t:typography_options.h4"
+            },
+            {
+              "value": "h5",
+              "label": "t:typography_options.h5"
+            },
+            {
+              "value": "h6",
+              "label": "t:typography_options.h6"
+            }
+          ],
+          "default": "subheading"
+        },
+        {
+          "type": "select",
+          "id": "color",
+          "label": "t:typography_blocks.color",
+          "options": [
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.layout"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "t:typography_blocks.width",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "select",
+          "id": "width_mobile",
+          "label": "t:typography_blocks.width_mobile",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "t:typography_blocks.alignment",
+          "default": "left",
+          "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.padding"
+        },
+        {
+          "type": "range",
+          "id": "padding_top",
+          "label": "t:typography_blocks.top",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom",
+          "label": "t:typography_blocks.bottom",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_left",
+          "label": "t:typography_blocks.left",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_right",
+          "label": "t:typography_blocks.right",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "mobile_scale",
+          "label": "t:typography_blocks.mobile_scale",
+          "min": 20,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 100
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.animation"
+        },
+        {
+          "type": "select",
+          "id": "animation_type",
+          "label": "t:typography_blocks.type",
+          "options": [
+            {
+              "value": "none",
+              "label": "t:typography_options.none"
+            },
+            {
+              "value": "fade_in",
+              "label": "t:typography_options.fade_in"
+            },
+            {
+              "value": "fade_up",
+              "label": "t:typography_options.fade_up"
+            },
+            {
+              "value": "slide_in_left",
+              "label": "t:typography_options.slide_in_left"
+            },
+            {
+              "value": "slide_in_right",
+              "label": "t:typography_options.slide_in_right"
+            },
+            {
+              "value": "zoom_in",
+              "label": "t:typography_options.zoom_in"
+            },
+            {
+              "value": "zoom_out",
+              "label": "t:typography_options.zoom_out"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "range",
+          "id": "animation_delay",
+          "label": "t:typography_blocks.animation_delay",
+          "min": 0,
+          "max": 1000,
+          "step": 50,
+          "unit": "ms",
+          "default": 0,
+          "visible_if": "{{ block.settings.animation_type != 'none' }}"
         }
       ]
     },
@@ -709,41 +941,79 @@
       "settings": [
         {
           "type": "header",
-          "content": "Heading"
+          "content": "t:typography_blocks.typography"
         },
         {
-          "type": "text",
+          "type": "richtext",
           "id": "heading",
-          "label": "Heading",
-          "default": "Featured collection"
+          "label": "t:typography_blocks.text",
+          "default": "<h2>Featured collection</h2>"
         },
         {
           "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
           "options": [
-            { "value": "h1", "label": "XX-large" },
-            { "value": "h2", "label": "X-large" },
-            { "value": "h3", "label": "Large" },
-            { "value": "h4", "label": "Medium" },
-            { "value": "h5", "label": "Small" },
-            { "value": "h6", "label": "X-small" }
+            {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
+              "value": "h1",
+              "label": "t:typography_options.h1"
+            },
+            {
+              "value": "h2",
+              "label": "t:typography_options.h2"
+            },
+            {
+              "value": "h3",
+              "label": "t:typography_options.h3"
+            },
+            {
+              "value": "h4",
+              "label": "t:typography_options.h4"
+            },
+            {
+              "value": "h5",
+              "label": "t:typography_options.h5"
+            },
+            {
+              "value": "h6",
+              "label": "t:typography_options.h6"
+            }
           ],
-          "default": "h2"
+          "default": "default"
         },
         {
           "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
+          "id": "color",
+          "label": "t:typography_blocks.color",
           "options": [
-            { "value": "h1", "label": "H1" },
-            { "value": "h2", "label": "H2" },
-            { "value": "h3", "label": "H3" },
-            { "value": "h4", "label": "H4" },
-            { "value": "h5", "label": "H5" },
-            { "value": "h6", "label": "H6" }
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
           ],
-          "default": "h2"
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
         }
       ]
     },
@@ -761,9 +1031,18 @@
           "id": "source",
           "label": "Product source",
           "options": [
-            { "value": "collection", "label": "Collection" },
-            { "value": "complementary", "label": "Complementary products" },
-            { "value": "related", "label": "Related products" }
+            {
+              "value": "collection",
+              "label": "Collection"
+            },
+            {
+              "value": "complementary",
+              "label": "Complementary products"
+            },
+            {
+              "value": "related",
+              "label": "Related products"
+            }
           ],
           "default": "collection"
         },
@@ -781,9 +1060,15 @@
       "name": "Product collection",
       "category": "Product discovery",
       "blocks": [
-        { "type": "eyebrow" },
-        { "type": "heading" },
-        { "type": "collection" }
+        {
+          "type": "subheading"
+        },
+        {
+          "type": "heading"
+        },
+        {
+          "type": "collection"
+        }
       ]
     }
   ]

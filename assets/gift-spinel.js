@@ -30,6 +30,7 @@ class GiftSpinel extends HTMLElement {
     window.clearTimeout(this.anchorTimer);
     window.cancelAnimationFrame(this.initializeFrame);
     window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
+    window.cancelAnimationFrame(this.editorScrollFrame);
     document.documentElement.classList.remove('gift-spinel-layout-changing');
     this.isBound = false;
   }
@@ -159,8 +160,27 @@ class GiftSpinel extends HTMLElement {
   handleBlockSelect(event) {
     const path = this.paths.find((item) => item.dataset.blockId === event.detail?.blockId);
     if (!path) return;
-    this.recipient = this.optionFor(path.dataset.recipient);
-    this.showResult(path);
+    this.recipient = this.optionFor(path.dataset.blockId);
+    this.disableScrollAnchoring();
+    this.showResult(path, false);
+    this.scrollToEditorBlock(path);
+    this.releaseScrollAnchoring();
+  }
+
+  scrollToEditorBlock(path) {
+    if (!this.result) return;
+
+    window.cancelAnimationFrame(this.editorScrollFrame);
+    this.editorScrollFrame = window.requestAnimationFrame(() => {
+      this.editorScrollFrame = window.requestAnimationFrame(() => {
+        this.editorScrollFrame = null;
+        const blockId = path?.dataset.blockId;
+        const anchor = Array.from(this.querySelectorAll('[data-gift-spinel-editor-block]')).find(
+          (element) => element.dataset.giftSpinelEditorBlock === blockId,
+        );
+        (anchor || this).scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
+      });
+    });
   }
 
   optionFor(value) {
@@ -192,7 +212,11 @@ class GiftSpinel extends HTMLElement {
   }
 
   findMatchingPath() {
-    return this.paths.find((path) => path.dataset.recipient === this.recipient?.value) || this.placeholderPath;
+    return (
+      this.paths.find((path) => path.dataset.blockId === this.recipient?.value)
+      || this.paths.find((path) => path.dataset.recipient === this.recipient?.value)
+      || this.placeholderPath
+    );
   }
 
   replaceTokens(root) {

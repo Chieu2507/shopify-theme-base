@@ -1,68 +1,105 @@
 if (!customElements.get('footer-localization')) {
   class FooterLocalization extends HTMLElement {
     connectedCallback() {
-      this.onChange = this.handleChange.bind(this);
-      this.addEventListener('change', this.onChange);
+      this.form = this.querySelector('form');
+      this.handleChange = () => this.form?.requestSubmit();
+      this.addEventListener('change', this.handleChange);
     }
 
     disconnectedCallback() {
-      this.removeEventListener('change', this.onChange);
-    }
-
-    handleChange(event) {
-      if (!event.target.matches('[data-footer-localization-select]')) return;
-      event.target.form.submit();
+      this.removeEventListener('change', this.handleChange);
     }
   }
 
   customElements.define('footer-localization', FooterLocalization);
 }
 
-(() => {
-  const observers = new WeakMap();
+if (!customElements.get('footer-house')) {
+  class FooterHouse extends HTMLElement {
+    connectedCallback() {
+      this.mobileQuery = window.matchMedia('(max-width: 749px)');
+      this.menus = [...this.querySelectorAll('[data-footer-menu]')];
+      this.handleViewportChange = () => this.syncMenuState();
+      this.handleBlockSelect = (event) => {
+        const selectedMenu = event.target.closest?.('[data-footer-menu]');
+        if (selectedMenu && this.contains(selectedMenu)) selectedMenu.open = true;
+      };
+      this.handleMenuToggle = (event) => {
+        if (!this.mobileQuery.matches || !event.currentTarget.open) return;
+        this.menus.forEach((menu) => {
+          if (menu !== event.currentTarget) menu.open = false;
+        });
+      };
 
-  const fitWordmark = (wordmark) => {
-    const text = wordmark.dataset.wordmark?.trim();
-    if (!text || !wordmark.clientWidth) return;
+      this.menus.forEach((menu) => menu.addEventListener('toggle', this.handleMenuToggle));
+      this.addEventListener('shopify:block:select', this.handleBlockSelect);
 
-    wordmark.style.removeProperty('--footer-wordmark-fitted-size');
-    const styles = getComputedStyle(wordmark);
-    const canvas = document.createElement('canvas');
-    const context = canvas.getContext('2d');
-    if (!context) return;
-
-    context.font = `${styles.fontStyle} ${styles.fontWeight} ${styles.fontSize} ${styles.fontFamily}`;
-    const renderedText = styles.textTransform === 'uppercase' ? text.toUpperCase() : text;
-    const letterSpacing = Number.parseFloat(styles.letterSpacing) || 0;
-    const textWidth = context.measureText(renderedText).width + Math.max(0, renderedText.length - 1) * letterSpacing;
-    const availableWidth = wordmark.clientWidth;
-    if (!textWidth || textWidth <= availableWidth) return;
-
-    const fontSize = Number.parseFloat(styles.fontSize);
-    wordmark.style.setProperty('--footer-wordmark-fitted-size', `${Math.floor(fontSize * ((availableWidth - 1) / textWidth))}px`);
-  };
-
-  const observeWordmarks = (root = document) => {
-    const wordmarks = [];
-    if (root instanceof Element && root.matches('.footer__wordmark')) wordmarks.push(root);
-    root.querySelectorAll?.('.footer__wordmark').forEach((wordmark) => wordmarks.push(wordmark));
-    wordmarks.forEach((wordmark) => {
-      if (!observers.has(wordmark)) {
-        const observer = new ResizeObserver(() => fitWordmark(wordmark));
-        observer.observe(wordmark);
-        observers.set(wordmark, observer);
+      if (this.mobileQuery.addEventListener) {
+        this.mobileQuery.addEventListener('change', this.handleViewportChange);
+      } else {
+        this.mobileQuery.addListener(this.handleViewportChange);
       }
-      fitWordmark(wordmark);
-    });
-  };
 
-  const initialize = () => {
-    observeWordmarks();
-    document.fonts?.ready.then(() => observeWordmarks());
-  };
+      this.syncMenuState();
+    }
 
-  if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', initialize, { once: true });
-  else initialize();
-  window.addEventListener('resize', () => observeWordmarks(), { passive: true });
-  document.addEventListener('shopify:section:load', (event) => observeWordmarks(event.target));
-})();
+    disconnectedCallback() {
+      this.menus?.forEach((menu) => menu.removeEventListener('toggle', this.handleMenuToggle));
+      this.removeEventListener('shopify:block:select', this.handleBlockSelect);
+
+      if (this.mobileQuery?.removeEventListener) {
+        this.mobileQuery.removeEventListener('change', this.handleViewportChange);
+      } else {
+        this.mobileQuery?.removeListener(this.handleViewportChange);
+      }
+    }
+
+    syncMenuState() {
+      this.menus.forEach((menu) => {
+        menu.open = !this.mobileQuery.matches;
+      });
+    }
+  }
+
+  customElements.define('footer-house', FooterHouse);
+}
+
+if (!customElements.get('footer-wordmark')) {
+  class FooterWordmark extends HTMLElement {
+    connectedCallback() {
+      this.handleResize = () => this.scheduleFit();
+      this.resizeObserver = new ResizeObserver(this.handleResize);
+      this.resizeObserver.observe(this);
+      document.fonts?.ready.then(() => this.scheduleFit());
+      this.scheduleFit();
+    }
+
+    disconnectedCallback() {
+      this.resizeObserver?.disconnect();
+      if (this.frame) cancelAnimationFrame(this.frame);
+    }
+
+    scheduleFit() {
+      if (this.frame) cancelAnimationFrame(this.frame);
+      this.frame = requestAnimationFrame(() => this.fit());
+    }
+
+    fit() {
+      this.frame = null;
+      const typography = this.querySelector('.typography-block');
+      const content = this.querySelector('.typography-block__content');
+      if (!typography || !content || this.clientWidth <= 0) return;
+
+      this.style.removeProperty('--footer-wordmark-fitted-size');
+      const naturalSize = Number.parseFloat(getComputedStyle(typography).fontSize);
+      const naturalWidth = content.scrollWidth;
+
+      if (naturalWidth > this.clientWidth) {
+        const fittedSize = Math.max(42, naturalSize * (this.clientWidth / naturalWidth) * 0.985);
+        this.style.setProperty('--footer-wordmark-fitted-size', `${fittedSize}px`);
+      }
+    }
+  }
+
+  customElements.define('footer-wordmark', FooterWordmark);
+}

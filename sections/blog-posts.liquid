@@ -21,22 +21,20 @@
         <header class="blog-posts__header">
           {% for block in section.blocks %}
             {% if block.type == 'header' %}
-              {% liquid
-                assign blog_heading_class = 'blog-posts__heading spinel-heading--' | append: block.settings.heading_size
-                assign blog_eyebrow_class = 'blog-posts__subheading content-text content-text--' | append: block.settings.subheading_size
-                assign blog_text_class = 'blog-posts__intro content-text content-text--' | append: block.settings.text_size
-              %}
+              {% assign heading_class = 'blog-posts__heading' %}
+              {% assign subheading_class = 'blog-posts__subheading content-text content-text--' | append: block.settings.subheading_size %}
+              {% assign text_class = 'blog-posts__intro content-text content-text--' | append: block.settings.text_size %}
               {% render 'section-header',
                 heading: block.settings.heading,
                 heading_tag: block.settings.heading_tag,
                 heading_size: block.settings.heading_size,
-                heading_class: blog_heading_class,
-                eyebrow: block.settings.subheading,
-                eyebrow_class: blog_eyebrow_class,
+                heading_class: heading_class,
+                subheading: block.settings.subheading,
+                subheading_class: subheading_class,
                 copy_class: 'blog-posts__header-copy',
                 title_group_class: 'blog-posts__header-title-group',
                 text: block.settings.text,
-                text_class: blog_text_class,
+                text_class: text_class,
                 action_label: block.settings.link_label,
                 action_url: block.settings.link,
                 action_style: block.settings.button_style,
@@ -120,7 +118,7 @@
                         <p class="blog-posts__tag">{{ card_tag | escape }}</p>
                       {% endif %}
 
-                      <{{ card_heading_tag }} class="blog-posts__card-title spinel-heading--{{ section.settings.title_size }} heading--{{ section.settings.title_size }}">
+                      <{{ card_heading_tag }} class="blog-posts__card-title {% render 'typography-class', preset: section.settings.title_size, fallback: 'h3' %}">
                         {% if card_url != blank %}
                           <a href="{{ card_url }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ card_title | escape }}</a>
                         {% else %}

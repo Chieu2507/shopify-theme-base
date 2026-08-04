@@ -166,7 +166,7 @@ Nên sắp xếp:
 
 | ID | Type đề xuất | Ý nghĩa |
 |---|---|---|
-| `eyebrow` | `text` | Dòng nhãn ngắn phía trên heading |
+| `subheading` | `text` | Dòng nhãn ngắn phía trên heading |
 | `heading` | `inline_richtext` hoặc `text` | Tiêu đề |
 | `heading_size` | `select` | Visual style của heading |
 | `heading_tag` | `select` | HTML tag semantic |
@@ -308,7 +308,7 @@ Global typography nên gồm:
 - Letter spacing.
 - Text transform.
 - Body text scale.
-- Eyebrow scale.
+- Subheading scale.
 
 Nên tách semantic HTML và visual size:
 
@@ -397,7 +397,7 @@ Các global option thường cần:
 
 | ID | Type |
 |---|---|
-| `eyebrow` | `text` |
+| `subheading` | `text` |
 | `heading` | `inline_richtext` |
 | `heading_size` | `select` |
 | `heading_tag` | `select` |
@@ -530,7 +530,7 @@ Section settings:
 
 Blocks hoặc content fields:
 
-- Eyebrow.
+- Subheading.
 - Heading.
 - Text.
 - Một hoặc hai CTA.
@@ -558,7 +558,7 @@ Slide block:
 - Mobile image.
 - Focal point.
 - Overlay opacity.
-- Eyebrow.
+- Subheading.
 - Heading.
 - Heading size/tag.
 - Text.
@@ -580,7 +580,7 @@ Section settings:
 
 Content blocks:
 
-- Eyebrow.
+- Subheading.
 - Heading.
 - Text.
 - CTA.
@@ -727,25 +727,32 @@ Item block:
 
 Nếu icon vocabulary cố định, dùng `select`. Nếu merchant tải icon riêng, dùng `image_picker`. Không dùng cùng một ID `icon` cho cả hai type.
 
-### 9.14. Scrolling text
+### 9.14. Marquee
 
 Section settings:
 
-- Direction.
-- Speed.
-- Pause on hover.
-- Item gap.
-- Text style.
-- Color scheme.
 - Section width.
+- Space between marquees.
+- Section padding.
+- Color scheme.
 
-Text block:
+Marquee block:
 
+- Enable scrolling.
+- Direction, scrolling duration và pause on hover.
+- Item gap và vertical alignment.
+- Desktop/mobile height.
+- Color scheme riêng cho từng marquee.
+
+Nested content blocks:
+
+- Icon / image.
+- Heading.
 - Text.
-- Optional link.
-- Optional icon.
+- Subheading.
+- Button.
 
-Không dùng autoplay interval theo kiểu slideshow; marquee nên dùng speed contract riêng.
+Heading, Text và Subheading dùng chung typography system từ thư mục `blocks`. Không dùng autoplay interval theo kiểu slideshow; mỗi marquee dùng duration contract riêng.
 
 ### 9.15. Countdown
 
@@ -819,7 +826,7 @@ Section settings:
 
 Blocks:
 
-- Eyebrow.
+- Subheading.
 - Heading.
 - Text.
 - Form.

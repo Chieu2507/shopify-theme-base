@@ -6,6 +6,9 @@
   assign tax_note = 'Taxes and shipping calculated at checkout.'
   assign has_price_block = false
   assign has_checkout_block = false
+  assign cart_price_font = settings.cart_price_font | default: 'subheading'
+  assign cart_title_case = settings.cart_product_title_case | default: 'none'
+  assign cart_image_radius = settings.cart_image_radius | default: 0
 
   if continue_url == blank
     assign continue_url = routes.all_products_collection_url
@@ -24,10 +27,10 @@
   endfor
 %}
 
-<section class="cart-page color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}" style="--cart-content-width: {{ section.settings.content_width }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;">
+<section class="cart-page color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}" style="--cart-content-width: {{ section.settings.content_width }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --cart-product-title-case: {{ cart_title_case }}; --cart-price-font-family: var(--font-{{ cart_price_font }}--family); --cart-price-font-style: var(--font-{{ cart_price_font }}--style); --cart-price-font-weight: var(--font-{{ cart_price_font }}--weight); --cart-image-radius: {{ cart_image_radius }}px;">
   <div class="cart-page__inner section-spacing">
     <header class="cart-page__header">
-      <{{ section.settings.heading_tag | default: 'h1' }} class="cart-page__title spinel-heading--{{ section.settings.heading_size | default: '2xl' }} heading--{{ section.settings.heading_size | default: '2xl' }}">{{ section.settings.heading | escape }} <span aria-hidden="true">({{ cart.item_count }})</span></{{ section.settings.heading_tag | default: 'h1' }}>
+      <{{ section.settings.heading_tag | default: 'h1' }} class="cart-page__title {% render 'typography-class', preset: section.settings.heading_size, fallback: '2xl' %}">{{ section.settings.heading | escape }} <span aria-hidden="true">({{ cart.item_count }})</span></{{ section.settings.heading_tag | default: 'h1' }}>
     </header>
 
     {% if cart.item_count == 0 %}
@@ -51,7 +54,7 @@
                 {% else %}{% render 'media-placeholder', class_name: 'cart-page__item-image', asset_name: 'placeholder-image-product-1.svg' %}{% endif %}
               </a>
               <div class="cart-page__item-info">
-                <h2 class="cart-page__item-title"><a href="{{ item.url }}">{{ item.product.title | escape }}</a></h2>
+                <h2 class="cart-page__item-title typo-h2"><a href="{{ item.url }}">{{ item.product.title | escape }}</a></h2>
                 {% unless item.product.has_only_default_variant %}
                   <dl class="cart-page__item-options">
                     {% for option in item.options_with_values %}
@@ -86,7 +89,7 @@
 
         <aside class="cart-page__summary" aria-labelledby="CartSummaryHeading-{{ section.id }}">
           <div class="cart-page__summary-header">
-            <h2 id="CartSummaryHeading-{{ section.id }}">{{ section.settings.summary_heading | escape }}</h2>
+            <h2 id="CartSummaryHeading-{{ section.id }}" class="typo-h2">{{ section.settings.summary_heading | escape }}</h2>
             <span class="cart-page__summary-count">{{ 'cart.item_count' | t: count: cart.item_count }}</span>
           </div>
 
@@ -146,7 +149,7 @@
             </div>
           {% endif %}
 
-          {% if additional_checkout_buttons %}
+          {% if settings.cart_show_accelerated_checkout and additional_checkout_buttons %}
             <div class="cart-page__additional-checkout-buttons">
               {{ content_for_additional_checkout_buttons }}
             </div>
@@ -208,10 +211,10 @@
   .cart-page__form { display: grid; grid-template-columns: minmax(0, 1fr) minmax(280px, 360px); gap: clamp(42px, 8vw, 120px); align-items: start; }
   .cart-page__items-heading { display: flex; justify-content: space-between; padding-bottom: 16px; border-bottom: 1px solid var(--color-variant-border); color: var(--color-text); font-size: var(--font-caption); letter-spacing: .08em; text-transform: uppercase; }
   .cart-page__item { display: grid; grid-template-columns: 140px minmax(0, 1fr) auto; gap: 20px; padding: 20px 0; border-bottom: 1px solid var(--color-variant-border); }
-  .cart-page__item-media { display: block; aspect-ratio: 1; overflow: hidden; background: var(--color-variant-component-background); }
+  .cart-page__item-media { display: block; aspect-ratio: 1; overflow: hidden; border-radius: var(--cart-image-radius, 0); background: var(--color-variant-component-background); }
   .cart-page__item-image { width: 100%; height: 100%; object-fit: cover; }
   .cart-page__item-info { min-width: 0; }
-  .cart-page__item-title { margin: 0; font-size: 20px; line-height: 1.15; }
+  .cart-page__item-title { margin: 0; font-size: 20px; line-height: 1.15; text-transform: var(--cart-product-title-case, none); }
   .cart-page__item-title a { color: inherit; text-decoration: none; }
   .cart-page__item-options, .cart-page__item-properties { margin-top: 8px; color: var(--color-text); font-size: var(--font-caption); }
   .cart-page__item-options div, .cart-page__item-properties div { display: flex; gap: 5px; }
@@ -220,7 +223,7 @@
   .cart-page__remove { display: inline-block; margin-top: 22px; color: inherit; font-size: var(--font-caption); text-underline-offset: 3px; }
   .cart-page__quantity-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .cart-page__quantity { display: block; width: 58px; min-height: var(--control-height); margin-top: 14px; padding: 6px 8px; border: 1px solid var(--color-variant-border); border-radius: var(--style-border-radius-inputs); background: transparent; color: inherit; text-align: center; }
-  .cart-page__item-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-size: 15px; white-space: nowrap; }
+  .cart-page__item-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-family: var(--cart-price-font-family, var(--font-body--family)); font-size: 15px; font-style: var(--cart-price-font-style, normal); font-weight: var(--cart-price-font-weight, 400); white-space: nowrap; }
   .cart-page__item-price s { color: var(--color-text); font-size: 12px; }
   .cart-page__item-discounts { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; color: var(--color-text); font-size: 12px; list-style: none; }
   .cart-page__item-discounts li { display: flex; justify-content: flex-end; gap: 10px; }
@@ -232,6 +235,7 @@
   .cart-page__summary-count { color: var(--color-text); font-size: var(--font-caption); white-space: nowrap; }
   .cart-page__summary-totals { padding: 20px 0 0; }
   .cart-page__summary-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; font-size: 15px; line-height: 1.4; }
+  .cart-page__summary-row > :last-child, .cart-page__discounts li > :last-child { font-family: var(--cart-price-font-family, var(--font-body--family)); font-style: var(--cart-price-font-style, normal); font-weight: var(--cart-price-font-weight, 400); }
   .cart-page__summary-row--total { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--color-variant-border); font-size: 18px; }
   .cart-page__block { margin-top: 22px; }
   .cart-page__summary label { display: block; margin-bottom: 8px; font-size: var(--font-caption); }

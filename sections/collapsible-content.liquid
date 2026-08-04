@@ -2,24 +2,16 @@
   <div class="collapsible-content__inner">
     {% for block in section.blocks %}
       {% if block.type == 'heading' and block.settings.heading != blank %}
-        {% capture header_attributes %}{{ block.shopify_attributes }}{% endcapture %}
-        {% render 'section-header',
-          heading: block.settings.heading,
-          heading_tag: block.settings.heading_tag,
-          heading_size: block.settings.heading_size,
-          heading_class: 'collapsible-content__heading',
-          alignment: block.settings.alignment,
-          class: 'collapsible-content__header',
-          tag: 'div',
-          attributes: header_attributes
-        %}
+        <div class="collapsible-content__header collapsible-content__heading">
+          {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+        </div>
       {% endif %}
     {% endfor %}
     <div class="collapsible-content__items">
       {% for block in section.blocks %}
         {% if block.type == 'item' %}
           <details class="collapsible-content__item" {% if block.settings.open_by_default %}open{% endif %} {{ block.shopify_attributes }}>
-            <summary><{{ block.settings.heading_tag | default: 'h3' }} class="collapsible-content__item-heading spinel-heading--{{ block.settings.heading_size | default: 'medium' }} heading--{{ block.settings.heading_size | default: 'medium' }}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}><span class="collapsible-content__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false"><path d="M15 12.5L10 7.5L5 12.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
+            <summary><{{ block.settings.heading_tag | default: 'h3' }} class="collapsible-content__item-heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'medium' %}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}><span class="collapsible-content__icon" aria-hidden="true"><svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false"><path d="M15 12.5L10 7.5L5 12.5" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/></svg></span></summary>
             <div class="collapsible-content__body content-text spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }} rte">{{ block.settings.content }}</div>
           </details>
         {% endif %}
@@ -137,83 +129,79 @@
       "settings": [
         {
           "type": "header",
-          "content": "Heading"
+          "content": "t:typography_blocks.typography"
         },
         {
-          "type": "text",
+          "type": "richtext",
           "id": "heading",
-          "label": "Heading",
-          "default": "More information"
+          "label": "t:typography_blocks.text",
+          "default": "<h2>More information</h2>"
         },
         {
           "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
           "options": [
             {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
               "value": "h1",
-              "label": "XX-large"
+              "label": "t:typography_options.h1"
             },
             {
               "value": "h2",
-              "label": "X-large"
+              "label": "t:typography_options.h2"
             },
             {
               "value": "h3",
-              "label": "Large"
+              "label": "t:typography_options.h3"
             },
             {
               "value": "h4",
-              "label": "Medium"
+              "label": "t:typography_options.h4"
             },
             {
               "value": "h5",
-              "label": "Small"
+              "label": "t:typography_options.h5"
             },
             {
               "value": "h6",
-              "label": "X-small"
+              "label": "t:typography_options.h6"
             }
           ],
-          "default": "h2"
+          "default": "default"
         },
         {
           "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
+          "id": "color",
+          "label": "t:typography_blocks.color",
           "options": [
             {
-              "value": "h1",
-              "label": "H1"
+              "value": "text",
+              "label": "t:typography_options.text"
             },
             {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
             }
           ],
-          "default": "h2"
+          "default": "text"
         },
         {
-          "type": "text_alignment",
-          "id": "alignment",
-          "label": "Alignment",
-          "default": "center"
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
         }
       ]
     },

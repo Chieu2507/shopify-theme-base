@@ -11,17 +11,15 @@
         {% case block.type %}
           {% when 'heading' %}
             {% if block.settings.heading != blank %}
-              <div class="countdown-timer__heading-block" {{ block.shopify_attributes }}>
-                <{{ block.settings.heading_tag }} class="countdown-timer__heading countdown-timer__spinel-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} spinel-heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}">
-                  {{ block.settings.heading | escape }}
-                </{{ block.settings.heading_tag }}>
+              <div class="countdown-timer__heading-block countdown-timer__heading">
+                {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
               </div>
             {% endif %}
 
           {% when 'text' %}
             {% if block.settings.text != blank %}
-              <div class="countdown-timer__text text-block text-block--{{ block.settings.text_size | default: 'medium' }} rte spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }}" {{ block.shopify_attributes }}>
-                {{ block.settings.text }}
+              <div class="countdown-timer__text">
+                {% render 'typography-block', block: block, content: block.settings.text, kind: 'text', default_preset: 'paragraph', default_font: 'body' %}
               </div>
             {% endif %}
 
@@ -205,83 +203,79 @@
       "settings": [
         {
           "type": "header",
-          "content": "Heading"
+          "content": "t:typography_blocks.typography"
         },
         {
-          "type": "text",
+          "type": "richtext",
           "id": "heading",
-          "label": "Heading",
-          "default": "Explore Spinel"
+          "label": "t:typography_blocks.text",
+          "default": "<h2>Explore Spinel</h2>"
         },
         {
           "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
           "options": [
             {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
               "value": "h1",
-              "label": "XX-large"
+              "label": "t:typography_options.h1"
             },
             {
               "value": "h2",
-              "label": "X-large"
+              "label": "t:typography_options.h2"
             },
             {
               "value": "h3",
-              "label": "Large"
+              "label": "t:typography_options.h3"
             },
             {
               "value": "h4",
-              "label": "Medium"
+              "label": "t:typography_options.h4"
             },
             {
               "value": "h5",
-              "label": "Small"
+              "label": "t:typography_options.h5"
             },
             {
               "value": "h6",
-              "label": "X-small"
+              "label": "t:typography_options.h6"
             }
           ],
-          "default": "h3"
+          "default": "default"
         },
         {
           "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
+          "id": "color",
+          "label": "t:typography_blocks.color",
           "options": [
             {
-              "value": "h1",
-              "label": "H1"
+              "value": "text",
+              "label": "t:typography_options.text"
             },
             {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
             }
           ],
-          "default": "h2"
+          "default": "text"
         },
         {
-          "type": "text_alignment",
-          "id": "alignment",
-          "label": "Alignment",
-          "default": "left"
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
         }
       ]
     },
@@ -292,41 +286,79 @@
       "settings": [
         {
           "type": "header",
-          "content": "Text"
+          "content": "t:typography_blocks.typography"
         },
         {
           "type": "richtext",
           "id": "text",
-          "label": "Text",
+          "label": "t:typography_blocks.text",
           "default": "<p>Discover jewelry designed for everyday wear.</p>"
         },
         {
           "type": "select",
-          "id": "text_size",
-          "label": "Text size",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
           "options": [
             {
-              "value": "x-large",
-              "label": "X-large"
+              "value": "default",
+              "label": "t:typography_options.default"
             },
             {
-              "value": "large",
-              "label": "Large"
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
             },
             {
-              "value": "medium",
-              "label": "Medium"
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
             },
             {
-              "value": "small",
-              "label": "Small"
+              "value": "h1",
+              "label": "t:typography_options.h1"
             },
             {
-              "value": "x-small",
-              "label": "X-small"
+              "value": "h2",
+              "label": "t:typography_options.h2"
+            },
+            {
+              "value": "h3",
+              "label": "t:typography_options.h3"
+            },
+            {
+              "value": "h4",
+              "label": "t:typography_options.h4"
+            },
+            {
+              "value": "h5",
+              "label": "t:typography_options.h5"
+            },
+            {
+              "value": "h6",
+              "label": "t:typography_options.h6"
             }
           ],
-          "default": "medium"
+          "default": "default"
+        },
+        {
+          "type": "select",
+          "id": "color",
+          "label": "t:typography_blocks.color",
+          "options": [
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
         }
       ]
     },

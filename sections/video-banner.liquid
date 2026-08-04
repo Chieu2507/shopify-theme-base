@@ -95,19 +95,23 @@
         <div class="video-banner__content">
           {% for block in section.blocks %}
             {% case block.type %}
-              {% when 'eyebrow' %}
+              {% when 'subheading' %}
                 {% if block.settings.text != blank %}
-                  <p class="video-banner__eyebrow" {{ block.shopify_attributes }}>
-                    {{ block.settings.text | escape }}
-                  </p>
+                  <div class="video-banner__subheading">
+                    {% render 'typography-block',
+                      block: block,
+                      content: block.settings.text,
+                      kind: 'text',
+                      default_preset: 'subheading',
+                      default_font: 'subheading'
+                    %}
+                  </div>
                 {% endif %}
 
               {% when 'heading' %}
                 {% if block.settings.heading != blank %}
-                  <div class="video-banner__heading-block" {{ block.shopify_attributes }}>
-                    <{{ block.settings.heading_tag }} class="video-banner__heading video-banner__spinel-heading--{{ block.settings.heading_size }} heading--{{ block.settings.heading_size }} spinel-heading--{{ block.settings.heading_size }} content-heading--{{ block.settings.alignment }}">
-                      {{ block.settings.heading | escape }}
-                    </{{ block.settings.heading_tag }}>
+                  <div class="video-banner__heading-block video-banner__heading">
+                    {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
                   </div>
                 {% endif %}
 
@@ -208,7 +212,7 @@
     text-align: right;
   }
 
-  .video-banner__eyebrow {
+  .video-banner__subheading {
     font-family: var(--font-body--family);
     font-size: var(--font-caption);
     line-height: 1.5;
@@ -519,19 +523,233 @@
       ]
     },
     {
-      "type": "eyebrow",
-      "name": "Eyebrow",
+      "type": "subheading",
+      "name": "Subheading",
       "limit": 1,
       "settings": [
         {
-          "type": "header",
-          "content": "Eyebrow"
+          "type": "richtext",
+          "id": "text",
+          "label": "Subheading",
+          "default": "<p>Introducing</p>"
         },
         {
-          "type": "text",
-          "id": "text",
-          "label": "Text",
-          "default": "Introducing"
+          "type": "header",
+          "content": "t:typography_blocks.typography"
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
+          "options": [
+            {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
+              "value": "h1",
+              "label": "t:typography_options.h1"
+            },
+            {
+              "value": "h2",
+              "label": "t:typography_options.h2"
+            },
+            {
+              "value": "h3",
+              "label": "t:typography_options.h3"
+            },
+            {
+              "value": "h4",
+              "label": "t:typography_options.h4"
+            },
+            {
+              "value": "h5",
+              "label": "t:typography_options.h5"
+            },
+            {
+              "value": "h6",
+              "label": "t:typography_options.h6"
+            }
+          ],
+          "default": "subheading"
+        },
+        {
+          "type": "select",
+          "id": "color",
+          "label": "t:typography_blocks.color",
+          "options": [
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.layout"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "t:typography_blocks.width",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "select",
+          "id": "width_mobile",
+          "label": "t:typography_blocks.width_mobile",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "t:typography_blocks.alignment",
+          "default": "left",
+          "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.padding"
+        },
+        {
+          "type": "range",
+          "id": "padding_top",
+          "label": "t:typography_blocks.top",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom",
+          "label": "t:typography_blocks.bottom",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_left",
+          "label": "t:typography_blocks.left",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_right",
+          "label": "t:typography_blocks.right",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "mobile_scale",
+          "label": "t:typography_blocks.mobile_scale",
+          "min": 20,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 100
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.animation"
+        },
+        {
+          "type": "select",
+          "id": "animation_type",
+          "label": "t:typography_blocks.type",
+          "options": [
+            {
+              "value": "none",
+              "label": "t:typography_options.none"
+            },
+            {
+              "value": "fade_in",
+              "label": "t:typography_options.fade_in"
+            },
+            {
+              "value": "fade_up",
+              "label": "t:typography_options.fade_up"
+            },
+            {
+              "value": "slide_in_left",
+              "label": "t:typography_options.slide_in_left"
+            },
+            {
+              "value": "slide_in_right",
+              "label": "t:typography_options.slide_in_right"
+            },
+            {
+              "value": "zoom_in",
+              "label": "t:typography_options.zoom_in"
+            },
+            {
+              "value": "zoom_out",
+              "label": "t:typography_options.zoom_out"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "range",
+          "id": "animation_delay",
+          "label": "t:typography_blocks.animation_delay",
+          "min": 0,
+          "max": 1000,
+          "step": 50,
+          "unit": "ms",
+          "default": 0,
+          "visible_if": "{{ block.settings.animation_type != 'none' }}"
         }
       ]
     },
@@ -542,83 +760,79 @@
       "settings": [
         {
           "type": "header",
-          "content": "Heading"
+          "content": "t:typography_blocks.typography"
         },
         {
-          "type": "text",
+          "type": "richtext",
           "id": "heading",
-          "label": "Heading",
-          "default": "Love, Always"
+          "label": "t:typography_blocks.text",
+          "default": "<h2>Love, Always</h2>"
         },
         {
           "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
           "options": [
             {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
               "value": "h1",
-              "label": "XX-large"
+              "label": "t:typography_options.h1"
             },
             {
               "value": "h2",
-              "label": "X-large"
+              "label": "t:typography_options.h2"
             },
             {
               "value": "h3",
-              "label": "Large"
+              "label": "t:typography_options.h3"
             },
             {
               "value": "h4",
-              "label": "Medium"
+              "label": "t:typography_options.h4"
             },
             {
               "value": "h5",
-              "label": "Small"
+              "label": "t:typography_options.h5"
             },
             {
               "value": "h6",
-              "label": "X-small"
+              "label": "t:typography_options.h6"
             }
           ],
-          "default": "h2"
+          "default": "default"
         },
         {
           "type": "select",
-          "id": "heading_tag",
-          "label": "HTML Tag",
+          "id": "color",
+          "label": "t:typography_blocks.color",
           "options": [
             {
-              "value": "h1",
-              "label": "H1"
+              "value": "text",
+              "label": "t:typography_options.text"
             },
             {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
             }
           ],
-          "default": "h2"
+          "default": "text"
         },
         {
-          "type": "text_alignment",
-          "id": "alignment",
-          "label": "Alignment",
-          "default": "center"
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
         }
       ]
     },
@@ -674,7 +888,7 @@
           "type": "video"
         },
         {
-          "type": "eyebrow"
+          "type": "subheading"
         },
         {
           "type": "heading"

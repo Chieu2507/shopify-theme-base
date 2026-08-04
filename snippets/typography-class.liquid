@@ -1,0 +1,34 @@
+{% doc %}
+  Resolves current and legacy typography preset values to a shared visual class.
+
+  @param {string} preset - Typography preset or legacy size value.
+  @param {string} [fallback] - Value used when preset is blank.
+{% enddoc %}
+
+{%- liquid
+  assign resolved_preset = preset | default: fallback | default: 'h2'
+  assign typography_class = ''
+  if resolved_preset == 'default'
+    assign resolved_preset = fallback | default: 'h2'
+  endif
+
+  case resolved_preset
+    when 'h1', 'xx-large', 'xxlarge', 'extra_large', 'extra-large', '2xl'
+      assign typography_class = 'typo-h1'
+    when 'h2', 'x-large', 'xlarge', 'large', 'xl'
+      assign typography_class = 'typo-h2'
+    when 'h3', 'medium', 'lg'
+      assign typography_class = 'typo-h3'
+    when 'h4', 'small', 'md'
+      assign typography_class = 'typo-h4'
+    when 'h5', 'extra_small', 'sm'
+      assign typography_class = 'typo-h5'
+    when 'h6', 'x-small', 'xsmall', 'xs'
+      assign typography_class = 'typo-h6'
+    when 'paragraph', 'body', 'p'
+      assign typography_class = 'typo-p'
+    when 'subheading', 'sub'
+      assign typography_class = 'typo-sub'
+  endcase
+-%}
+{{- typography_class -}}

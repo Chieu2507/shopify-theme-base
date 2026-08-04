@@ -18,10 +18,16 @@
   <div class="collection-showcase__inner{% if section.settings.section_width == 'page' %} collection-showcase__inner--page{% endif %}">
     <div class="collection-showcase__content color-scheme color-{{ section.settings.content_color_scheme.id }}">
       {% for block in section.blocks %}
-        {% if block.type == 'eyebrow' and block.settings.text != blank %}
-          <p class="collection-showcase__eyebrow" {{ block.shopify_attributes }}>
-            {{ block.settings.text | escape }}
-          </p>
+        {% if block.type == 'subheading' and block.settings.text != blank %}
+          <div class="collection-showcase__subheading">
+            {% render 'typography-block',
+              block: block,
+              content: block.settings.text,
+              kind: 'text',
+              default_preset: 'subheading',
+              default_font: 'subheading'
+            %}
+          </div>
         {% endif %}
       {% endfor %}
 
@@ -158,14 +164,23 @@
   "tag": "section",
   "class": "section",
   "settings": [
-    { "type": "header", "content": "Layout" },
+    {
+      "type": "header",
+      "content": "Layout"
+    },
     {
       "type": "select",
       "id": "section_width",
       "label": "Section width",
       "options": [
-        { "value": "full", "label": "Full width" },
-        { "value": "page", "label": "Page width" }
+        {
+          "value": "full",
+          "label": "Full width"
+        },
+        {
+          "value": "page",
+          "label": "Page width"
+        }
       ],
       "default": "full"
     },
@@ -174,8 +189,14 @@
       "id": "media_position_desktop",
       "label": "Desktop media position",
       "options": [
-        { "value": "before", "label": "Before" },
-        { "value": "after", "label": "After" }
+        {
+          "value": "before",
+          "label": "Before"
+        },
+        {
+          "value": "after",
+          "label": "After"
+        }
       ],
       "default": "after"
     },
@@ -184,35 +205,89 @@
       "id": "media_position_mobile",
       "label": "Mobile media position",
       "options": [
-        { "value": "before", "label": "Before" },
-        { "value": "after", "label": "After" }
+        {
+          "value": "before",
+          "label": "Before"
+        },
+        {
+          "value": "after",
+          "label": "After"
+        }
       ],
       "default": "after"
     },
-    { "type": "header", "content": "Section height" },
-    { "type": "range", "id": "height_desktop", "min": 640, "max": 960, "step": 4, "unit": "px", "label": "Desktop", "default": 812 },
-    { "type": "range", "id": "height_tablet", "min": 480, "max": 800, "step": 4, "unit": "px", "label": "Tablet", "default": 560 },
-    { "type": "range", "id": "height_mobile", "min": 320, "max": 680, "step": 4, "unit": "px", "label": "Mobile media", "default": 520 },
-    { "type": "header", "content": "Media display" },
+    {
+      "type": "header",
+      "content": "Section height"
+    },
+    {
+      "type": "range",
+      "id": "height_desktop",
+      "min": 640,
+      "max": 960,
+      "step": 4,
+      "unit": "px",
+      "label": "Desktop",
+      "default": 812
+    },
+    {
+      "type": "range",
+      "id": "height_tablet",
+      "min": 480,
+      "max": 800,
+      "step": 4,
+      "unit": "px",
+      "label": "Tablet",
+      "default": 560
+    },
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "min": 320,
+      "max": 680,
+      "step": 4,
+      "unit": "px",
+      "label": "Mobile media",
+      "default": 520
+    },
+    {
+      "type": "header",
+      "content": "Media display"
+    },
     {
       "type": "select",
       "id": "media_display",
       "label": "Media display",
       "options": [
-        { "value": "contained", "label": "Contained" },
-        { "value": "fill", "label": "Fill" }
+        {
+          "value": "contained",
+          "label": "Contained"
+        },
+        {
+          "value": "fill",
+          "label": "Fill"
+        }
       ],
       "default": "contained",
       "info": "Fill makes media cover its entire column and removes the mobile inset."
     },
-    { "type": "header", "content": "Collection link typography" },
+    {
+      "type": "header",
+      "content": "Collection link typography"
+    },
     {
       "type": "select",
       "id": "link_font",
       "label": "Font family",
       "options": [
-        { "value": "heading", "label": "Heading" },
-        { "value": "body", "label": "Body" }
+        {
+          "value": "heading",
+          "label": "Heading"
+        },
+        {
+          "value": "body",
+          "label": "Body"
+        }
       ],
       "default": "heading",
       "info": "Uses the fonts selected in Theme settings."
@@ -222,27 +297,268 @@
       "id": "link_size",
       "label": "Font size",
       "options": [
-        { "value": "small", "label": "Small" },
-        { "value": "medium", "label": "Medium" },
-        { "value": "large", "label": "Large" }
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
       ],
       "default": "large"
     },
-    { "type": "header", "content": "Appearance" },
-    { "type": "color_scheme", "id": "content_color_scheme", "label": "Content color scheme", "default": "scheme-3" },
-    { "type": "color_scheme", "id": "media_color_scheme", "label": "Media color scheme", "default": "scheme-2" }
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "content_color_scheme",
+      "label": "Content color scheme",
+      "default": "scheme-3"
+    },
+    {
+      "type": "color_scheme",
+      "id": "media_color_scheme",
+      "label": "Media color scheme",
+      "default": "scheme-2"
+    }
   ],
   "blocks": [
     {
-      "type": "eyebrow",
-      "name": "Eyebrow",
+      "type": "subheading",
+      "name": "Subheading",
       "limit": 1,
       "settings": [
         {
-          "type": "header",
-          "content": "Eyebrow"
+          "type": "richtext",
+          "id": "text",
+          "label": "Subheading",
+          "default": "<p>DREAM COME TRUE — AW ‘26 COLLECTION</p>"
         },
-        { "type": "text", "id": "text", "label": "Text", "default": "DREAM COME TRUE — AW ‘26 COLLECTION" }
+        {
+          "type": "header",
+          "content": "t:typography_blocks.typography"
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "t:typography_blocks.preset",
+          "options": [
+            {
+              "value": "default",
+              "label": "t:typography_options.default"
+            },
+            {
+              "value": "paragraph",
+              "label": "t:typography_options.paragraph"
+            },
+            {
+              "value": "subheading",
+              "label": "t:typography_options.subheading"
+            },
+            {
+              "value": "h1",
+              "label": "t:typography_options.h1"
+            },
+            {
+              "value": "h2",
+              "label": "t:typography_options.h2"
+            },
+            {
+              "value": "h3",
+              "label": "t:typography_options.h3"
+            },
+            {
+              "value": "h4",
+              "label": "t:typography_options.h4"
+            },
+            {
+              "value": "h5",
+              "label": "t:typography_options.h5"
+            },
+            {
+              "value": "h6",
+              "label": "t:typography_options.h6"
+            }
+          ],
+          "default": "subheading"
+        },
+        {
+          "type": "select",
+          "id": "color",
+          "label": "t:typography_blocks.color",
+          "options": [
+            {
+              "value": "text",
+              "label": "t:typography_options.text"
+            },
+            {
+              "value": "subtext",
+              "label": "t:typography_options.subtext"
+            }
+          ],
+          "default": "text"
+        },
+        {
+          "type": "checkbox",
+          "id": "disable_line_break_mobile",
+          "label": "t:typography_blocks.disable_line_break_mobile",
+          "default": false
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.layout"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "t:typography_blocks.width",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "select",
+          "id": "width_mobile",
+          "label": "t:typography_blocks.width_mobile",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "t:typography_blocks.alignment",
+          "default": "left",
+          "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.padding"
+        },
+        {
+          "type": "range",
+          "id": "padding_top",
+          "label": "t:typography_blocks.top",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_bottom",
+          "label": "t:typography_blocks.bottom",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_left",
+          "label": "t:typography_blocks.left",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding_right",
+          "label": "t:typography_blocks.right",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "mobile_scale",
+          "label": "t:typography_blocks.mobile_scale",
+          "min": 20,
+          "max": 100,
+          "step": 1,
+          "unit": "%",
+          "default": 100
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.animation"
+        },
+        {
+          "type": "select",
+          "id": "animation_type",
+          "label": "t:typography_blocks.type",
+          "options": [
+            {
+              "value": "none",
+              "label": "t:typography_options.none"
+            },
+            {
+              "value": "fade_in",
+              "label": "t:typography_options.fade_in"
+            },
+            {
+              "value": "fade_up",
+              "label": "t:typography_options.fade_up"
+            },
+            {
+              "value": "slide_in_left",
+              "label": "t:typography_options.slide_in_left"
+            },
+            {
+              "value": "slide_in_right",
+              "label": "t:typography_options.slide_in_right"
+            },
+            {
+              "value": "zoom_in",
+              "label": "t:typography_options.zoom_in"
+            },
+            {
+              "value": "zoom_out",
+              "label": "t:typography_options.zoom_out"
+            }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "range",
+          "id": "animation_delay",
+          "label": "t:typography_blocks.animation_delay",
+          "min": 0,
+          "max": 1000,
+          "step": 50,
+          "unit": "ms",
+          "default": 0,
+          "visible_if": "{{ block.settings.animation_type != 'none' }}"
+        }
       ]
     },
     {
@@ -254,13 +570,45 @@
           "type": "header",
           "content": "Collection link"
         },
-        { "type": "collection", "id": "collection", "label": "Collection" },
-        { "type": "image_picker", "id": "image", "label": "Image for right-hand panel", "info": "Choose the image displayed for this collection in the right-hand panel." },
-        { "type": "text", "id": "image_alt", "label": "Custom image alt text" },
-        { "type": "text", "id": "focal_point", "label": "Image focal point", "default": "center center", "info": "CSS object-position, for example: 50% 40%" },
-        { "type": "text", "id": "title", "label": "Custom title" },
-        { "type": "text", "id": "count", "label": "Custom count (optional)", "info": "Leave blank to show the collection's live product count." },
-        { "type": "url", "id": "link", "label": "Custom link" }
+        {
+          "type": "collection",
+          "id": "collection",
+          "label": "Collection"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image for right-hand panel",
+          "info": "Choose the image displayed for this collection in the right-hand panel."
+        },
+        {
+          "type": "text",
+          "id": "image_alt",
+          "label": "Custom image alt text"
+        },
+        {
+          "type": "text",
+          "id": "focal_point",
+          "label": "Image focal point",
+          "default": "center center",
+          "info": "CSS object-position, for example: 50% 40%"
+        },
+        {
+          "type": "text",
+          "id": "title",
+          "label": "Custom title"
+        },
+        {
+          "type": "text",
+          "id": "count",
+          "label": "Custom count (optional)",
+          "info": "Leave blank to show the collection's live product count."
+        },
+        {
+          "type": "url",
+          "id": "link",
+          "label": "Custom link"
+        }
       ]
     }
   ],
@@ -269,11 +617,21 @@
       "name": "Collection showcase",
       "category": "Collections",
       "blocks": [
-        { "type": "eyebrow" },
-        { "type": "collection_link" },
-        { "type": "collection_link" },
-        { "type": "collection_link" },
-        { "type": "collection_link" }
+        {
+          "type": "subheading"
+        },
+        {
+          "type": "collection_link"
+        },
+        {
+          "type": "collection_link"
+        },
+        {
+          "type": "collection_link"
+        },
+        {
+          "type": "collection_link"
+        }
       ]
     }
   ]
