@@ -1,66 +1,23 @@
 {% render 'section-stylesheet', asset: 'section-image-comparison.css', defer_on_home: true %}
 
 {% liquid
-  assign before_block = section.blocks | first
-  assign after_block = section.blocks | last
+  assign image_blocks = section.blocks | where: 'type', '_image-comparison-image'
+  assign before_block = image_blocks | first
   assign has_comparison_images = false
-  if section.blocks.size == 2
+  if image_blocks.size == 2
     assign has_comparison_images = true
   endif
 
   assign before_image = before_block.settings.image | default: before_block.settings.mobile_image
-  assign after_image = after_block.settings.image | default: after_block.settings.mobile_image
   assign comparison_ratio = before_image.aspect_ratio | default: 1.333333
-
-  assign page_width_pixels = settings.max_page_width | remove: 'rem' | times: 16
-  assign desktop_page_margin = settings.page_margin_desktop | at_least: settings.min_page_margin
-  assign tablet_page_margin = settings.page_margin_tablet | at_least: settings.min_page_margin
-  assign mobile_page_margin = settings.page_margin_mobile | at_least: settings.min_page_margin
-  assign desktop_horizontal_margin = desktop_page_margin | times: 2
-  assign tablet_horizontal_margin = tablet_page_margin | times: 2
-  assign mobile_horizontal_margin = mobile_page_margin | times: 2
-  assign comparison_max_width = page_width_pixels | minus: desktop_horizontal_margin
-  capture comparison_image_sizes
-    echo '(min-width: '
-    echo page_width_pixels
-    echo 'px) '
-    echo comparison_max_width
-    echo 'px, (min-width: 990px) calc(100vw - '
-    echo desktop_horizontal_margin
-    echo 'px), (min-width: 750px) calc(100vw - '
-    echo tablet_horizontal_margin
-    echo 'px), calc(100vw - '
-    echo mobile_horizontal_margin
-    echo 'px)'
-  endcapture
 %}
 
 <section
   class="image-comparison color-scheme color-{{ section.settings.color_scheme.id }} image-comparison--{{ section.settings.layout }} full-width"
-  style="--image-comparison-ratio: {{ comparison_ratio }}; --image-comparison-height-desktop: {{ section.settings.desktop_height }}; --image-comparison-height-mobile: {{ section.settings.mobile_height }}; --image-comparison-layout-gap: {{ section.settings.layout_gap }}px; --image-comparison-heading-gap: {{ section.settings.heading_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  style="--image-comparison-ratio: {{ comparison_ratio }}; --image-comparison-height-desktop: {{ section.settings.desktop_height }}; --image-comparison-height-mobile: {{ section.settings.mobile_height }}; --image-comparison-layout-gap: {{ section.settings.layout_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
   <div class="image-comparison__inner section-spacing">
-    {% if section.settings.subheading != blank or section.settings.heading != blank or section.settings.description != blank or section.settings.button_label != blank %}
-      {% render 'section-header',
-        heading: section.settings.heading,
-        heading_tag: section.settings.heading_tag,
-        heading_size: section.settings.heading_size,
-        heading_class: 'image-comparison__heading',
-        heading_html: section.settings.heading,
-        subheading: section.settings.subheading,
-        subheading_class: 'image-comparison__subheading',
-        subheading_html: section.settings.subheading,
-        text: section.settings.description,
-        text_class: 'image-comparison__description',
-        action_label: section.settings.button_label,
-        action_url: section.settings.button_link,
-        action_style: 'primary',
-        action_group_class: 'image-comparison__button',
-        alignment: section.settings.content_alignment,
-        class: 'image-comparison__content',
-        tag: 'header'
-      %}
-    {% endif %}
+    {% content_for 'block', type: '_section-header', id: 'image_comparison_header' %}
 
     <image-comparison-slider
       class="image-comparison__slider image-comparison__slider--{{ section.settings.layout }} image-comparison__slider--desktop-height-{{ section.settings.desktop_height }} image-comparison__slider--mobile-height-{{ section.settings.mobile_height }}{% unless has_comparison_images %} image-comparison__slider--incomplete{% endunless %}"
@@ -69,33 +26,7 @@
       data-deferred-module="{{ 'section-image-comparison.js' | asset_url }}"
       aria-label="{{ 'image_comparison.comparison_label' | t | escape }}"
     >
-      <div class="image-comparison__media image-comparison__media--before" {{ before_block.shopify_attributes }}>
-        {% if before_image != blank %}
-          <picture>
-            {% if before_block.settings.mobile_image != blank %}
-              <source media="(max-width: 749px)" srcset="{{ before_block.settings.mobile_image | image_url: width: 1200 }}">
-            {% endif %}
-            {% render 'responsive-image', image: before_image, max_width: 2400, widths: '480, 750, 1100, 1500, 1920, 2400', sizes: comparison_image_sizes, class: 'image-comparison__image', loading: 'lazy', alt: before_block.settings.image_alt %}
-          </picture>
-        {% else %}
-          {% render 'media-placeholder', class_name: 'image-comparison__placeholder', asset_name: 'placeholder-image-default-1.svg' %}
-        {% endif %}
-        {% render 'image-comparison-overlay', block: before_block, position: 'before' %}
-      </div>
-
-      <div class="image-comparison__media image-comparison__media--after" {{ after_block.shopify_attributes }}>
-        {% if after_image != blank %}
-          <picture>
-            {% if after_block.settings.mobile_image != blank %}
-              <source media="(max-width: 749px)" srcset="{{ after_block.settings.mobile_image | image_url: width: 1200 }}">
-            {% endif %}
-            {% render 'responsive-image', image: after_image, max_width: 2400, widths: '480, 750, 1100, 1500, 1920, 2400', sizes: comparison_image_sizes, class: 'image-comparison__image', loading: 'lazy', alt: after_block.settings.image_alt %}
-          </picture>
-        {% else %}
-          {% render 'media-placeholder', class_name: 'image-comparison__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
-        {% endif %}
-        {% render 'image-comparison-overlay', block: after_block, position: 'after' %}
-      </div>
+      {% content_for 'blocks' %}
 
       <button
         class="image-comparison__handle"
@@ -131,16 +62,6 @@
     { "type": "range", "id": "layout_gap", "min": 0, "max": 120, "step": 4, "unit": "px", "label": "Heading to image gap", "default": 44 },
     { "type": "header", "content": "Mobile layout" },
     { "type": "select", "id": "mobile_height", "label": "Mobile height", "options": [{ "value": "adapt", "label": "Adapt to first image" }, { "value": "small", "label": "Small" }, { "value": "medium", "label": "Medium" }, { "value": "large", "label": "Large" }], "default": "adapt" },
-    { "type": "header", "content": "Heading" },
-    { "type": "inline_richtext", "id": "heading", "label": "Heading", "default": "Image comparison" },
-    { "type": "select", "id": "heading_size", "label": "Heading size", "options": [{ "value": "h1", "label": "XX-large" }, { "value": "h2", "label": "X-large" }, { "value": "h3", "label": "Large" }, { "value": "h4", "label": "Medium" }, { "value": "h5", "label": "Small" }, { "value": "h6", "label": "X-small" }], "default": "h4" },
-    { "type": "text_alignment", "id": "content_alignment", "label": "Heading alignment", "default": "center" },
-    { "type": "select", "id": "heading_tag", "label": "HTML Tag", "options": [{ "value": "h1", "label": "H1" }, { "value": "h2", "label": "H2" }, { "value": "h3", "label": "H3" }, { "value": "h4", "label": "H4" }, { "value": "h5", "label": "H5" }, { "value": "h6", "label": "H6" }], "default": "h2" },
-    { "type": "inline_richtext", "id": "subheading", "label": "Subheading" },
-    { "type": "richtext", "id": "description", "label": "Description" },
-    { "type": "text", "id": "button_label", "label": "Button label", "info": "Leave the label blank to hide the button." },
-    { "type": "url", "id": "button_link", "label": "Button link" },
-    { "type": "range", "id": "heading_gap", "min": 0, "max": 64, "step": 4, "unit": "px", "label": "Heading content gap", "default": 16 },
     { "type": "header", "content": "Appearance" },
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
     { "type": "header", "content": "Section" },
@@ -148,33 +69,41 @@
     { "type": "range", "id": "padding_bottom", "min": 0, "max": 160, "step": 4, "unit": "px", "label": "Bottom padding", "default": 72 }
   ],
   "blocks": [
-    {
-      "type": "image",
-      "name": "Image",
-      "limit": 2,
-      "settings": [
-        {
-          "type": "header",
-          "content": "Image"
-        },
-        { "type": "paragraph", "content": "Add two image blocks. The first is Before; the second is After." },
-        { "type": "image_picker", "id": "image", "label": "Image" },
-        { "type": "image_picker", "id": "mobile_image", "label": "Mobile image" },
-        { "type": "text", "id": "image_alt", "label": "Image alt text" },
-        { "type": "inline_richtext", "id": "subheading", "label": "Subheading" },
-        { "type": "inline_richtext", "id": "heading", "label": "Heading" },
-        { "type": "text", "id": "button_label", "label": "Button label", "info": "Leave the label blank to hide the button." },
-        { "type": "url", "id": "button_link", "label": "Button link" },
-        { "type": "select", "id": "content_position", "label": "Content position", "options": [{ "value": "start", "label": "Start" }, { "value": "center", "label": "Center" }, { "value": "end", "label": "End" }], "default": "end" },
-        { "type": "color", "id": "text_color", "label": "Text", "default": "#FFFFFF" }
-      ]
-    }
+    { "type": "_image-comparison-image" }
   ],
   "presets": [
     {
       "name": "Image comparison",
       "category": "Banners",
-      "blocks": [{ "type": "image" }, { "type": "image" }]
+      "blocks": [
+        {
+          "type": "_section-header",
+          "id": "image_comparison_header",
+          "static": true,
+          "blocks": [
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h2>The Making of Timeless Beauty</h2>",
+                "type_preset": "h2",
+                "color": "text",
+                "alignment": "center"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Discover the precision behind every handcrafted piece</p>",
+                "type_preset": "paragraph",
+                "color": "subtext",
+                "alignment": "center"
+              }
+            }
+          ]
+        },
+        { "type": "_image-comparison-image" },
+        { "type": "_image-comparison-image" }
+      ]
     }
   ]
 }
