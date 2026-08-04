@@ -15,6 +15,9 @@
   assign navigation_menu = section.settings.menu
   assign menu_links = navigation_menu.links
   assign header_color_scheme = section.settings.color_scheme
+  assign account_action = section.settings.account_action | default: 'panel'
+  assign account_href = routes.account_url
+  assign account_open_new_tab = false
   assign floating_header_enabled = false
   assign transparent_header_enabled = false
   assign has_menu = false
@@ -31,6 +34,14 @@
 
   if transparent_header_enabled
     assign header_color_scheme = section.settings.transparent_color_scheme
+  endif
+
+  if account_action == 'custom_url' and section.settings.account_custom_url != blank
+    assign account_href = section.settings.account_custom_url
+  endif
+
+  if account_action == 'new_tab'
+    assign account_open_new_tab = true
   endif
 
   if section.settings.show_localization
@@ -318,7 +329,7 @@
 
             <div class="header__mobile-drawer-bottom">
               {% if section.settings.show_account and shop.customer_accounts_enabled %}
-                <a class="header__mobile-login" href="{{ routes.account_url }}">{{ 'header.login' | t }}</a>
+                <a class="header__mobile-login" href="{{ account_href }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>{{ 'header.login' | t }}</a>
               {% endif %}
 
               <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
@@ -502,9 +513,15 @@
       {% endif %}
 
       {% if section.settings.show_account and shop.customer_accounts_enabled %}
-        <shopify-account class="header__action header__action--account" menu="{{ section.settings.customer_account_menu }}">
-          <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
-        </shopify-account>
+        {% if account_action == 'panel' %}
+          <shopify-account class="header__action header__action--account" menu="{{ section.settings.customer_account_menu }}">
+            <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
+          </shopify-account>
+        {% else %}
+          <a class="header__action header__action--account" href="{{ account_href }}" aria-label="{{ 'header.login' | t | escape }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>
+            {% render 'icon', name: 'account' %}
+          </a>
+        {% endif %}
       {% endif %}
 
       {% if section.settings.show_cart %}
@@ -639,6 +656,24 @@
     { "type": "checkbox", "id": "show_localization", "label": "Show country and currency", "default": true },
     { "type": "checkbox", "id": "show_country_flag", "label": "Show country flag", "default": true },
     { "type": "checkbox", "id": "show_account", "label": "Show account", "default": true },
+    {
+      "type": "select",
+      "id": "account_action",
+      "label": "Account icon action",
+      "options": [
+        { "value": "panel", "label": "Open account panel" },
+        { "value": "redirect", "label": "Redirect to account page" },
+        { "value": "new_tab", "label": "Open account page in new tab" },
+        { "value": "custom_url", "label": "Open custom URL" }
+      ],
+      "default": "panel"
+    },
+    {
+      "type": "url",
+      "id": "account_custom_url",
+      "label": "Custom URL",
+      "visible_if": "{{ section.settings.account_action == 'custom_url' }}"
+    },
     { "type": "checkbox", "id": "show_cart", "label": "Show cart", "default": true },
     {
       "type": "header",
