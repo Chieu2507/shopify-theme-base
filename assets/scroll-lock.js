@@ -132,8 +132,15 @@
     updateQueued = false;
     const activeModes = getActiveModes();
     if (!activeModes.has('overflow')) {
-      root.classList.remove('header-menu-scroll-locked');
-      body.classList.remove('header-menu-scroll-locked');
+      // Avoid no-op class writes while the root scroll-lock attribute is set.
+      // Some browsers still emit a class mutation for remove() when the token
+      // is absent, which would continuously retrigger the observer below.
+      if (root.classList.contains('header-menu-scroll-locked')) {
+        root.classList.remove('header-menu-scroll-locked');
+      }
+      if (body.classList.contains('header-menu-scroll-locked')) {
+        body.classList.remove('header-menu-scroll-locked');
+      }
     }
     if (!activeModes.size) {
       unlock();
@@ -158,7 +165,9 @@
     if (mutations.some((mutation) => {
       if (mutation.type === 'childList') return true;
       if (mutation.attributeName === 'open' || mutation.attributeName === 'scroll-lock') return true;
-      return mutation.target instanceof Element && mutation.target.hasAttribute('scroll-lock');
+      return mutation.target instanceof Element
+        && mutation.target !== root
+        && mutation.target.hasAttribute('scroll-lock');
     })) scheduleUpdate();
   });
   observer.observe(document.documentElement, {
