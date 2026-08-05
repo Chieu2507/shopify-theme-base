@@ -67,6 +67,22 @@ Không đưa toàn bộ nội dung trực tiếp vào section chỉ vì cách đ
 Nếu bắt buộc phải dùng phương án thứ tư, phải nêu rõ lý do kỹ thuật trong phần
 bàn giao cuối cùng.
 
+### Quy tắc tương thích giữa section block và theme block
+
+- Một section phải chọn một cơ chế block nhất quán: local section block (khai
+  báo trong `schema.blocks` và render qua `section.blocks`/`block_order`) hoặc
+  theme block (khai báo trong `blocks/` và render qua
+  `{% content_for 'blocks' %}`). Shopify không cho phép trộn section block và
+  theme block trong cùng một section.
+- Vì vậy, nếu section hiện tại hoặc section mới được xây dựng theo local
+  section block, phải tiếp tục dùng local block trong section đó. Không chuyển
+  sang theme block chỉ vì quy tắc ưu tiên tái sử dụng hoặc nested composition
+  ở trên.
+- Chỉ chọn kiến trúc theme block khi toàn bộ cơ chế block của section tương
+  thích với theme block. Trước khi triển khai phải kiểm tra schema, Liquid
+  render, preset và JSON template để bảo đảm không có hai cơ chế block cùng
+  xuất hiện trong một section.
+
 ### Nested theme blocks và static theme blocks
 
 - Theme block dùng chung được khai báo bằng file Liquid trong `blocks/`. Một
@@ -78,7 +94,8 @@ bàn giao cuối cùng.
   tính cấp section.
 - Theme block không khai báo local block trong schema như section block. Section
   block chỉ dùng trong section chứa nó, chỉ hỗ trợ một cấp và không thể dùng
-  chung với theme block trong cùng section.
+  chung với theme block trong cùng section. Nếu section cần local block, hãy
+  giữ nguyên kiến trúc local block và các thao tác `section.blocks` tương ứng.
 - Khi merchant cần tự do thêm, xóa, nhân bản hoặc sắp xếp nội dung, dùng block
   động với `{% content_for 'blocks' %}`. Khi một phần tử phải giữ quan hệ hoặc
   vị trí cố định trong parent, dùng static theme block với:
