@@ -270,10 +270,17 @@
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
       this.resetHandleDrag();
+      const shouldAnimateOpen = !(this.isOpen && this.classList.contains('is-open'));
       this.hidden = false;
       this.isOpen = true;
-      this.classList.remove('is-closing');
-      this.classList.add('is-open');
+      if (this.classList.contains('is-closing')) this.classList.remove('is-closing');
+      if (shouldAnimateOpen) {
+        if (this.classList.contains('is-open')) this.classList.remove('is-open');
+        // The drawer starts hidden. Force one layout pass in its off-canvas
+        // state so the first open can transition instead of jumping to 0.
+        this.panel?.getBoundingClientRect();
+      }
+      if (!this.classList.contains('is-open')) this.classList.add('is-open');
       document.documentElement.classList.add('cart-drawer-open');
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'true'));
       this.panel?.focus({ preventScroll: true });
