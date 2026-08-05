@@ -7,6 +7,7 @@ if (!window.SpinelHeaderMenus) {
   const cartFeedbackHeaderStates = new WeakMap();
   const mobileMenuReturnFocus = new WeakMap();
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
+  const headerHoverCloseDelay = 500;
   let transparentHeaderFrame = 0;
   let headerScrollLockFallbackStyles = null;
 
@@ -600,7 +601,7 @@ if (!window.SpinelHeaderMenus) {
     '.header__submenu-disclosure--hover[open]'
   ) || [];
 
-  const scheduleMegaMenuClose = (details, delay = 160) => {
+  const scheduleMegaMenuClose = (details, delay = headerHoverCloseDelay) => {
     clearMegaMenuHoverTimer(details);
     megaMenuHoverTimers.set(details, window.setTimeout(() => {
       megaMenuHoverTimers.delete(details);
@@ -725,7 +726,7 @@ if (!window.SpinelHeaderMenus) {
     const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
     if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
       clearMegaMenuHoverTimer(nestedDetails);
-      megaMenuHoverTimers.set(nestedDetails, window.setTimeout(() => closeMegaMenu(nestedDetails), 180));
+      megaMenuHoverTimers.set(nestedDetails, window.setTimeout(() => closeMegaMenu(nestedDetails), headerHoverCloseDelay));
       const parentDetails = nestedDetails.closest('.header__submenu-disclosure--hover');
       if (parentDetails && !parentDetails.contains(event.relatedTarget)) scheduleMegaMenuClose(parentDetails);
       return;
