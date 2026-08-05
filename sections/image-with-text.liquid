@@ -74,22 +74,13 @@
         <div class="image-with-text__content image-with-text__content--{{ section.settings.content_alignment }}">
           {% for block in section.blocks %}
             {% case block.type %}
-              {% when 'subheading' %}
-                {% if block.settings.text != blank %}
-                  <div class="image-with-text__subheading">
-                    {% render 'typography-block',
-                      block: block,
-                      content: block.settings.text,
-                      kind: 'text',
-                      default_preset: 'subheading',
-                      default_font: 'subheading'
-                    %}
-                  </div>
-                {% endif %}
-
               {% when 'heading' %}
                 {% if block.settings.heading != blank %}
-                  <div class="image-with-text__heading-block image-with-text__heading">
+                  {% assign heading_class = 'image-with-text__heading-block image-with-text__heading' %}
+                  {% if block.settings.type_preset == 'subheading' %}
+                    {% assign heading_class = 'image-with-text__subheading' %}
+                  {% endif %}
+                  <div class="{{ heading_class }}">
                     {% render 'typography-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
                   </div>
                 {% endif %}
@@ -157,7 +148,7 @@
       "options": [
         {
           "value": "page",
-          "label": "Page"
+          "label": "Page width"
         },
         {
           "value": "full",
@@ -289,19 +280,19 @@
       ]
     },
     {
-      "type": "subheading",
-      "name": "Subheading",
-      "limit": 1,
+      "type": "heading",
+      "name": "Heading",
+      "limit": 2,
       "settings": [
-        {
-          "type": "richtext",
-          "id": "text",
-          "label": "Subheading",
-          "default": "<p>Our mission</p>"
-        },
         {
           "type": "header",
           "content": "t:typography_blocks.typography"
+        },
+        {
+          "type": "richtext",
+          "id": "heading",
+          "label": "t:typography_blocks.text",
+          "default": "t:typography_defaults.heading"
         },
         {
           "type": "select",
@@ -345,7 +336,7 @@
               "label": "t:typography_options.h6"
             }
           ],
-          "default": "subheading"
+          "default": "default"
         },
         {
           "type": "select",
@@ -414,60 +405,6 @@
         },
         {
           "type": "header",
-          "content": "t:typography_blocks.padding"
-        },
-        {
-          "type": "range",
-          "id": "padding_top",
-          "label": "t:typography_blocks.top",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_bottom",
-          "label": "t:typography_blocks.bottom",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_left",
-          "label": "t:typography_blocks.left",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "padding_right",
-          "label": "t:typography_blocks.right",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "px",
-          "default": 0
-        },
-        {
-          "type": "range",
-          "id": "mobile_scale",
-          "label": "t:typography_blocks.mobile_scale",
-          "min": 20,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "default": 100
-        },
-        {
-          "type": "header",
           "content": "t:typography_blocks.animation"
         },
         {
@@ -516,89 +453,6 @@
           "unit": "ms",
           "default": 0,
           "visible_if": "{{ block.settings.animation_type != 'none' }}"
-        }
-      ]
-    },
-    {
-      "type": "heading",
-      "name": "Heading",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "header",
-          "content": "t:typography_blocks.typography"
-        },
-        {
-          "type": "richtext",
-          "id": "heading",
-          "label": "t:typography_blocks.text",
-          "default": "<h2>More Than Beauty, A Philosophy</h2>"
-        },
-        {
-          "type": "select",
-          "id": "type_preset",
-          "label": "t:typography_blocks.preset",
-          "options": [
-            {
-              "value": "default",
-              "label": "t:typography_options.default"
-            },
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.subheading"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            }
-          ],
-          "default": "default"
-        },
-        {
-          "type": "select",
-          "id": "color",
-          "label": "t:typography_blocks.color",
-          "options": [
-            {
-              "value": "text",
-              "label": "t:typography_options.text"
-            },
-            {
-              "value": "subtext",
-              "label": "t:typography_options.subtext"
-            }
-          ],
-          "default": "text"
-        },
-        {
-          "type": "checkbox",
-          "id": "disable_line_break_mobile",
-          "label": "t:typography_blocks.disable_line_break_mobile",
-          "default": false
         }
       ]
     },
@@ -740,10 +594,18 @@
           "type": "media"
         },
         {
-          "type": "subheading"
+          "type": "heading",
+          "settings": {
+            "heading": "<p>Our mission</p>",
+            "type_preset": "subheading"
+          }
         },
         {
-          "type": "heading"
+          "type": "heading",
+          "settings": {
+            "heading": "<h2>More Than Beauty, A Philosophy</h2>",
+            "type_preset": "default"
+          }
         },
         {
           "type": "text"
