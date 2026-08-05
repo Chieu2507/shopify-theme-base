@@ -1,1006 +1,3416 @@
-{% comment %}This asset exceeds Shopify's inline-asset limit, so load it as a stylesheet on the homepage too.{% endcomment %}
-{% render 'section-stylesheet', asset: 'section-header-critical-1.css' %}
-{% render 'section-stylesheet', asset: 'section-header-critical-2.css', loaded_in_home_head: true %}
-<style>{{ 'section-header-critical-3.css' | inline_asset_content }}</style>
-{% render 'section-stylesheet', asset: 'section-header-mobile.css' %}
-
-{% liquid
-  assign country_form_id = 'HeaderCountrySelector-' | append: section.id
-  assign mobile_country_form_id = 'HeaderMobileCountrySelector-' | append: section.id
-  assign mobile_language_form_id = 'HeaderMobileLanguageSelector-' | append: section.id
-  assign mobile_country_sheet_title_id = 'HeaderMobileCountrySheetTitle-' | append: section.id
-  assign mobile_language_sheet_title_id = 'HeaderMobileLanguageSheetTitle-' | append: section.id
-  assign mobile_country_search_id = 'HeaderMobileCountrySearch-' | append: section.id
-  assign logo_image = settings.logo | default: settings.logo_mobile
-  assign logo_image_mobile = settings.logo_mobile | default: logo_image
-  assign logo_width_desktop = 170
-  assign logo_width_mobile = 120
-  assign navigation_menu = section.settings.menu
-  assign menu_links = navigation_menu.links
-  assign header_color_scheme = section.settings.color_scheme
-  assign account_action = section.settings.account_action | default: 'panel'
-  assign account_href = routes.account_url
-  assign account_open_new_tab = false
-  assign floating_header_enabled = false
-  assign transparent_header_enabled = false
-  assign has_menu = false
-  assign has_mobile_utilities = false
-  assign can_change_country = false
-
-  if template.name == 'index'
-    if section.settings.header_style == 'floating'
-      assign floating_header_enabled = true
-    elsif section.settings.header_style == 'transparent'
-      assign transparent_header_enabled = true
-    endif
+{%- liquid
+  assign helix_header_id = 'helix-header-' | append: section.id
+  assign helix_logo_width = section.settings.logo_width | default: 110
+  assign helix_mobile_logo_width = section.settings.mobile_logo_width | default: 90
+  assign helix_logo_text = section.settings.logo_text | default: 'HELIX'
+  assign helix_currency_code = localization.country.currency.iso_code | default: 'VND'
+  assign helix_currency_symbol = localization.country.currency.symbol | default: '₫'
+  assign helix_announcement_1 = section.settings.announcement_message_1 | default: 'Free shipping for all orders over 5.000.000₫'
+  assign helix_announcement_1 = helix_announcement_1 | replace: 'Free shipping for all orders over 5.000.000₫Free shipping for all orders over 5.000.000₫', 'Free shipping for all orders over 5.000.000₫'
+  assign helix_announcement_1 = helix_announcement_1 | replace: 'Free shipping for all orders over 5.000.000₫Free shipping for all orders over', 'Free shipping for all orders over 5.000.000₫'
+  if helix_announcement_1 contains 'Free shipping for all orders over'
+    assign helix_announcement_1 = 'Free shipping for all orders over 5.000.000₫'
   endif
-
-  if transparent_header_enabled
-    assign header_color_scheme = section.settings.transparent_color_scheme
+  assign helix_announcement_2 = section.settings.announcement_message_2 | default: 'Receive 20% off your first order. Shop now'
+  assign helix_emphasis_1 = section.settings.announcement_emphasis_1 | default: '5.000.000₫'
+  assign helix_emphasis_2 = section.settings.announcement_emphasis_2
+  assign helix_collections_url = routes.collections_url
+  assign helix_women_url = section.settings.women_url
+  if helix_women_url == blank
+    assign helix_women_url = helix_collections_url | append: '/all-womens'
   endif
-
-  if account_action == 'custom_url' and section.settings.account_custom_url != blank
-    assign account_href = section.settings.account_custom_url
+  assign helix_men_url = section.settings.men_url
+  if helix_men_url == blank
+    assign helix_men_url = helix_collections_url | append: '/all-mens'
   endif
-
-  if account_action == 'new_tab'
-    assign account_open_new_tab = true
+  assign helix_find_shoes_url = section.settings.find_shoes_url | default: '/pages/find-your-shoes'
+  assign helix_journal_url = section.settings.pages_journal_url | default: '/blogs/news'
+  assign helix_womens_top_picks_url = helix_collections_url | append: '/womens-top-picks'
+  assign helix_womens_best_sellers_url = section.settings.best_sellers_url
+  if helix_womens_best_sellers_url == blank
+    assign helix_womens_best_sellers_url = helix_collections_url | append: '/womens-best-sellers'
   endif
-
-  if section.settings.show_localization
-    assign has_mobile_utilities = true
+  assign helix_womens_trending_url = section.settings.trending_url
+  if helix_womens_trending_url == blank
+    assign helix_womens_trending_url = helix_collections_url | append: '/womens-trending'
   endif
-
-  if localization.available_countries.size > 1
-    assign can_change_country = true
+  assign helix_womens_new_arrivals_url = helix_collections_url | append: '/womens-new-arrivals'
+  assign helix_womens_sale_url = section.settings.sale_url
+  if helix_womens_sale_url == blank
+    assign helix_womens_sale_url = helix_collections_url | append: '/womens-on-sale'
   endif
-
-  if menu_links == blank and navigation_menu != blank
-    assign navigation_menu_handle = navigation_menu.handle | default: navigation_menu
-    assign navigation_menu = linklists[navigation_menu_handle]
-    assign menu_links = navigation_menu.links
+  assign helix_mens_top_picks_url = helix_collections_url | append: '/mens-top-picks'
+  assign helix_mens_best_sellers_url = section.settings.best_sellers_url
+  if helix_mens_best_sellers_url == blank
+    assign helix_mens_best_sellers_url = helix_collections_url | append: '/mens-best-sellers'
   endif
-
-  if menu_links != blank
-    assign has_menu = true
+  assign helix_mens_trending_url = section.settings.trending_url
+  if helix_mens_trending_url == blank
+    assign helix_mens_trending_url = helix_collections_url | append: '/mens-trending'
   endif
-%}
+  assign helix_mens_new_arrivals_url = helix_collections_url | append: '/mens-new-arrivals'
+  assign helix_mens_sale_url = section.settings.sale_url
+  if helix_mens_sale_url == blank
+    assign helix_mens_sale_url = helix_collections_url | append: '/mens-on-sale'
+  endif
+  assign helix_men_featured_handles = 'prime-form-men|base-line-men|form-core-men|frame-one-men|drift-prime-men' | split: '|'
+  assign helix_trending_collection_url = section.settings.trending_url
+  if helix_trending_collection_url == blank
+    assign helix_trending_collection_url = helix_collections_url | append: '/trending'
+  endif
+  assign helix_best_sellers_collection_url = section.settings.best_sellers_url
+  if helix_best_sellers_collection_url == blank
+    assign helix_best_sellers_collection_url = helix_collections_url | append: '/best-sellers'
+  endif
+  assign helix_sale_collection_url = section.settings.sale_url
+  if helix_sale_collection_url == blank
+    assign helix_sale_collection_url = helix_collections_url | append: '/sale'
+  endif
+  assign helix_mobile_logo = section.settings.mobile_logo
+  if helix_mobile_logo == blank
+    assign helix_mobile_logo = section.settings.logo
+  endif
+  assign helix_mobile_transparent_logo = section.settings.mobile_transparent_logo
+  if helix_mobile_transparent_logo == blank
+    assign helix_mobile_transparent_logo = section.settings.transparent_logo
+  endif
+  if helix_mobile_transparent_logo == blank
+    assign helix_mobile_transparent_logo = helix_mobile_logo
+  endif
+-%}
 
-<span
-  class="header__menu-overlay header__menu-overlay--desktop"
-  data-header-menu-overlay="Header-{{ section.id }}"
-  aria-hidden="true"
-></span>
-
-<header
-  id="Header-{{ section.id }}"
-  class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.underline_active_link %} header--underline-active{% endif %}{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}"
-  style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px;"
-  data-sticky-behavior="{{ section.settings.sticky_behavior }}"
-  data-mega-menu-animation="slide_down"
-  data-mega-menu-animation-duration="250"
-  data-floating-header="{{ floating_header_enabled }}"
-  data-transparent-header="{{ transparent_header_enabled }}"
-  data-default-color-class="color-{{ section.settings.color_scheme.id }}"
-  data-transparent-color-class="color-{{ section.settings.transparent_color_scheme.id }}"
-  data-deferred-module="{{ 'section-header.js' | asset_url }}"
-  data-header
+<div
+  id="{{ helix_header_id }}"
+  class="helix-header{% if section.settings.overlay_header %} helix-header--overlay{% endif %}{% if section.settings.sticky_header %} helix-header--sticky{% endif %}{% unless section.settings.show_announcement %} helix-header--no-announcement{% endunless %}"
+  data-helix-header
+  data-announcement-interval="{{ section.settings.announcement_interval | default: 5 | times: 1000 }}"
+  style="
+    --helix-overlay-text: {{ section.settings.overlay_text_color | default: '#ffffff' }};
+    --helix-solid-text: {{ section.settings.solid_text_color | default: '#1e1e1e' }};
+    --helix-announcement-bg: {{ section.settings.announcement_background | default: '#d3f285' }};
+    --helix-announcement-text: {{ section.settings.announcement_text_color | default: '#1a1312' }};
+    --helix-logo-width: {{ helix_logo_width }}px;
+    --helix-mobile-logo-width: {{ helix_mobile_logo_width }}px;
+  "
 >
-  <div class="header__inner">
-    {% if has_menu or has_mobile_utilities %}
-      <details class="header__menu-disclosure" data-open-label="{{ 'header.open_menu' | t | escape }}" data-close-label="{{ 'header.close_menu' | t | escape }}">
-        <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}" aria-expanded="false" aria-controls="HeaderMobileDrawer-{{ section.id }}">
-          <span class="header__menu-icon header__menu-icon--open header__burger-lines" aria-hidden="true">
-            <span></span>
-            <span></span>
-            <span></span>
-          </span>
-        </summary>
-      </details>
+  {% if section.settings.show_announcement %}
+    <div class="helix-header__announcement" data-helix-announcement role="region" aria-label="Announcements">
+      <div class="helix-header__announcement-side helix-header__announcement-side--left">
+        <button type="button" data-helix-announcement-prev aria-label="{{ 'header.previous_announcement' | t }}">
+          <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+        </button>
+      </div>
 
-      <div
-        id="HeaderMobileDrawer-{{ section.id }}"
-        class="header__mobile-drawer"
-        data-header-mobile-drawer
-      >
-        <span
-          class="header__menu-overlay header__menu-overlay--mobile"
-          data-header-menu-overlay="Header-{{ section.id }}"
-          aria-hidden="true"
-        ></span>
-        <div class="header__mobile-drawer-surface color-scheme color-{{ section.settings.color_scheme.id }}">
-          <div class="header__mobile-drawer-header">
-            <span id="HeaderMobileDrawerTitle-{{ section.id }}" class="visually-hidden">{{ 'header.primary_navigation' | t }}</span>
-            <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
-              {% if logo_image_mobile != blank %}
-                {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '120px', alt: shop.name, loading: 'eager' }}
-              {% else %}
-                <span class="header__logo-text">{{ shop.name | escape }}</span>
-              {% endif %}
-            </a>
-            <button class="header__mobile-drawer-close" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-mobile-close>
-              {% render 'icon', name: 'close' %}
-            </button>
-          </div>
+      <div class="helix-header__announcement-track" aria-live="polite">
+        <p class="helix-header__announcement-message is-active" data-helix-announcement-message>
+          {% if helix_emphasis_1 != blank and helix_announcement_1 contains helix_emphasis_1 %}
+            {% assign helix_announcement_1_prefix = helix_announcement_1 | split: helix_emphasis_1 | first %}
+            {% assign helix_announcement_1_suffix = helix_announcement_1 | split: helix_emphasis_1 | last %}
+            {{ helix_announcement_1_prefix }}<strong>{{ helix_emphasis_1 }}</strong>{{ helix_announcement_1_suffix }}
+          {% else %}
+            {{ helix_announcement_1 }}
+          {% endif %}
+        </p>
+        {% if helix_announcement_2 != blank %}
+          <p class="helix-header__announcement-message" data-helix-announcement-message>
+            {% if helix_emphasis_2 != blank and helix_announcement_2 contains helix_emphasis_2 %}
+              {% assign helix_announcement_2_prefix = helix_announcement_2 | split: helix_emphasis_2 | first %}
+              {% assign helix_announcement_2_suffix = helix_announcement_2 | split: helix_emphasis_2 | last %}
+              {{ helix_announcement_2_prefix }}<strong>{{ helix_emphasis_2 }}</strong>{{ helix_announcement_2_suffix }}
+            {% else %}
+              {{ helix_announcement_2 }}
+            {% endif %}
+          </p>
+        {% endif %}
+      </div>
 
-          <nav id="HeaderNavigation-{{ section.id }}" class="header__navigation" aria-label="{{ 'header.primary_navigation' | t | escape }}">
-            <div class="header__navigation-content">
-              <ul class="header__menu" role="list">
-          {% for link in menu_links %}
-            {% liquid
-              assign badge_block = nil
-              assign mega_menu_block = nil
-              for block in section.blocks
-                if block.type == 'menu_badge' and block.settings.menu_item != blank and block.settings.menu_item == link.title
-                  assign badge_block = block
-                endif
-                if block.type == 'mega_menu' and block.settings.menu_item != blank
-                  assign mega_menu_items = block.settings.menu_item | split: ';'
-                  for mega_menu_item in mega_menu_items
-                    assign mega_menu_item_name = mega_menu_item | strip
-                    if mega_menu_item_name == link.title
-                      assign mega_menu_block = block
-                      break
-                    endif
-                  endfor
-                endif
-              endfor
+      <div class="helix-header__announcement-side helix-header__announcement-side--right">
+        <button type="button" data-helix-announcement-next aria-label="{{ 'header.next_announcement' | t }}">
+          <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+        </button>
+      </div>
+    </div>
+  {% endif %}
 
-              assign mega_menu_links = link.links
-              assign top_menu_index = forloop.index
-              assign submenu_id = 'HeaderSubmenu-' | append: section.id | append: '-' | append: top_menu_index
-              assign has_submenu = false
-              if link.links != blank or mega_menu_block != nil
-                assign has_submenu = true
-              endif
-            %}
-            <li class="header__menu-item{% if has_submenu %} header__menu-item--has-children{% endif %}{% if mega_menu_block != nil and has_submenu %} header__menu-item--mega{% endif %}">
-              {% if has_submenu %}
-                {% if link.url != blank %}
-                  <a class="header__mobile-menu-direct-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
-                {% endif %}
-                <details class="header__submenu-disclosure{% if link.url == blank %} header__submenu-disclosure--no-direct-link{% endif %}{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% endif %}{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
-                  <summary class="header__menu-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" aria-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-open-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-close-label="{{ 'header.close_submenu' | t: item: link.title | escape }}" aria-expanded="false" aria-controls="{{ submenu_id }}">
-                    <span class="header__menu-link-title">{{ link.title | escape }}</span>
-                    <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                  </summary>
-                  {% if mega_menu_block != nil %}
-                    {% liquid
-                      assign mega_columns = mega_menu_block.settings.columns | plus: 0
-                      assign links_per_column = mega_menu_links.size | plus: mega_columns | minus: 1 | divided_by: mega_columns
-                      assign promotion_count = 0
-                      assign has_promotion_1 = false
-                      assign has_promotion_2 = false
-
-                      if mega_menu_block.settings.promotion_1_image != blank
-                        assign has_promotion_1 = true
-                      elsif mega_menu_block.settings.promotion_1_heading != blank
-                        assign has_promotion_1 = true
-                      elsif mega_menu_block.settings.promotion_1_text != blank
-                        assign has_promotion_1 = true
-                      elsif mega_menu_block.settings.promotion_1_link_label != blank
-                        assign has_promotion_1 = true
-                      endif
-
-                      if mega_menu_block.settings.promotion_2_image != blank
-                        assign has_promotion_2 = true
-                      elsif mega_menu_block.settings.promotion_2_heading != blank
-                        assign has_promotion_2 = true
-                      elsif mega_menu_block.settings.promotion_2_text != blank
-                        assign has_promotion_2 = true
-                      elsif mega_menu_block.settings.promotion_2_link_label != blank
-                        assign has_promotion_2 = true
-                      endif
-
-                      if has_promotion_1
-                        assign promotion_count = promotion_count | plus: 1
-                      endif
-                      if has_promotion_2
-                        assign promotion_count = promotion_count | plus: 1
-                      endif
-                    %}
-                    <div id="{{ submenu_id }}" class="header__mega-panel header__mega-panel--text-{{ mega_menu_block.settings.text_size | default: 'medium' }}" {{ mega_menu_block.shopify_attributes }}>
-                      <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: link.title | escape }}" data-header-mobile-back>
-                        <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
-                        <span>{{ link.title | escape }}</span>
-                      </button>
-                      <div class="header__mega-surface">
-                        <div class="header__mega-inner{% if promotion_count == 0 %} header__mega-inner--links-only{% endif %}">
-                          {% if mega_menu_links != blank %}
-                            <div class="header__mega-navigation">
-                              {% if mega_menu_block.settings.column_heading != blank %}<p class="header__mega-heading">{{ mega_menu_block.settings.column_heading | escape }}</p>{% endif %}
-                              <div class="header__mega-lists" style="--header-mega-columns: {{ mega_columns }};">
-                                {% for column in (1..mega_columns) %}
-                                  {% liquid
-                                    assign column_index = column | minus: 1
-                                    assign column_offset = column_index | times: links_per_column
-                                    assign column_links = mega_menu_links | slice: column_offset, links_per_column
-                                  %}
-                                  {% if column_links.size > 0 %}
-                                    <div class="header__mega-list">
-                                      <ul role="list">
-                                        {% for child_link in column_links %}
-                                          <li>
-                                            {% if child_link.links != blank %}
-                                              <span class="header__mega-category-title">{{ child_link.title | escape }}</span>
-                                              <ul class="header__mega-nested" role="list">
-                                                {% for grandchild_link in child_link.links %}
-                                                  <li><a class="header__mega-link header__mega-link--nested{% if grandchild_link.current %} header__mega-link--active{% endif %}" href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}>{{ grandchild_link.title | escape }}</a></li>
-                                                {% endfor %}
-                                              </ul>
-                                            {% else %}
-                                              <a class="header__mega-link{% if child_link.current %} header__mega-link--active{% endif %}" href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>
-                                            {% endif %}
-                                          </li>
-                                        {% endfor %}
-                                      </ul>
-                                    </div>
-                                  {% endif %}
-                                {% endfor %}
-                              </div>
-                            </div>
-                          {% endif %}
-                          {% if promotion_count > 0 %}
-                            <div class="header__mega-promotions">
-                              {% if has_promotion_1 %}
-                                <article class="header__mega-promo">
-                                  {% if mega_menu_block.settings.promotion_1_image != blank %}
-                                    {% assign promotion_1_image_alt = mega_menu_block.settings.promotion_1_image.alt | default: mega_menu_block.settings.promotion_1_heading %}
-                                    {% render 'responsive-image', image: mega_menu_block.settings.promotion_1_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_1_image_alt %}
-                                  {% else %}
-                                    {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
-                                  {% endif %}
-                                  <div class="header__mega-promo-content">
-                                    {% if mega_menu_block.settings.promotion_1_heading != blank %}<{{ mega_menu_block.settings.promotion_1_heading_tag | default: 'h3' }} class="header__mega-promo-title {% render 'typography-class', preset: mega_menu_block.settings.promotion_1_heading_size, fallback: 'medium' %}">{{ mega_menu_block.settings.promotion_1_heading | escape }}</{{ mega_menu_block.settings.promotion_1_heading_tag | default: 'h3' }}>{% endif %}
-                                    {% if mega_menu_block.settings.promotion_1_text != blank %}<div class="header__mega-promo-text rte spinel-text--{{ mega_menu_block.settings.promotion_1_text_size | default: 'medium' }} content-text content-text--{{ mega_menu_block.settings.promotion_1_text_alignment | default: 'left' }}">{{ mega_menu_block.settings.promotion_1_text }}</div>{% endif %}
-                                    {% if mega_menu_block.settings.promotion_1_link_label != blank and mega_menu_block.settings.promotion_1_link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ mega_menu_block.settings.promotion_1_link }}">{{ mega_menu_block.settings.promotion_1_link_label | escape }}</a>{% endif %}
-                                  </div>
-                                </article>
-                              {% endif %}
-                              {% if has_promotion_2 %}
-                                <article class="header__mega-promo">
-                                  {% if mega_menu_block.settings.promotion_2_image != blank %}
-                                    {% assign promotion_2_image_alt = mega_menu_block.settings.promotion_2_image.alt | default: mega_menu_block.settings.promotion_2_heading %}
-                                    {% render 'responsive-image', image: mega_menu_block.settings.promotion_2_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_2_image_alt %}
-                                  {% else %}
-                                    {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
-                                  {% endif %}
-                                  <div class="header__mega-promo-content">
-                                    {% if mega_menu_block.settings.promotion_2_heading != blank %}<{{ mega_menu_block.settings.promotion_2_heading_tag | default: 'h3' }} class="header__mega-promo-title {% render 'typography-class', preset: mega_menu_block.settings.promotion_2_heading_size, fallback: 'medium' %}">{{ mega_menu_block.settings.promotion_2_heading | escape }}</{{ mega_menu_block.settings.promotion_2_heading_tag | default: 'h3' }}>{% endif %}
-                                    {% if mega_menu_block.settings.promotion_2_text != blank %}<div class="header__mega-promo-text rte spinel-text--{{ mega_menu_block.settings.promotion_2_text_size | default: 'medium' }} content-text content-text--{{ mega_menu_block.settings.promotion_2_text_alignment | default: 'left' }}">{{ mega_menu_block.settings.promotion_2_text }}</div>{% endif %}
-                                    {% if mega_menu_block.settings.promotion_2_link_label != blank and mega_menu_block.settings.promotion_2_link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ mega_menu_block.settings.promotion_2_link }}">{{ mega_menu_block.settings.promotion_2_link_label | escape }}</a>{% endif %}
-                                  </div>
-                                </article>
-                              {% endif %}
-                            </div>
-                          {% endif %}
-                        </div>
-                      </div>
+  <div class="helix-header__desktop-bar" data-helix-desktop-bar>
+    <div class="helix-header__menu-background" data-helix-menu-background aria-hidden="true"></div>
+    <div class="helix-header__desktop-surface">
+      <div class="helix-header__desktop-inner">
+        <nav class="helix-header__desktop-nav" aria-label="{{ 'header.primary_navigation' | t }}">
+          <details class="helix-header__dropdown helix-header__dropdown--mega" data-helix-dropdown data-helix-hover-dropdown>
+            <summary class="helix-header__nav-trigger" data-url="{{ helix_women_url }}">
+              <span>{{ section.settings.women_label | default: 'Women' }}</span>
+              <span class="helix-header__chevron" aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+            </summary>
+            <div class="helix-header__mega-panel" data-helix-mega-panel>
+              <div class="helix-header__mega-inner">
+                <div class="helix-header__mega-columns">
+                  <div class="helix-header__mega-links-grid">
+                    <div class="helix-header__mega-column">
+                      <ul class="helix-header__mega-links" role="list">
+                        <li><a href="{{ helix_womens_top_picks_url }}">Top picks</a></li>
+                        <li><a href="{{ helix_womens_best_sellers_url }}">Best sellers</a></li>
+                        <li><a href="{{ helix_womens_trending_url }}">Trending</a></li>
+                        <li><a href="{{ helix_womens_new_arrivals_url }}">New arrivals</a></li>
+                        <li><a href="{{ helix_womens_sale_url }}">On sale</a></li>
+                      </ul>
                     </div>
-                  {% else %}
-                    <ul id="{{ submenu_id }}" class="header__submenu" role="list">
-                      <li class="header__mobile-submenu-back-item">
-                        <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: link.title | escape }}" data-header-mobile-back>
-                          <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
-                          <span>{{ link.title | escape }}</span>
-                        </button>
-                      </li>
-                      {% for child_link in link.links %}
-                        <li{% if child_link.links != blank %} class="header__submenu-item--has-children"{% endif %}>
-                          {% if child_link.links != blank %}
-                            {% assign nested_submenu_id = submenu_id | append: '-' | append: forloop.index %}
-                            <details class="header__submenu-nested-disclosure">
-                              <summary class="header__submenu-link header__mega-category-title{% if child_link.current or child_link.child_active %} header__submenu-link--active{% endif %}" aria-expanded="false" aria-controls="{{ nested_submenu_id }}">
-                                <span class="header__submenu-link-text">{{ child_link.title | escape }}</span>
-                                <span class="header__submenu-caret header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
-                              </summary>
-                            <ul id="{{ nested_submenu_id }}" class="header__submenu-nested" role="list">
-                              <li class="header__mobile-submenu-back-item">
-                                <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: child_link.title | escape }}" data-header-mobile-back>
-                                  <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
-                                  <span>{{ child_link.title | escape }}</span>
-                                </button>
-                              </li>
-                              {% for grandchild_link in child_link.links %}<li><a class="header__submenu-link{% if grandchild_link.current %} header__submenu-link--active{% endif %}" href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></a></li>{% endfor %}
-                              </ul>
-                            </details>
-                          {% else %}
-                            <a class="header__submenu-link{% if child_link.current %} header__submenu-link--active{% endif %}" href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ child_link.title | escape }}</span></a>
-                          {% endif %}
-                        </li>
-                      {% endfor %}
-                    </ul>
-                  {% endif %}
-                </details>
-              {% else %}
-                <a
-                  class="header__menu-link{% if link.current %} header__menu-link--active{% endif %}"
-                  href="{{ link.url }}"
-                  {% if link.current %}aria-current="page"{% endif %}
-                >
-                  {{ link.title | escape }}
-                </a>
-              {% endif %}
-
-              {% if badge_block != nil and badge_block.settings.text != blank %}
-                <span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>
-              {% endif %}
-            </li>
-          {% endfor %}
-              </ul>
-            </div>
-
-            <div class="header__mobile-drawer-bottom">
-              {% if section.settings.show_account and shop.customer_accounts_enabled %}
-                <a class="header__mobile-login" href="{{ account_href }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>{{ 'header.login' | t }}</a>
-              {% endif %}
-
-              <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
-          {% if section.settings.show_localization %}
-            <div class="header__mobile-localization">
-              {% if can_change_country %}
-                <details class="header__localization-selector">
-                  <summary aria-label="{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}">
-                    <span class="header__mobile-action-icon" aria-hidden="true">
-                      {% if section.settings.show_country_flag %}
-                        {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
+                    <div class="helix-header__mega-column">
+                      <p class="helix-header__mega-title">By activity</p>
+                      <ul class="helix-header__mega-links" role="list">
+                        <li><a href="{{ helix_collections_url }}/womens-hiking">Hiking</a></li>
+                        <li><a href="{{ helix_collections_url }}/women-s-running">Running</a></li>
+                        <li><a href="{{ helix_collections_url }}/women-s-training">Training</a></li>
+                        <li><a href="{{ helix_collections_url }}/womens-tennis">Tennis</a></li>
+                        <li><a href="{{ helix_collections_url }}/womens-lifestyle">Lifestyle</a></li>
+                        <li><a href="{{ helix_women_url }}">Shop all</a></li>
+                      </ul>
+                    </div>
+                    <div class="helix-header__mega-column">
+                      <p class="helix-header__mega-title">By feature</p>
+                      <ul class="helix-header__mega-links" role="list">
+                        <li><a href="{{ helix_women_url }}?filter.p.m.custom.feature=Cushioned">Cushioned</a></li>
+                        <li><a href="{{ helix_women_url }}?filter.p.m.custom.feature=Waterproof">Waterproof</a></li>
+                        <li><a href="{{ helix_women_url }}?filter.p.m.custom.feature=Water-resistant">Water-resistant</a></li>
+                        <li><a href="{{ helix_women_url }}?filter.p.m.custom.feature=Breathable">Breathable</a></li>
+                        <li><a href="{{ helix_women_url }}?filter.p.m.custom.feature=Windproof">Windproof</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="helix-header__mega-banners">
+                    <a class="helix-header__mega-promo" href="{{ helix_collections_url }}/womens-on-sale">
+                      {% if section.settings.women_banner != blank %}
+                        {{ section.settings.women_banner | image_url: width: 900 | image_tag: loading: 'lazy', widths: '360,540,720,900', sizes: '(min-width: 991px) 24vw, 100vw', alt: section.settings.women_banner_title }}
                       {% else %}
-                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5M12 3.5C9.8 5.8 8.7 8.6 8.7 12s1.1 6.2 3.3 8.5"/></svg>
+                        {% # theme-check-disable RemoteAsset %}
+                        <img src="https://helix-shoes-theme.myshopify.com/cdn/shop/files/banner_mega_menu_1.webp?v=1777884363&amp;width=900" width="900" height="604" loading="lazy" alt="">
+                        {% # theme-check-enable RemoteAsset %}
                       {% endif %}
-                    </span>
-                    <span class="header__mobile-localization-copy">
-                      <span class="header__mobile-localization-title">{{ 'header.country_region' | t }}</span>
-                      <span class="header__mobile-localization-full-value">{{ localization.country.name | escape }} ({{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }})</span>
-                    </span>
-                    <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}</span>
-                    <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                  </summary>
-                  <div class="header__localization-popover" data-header-localization-popover>
-                    <button class="header__localization-backdrop" type="button" tabindex="-1" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
-                    <div class="header__localization-sheet" role="dialog" aria-modal="true" aria-labelledby="{{ mobile_country_sheet_title_id }}">
-                      <div class="header__localization-sheet-header">
-                        <span class="header__localization-sheet-handle" aria-hidden="true"></span>
-                        <h2 id="{{ mobile_country_sheet_title_id }}">{{ 'header.country_region' | t }}</h2>
-                        <button class="header__localization-sheet-close" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close>
-                          {% render 'icon', name: 'close' %}
-                        </button>
-                      </div>
-                    {% form 'localization', id: mobile_country_form_id %}
-                      <div class="header__localization-select" data-header-country-picker>
-                        <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-header-country-input>
-                        <div class="header__localization-search" role="search">
-                          <label class="visually-hidden" for="{{ mobile_country_search_id }}">{{ 'header.search' | t }}</label>
-                          <input id="{{ mobile_country_search_id }}" class="header__localization-search-input" type="search" placeholder="{{ 'header.search' | t | escape }}" autocomplete="off" data-header-localization-search>
-                          <span class="header__localization-search-icon" aria-hidden="true">{% render 'icon', name: 'search' %}</span>
-                        </div>
-                        <div id="{{ mobile_country_form_id }}-Options" class="header__localization-options" role="listbox" aria-label="{{ 'header.country_region' | t | escape }}">
-                          {% for country in localization.available_countries %}
-                            <button class="header__localization-option{% if country.iso_code == localization.country.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if country.iso_code == localization.country.iso_code %}true{% else %}false{% endif %}" data-header-country-option data-country-code="{{ country.iso_code }}">
-                              {{ country | image_url: width: 32 | image_tag: class: 'header__localization-option-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
-                              <span class="header__localization-option-name">{{ country.name | escape }}</span>
-                              <span class="header__localization-option-currency">{{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }}</span>
-                              {% if country.iso_code == localization.country.iso_code %}<span class="header__localization-option-check" aria-hidden="true">✓</span>{% endif %}
-                            </button>
-                          {% endfor %}
-                        </div>
-                      </div>
-                      <noscript>
-                        <select name="country_code">
-                          {% for country in localization.available_countries %}
-                            <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.name | escape }} ({{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }})</option>
-                          {% endfor %}
-                        </select>
-                        <button type="submit">{{ 'header.apply' | t }}</button>
-                      </noscript>
-                    {% endform %}
-                    </div>
+                      <span class="helix-header__mega-promo-content">
+                        <strong>{% if section.settings.women_banner != blank %}{{ section.settings.women_banner_title | default: 'Find your favourites' }}{% else %}Women's sale{% endif %}</strong>
+                        <span>{{ 'header.shop_now' | t }} ↗</span>
+                      </span>
+                    </a>
+                    <a class="helix-header__mega-promo" href="{{ helix_women_url }}?sort_by=best-selling">
+                      {% # theme-check-disable RemoteAsset %}
+                      <img src="https://helix-shoes-theme.myshopify.com/cdn/shop/files/banner_mega_menu_2.webp?v=1777884363&amp;width=900" width="900" height="604" loading="lazy" alt="">
+                      {% # theme-check-enable RemoteAsset %}
+                      <span class="helix-header__mega-promo-content">
+                        <strong>Women’s favorites</strong>
+                        <span>{{ 'header.shop_now' | t }} ↗</span>
+                      </span>
+                    </a>
                   </div>
-                </details>
-              {% else %}
-                <div class="header__mobile-action" aria-label="{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}">
-                  <span class="header__mobile-action-icon" aria-hidden="true">
-                    {% if section.settings.show_country_flag %}
-                      {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
-                    {% else %}
-                      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5M12 3.5C9.8 5.8 8.7 8.6 8.7 12s1.1 6.2 3.3 8.5"/></svg>
-                    {% endif %}
-                  </span>
-                  <span class="header__mobile-localization-copy">
-                    <span class="header__mobile-localization-title">{{ 'header.country_region' | t }}</span>
-                    <span class="header__mobile-localization-full-value">{{ localization.country.name | escape }} ({{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }})</span>
-                  </span>
-                  <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}</span>
                 </div>
-              {% endif %}
-            </div>
-                {% endif %}
-
-                {% if section.settings.show_localization and localization.available_languages.size > 1 %}
-                  <div class="header__mobile-language">
-                    <details class="header__localization-selector header__language-selector">
-                      <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}">
-                        <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
-                        <span class="header__mobile-localization-copy">
-                          <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
-                          <span class="header__mobile-localization-full-value">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
-                        </span>
-                        <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
-                        <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                      </summary>
-                      <div class="header__localization-popover" data-header-localization-popover>
-                        <button class="header__localization-backdrop" type="button" tabindex="-1" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
-                        <div class="header__localization-sheet" role="dialog" aria-modal="true" aria-labelledby="{{ mobile_language_sheet_title_id }}">
-                          <div class="header__localization-sheet-header">
-                            <span class="header__localization-sheet-handle" aria-hidden="true"></span>
-                            <h2 id="{{ mobile_language_sheet_title_id }}">{{ 'header.language' | t }}</h2>
-                            <button class="header__localization-sheet-close" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close>
-                              {% render 'icon', name: 'close' %}
-                            </button>
-                          </div>
-                        {% form 'localization', id: mobile_language_form_id %}
-                          <div class="header__localization-select" data-header-language-picker>
-                            <input type="hidden" name="language_code" value="{{ localization.language.iso_code }}" data-header-language-input>
-                            <div class="header__localization-options" role="listbox" aria-label="{{ 'header.language' | t | escape }}">
-                              {% for language in localization.available_languages %}
-                                <button class="header__localization-option{% if language.iso_code == localization.language.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if language.iso_code == localization.language.iso_code %}true{% else %}false{% endif %}" data-header-language-option data-language-code="{{ language.iso_code }}">
-                                  <span>{{ language.endonym_name | default: language.name | escape }}</span>
-                                  {% if language.iso_code == localization.language.iso_code %}<span class="header__localization-option-check" aria-hidden="true">✓</span>{% endif %}
-                                </button>
-                              {% endfor %}
-                            </div>
-                          </div>
-                        {% endform %}
-                        </div>
-                      </div>
-                    </details>
-                  </div>
-                {% elsif section.settings.show_localization and localization.language != blank %}
-                  <div class="header__mobile-language header__mobile-language--static" aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}">
-                    <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
-                    <span class="header__mobile-localization-copy">
-                      <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
-                      <span class="header__mobile-localization-full-value">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
-                    </span>
-                    <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
-                  </div>
-                {% endif %}
               </div>
             </div>
-          </nav>
+          </details>
+
+          <details class="helix-header__dropdown helix-header__dropdown--mega" data-helix-dropdown data-helix-hover-dropdown>
+            <summary class="helix-header__nav-trigger" data-url="{{ helix_men_url }}">
+              <span>{{ section.settings.men_label | default: 'Men' }}</span>
+              <span class="helix-header__chevron" aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+            </summary>
+            <div class="helix-header__mega-panel" data-helix-mega-panel>
+              <div class="helix-header__mega-inner">
+                <div class="helix-header__mega-columns">
+                  <div class="helix-header__mega-links-grid">
+                    <div class="helix-header__mega-column">
+                      <ul class="helix-header__mega-links" role="list">
+                      <li><a href="{{ helix_mens_top_picks_url }}">Top picks</a></li>
+                      <li><a href="{{ helix_mens_best_sellers_url }}">Best sellers</a></li>
+                      <li><a href="{{ helix_mens_trending_url }}">Trending</a></li>
+                      <li><a href="{{ helix_mens_new_arrivals_url }}">New arrivals</a></li>
+                      <li><a href="{{ helix_mens_sale_url }}">On sale</a></li>
+                      </ul>
+                    </div>
+                    <div class="helix-header__mega-column">
+                      <p class="helix-header__mega-title">By activity</p>
+                      <ul class="helix-header__mega-links" role="list">
+                      <li><a href="{{ helix_collections_url }}/mens-hiking">Hiking</a></li>
+                      <li><a href="{{ helix_collections_url }}/mens-running">Running</a></li>
+                      <li><a href="{{ helix_collections_url }}/mens-training">Training</a></li>
+                      <li><a href="{{ helix_collections_url }}/mens-tennis">Tennis</a></li>
+                      <li><a href="{{ helix_collections_url }}/mens-lifestyle">Lifestyle</a></li>
+                      <li><a href="{{ helix_men_url }}">Shop all</a></li>
+                      </ul>
+                    </div>
+                    <div class="helix-header__mega-column">
+                      <p class="helix-header__mega-title">By feature</p>
+                      <ul class="helix-header__mega-links" role="list">
+                      <li><a href="{{ helix_men_url }}?filter.p.m.custom.feature=Cushioned">Cushioned</a></li>
+                      <li><a href="{{ helix_men_url }}?filter.p.m.custom.feature=Waterproof">Waterproof</a></li>
+                      <li><a href="{{ helix_men_url }}?filter.p.m.custom.feature=Water-resistant">Water-resistant</a></li>
+                      <li><a href="{{ helix_men_url }}?filter.p.m.custom.feature=Breathable">Breathable</a></li>
+                      <li><a href="{{ helix_men_url }}?filter.p.m.custom.feature=Windproof">Windproof</a></li>
+                      </ul>
+                    </div>
+                  </div>
+                  <div class="helix-header__mega-products" data-helix-men-products>
+                    <div class="helix-header__mega-products-head">
+                      <p class="helix-header__mega-title">Best deals <span aria-hidden="true">🔥</span></p>
+                      <div class="helix-header__mega-products-controls" aria-label="Men products">
+                        <button type="button" class="helix-header__mega-products-button helix-header__mega-products-button--prev" data-helix-men-products-prev aria-label="Previous" disabled>
+                          {% render 'helix-icon-chevron' %}
+                        </button>
+                        <button type="button" class="helix-header__mega-products-button helix-header__mega-products-button--next" data-helix-men-products-next aria-label="Next">
+                          {% render 'helix-icon-chevron' %}
+                        </button>
+                      </div>
+                    </div>
+
+                    <div class="helix-header__mega-products-viewport" data-helix-men-products-viewport>
+                      <div class="helix-header__mega-products-track" data-helix-men-products-track>
+        {% for helix_men_featured_handle in helix_men_featured_handles %}
+          {% assign helix_men_product = all_products[helix_men_featured_handle] %}
+          {% if helix_men_product == blank and collections.all.products[forloop.index0] != blank %}
+            {% assign helix_men_product = collections.all.products[forloop.index0] %}
+          {% endif %}
+          {% if helix_men_product != blank %}
+            {% assign helix_men_product_variant = helix_men_product.selected_or_first_available_variant %}
+            {% assign helix_men_compare_at_price = helix_men_product_variant.compare_at_price %}
+            {% assign helix_men_discount = 0 %}
+            {% if helix_men_compare_at_price > helix_men_product_variant.price %}
+              {% assign helix_men_discount_difference = helix_men_compare_at_price | minus: helix_men_product_variant.price %}
+              {% assign helix_men_discount = helix_men_discount_difference | times: 100 | divided_by: helix_men_compare_at_price | round %}
+            {% endif %}
+            {% assign helix_men_secondary_image = helix_men_product.images[1] %}
+            {% assign helix_men_product_option = helix_men_product.options_with_values | first %}
+            <article class="helix-header__mega-product">
+              <div class="helix-header__mega-product-media">
+                <a href="{{ helix_men_product.url }}" aria-label="{{ helix_men_product.title | escape }}">
+                  {% if helix_men_product.featured_image != blank %}
+                    {{ helix_men_product.featured_image | image_url: width: 700 | image_tag: loading: 'lazy', widths: '294,441,588,700', sizes: '294px', alt: helix_men_product.title, class: 'helix-header__mega-product-image' }}
+                  {% endif %}
+                  {% if helix_men_secondary_image != blank %}
+                    {{ helix_men_secondary_image | image_url: width: 700 | image_tag: loading: 'lazy', widths: '294,441,588,700', sizes: '294px', alt: helix_men_product.title, class: 'helix-header__mega-product-image helix-header__mega-product-image--secondary' }}
+                  {% endif %}
+                </a>
+                {% if helix_men_discount > 0 %}
+                  <span class="helix-header__mega-product-badge">-{{ helix_men_discount }}%</span>
+                {% endif %}
+                <a class="helix-header__mega-product-quick-view" href="{{ helix_men_product.url }}" aria-label="Quick view">
+                  <svg width="20" height="20" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+                    <path d="M1.718 10.291a.75.75 0 0 1 0-.582A9.04 9.04 0 0 1 10 4.168a9.04 9.04 0 0 1 8.282 5.541.75.75 0 0 1 0 .582A9.04 9.04 0 0 1 10 15.832a9.04 9.04 0 0 1-8.282-5.541Z" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"/>
+                    <circle cx="10" cy="10" r="2.5" stroke="currentColor" stroke-width="1.25"/>
+                  </svg>
+                </a>
+                <a class="helix-header__mega-product-quick-add" href="{{ helix_men_product.url }}">Quick add</a>
+              </div>
+              <div class="helix-header__mega-product-details">
+                {% if helix_men_product_option != blank and helix_men_product_option.values != blank %}
+                  <ul class="helix-header__mega-product-swatches" role="list" aria-label="{{ helix_men_product_option.name | escape }}">
+                    {% for helix_men_option_value in helix_men_product_option.values limit: 4 %}
+                      {% assign helix_men_option_variant = blank %}
+                      {% for helix_men_variant in helix_men_product.variants %}
+                        {% if helix_men_variant.option1 == helix_men_option_value or helix_men_variant.option2 == helix_men_option_value or helix_men_variant.option3 == helix_men_option_value %}
+                          {% assign helix_men_option_variant = helix_men_variant %}
+                          {% break %}
+                        {% endif %}
+                      {% endfor %}
+                      {% assign helix_men_option_image = helix_men_option_variant.featured_image %}
+                      {% if helix_men_option_image == blank %}
+                        {% assign helix_men_option_image = helix_men_product.images[forloop.index0] %}
+                      {% endif %}
+                      {% if helix_men_option_image == blank %}
+                        {% assign helix_men_option_image = helix_men_product.featured_image %}
+                      {% endif %}
+                      <li>
+                        <a href="{{ helix_men_product.url }}{% if helix_men_option_variant != blank %}?variant={{ helix_men_option_variant.id }}{% endif %}" aria-label="{{ helix_men_option_value | escape }}">
+                          <span title="{{ helix_men_option_value | escape }}" style="--helix-swatch-image: url('{{ helix_men_option_image | image_url: width: 80 }}');"></span>
+                        </a>
+                      </li>
+                    {% endfor %}
+                  </ul>
+                {% endif %}
+                <div class="helix-header__mega-product-info">
+                  <a href="{{ helix_men_product.url }}">{{ helix_men_product.title }}</a>
+                  <div>
+                    <span{% if helix_men_compare_at_price > helix_men_product_variant.price %} class="helix-header__mega-product-sale-price"{% endif %}>{{ helix_men_product_variant.price | money }}</span>
+                    {% if helix_men_compare_at_price > helix_men_product_variant.price %}
+                      <s>{{ helix_men_compare_at_price | money }}</s>
+                    {% endif %}
+                  </div>
+                </div>
+              </div>
+            </article>
+          {% endif %}
+        {% endfor %}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </details>
+
+          <details class="helix-header__dropdown helix-header__dropdown--pages" data-helix-dropdown data-helix-hover-dropdown>
+            <summary class="helix-header__nav-trigger">
+              <span>{{ section.settings.pages_label | default: 'Pages' }}</span>
+              <span class="helix-header__chevron" aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+            </summary>
+            <div class="helix-header__pages-panel">
+              <a href="{{ section.settings.pages_about_url | default: '/pages/about-us' }}">About us</a>
+              <a href="{{ section.settings.pages_contact_url | default: '/pages/contact' }}">Contact</a>
+              <a href="{{ section.settings.pages_faq_url | default: '/pages/faqs' }}">Faqs</a>
+              <a href="{{ section.settings.pages_store_url | default: '/pages/store-locations' }}">Store locations</a>
+              <a href="{{ section.settings.pages_recent_url | default: '/pages/recently-viewed' }}">Recently viewed</a>
+              <a href="{{ helix_journal_url }}">Our journal</a>
+            </div>
+          </details>
+
+          <a class="helix-header__nav-link" href="{{ helix_find_shoes_url }}">{{ section.settings.find_shoes_label | default: 'Find your shoes' }}</a>
+        </nav>
+
+        <a class="helix-header__brand" href="{{ routes.root_url }}" aria-label="{{ helix_logo_text }}">
+          {% if section.settings.logo != blank %}
+            <span class="helix-header__logo helix-header__logo--normal">
+              {{ section.settings.logo | image_url: width: 300 | image_tag: loading: 'eager', widths: '110,220,300', sizes: '110px', alt: helix_logo_text }}
+            </span>
+            <span class="helix-header__logo helix-header__logo--overlay" aria-hidden="true">
+              {% if section.settings.transparent_logo != blank %}
+                {{ section.settings.transparent_logo | image_url: width: 300 | image_tag: loading: 'eager', widths: '110,220,300', sizes: '110px', alt: '' }}
+              {% else %}
+                {{ section.settings.logo | image_url: width: 300 | image_tag: loading: 'eager', widths: '110,220,300', sizes: '110px', alt: '' }}
+              {% endif %}
+            </span>
+          {% else %}
+            <span class="helix-header__logo helix-header__logo--normal">
+              {% # theme-check-disable RemoteAsset %}
+              <img src="https://helix-shoes-theme.myshopify.com/cdn/shop/files/logo.svg?v=1776243138&amp;width=220" width="110" height="19" loading="eager" alt="{{ helix_logo_text }}">
+              {% # theme-check-enable RemoteAsset %}
+            </span>
+            <span class="helix-header__logo helix-header__logo--overlay" aria-hidden="true">
+              {% # theme-check-disable RemoteAsset %}
+              <img src="https://helix-shoes-theme.myshopify.com/cdn/shop/files/logo-white.svg?v=1776243137&amp;width=220" width="110" height="19" loading="eager" alt="">
+              {% # theme-check-enable RemoteAsset %}
+            </span>
+          {% endif %}
+        </a>
+
+        <div class="helix-header__actions">
+          <details class="helix-header__dropdown helix-header__dropdown--currency" data-helix-dropdown data-helix-hover-dropdown>
+            <summary class="helix-header__currency-trigger">
+              <span class="helix-header__country-flag" aria-hidden="true" style="--helix-country-flag: url(//cdn.shopify.com/static/images/flags/{{ localization.country.iso_code | default: 'VN' | downcase }}.svg?width=20);"></span>
+              <span>{{ helix_currency_code }} {{ helix_currency_symbol }}</span>
+              <span class="helix-header__chevron" aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+            </summary>
+            <div class="helix-header__currency-panel">
+              <p class="helix-header__panel-label">{{ 'header.country_region' | t }}</p>
+              <form action="{{ routes.localization_url }}" method="post" data-helix-localization-form>
+                <input type="hidden" name="return_to" value="{{ request.path }}">
+                <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-helix-country-value>
+                <div class="helix-header__country-list">
+                  {% for country in localization.available_countries %}
+                    <button type="button" value="{{ country.iso_code }}" data-helix-country-option>
+                      <span>{{ country.name }}</span>
+                      <span>{{ country.currency.iso_code }} {{ country.currency.symbol }}</span>
+                    </button>
+                  {% endfor %}
+                </div>
+              </form>
+            </div>
+          </details>
+          <span class="helix-header__actions-divider" aria-hidden="true"></span>
+
+          <a class="helix-header__icon-button" href="{{ routes.search_url }}" data-helix-open-search aria-label="{{ 'header.search' | t }}">
+            {% render 'helix-icon-search' %}
+            <span class="visually-hidden">{{ 'header.search' | t }}</span>
+          </a>
+          <a class="helix-header__icon-button helix-header__account-link" href="{{ routes.account_login_url }}" aria-label="{{ 'header.account' | t }}">
+            {% render 'helix-icon-account' %}
+            <span class="visually-hidden">{{ 'header.account' | t }}</span>
+          </a>
+          <a class="helix-header__icon-button helix-header__cart-link" href="{{ routes.cart_url }}" data-helix-open-cart aria-label="{{ 'header.cart' | t }}">
+            <span class="helix-header__cart-icon">
+              {% render 'helix-icon-cart' %}
+              {% if cart.item_count > 0 %}<span class="helix-header__cart-count">{{ cart.item_count }}</span>{% endif %}
+            </span>
+            <span class="visually-hidden">{{ 'header.cart' | t }}</span>
+          </a>
         </div>
       </div>
-    {% endif %}
-
-    <div
-      class="header__logo"
-      style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px;"
-    >
-        <a href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
-          {% if logo_image != blank %}
-            <picture class="header__logo-image header__logo-image--dark">
-              {% if logo_image_mobile != blank %}<source media="(max-width: 899px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
-              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 899px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
-            </picture>
-            <picture class="header__logo-image header__logo-image--light">
-              {% if logo_image_mobile != blank %}<source media="(max-width: 899px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
-              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 899px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
-            </picture>
-          {% else %}
-            <span class="header__logo-text">{{ shop.name | escape }}</span>
-          {% endif %}
-        </a>
-    </div>
-
-    <div class="header__actions">
-      {% if section.settings.show_localization %}
-        <div class="header__localization">
-          {% if can_change_country %}
-            <details class="header__localization-selector">
-              <summary aria-label="{{ 'header.country_region' | t | escape }}">
-                {% if section.settings.show_country_flag %}
-                  {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: localization.country.name, loading: 'lazy' }}
-                {% endif %}
-                <span class="header__localization-label">{{ localization.country.name | escape }} ({{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }})</span>
-                <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-              </summary>
-              <div class="header__localization-popover">
-                {% form 'localization', id: country_form_id %}
-                  <div class="header__localization-select" data-header-country-picker>
-                    <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-header-country-input>
-                    <div id="{{ country_form_id }}-Options" class="header__localization-options" role="listbox" aria-label="{{ 'header.country_region' | t | escape }}">
-                      {% for country in localization.available_countries %}
-                        <button class="header__localization-option{% if country.iso_code == localization.country.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if country.iso_code == localization.country.iso_code %}true{% else %}false{% endif %}" data-header-country-option data-country-code="{{ country.iso_code }}">
-                          {{ country | image_url: width: 32 | image_tag: class: 'header__localization-option-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
-                          <span>{{ country.name | escape }} ({{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }})</span>
-                          {% if country.iso_code == localization.country.iso_code %}<span class="header__localization-option-check" aria-hidden="true">✓</span>{% endif %}
-                        </button>
-                      {% endfor %}
-                    </div>
-                  </div>
-                  <noscript>
-                    <select name="country_code">
-                      {% for country in localization.available_countries %}
-                        <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.name | escape }} ({{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }})</option>
-                      {% endfor %}
-                    </select>
-                    <button type="submit">{{ 'header.apply' | t }}</button>
-                  </noscript>
-                {% endform %}
-              </div>
-            </details>
-          {% else %}
-            <span class="header__localization-current" aria-label="{{ 'header.country_region' | t | escape }}">
-              {% if section.settings.show_country_flag %}
-                {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: localization.country.name, loading: 'lazy' }}
-              {% endif %}
-              <span class="header__localization-label">{{ localization.country.name | escape }} ({{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }})</span>
-            </span>
-          {% endif %}
-        </div>
-      {% endif %}
-
-      {% if section.settings.show_search %}
-        <button class="header__action header__search-trigger" type="button" aria-label="{{ 'header.search' | t | escape }}" aria-haspopup="dialog" aria-controls="HeaderSearch-{{ section.id }}" data-header-search-open>
-          {% render 'icon', name: 'search' %}
-        </button>
-      {% endif %}
-
-      {% if section.settings.show_account and shop.customer_accounts_enabled %}
-        {% if account_action == 'panel' %}
-          <shopify-account class="header__action header__action--account" menu="{{ section.settings.customer_account_menu }}">
-            <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
-          </shopify-account>
-        {% else %}
-          <a class="header__action header__action--account" href="{{ account_href }}" aria-label="{{ 'header.login' | t | escape }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>
-            {% render 'icon', name: 'account' %}
-          </a>
-        {% endif %}
-      {% endif %}
-
-      {% if section.settings.show_cart %}
-        <a class="header__action header__cart" href="{{ routes.cart_url }}" aria-label="{{ 'header.cart' | t | escape }}" data-cart-count-label="{{ 'header.cart_count' | t: count: '__count__' | escape }}"{% if settings.cart_action == 'drawer' %} data-cart-drawer-open aria-controls="CartDrawer" aria-expanded="false"{% endif %}>
-          {% render 'icon', name: 'bag' %}
-          {% if cart.item_count > 0 %}
-            <span class="header__cart-count" aria-label="{{ 'header.cart_count' | t: count: cart.item_count | escape }}">
-              {{ cart.item_count }}
-            </span>
-          {% endif %}
-        </a>
-      {% endif %}
     </div>
   </div>
 
-  {% if section.settings.show_search %}
-    <dialog scroll-lock data-scroll-lock-owner="search" class="header-search-modal color-scheme color-{{ section.settings.color_scheme.id }}" id="HeaderSearch-{{ section.id }}" aria-labelledby="HeaderSearchLabel-{{ section.id }}" data-header-search-modal data-predictive-search-url="{{ routes.predictive_search_url }}" data-currency-code="{{ localization.country.currency.iso_code | default: shop.currency | escape }}">
-      <div class="header-search-modal__inner">
-        <button class="header-search-modal__close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_search' | t | escape }}" data-header-search-close></button>
-        <form class="header-search-modal__form search-field" action="{{ routes.search_url }}" method="get" role="search" data-header-search-form>
-          <label class="visually-hidden" id="HeaderSearchLabel-{{ section.id }}" for="HeaderSearchInput-{{ section.id }}">{{ 'search.label' | t }}</label>
-          <input id="HeaderSearchInput-{{ section.id }}" class="header-search-modal__input search-field__input" type="search" name="q" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="HeaderSearchPanel-{{ section.id }}-products" data-header-search-input>
-          <button class="header-search-modal__clear search-field__clear" type="button" aria-label="{{ 'search.clear_search' | t | escape }}" data-header-search-clear hidden>
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </button>
-          <button class="header-search-modal__submit search-field__submit" type="submit" aria-label="{{ 'search.submit' | t | escape }}">
-            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m16 16 4.4 4.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
-          </button>
-        </form>
+  <div class="helix-header__mobile-bar" data-helix-mobile-bar>
+    <div class="helix-header__mobile-inner">
+      <div class="helix-header__mobile-side helix-header__mobile-side--left">
+        <button class="helix-header__mobile-icon" type="button" data-helix-mobile-open aria-expanded="false" aria-controls="{{ helix_header_id }}-mobile-menu" aria-label="{{ 'header.open_menu' | t }}">
+          {% render 'helix-icon-menu' %}
+        </button>
+      </div>
 
-        <div class="header-search-modal__predictive" data-header-search-predictive aria-live="polite" aria-atomic="false" hidden>
-          <div class="header-search-modal__tabs" role="tablist" aria-label="{{ 'search.result_tabs' | t | escape }}">
-            <button id="HeaderSearchTab-{{ section.id }}-products" type="button" role="tab" aria-selected="true" aria-controls="HeaderSearchPanel-{{ section.id }}-products" tabindex="0" data-header-search-tab="products">{{ 'search.products' | t }}</button>
-            <button id="HeaderSearchTab-{{ section.id }}-collections" type="button" role="tab" aria-selected="false" aria-controls="HeaderSearchPanel-{{ section.id }}-collections" tabindex="-1" data-header-search-tab="collections">{{ 'search.collections' | t }}</button>
+      <a class="helix-header__brand helix-header__brand--mobile" href="{{ routes.root_url }}" aria-label="{{ helix_logo_text }}">
+        {% if helix_mobile_logo != blank %}
+          <span class="helix-header__logo helix-header__logo--normal">
+            {{ helix_mobile_logo | image_url: width: 240 | image_tag: loading: 'eager', widths: '90,180,240', sizes: '90px', alt: helix_logo_text }}
+          </span>
+          <span class="helix-header__logo helix-header__logo--overlay" aria-hidden="true">
+            {% if helix_mobile_transparent_logo != blank %}
+              {{ helix_mobile_transparent_logo | image_url: width: 240 | image_tag: loading: 'eager', widths: '90,180,240', sizes: '90px', alt: '' }}
+            {% else %}
+              {{ helix_mobile_logo | image_url: width: 240 | image_tag: loading: 'eager', widths: '90,180,240', sizes: '90px', alt: '' }}
+            {% endif %}
+          </span>
+        {% else %}
+          <span class="helix-header__logo helix-header__logo--normal">
+            {% # theme-check-disable RemoteAsset %}
+            <img src="https://helix-shoes-theme.myshopify.com/cdn/shop/files/logo.svg?v=1776243138&amp;width=180" width="90" height="16" loading="eager" alt="{{ helix_logo_text }}">
+            {% # theme-check-enable RemoteAsset %}
+          </span>
+          <span class="helix-header__logo helix-header__logo--overlay" aria-hidden="true">
+            {% # theme-check-disable RemoteAsset %}
+            <img src="https://helix-shoes-theme.myshopify.com/cdn/shop/files/logo-white.svg?v=1776243137&amp;width=180" width="90" height="16" loading="eager" alt="">
+            {% # theme-check-enable RemoteAsset %}
+          </span>
+        {% endif %}
+      </a>
+
+      <div class="helix-header__mobile-side helix-header__mobile-side--right">
+        <a class="helix-header__mobile-icon" href="{{ routes.search_url }}" data-helix-open-search aria-label="{{ 'header.search' | t }}">
+          {% render 'helix-icon-search' %}
+        </a>
+        <a class="helix-header__mobile-icon helix-header__cart-link" href="{{ routes.cart_url }}" data-helix-open-cart aria-label="{{ 'header.cart' | t }}">
+          <span class="helix-header__cart-icon">
+            {% render 'helix-icon-cart' %}
+            {% if cart.item_count > 0 %}<span class="helix-header__cart-count">{{ cart.item_count }}</span>{% endif %}
+          </span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <button class="helix-header__scrim" type="button" data-helix-close-layer aria-label="{{ 'general.close' | t }}"></button>
+
+  <div class="helix-header__mobile-menu" id="{{ helix_header_id }}-mobile-menu" data-helix-mobile-menu aria-hidden="true">
+    <div class="helix-header__mobile-menu-panel" role="dialog" aria-modal="true" aria-label="{{ 'header.menu' | t }}" tabindex="-1">
+      <div class="helix-header__mobile-menu-top">
+        <a class="helix-header__mobile-menu-logo" href="{{ routes.root_url }}" aria-label="{{ helix_logo_text }}">{{ helix_logo_text }}</a>
+        <button class="helix-header__close-button" type="button" data-helix-close-mobile aria-label="{{ 'general.close' | t }}">
+          {% render 'helix-icon-close' %}
+        </button>
+      </div>
+      <nav class="helix-header__mobile-nav" aria-label="{{ 'header.primary_navigation' | t }}">
+        <details data-helix-mobile-section>
+          <summary><span>{{ section.settings.women_label | default: 'Women' }}</span><span aria-hidden="true">{% render 'helix-icon-chevron' %}</span></summary>
+          <div class="helix-header__mobile-submenu">
+            <div class="helix-header__mobile-submenu-header">
+              <button class="helix-header__mobile-back" type="button" data-helix-mobile-back aria-label="{{ 'general.back' | t }}">
+                <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+                <span>{{ section.settings.women_label | default: 'Women' }}</span>
+              </button>
+              <button class="helix-header__close-button" type="button" data-helix-close-mobile aria-label="{{ 'general.close' | t }}">
+                {% render 'helix-icon-close' %}
+              </button>
+            </div>
+            <div class="helix-header__mobile-submenu-inner">
+              <div class="helix-header__mobile-submenu-group helix-header__mobile-submenu-group--featured">
+                <a href="{{ helix_womens_top_picks_url }}">Top picks</a>
+                <a href="{{ helix_womens_best_sellers_url }}">Best sellers</a>
+                <a href="{{ helix_womens_trending_url }}">Trending</a>
+                <a href="{{ helix_womens_new_arrivals_url }}">New arrivals</a>
+                <a href="{{ helix_womens_sale_url }}">On sale</a>
+              </div>
+              <details class="helix-header__mobile-submenu-details">
+                <summary><span>By activity</span><span aria-hidden="true">{% render 'helix-icon-chevron' %}</span></summary>
+                <div class="helix-header__mobile-submenu helix-header__mobile-submenu--child">
+                  <div class="helix-header__mobile-submenu-header">
+                    <button class="helix-header__mobile-back" type="button" data-helix-mobile-back aria-label="{{ 'general.back' | t }}">
+                      <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+                      <span>By activity</span>
+                    </button>
+                    <button class="helix-header__close-button" type="button" data-helix-close-mobile aria-label="{{ 'general.close' | t }}">
+                      {% render 'helix-icon-close' %}
+                    </button>
+                  </div>
+                  <div class="helix-header__mobile-submenu-inner">
+                    <div class="helix-header__mobile-submenu-group">
+                      <a href="{{ helix_collections_url }}/womens-hiking">Hiking</a>
+                      <a href="{{ helix_collections_url }}/women-s-running">Running</a>
+                      <a href="{{ helix_collections_url }}/women-s-training">Training</a>
+                      <a href="{{ helix_collections_url }}/womens-tennis">Tennis</a>
+                      <a href="{{ helix_collections_url }}/womens-lifestyle">Lifestyle</a>
+                      <a href="{{ helix_women_url }}">Shop all</a>
+                    </div>
+                  </div>
+                </div>
+              </details>
+              <details class="helix-header__mobile-submenu-details">
+                <summary><span>By feature</span><span aria-hidden="true">{% render 'helix-icon-chevron' %}</span></summary>
+                <div class="helix-header__mobile-submenu helix-header__mobile-submenu--child">
+                  <div class="helix-header__mobile-submenu-header">
+                    <button class="helix-header__mobile-back" type="button" data-helix-mobile-back aria-label="{{ 'general.back' | t }}">
+                      <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+                      <span>By feature</span>
+                    </button>
+                    <button class="helix-header__close-button" type="button" data-helix-close-mobile aria-label="{{ 'general.close' | t }}">
+                      {% render 'helix-icon-close' %}
+                    </button>
+                  </div>
+                  <div class="helix-header__mobile-submenu-inner">
+                    <div class="helix-header__mobile-submenu-group">
+                      <a href="{{ helix_women_url }}?filter.p.m.custom.feature=Cushioned">Cushioned</a>
+                      <a href="{{ helix_women_url }}?filter.p.m.custom.feature=Waterproof">Waterproof</a>
+                      <a href="{{ helix_women_url }}?filter.p.m.custom.feature=Water-resistant">Water-resistant</a>
+                      <a href="{{ helix_women_url }}?filter.p.m.custom.feature=Breathable">Breathable</a>
+                      <a href="{{ helix_women_url }}?filter.p.m.custom.feature=Windproof">Windproof</a>
+                    </div>
+                  </div>
+                </div>
+              </details>
+              <div class="helix-header__mobile-promos">
+                <a class="helix-header__mobile-promo" href="{{ helix_collections_url }}/womens-on-sale">
+                  <span class="helix-header__mobile-promo-media">
+                    {% # theme-check-disable RemoteAsset %}
+                    <img src="https://helix-shoes-theme.myshopify.com/cdn/shop/files/banner_mega_menu_1.webp?v=1777884363&amp;width=450" width="450" height="302" loading="lazy" alt="">
+                    {% # theme-check-enable RemoteAsset %}
+                  </span>
+                  <strong>Women's sale</strong>
+                  <span>Shop now <span aria-hidden="true">↗</span></span>
+                </a>
+                <a class="helix-header__mobile-promo" href="{{ helix_women_url }}?sort_by=best-selling">
+                  <span class="helix-header__mobile-promo-media">
+                    {% # theme-check-disable RemoteAsset %}
+                    <img src="https://helix-shoes-theme.myshopify.com/cdn/shop/files/banner_mega_menu_2.webp?v=1777884363&amp;width=450" width="450" height="302" loading="lazy" alt="">
+                    {% # theme-check-enable RemoteAsset %}
+                  </span>
+                  <strong>Women’s favorites</strong>
+                  <span>Shop now <span aria-hidden="true">↗</span></span>
+                </a>
+              </div>
+            </div>
           </div>
-          <div class="header-search-modal__panels">
-            <div id="HeaderSearchPanel-{{ section.id }}-products" role="tabpanel" aria-labelledby="HeaderSearchTab-{{ section.id }}-products" data-header-search-panel="products"></div>
-            <div id="HeaderSearchPanel-{{ section.id }}-collections" role="tabpanel" aria-labelledby="HeaderSearchTab-{{ section.id }}-collections" hidden data-header-search-panel="collections"></div>
-            <p class="header-search-modal__empty" data-header-search-empty hidden></p>
+        </details>
+        <details data-helix-mobile-section>
+          <summary><span>{{ section.settings.men_label | default: 'Men' }}</span><span aria-hidden="true">{% render 'helix-icon-chevron' %}</span></summary>
+          <div class="helix-header__mobile-submenu">
+            <div class="helix-header__mobile-submenu-header">
+              <button class="helix-header__mobile-back" type="button" data-helix-mobile-back aria-label="{{ 'general.back' | t }}">
+                <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+                <span>{{ section.settings.men_label | default: 'Men' }}</span>
+              </button>
+              <button class="helix-header__close-button" type="button" data-helix-close-mobile aria-label="{{ 'general.close' | t }}">
+                {% render 'helix-icon-close' %}
+              </button>
+            </div>
+            <div class="helix-header__mobile-submenu-inner">
+              <div class="helix-header__mobile-submenu-group helix-header__mobile-submenu-group--featured">
+                <a href="{{ helix_mens_top_picks_url }}">Top picks</a>
+                <a href="{{ helix_mens_best_sellers_url }}">Best sellers</a>
+                <a href="{{ helix_mens_trending_url }}">Trending</a>
+                <a href="{{ helix_mens_new_arrivals_url }}">New arrivals</a>
+                <a href="{{ helix_mens_sale_url }}">On sale</a>
+              </div>
+              <details class="helix-header__mobile-submenu-details">
+                <summary><span>By activity</span><span aria-hidden="true">{% render 'helix-icon-chevron' %}</span></summary>
+                <div class="helix-header__mobile-submenu helix-header__mobile-submenu--child">
+                  <div class="helix-header__mobile-submenu-header">
+                    <button class="helix-header__mobile-back" type="button" data-helix-mobile-back aria-label="{{ 'general.back' | t }}">
+                      <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+                      <span>By activity</span>
+                    </button>
+                    <button class="helix-header__close-button" type="button" data-helix-close-mobile aria-label="{{ 'general.close' | t }}">
+                      {% render 'helix-icon-close' %}
+                    </button>
+                  </div>
+                  <div class="helix-header__mobile-submenu-inner">
+                    <div class="helix-header__mobile-submenu-group">
+                      <a href="{{ helix_collections_url }}/mens-hiking">Hiking</a>
+                      <a href="{{ helix_collections_url }}/mens-running">Running</a>
+                      <a href="{{ helix_collections_url }}/mens-training">Training</a>
+                      <a href="{{ helix_collections_url }}/mens-tennis">Tennis</a>
+                      <a href="{{ helix_collections_url }}/mens-lifestyle">Lifestyle</a>
+                      <a href="{{ helix_men_url }}">Shop all</a>
+                    </div>
+                  </div>
+                </div>
+              </details>
+              <details class="helix-header__mobile-submenu-details">
+                <summary><span>By feature</span><span aria-hidden="true">{% render 'helix-icon-chevron' %}</span></summary>
+                <div class="helix-header__mobile-submenu helix-header__mobile-submenu--child">
+                  <div class="helix-header__mobile-submenu-header">
+                    <button class="helix-header__mobile-back" type="button" data-helix-mobile-back aria-label="{{ 'general.back' | t }}">
+                      <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+                      <span>By feature</span>
+                    </button>
+                    <button class="helix-header__close-button" type="button" data-helix-close-mobile aria-label="{{ 'general.close' | t }}">
+                      {% render 'helix-icon-close' %}
+                    </button>
+                  </div>
+                  <div class="helix-header__mobile-submenu-inner">
+                    <div class="helix-header__mobile-submenu-group">
+                      <a href="{{ helix_men_url }}?filter.p.m.custom.feature=Cushioned">Cushioned</a>
+                      <a href="{{ helix_men_url }}?filter.p.m.custom.feature=Waterproof">Waterproof</a>
+                      <a href="{{ helix_men_url }}?filter.p.m.custom.feature=Water-resistant">Water-resistant</a>
+                      <a href="{{ helix_men_url }}?filter.p.m.custom.feature=Breathable">Breathable</a>
+                      <a href="{{ helix_men_url }}?filter.p.m.custom.feature=Windproof">Windproof</a>
+                    </div>
+                  </div>
+                </div>
+              </details>
+              <div class="helix-header__mobile-products">
+                <p class="helix-header__mobile-products-title">Best deals <span aria-hidden="true">🔥</span></p>
+                <div class="helix-header__mobile-products-grid">
+                  {% for helix_men_mobile_handle in helix_men_featured_handles limit: 5 %}
+                    {% assign helix_men_mobile_product = all_products[helix_men_mobile_handle] %}
+                    {% if helix_men_mobile_product == blank and collections.all.products[forloop.index0] != blank %}
+                      {% assign helix_men_mobile_product = collections.all.products[forloop.index0] %}
+                    {% endif %}
+                    {% if helix_men_mobile_product != blank %}
+                      {% assign helix_men_mobile_variant = helix_men_mobile_product.selected_or_first_available_variant %}
+                      {% assign helix_men_mobile_compare_at = helix_men_mobile_variant.compare_at_price %}
+                      {% assign helix_men_mobile_discount = 0 %}
+                      {% if helix_men_mobile_compare_at > helix_men_mobile_variant.price %}
+                        {% assign helix_men_mobile_difference = helix_men_mobile_compare_at | minus: helix_men_mobile_variant.price %}
+                        {% assign helix_men_mobile_discount = helix_men_mobile_difference | times: 100 | divided_by: helix_men_mobile_compare_at | round %}
+                      {% endif %}
+                      {% assign helix_men_mobile_secondary = helix_men_mobile_product.images[1] %}
+                      {% assign helix_men_mobile_option = helix_men_mobile_product.options_with_values | first %}
+                      <article class="helix-header__mega-product helix-header__mobile-product">
+                        <div class="helix-header__mega-product-media">
+                          <a href="{{ helix_men_mobile_product.url }}" aria-label="{{ helix_men_mobile_product.title | escape }}">
+                            {% if helix_men_mobile_product.featured_image != blank %}
+                              {{ helix_men_mobile_product.featured_image | image_url: width: 700 | image_tag: loading: 'lazy', widths: '294,441,588,700', sizes: '160px', alt: helix_men_mobile_product.title, class: 'helix-header__mega-product-image' }}
+                            {% endif %}
+                            {% if helix_men_mobile_secondary != blank %}
+                              {{ helix_men_mobile_secondary | image_url: width: 700 | image_tag: loading: 'lazy', widths: '294,441,588,700', sizes: '160px', alt: helix_men_mobile_product.title, class: 'helix-header__mega-product-image helix-header__mega-product-image--secondary' }}
+                            {% endif %}
+                          </a>
+                          {% if helix_men_mobile_discount > 0 %}<span class="helix-header__mega-product-badge">-{{ helix_men_mobile_discount }}%</span>{% endif %}
+                          <a class="helix-header__mega-product-quick-view" href="{{ helix_men_mobile_product.url }}" aria-label="Quick view">
+                            {% render 'helix-icon-cart' %}
+                          </a>
+                        </div>
+                        <div class="helix-header__mega-product-details">
+                          {% if helix_men_mobile_option != blank and helix_men_mobile_option.values != blank %}
+                            <ul class="helix-header__mega-product-swatches" role="list" aria-label="{{ helix_men_mobile_option.name | escape }}">
+                              {% for helix_men_mobile_option_value in helix_men_mobile_option.values limit: 4 %}
+                                {% assign helix_men_mobile_option_variant = blank %}
+                                {% for helix_men_mobile_variant_item in helix_men_mobile_product.variants %}
+                                  {% if helix_men_mobile_variant_item.option1 == helix_men_mobile_option_value or helix_men_mobile_variant_item.option2 == helix_men_mobile_option_value or helix_men_mobile_variant_item.option3 == helix_men_mobile_option_value %}
+                                    {% assign helix_men_mobile_option_variant = helix_men_mobile_variant_item %}
+                                    {% break %}
+                                  {% endif %}
+                                {% endfor %}
+                                {% assign helix_men_mobile_option_image = helix_men_mobile_option_variant.featured_image %}
+                                {% if helix_men_mobile_option_image == blank %}{% assign helix_men_mobile_option_image = helix_men_mobile_product.images[forloop.index0] %}{% endif %}
+                                {% if helix_men_mobile_option_image == blank %}{% assign helix_men_mobile_option_image = helix_men_mobile_product.featured_image %}{% endif %}
+                                <li><a href="{{ helix_men_mobile_product.url }}{% if helix_men_mobile_option_variant != blank %}?variant={{ helix_men_mobile_option_variant.id }}{% endif %}" aria-label="{{ helix_men_mobile_option_value | escape }}"><span title="{{ helix_men_mobile_option_value | escape }}" style="--helix-swatch-image: url('{{ helix_men_mobile_option_image | image_url: width: 80 }}');"></span></a></li>
+                              {% endfor %}
+                            </ul>
+                          {% endif %}
+                          <div class="helix-header__mega-product-info">
+                            <a href="{{ helix_men_mobile_product.url }}">{{ helix_men_mobile_product.title }}</a>
+                            <div>
+                              <span{% if helix_men_mobile_compare_at > helix_men_mobile_variant.price %} class="helix-header__mega-product-sale-price"{% endif %}>{{ helix_men_mobile_variant.price | money }}</span>
+                              {% if helix_men_mobile_compare_at > helix_men_mobile_variant.price %}<s>{{ helix_men_mobile_compare_at | money }}</s>{% endif %}
+                            </div>
+                          </div>
+                        </div>
+                      </article>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
           </div>
-          <a class="button button--primary header-search-modal__view-all" href="{{ routes.search_url }}" data-header-search-view-all>{{ 'search.view_all_results' | t }}</a>
+        </details>
+        <details data-helix-mobile-section>
+          <summary><span>{{ section.settings.pages_label | default: 'Pages' }}</span><span aria-hidden="true">{% render 'helix-icon-chevron' %}</span></summary>
+          <div class="helix-header__mobile-submenu">
+            <div class="helix-header__mobile-submenu-header">
+              <button class="helix-header__mobile-back" type="button" data-helix-mobile-back aria-label="{{ 'general.back' | t }}">
+                <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+                <span>{{ section.settings.pages_label | default: 'Pages' }}</span>
+              </button>
+              <button class="helix-header__close-button" type="button" data-helix-close-mobile aria-label="{{ 'general.close' | t }}">
+                {% render 'helix-icon-close' %}
+              </button>
+            </div>
+            <div class="helix-header__mobile-submenu-inner">
+              <div class="helix-header__mobile-submenu-group helix-header__mobile-submenu-group--featured">
+                <a href="{{ section.settings.pages_about_url | default: '/pages/about-us' }}">About us</a>
+                <a href="{{ section.settings.pages_contact_url | default: '/pages/contact' }}">Contact</a>
+                <a href="{{ section.settings.pages_faq_url | default: '/pages/faqs' }}">Faqs</a>
+                <a href="{{ section.settings.pages_store_url | default: '/pages/store-locations' }}">Store locations</a>
+                <a href="{{ section.settings.pages_recent_url | default: '/pages/recently-viewed' }}">Recently viewed</a>
+                <a href="{{ helix_journal_url }}">Our journal</a>
+              </div>
+            </div>
+          </div>
+        </details>
+        <a href="{{ helix_find_shoes_url }}">{{ section.settings.find_shoes_label | default: 'Find your shoes' }}</a>
+      </nav>
+      <div class="helix-header__mobile-menu-footer">
+        <a class="helix-header__mobile-login" href="{{ routes.account_login_url }}">{{ 'header.login' | t }}</a>
+        <details class="helix-header__mobile-localization">
+          <summary>
+            <span class="helix-header__country-flag" aria-hidden="true" style="--helix-country-flag: url(//cdn.shopify.com/static/images/flags/{{ localization.country.iso_code | default: 'VN' | downcase }}.svg?width=20);"></span>
+            <span>{{ helix_currency_code }} {{ helix_currency_symbol }}</span>
+            <span aria-hidden="true">{% render 'helix-icon-chevron' %}</span>
+          </summary>
+          <div class="helix-header__mobile-localization-panel">
+            <p class="helix-header__panel-label">{{ 'header.country_region' | t }}</p>
+            {% for country in localization.available_countries %}
+              <button type="button" value="{{ country.iso_code }}" data-helix-country-option>{{ country.name }} <span>{{ country.currency.iso_code }} {{ country.currency.symbol }}</span></button>
+            {% endfor %}
+          </div>
+        </details>
+        <div class="helix-header__mobile-socials" aria-label="Social links">
+          <a href="{{ routes.root_url }}" aria-label="Facebook">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14 8h3V4h-3c-3.3 0-5 1.9-5 5v3H6v4h3v4h4v-4h3l1-4h-4V9c0-.7.3-1 1-1Z" fill="currentColor"></path></svg>
+          </a>
+          <a href="{{ routes.root_url }}" aria-label="Instagram">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><rect x="4" y="4" width="16" height="16" rx="4" fill="none" stroke="currentColor" stroke-width="2"></rect><circle cx="12" cy="12" r="3.5" fill="none" stroke="currentColor" stroke-width="2"></circle><circle cx="17.2" cy="6.8" r="1.2" fill="currentColor"></circle></svg>
+          </a>
+          <a href="{{ routes.root_url }}" aria-label="YouTube">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M21 8.2a2.8 2.8 0 0 0-2-2C17.2 5.7 12 5.7 12 5.7s-5.2 0-7 .5a2.8 2.8 0 0 0-2 2A29 29 0 0 0 2.5 12 29 29 0 0 0 3 15.8a2.8 2.8 0 0 0 2 2c1.8.5 7 .5 7 .5s5.2 0 7-.5a2.8 2.8 0 0 0 2-2 29 29 0 0 0 .5-3.8 29 29 0 0 0-.5-3.8ZM10 15.2V8.8l5.5 3.2-5.5 3.2Z" fill="currentColor"></path></svg>
+          </a>
+          <a href="{{ routes.root_url }}" aria-label="TikTok">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M14.5 4c.4 2.3 1.7 3.7 4 4v3.1a8.4 8.4 0 0 1-4-1.2v6.4a5.2 5.2 0 1 1-4.6-5.2v3.2a2.1 2.1 0 1 0 1.5 2V4h3.1Z" fill="currentColor"></path></svg>
+          </a>
         </div>
       </div>
-    </dialog>
-  {% endif %}
-</header>
+    </div>
+  </div>
 
+  <div class="helix-header__drawer helix-header__drawer--search" data-helix-search-drawer aria-hidden="true">
+    <div class="helix-header__drawer-panel" role="dialog" aria-modal="true" aria-label="{{ 'header.search' | t }}" tabindex="-1">
+      <div class="helix-header__drawer-top">
+        <strong>{{ 'header.search' | t }}</strong>
+        <button class="helix-header__close-button" type="button" data-helix-close-layer aria-label="{{ 'general.close' | t }}">{% render 'helix-icon-close' %}</button>
+      </div>
+      <form action="{{ routes.search_url }}" method="get" class="helix-header__search-form">
+        <label class="visually-hidden" for="{{ helix_header_id }}-search">{{ 'header.search' | t }}</label>
+        <input id="{{ helix_header_id }}-search" type="search" name="q" placeholder="What are you looking for?" autocomplete="off">
+        <button type="submit" aria-label="{{ 'header.search' | t }}">{% render 'helix-icon-search' %}</button>
+      </form>
+      <p class="helix-header__drawer-note">{{ 'header.popular_searches' | t }}</p>
+      <div class="helix-header__search-links">
+        <a href="{{ helix_trending_collection_url }}">{{ 'header.trending' | t }}</a>
+        <a href="{{ helix_best_sellers_collection_url }}">{{ 'header.best_sellers' | t }}</a>
+        <a href="{{ helix_sale_collection_url }}">{{ 'header.on_sale' | t }}</a>
+      </div>
+    </div>
+  </div>
 
+  <div class="helix-header__drawer helix-header__drawer--cart" data-helix-cart-drawer aria-hidden="true">
+    <div class="helix-header__drawer-panel" role="dialog" aria-modal="true" aria-label="{{ 'header.cart' | t }}" tabindex="-1">
+      <div class="helix-header__drawer-top">
+        <strong>{{ 'header.cart' | t }}</strong>
+        <button class="helix-header__close-button" type="button" data-helix-close-layer aria-label="{{ 'general.close' | t }}">{% render 'helix-icon-close' %}</button>
+      </div>
+      {% if cart.item_count > 0 %}
+        <p class="helix-header__cart-message">{{ cart.item_count }} {{ 'header.items_in_cart' | t }}</p>
+        <div class="helix-header__cart-total">{{ cart.total_price | money }}</div>
+        <a class="helix-header__drawer-button helix-header__drawer-button--dark" href="{{ routes.cart_url }}">{{ 'header.view_cart' | t }}</a>
+        {% if additional_checkout_buttons %}{{ content_for_additional_checkout_buttons }}{% endif %}
+      {% else %}
+        <p class="helix-header__cart-message">{{ 'header.empty_cart' | t }}</p>
+        <a class="helix-header__drawer-button" href="{{ routes.all_products_collection_url }}">{{ 'header.shop' | t }}</a>
+      {% endif %}
+    </div>
+  </div>
+</div>
 
+{% style %}
+  @import url('https://fonts.googleapis.com/css2?family=Archivo:wght@700&family=Figtree:wght@400;500;600;700&display=swap');
+
+  #{{ helix_header_id }} {
+    --helix-font: {% if section.settings.font_family != blank %}{{ section.settings.font_family.family }}, {{ section.settings.font_family.fallback_families }}{% else %}'Figtree', sans-serif{% endif %};
+  }
+{% endstyle %}
+
+{% stylesheet %}
+  .helix-header,
+  .helix-header * {
+    box-sizing: border-box;
+  }
+
+  .helix-header {
+    position: relative;
+    z-index: 30;
+    width: 100vw;
+    color: var(--helix-solid-text);
+    font-family: var(--helix-font, 'Figtree', 'Open Sans', Arial, sans-serif);
+    font-size: 14px;
+    line-height: 1.6;
+  }
+
+  body:has(.helix-header) {
+    overflow-x: hidden;
+  }
+
+  html.helix-header-lock,
+  html.helix-header-lock body {
+    overflow: hidden;
+  }
+
+  .helix-header button,
+  .helix-header input {
+    color: inherit;
+    font: inherit;
+  }
+
+  .helix-header button,
+  .helix-header summary {
+    cursor: pointer;
+  }
+
+  .helix-header a {
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .helix-header__announcement {
+    display: grid;
+    min-height: 38.4px;
+    grid-template-columns: 32px minmax(0, 700px) 32px;
+    align-items: center;
+    justify-content: center;
+    padding: 0 16px;
+    overflow: hidden;
+    background: var(--helix-announcement-bg);
+    color: var(--helix-announcement-text);
+    font-size: 14px;
+    line-height: 22.4px;
+  }
+
+  .helix-header__announcement-track {
+    position: relative;
+    grid-column: 2;
+    width: 100%;
+    min-width: 0;
+    height: 22.4px;
+    min-height: 22.4px;
+    overflow: hidden;
+    text-align: center;
+  }
+
+  .helix-header__announcement-message {
+    position: absolute;
+    inset: 0;
+    margin: 0;
+    width: 100%;
+    white-space: nowrap;
+    opacity: 0;
+    transform: translateY(7px);
+    transition: opacity .2s cubic-bezier(.6, .14, 0, 1), transform .3s cubic-bezier(.6, .14, 0, 1);
+    pointer-events: none;
+  }
+
+  .helix-header__announcement-message.is-active {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .helix-header__announcement-message strong {
+    font-weight: 700;
+  }
+
+  .helix-header__announcement-side {
+    display: flex;
+    width: 32px;
+    height: 38.4px;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .helix-header__announcement-side--right {
+    grid-column: 3;
+  }
+
+  .helix-header__announcement-side button {
+    display: grid;
+    width: 32px;
+    height: 38.4px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    font-size: 14px;
+    line-height: 22.4px;
+    transition: transform .2s ease, opacity .2s ease;
+  }
+
+  .helix-header__announcement-side--left {
+    grid-column: 1;
+  }
+
+  .helix-header__announcement-side--left button span {
+    display: inline-flex;
+    transform: rotate(90deg);
+  }
+
+  .helix-header__announcement-side--right button span {
+    display: inline-flex;
+    transform: rotate(-90deg);
+  }
+
+  .helix-header__announcement-side button svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .helix-header__announcement-side button:hover,
+  .helix-header__announcement-side button:focus-visible {
+    transform: translateX(3px);
+    opacity: .62;
+  }
+
+  .helix-header__announcement-side--left button:hover,
+  .helix-header__announcement-side--left button:focus-visible {
+    transform: translateX(-3px);
+  }
+
+  .helix-header__desktop-bar,
+  .helix-header__mobile-bar {
+    position: absolute;
+    z-index: 3;
+    top: 38.4px;
+    right: 0;
+    left: 0;
+    color: var(--helix-solid-text);
+  }
+
+  .helix-header--no-announcement .helix-header__desktop-bar,
+  .helix-header--no-announcement .helix-header__mobile-bar {
+    top: 0;
+  }
+
+  .helix-header__desktop-surface,
+  .helix-header__mobile-inner {
+    background: transparent;
+    transition: background-color .2s cubic-bezier(.6, 0, .4, 1), box-shadow .2s cubic-bezier(.6, 0, .4, 1), color .2s cubic-bezier(.6, 0, .4, 1);
+  }
+
+  .helix-header__desktop-surface {
+    position: relative;
+    z-index: 1;
+    isolation: isolate;
+  }
+
+  .helix-header__menu-background {
+    position: absolute;
+    z-index: 0;
+    top: 0;
+    right: 0;
+    left: 0;
+    height: 0;
+    background: transparent;
+    pointer-events: none;
+    transition: height .3s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__desktop-surface::before {
+    display: none;
+  }
+
+  .helix-header__desktop-inner {
+    position: relative;
+    z-index: 1;
+    display: grid;
+    width: min(1820px, calc(100vw - 100px));
+    min-height: 80px;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+    align-items: center;
+    margin-left: 50px;
+    margin-right: 0;
+    gap: 10px;
+    padding: 24px 0;
+  }
+
+  .helix-header__desktop-nav,
+  .helix-header__actions {
+    display: flex;
+    min-width: 0;
+    align-items: center;
+  }
+
+  .helix-header__desktop-nav {
+    justify-content: flex-start;
+    gap: 0;
+    margin-left: -12px;
+  }
+
+  .helix-header__actions {
+    justify-content: flex-end;
+    gap: 0;
+  }
+
+  .helix-header__brand {
+    position: relative;
+    z-index: 2;
+    display: inline-flex;
+    width: var(--helix-logo-width);
+    min-width: var(--helix-logo-width);
+    height: auto;
+    align-items: center;
+    justify-content: center;
+    justify-self: center;
+    line-height: 1;
+  }
+
+  .helix-header__desktop-inner > .helix-header__brand {
+    height: 19px;
+  }
+
+  .helix-header__brand--mobile {
+    width: var(--helix-mobile-logo-width);
+    min-width: var(--helix-mobile-logo-width);
+  }
+
+  .helix-header__logo,
+  .helix-header__logo-text {
+    display: block;
+    width: 100%;
+    line-height: 1;
+  }
+
+  .helix-header__logo img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .helix-header__logo--overlay,
+  .helix-header__logo-text--overlay {
+    position: absolute;
+    inset: 0;
+    display: none;
+  }
+
+  .helix-header__logo-text {
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: -.03em;
+    text-align: center;
+    white-space: nowrap;
+  }
+
+  .helix-header__nav-trigger,
+  .helix-header__currency-trigger,
+  .helix-header__nav-link {
+    position: relative;
+    display: inline-flex;
+    min-height: 32px;
+    align-items: center;
+    gap: 4px;
+    padding: 5px 12px;
+    border: 0;
+    background: transparent;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .02em;
+    line-height: 22.4px;
+    white-space: nowrap;
+  }
+
+  .helix-header__nav-trigger::after,
+  .helix-header__nav-link::after,
+  .helix-header__currency-trigger::after {
+    position: absolute;
+    right: 12px;
+    bottom: 1px;
+    left: 12px;
+    height: 1px;
+    background: currentColor;
+    content: '';
+    opacity: .85;
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform .2s cubic-bezier(.6, 0, .4, 1);
+  }
+
+  .helix-header__nav-trigger:hover::after,
+  .helix-header__nav-trigger:focus-visible::after,
+  .helix-header__nav-link:hover::after,
+  .helix-header__nav-link:focus-visible::after,
+  .helix-header__dropdown[open] > .helix-header__nav-trigger::after,
+  .helix-header__currency-trigger:hover::after,
+  .helix-header__currency-trigger:focus-visible::after,
+  .helix-header__dropdown[open] > .helix-header__currency-trigger::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  .helix-header__chevron {
+    display: inline-flex;
+    width: 20px;
+    height: 20px;
+    align-items: center;
+    justify-content: center;
+    transition: transform .3s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__chevron svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .helix-header__desktop-nav .helix-header__chevron,
+  .helix-header__desktop-nav .helix-header__chevron svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .helix-header__dropdown[open] > summary .helix-header__chevron {
+    transform: rotate(180deg);
+  }
+
+  .helix-header__dropdown > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .helix-header__dropdown > summary {
+    list-style: none;
+  }
+
+  .helix-header__dropdown {
+    position: static;
+  }
+
+  .helix-header__dropdown--pages,
+  .helix-header__dropdown--currency {
+    position: relative;
+  }
+
+  .helix-header__currency-trigger {
+    display: flex;
+    min-height: 16px;
+    height: 16px;
+    gap: 8px;
+    padding: 0;
+    font-weight: 400;
+    line-height: 14px;
+    letter-spacing: normal;
+  }
+
+  .helix-header__currency-trigger .helix-header__chevron,
+  .helix-header__currency-trigger .helix-header__chevron svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .helix-header__country-flag {
+    display: inline-block;
+    width: 16px;
+    height: 16px;
+    flex: 0 0 16px;
+    background: var(--helix-country-flag) center / contain no-repeat;
+  }
+
+  .helix-header__actions-divider {
+    width: 1px;
+    height: 16px;
+    flex: 0 0 1px;
+    margin-right: 20px;
+    border-right: 1px solid #e5e5e5;
+  }
+
+  .helix-header__dropdown--currency {
+    margin-right: 20px;
+  }
+
+  .helix-header__icon-button {
+    display: inline-flex;
+    width: 24px;
+    height: 24px;
+    align-items: center;
+    justify-content: center;
+    border: 0;
+    background: transparent;
+    transition: transform .25s ease, opacity .25s ease;
+  }
+
+  .helix-header__icon-button:hover,
+  .helix-header__icon-button:focus-visible {
+    opacity: .62;
+    transform: translateY(-1px);
+  }
+
+  .helix-header__icon-button + .helix-header__icon-button {
+    margin-left: 20px;
+  }
+
+  .helix-header__icon-button svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  .helix-header__cart-icon {
+    position: relative;
+    display: inline-flex;
+  }
+
+  .helix-header__cart-count {
+    position: absolute;
+    top: -7px;
+    right: -8px;
+    display: grid;
+    min-width: 15px;
+    height: 15px;
+    padding: 0 3px;
+    place-items: center;
+    border-radius: 50%;
+    background: currentColor;
+    color: var(--helix-announcement-bg);
+    font-size: 9px;
+    font-weight: 700;
+    line-height: 1;
+  }
+
+  .helix-header__mega-panel {
+    position: absolute;
+    z-index: 8;
+    top: 100%;
+    right: -50px;
+    left: -50px;
+    height: var(--helix-mega-height, 0px);
+    max-height: min(540px, calc(100vh - 80px));
+    overflow: hidden;
+    background: #fff;
+    color: #1a1312;
+    opacity: 0;
+    pointer-events: none;
+    transform: none;
+    transition: height .3s cubic-bezier(.6, .14, 0, 1), opacity .2s cubic-bezier(.6, .14, 0, 1), visibility 0s linear .3s;
+    visibility: hidden;
+  }
+
+  .helix-header__mega-panel::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+
+  .helix-header__mega-panel::-webkit-scrollbar-thumb {
+    border-radius: 99px;
+    background: rgba(26, 19, 18, .2);
+  }
+
+  .helix-header__mega-panel::-webkit-scrollbar-track {
+    background: transparent;
+  }
+
+  .helix-header__dropdown[open] > .helix-header__mega-panel {
+    height: var(--helix-mega-height, min(540px, calc(100vh - 80px)));
+    opacity: 1;
+    overflow: auto;
+    pointer-events: auto;
+    transition-delay: 0s;
+    visibility: visible;
+  }
+
+  .helix-header__mega-inner {
+    width: 100%;
+    margin-inline: auto;
+    padding: 40px 0;
+  }
+
+  .helix-header__mega-columns {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 40px;
+    padding-inline: clamp(30px, 3.94vw, 50px);
+  }
+
+  .helix-header__mega-links-grid {
+    display: grid;
+    width: 600px;
+    max-width: 600px;
+    flex: 1 1 0%;
+    grid-template-columns: repeat(3, 200px);
+    margin: -15px;
+  }
+
+  .helix-header__mega-banners {
+    display: grid;
+    min-width: 0;
+    flex: 0 1 907px;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 12px;
+  }
+
+  .helix-header__mega-products {
+    min-width: 0;
+    flex: 0 1 50%;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .helix-header__mega-products-head {
+    display: flex;
+    min-height: 25.2px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 20px;
+    margin: 0 0 24px;
+    opacity: 0;
+    transform: translate3d(0, 15px, 0);
+  }
+
+  .helix-header__dropdown[open] .helix-header__mega-products-head {
+    animation: helix-menu-reveal .4s ease .35s forwards;
+  }
+
+  .helix-header__mega-products-head .helix-header__mega-title {
+    margin: 0;
+    font-family: 'Archivo', var(--helix-font, sans-serif);
+    font-size: 18px;
+    font-weight: 700;
+    letter-spacing: .36px;
+    line-height: 25.2px;
+  }
+
+  .helix-header__mega-products-controls {
+    display: flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .helix-header__mega-products-button {
+    display: grid;
+    width: 24px;
+    height: 24px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: currentColor;
+    cursor: pointer;
+    transition: opacity .2s ease, transform .2s ease;
+  }
+
+  .helix-header__mega-products-button:hover:not(:disabled),
+  .helix-header__mega-products-button:focus-visible:not(:disabled) {
+    opacity: .55;
+    transform: translateY(-1px);
+  }
+
+  .helix-header__mega-products-button:disabled {
+    cursor: not-allowed;
+    opacity: .5;
+  }
+
+  .helix-header__mega-products-button svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .helix-header__mega-products-button--prev svg {
+    transform: rotate(90deg);
+  }
+
+  .helix-header__mega-products-button--next svg {
+    transform: rotate(-90deg);
+  }
+
+  .helix-header__mega-products-viewport {
+    overflow: hidden;
+    margin: 0 -10px;
+    padding: 0 10px;
+  }
+
+  .helix-header__mega-products-track {
+    display: flex;
+    gap: 12px;
+    transform: translate3d(0, 0, 0);
+    transition: transform .35s cubic-bezier(.6, .14, 0, 1);
+    will-change: transform;
+  }
+
+  .helix-header__mega-product {
+    width: calc((100% - 24px) / 3);
+    min-width: calc((100% - 24px) / 3);
+    flex: 0 0 calc((100% - 24px) / 3);
+    opacity: 0;
+    transform: translate3d(0, 15px, 0);
+  }
+
+  .helix-header__dropdown[open] .helix-header__mega-product {
+    animation: helix-menu-reveal .4s ease forwards;
+  }
+
+  .helix-header__dropdown[open] .helix-header__mega-product:nth-child(1) { animation-delay: .4s; }
+  .helix-header__dropdown[open] .helix-header__mega-product:nth-child(2) { animation-delay: .45s; }
+  .helix-header__dropdown[open] .helix-header__mega-product:nth-child(3) { animation-delay: .5s; }
+  .helix-header__dropdown[open] .helix-header__mega-product:nth-child(4) { animation-delay: .55s; }
+  .helix-header__dropdown[open] .helix-header__mega-product:nth-child(5) { animation-delay: .6s; }
+
+  .helix-header__mega-product-media {
+    position: relative;
+    overflow: hidden;
+    aspect-ratio: 1;
+    border-radius: 16px;
+    background: transparent;
+  }
+
+  .helix-header__mega-product-media > a:not(.helix-header__mega-product-quick-view):not(.helix-header__mega-product-quick-add) {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .helix-header__mega-product-image {
+    position: relative;
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: contain;
+    transition: opacity .45s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__mega-product-image--secondary {
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+  }
+
+  .helix-header__mega-product-media:hover .helix-header__mega-product-image--secondary,
+  .helix-header__mega-product-media:focus-within .helix-header__mega-product-image--secondary {
+    opacity: 1;
+  }
+
+  .helix-header__mega-product-badge {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    left: 12px;
+    display: inline-flex;
+    min-height: 20px;
+    align-items: center;
+    padding: 3px 8.5px;
+    border-radius: 9990px;
+    background: #e80303;
+    color: #fff;
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: .06em;
+    line-height: normal;
+  }
+
+  .helix-header__mega-product-quick-view {
+    position: absolute;
+    z-index: 2;
+    top: 12px;
+    right: 12px;
+    display: grid;
+    width: 44px;
+    height: 44px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    background: #fff;
+    color: #1a1312;
+    opacity: 0;
+    transform: translateX(10px);
+    transition: opacity .3s cubic-bezier(.4, 0, .2, 1), transform .3s cubic-bezier(.4, 0, .2, 1);
+  }
+
+  .helix-header__mega-product-quick-view svg {
+    width: 20px;
+    height: 20px;
+  }
+
+  .helix-header__mega-product-media:hover .helix-header__mega-product-quick-view,
+  .helix-header__mega-product-media:focus-within .helix-header__mega-product-quick-view {
+    opacity: 1;
+    transform: translateX(0);
+  }
+
+  .helix-header__mega-product-quick-add {
+    position: absolute;
+    z-index: 2;
+    right: 12px;
+    bottom: 12px;
+    left: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    min-height: 44px;
+    padding: 6px 22px;
+    border-radius: 9990px;
+    background: #fff;
+    color: #1a1312;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .28px;
+    line-height: normal;
+    opacity: 0;
+    transform: translateY(10px);
+    transition: opacity .25s ease, transform .35s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__mega-product-media:hover .helix-header__mega-product-quick-add,
+  .helix-header__mega-product-media:focus-within .helix-header__mega-product-quick-add {
+    opacity: 1;
+    transform: translateY(0);
+  }
+
+  .helix-header__mega-product-details {
+    display: flex;
+    min-height: 113.78px;
+    align-items: flex-start;
+    flex-direction: column;
+    gap: 8px;
+    padding-top: 14px;
+  }
+
+  .helix-header__mega-product-swatches {
+    display: flex;
+    width: 88px;
+    min-width: 88px;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 8px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .helix-header__mega-product-swatches li {
+    display: flex;
+    width: 40px;
+    height: 45px;
+    align-items: flex-start;
+  }
+
+  .helix-header__mega-product-swatches li a {
+    display: flex;
+    width: 40px;
+    height: 40px;
+    overflow: hidden;
+    border-radius: 6px;
+  }
+
+  .helix-header__mega-product-swatches li span {
+    display: block;
+    width: 40px;
+    height: 40px;
+    border-radius: 6px;
+    background: var(--helix-swatch-image) center / cover no-repeat;
+  }
+
+  .helix-header__mega-product-info {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 2px;
+    color: #323232;
+    font-size: 14px;
+    line-height: 22.4px;
+  }
+
+  .helix-header__mega-product-info > a {
+    overflow: hidden;
+    color: #323232;
+    font-size: 14px;
+    line-height: 22.4px;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .helix-header__mega-product-info > div {
+    display: flex;
+    align-items: baseline;
+    gap: 6px;
+  }
+
+  .helix-header__mega-product-sale-price {
+    color: #d82727;
+  }
+
+  .helix-header__mega-product-info s {
+    color: #131313;
+    font-size: 85%;
+    line-height: 1.6;
+  }
+
+  .helix-header__mega-column,
+  .helix-header__mega-promo {
+    opacity: 0;
+    transform: translate3d(0, 15px, 0);
+  }
+
+  .helix-header__dropdown[open] .helix-header__mega-column,
+  .helix-header__dropdown[open] .helix-header__mega-promo {
+    animation: helix-menu-reveal .4s ease forwards;
+  }
+
+  .helix-header__dropdown[open] .helix-header__mega-column:nth-child(1) { animation-delay: .2s; }
+  .helix-header__dropdown[open] .helix-header__mega-column:nth-child(2) { animation-delay: .25s; }
+  .helix-header__dropdown[open] .helix-header__mega-column:nth-child(3) { animation-delay: .3s; }
+  .helix-header__dropdown[open] .helix-header__mega-promo { animation-delay: .35s; }
+  .helix-header__dropdown[open] .helix-header__mega-promo:nth-child(2) { animation-delay: .4s; }
+
+  .helix-header__mega-title,
+  .helix-header__panel-label {
+    margin: 0 0 16px;
+    color: #131313;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .02em;
+    line-height: 22.4px;
+  }
+
+  .helix-header__mega-links {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .helix-header__mega-links a,
+  .helix-header__pages-panel a {
+    position: relative;
+    display: inline-flex;
+    width: max-content;
+    max-width: 100%;
+    padding-block: 0;
+    font-size: 14px;
+    line-height: 22.4px;
+    transition: color .2s ease;
+  }
+
+  .helix-header__mega-links a::after,
+  .helix-header__pages-panel a::after {
+    position: absolute;
+    right: 0;
+    bottom: -1px;
+    left: 0;
+    height: 1px;
+    background: currentColor;
+    content: '';
+    transform: scaleX(0);
+    transform-origin: right center;
+    transition: transform .2s cubic-bezier(.6, 0, .4, 1);
+  }
+
+  .helix-header__mega-links a:hover::after,
+  .helix-header__mega-links a:focus-visible::after,
+  .helix-header__pages-panel a:hover::after,
+  .helix-header__pages-panel a:focus-visible::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+
+  .helix-header__mega-column:first-child .helix-header__mega-links a {
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 25.6px;
+  }
+
+  .helix-header__mega-links a:hover,
+  .helix-header__mega-links a:focus-visible,
+  .helix-header__pages-panel a:hover,
+  .helix-header__pages-panel a:focus-visible {
+    color: rgba(26, 19, 18, .55);
+  }
+
+  .helix-header__mega-promo {
+    display: flex;
+    min-width: 0;
+    flex-direction: column;
+    gap: 16px;
+    color: #1a1312;
+  }
+
+  .helix-header__mega-promo img {
+    display: block;
+    width: 100%;
+    aspect-ratio: 1.49;
+    height: auto;
+    border-radius: 16px;
+    object-fit: cover;
+    transition: transform .55s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__mega-promo:hover img {
+    transform: scale(1.02);
+  }
+
+  .helix-header__mega-promo--fallback {
+    display: none;
+  }
+
+  .helix-header__mega-promo-content {
+    display: flex;
+    width: 100%;
+    flex-direction: column;
+    gap: 8px;
+  }
+
+  .helix-header__mega-promo-content strong {
+    font-family: 'Archivo', var(--helix-font, sans-serif);
+    font-size: 16px;
+    font-weight: 700;
+    line-height: 24px;
+  }
+
+  .helix-header__mega-promo-content span {
+    display: flex;
+    min-height: 29px;
+    align-items: center;
+    font-size: 14px;
+    font-weight: 500;
+    letter-spacing: .28px;
+    line-height: 22.4px;
+  }
+
+  .helix-header__pages-panel,
+  .helix-header__currency-panel {
+    position: absolute;
+    z-index: 9;
+    top: calc(100% + 6px);
+    right: 0;
+    width: max-content;
+    min-width: 210px;
+    padding: 15px;
+    border: 1px solid rgba(26, 19, 18, .12);
+    background: rgba(255, 255, 255, .98);
+    box-shadow: 0 16px 40px rgba(26, 19, 18, .12);
+    color: #1a1312;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(-7px);
+    transition: opacity .2s cubic-bezier(.6, .14, 0, 1), transform .3s cubic-bezier(.6, .14, 0, 1), visibility 0s linear .3s;
+    visibility: hidden;
+  }
+
+  .helix-header__dropdown[open] > .helix-header__pages-panel,
+  .helix-header__dropdown[open] > .helix-header__currency-panel {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+    transition-delay: 0s;
+    visibility: visible;
+  }
+
+  .helix-header__pages-panel {
+    top: calc(100% + 24px);
+    left: 0;
+    right: auto;
+    width: 270px;
+    min-width: 270px;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    padding: 10px 0;
+    border: 0;
+    border-radius: 16px;
+    box-shadow: 0 4px 20px rgba(0, 0, 0, .1);
+  }
+
+  .helix-header__pages-panel a {
+    width: 100%;
+    max-width: none;
+    min-height: 38.4px;
+    align-items: center;
+    padding: 8px 10px;
+    opacity: 0;
+    transform: translate3d(15px, 0, 0);
+  }
+
+  .helix-header__dropdown[open] > .helix-header__pages-panel a {
+    animation: helix-menu-link-reveal .4s ease forwards;
+  }
+
+  .helix-header__dropdown[open] > .helix-header__pages-panel a:nth-child(1) { animation-delay: .15s; }
+  .helix-header__dropdown[open] > .helix-header__pages-panel a:nth-child(2) { animation-delay: .2s; }
+  .helix-header__dropdown[open] > .helix-header__pages-panel a:nth-child(3) { animation-delay: .25s; }
+  .helix-header__dropdown[open] > .helix-header__pages-panel a:nth-child(4) { animation-delay: .3s; }
+  .helix-header__dropdown[open] > .helix-header__pages-panel a:nth-child(5) { animation-delay: .35s; }
+  .helix-header__dropdown[open] > .helix-header__pages-panel a:nth-child(6) { animation-delay: .4s; }
+
+  .helix-header__country-list {
+    display: flex;
+    max-height: 260px;
+    flex-direction: column;
+    gap: 2px;
+    overflow-y: auto;
+  }
+
+  .helix-header__country-list button {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 8px 0;
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .helix-header__country-list button span:last-child {
+    color: rgba(26, 19, 18, .55);
+    white-space: nowrap;
+  }
+
+  .helix-header__country-list button:hover,
+  .helix-header__country-list button:focus-visible {
+    color: rgba(26, 19, 18, .55);
+  }
+
+  .helix-header__scrim,
+  .helix-header__mobile-menu,
+  .helix-header__drawer {
+    position: fixed;
+    z-index: 50;
+    inset: 0;
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity .3s ease, visibility 0s linear .3s;
+  }
+
+  .helix-header__scrim {
+    width: 100%;
+    padding: 0;
+    border: 0;
+    background: rgba(20, 16, 15, .38);
+  }
+
+  .helix-header.is-mobile-menu-open .helix-header__scrim,
+  .helix-header.is-search-open .helix-header__scrim,
+  .helix-header.is-cart-open .helix-header__scrim,
+  .helix-header.is-mobile-menu-open .helix-header__mobile-menu,
+  .helix-header.is-search-open .helix-header__drawer--search,
+  .helix-header.is-cart-open .helix-header__drawer--cart {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+    transition-delay: 0s;
+  }
+
+  .helix-header__mobile-menu,
+  .helix-header__drawer {
+    display: flex;
+    justify-content: flex-start;
+  }
+
+  .helix-header__mobile-menu-panel,
+  .helix-header__drawer-panel {
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    width: min(420px, 100%);
+    height: 100%;
+    overflow: hidden;
+    padding: 24px clamp(20px, 5vw, 36px) 40px;
+    background: #fff;
+    color: #1a1312;
+    box-shadow: 10px 0 40px rgba(26, 19, 18, .14);
+    transform: translateX(-100%);
+    transition: transform .5s cubic-bezier(.6, 0, .4, 1) .05s;
+  }
+
+  .helix-header__drawer-panel {
+    overflow-y: auto;
+  }
+
+  .helix-header.is-mobile-menu-open .helix-header__mobile-menu-panel,
+  .helix-header.is-search-open .helix-header__drawer--search .helix-header__drawer-panel,
+  .helix-header.is-cart-open .helix-header__drawer--cart .helix-header__drawer-panel {
+    transform: translateX(0);
+  }
+
+  .helix-header__mobile-menu-top,
+  .helix-header__drawer-top {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 25px;
+  }
+
+  .helix-header__mobile-menu-top strong,
+  .helix-header__drawer-top strong {
+    font-size: 18px;
+    font-weight: 600;
+  }
+
+  .helix-header__mobile-menu-logo {
+    color: inherit;
+    font-size: 24px;
+    font-weight: 700;
+    letter-spacing: .04em;
+    line-height: 1;
+    text-transform: uppercase;
+  }
+
+  .helix-header__close-button {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    place-items: center;
+    border: 1px solid rgba(26, 19, 18, .18);
+    border-radius: 50%;
+    background: transparent;
+    transition: transform .25s ease, background .25s ease;
+  }
+
+  .helix-header__close-button:hover,
+  .helix-header__close-button:focus-visible {
+    background: #f4f0ed;
+    transform: rotate(90deg);
+  }
+
+  .helix-header__mobile-nav {
+    position: relative;
+    flex: 1 1 auto;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  .helix-header__mobile-nav > a,
+  .helix-header__mobile-nav > details > summary {
+    display: flex;
+    min-height: 54px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 18px;
+    padding: 12px 0;
+    border-bottom: 1px solid rgba(26, 19, 18, .14);
+    font-size: 17px;
+    font-weight: 500;
+  }
+
+  .helix-header__mobile-nav details > summary {
+    list-style: none;
+  }
+
+  .helix-header__mobile-nav details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .helix-header__mobile-nav details > summary span:last-child {
+    display: inline-flex;
+    transform: rotate(-90deg);
+    transition: transform .3s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__mobile-submenu {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    padding: 0;
+    background: #fff;
+    opacity: 0;
+    pointer-events: none;
+    transform: translateX(100%);
+    visibility: hidden;
+    transition: transform .45s cubic-bezier(.6, 0, .4, 1), opacity .25s ease, visibility 0s linear .45s;
+  }
+
+  .helix-header__mobile-nav details[open] > .helix-header__mobile-submenu {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateX(0);
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  @keyframes helix-mobile-slide-out {
+    from {
+      transform: translateX(0);
+    }
+
+    to {
+      transform: translateX(100%);
+    }
+  }
+
+  .helix-header__mobile-nav details[open] > .helix-header__mobile-submenu.is-mobile-submenu-closing {
+    opacity: 1;
+    pointer-events: none;
+    transform: translateX(100%);
+    visibility: visible;
+    animation: helix-mobile-slide-out .3s ease-in-out both;
+    transition: none;
+  }
+
+  .helix-header__mobile-submenu-header {
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    border-bottom: 1px solid rgba(26, 19, 18, .14);
+  }
+
+  .helix-header__mobile-back {
+    display: inline-flex;
+    min-height: 40px;
+    min-width: 0;
+    flex: 1;
+    align-items: center;
+    gap: 10px;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    font-size: 18px;
+    font-weight: 600;
+    text-align: left;
+  }
+
+  .helix-header__mobile-back > span:first-child {
+    display: inline-flex;
+    transform: rotate(90deg);
+  }
+
+  .helix-header__mobile-submenu-inner {
+    min-height: 0;
+    flex: 1 1 auto;
+    overflow-y: auto;
+    padding: 16px 0 30px;
+  }
+
+  .helix-header__mobile-submenu-group {
+    display: flex;
+    flex-direction: column;
+  }
+
+  .helix-header__mobile-submenu-group + .helix-header__mobile-submenu-group {
+    margin-top: 22px;
+  }
+
+  .helix-header__mobile-submenu-group a {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    padding: 10px 0;
+    border-bottom: 1px solid rgba(26, 19, 18, .12);
+    font-size: 16px;
+    line-height: 25.6px;
+  }
+
+  .helix-header__mobile-submenu-group--featured a {
+    font-weight: 600;
+  }
+
+  .helix-header__mobile-submenu-details {
+    border-bottom: 1px solid rgba(26, 19, 18, .12);
+  }
+
+  .helix-header__mobile-submenu-details > summary {
+    display: flex;
+    min-height: 56px;
+    align-items: center;
+    justify-content: space-between;
+    gap: 12px;
+    list-style: none;
+    font-size: 16px;
+  }
+
+  .helix-header__mobile-submenu-details > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .helix-header__mobile-submenu-details > summary span:last-child {
+    display: inline-flex;
+    transform: rotate(-90deg);
+    transition: transform .3s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__mobile-submenu-details[open] > summary span:last-child {
+    transform: rotate(0deg);
+  }
+
+  .helix-header__mobile-submenu-details > .helix-header__mobile-submenu--child {
+    z-index: 4;
+  }
+
+  .helix-header__mobile-submenu-details-content {
+    display: flex;
+    max-height: 0;
+    flex-direction: column;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height .35s cubic-bezier(.6, .14, 0, 1), opacity .2s ease, padding .35s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__mobile-submenu-details[open] .helix-header__mobile-submenu-details-content {
+    max-height: 360px;
+    padding-bottom: 12px;
+    opacity: 1;
+  }
+
+  .helix-header__mobile-submenu-label {
+    margin: 0 0 4px;
+    color: rgba(26, 19, 18, .58);
+    font-size: 13px;
+    font-weight: 600;
+    line-height: 20.8px;
+  }
+
+  .helix-header__mobile-menu-footer {
+    display: flex;
+    flex: 0 0 auto;
+    flex-direction: column;
+    gap: 14px;
+    padding-top: 14px;
+    border-top: 1px solid rgba(26, 19, 18, .14);
+  }
+
+  .helix-header__mobile-socials {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+  }
+
+  .helix-header__mobile-socials a {
+    display: grid;
+    width: 38px;
+    height: 38px;
+    place-items: center;
+    border-radius: 50%;
+    background: #edf0f2;
+    color: #323232;
+    transition: transform .25s ease, background .25s ease;
+  }
+
+  .helix-header__mobile-socials a:hover,
+  .helix-header__mobile-socials a:focus-visible {
+    background: #e3e7ea;
+    transform: translateY(-2px);
+  }
+
+  .helix-header__mobile-socials svg {
+    width: 18px;
+    height: 18px;
+  }
+
+  .helix-header__mobile-login {
+    display: flex;
+    min-height: 48px;
+    align-items: center;
+    justify-content: center;
+    border-radius: 9990px;
+    background: #1a1312;
+    color: #fff;
+    font-size: 14px;
+    font-weight: 500;
+  }
+
+  .helix-header__mobile-localization > summary {
+    display: flex;
+    min-height: 40px;
+    align-items: center;
+    gap: 8px;
+    list-style: none;
+    font-size: 14px;
+  }
+
+  .helix-header__mobile-localization > summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .helix-header__mobile-localization > summary span:last-child {
+    display: inline-flex;
+    margin-left: auto;
+    transform: rotate(0deg);
+    transition: transform .3s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__mobile-localization[open] > summary span:last-child {
+    transform: rotate(180deg);
+  }
+
+  .helix-header__mobile-localization-panel {
+    display: flex;
+    max-height: 0;
+    flex-direction: column;
+    gap: 2px;
+    overflow: hidden;
+    opacity: 0;
+    transition: max-height .35s cubic-bezier(.6, .14, 0, 1), opacity .2s ease, padding .35s cubic-bezier(.6, .14, 0, 1);
+  }
+
+  .helix-header__mobile-localization[open] .helix-header__mobile-localization-panel {
+    max-height: 260px;
+    padding: 8px 0 10px;
+    opacity: 1;
+  }
+
+  .helix-header__mobile-localization-panel button {
+    display: flex;
+    width: 100%;
+    justify-content: space-between;
+    padding: 8px 0;
+    border: 0;
+    background: transparent;
+    font-size: 13px;
+    text-align: left;
+  }
+
+  .helix-header__mobile-localization-panel button span {
+    color: rgba(26, 19, 18, .55);
+  }
+
+  .helix-header__mobile-submenu a:hover,
+  .helix-header__mobile-submenu a:focus-visible,
+  .helix-header__mobile-localization-panel button:hover,
+  .helix-header__mobile-localization-panel button:focus-visible {
+    color: rgba(26, 19, 18, .55);
+  }
+
+  .helix-header__mobile-submenu a,
+  .helix-header__mobile-submenu button {
+    text-align: left;
+  }
+
+  .helix-header__mobile-submenu button {
+    padding: 0;
+    border: 0;
+    background: transparent;
+  }
+
+  .helix-header__mobile-submenu button span {
+    color: inherit;
+  }
+
+  .helix-header__mobile-submenu button:hover,
+  .helix-header__mobile-submenu button:focus-visible {
+    color: rgba(26, 19, 18, .55);
+  }
+
+  .helix-header__mobile-nav details[open] > summary span:last-child {
+    transform: rotate(-90deg);
+  }
+
+  .helix-header__mobile-nav details[open] .helix-header__mobile-submenu {
+    opacity: 1;
+  }
+
+  .helix-header__drawer {
+    justify-content: flex-end;
+  }
+
+  .helix-header__drawer-panel {
+    width: min(480px, 100%);
+    padding-inline: clamp(22px, 4vw, 44px);
+    transform: translateX(100%);
+  }
+
+  .helix-header__search-form {
+    display: flex;
+    align-items: center;
+    border-bottom: 1px solid rgba(26, 19, 18, .35);
+  }
+
+  .helix-header__search-form input {
+    width: 100%;
+    min-height: 56px;
+    padding: 0;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    font-size: 20px;
+  }
+
+  .helix-header__search-form button {
+    display: grid;
+    width: 44px;
+    height: 44px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+  }
+
+  .helix-header__drawer-note {
+    margin: 30px 0 10px;
+    color: rgba(26, 19, 18, .55);
+    font-size: 11px;
+    letter-spacing: .12em;
+    text-transform: uppercase;
+  }
+
+  .helix-header__search-links {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+  }
+
+  .helix-header__search-links a,
+  .helix-header__drawer-button {
+    display: inline-flex;
+    min-height: 42px;
+    align-items: center;
+    justify-content: center;
+    padding: 8px 18px;
+    border: 1px solid rgba(26, 19, 18, .24);
+    border-radius: 999px;
+    font-size: 12px;
+    font-weight: 600;
+    transition: background .25s ease, color .25s ease, transform .25s ease;
+  }
+
+  .helix-header__search-links a:hover,
+  .helix-header__search-links a:focus-visible,
+  .helix-header__drawer-button:hover,
+  .helix-header__drawer-button:focus-visible {
+    background: #f4f0ed;
+    transform: translateY(-2px);
+  }
+
+  .helix-header__cart-message {
+    margin: 22px 0 10px;
+    font-size: 16px;
+  }
+
+  .helix-header__cart-total {
+    margin-bottom: 26px;
+    font-size: 22px;
+    font-weight: 600;
+  }
+
+  .helix-header__drawer-button--dark {
+    width: 100%;
+    border-color: #1a1312;
+    background: #1a1312;
+    color: #fff;
+  }
+
+  .helix-header__mobile-bar {
+    display: none;
+  }
+
+  .helix-header--overlay .helix-header__desktop-bar,
+  .helix-header--overlay .helix-header__mobile-bar {
+    color: var(--helix-overlay-text);
+  }
+
+  .helix-header--overlay .helix-header__logo--normal,
+  .helix-header--overlay .helix-header__logo-text--normal,
+  .helix-header--overlay .helix-header__logo--overlay,
+  .helix-header--overlay .helix-header__logo-text--overlay {
+    display: none;
+  }
+
+  .helix-header--overlay .helix-header__logo--overlay,
+  .helix-header--overlay .helix-header__logo-text--overlay {
+    display: block;
+  }
+
+  .helix-header.is-menu-open .helix-header__desktop-bar,
+  .helix-header.is-menu-open .helix-header__mobile-bar {
+    color: var(--helix-solid-text);
+  }
+
+  .helix-header.is-menu-open .helix-header__desktop-surface {
+    background: transparent;
+    box-shadow: 0 1px 0 rgba(26, 19, 18, .12);
+    color: var(--helix-solid-text);
+  }
+
+  .helix-header.is-menu-open .helix-header__menu-background {
+    height: calc(80px + var(--helix-menu-height, 0px));
+    background: #fff;
+  }
+
+  .helix-header.is-replaying-menu-reveal .helix-header__mega-panel {
+    height: 0;
+    opacity: 0;
+    pointer-events: none;
+    transition: none;
+    visibility: hidden;
+  }
+
+  .helix-header.is-menu-open .helix-header__logo--normal,
+  .helix-header.is-menu-open .helix-header__logo-text--normal {
+    display: block;
+  }
+
+  .helix-header.is-menu-open .helix-header__logo--overlay,
+  .helix-header.is-menu-open .helix-header__logo-text--overlay {
+    display: none;
+  }
+
+  .helix-header.is-scrolled .helix-header__desktop-bar,
+  .helix-header.is-scrolled .helix-header__mobile-bar {
+    position: fixed;
+    top: 0;
+  }
+
+  .helix-header:not(.helix-header--overlay).is-scrolled .helix-header__desktop-surface,
+  .helix-header:not(.helix-header--overlay).is-scrolled .helix-header__mobile-inner {
+    background: rgba(255, 255, 255, .96);
+    box-shadow: 0 1px 0 rgba(26, 19, 18, .12);
+    color: var(--helix-solid-text);
+    backdrop-filter: blur(12px);
+  }
+
+  .helix-header:not(.helix-header--overlay).is-scrolled .helix-header__logo--normal,
+  .helix-header:not(.helix-header--overlay).is-scrolled .helix-header__logo-text--normal {
+    display: block;
+  }
+
+  .helix-header:not(.helix-header--overlay).is-scrolled .helix-header__logo--overlay,
+  .helix-header:not(.helix-header--overlay).is-scrolled .helix-header__logo-text--overlay {
+    display: none;
+  }
+
+  .helix-header__logo-text {
+    text-transform: uppercase;
+  }
+
+  .helix-header__mobile-icon {
+    display: grid;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+    place-items: center;
+    border: 0;
+    background: transparent;
+    transition: opacity .25s ease, transform .25s ease;
+  }
+
+  .helix-header__mobile-icon:hover,
+  .helix-header__mobile-icon:focus-visible {
+    opacity: .62;
+    transform: translateY(-1px);
+  }
+
+  .helix-header__mobile-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+
+  @keyframes helix-menu-reveal {
+    from { opacity: 0; transform: translate3d(0, 15px, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+
+  @keyframes helix-menu-link-reveal {
+    from { opacity: 0; transform: translate3d(15px, 0, 0); }
+    to { opacity: 1; transform: translate3d(0, 0, 0); }
+  }
+
+  @media (max-width: 990px) {
+    .helix-header__desktop-bar {
+      display: none;
+    }
+
+    .helix-header__mobile-menu {
+      inset: 8px;
+      overflow: hidden;
+      border-radius: 16px;
+    }
+
+    .helix-header__mobile-menu-panel {
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border-radius: inherit;
+      box-shadow: none;
+    }
+
+    .helix-header__mobile-menu-top {
+      min-height: 69px;
+      margin: 0;
+      padding: 16px;
+      border-bottom: 1px solid rgba(26, 19, 18, .14);
+    }
+
+    .helix-header__mobile-menu-top .helix-header__close-button {
+      width: 36px;
+      height: 36px;
+      border: 0;
+    }
+
+    .helix-header__mobile-submenu-header .helix-header__close-button {
+      width: 36px;
+      height: 36px;
+      border: 0;
+    }
+
+    .helix-header__mobile-submenu--child .helix-header__close-button {
+      display: none;
+    }
+
+    .helix-header__mobile-menu-panel.is-mobile-submenu-open .helix-header__mobile-menu-top {
+      display: none;
+    }
+
+    .helix-header__mobile-nav {
+      position: static;
+      overflow: visible;
+      padding: 20px 16px 0;
+    }
+
+    .helix-header__mobile-nav > a,
+    .helix-header__mobile-nav > details > summary {
+      min-height: 56px;
+      padding: 0;
+      font-size: 16px;
+    }
+
+    .helix-header__mobile-submenu {
+      z-index: 3;
+    }
+
+    .helix-header__mobile-submenu-header {
+      box-sizing: border-box;
+      height: 69px;
+      min-height: 69px;
+      flex: 0 0 auto;
+      padding: 16px 16px 16px 12px;
+    }
+
+    .helix-header__mobile-submenu-header .helix-header__mobile-back {
+      height: 18px;
+      min-height: 18px;
+      gap: 8px;
+      font-family: 'Archivo', var(--helix-font, sans-serif);
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 17px;
+    }
+
+    .helix-header__mobile-submenu-inner {
+      padding: 20px 16px 30px;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+
+    .helix-header__mobile-submenu-inner::-webkit-scrollbar {
+      width: 0;
+      height: 0;
+      display: none;
+    }
+
+    .helix-header__mobile-submenu-group--featured {
+      gap: 8px;
+      margin-bottom: 16px;
+    }
+
+    .helix-header__mobile-submenu-group--featured a {
+      height: 25.6px;
+      min-height: 0;
+      padding: 0;
+      border-bottom: 0;
+      font-family: 'Archivo', var(--helix-font, sans-serif);
+      font-size: 16px;
+      font-weight: 700;
+      line-height: 25.6px;
+    }
+
+    .helix-header__mobile-submenu-details > summary {
+      min-height: 57.6px;
+      font-weight: 500;
+    }
+
+    .helix-header__mobile-promos {
+      display: flex;
+      flex-direction: column;
+      gap: 28px;
+      margin-top: 36px;
+    }
+
+    .helix-header__mobile-promo {
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+      color: #323232;
+    }
+
+    .helix-header__mobile-promo-media {
+      display: block;
+      overflow: hidden;
+      aspect-ratio: 1.5;
+      border-radius: 16px;
+      background: #f1f3f4;
+    }
+
+    .helix-header__mobile-promo-media img {
+      display: block;
+      width: 100%;
+      height: 100%;
+      object-fit: cover;
+    }
+
+    .helix-header__mobile-promo strong {
+      font-size: 16px;
+      line-height: 22.4px;
+    }
+
+    .helix-header__mobile-promo > span:last-child {
+      display: inline-flex;
+      width: fit-content;
+      gap: 8px;
+      font-size: 14px;
+      line-height: 22.4px;
+    }
+
+    .helix-header__mobile-products {
+      margin-top: 36px;
+    }
+
+    .helix-header__mobile-products-title {
+      margin: 0 0 24px;
+      color: #323232;
+      font-size: 18px;
+      font-weight: 700;
+      line-height: 25.2px;
+    }
+
+    .helix-header__mobile-products-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 28px 8px;
+    }
+
+    .helix-header__mobile-products .helix-header__mobile-product {
+      width: auto;
+      min-width: 0;
+      opacity: 1;
+      transform: none;
+    }
+
+    .helix-header__mobile-products .helix-header__mega-product-media {
+      background: #f1f3f4;
+    }
+
+    .helix-header__mobile-products .helix-header__mega-product-quick-view {
+      top: auto;
+      right: 8px;
+      bottom: 8px;
+      width: 32px;
+      height: 32px;
+      opacity: 1;
+      transform: none;
+    }
+
+    .helix-header__mobile-products .helix-header__mega-product-quick-view svg {
+      width: 16px;
+      height: 16px;
+    }
+
+    .helix-header__mobile-products .helix-header__mega-product-quick-add {
+      display: none;
+    }
+
+    .helix-header__mobile-products .helix-header__mega-product-details {
+      min-height: 0;
+      gap: 8px;
+      padding-top: 12px;
+    }
+
+    .helix-header__mobile-products .helix-header__mega-product-info {
+      font-size: 14px;
+      line-height: 22.4px;
+    }
+
+    .helix-header__mobile-menu-footer {
+      gap: 14px;
+      padding: 14px 16px 16px;
+    }
+
+    .helix-header__mobile-login {
+      min-height: 44px;
+    }
+
+    .helix-header__mobile-bar {
+      display: block;
+      min-height: 56px;
+    }
+
+    .helix-header__mobile-inner {
+      display: grid;
+      min-height: 56px;
+      grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+      align-items: center;
+      padding-inline: 16px;
+    }
+
+    .helix-header__mobile-side {
+      display: flex;
+      align-items: center;
+    }
+
+    .helix-header__mobile-side--left {
+      margin-left: -8px;
+    }
+
+    .helix-header__mobile-side--right {
+      justify-content: flex-end;
+      gap: 0;
+      margin-right: -8px;
+    }
+
+    .helix-header__brand--mobile {
+      justify-self: center;
+    }
+
+    .helix-header__brand--mobile .helix-header__logo-text {
+      font-size: 16px;
+    }
+
+    .helix-header__mobile-side--right .helix-header__mobile-icon {
+      width: 40px;
+      height: 40px;
+    }
+
+    .helix-header.is-scroll-hidden .helix-header__mobile-bar {
+      transform: translateY(-100%);
+    }
+
+    .helix-header__announcement {
+      padding-inline: 8px;
+    }
+
+    .helix-header__announcement-track {
+      min-width: 0;
+      width: min(330px, calc(100vw - 72px));
+    }
+
+    .helix-header__announcement-message {
+      font-size: 12px;
+      line-height: 18px;
+      white-space: nowrap;
+    }
+
+    .helix-header__announcement-side button {
+      width: 28px;
+      height: 28px;
+      font-size: 16px;
+    }
+
+    .helix-header__mega-inner {
+      padding-inline: 20px;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .helix-header *,
+    .helix-header *::before,
+    .helix-header *::after {
+      animation-duration: .01ms !important;
+      animation-iteration-count: 1 !important;
+      scroll-behavior: auto !important;
+      transition-duration: .01ms !important;
+    }
+  }
+
+  @media (max-width: 520px) {
+    .helix-header__announcement-message {
+      font-size: 11px;
+    }
+
+    .helix-header__mobile-submenu {
+      grid-template-columns: 1fr;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (() => {
+    const initHelixHeader = (root) => {
+      if (!root || root.dataset.helixReady === 'true') return;
+      root.dataset.helixReady = 'true';
+
+    const select = (selector, scope = root) => scope.querySelector(selector);
+    const selectAll = (selector, scope = root) => Array.from(scope.querySelectorAll(selector));
+    const desktopQuery = window.matchMedia('(min-width: 991px)');
+    const dropdowns = selectAll('[data-helix-dropdown]');
+    const mobileMenu = select('[data-helix-mobile-menu]');
+    const searchDrawer = select('[data-helix-search-drawer]');
+    const cartDrawer = select('[data-helix-cart-drawer]');
+    const mobileMenuPanel = select('.helix-header__mobile-menu-panel');
+    const mobileSections = selectAll('[data-helix-mobile-section]');
+    const mobileDetails = selectAll('.helix-header__mobile-nav details');
+    const mobileSubmenuSections = selectAll('.helix-header__mobile-submenu-details');
+    const searchPanel = select('.helix-header__drawer--search .helix-header__drawer-panel');
+    const cartPanel = select('.helix-header__drawer--cart .helix-header__drawer-panel');
+    let announcementIndex = 0;
+    let announcementTimer;
+    let closeDropdownTimer;
+    let lastScrollY = window.scrollY;
+    const menProducts = select('[data-helix-men-products]');
+    const menProductsViewport = select('[data-helix-men-products-viewport]', menProducts);
+    const menProductsTrack = select('[data-helix-men-products-track]', menProducts);
+    const menProductsPrev = select('[data-helix-men-products-prev]', menProducts);
+    const menProductsNext = select('[data-helix-men-products-next]', menProducts);
+    let menProductsOffset = 0;
+
+    const syncMobileSubmenuState = () => {
+      mobileMenuPanel?.classList.toggle('is-mobile-submenu-open', mobileSections.some((section) => section.open));
+    };
+
+    const getMobileSubmenuPanel = (section) => section?.querySelector(':scope > .helix-header__mobile-submenu');
+
+    const resetMobileSubmenuTransition = (section) => {
+      getMobileSubmenuPanel(section)?.classList.remove('is-mobile-submenu-closing');
+      section?.removeAttribute('data-helix-mobile-closing');
+    };
+
+    const closeMobileSubmenu = (section) => {
+      if (!section?.open) return;
+
+      const panel = getMobileSubmenuPanel(section);
+      if (!panel) {
+        section.removeAttribute('open');
+        syncMobileSubmenuState();
+        return;
+      }
+
+      if (section.dataset.helixMobileClosing === 'true') return;
+
+      section.dataset.helixMobileClosing = 'true';
+      panel.classList.add('is-mobile-submenu-closing');
+
+      let fallbackTimer;
+      let finished = false;
+      const finish = () => {
+        if (finished) return;
+        finished = true;
+        panel.removeEventListener('animationend', handleAnimationEnd);
+        window.clearTimeout(fallbackTimer);
+        panel.classList.remove('is-mobile-submenu-closing');
+        section.removeAttribute('data-helix-mobile-closing');
+        section.removeAttribute('open');
+        syncMobileSubmenuState();
+      };
+      const handleAnimationEnd = (event) => {
+        if (event.animationName === 'helix-mobile-slide-out') finish();
+      };
+
+      panel.addEventListener('animationend', handleAnimationEnd);
+      fallbackTimer = window.setTimeout(finish, 360);
+    };
+
+    const normalizeAnnouncementMessage = () => {
+      const firstMessage = select('[data-helix-announcement-message]');
+      if (!firstMessage) return;
+      const messageText = firstMessage.textContent.replace(/\\s+/g, ' ').trim();
+      if (!messageText.includes('Free shipping for all orders over') || !messageText.includes('5.000.000₫Free shipping for all orders over')) return;
+      firstMessage.innerHTML = 'Free shipping for all orders over <strong>5.000.000₫</strong>';
+    };
+
+    normalizeAnnouncementMessage();
+
+    const syncMenProducts = () => {
+      if (!menProductsViewport || !menProductsTrack) return;
+      const maxOffset = Math.max(0, menProductsTrack.scrollWidth - menProductsViewport.clientWidth);
+      menProductsOffset = Math.max(0, Math.min(menProductsOffset, maxOffset));
+      menProductsTrack.style.transform = `translate3d(-${menProductsOffset}px, 0, 0)`;
+      if (menProductsPrev) menProductsPrev.disabled = menProductsOffset <= 0;
+      if (menProductsNext) menProductsNext.disabled = menProductsOffset >= maxOffset - 1;
+    };
+
+    const stepMenProducts = (direction) => {
+      if (!menProductsViewport || !menProductsTrack) return;
+      const maxOffset = Math.max(0, menProductsTrack.scrollWidth - menProductsViewport.clientWidth);
+      menProductsOffset = Math.max(0, Math.min(maxOffset, menProductsOffset + direction * 304));
+      syncMenProducts();
+    };
+
+    menProductsPrev?.addEventListener('click', () => stepMenProducts(-1));
+    menProductsNext?.addEventListener('click', () => stepMenProducts(1));
+
+    const setBodyLock = () => {
+      const locked = dropdowns.some((dropdown) => dropdown.open) || root.classList.contains('is-mobile-menu-open') || root.classList.contains('is-search-open') || root.classList.contains('is-cart-open');
+      document.documentElement.classList.toggle('helix-header-lock', locked);
+    };
+
+    const closeDropdowns = () => {
+      dropdowns.forEach((dropdown) => {
+        dropdown.open = false;
+      });
+      root.classList.remove('is-menu-open');
+      window.setTimeout(syncDropdownState, 0);
+    };
+
+    const openLayer = (name) => {
+      closeDropdowns();
+      closeLayers();
+      const target = name === 'mobile' ? mobileMenu : name === 'search' ? searchDrawer : cartDrawer;
+      const panel = name === 'mobile' ? mobileMenuPanel : name === 'search' ? searchPanel : cartPanel;
+      if (!target) return;
+      const stateName = name === 'mobile' ? 'mobile-menu' : name;
+      root.classList.add(`is-${stateName}-open`);
+      target.setAttribute('aria-hidden', 'false');
+      panel?.focus({ preventScroll: true });
+      setBodyLock();
+      if (name === 'search') select('input[type="search"]', searchDrawer)?.focus({ preventScroll: true });
+    };
+
+    const closeLayers = () => {
+      root.classList.remove('is-mobile-menu-open', 'is-search-open', 'is-cart-open');
+      [mobileMenu, searchDrawer, cartDrawer].forEach((layer) => layer?.setAttribute('aria-hidden', 'true'));
+      mobileDetails.forEach((section) => {
+        resetMobileSubmenuTransition(section);
+        section.open = false;
+      });
+      syncMobileSubmenuState();
+      select('[data-helix-mobile-open]')?.setAttribute('aria-expanded', 'false');
+      setBodyLock();
+    };
+
+    const syncMegaPanelHeight = (dropdown) => {
+      const panel = select('[data-helix-mega-panel]', dropdown);
+      if (!panel) return 0;
+      if (!dropdown.open) {
+        panel.style.setProperty('--helix-mega-height', '0px');
+        return 0;
+      }
+      const maxHeight = Math.min(540, Math.max(0, window.innerHeight - 80));
+      const panelHeight = Math.min(Math.max(0, panel.scrollHeight - 2), maxHeight);
+      panel.style.setProperty('--helix-mega-height', `${panelHeight}px`);
+      return panelHeight;
+    };
+
+    const syncDropdownState = () => {
+      const open = dropdowns.some((dropdown) => dropdown.open);
+      root.classList.toggle('is-menu-open', open);
+      let menuHeight = 0;
+      dropdowns.forEach((dropdown) => {
+        const panelHeight = syncMegaPanelHeight(dropdown);
+        if (dropdown.open) menuHeight = panelHeight;
+      });
+      root.style.setProperty('--helix-menu-height', `${menuHeight}px`);
+      setBodyLock();
+      syncMenProducts();
+    };
+
+    const replayMegaPanelReveal = () => {
+      if (!desktopQuery.matches || !root.classList.contains('is-menu-open')) return;
+      root.classList.add('is-replaying-menu-reveal');
+      void root.offsetWidth;
+      root.classList.remove('is-replaying-menu-reveal');
+    };
+
+    dropdowns.forEach((dropdown) => {
+      const summary = select('summary', dropdown);
+      dropdown.addEventListener('toggle', syncDropdownState);
+
+      summary?.addEventListener('click', () => {
+        const url = summary.dataset.url;
+        if (url && url !== '#') {
+          window.location.href = url;
+          return;
+        }
+        window.setTimeout(syncDropdownState, 0);
+      });
+
+      dropdown.addEventListener('pointerenter', () => {
+        if (!desktopQuery.matches || !dropdown.hasAttribute('data-helix-hover-dropdown')) return;
+        window.clearTimeout(closeDropdownTimer);
+        const switchingDropdown = dropdowns.some((item) => item !== dropdown && item.open);
+        dropdowns.forEach((item) => {
+          if (item !== dropdown) item.open = false;
+        });
+        dropdown.open = true;
+        syncDropdownState();
+        if (switchingDropdown) replayMegaPanelReveal();
+      });
+
+      dropdown.addEventListener('pointerleave', () => {
+        if (!desktopQuery.matches || !dropdown.hasAttribute('data-helix-hover-dropdown')) return;
+        closeDropdownTimer = window.setTimeout(() => {
+          if (!dropdown.matches(':hover')) {
+            dropdown.open = false;
+            syncDropdownState();
+          }
+        }, 120);
+      });
+    });
+
+    mobileSections.forEach((section) => {
+      section.addEventListener('toggle', () => {
+        if (section.open) {
+          mobileSections.forEach((otherSection) => {
+            if (otherSection !== section) otherSection.open = false;
+          });
+        }
+        window.setTimeout(syncMobileSubmenuState, 0);
+      });
+    });
+
+    mobileSubmenuSections.forEach((section) => {
+      section.addEventListener('toggle', () => {
+        if (section.open) {
+          resetMobileSubmenuTransition(section);
+          mobileSubmenuSections.forEach((otherSection) => {
+            if (otherSection !== section && otherSection.parentElement === section.parentElement) otherSection.open = false;
+          });
+        }
+        window.setTimeout(syncMobileSubmenuState, 0);
+      });
+    });
+
+    document.addEventListener('click', (event) => {
+      if (!root.contains(event.target)) {
+        closeDropdowns();
+        closeLayers();
+      }
+    });
+
+    root.addEventListener('click', (event) => {
+      const searchTrigger = event.target.closest('[data-helix-open-search]');
+      const cartTrigger = event.target.closest('[data-helix-open-cart]');
+      const mobileTrigger = event.target.closest('[data-helix-mobile-open]');
+      const mobileBack = event.target.closest('[data-helix-mobile-back]');
+      const closeTrigger = event.target.closest('[data-helix-close-layer], [data-helix-close-mobile]');
+      const countryOption = event.target.closest('[data-helix-country-option]');
+
+      if (mobileBack) {
+        event.preventDefault();
+        closeMobileSubmenu(mobileBack.closest('details'));
+        return;
+      }
+
+      if (searchTrigger) {
+        event.preventDefault();
+        openLayer('search');
+      }
+
+      if (cartTrigger) {
+        event.preventDefault();
+        openLayer('cart');
+      }
+
+      if (mobileTrigger) {
+        event.preventDefault();
+        openLayer('mobile');
+        mobileTrigger.setAttribute('aria-expanded', 'true');
+      }
+
+      if (closeTrigger) {
+        event.preventDefault();
+        closeLayers();
+        select('[data-helix-mobile-open]')?.setAttribute('aria-expanded', 'false');
+      }
+
+      if (countryOption) {
+        const value = countryOption.value;
+        const countryValue = select('[data-helix-country-value]');
+        const localizationForm = select('[data-helix-localization-form]');
+        if (countryValue && localizationForm && value) {
+          countryValue.value = value;
+          localizationForm.submit();
+        }
+      }
+    });
+
+    select('[data-helix-announcement-prev]')?.addEventListener('click', () => showAnnouncement(announcementIndex - 1, -1));
+    select('[data-helix-announcement-next]')?.addEventListener('click', () => showAnnouncement(announcementIndex + 1, 1));
+
+    function showAnnouncement(index, direction = 1) {
+      const messages = selectAll('[data-helix-announcement-message]');
+      if (messages.length < 2) return;
+      announcementIndex = (index + messages.length) % messages.length;
+      messages.forEach((message, messageIndex) => {
+        message.classList.toggle('is-active', messageIndex === announcementIndex);
+        message.style.setProperty('--helix-announcement-direction', direction > 0 ? '1' : '-1');
+      });
+      restartAnnouncementTimer();
+    }
+
+    function restartAnnouncementTimer() {
+      window.clearInterval(announcementTimer);
+      const messages = selectAll('[data-helix-announcement-message]');
+      if (messages.length < 2) return;
+      announcementTimer = window.setInterval(() => showAnnouncement(announcementIndex + 1, 1), Number(root.dataset.announcementInterval) || 5000);
+    }
+
+    function updateScrollState() {
+      if (!root.classList.contains('helix-header--sticky')) return;
+      const currentScrollY = window.scrollY;
+      root.classList.toggle('is-scrolled', currentScrollY > 8);
+      if (!desktopQuery.matches) {
+        if (currentScrollY > lastScrollY + 3 && currentScrollY > 80) root.classList.add('is-scroll-hidden');
+        if (currentScrollY < lastScrollY - 3 || currentScrollY <= 8) root.classList.remove('is-scroll-hidden');
+      } else {
+        root.classList.remove('is-scroll-hidden');
+      }
+      lastScrollY = currentScrollY;
+    }
+
+    document.addEventListener('keydown', (event) => {
+      if (event.key !== 'Escape') return;
+      closeDropdowns();
+      closeLayers();
+      select('[data-helix-mobile-open]')?.setAttribute('aria-expanded', 'false');
+    });
+
+    window.addEventListener('scroll', updateScrollState, { passive: true });
+    window.addEventListener('resize', () => {
+      if (desktopQuery.matches) root.classList.remove('is-scroll-hidden');
+      syncDropdownState();
+      syncMenProducts();
+    });
+
+    restartAnnouncementTimer();
+      updateScrollState();
+    };
+
+    const bootHelixHeaders = () => {
+      document.querySelectorAll('[data-helix-header]').forEach(initHelixHeader);
+    };
+
+    if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', bootHelixHeaders);
+    else bootHelixHeaders();
+    document.addEventListener('shopify:section:load', bootHelixHeaders);
+  })();
+{% endjavascript %}
 
 {% schema %}
 {
-  "name": "Header",
-  "max_blocks": 16,
-  "enabled_on": {
-    "groups": [
-      "header"
-    ]
-  },
+  "name": "Helix header",
   "settings": [
     {
-      "type": "header",
-      "content": "General"
+      "type": "font_picker",
+      "id": "font_family",
+      "label": "Typography",
+      "default": "figtree_n4"
     },
     {
-      "type": "paragraph",
-      "content": "Edit your logo in [theme settings](https://admin.shopify.com/store/omnise-themes-omniselle/themes/191561531764/editor?context=theme&category=gid%3A%2F%2Fshopify%2FOnlineStoreThemeSettingsCategory%2FLogo%3Ftheme_id%3D191561531764%26first_setting_id%3Dlogo)."
+      "type": "image_picker",
+      "id": "logo",
+      "label": "Desktop logo"
     },
     {
-      "type": "link_list",
-      "id": "menu",
-      "label": "Menu",
-      "default": "main-menu"
+      "type": "image_picker",
+      "id": "transparent_logo",
+      "label": "Transparent/white desktop logo"
     },
     {
-      "type": "select",
-      "id": "dropdown_trigger",
-      "label": "Dropdown menu trigger",
-      "options": [
-        { "value": "click", "label": "Click" },
-        { "value": "hover", "label": "Hover" }
-      ],
-      "default": "hover"
+      "type": "image_picker",
+      "id": "mobile_logo",
+      "label": "Mobile logo"
+    },
+    {
+      "type": "image_picker",
+      "id": "mobile_transparent_logo",
+      "label": "Transparent/white mobile logo"
+    },
+    {
+      "type": "range",
+      "id": "logo_width",
+      "label": "Desktop logo width",
+      "min": 90,
+      "max": 160,
+      "step": 1,
+      "unit": "px",
+      "default": 110
+    },
+    {
+      "type": "range",
+      "id": "mobile_logo_width",
+      "label": "Mobile logo width",
+      "min": 70,
+      "max": 120,
+      "step": 1,
+      "unit": "px",
+      "default": 90
+    },
+    {
+      "type": "text",
+      "id": "logo_text",
+      "label": "Text logo fallback",
+      "default": "HELIX"
     },
     {
       "type": "checkbox",
-      "id": "underline_active_link",
-      "label": "Underline active link",
-      "default": false
+      "id": "overlay_header",
+      "label": "Overlay header on hero",
+      "default": true
     },
     {
-      "type": "select",
-      "id": "header_layout",
-      "label": "Header layout",
-      "options": [
-        { "value": "left", "label": "Logo left" },
-        { "value": "center", "label": "Logo center" }
-      ],
-      "default": "center"
+      "type": "checkbox",
+      "id": "sticky_header",
+      "label": "Keep header sticky",
+      "default": true
     },
     {
-      "type": "select",
-      "id": "header_style",
-      "label": "Header style",
-      "options": [
-        { "value": "none", "label": "Normal" },
-        { "value": "floating", "label": "Floating" },
-        { "value": "transparent", "label": "Transparent" }
-      ],
-      "default": "none"
+      "type": "color",
+      "id": "overlay_text_color",
+      "label": "Overlay text color",
+      "default": "#ffffff"
     },
     {
-      "type": "select",
-      "id": "sticky_behavior",
-      "label": "Sticky behavior",
-      "options": [
-        {
-          "value": "none",
-          "label": "None"
-        },
-        {
-          "value": "always",
-          "label": "Always"
-        }
-      ],
-      "default": "none"
+      "type": "color",
+      "id": "solid_text_color",
+      "label": "Solid header text color",
+      "default": "#1e1e1e"
     },
-    { "type": "range", "id": "height_desktop", "min": 64, "max": 112, "step": 2, "unit": "px", "label": "Desktop height", "default": 84 },
-    { "type": "range", "id": "height_mobile", "min": 52, "max": 84, "step": 2, "unit": "px", "label": "Mobile height", "default": 60 },
-    { "type": "header", "content": "Actions" },
-    { "type": "checkbox", "id": "show_search", "label": "Show search", "default": true },
-    { "type": "checkbox", "id": "show_localization", "label": "Show country and currency", "default": true },
-    { "type": "checkbox", "id": "show_country_flag", "label": "Show country flag", "default": true },
-    { "type": "checkbox", "id": "show_account", "label": "Show account", "default": true },
     {
-      "type": "select",
-      "id": "account_action",
-      "label": "Account icon action",
-      "options": [
-        { "value": "panel", "label": "Open account panel" },
-        { "value": "redirect", "label": "Redirect to account page" },
-        { "value": "new_tab", "label": "Open account page in new tab" },
-        { "value": "custom_url", "label": "Open custom URL" }
-      ],
-      "default": "panel"
+      "type": "checkbox",
+      "id": "show_announcement",
+      "label": "Show announcement bar",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "announcement_message_1",
+      "label": "Announcement message 1",
+      "default": "Free shipping for all orders over 5.000.000₫"
+    },
+    {
+      "type": "text",
+      "id": "announcement_emphasis_1",
+      "label": "Announcement 1 bold text",
+      "default": "5.000.000₫"
+    },
+    {
+      "type": "text",
+      "id": "announcement_message_2",
+      "label": "Announcement message 2",
+      "default": "Receive 20% off your first order. Shop now"
+    },
+    {
+      "type": "text",
+      "id": "announcement_emphasis_2",
+      "label": "Announcement 2 bold text"
+    },
+    {
+      "type": "range",
+      "id": "announcement_interval",
+      "label": "Announcement interval",
+      "min": 3,
+      "max": 15,
+      "step": 1,
+      "unit": "s",
+      "default": 5
+    },
+    {
+      "type": "color",
+      "id": "announcement_background",
+      "label": "Announcement background",
+      "default": "#d3f285"
+    },
+    {
+      "type": "color",
+      "id": "announcement_text_color",
+      "label": "Announcement text color",
+      "default": "#1a1312"
+    },
+    {
+      "type": "text",
+      "id": "women_label",
+      "label": "Women label",
+      "default": "Women"
     },
     {
       "type": "url",
-      "id": "account_custom_url",
-      "label": "Custom URL",
-      "visible_if": "{{ section.settings.account_action == 'custom_url' }}"
-    },
-    { "type": "checkbox", "id": "show_cart", "label": "Show cart", "default": true },
-    {
-      "type": "header",
-      "content": "Customer account"
+      "id": "women_url",
+      "label": "Women link"
     },
     {
-      "type": "paragraph",
-      "content": "[Manage visibility](https://admin.shopify.com/store/spinel-theme/settings/customer_accounts) in customer account settings. Legacy accounts not supported."
+      "type": "image_picker",
+      "id": "women_banner",
+      "label": "Women mega menu image"
     },
     {
-      "type": "link_list",
-      "id": "customer_account_menu",
-      "label": "Menu",
-      "default": "customer-account-main-menu"
+      "type": "text",
+      "id": "women_banner_title",
+      "label": "Women mega menu title",
+      "default": "Find your favourites"
     },
     {
-      "type": "header",
-      "content": "Appearance"
+      "type": "text",
+      "id": "men_label",
+      "label": "Men label",
+      "default": "Men"
     },
     {
-      "type": "color_scheme",
-      "id": "color_scheme",
-      "label": "Color scheme",
-      "default": "scheme-1",
-      "visible_if": "{{ section.settings.header_style != 'transparent' }}"
+      "type": "url",
+      "id": "men_url",
+      "label": "Men link"
     },
     {
-      "type": "color_scheme",
-      "id": "transparent_color_scheme",
-      "label": "Transparent header color scheme",
-      "default": "scheme-3",
-      "visible_if": "{{ section.settings.header_style == 'transparent' }}"
-    }
-  ],
-  "blocks": [
-    {
-      "type": "menu_badge",
-      "name": "Menu badge",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Menu badge"
-        },
-        {
-          "type": "text",
-          "id": "menu_item",
-          "label": "Menu item title",
-          "info": "Must exactly match a top-level menu item."
-        },
-        {
-          "type": "text",
-          "id": "text",
-          "label": "Badge text",
-          "default": "New"
-        }
-      ]
+      "type": "image_picker",
+      "id": "men_banner",
+      "label": "Men mega menu image"
     },
     {
-      "type": "mega_menu",
-      "name": "Mega menu",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Mega menu"
-        },
-        {
-          "type": "text",
-          "id": "menu_item",
-          "label": "Top-level menu item",
-          "info": "Enter one or more top-level menu item titles, separated by semicolons (for example: Collection;Shop). Each item must have child links."
-        },
-        {
-          "type": "select",
-          "id": "text_size",
-          "label": "Text size",
-          "options": [
-            { "value": "small", "label": "Small" },
-            { "value": "medium", "label": "Medium" },
-            { "value": "large", "label": "Large" }
-          ],
-          "default": "medium"
-        },
-        {
-          "type": "text",
-          "id": "column_heading",
-          "label": "Column heading",
-          "default": "Product categories"
-        },
-        {
-          "type": "select",
-          "id": "columns",
-          "label": "Desktop columns",
-          "options": [
-            {
-              "value": "2",
-              "label": "2"
-            },
-            {
-              "value": "3",
-              "label": "3"
-            },
-            {
-              "value": "4",
-              "label": "4"
-            }
-          ],
-          "default": "3"
-        },
-        {
-          "type": "header",
-          "content": "Promotion 1"
-        },
-        {
-          "type": "image_picker",
-          "id": "promotion_1_image",
-          "label": "Image"
-        },
-        {
-          "type": "text",
-          "id": "promotion_1_heading",
-          "label": "Heading"
-        },
-        {
-          "type": "select",
-          "id": "promotion_1_heading_size",
-          "label": "Heading size",
-          "options": [
-            { "value": "h1", "label": "XX-large" },
-            { "value": "h2", "label": "X-large" },
-            { "value": "h3", "label": "Large" },
-            { "value": "h4", "label": "Medium" },
-            { "value": "h5", "label": "Small" },
-            { "value": "h6", "label": "X-small" }
-          ],
-          "default": "h4"
-        },
-        {
-          "type": "select",
-          "id": "promotion_1_heading_tag",
-          "label": "HTML Tag",
-          "options": [
-            { "value": "h1", "label": "H1" },
-            { "value": "h2", "label": "H2" },
-            { "value": "h3", "label": "H3" },
-            { "value": "h4", "label": "H4" },
-            { "value": "h5", "label": "H5" },
-            { "value": "h6", "label": "H6" }
-          ],
-          "default": "h3"
-        },
-        {
-          "type": "richtext",
-          "id": "promotion_1_text",
-          "label": "Text"
-        },
-        {
-          "type": "select",
-          "id": "promotion_1_text_size",
-          "label": "Text size",
-          "options": [
-            { "value": "x-large", "label": "X-large" },
-            { "value": "large", "label": "Large" },
-            { "value": "medium", "label": "Medium" },
-            { "value": "small", "label": "Small" },
-            { "value": "x-small", "label": "X-small" }
-          ],
-          "default": "medium"
-        },
-        {
-          "type": "text_alignment",
-          "id": "promotion_1_text_alignment",
-          "label": "Alignment",
-          "default": "left"
-        },
-        {
-          "type": "text",
-          "id": "promotion_1_link_label",
-          "label": "Link label"
-        },
-        {
-          "type": "url",
-          "id": "promotion_1_link",
-          "label": "Link"
-        },
-        {
-          "type": "header",
-          "content": "Promotion 2"
-        },
-        {
-          "type": "image_picker",
-          "id": "promotion_2_image",
-          "label": "Image"
-        },
-        {
-          "type": "text",
-          "id": "promotion_2_heading",
-          "label": "Heading"
-        },
-        {
-          "type": "select",
-          "id": "promotion_2_heading_size",
-          "label": "Heading size",
-          "options": [
-            { "value": "h1", "label": "XX-large" },
-            { "value": "h2", "label": "X-large" },
-            { "value": "h3", "label": "Large" },
-            { "value": "h4", "label": "Medium" },
-            { "value": "h5", "label": "Small" },
-            { "value": "h6", "label": "X-small" }
-          ],
-          "default": "h4"
-        },
-        {
-          "type": "select",
-          "id": "promotion_2_heading_tag",
-          "label": "HTML Tag",
-          "options": [
-            { "value": "h1", "label": "H1" },
-            { "value": "h2", "label": "H2" },
-            { "value": "h3", "label": "H3" },
-            { "value": "h4", "label": "H4" },
-            { "value": "h5", "label": "H5" },
-            { "value": "h6", "label": "H6" }
-          ],
-          "default": "h3"
-        },
-        {
-          "type": "richtext",
-          "id": "promotion_2_text",
-          "label": "Text"
-        },
-        {
-          "type": "select",
-          "id": "promotion_2_text_size",
-          "label": "Text size",
-          "options": [
-            { "value": "x-large", "label": "X-large" },
-            { "value": "large", "label": "Large" },
-            { "value": "medium", "label": "Medium" },
-            { "value": "small", "label": "Small" },
-            { "value": "x-small", "label": "X-small" }
-          ],
-          "default": "medium"
-        },
-        {
-          "type": "text_alignment",
-          "id": "promotion_2_text_alignment",
-          "label": "Alignment",
-          "default": "left"
-        },
-        {
-          "type": "text",
-          "id": "promotion_2_link_label",
-          "label": "Link label"
-        },
-        {
-          "type": "url",
-          "id": "promotion_2_link",
-          "label": "Link"
-        }
-      ]
+      "type": "text",
+      "id": "men_banner_title",
+      "label": "Men mega menu title",
+      "default": "The everyday edit"
+    },
+    {
+      "type": "text",
+      "id": "pages_label",
+      "label": "Pages label",
+      "default": "Pages"
+    },
+    {
+      "type": "url",
+      "id": "pages_about_url",
+      "label": "About us link"
+    },
+    {
+      "type": "url",
+      "id": "pages_contact_url",
+      "label": "Contact link"
+    },
+    {
+      "type": "url",
+      "id": "pages_faq_url",
+      "label": "Faqs link"
+    },
+    {
+      "type": "url",
+      "id": "pages_store_url",
+      "label": "Store locations link"
+    },
+    {
+      "type": "url",
+      "id": "pages_recent_url",
+      "label": "Recently viewed link"
+    },
+    {
+      "type": "url",
+      "id": "pages_journal_url",
+      "label": "Our journal link"
+    },
+    {
+      "type": "text",
+      "id": "find_shoes_label",
+      "label": "Find your shoes label",
+      "default": "Find your shoes"
+    },
+    {
+      "type": "url",
+      "id": "find_shoes_url",
+      "label": "Find your shoes link"
+    },
+    {
+      "type": "url",
+      "id": "trending_url",
+      "label": "Trending link"
+    },
+    {
+      "type": "url",
+      "id": "best_sellers_url",
+      "label": "Best sellers link"
+    },
+    {
+      "type": "url",
+      "id": "sale_url",
+      "label": "On sale link"
     }
   ],
   "presets": [
     {
-      "name": "Header",
-      "category": "Theme layout",
-      "blocks": [
-        {
-          "type": "mega_menu",
-          "settings": {
-            "menu_item": "Collection",
-            "text_size": "medium",
-            "column_heading": "",
-            "columns": "3",
-            "promotion_1_heading": "New Arrivals",
-            "promotion_1_heading_size": "h4",
-            "promotion_1_heading_tag": "h3",
-            "promotion_1_text": "<p>Discover the latest pieces, selected for everyday use and lasting style.</p>",
-            "promotion_1_text_size": "medium",
-            "promotion_1_text_alignment": "left",
-            "promotion_1_link_label": "SHOP NEW ARRIVALS",
-            "promotion_1_link": "/collections/new-arrivals",
-            "promotion_2_heading": "Best Sellers",
-            "promotion_2_heading_size": "h4",
-            "promotion_2_heading_tag": "h3",
-            "promotion_2_text": "<p>Explore customer favorites loved for their exceptional craftsmanship and lasting beauty.</p>",
-            "promotion_2_text_size": "medium",
-            "promotion_2_text_alignment": "left",
-            "promotion_2_link_label": "SHOP BEST SELLERS",
-            "promotion_2_link": "/collections/best-sellers"
-          }
-        }
-      ]
+      "name": "Helix header"
     }
   ]
 }
