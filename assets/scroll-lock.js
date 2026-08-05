@@ -24,6 +24,16 @@
     return 'modal';
   };
 
+  const isImperativeOwnerActive = (owner) => {
+    if (owner === 'mega-menu') return Boolean(document.querySelector('.header__submenu-disclosure[open]'));
+    if (owner === 'mobile-menu') {
+      return Boolean(document.querySelector(
+        '[data-header-mobile-drawer][data-open="true"], [data-header-mobile-drawer][data-motion-state="closing"]',
+      ));
+    }
+    return true;
+  };
+
   const setScrollbarVariables = (width) => {
     const value = `${Math.max(0, width)}px`;
     root.style.setProperty('--scrollbar-width', value);
@@ -42,7 +52,14 @@
   };
 
   const getActiveModes = () => {
-    const modes = new Set(imperativeOwners.values());
+    const modes = new Set();
+    imperativeOwners.forEach((mode, owner) => {
+      if (!isImperativeOwnerActive(owner)) {
+        imperativeOwners.delete(owner);
+        return;
+      }
+      modes.add(mode);
+    });
     document.querySelectorAll('[scroll-lock][open], [scroll-lock].is-open, [scroll-lock].is-closing').forEach((element) => {
       modes.add(ownerMode(getDeclarativeOwner(element)));
     });
@@ -114,6 +131,10 @@
   const update = () => {
     updateQueued = false;
     const activeModes = getActiveModes();
+    if (!activeModes.has('overflow')) {
+      root.classList.remove('header-menu-scroll-locked');
+      body.classList.remove('header-menu-scroll-locked');
+    }
     if (!activeModes.size) {
       unlock();
       return;
@@ -150,6 +171,7 @@
   document.addEventListener('click', measureScrollbarWidth, true);
   window.addEventListener('resize', measureScrollbarWidth);
   window.addEventListener('pageshow', scheduleUpdate);
+  document.addEventListener('shopify:section:unload', () => window.setTimeout(update, 0), true);
 
   window.themeScrollLock = {
     acquire(owner, options = {}) {

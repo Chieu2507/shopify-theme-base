@@ -6,28 +6,6 @@ if (!window.__spinelProductEditorScrollGuard) {
   window.__spinelProductEditorScrollGuard = true;
   const sectionScrollPositions = new Map();
   const pendingScrollRestorations = new Map();
-  let editorScrollLock = null;
-  const lockEditorScroll = (scrollTop) => {
-    if (editorScrollLock || !document.body) return;
-    const bodyStyle = document.body.style;
-    editorScrollLock = {
-      position: bodyStyle.position,
-      top: bodyStyle.top,
-      width: bodyStyle.width,
-    };
-    bodyStyle.position = 'fixed';
-    bodyStyle.top = `-${scrollTop}px`;
-    bodyStyle.width = '100%';
-  };
-  const unlockEditorScroll = (scrollTop) => {
-    if (!editorScrollLock || !document.body) return;
-    const bodyStyle = document.body.style;
-    bodyStyle.position = editorScrollLock.position;
-    bodyStyle.top = editorScrollLock.top;
-    bodyStyle.width = editorScrollLock.width;
-    editorScrollLock = null;
-    window.scrollTo({ top: scrollTop, behavior: 'auto' });
-  };
   const restoreScrollPosition = (scrollTop) => {
     const restore = () => window.scrollTo({ top: scrollTop, behavior: 'auto' });
     let frame = 0;
@@ -45,15 +23,17 @@ if (!window.__spinelProductEditorScrollGuard) {
     window.setTimeout(() => {
       if (pendingScrollRestorations.get(sectionId) === scrollTop) pendingScrollRestorations.delete(sectionId);
     }, 1000);
-    window.setTimeout(() => unlockEditorScroll(scrollTop), 500);
-    window.setTimeout(() => unlockEditorScroll(scrollTop), 1500);
   };
   const getProductPage = (target, sectionId) => {
+    const matchesSection = (productPage) => (
+      productPage && (!sectionId || productPage.dataset.sectionId === sectionId)
+    );
+
     if (target instanceof Element) {
-      if (target.matches('product-page')) return target;
+      if (target.matches('product-page') && matchesSection(target)) return target;
       const parentProductPage = target.closest('product-page');
-      if (parentProductPage) return parentProductPage;
-      const productPage = target.querySelector('product-page');
+      if (matchesSection(parentProductPage)) return parentProductPage;
+      const productPage = Array.from(target.querySelectorAll('product-page')).find(matchesSection);
       if (productPage) return productPage;
     }
     return sectionId ? document.querySelector(`product-page[data-section-id="${CSS.escape(sectionId)}"]`) : null;
@@ -63,17 +43,15 @@ if (!window.__spinelProductEditorScrollGuard) {
   document.addEventListener('shopify:section:unload', (event) => {
     if (!window.Shopify?.designMode) return;
     const productPage = getProductPage(event.target, event.detail?.sectionId);
+    if (!productPage) return;
     const sectionId = getSectionId(event, productPage);
-    if (sectionId) {
-      const scrollTop = window.scrollY;
-      sectionScrollPositions.set(sectionId, scrollTop);
-      lockEditorScroll(scrollTop);
-    }
+    if (sectionId) sectionScrollPositions.set(sectionId, window.scrollY);
   }, true);
 
   document.addEventListener('shopify:section:load', (event) => {
     if (!window.Shopify?.designMode) return;
     const productPage = getProductPage(event.target, event.detail?.sectionId);
+    if (!productPage) return;
     const sectionId = getSectionId(event, productPage);
     const scrollTop = sectionId ? sectionScrollPositions.get(sectionId) : undefined;
     if (!Number.isFinite(scrollTop)) return;
