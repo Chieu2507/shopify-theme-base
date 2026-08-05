@@ -1,6 +1,10 @@
 if (!window.SpinelHeaderMenus) {
   window.SpinelHeaderMenus = true;
   const megaMenuAnimations = new WeakMap();
+  const desktopMegaMenuMotions = new WeakMap();
+  const desktopMegaMenuRevealEnds = new WeakMap();
+  const desktopMegaMenuResizeObservers = new WeakMap();
+  const desktopMegaMenuHeightTimers = new WeakMap();
   const mobileMegaMenuMotions = new WeakMap();
   const mobileDrawerMotions = new WeakMap();
   const megaMenuHoverTimers = new WeakMap();
@@ -8,10 +12,14 @@ if (!window.SpinelHeaderMenus) {
   const mobileMenuReturnFocus = new WeakMap();
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   const headerHoverCloseDelay = 500;
-  // Temporary visual test: render mega menus without Web Animations API motion.
-  const disableMegaMenuWebAnimations = true;
+  const desktopMegaMenuHoverCloseDelay = 120;
+  const desktopMegaMenuTransitionDuration = 300;
+  // Keep the current mobile and non-mega baseline; desktop mega menus use the CSS motion below.
+  const disableLegacyMegaMenuWebAnimations = true;
   let transparentHeaderFrame = 0;
   let headerScrollLockFallbackStyles = null;
+  let headerBreakpointFocusContext = null;
+  let wasMobileHeaderViewport = window.matchMedia('(max-width: 899px)').matches;
 
   const isMobileHeaderViewport = () => window.matchMedia('(max-width: 899px)').matches;
 
@@ -170,6 +178,19 @@ if (!window.SpinelHeaderMenus) {
     const body = document.body;
     root.classList.toggle('header-menu-overlay-visible', shouldShowOverlay);
     root.classList.toggle('header-menu-overlay-closing', isMobile && Boolean(closingMobileDrawer));
+    document.querySelectorAll('[data-header-menu-overlay]').forEach((overlay) => {
+      const header = document.getElementById(overlay.dataset.headerMenuOverlay);
+      const drawer = overlay.closest('[data-header-mobile-drawer]')
+        || getMobileDrawer(header?.querySelector(':scope > .header__inner > .header__menu-disclosure'));
+      const isOwnedMobileOverlay = overlay.matches('.header__menu-overlay--mobile');
+      const isOwnedDesktopOverlay = overlay.matches('.header__menu-overlay--desktop');
+      const isDrawerClosing = drawer?.dataset.motionState === 'closing';
+      const overlayVisible = isMobile
+        ? isOwnedMobileOverlay && drawer?.dataset.open === 'true' && !isDrawerClosing
+        : isOwnedDesktopOverlay && Boolean(header?.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])'));
+      overlay.toggleAttribute('data-visible', Boolean(overlayVisible));
+      overlay.toggleAttribute('data-closing', Boolean(isMobile && isOwnedMobileOverlay && isDrawerClosing));
+    });
 
     if (shouldLock && !isLocked) window.SpinelSmoothScroll?.cancel();
 
@@ -245,7 +266,7 @@ if (!window.SpinelHeaderMenus) {
     if (!isTransparentHeader) return;
 
     const hasOpenDesktopMenu = !isMobileHeaderViewport()
-      && Boolean(header.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])'));
+      && Boolean(header.querySelector('.header__submenu-disclosure[open]'));
     const showSurface = isScrolled || hasOpenDesktopMenu;
     header.classList.toggle('header--surface-visible', showSurface);
     setTransparentHeaderColorScheme(header, showSurface);
@@ -270,17 +291,69 @@ if (!window.SpinelHeaderMenus) {
   initializeResponsiveHeaders();
   window.addEventListener('scroll', scheduleResponsiveHeaderSync, { passive: true });
   window.addEventListener('resize', () => {
+    const isMobile = isMobileHeaderViewport();
+    const crossedHeaderBreakpoint = isMobile !== wasMobileHeaderViewport;
+    wasMobileHeaderViewport = isMobile;
     scheduleResponsiveHeaderSync();
-    syncHeaderMenuScrollLock();
-    if (!isMobileHeaderViewport()) {
+    if (crossedHeaderBreakpoint) {
+      const breakpointFocusTargets = [];
+      document.querySelectorAll('[data-header]').forEach((header) => {
+        const activeElement = document.activeElement;
+        const activeDisclosure = activeElement?.closest?.(
+          '.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open], [data-header-mobile-drawer][data-open="true"]'
+        );
+        const rememberedOwner = headerBreakpointFocusContext?.header === header
+          ? headerBreakpointFocusContext.owner
+          : null;
+        const rememberedOwnerIsOpen = rememberedOwner?.matches?.('details')
+          ? rememberedOwner.open
+          : rememberedOwner?.dataset.open === 'true';
+        if ((!activeDisclosure || !header.contains(activeElement)) && !rememberedOwnerIsOpen) return;
+        const focusTarget = isMobile
+          ? header.querySelector(':scope > .header__inner > .header__menu-disclosure > summary')
+          : header.querySelector('.header__submenu-disclosure > summary')
+            || Array.from(header.querySelectorAll('.header__navigation a[href], .header__navigation button:not([disabled])'))
+              .find((element) => element.getClientRects().length > 0);
+        if (focusTarget) breakpointFocusTargets.push(focusTarget);
+      });
+      document.querySelectorAll('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(clearMegaMenuHoverTimer);
       document.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => closeMegaMenu(details, true));
+      document.querySelectorAll('.header__submenu-disclosure--mega').forEach(resetDesktopMegaMenuPresentation);
+      document.querySelectorAll('[data-header]').forEach(resetDesktopMegaMenuBackground);
+      if (breakpointFocusTargets.length) {
+        window.requestAnimationFrame(() => {
+          if (breakpointFocusTargets[0].isConnected) focusWithoutScroll(breakpointFocusTargets[0]);
+        });
+      }
+    } else if (!isMobile) {
+      document.querySelectorAll('.header__submenu-disclosure--mega[open]:not([data-closing="true"])').forEach(syncDesktopMegaMenuPanelHeight);
     }
     document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => {
-      if (!isMobileHeaderViewport()) mobileDrawerMotions.get(disclosure)?.finish();
+      if (crossedHeaderBreakpoint) {
+        clearMobileDrawerMotion(disclosure);
+        disclosure.open = false;
+        const drawer = getMobileDrawer(disclosure);
+        if (drawer) drawer.dataset.motionState = 'closed';
+      } else if (!isMobile) {
+        mobileDrawerMotions.get(disclosure)?.finish();
+      }
       syncMobileDrawer(disclosure);
     });
+    syncHeaderMenuScrollLock();
   });
   document.addEventListener('shopify:section:load', (event) => initializeResponsiveHeaders(event.target));
+
+  document.addEventListener('focusin', (event) => {
+    const header = event.target.closest?.('[data-header]');
+    if (!header) {
+      headerBreakpointFocusContext = null;
+      return;
+    }
+    const owner = event.target.closest?.(
+      '.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open], [data-header-mobile-drawer][data-open="true"]'
+    );
+    headerBreakpointFocusContext = owner ? { header, owner } : null;
+  });
 
   const revealHeaderForCartFeedback = (duration = 2200) => {
     document.querySelectorAll('[data-header]').forEach((header) => {
@@ -396,6 +469,272 @@ if (!window.SpinelHeaderMenus) {
     return opening ? frames : frames.slice().reverse();
   };
 
+  const usesDesktopMegaMenuCssMotion = (details) => (
+    !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure--mega')
+  );
+
+  const getDesktopMegaMenuPanel = (details) => details.querySelector(':scope > .header__mega-panel');
+
+  const resetDesktopMegaMenuBackground = (header) => {
+    if (!header) return;
+    header.classList.remove('is-menu-open');
+    header.style.removeProperty('--header-mega-background-height');
+  };
+
+  const measureDesktopMegaMenuPanelHeight = (details) => {
+    const panel = getDesktopMegaMenuPanel(details);
+    if (!panel) return 0;
+    const availableHeight = Math.max(0, document.documentElement.clientHeight - panel.getBoundingClientRect().top);
+    return Math.ceil(Math.min(Math.max(0, panel.scrollHeight), availableHeight));
+  };
+
+  const syncDesktopMegaMenuBackground = (header, preferredDetails, preferredHeight) => {
+    if (!header || isMobileHeaderViewport()) {
+      resetDesktopMegaMenuBackground(header);
+      return 0;
+    }
+
+    const preferredIsActive = preferredDetails?.open && preferredDetails.dataset.closing !== 'true';
+    const activeDetails = preferredIsActive
+      ? preferredDetails
+      : header.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])');
+    if (!activeDetails) {
+      const closingDetails = header.querySelector('.header__submenu-disclosure--mega[open][data-closing="true"]');
+      if (closingDetails) {
+        header.style.setProperty('--header-mega-background-height', '0px');
+        header.classList.add('is-menu-open');
+      } else {
+        resetDesktopMegaMenuBackground(header);
+      }
+      return 0;
+    }
+
+    const panelHeight = activeDetails === preferredDetails && Number.isFinite(preferredHeight)
+      ? preferredHeight
+      : measureDesktopMegaMenuPanelHeight(activeDetails);
+    header.style.setProperty('--header-mega-background-height', `${panelHeight}px`);
+    header.classList.add('is-menu-open');
+    return panelHeight;
+  };
+
+  const clearDesktopMegaMenuMotion = (details, result = false) => {
+    const state = desktopMegaMenuMotions.get(details);
+    if (!state) return;
+    if (state.frame) window.cancelAnimationFrame(state.frame);
+    window.clearTimeout(state.timer);
+    state.panel.removeEventListener('transitionend', state.onTransitionEnd);
+    desktopMegaMenuMotions.delete(details);
+    state.resolve(result);
+  };
+
+  const clearDesktopMegaMenuRevealDelays = (details) => {
+    getDesktopMegaMenuPanel(details)?.querySelectorAll(
+      '.header__mega-heading, .header__mega-list, .header__mega-promo'
+    ).forEach((element) => element.style.removeProperty('--header-mega-reveal-delay'));
+  };
+
+  const clearDesktopMegaMenuHeightGuard = (details) => {
+    const timer = desktopMegaMenuHeightTimers.get(details);
+    if (!timer) return;
+    window.clearTimeout(timer);
+    desktopMegaMenuHeightTimers.delete(details);
+    delete details.dataset.opening;
+  };
+
+  const resetDesktopMegaMenuPresentation = (details) => {
+    clearDesktopMegaMenuMotion(details);
+    clearDesktopMegaMenuHeightGuard(details);
+    desktopMegaMenuRevealEnds.delete(details);
+    delete details.dataset.opening;
+    delete details.dataset.closing;
+    delete details.dataset.megaPanelVisible;
+    const panel = getDesktopMegaMenuPanel(details);
+    panel?.style.removeProperty('height');
+    panel?.style.removeProperty('--header-mega-panel-height');
+    if (panel) panel.inert = false;
+    clearDesktopMegaMenuRevealDelays(details);
+  };
+
+  const updateDesktopMegaMenuRevealDelays = (details) => {
+    const panel = getDesktopMegaMenuPanel(details);
+    if (!panel) return;
+    const heading = panel.querySelector('.header__mega-heading');
+    const columns = Array.from(panel.querySelectorAll('.header__mega-list'));
+    const promotions = Array.from(panel.querySelectorAll('.header__mega-promo'));
+    heading?.style.setProperty('--header-mega-reveal-delay', '200ms');
+    columns.forEach((column, index) => {
+      column.style.setProperty('--header-mega-reveal-delay', `${200 + (index * 50)}ms`);
+    });
+    const promotionDelay = Math.max(350, Math.min(400, 200 + (columns.length * 50)));
+    promotions.forEach((promotion, index) => {
+      promotion.style.setProperty('--header-mega-reveal-delay', `${Math.min(400, promotionDelay + (index * 50))}ms`);
+    });
+    const revealDelays = [
+      heading ? 200 : 0,
+      ...columns.map((_, index) => 200 + (index * 50)),
+      ...promotions.map((_, index) => Math.min(400, promotionDelay + (index * 50)))
+    ];
+    return Math.max(0, ...revealDelays) + 400;
+  };
+
+  const scheduleDesktopMegaMenuMotionFinish = (state) => {
+    window.clearTimeout(state.timer);
+    const transitionEndsAt = Math.max(state.heightTransitionEndsAt, state.revealEndsAt);
+    state.timer = window.setTimeout(
+      state.finish,
+      Math.max(0, transitionEndsAt - performance.now()) + 80
+    );
+  };
+
+  const syncDesktopMegaMenuPanelHeight = (details) => {
+    const panel = getDesktopMegaMenuPanel(details);
+    if (!panel) return 0;
+    const panelHeight = measureDesktopMegaMenuPanelHeight(details);
+    const heightValue = `${panelHeight}px`;
+    const heightChanged = panel.style.getPropertyValue('--header-mega-panel-height') !== heightValue;
+    const state = desktopMegaMenuMotions.get(details);
+    const guardStableResize = heightChanged
+      && !state
+      && details.open
+      && details.dataset.closing !== 'true'
+      && details.dataset.megaPanelVisible === 'true'
+      && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (guardStableResize) details.dataset.opening = 'true';
+    panel.style.setProperty('--header-mega-panel-height', heightValue);
+    if (details.open && details.dataset.closing !== 'true') {
+      syncDesktopMegaMenuBackground(details.closest('[data-header]'), details, panelHeight);
+    }
+    if (heightChanged && state?.opening) {
+      state.heightTransitionEndsAt = performance.now() + desktopMegaMenuTransitionDuration;
+      scheduleDesktopMegaMenuMotionFinish(state);
+    } else if (guardStableResize) {
+      window.clearTimeout(desktopMegaMenuHeightTimers.get(details));
+      desktopMegaMenuHeightTimers.set(details, window.setTimeout(() => {
+        desktopMegaMenuHeightTimers.delete(details);
+        if (desktopMegaMenuMotions.has(details) || !details.open || details.dataset.closing === 'true') return;
+        delete details.dataset.opening;
+      }, desktopMegaMenuTransitionDuration + 80));
+    }
+    return panelHeight;
+  };
+
+  const runDesktopMegaMenuCssMotion = (details, opening, focusAfterMotion = false) => {
+    const panel = getDesktopMegaMenuPanel(details);
+    if (!panel) return Promise.resolve(false);
+
+    const currentHeight = Math.max(0, panel.getBoundingClientRect().height);
+    const wasVisible = details.dataset.megaPanelVisible === 'true';
+    clearDesktopMegaMenuMotion(details);
+    clearDesktopMegaMenuHeightGuard(details);
+    panel.style.height = `${currentHeight}px`;
+    const header = details.closest('[data-header]');
+    const responsiveHeader = details.closest('[data-transparent-header="true"], [data-floating-header="true"]');
+    const now = performance.now();
+    let revealEndsAt = desktopMegaMenuRevealEnds.get(details) || now;
+
+    if (opening) {
+      panel.inert = false;
+      details.dataset.opening = 'true';
+      delete details.dataset.closing;
+      const revealDuration = updateDesktopMegaMenuRevealDelays(details);
+      if (!wasVisible) {
+        revealEndsAt = now + revealDuration;
+        desktopMegaMenuRevealEnds.set(details, revealEndsAt);
+      }
+      const panelHeight = measureDesktopMegaMenuPanelHeight(details);
+      panel.style.setProperty('--header-mega-panel-height', `${panelHeight}px`);
+      syncDesktopMegaMenuBackground(header, details, panelHeight);
+    } else {
+      if (panel.contains(document.activeElement)) {
+        focusWithoutScroll(details.querySelector(':scope > summary'));
+      }
+      panel.inert = true;
+      details.dataset.closing = 'true';
+      delete details.dataset.opening;
+      syncDesktopMegaMenuBackground(header);
+    }
+
+    panel.getBoundingClientRect();
+    syncHeaderDisclosureAria(details);
+    syncHeaderMenuScrollLock();
+    if (responsiveHeader) syncResponsiveHeader(responsiveHeader);
+
+    let resolveMotion;
+    const motionPromise = new Promise((resolve) => { resolveMotion = resolve; });
+    const finish = () => {
+      const state = desktopMegaMenuMotions.get(details);
+      if (!state || state.finish !== finish) return;
+      clearDesktopMegaMenuMotion(details, true);
+      panel.style.removeProperty('height');
+      if (opening) {
+        delete details.dataset.opening;
+        desktopMegaMenuRevealEnds.delete(details);
+        syncDesktopMegaMenuPanelHeight(details);
+      } else {
+        details.open = false;
+        delete details.dataset.closing;
+        delete details.dataset.megaPanelVisible;
+        desktopMegaMenuRevealEnds.delete(details);
+        panel.style.removeProperty('--header-mega-panel-height');
+        clearDesktopMegaMenuRevealDelays(details);
+        syncDesktopMegaMenuBackground(header);
+      }
+      syncHeaderDisclosureAria(details);
+      syncHeaderMenuScrollLock();
+      if (responsiveHeader) scheduleResponsiveHeaderSync();
+      if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
+    };
+    const onTransitionEnd = (event) => {
+      if (!opening && event.target === panel && event.propertyName === 'height') finish();
+    };
+    const state = {
+      panel,
+      opening,
+      frame: 0,
+      timer: 0,
+      heightTransitionEndsAt: now + desktopMegaMenuTransitionDuration,
+      revealEndsAt: opening ? revealEndsAt : now + desktopMegaMenuTransitionDuration,
+      finish,
+      onTransitionEnd,
+      resolve: resolveMotion
+    };
+    desktopMegaMenuMotions.set(details, state);
+    panel.addEventListener('transitionend', onTransitionEnd);
+
+    state.frame = window.requestAnimationFrame(() => {
+      state.frame = 0;
+      if (desktopMegaMenuMotions.get(details) !== state) return;
+      if (opening) details.dataset.megaPanelVisible = 'true';
+      panel.style.removeProperty('height');
+      state.heightTransitionEndsAt = performance.now() + desktopMegaMenuTransitionDuration;
+      scheduleDesktopMegaMenuMotionFinish(state);
+    });
+
+    return motionPromise;
+  };
+
+  const observeDesktopMegaMenu = (details) => {
+    if (!window.ResizeObserver || desktopMegaMenuResizeObservers.has(details)) return;
+    const surface = getDesktopMegaMenuPanel(details)?.querySelector(':scope > .header__mega-surface');
+    if (!surface) return;
+    const observer = new ResizeObserver(() => {
+      if (usesDesktopMegaMenuCssMotion(details) && details.open && details.dataset.closing !== 'true') {
+        syncDesktopMegaMenuPanelHeight(details);
+      }
+    });
+    observer.observe(surface);
+    desktopMegaMenuResizeObservers.set(details, observer);
+  };
+
+  const initializeDesktopMegaMenuObservers = (scope = document) => {
+    scope.querySelectorAll?.('.header__submenu-disclosure--mega').forEach(observeDesktopMegaMenu);
+  };
+
+  const disconnectDesktopMegaMenuObserver = (details) => {
+    desktopMegaMenuResizeObservers.get(details)?.disconnect();
+    desktopMegaMenuResizeObservers.delete(details);
+  };
+
   const runMobileMegaMenuMotion = (details, opening, focusAfterMotion = false) => {
     const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
     const summary = details.querySelector(':scope > summary');
@@ -490,7 +829,29 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const animateMegaMenuOpen = (details, focusAfterMotion = false) => {
-    if (disableMegaMenuWebAnimations) {
+    if (usesDesktopMegaMenuCssMotion(details)) {
+      if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+        clearDesktopMegaMenuMotion(details);
+        clearDesktopMegaMenuHeightGuard(details);
+        const panel = getDesktopMegaMenuPanel(details);
+        if (panel) {
+          panel.inert = false;
+          panel.style.removeProperty('height');
+        }
+        updateDesktopMegaMenuRevealDelays(details);
+        const panelHeight = syncDesktopMegaMenuPanelHeight(details);
+        details.dataset.megaPanelVisible = 'true';
+        delete details.dataset.opening;
+        delete details.dataset.closing;
+        syncDesktopMegaMenuBackground(details.closest('[data-header]'), details, panelHeight);
+        syncHeaderDisclosureAria(details);
+        syncHeaderMenuScrollLock();
+        return Promise.resolve(true);
+      }
+      return runDesktopMegaMenuCssMotion(details, true, focusAfterMotion);
+    }
+
+    if (disableLegacyMegaMenuWebAnimations) {
       megaMenuAnimations.get(details)?.cancel();
       megaMenuAnimations.delete(details);
       mobileMegaMenuMotions.get(details)?.animation.cancel();
@@ -542,7 +903,27 @@ if (!window.SpinelHeaderMenus) {
       });
     }
 
-    if (immediate || disableMegaMenuWebAnimations || !panel || type === 'none' || reduceMotion) {
+    if (usesDesktopMegaMenuCssMotion(details)) {
+      if (immediate || reduceMotion) {
+        const header = details.closest('[data-header]');
+        const desktopPanel = getDesktopMegaMenuPanel(details);
+        if (desktopPanel?.contains(document.activeElement)) {
+          focusWithoutScroll(details.querySelector(':scope > summary'));
+        }
+        resetDesktopMegaMenuPresentation(details);
+        details.open = false;
+        syncDesktopMegaMenuBackground(header);
+        syncHeaderDisclosureAria(details);
+        syncHeaderMenuScrollLock();
+        if (details.closest('[data-transparent-header="true"], [data-floating-header="true"]')) scheduleResponsiveHeaderSync();
+        if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
+        return;
+      }
+      return runDesktopMegaMenuCssMotion(details, false, focusAfterMotion);
+    }
+
+    if (immediate || disableLegacyMegaMenuWebAnimations || !panel || type === 'none' || reduceMotion) {
+      resetDesktopMegaMenuPresentation(details);
       megaMenuAnimations.get(details)?.cancel();
       megaMenuAnimations.delete(details);
       mobileMegaMenuMotions.get(details)?.animation.cancel();
@@ -595,7 +976,7 @@ if (!window.SpinelHeaderMenus) {
   const syncHeaderDisclosureAria = (details) => {
     const summary = details.querySelector(':scope > summary[aria-controls]');
     if (!summary) return;
-    const isOpen = details.open;
+    const isOpen = details.open && !(usesDesktopMegaMenuCssMotion(details) && details.dataset.closing === 'true');
     summary.setAttribute('aria-expanded', String(isOpen));
     const stateLabel = isOpen ? summary.dataset.closeLabel : summary.dataset.openLabel;
     if (stateLabel) summary.setAttribute('aria-label', stateLabel);
@@ -615,13 +996,16 @@ if (!window.SpinelHeaderMenus) {
     '.header__submenu-disclosure--hover[open]'
   ) || [];
 
-  const scheduleMegaMenuClose = (details, delay = headerHoverCloseDelay) => {
+  const scheduleMegaMenuClose = (details, delay) => {
+    const closeDelay = delay ?? (details.matches('.header__submenu-disclosure--mega')
+      ? desktopMegaMenuHoverCloseDelay
+      : headerHoverCloseDelay);
     clearMegaMenuHoverTimer(details);
     megaMenuHoverTimers.set(details, window.setTimeout(() => {
       megaMenuHoverTimers.delete(details);
-      if (details.matches(':hover')) return;
+      if (details.matches(':hover') || details.querySelector(':focus-visible')) return;
       closeMegaMenu(details);
-    }, delay));
+    }, closeDelay));
   };
 
   const positionHeaderSubmenu = (details) => {
@@ -668,8 +1052,18 @@ if (!window.SpinelHeaderMenus) {
     });
   };
 
+  const closeDesktopMenusInOtherHeaders = (details) => {
+    const activeHeader = details.closest('[data-header]');
+    document.querySelectorAll('[data-header]').forEach((header) => {
+      if (header === activeHeader) return;
+      header.querySelectorAll('.header__submenu-disclosure[open]').forEach((menu) => closeMegaMenu(menu));
+    });
+  };
+
   const openHeaderSubmenu = (details) => {
     clearMegaMenuHoverTimer(details);
+    const isDesktopMegaMenu = usesDesktopMegaMenuCssMotion(details);
+    const isDesktopTopLevelMenu = !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure');
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
@@ -679,17 +1073,21 @@ if (!window.SpinelHeaderMenus) {
           responsiveHeader.classList.add('header--surface-visible');
           setTransparentHeaderColorScheme(responsiveHeader, true);
         }
-        delete details.dataset.closing;
-        syncHeaderDisclosureAria(details);
       }
       animateMegaMenuOpen(details, isMobileHeaderViewport());
+      if (isDesktopMegaMenu) {
+        closeOtherHeaderSubmenus(details);
+      }
+      if (isDesktopTopLevelMenu) closeDesktopMenusInOtherHeaders(details);
       return;
     }
 
-    closeOtherHeaderSubmenus(
-      details,
-      supportsDesktopHeaderHover() && details.matches('.header__submenu-disclosure--hover')
-    );
+    if (!isDesktopMegaMenu) {
+      closeOtherHeaderSubmenus(
+        details,
+        supportsDesktopHeaderHover() && details.matches('.header__submenu-disclosure--hover')
+      );
+    }
     positionHeaderSubmenu(details);
     const responsiveHeader = details.closest('[data-transparent-header="true"], [data-floating-header="true"]');
     if (responsiveHeader?.dataset.transparentHeader === 'true' && !isMobileHeaderViewport()) {
@@ -698,6 +1096,9 @@ if (!window.SpinelHeaderMenus) {
     }
     details.dataset.opening = 'true';
     details.open = true;
+    if (details.contains(document.activeElement)) {
+      headerBreakpointFocusContext = { header: details.closest('[data-header]'), owner: details };
+    }
     syncHeaderDisclosureAria(details);
     positionNestedHeaderSubmenu(details);
     syncHeaderMenuScrollLock();
@@ -705,6 +1106,10 @@ if (!window.SpinelHeaderMenus) {
       scheduleResponsiveHeaderSync();
     }
     animateMegaMenuOpen(details, isMobileHeaderViewport());
+    if (isDesktopMegaMenu) {
+      closeOtherHeaderSubmenus(details);
+    }
+    if (isDesktopTopLevelMenu) closeDesktopMenusInOtherHeaders(details);
   };
 
   window.addEventListener('resize', () => {
@@ -749,6 +1154,7 @@ if (!window.SpinelHeaderMenus) {
     const details = event.target.closest?.('.header__submenu-disclosure--hover');
     if (details) {
       if (details.contains(event.relatedTarget)) return;
+      if (details.matches('.header__submenu-disclosure--mega') && details.closest('[data-header]')?.contains(event.relatedTarget)) return;
 
       scheduleMegaMenuClose(details);
       return;
@@ -758,6 +1164,13 @@ if (!window.SpinelHeaderMenus) {
     if (!header || header.contains(event.relatedTarget)) return;
 
     getOpenHoverMenus(header).forEach((openDetails) => scheduleMegaMenuClose(openDetails));
+  });
+
+  document.addEventListener('focusout', (event) => {
+    if (!supportsDesktopHeaderHover()) return;
+    const details = event.target.closest?.('.header__submenu-disclosure--hover[open]');
+    if (!details || details.contains(event.relatedTarget) || details.matches(':hover')) return;
+    scheduleMegaMenuClose(details);
   });
 
   document.addEventListener(
@@ -934,8 +1347,10 @@ if (!window.SpinelHeaderMenus) {
         return;
       }
 
+      const activeHeader = event.target.closest?.('[data-header]');
       const openMenu = event.target.closest?.('[data-header-mobile-drawer][data-open="true"]')?.closest('[data-header]')?.querySelector('.header__menu-disclosure[open]')
-        || document.querySelector('[data-header] .header__menu-disclosure[open]');
+        || activeHeader?.querySelector('.header__menu-disclosure[open]')
+        || (!activeHeader && document.querySelector('[data-header] .header__menu-disclosure[open]'));
       if (openMenu) {
         event.preventDefault();
         closeMobileMenu(openMenu);
@@ -943,8 +1358,11 @@ if (!window.SpinelHeaderMenus) {
       }
     }
 
+    const activeHeader = event.target.closest?.('[data-header]');
     const focusTargets = [];
-    document.querySelectorAll('[data-header] details[open]').forEach((details) => {
+    const openDetails = activeHeader?.querySelectorAll('details[open]')
+      || document.querySelectorAll('[data-header] details[open]');
+    openDetails.forEach((details) => {
       if (details.matches('.header__submenu-disclosure')) focusTargets.push(details.querySelector(':scope > summary'));
       if (details.matches('.header__menu-disclosure')) focusTargets.push(details.querySelector(':scope > summary'));
       if (details.matches('.header__submenu-disclosure, .header__submenu-nested-disclosure') && shouldAnimateHeaderSubmenu(details)) {
@@ -957,12 +1375,36 @@ if (!window.SpinelHeaderMenus) {
   });
 
   initializeHeaderDisclosures();
+  initializeDesktopMegaMenuObservers();
   document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => syncMobileDrawer(disclosure));
   syncHeaderMenuScrollLock();
   document.addEventListener('shopify:section:load', (event) => {
     initializeHeaderDisclosures(event.target);
+    initializeDesktopMegaMenuObservers(event.target);
     event.target.querySelectorAll?.('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => syncMobileDrawer(disclosure));
     syncHeaderMenuScrollLock();
+  });
+  document.addEventListener('shopify:section:unload', (event) => {
+    if (event.target.contains?.(headerBreakpointFocusContext?.header)) headerBreakpointFocusContext = null;
+    event.target.querySelectorAll?.('[data-header]').forEach(resetDesktopMegaMenuBackground);
+    event.target.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach((details) => {
+      clearMegaMenuHoverTimer(details);
+      resetDesktopMegaMenuPresentation(details);
+      disconnectDesktopMegaMenuObserver(details);
+      megaMenuAnimations.get(details)?.cancel();
+      megaMenuAnimations.delete(details);
+      mobileMegaMenuMotions.get(details)?.animation.cancel();
+      mobileMegaMenuMotions.delete(details);
+      details.open = false;
+      syncHeaderDisclosureAria(details);
+    });
+    event.target.querySelectorAll?.('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => {
+      clearMobileDrawerMotion(disclosure);
+      disclosure.open = false;
+      syncMobileDrawer(disclosure);
+    });
+    syncHeaderMenuScrollLock();
+    scheduleResponsiveHeaderSync();
   });
 
   document.addEventListener('click', (event) => {
