@@ -71,7 +71,7 @@
 
 <header
   id="Header-{{ section.id }}"
-  class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}"
+  class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.underline_active_link %} header--underline-active{% endif %}{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}"
   style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px;"
   data-sticky-behavior="{{ section.settings.sticky_behavior }}"
   data-mega-menu-animation="slide_down"
@@ -154,10 +154,10 @@
             <li class="header__menu-item{% if has_submenu %} header__menu-item--has-children{% endif %}{% if mega_menu_block != nil and has_submenu %} header__menu-item--mega{% endif %}">
               {% if has_submenu %}
                 {% if link.url != blank %}
-                  <a class="header__mobile-menu-direct-link" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
+                  <a class="header__mobile-menu-direct-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
                 {% endif %}
-                <details class="header__submenu-disclosure{% if link.url == blank %} header__submenu-disclosure--no-direct-link{% endif %}{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
-                  <summary class="header__menu-link{% if link.child_active %} header__menu-link--active{% endif %}" aria-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-open-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-close-label="{{ 'header.close_submenu' | t: item: link.title | escape }}" aria-expanded="false" aria-controls="{{ submenu_id }}">
+                <details class="header__submenu-disclosure{% if link.url == blank %} header__submenu-disclosure--no-direct-link{% endif %}{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% endif %}{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
+                  <summary class="header__menu-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" aria-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-open-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-close-label="{{ 'header.close_submenu' | t: item: link.title | escape }}" aria-expanded="false" aria-controls="{{ submenu_id }}">
                     <span class="header__menu-link-title">{{ link.title | escape }}</span>
                     <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
                   </summary>
@@ -287,7 +287,7 @@
                           {% if child_link.links != blank %}
                             {% assign nested_submenu_id = submenu_id | append: '-' | append: forloop.index %}
                             <details class="header__submenu-nested-disclosure">
-                              <summary class="header__submenu-link header__mega-category-title{% if child_link.current %} header__submenu-link--active{% endif %}" aria-expanded="false" aria-controls="{{ nested_submenu_id }}">
+                              <summary class="header__submenu-link header__mega-category-title{% if child_link.current or child_link.child_active %} header__submenu-link--active{% endif %}" aria-expanded="false" aria-controls="{{ nested_submenu_id }}">
                                 <span class="header__submenu-link-text">{{ child_link.title | escape }}</span>
                                 <span class="header__submenu-caret header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
                               </summary>

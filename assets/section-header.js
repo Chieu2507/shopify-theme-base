@@ -242,7 +242,7 @@ if (!window.SpinelHeaderMenus) {
     if (!isTransparentHeader) return;
 
     const hasOpenDesktopMenu = !isMobileHeaderViewport()
-      && Boolean(header.querySelector('.header__submenu-disclosure[open]'));
+      && Boolean(header.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])'));
     const showSurface = isScrolled || hasOpenDesktopMenu;
     header.classList.toggle('header--surface-visible', showSurface);
     setTransparentHeaderColorScheme(header, showSurface);
@@ -546,6 +546,10 @@ if (!window.SpinelHeaderMenus) {
     details.dataset.closing = 'true';
     syncHeaderDisclosureAria(details);
     syncHeaderMenuScrollLock();
+    if (!isMobileHeaderViewport()) {
+      const responsiveHeader = details.closest('[data-transparent-header="true"]');
+      if (responsiveHeader) syncResponsiveHeader(responsiveHeader);
+    }
     const animation = panel.animate(getMegaMenuFrames(type, false, panel, currentHeight), {
       duration,
       easing,
@@ -566,7 +570,7 @@ if (!window.SpinelHeaderMenus) {
       .catch(() => {});
   };
 
-  const supportsMegaMenuHover = () => window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches;
+  const supportsDesktopHeaderHover = () => window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches;
   const shouldAnimateHeaderSubmenu = (details) => details.matches(
     '.header__submenu-disclosure, .header__submenu-nested-disclosure'
   );
@@ -588,6 +592,24 @@ if (!window.SpinelHeaderMenus) {
     const timer = megaMenuHoverTimers.get(details);
     if (timer) window.clearTimeout(timer);
     megaMenuHoverTimers.delete(details);
+  };
+
+  const getOpenHoverMenus = (header) => header?.querySelectorAll(
+    '.header__submenu-disclosure--hover[open]'
+  ) || [];
+
+  const clearHeaderHoverTimers = (header) => {
+    getOpenHoverMenus(header).forEach(clearMegaMenuHoverTimer);
+  };
+
+  const scheduleMegaMenuClose = (details, delay = 160) => {
+    clearMegaMenuHoverTimer(details);
+    const header = details.closest('[data-header]');
+    megaMenuHoverTimers.set(details, window.setTimeout(() => {
+      megaMenuHoverTimers.delete(details);
+      if (header?.matches(':hover')) return;
+      closeMegaMenu(details);
+    }, delay));
   };
 
   const positionHeaderSubmenu = (details) => {
@@ -639,6 +661,15 @@ if (!window.SpinelHeaderMenus) {
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
+      if (!isMobileHeaderViewport()) {
+        const responsiveHeader = details.closest('[data-transparent-header="true"]');
+        if (responsiveHeader) {
+          responsiveHeader.classList.add('header--surface-visible');
+          setTransparentHeaderColorScheme(responsiveHeader, true);
+        }
+        delete details.dataset.closing;
+        syncHeaderDisclosureAria(details);
+      }
       animateMegaMenuOpen(details, isMobileHeaderViewport());
       return;
     }
@@ -667,7 +698,18 @@ if (!window.SpinelHeaderMenus) {
   });
 
   document.addEventListener('pointerover', (event) => {
-    if (!supportsMegaMenuHover()) return;
+    if (!supportsDesktopHeaderHover()) return;
+
+    const overlay = event.target.closest?.('.header__menu-overlay--desktop[data-header-menu-overlay]');
+    if (overlay) {
+      const header = document.getElementById(overlay.dataset.headerMenuOverlay);
+      getOpenHoverMenus(header).forEach((openDetails) => scheduleMegaMenuClose(openDetails));
+      return;
+    }
+
+    const header = event.target.closest?.('[data-header]');
+    if (header) clearHeaderHoverTimers(header);
+
     const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
     if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
       clearMegaMenuHoverTimer(nestedDetails);
@@ -675,26 +717,42 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    const details = event.target.closest?.('.header__submenu-disclosure--mega.header__submenu-disclosure--hover');
+    const details = event.target.closest?.('.header__submenu-disclosure--hover');
     if (!details || details.contains(event.relatedTarget)) return;
 
     openHeaderSubmenu(details);
   });
 
   document.addEventListener('pointerout', (event) => {
-    if (!supportsMegaMenuHover()) return;
+    if (!supportsDesktopHeaderHover()) return;
     const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
     if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
       clearMegaMenuHoverTimer(nestedDetails);
       megaMenuHoverTimers.set(nestedDetails, window.setTimeout(() => closeMegaMenu(nestedDetails), 180));
+      const parentDetails = nestedDetails.closest('.header__submenu-disclosure--hover');
+      const header = nestedDetails.closest('[data-header]');
+      if (parentDetails && !header?.contains(event.relatedTarget)) scheduleMegaMenuClose(parentDetails);
       return;
     }
 
-    const details = event.target.closest?.('.header__submenu-disclosure--mega.header__submenu-disclosure--hover');
-    if (!details || details.contains(event.relatedTarget)) return;
+    const details = event.target.closest?.('.header__submenu-disclosure--hover');
+    if (details) {
+      if (details.contains(event.relatedTarget)) return;
 
-    clearMegaMenuHoverTimer(details);
-    megaMenuHoverTimers.set(details, window.setTimeout(() => closeMegaMenu(details), 160));
+      const header = details.closest('[data-header]');
+      if (header?.contains(event.relatedTarget)) {
+        clearMegaMenuHoverTimer(details);
+        return;
+      }
+
+      scheduleMegaMenuClose(details);
+      return;
+    }
+
+    const header = event.target.closest?.('[data-header]');
+    if (!header || header.contains(event.relatedTarget)) return;
+
+    getOpenHoverMenus(header).forEach((openDetails) => scheduleMegaMenuClose(openDetails));
   });
 
   document.addEventListener(
@@ -712,6 +770,15 @@ if (!window.SpinelHeaderMenus) {
 
       if (details.matches?.('.header__menu-disclosure, .header__submenu-disclosure, .header__submenu-nested-disclosure')) {
         syncHeaderMenuScrollLock();
+      }
+
+      if (details.open && details.matches?.('.header__localization-selector')) {
+        const mobileUtilities = details.closest?.('.header__mobile-utilities');
+        if (mobileUtilities) {
+          mobileUtilities.querySelectorAll('.header__localization-selector[open]').forEach((otherDetails) => {
+            if (otherDetails !== details) otherDetails.open = false;
+          });
+        }
       }
 
       if (details.matches?.('.header__submenu-disclosure, .header__submenu-nested-disclosure')) {
@@ -764,7 +831,7 @@ if (!window.SpinelHeaderMenus) {
 
     const summary = event.target.closest?.('summary');
     const submenu = summary?.parentElement;
-    if (submenu?.matches('.header__submenu-disclosure--mega.header__submenu-disclosure--hover') && supportsMegaMenuHover()) {
+    if (submenu?.matches('.header__submenu-disclosure--hover') && supportsDesktopHeaderHover()) {
       event.preventDefault();
       if (submenu.open) closeMegaMenu(submenu);
       else openHeaderSubmenu(submenu);
@@ -818,14 +885,14 @@ if (!window.SpinelHeaderMenus) {
     const summary = event.target.closest?.('summary[aria-controls]');
     const disclosure = summary?.parentElement;
 
-    if (event.key === 'ArrowRight' && disclosure?.matches('.header__submenu-nested-disclosure') && supportsMegaMenuHover()) {
+    if (event.key === 'ArrowRight' && disclosure?.matches('.header__submenu-nested-disclosure') && supportsDesktopHeaderHover()) {
       event.preventDefault();
       openHeaderSubmenu(disclosure);
       window.requestAnimationFrame(() => disclosure.querySelector(':scope > .header__submenu-nested a')?.focus());
       return;
     }
 
-    if (event.key === 'ArrowLeft' && event.target.closest?.('.header__submenu-nested-disclosure[open]') && supportsMegaMenuHover()) {
+    if (event.key === 'ArrowLeft' && event.target.closest?.('.header__submenu-nested-disclosure[open]') && supportsDesktopHeaderHover()) {
       event.preventDefault();
       const nestedDisclosure = event.target.closest('.header__submenu-nested-disclosure');
       closeMegaMenu(nestedDisclosure);
