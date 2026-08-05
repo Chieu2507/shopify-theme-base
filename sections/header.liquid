@@ -1,32 +1,42 @@
-{% comment %}Source-inspired header presentation adapted to Spinel's merchant-managed data model.{% endcomment %}
-{% render 'section-stylesheet', asset: 'section-header-source.css' %}
+{% comment %}This asset exceeds Shopify's inline-asset limit, so load it as a stylesheet on the homepage too.{% endcomment %}
+{% render 'section-stylesheet', asset: 'section-header-critical-1.css' %}
+{% render 'section-stylesheet', asset: 'section-header-critical-2.css', loaded_in_home_head: true %}
+<style>{{ 'section-header-critical-3.css' | inline_asset_content }}</style>
+{% render 'section-stylesheet', asset: 'section-header-mobile.css' %}
 
 {% liquid
-  assign header_id = 'Header-' | append: section.id
-  assign navigation_menu = section.settings.menu
-  assign menu_links = navigation_menu.links
+  assign country_form_id = 'HeaderCountrySelector-' | append: section.id
+  assign mobile_country_form_id = 'HeaderMobileCountrySelector-' | append: section.id
+  assign mobile_language_form_id = 'HeaderMobileLanguageSelector-' | append: section.id
+  assign mobile_country_sheet_title_id = 'HeaderMobileCountrySheetTitle-' | append: section.id
+  assign mobile_language_sheet_title_id = 'HeaderMobileLanguageSheetTitle-' | append: section.id
+  assign mobile_country_search_id = 'HeaderMobileCountrySearch-' | append: section.id
   assign logo_image = settings.logo | default: settings.logo_mobile
-  assign mobile_logo_image = settings.logo_mobile | default: logo_image
+  assign logo_image_mobile = settings.logo_mobile | default: logo_image
   assign logo_width_desktop = 170
   assign logo_width_mobile = 120
-  assign country_form_id = 'HeaderCountryForm-' | append: section.id
-  assign mobile_country_form_id = 'HeaderMobileCountryForm-' | append: section.id
-  assign mobile_language_form_id = 'HeaderMobileLanguageForm-' | append: section.id
+  assign navigation_menu = section.settings.menu
+  assign menu_links = navigation_menu.links
   assign header_color_scheme = section.settings.color_scheme
-  assign transparent_header_enabled = false
-  assign floating_header_enabled = false
   assign account_action = section.settings.account_action | default: 'panel'
   assign account_href = routes.account_url
   assign account_open_new_tab = false
+  assign floating_header_enabled = false
+  assign transparent_header_enabled = false
   assign has_menu = false
+  assign has_mobile_utilities = false
+  assign can_change_country = false
 
   if template.name == 'index'
-    if section.settings.header_style == 'transparent'
-      assign transparent_header_enabled = true
-      assign header_color_scheme = section.settings.transparent_color_scheme
-    elsif section.settings.header_style == 'floating'
+    if section.settings.header_style == 'floating'
       assign floating_header_enabled = true
+    elsif section.settings.header_style == 'transparent'
+      assign transparent_header_enabled = true
     endif
+  endif
+
+  if transparent_header_enabled
+    assign header_color_scheme = section.settings.transparent_color_scheme
   endif
 
   if account_action == 'custom_url' and section.settings.account_custom_url != blank
@@ -35,6 +45,14 @@
 
   if account_action == 'new_tab'
     assign account_open_new_tab = true
+  endif
+
+  if section.settings.show_localization
+    assign has_mobile_utilities = true
+  endif
+
+  if localization.available_countries.size > 1
+    assign can_change_country = true
   endif
 
   if menu_links == blank and navigation_menu != blank
@@ -48,31 +66,74 @@
   endif
 %}
 
+<span
+  class="header__menu-overlay header__menu-overlay--desktop"
+  data-header-menu-overlay="Header-{{ section.id }}"
+  aria-hidden="true"
+></span>
+
 <header
-  id="{{ header_id }}"
-  class="header header--no-announcement header--logo-{{ section.settings.header_layout }} color-scheme color-{{ header_color_scheme.id }}{% if transparent_header_enabled %} header--overlay header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if section.settings.underline_active_link %} header--underline-active{% endif %}"
-  data-header-root
-  data-dropdown-trigger="{{ section.settings.dropdown_trigger }}"
+  id="Header-{{ section.id }}"
+  class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.underline_active_link %} header--underline-active{% endif %}{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}"
+  style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px;"
+  data-sticky-behavior="{{ section.settings.sticky_behavior }}"
+  data-mega-menu-animation="slide_down"
+  data-mega-menu-animation-duration="250"
+  data-floating-header="{{ floating_header_enabled }}"
+  data-transparent-header="{{ transparent_header_enabled }}"
   data-default-color-class="color-{{ section.settings.color_scheme.id }}"
   data-transparent-color-class="color-{{ section.settings.transparent_color_scheme.id }}"
-  data-deferred-module="{{ 'section-header-source.js' | asset_url }}"
-  style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px; --header-logo-width: {{ logo_width_desktop }}px; --header-mobile-logo-width: {{ logo_width_mobile }}px; --header-font: var(--font-paragraph--family); --header-solid-text: var(--color-text); --header-overlay-text: var(--color-text); --header-announcement-bg: var(--color-background);"
+  data-deferred-module="{{ 'section-header.js' | asset_url }}"
+  data-header
 >
-  <div class="header__desktop-bar">
-    <div class="header__menu-background" aria-hidden="true"></div>
-    <div class="header__desktop-surface">
-      <div class="header__desktop-inner">
-        <nav class="header__desktop-nav" aria-label="{{ 'header.primary_navigation' | t | escape }}">
+  <div class="header__inner">
+    {% if has_menu or has_mobile_utilities %}
+      <details class="header__menu-disclosure" data-open-label="{{ 'header.open_menu' | t | escape }}" data-close-label="{{ 'header.close_menu' | t | escape }}">
+        <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}" aria-expanded="false" aria-controls="HeaderMobileDrawer-{{ section.id }}">
+          <span class="header__menu-icon header__menu-icon--open header__burger-lines" aria-hidden="true">
+            <span></span>
+            <span></span>
+            <span></span>
+          </span>
+        </summary>
+      </details>
+
+      <div
+        id="HeaderMobileDrawer-{{ section.id }}"
+        class="header__mobile-drawer"
+        data-header-mobile-drawer
+      >
+        <span
+          class="header__menu-overlay header__menu-overlay--mobile"
+          data-header-menu-overlay="Header-{{ section.id }}"
+          aria-hidden="true"
+        ></span>
+        <div class="header__mobile-drawer-surface color-scheme color-{{ section.settings.color_scheme.id }}">
+          <div class="header__mobile-drawer-header">
+            <span id="HeaderMobileDrawerTitle-{{ section.id }}" class="visually-hidden">{{ 'header.primary_navigation' | t }}</span>
+            <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+              {% if logo_image_mobile != blank %}
+                {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '120px', alt: shop.name, loading: 'eager' }}
+              {% else %}
+                <span class="header__logo-text">{{ shop.name | escape }}</span>
+              {% endif %}
+            </a>
+            <button class="header__mobile-drawer-close" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-mobile-close>
+              {% render 'icon', name: 'close' %}
+            </button>
+          </div>
+
+          <nav id="HeaderNavigation-{{ section.id }}" class="header__navigation" aria-label="{{ 'header.primary_navigation' | t | escape }}">
+            <div class="header__navigation-content">
+              <ul class="header__menu" role="list">
           {% for link in menu_links %}
             {% liquid
               assign badge_block = nil
               assign mega_menu_block = nil
-
               for block in section.blocks
                 if block.type == 'menu_badge' and block.settings.menu_item != blank and block.settings.menu_item == link.title
                   assign badge_block = block
                 endif
-
                 if block.type == 'mega_menu' and block.settings.menu_item != blank
                   assign mega_menu_items = block.settings.menu_item | split: ';'
                   for mega_menu_item in mega_menu_items
@@ -85,387 +146,464 @@
                 endif
               endfor
 
-              assign has_dropdown = false
+              assign mega_menu_links = link.links
+              assign top_menu_index = forloop.index
+              assign submenu_id = 'HeaderSubmenu-' | append: section.id | append: '-' | append: top_menu_index
+              assign has_submenu = false
               if link.links != blank or mega_menu_block != nil
-                assign has_dropdown = true
+                assign has_submenu = true
               endif
             %}
+            <li class="header__menu-item{% if has_submenu %} header__menu-item--has-children{% endif %}{% if mega_menu_block != nil and has_submenu %} header__menu-item--mega{% endif %}">
+              {% if has_submenu %}
+                {% if link.url != blank %}
+                  <a class="header__mobile-menu-direct-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
+                {% endif %}
+                <details class="header__submenu-disclosure{% if link.url == blank %} header__submenu-disclosure--no-direct-link{% endif %}{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% endif %}{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
+                  <summary class="header__menu-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" aria-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-open-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-close-label="{{ 'header.close_submenu' | t: item: link.title | escape }}" aria-expanded="false" aria-controls="{{ submenu_id }}">
+                    <span class="header__menu-link-title">{{ link.title | escape }}</span>
+                    <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                  </summary>
+                  {% if mega_menu_block != nil %}
+                    {% liquid
+                      assign mega_columns = mega_menu_block.settings.columns | plus: 0
+                      assign links_per_column = mega_menu_links.size | plus: mega_columns | minus: 1 | divided_by: mega_columns
+                      assign promotion_count = 0
+                      assign has_promotion_1 = false
+                      assign has_promotion_2 = false
 
-            {% if has_dropdown %}
-              <details class="header__dropdown{% if mega_menu_block != nil %} header__dropdown--mega{% else %} header__dropdown--pages{% endif %}" data-header-dropdown>
-                <summary class="header__nav-trigger{% if link.current or link.child_active %} is-active{% endif %}" aria-label="{{ 'header.open_submenu' | t: item: link.title | escape }}">
-                  <span>{{ link.title | escape }}</span>
-                  {% if badge_block != nil %}<span class="header__menu-badge" {{ badge_block.shopify_attributes }}><span>{{ badge_block.settings.text | escape }}</span></span>{% endif %}
-                  <span class="header__chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                </summary>
+                      if mega_menu_block.settings.promotion_1_image != blank
+                        assign has_promotion_1 = true
+                      elsif mega_menu_block.settings.promotion_1_heading != blank
+                        assign has_promotion_1 = true
+                      elsif mega_menu_block.settings.promotion_1_text != blank
+                        assign has_promotion_1 = true
+                      elsif mega_menu_block.settings.promotion_1_link_label != blank
+                        assign has_promotion_1 = true
+                      endif
 
-                {% if mega_menu_block != nil %}
-                  {% liquid
-                    assign mega_columns = mega_menu_block.settings.columns | default: '3' | plus: 0
-                    assign links_per_column = link.links.size | plus: mega_columns | minus: 1 | divided_by: mega_columns
-                    assign promotion_count = 0
-                    assign has_promotion_1 = false
-                    assign has_promotion_2 = false
+                      if mega_menu_block.settings.promotion_2_image != blank
+                        assign has_promotion_2 = true
+                      elsif mega_menu_block.settings.promotion_2_heading != blank
+                        assign has_promotion_2 = true
+                      elsif mega_menu_block.settings.promotion_2_text != blank
+                        assign has_promotion_2 = true
+                      elsif mega_menu_block.settings.promotion_2_link_label != blank
+                        assign has_promotion_2 = true
+                      endif
 
-                    if mega_menu_block.settings.promotion_1_image != blank or mega_menu_block.settings.promotion_1_heading != blank or mega_menu_block.settings.promotion_1_text != blank or mega_menu_block.settings.promotion_1_link_label != blank
-                      assign has_promotion_1 = true
-                      assign promotion_count = promotion_count | plus: 1
-                    endif
-                    if mega_menu_block.settings.promotion_2_image != blank or mega_menu_block.settings.promotion_2_heading != blank or mega_menu_block.settings.promotion_2_text != blank or mega_menu_block.settings.promotion_2_link_label != blank
-                      assign has_promotion_2 = true
-                      assign promotion_count = promotion_count | plus: 1
-                    endif
-                  %}
-                  <div class="header__mega-panel" data-header-mega-panel {{ mega_menu_block.shopify_attributes }}>
-                    <div class="header__mega-inner">
-                      <div class="header__mega-columns{% if promotion_count == 0 %} header__mega-columns--links-only{% endif %}">
-                        <div class="header__mega-links-grid" style="--header-mega-columns: {{ mega_columns }};">
-                          {% for column in (1..mega_columns) %}
-                            {% liquid
-                              assign column_index = column | minus: 1
-                              assign column_offset = column_index | times: links_per_column
-                              assign column_links = link.links | slice: column_offset, links_per_column
-                            %}
-                            {% if column_links.size > 0 or forloop.first %}
-                              <div class="header__mega-column">
-                                {% if forloop.first and mega_menu_block.settings.column_heading != blank %}
-                                  <p class="header__mega-title">{{ mega_menu_block.settings.column_heading | escape }}</p>
-                                {% endif %}
-                                <ul class="header__mega-links" role="list">
-                                  {% if forloop.first and link.url != blank %}
-                                    <li><a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a></li>
+                      if has_promotion_1
+                        assign promotion_count = promotion_count | plus: 1
+                      endif
+                      if has_promotion_2
+                        assign promotion_count = promotion_count | plus: 1
+                      endif
+                    %}
+                    <div id="{{ submenu_id }}" class="header__mega-panel header__mega-panel--text-{{ mega_menu_block.settings.text_size | default: 'medium' }}" {{ mega_menu_block.shopify_attributes }}>
+                      <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: link.title | escape }}" data-header-mobile-back>
+                        <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
+                        <span>{{ link.title | escape }}</span>
+                      </button>
+                      <div class="header__mega-surface">
+                        <div class="header__mega-inner{% if promotion_count == 0 %} header__mega-inner--links-only{% endif %}">
+                          {% if mega_menu_links != blank %}
+                            <div class="header__mega-navigation">
+                              {% if mega_menu_block.settings.column_heading != blank %}<p class="header__mega-heading">{{ mega_menu_block.settings.column_heading | escape }}</p>{% endif %}
+                              <div class="header__mega-lists" style="--header-mega-columns: {{ mega_columns }};">
+                                {% for column in (1..mega_columns) %}
+                                  {% liquid
+                                    assign column_index = column | minus: 1
+                                    assign column_offset = column_index | times: links_per_column
+                                    assign column_links = mega_menu_links | slice: column_offset, links_per_column
+                                  %}
+                                  {% if column_links.size > 0 %}
+                                    <div class="header__mega-list">
+                                      <ul role="list">
+                                        {% for child_link in column_links %}
+                                          <li>
+                                            {% if child_link.links != blank %}
+                                              <span class="header__mega-category-title">{{ child_link.title | escape }}</span>
+                                              <ul class="header__mega-nested" role="list">
+                                                {% for grandchild_link in child_link.links %}
+                                                  <li><a class="header__mega-link header__mega-link--nested{% if grandchild_link.current %} header__mega-link--active{% endif %}" href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}>{{ grandchild_link.title | escape }}</a></li>
+                                                {% endfor %}
+                                              </ul>
+                                            {% else %}
+                                              <a class="header__mega-link{% if child_link.current %} header__mega-link--active{% endif %}" href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>
+                                            {% endif %}
+                                          </li>
+                                        {% endfor %}
+                                      </ul>
+                                    </div>
                                   {% endif %}
-                                  {% for child_link in column_links %}
-                                    <li>
-                                      {% if child_link.links != blank %}
-                                        <a class="header__mega-category-title" href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>
-                                        <ul class="header__mega-nested" role="list">
-                                          {% for grandchild_link in child_link.links %}
-                                            <li><a href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}>{{ grandchild_link.title | escape }}</a></li>
-                                          {% endfor %}
-                                        </ul>
-                                      {% else %}
-                                        <a href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>
-                                      {% endif %}
-                                    </li>
-                                  {% endfor %}
-                                </ul>
+                                {% endfor %}
                               </div>
-                            {% endif %}
-                          {% endfor %}
+                            </div>
+                          {% endif %}
+                          {% if promotion_count > 0 %}
+                            <div class="header__mega-promotions">
+                              {% if has_promotion_1 %}
+                                <article class="header__mega-promo">
+                                  {% if mega_menu_block.settings.promotion_1_image != blank %}
+                                    {% assign promotion_1_image_alt = mega_menu_block.settings.promotion_1_image.alt | default: mega_menu_block.settings.promotion_1_heading %}
+                                    {% render 'responsive-image', image: mega_menu_block.settings.promotion_1_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_1_image_alt %}
+                                  {% else %}
+                                    {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
+                                  {% endif %}
+                                  <div class="header__mega-promo-content">
+                                    {% if mega_menu_block.settings.promotion_1_heading != blank %}<{{ mega_menu_block.settings.promotion_1_heading_tag | default: 'h3' }} class="header__mega-promo-title {% render 'typography-class', preset: mega_menu_block.settings.promotion_1_heading_size, fallback: 'medium' %}">{{ mega_menu_block.settings.promotion_1_heading | escape }}</{{ mega_menu_block.settings.promotion_1_heading_tag | default: 'h3' }}>{% endif %}
+                                    {% if mega_menu_block.settings.promotion_1_text != blank %}<div class="header__mega-promo-text rte spinel-text--{{ mega_menu_block.settings.promotion_1_text_size | default: 'medium' }} content-text content-text--{{ mega_menu_block.settings.promotion_1_text_alignment | default: 'left' }}">{{ mega_menu_block.settings.promotion_1_text }}</div>{% endif %}
+                                    {% if mega_menu_block.settings.promotion_1_link_label != blank and mega_menu_block.settings.promotion_1_link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ mega_menu_block.settings.promotion_1_link }}">{{ mega_menu_block.settings.promotion_1_link_label | escape }}</a>{% endif %}
+                                  </div>
+                                </article>
+                              {% endif %}
+                              {% if has_promotion_2 %}
+                                <article class="header__mega-promo">
+                                  {% if mega_menu_block.settings.promotion_2_image != blank %}
+                                    {% assign promotion_2_image_alt = mega_menu_block.settings.promotion_2_image.alt | default: mega_menu_block.settings.promotion_2_heading %}
+                                    {% render 'responsive-image', image: mega_menu_block.settings.promotion_2_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 900px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_2_image_alt %}
+                                  {% else %}
+                                    {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
+                                  {% endif %}
+                                  <div class="header__mega-promo-content">
+                                    {% if mega_menu_block.settings.promotion_2_heading != blank %}<{{ mega_menu_block.settings.promotion_2_heading_tag | default: 'h3' }} class="header__mega-promo-title {% render 'typography-class', preset: mega_menu_block.settings.promotion_2_heading_size, fallback: 'medium' %}">{{ mega_menu_block.settings.promotion_2_heading | escape }}</{{ mega_menu_block.settings.promotion_2_heading_tag | default: 'h3' }}>{% endif %}
+                                    {% if mega_menu_block.settings.promotion_2_text != blank %}<div class="header__mega-promo-text rte spinel-text--{{ mega_menu_block.settings.promotion_2_text_size | default: 'medium' }} content-text content-text--{{ mega_menu_block.settings.promotion_2_text_alignment | default: 'left' }}">{{ mega_menu_block.settings.promotion_2_text }}</div>{% endif %}
+                                    {% if mega_menu_block.settings.promotion_2_link_label != blank and mega_menu_block.settings.promotion_2_link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ mega_menu_block.settings.promotion_2_link }}">{{ mega_menu_block.settings.promotion_2_link_label | escape }}</a>{% endif %}
+                                  </div>
+                                </article>
+                              {% endif %}
+                            </div>
+                          {% endif %}
                         </div>
-
-                        {% if promotion_count > 0 %}
-                          <div class="header__mega-banners header__mega-banners--{{ promotion_count }}">
-                            {% if has_promotion_1 %}
-                              <article class="header__mega-promo">
-                                {% if mega_menu_block.settings.promotion_1_image != blank %}
-                                  {% assign promotion_1_alt = mega_menu_block.settings.promotion_1_image.alt | default: mega_menu_block.settings.promotion_1_heading %}
-                                  {% render 'responsive-image', image: mega_menu_block.settings.promotion_1_image, max_width: 900, widths: '360, 540, 720, 900', sizes: '(min-width: 991px) 24vw, 70vw', loading: 'lazy', alt: promotion_1_alt %}
-                                {% endif %}
-                                <div class="header__mega-promo-content">
-                                  {% if mega_menu_block.settings.promotion_1_heading != blank %}<{{ mega_menu_block.settings.promotion_1_heading_tag | default: 'h3' }} class="{% render 'typography-class', preset: mega_menu_block.settings.promotion_1_heading_size, fallback: 'medium' %}">{{ mega_menu_block.settings.promotion_1_heading | escape }}</{{ mega_menu_block.settings.promotion_1_heading_tag | default: 'h3' }}>{% endif %}
-                                  {% if mega_menu_block.settings.promotion_1_text != blank %}<div class="rte spinel-text--{{ mega_menu_block.settings.promotion_1_text_size | default: 'medium' }} content-text content-text--{{ mega_menu_block.settings.promotion_1_text_alignment | default: 'left' }}">{{ mega_menu_block.settings.promotion_1_text }}</div>{% endif %}
-                                  {% if mega_menu_block.settings.promotion_1_link_label != blank and mega_menu_block.settings.promotion_1_link != blank %}<a href="{{ mega_menu_block.settings.promotion_1_link }}">{{ mega_menu_block.settings.promotion_1_link_label | escape }} <span aria-hidden="true">↗</span></a>{% endif %}
-                                </div>
-                              </article>
-                            {% endif %}
-                            {% if has_promotion_2 %}
-                              <article class="header__mega-promo">
-                                {% if mega_menu_block.settings.promotion_2_image != blank %}
-                                  {% assign promotion_2_alt = mega_menu_block.settings.promotion_2_image.alt | default: mega_menu_block.settings.promotion_2_heading %}
-                                  {% render 'responsive-image', image: mega_menu_block.settings.promotion_2_image, max_width: 900, widths: '360, 540, 720, 900', sizes: '(min-width: 991px) 24vw, 70vw', loading: 'lazy', alt: promotion_2_alt %}
-                                {% endif %}
-                                <div class="header__mega-promo-content">
-                                  {% if mega_menu_block.settings.promotion_2_heading != blank %}<{{ mega_menu_block.settings.promotion_2_heading_tag | default: 'h3' }} class="{% render 'typography-class', preset: mega_menu_block.settings.promotion_2_heading_size, fallback: 'medium' %}">{{ mega_menu_block.settings.promotion_2_heading | escape }}</{{ mega_menu_block.settings.promotion_2_heading_tag | default: 'h3' }}>{% endif %}
-                                  {% if mega_menu_block.settings.promotion_2_text != blank %}<div class="rte spinel-text--{{ mega_menu_block.settings.promotion_2_text_size | default: 'medium' }} content-text content-text--{{ mega_menu_block.settings.promotion_2_text_alignment | default: 'left' }}">{{ mega_menu_block.settings.promotion_2_text }}</div>{% endif %}
-                                  {% if mega_menu_block.settings.promotion_2_link_label != blank and mega_menu_block.settings.promotion_2_link != blank %}<a href="{{ mega_menu_block.settings.promotion_2_link }}">{{ mega_menu_block.settings.promotion_2_link_label | escape }} <span aria-hidden="true">↗</span></a>{% endif %}
-                                </div>
-                              </article>
-                            {% endif %}
-                          </div>
-                        {% endif %}
                       </div>
                     </div>
-                  </div>
-                {% else %}
-                  <div class="header__pages-panel">
-                    {% if link.url != blank %}<a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>{% endif %}
-                    {% for child_link in link.links %}
-                      {% if child_link.links != blank %}
-                        <div class="header__pages-panel-group">
-                          <strong>{{ child_link.title | escape }}</strong>
-                          {% if child_link.url != blank %}<a href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>{% endif %}
-                          {% for grandchild_link in child_link.links %}<a href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}>{{ grandchild_link.title | escape }}</a>{% endfor %}
-                        </div>
+                  {% else %}
+                    <ul id="{{ submenu_id }}" class="header__submenu" role="list">
+                      <li class="header__mobile-submenu-back-item">
+                        <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: link.title | escape }}" data-header-mobile-back>
+                          <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
+                          <span>{{ link.title | escape }}</span>
+                        </button>
+                      </li>
+                      {% for child_link in link.links %}
+                        <li{% if child_link.links != blank %} class="header__submenu-item--has-children"{% endif %}>
+                          {% if child_link.links != blank %}
+                            {% assign nested_submenu_id = submenu_id | append: '-' | append: forloop.index %}
+                            <details class="header__submenu-nested-disclosure">
+                              <summary class="header__submenu-link header__mega-category-title{% if child_link.current or child_link.child_active %} header__submenu-link--active{% endif %}" aria-expanded="false" aria-controls="{{ nested_submenu_id }}">
+                                <span class="header__submenu-link-text">{{ child_link.title | escape }}</span>
+                                <span class="header__submenu-caret header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
+                              </summary>
+                            <ul id="{{ nested_submenu_id }}" class="header__submenu-nested" role="list">
+                              <li class="header__mobile-submenu-back-item">
+                                <button class="header__mobile-submenu-back" type="button" aria-label="{{ 'header.back_to' | t: item: child_link.title | escape }}" data-header-mobile-back>
+                                  <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
+                                  <span>{{ child_link.title | escape }}</span>
+                                </button>
+                              </li>
+                              {% for grandchild_link in child_link.links %}<li><a class="header__submenu-link{% if grandchild_link.current %} header__submenu-link--active{% endif %}" href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></a></li>{% endfor %}
+                              </ul>
+                            </details>
+                          {% else %}
+                            <a class="header__submenu-link{% if child_link.current %} header__submenu-link--active{% endif %}" href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ child_link.title | escape }}</span></a>
+                          {% endif %}
+                        </li>
+                      {% endfor %}
+                    </ul>
+                  {% endif %}
+                </details>
+              {% else %}
+                <a
+                  class="header__menu-link{% if link.current %} header__menu-link--active{% endif %}"
+                  href="{{ link.url }}"
+                  {% if link.current %}aria-current="page"{% endif %}
+                >
+                  {{ link.title | escape }}
+                </a>
+              {% endif %}
+
+              {% if badge_block != nil and badge_block.settings.text != blank %}
+                <span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>
+              {% endif %}
+            </li>
+          {% endfor %}
+              </ul>
+            </div>
+
+            <div class="header__mobile-drawer-bottom">
+              {% if section.settings.show_account and shop.customer_accounts_enabled %}
+                <a class="header__mobile-login" href="{{ account_href }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>{{ 'header.login' | t }}</a>
+              {% endif %}
+
+              <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
+          {% if section.settings.show_localization %}
+            <div class="header__mobile-localization">
+              {% if can_change_country %}
+                <details class="header__localization-selector">
+                  <summary aria-label="{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}">
+                    <span class="header__mobile-action-icon" aria-hidden="true">
+                      {% if section.settings.show_country_flag %}
+                        {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
                       {% else %}
-                        <a href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>
+                        <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5M12 3.5C9.8 5.8 8.7 8.6 8.7 12s1.1 6.2 3.3 8.5"/></svg>
                       {% endif %}
-                    {% endfor %}
+                    </span>
+                    <span class="header__mobile-localization-copy">
+                      <span class="header__mobile-localization-title">{{ 'header.country_region' | t }}</span>
+                      <span class="header__mobile-localization-full-value">{{ localization.country.name | escape }} ({{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }})</span>
+                    </span>
+                    <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}</span>
+                    <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                  </summary>
+                  <div class="header__localization-popover" data-header-localization-popover>
+                    <button class="header__localization-backdrop" type="button" tabindex="-1" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
+                    <div class="header__localization-sheet" role="dialog" aria-modal="true" aria-labelledby="{{ mobile_country_sheet_title_id }}">
+                      <div class="header__localization-sheet-header">
+                        <span class="header__localization-sheet-handle" aria-hidden="true"></span>
+                        <h2 id="{{ mobile_country_sheet_title_id }}">{{ 'header.country_region' | t }}</h2>
+                        <button class="header__localization-sheet-close" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close>
+                          {% render 'icon', name: 'close' %}
+                        </button>
+                      </div>
+                    {% form 'localization', id: mobile_country_form_id %}
+                      <div class="header__localization-select" data-header-country-picker>
+                        <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-header-country-input>
+                        <div class="header__localization-search" role="search">
+                          <label class="visually-hidden" for="{{ mobile_country_search_id }}">{{ 'header.search' | t }}</label>
+                          <input id="{{ mobile_country_search_id }}" class="header__localization-search-input" type="search" placeholder="{{ 'header.search' | t | escape }}" autocomplete="off" data-header-localization-search>
+                          <span class="header__localization-search-icon" aria-hidden="true">{% render 'icon', name: 'search' %}</span>
+                        </div>
+                        <div id="{{ mobile_country_form_id }}-Options" class="header__localization-options" role="listbox" aria-label="{{ 'header.country_region' | t | escape }}">
+                          {% for country in localization.available_countries %}
+                            <button class="header__localization-option{% if country.iso_code == localization.country.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if country.iso_code == localization.country.iso_code %}true{% else %}false{% endif %}" data-header-country-option data-country-code="{{ country.iso_code }}">
+                              {{ country | image_url: width: 32 | image_tag: class: 'header__localization-option-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
+                              <span class="header__localization-option-name">{{ country.name | escape }}</span>
+                              <span class="header__localization-option-currency">{{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }}</span>
+                              {% if country.iso_code == localization.country.iso_code %}<span class="header__localization-option-check" aria-hidden="true">✓</span>{% endif %}
+                            </button>
+                          {% endfor %}
+                        </div>
+                      </div>
+                      <noscript>
+                        <select name="country_code">
+                          {% for country in localization.available_countries %}
+                            <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.name | escape }} ({{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }})</option>
+                          {% endfor %}
+                        </select>
+                        <button type="submit">{{ 'header.apply' | t }}</button>
+                      </noscript>
+                    {% endform %}
+                    </div>
+                  </div>
+                </details>
+              {% else %}
+                <div class="header__mobile-action" aria-label="{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}">
+                  <span class="header__mobile-action-icon" aria-hidden="true">
+                    {% if section.settings.show_country_flag %}
+                      {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
+                    {% else %}
+                      <svg viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5M12 3.5C9.8 5.8 8.7 8.6 8.7 12s1.1 6.2 3.3 8.5"/></svg>
+                    {% endif %}
+                  </span>
+                  <span class="header__mobile-localization-copy">
+                    <span class="header__mobile-localization-title">{{ 'header.country_region' | t }}</span>
+                    <span class="header__mobile-localization-full-value">{{ localization.country.name | escape }} ({{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }})</span>
+                  </span>
+                  <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}</span>
+                </div>
+              {% endif %}
+            </div>
+                {% endif %}
+
+                {% if section.settings.show_localization and localization.available_languages.size > 1 %}
+                  <div class="header__mobile-language">
+                    <details class="header__localization-selector header__language-selector">
+                      <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}">
+                        <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
+                        <span class="header__mobile-localization-copy">
+                          <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
+                          <span class="header__mobile-localization-full-value">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+                        </span>
+                        <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+                        <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                      </summary>
+                      <div class="header__localization-popover" data-header-localization-popover>
+                        <button class="header__localization-backdrop" type="button" tabindex="-1" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
+                        <div class="header__localization-sheet" role="dialog" aria-modal="true" aria-labelledby="{{ mobile_language_sheet_title_id }}">
+                          <div class="header__localization-sheet-header">
+                            <span class="header__localization-sheet-handle" aria-hidden="true"></span>
+                            <h2 id="{{ mobile_language_sheet_title_id }}">{{ 'header.language' | t }}</h2>
+                            <button class="header__localization-sheet-close" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close>
+                              {% render 'icon', name: 'close' %}
+                            </button>
+                          </div>
+                        {% form 'localization', id: mobile_language_form_id %}
+                          <div class="header__localization-select" data-header-language-picker>
+                            <input type="hidden" name="language_code" value="{{ localization.language.iso_code }}" data-header-language-input>
+                            <div class="header__localization-options" role="listbox" aria-label="{{ 'header.language' | t | escape }}">
+                              {% for language in localization.available_languages %}
+                                <button class="header__localization-option{% if language.iso_code == localization.language.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if language.iso_code == localization.language.iso_code %}true{% else %}false{% endif %}" data-header-language-option data-language-code="{{ language.iso_code }}">
+                                  <span>{{ language.endonym_name | default: language.name | escape }}</span>
+                                  {% if language.iso_code == localization.language.iso_code %}<span class="header__localization-option-check" aria-hidden="true">✓</span>{% endif %}
+                                </button>
+                              {% endfor %}
+                            </div>
+                          </div>
+                        {% endform %}
+                        </div>
+                      </div>
+                    </details>
+                  </div>
+                {% elsif section.settings.show_localization and localization.language != blank %}
+                  <div class="header__mobile-language header__mobile-language--static" aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}">
+                    <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
+                    <span class="header__mobile-localization-copy">
+                      <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
+                      <span class="header__mobile-localization-full-value">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+                    </span>
+                    <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
                   </div>
                 {% endif %}
-              </details>
-            {% else %}
-              <a class="header__nav-link" href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>
-                <span>{{ link.title | escape }}</span>
-                {% if badge_block != nil %}<span class="header__menu-badge" {{ badge_block.shopify_attributes }}><span>{{ badge_block.settings.text | escape }}</span></span>{% endif %}
-              </a>
-            {% endif %}
-          {% endfor %}
-        </nav>
+              </div>
+            </div>
+          </nav>
+        </div>
+      </div>
+    {% endif %}
 
-        <a class="header__brand" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+    <div
+      class="header__logo"
+      style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px;"
+    >
+        <a href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
           {% if logo_image != blank %}
-            <span class="header__logo header__logo--normal">{{ logo_image | image_url: width: 480 | image_tag: loading: 'eager', widths: '170, 240, 340, 480', sizes: '170px', alt: shop.name }}</span>
-            <span class="header__logo header__logo--overlay" aria-hidden="true">{{ logo_image | image_url: width: 480 | image_tag: loading: 'eager', widths: '170, 240, 340, 480', sizes: '170px', alt: '' }}</span>
+            <picture class="header__logo-image header__logo-image--dark">
+              {% if logo_image_mobile != blank %}<source media="(max-width: 899px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
+              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 899px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
+            </picture>
+            <picture class="header__logo-image header__logo-image--light">
+              {% if logo_image_mobile != blank %}<source media="(max-width: 899px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
+              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 899px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
+            </picture>
           {% else %}
-            <span class="header__logo-text header__logo-text--normal">{{ shop.name | escape }}</span>
-            <span class="header__logo-text header__logo-text--overlay" aria-hidden="true">{{ shop.name | escape }}</span>
+            <span class="header__logo-text">{{ shop.name | escape }}</span>
           {% endif %}
         </a>
+    </div>
 
-        <div class="header__actions">
-          {% if section.settings.show_localization and localization.available_countries.size > 1 %}
-            <details class="header__dropdown header__dropdown--currency" data-header-dropdown>
-              <summary class="header__currency-trigger">
-                {% if section.settings.show_country_flag %}<span class="header__country-flag" aria-hidden="true" style="--header-country-flag: url(https://cdn.shopify.com/static/images/flags/{{ localization.country.iso_code | downcase }}.svg?width=32);"></span>{% endif %}
-                <span>{{ localization.country.currency.iso_code }} {{ localization.country.currency.symbol }}</span>
-                <span class="header__chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+    <div class="header__actions">
+      {% if section.settings.show_localization %}
+        <div class="header__localization">
+          {% if can_change_country %}
+            <details class="header__localization-selector">
+              <summary aria-label="{{ 'header.country_region' | t | escape }}">
+                {% if section.settings.show_country_flag %}
+                  {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: localization.country.name, loading: 'lazy' }}
+                {% endif %}
+                <span class="header__localization-label">{{ localization.country.name | escape }} ({{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }})</span>
+                <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
               </summary>
-              <div class="header__currency-panel">
-                <p class="header__panel-label">{{ 'header.country_region' | t }}</p>
-                <div data-header-country-form>
-                  {% form 'localization', id: country_form_id %}
-                    <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-header-country-value>
-                    <div class="header__country-list">
+              <div class="header__localization-popover">
+                {% form 'localization', id: country_form_id %}
+                  <div class="header__localization-select" data-header-country-picker>
+                    <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-header-country-input>
+                    <div id="{{ country_form_id }}-Options" class="header__localization-options" role="listbox" aria-label="{{ 'header.country_region' | t | escape }}">
                       {% for country in localization.available_countries %}
-                        <button type="button" value="{{ country.iso_code }}" data-header-country-option{% if country.iso_code == localization.country.iso_code %} aria-current="true"{% endif %}>
-                          <span>{{ country.name }}</span><span>{{ country.currency.iso_code }} {{ country.currency.symbol }}</span>
+                        <button class="header__localization-option{% if country.iso_code == localization.country.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if country.iso_code == localization.country.iso_code %}true{% else %}false{% endif %}" data-header-country-option data-country-code="{{ country.iso_code }}">
+                          {{ country | image_url: width: 32 | image_tag: class: 'header__localization-option-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
+                          <span>{{ country.name | escape }} ({{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }})</span>
+                          {% if country.iso_code == localization.country.iso_code %}<span class="header__localization-option-check" aria-hidden="true">✓</span>{% endif %}
                         </button>
                       {% endfor %}
                     </div>
-                  {% endform %}
-                </div>
+                  </div>
+                  <noscript>
+                    <select name="country_code">
+                      {% for country in localization.available_countries %}
+                        <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.name | escape }} ({{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }})</option>
+                      {% endfor %}
+                    </select>
+                    <button type="submit">{{ 'header.apply' | t }}</button>
+                  </noscript>
+                {% endform %}
               </div>
             </details>
-            <span class="header__actions-divider" aria-hidden="true"></span>
-          {% endif %}
-
-          {% if section.settings.show_search %}
-            <a class="header__icon-button" href="{{ routes.search_url }}" data-header-search-open aria-controls="{{ header_id }}-search" aria-label="{{ 'header.search' | t | escape }}">{% render 'icon', name: 'search' %}</a>
-          {% endif %}
-
-          {% if section.settings.show_account and shop.customer_accounts_enabled %}
-            {% if account_action == 'panel' %}
-              <shopify-account class="header__icon-button header__account-component" menu="{{ section.settings.customer_account_menu }}">
-                <span slot="signed-out-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
-              </shopify-account>
-            {% else %}
-              <a class="header__icon-button" href="{{ account_href }}"{% if account_open_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="{{ 'header.account' | t | escape }}">{% render 'icon', name: 'account' %}</a>
-            {% endif %}
-          {% endif %}
-
-          {% if section.settings.show_cart %}
-            <a class="header__icon-button header__cart-link" href="{{ routes.cart_url }}" data-cart-drawer-open aria-label="{{ 'header.cart_count' | t: count: cart.item_count | escape }}">
-              <span class="header__cart-icon">{% render 'icon', name: 'bag' %}{% if cart.item_count > 0 %}<span class="header__cart-count">{{ cart.item_count }}</span>{% endif %}</span>
-            </a>
+          {% else %}
+            <span class="header__localization-current" aria-label="{{ 'header.country_region' | t | escape }}">
+              {% if section.settings.show_country_flag %}
+                {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: localization.country.name, loading: 'lazy' }}
+              {% endif %}
+              <span class="header__localization-label">{{ localization.country.name | escape }} ({{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }})</span>
+            </span>
           {% endif %}
         </div>
-      </div>
-    </div>
-  </div>
+      {% endif %}
 
-  <div class="header__mobile-bar">
-    <div class="header__mobile-inner">
-      <div class="header__mobile-side header__mobile-side--left">
-        {% if has_menu %}<button class="header__mobile-icon" type="button" data-header-mobile-open aria-expanded="false" aria-controls="{{ header_id }}-mobile-menu" aria-label="{{ 'header.open_menu' | t | escape }}">{% render 'icon', name: 'menu' %}</button>{% endif %}
-      </div>
+      {% if section.settings.show_search %}
+        <button class="header__action header__search-trigger" type="button" aria-label="{{ 'header.search' | t | escape }}" aria-haspopup="dialog" aria-controls="HeaderSearch-{{ section.id }}" data-header-search-open>
+          {% render 'icon', name: 'search' %}
+        </button>
+      {% endif %}
 
-      <a class="header__brand header__brand--mobile" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
-        {% if mobile_logo_image != blank %}
-          <span class="header__logo header__logo--normal">{{ mobile_logo_image | image_url: width: 360 | image_tag: loading: 'eager', widths: '120, 180, 240, 360', sizes: '120px', alt: shop.name }}</span>
-          <span class="header__logo header__logo--overlay" aria-hidden="true">{{ mobile_logo_image | image_url: width: 360 | image_tag: loading: 'eager', widths: '120, 180, 240, 360', sizes: '120px', alt: '' }}</span>
+      {% if section.settings.show_account and shop.customer_accounts_enabled %}
+        {% if account_action == 'panel' %}
+          <shopify-account class="header__action header__action--account" menu="{{ section.settings.customer_account_menu }}">
+            <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
+          </shopify-account>
         {% else %}
-          <span class="header__logo-text header__logo-text--normal">{{ shop.name | escape }}</span>
-          <span class="header__logo-text header__logo-text--overlay" aria-hidden="true">{{ shop.name | escape }}</span>
+          <a class="header__action header__action--account" href="{{ account_href }}" aria-label="{{ 'header.login' | t | escape }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>
+            {% render 'icon', name: 'account' %}
+          </a>
         {% endif %}
-      </a>
+      {% endif %}
 
-      <div class="header__mobile-side header__mobile-side--right">
-        {% if section.settings.show_search %}<a class="header__mobile-icon" href="{{ routes.search_url }}" data-header-search-open aria-controls="{{ header_id }}-search" aria-label="{{ 'header.search' | t | escape }}">{% render 'icon', name: 'search' %}</a>{% endif %}
-        {% if section.settings.show_cart %}<a class="header__mobile-icon header__cart-link" href="{{ routes.cart_url }}" data-cart-drawer-open aria-label="{{ 'header.cart_count' | t: count: cart.item_count | escape }}"><span class="header__cart-icon">{% render 'icon', name: 'bag' %}{% if cart.item_count > 0 %}<span class="header__cart-count">{{ cart.item_count }}</span>{% endif %}</span></a>{% endif %}
-      </div>
+      {% if section.settings.show_cart %}
+        <a class="header__action header__cart" href="{{ routes.cart_url }}" aria-label="{{ 'header.cart' | t | escape }}" data-cart-count-label="{{ 'header.cart_count' | t: count: '__count__' | escape }}"{% if settings.cart_action == 'drawer' %} data-cart-drawer-open aria-controls="CartDrawer" aria-expanded="false"{% endif %}>
+          {% render 'icon', name: 'bag' %}
+          {% if cart.item_count > 0 %}
+            <span class="header__cart-count" aria-label="{{ 'header.cart_count' | t: count: cart.item_count | escape }}">
+              {{ cart.item_count }}
+            </span>
+          {% endif %}
+        </a>
+      {% endif %}
     </div>
   </div>
-
-  <button class="header__scrim" type="button" data-header-close-layer aria-label="{{ 'header.close_menu' | t | escape }}"></button>
-
-  {% if has_menu %}
-    <div class="header__mobile-menu" id="{{ header_id }}-mobile-menu" data-header-mobile-menu aria-hidden="true">
-      <div class="header__mobile-menu-panel" role="dialog" aria-modal="true" aria-label="{{ 'header.primary_navigation' | t | escape }}" tabindex="-1">
-        <div class="header__mobile-menu-top">
-          <a class="header__mobile-menu-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
-            {% if mobile_logo_image != blank %}<span class="header__logo">{{ mobile_logo_image | image_url: width: 360 | image_tag: loading: 'eager', widths: '120, 180, 240, 360', sizes: '120px', alt: shop.name }}</span>{% else %}<span class="header__logo-text">{{ shop.name | escape }}</span>{% endif %}
-          </a>
-          <button class="header__close-button" type="button" data-header-close-mobile aria-label="{{ 'header.close_menu' | t | escape }}">{% render 'icon', name: 'close' %}</button>
-        </div>
-
-        <nav class="header__mobile-nav" aria-label="{{ 'header.primary_navigation' | t | escape }}">
-          {% for link in menu_links %}
-            {% liquid
-              assign mobile_badge_block = nil
-              assign mobile_mega_block = nil
-              for block in section.blocks
-                if block.type == 'menu_badge' and block.settings.menu_item == link.title
-                  assign mobile_badge_block = block
-                endif
-                if block.type == 'mega_menu' and block.settings.menu_item != blank
-                  assign mobile_mega_items = block.settings.menu_item | split: ';'
-                  for mobile_mega_item in mobile_mega_items
-                    assign mobile_mega_item_name = mobile_mega_item | strip
-                    if mobile_mega_item_name == link.title
-                      assign mobile_mega_block = block
-                      break
-                    endif
-                  endfor
-                endif
-              endfor
-              assign mobile_has_submenu = false
-              if link.links != blank or mobile_mega_block != nil
-                assign mobile_has_submenu = true
-              endif
-            %}
-
-            {% if mobile_has_submenu %}
-              <details data-header-mobile-section>
-                <summary><span>{{ link.title | escape }}{% if mobile_badge_block != nil %}<span class="header__mobile-menu-badge">{{ mobile_badge_block.settings.text | escape }}</span>{% endif %}</span><span aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span></summary>
-                <div class="header__mobile-submenu">
-                  <div class="header__mobile-submenu-header">
-                    <button class="header__mobile-back" type="button" data-header-mobile-back aria-label="{{ 'header.back_to' | t: item: link.title | escape }}"><span aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span><span>{{ link.title | escape }}</span></button>
-                    <button class="header__close-button" type="button" data-header-close-mobile aria-label="{{ 'header.close_menu' | t | escape }}">{% render 'icon', name: 'close' %}</button>
-                  </div>
-                  <div class="header__mobile-submenu-inner">
-                    <div class="header__mobile-submenu-group header__mobile-submenu-group--featured">
-                      {% if link.url != blank %}<a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>{% endif %}
-                      {% for child_link in link.links %}
-                        {% if child_link.links == blank %}<a href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>{% endif %}
-                      {% endfor %}
-                    </div>
-
-                    {% for child_link in link.links %}
-                      {% if child_link.links != blank %}
-                        <details class="header__mobile-submenu-details">
-                          <summary><span>{{ child_link.title | escape }}</span><span aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span></summary>
-                          <div class="header__mobile-submenu header__mobile-submenu--child">
-                            <div class="header__mobile-submenu-header">
-                              <button class="header__mobile-back" type="button" data-header-mobile-back aria-label="{{ 'header.back_to' | t: item: child_link.title | escape }}"><span aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span><span>{{ child_link.title | escape }}</span></button>
-                            </div>
-                            <div class="header__mobile-submenu-inner">
-                              <div class="header__mobile-submenu-group">
-                                {% if child_link.url != blank %}<a href="{{ child_link.url }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>{% endif %}
-                                {% for grandchild_link in child_link.links %}<a href="{{ grandchild_link.url }}"{% if grandchild_link.current %} aria-current="page"{% endif %}>{{ grandchild_link.title | escape }}</a>{% endfor %}
-                              </div>
-                            </div>
-                          </div>
-                        </details>
-                      {% endif %}
-                    {% endfor %}
-
-                    {% if mobile_mega_block != nil %}
-                      {% liquid
-                        assign mobile_has_promotion_1 = false
-                        assign mobile_has_promotion_2 = false
-                        if mobile_mega_block.settings.promotion_1_image != blank or mobile_mega_block.settings.promotion_1_heading != blank or mobile_mega_block.settings.promotion_1_link_label != blank
-                          assign mobile_has_promotion_1 = true
-                        endif
-                        if mobile_mega_block.settings.promotion_2_image != blank or mobile_mega_block.settings.promotion_2_heading != blank or mobile_mega_block.settings.promotion_2_link_label != blank
-                          assign mobile_has_promotion_2 = true
-                        endif
-                      %}
-                      {% if mobile_has_promotion_1 or mobile_has_promotion_2 %}
-                        <div class="header__mobile-promos">
-                          {% if mobile_has_promotion_1 %}
-                            <article class="header__mobile-promo">
-                              {% if mobile_mega_block.settings.promotion_1_image != blank %}<span class="header__mobile-promo-media">{% render 'responsive-image', image: mobile_mega_block.settings.promotion_1_image, max_width: 600, widths: '240, 360, 480, 600', sizes: '70vw', loading: 'lazy', alt: mobile_mega_block.settings.promotion_1_heading %}</span>{% endif %}
-                              {% if mobile_mega_block.settings.promotion_1_heading != blank %}<strong>{{ mobile_mega_block.settings.promotion_1_heading | escape }}</strong>{% endif %}
-                              {% if mobile_mega_block.settings.promotion_1_link_label != blank and mobile_mega_block.settings.promotion_1_link != blank %}<a href="{{ mobile_mega_block.settings.promotion_1_link }}">{{ mobile_mega_block.settings.promotion_1_link_label | escape }} <span aria-hidden="true">↗</span></a>{% endif %}
-                            </article>
-                          {% endif %}
-                          {% if mobile_has_promotion_2 %}
-                            <article class="header__mobile-promo">
-                              {% if mobile_mega_block.settings.promotion_2_image != blank %}<span class="header__mobile-promo-media">{% render 'responsive-image', image: mobile_mega_block.settings.promotion_2_image, max_width: 600, widths: '240, 360, 480, 600', sizes: '70vw', loading: 'lazy', alt: mobile_mega_block.settings.promotion_2_heading %}</span>{% endif %}
-                              {% if mobile_mega_block.settings.promotion_2_heading != blank %}<strong>{{ mobile_mega_block.settings.promotion_2_heading | escape }}</strong>{% endif %}
-                              {% if mobile_mega_block.settings.promotion_2_link_label != blank and mobile_mega_block.settings.promotion_2_link != blank %}<a href="{{ mobile_mega_block.settings.promotion_2_link }}">{{ mobile_mega_block.settings.promotion_2_link_label | escape }} <span aria-hidden="true">↗</span></a>{% endif %}
-                            </article>
-                          {% endif %}
-                        </div>
-                      {% endif %}
-                    {% endif %}
-                  </div>
-                </div>
-              </details>
-            {% else %}
-              <a href="{{ link.url }}"{% if link.current %} aria-current="page"{% endif %}><span>{{ link.title | escape }}{% if mobile_badge_block != nil %}<span class="header__mobile-menu-badge">{{ mobile_badge_block.settings.text | escape }}</span>{% endif %}</span></a>
-            {% endif %}
-          {% endfor %}
-        </nav>
-
-        <div class="header__mobile-menu-footer">
-          {% if section.settings.show_account and shop.customer_accounts_enabled %}
-            {% if account_action == 'panel' %}
-              <shopify-account class="header__mobile-login" menu="{{ section.settings.customer_account_menu }}"><span slot="signed-out-avatar">{{ 'header.login' | t }}</span></shopify-account>
-            {% else %}
-              <a class="header__mobile-login" href="{{ account_href }}"{% if account_open_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>{{ 'header.login' | t }}</a>
-            {% endif %}
-          {% endif %}
-
-          {% if section.settings.show_localization %}
-            {% if localization.available_countries.size > 1 %}
-              <details class="header__mobile-localization">
-                <summary>{% if section.settings.show_country_flag %}<span class="header__country-flag" aria-hidden="true" style="--header-country-flag: url(https://cdn.shopify.com/static/images/flags/{{ localization.country.iso_code | downcase }}.svg?width=32);"></span>{% endif %}<span>{{ localization.country.name }} · {{ localization.country.currency.iso_code }}</span><span aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span></summary>
-                <div class="header__mobile-localization-panel">
-                  <div data-header-country-form>
-                    {% form 'localization', id: mobile_country_form_id %}
-                      <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-header-country-value>
-                      {% for country in localization.available_countries %}<button type="button" value="{{ country.iso_code }}" data-header-country-option><span>{{ country.name }}</span><span>{{ country.currency.iso_code }}</span></button>{% endfor %}
-                    {% endform %}
-                  </div>
-                </div>
-              </details>
-            {% endif %}
-            {% if localization.available_languages.size > 1 %}
-              <details class="header__mobile-localization">
-                <summary><span>{{ 'header.language' | t }} · {{ localization.language.endonym_name }}</span><span aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span></summary>
-                <div class="header__mobile-localization-panel">
-                  <div data-header-language-form>
-                    {% form 'localization', id: mobile_language_form_id %}
-                      <input type="hidden" name="locale_code" value="{{ localization.language.iso_code }}" data-header-language-value>
-                      {% for language in localization.available_languages %}<button type="button" value="{{ language.iso_code }}" data-header-language-option><span>{{ language.endonym_name }}</span><span>{{ language.iso_code | upcase }}</span></button>{% endfor %}
-                    {% endform %}
-                  </div>
-                </div>
-              </details>
-            {% endif %}
-          {% endif %}
-        </div>
-      </div>
-    </div>
-  {% endif %}
 
   {% if section.settings.show_search %}
-    <div class="header__drawer header__drawer--search" id="{{ header_id }}-search" data-header-search-drawer aria-hidden="true">
-      <div class="header__drawer-panel" role="dialog" aria-modal="true" aria-label="{{ 'header.search' | t | escape }}" tabindex="-1">
-        <div class="header__drawer-top"><strong>{{ 'header.search' | t }}</strong><button class="header__close-button" type="button" data-header-close-layer aria-label="{{ 'header.close_search' | t | escape }}">{% render 'icon', name: 'close' %}</button></div>
-        <form action="{{ routes.search_url }}" method="get" class="header__search-form" role="search">
-          <label class="visually-hidden" for="{{ header_id }}-search-input">{{ 'header.search' | t }}</label>
-          <input id="{{ header_id }}-search-input" type="search" name="q" placeholder="{{ 'search.placeholder' | t | escape }}" autocomplete="off">
-          <input type="hidden" name="options[prefix]" value="last">
-          <button type="submit" aria-label="{{ 'header.search' | t | escape }}">{% render 'icon', name: 'search' %}</button>
+    <dialog scroll-lock data-scroll-lock-owner="search" class="header-search-modal color-scheme color-{{ section.settings.color_scheme.id }}" id="HeaderSearch-{{ section.id }}" aria-labelledby="HeaderSearchLabel-{{ section.id }}" data-header-search-modal data-predictive-search-url="{{ routes.predictive_search_url }}" data-currency-code="{{ localization.country.currency.iso_code | default: shop.currency | escape }}">
+      <div class="header-search-modal__inner">
+        <button class="header-search-modal__close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_search' | t | escape }}" data-header-search-close></button>
+        <form class="header-search-modal__form search-field" action="{{ routes.search_url }}" method="get" role="search" data-header-search-form>
+          <label class="visually-hidden" id="HeaderSearchLabel-{{ section.id }}" for="HeaderSearchInput-{{ section.id }}">{{ 'search.label' | t }}</label>
+          <input id="HeaderSearchInput-{{ section.id }}" class="header-search-modal__input search-field__input" type="search" name="q" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="HeaderSearchPanel-{{ section.id }}-products" data-header-search-input>
+          <button class="header-search-modal__clear search-field__clear" type="button" aria-label="{{ 'search.clear_search' | t | escape }}" data-header-search-clear hidden>
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
+          <button class="header-search-modal__submit search-field__submit" type="submit" aria-label="{{ 'search.submit' | t | escape }}">
+            <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m16 16 4.4 4.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+          </button>
         </form>
+
+        <div class="header-search-modal__predictive" data-header-search-predictive aria-live="polite" aria-atomic="false" hidden>
+          <div class="header-search-modal__tabs" role="tablist" aria-label="{{ 'search.result_tabs' | t | escape }}">
+            <button id="HeaderSearchTab-{{ section.id }}-products" type="button" role="tab" aria-selected="true" aria-controls="HeaderSearchPanel-{{ section.id }}-products" tabindex="0" data-header-search-tab="products">{{ 'search.products' | t }}</button>
+            <button id="HeaderSearchTab-{{ section.id }}-collections" type="button" role="tab" aria-selected="false" aria-controls="HeaderSearchPanel-{{ section.id }}-collections" tabindex="-1" data-header-search-tab="collections">{{ 'search.collections' | t }}</button>
+          </div>
+          <div class="header-search-modal__panels">
+            <div id="HeaderSearchPanel-{{ section.id }}-products" role="tabpanel" aria-labelledby="HeaderSearchTab-{{ section.id }}-products" data-header-search-panel="products"></div>
+            <div id="HeaderSearchPanel-{{ section.id }}-collections" role="tabpanel" aria-labelledby="HeaderSearchTab-{{ section.id }}-collections" hidden data-header-search-panel="collections"></div>
+            <p class="header-search-modal__empty" data-header-search-empty hidden></p>
+          </div>
+          <a class="button button--primary header-search-modal__view-all" href="{{ routes.search_url }}" data-header-search-view-all>{{ 'search.view_all_results' | t }}</a>
+        </div>
       </div>
-    </div>
+    </dialog>
   {% endif %}
 </header>
+
+
+
 
 {% schema %}
 {
