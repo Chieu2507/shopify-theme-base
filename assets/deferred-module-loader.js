@@ -1,5 +1,7 @@
 (() => {
   const pending = new WeakSet();
+  const isMobileViewport = window.matchMedia('(max-width: 749px)').matches;
+  const deferredModuleRootMargin = isMobileViewport ? '800px 0px' : '480px 0px';
   const observer = 'IntersectionObserver' in window
     ? new IntersectionObserver((entries) => {
         entries.forEach((entry) => {
@@ -7,7 +9,7 @@
           observer.unobserve(entry.target);
           load(entry.target);
         });
-      }, { rootMargin: '480px 0px' })
+      }, { rootMargin: deferredModuleRootMargin })
     : null;
 
   function load(element) {

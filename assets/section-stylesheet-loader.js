@@ -2,6 +2,8 @@ const deferredStylesheets = document.querySelectorAll('[data-deferred-section-st
 const loadedStylesheetUrls = new Set(
   [...document.querySelectorAll('link[rel="stylesheet"][href]')].map((link) => link.href),
 );
+const isMobileViewport = window.matchMedia('(max-width: 749px)').matches;
+const deferredStylesheetRootMargin = isMobileViewport ? '800px 0px' : '400px 0px';
 const scrollRestoration = window.SpinelScrollRestoration;
 
 const loadStylesheet = (link) => new Promise((resolve) => {
@@ -71,7 +73,7 @@ if (scrollRestoration?.shouldRestore) {
         observer.unobserve(entry.target);
       });
     },
-    { rootMargin: '400px 0px' },
+    { rootMargin: deferredStylesheetRootMargin },
   );
 
   deferredStylesheets.forEach((link) => {
