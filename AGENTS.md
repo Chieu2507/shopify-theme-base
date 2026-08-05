@@ -50,6 +50,15 @@ storefront có liên quan.
   animation, các tùy chỉnh dành cho merchant và những khác biệt được phép. Trong
   bước QA cuối cùng, phải đối chiếu lại demo theo checklist đó.
 
+### Thông tin truy cập storefront demo
+
+- Password page của tất cả storefront demo đang dùng theme Spinel hiện tại là
+  `1`. Khi cần mở storefront hoặc preview bị khóa trong phạm vi này, dùng mật
+  khẩu `1` và không hỏi lại người dùng.
+- Chỉ áp dụng giá trị này cho storefront demo và theme Spinel hiện tại. Không
+  suy rộng sang Shopify Admin, tài khoản Shopify, VPS, GitHub, API, token hoặc
+  bất kỳ môi trường nào khác.
+
 ### Thứ tự ưu tiên bắt buộc khi xây dựng cấu trúc
 
 Chọn phương án phù hợp về kỹ thuật đầu tiên theo đúng thứ tự sau:
