@@ -507,6 +507,7 @@ if (!window.SpinelHeaderMenus) {
       .then(() => {
         if (megaMenuAnimations.get(details) !== animation) return false;
         megaMenuAnimations.delete(details);
+        delete details.dataset.opening;
         animation.cancel();
         return true;
       })
@@ -561,6 +562,7 @@ if (!window.SpinelHeaderMenus) {
         if (megaMenuAnimations.get(details) !== animation) return;
         megaMenuAnimations.delete(details);
         delete details.dataset.closing;
+        delete details.dataset.opening;
         details.open = false;
         syncHeaderDisclosureAria(details);
         syncHeaderMenuScrollLock();
