@@ -1,4 +1,4 @@
-{% render 'section-stylesheet', asset: 'section-featured-collection-critical.css', inline_on_home: true %}
+{% render 'section-stylesheet', asset: 'section-featured-collection-critical.css', inline_on_home: true, inline_on_design_mode: true %}
 {% render 'swiper-stylesheet', defer_on_home: true %}
 
 {% liquid
@@ -186,6 +186,35 @@
               {% assign panel_index = 0 %}
               {% for block in section.blocks %}
                 {% if block.type == 'collection_tab' %}
+                  {% liquid
+                    assign panel_product_count = section.settings.products_to_show
+                    if block.settings.collection != blank
+                      assign panel_product_count = block.settings.collection.products_count
+                      if panel_product_count > section.settings.products_to_show
+                        assign panel_product_count = section.settings.products_to_show
+                      endif
+                    endif
+
+                    assign panel_mobile_columns = section.settings.columns_mobile | plus: 0
+                    assign panel_tablet_columns = section.settings.columns_desktop
+                    if promotion_block != blank
+                      assign panel_tablet_columns = 1
+                    elsif panel_tablet_columns > 2
+                      assign panel_tablet_columns = 2
+                    endif
+                    assign panel_desktop_slides = section.settings.columns_desktop
+                    assign panel_tablet_slides = panel_tablet_columns
+                    assign panel_mobile_slides = panel_mobile_columns
+                    if panel_product_count > panel_desktop_slides
+                      assign panel_desktop_slides = panel_desktop_slides | plus: 0.15
+                    endif
+                    if panel_product_count > panel_tablet_slides
+                      assign panel_tablet_slides = panel_tablet_slides | plus: 0.15
+                    endif
+                    if panel_product_count > panel_mobile_slides
+                      assign panel_mobile_slides = panel_mobile_slides | plus: 0.15
+                    endif
+                  %}
                   <div
                     class="featured-collection__panel"
                     id="FeaturedCollectionPanel-{{ section.id }}-{{ block.id }}"
@@ -194,6 +223,7 @@
                     data-featured-collection-panel
                     data-block-id="{{ block.id }}"
                     data-featured-collection-source="{{ block.settings.source | default: 'collection' }}"
+                    style="--featured-collection-slide-width-mobile: calc((100% - {{ section.settings.mobile_column_gap }}px * ({{ panel_mobile_slides }} - 1)) / {{ panel_mobile_slides }}); --featured-collection-slide-width-tablet: calc((100% - {{ section.settings.column_gap }}px * ({{ panel_tablet_slides }} - 1)) / {{ panel_tablet_slides }}); --featured-collection-slide-width-desktop: calc((100% - {{ section.settings.column_gap }}px * ({{ panel_desktop_slides }} - 1)) / {{ panel_desktop_slides }});"
                     {% unless panel_index == 0 %}hidden{% endunless %}
                     {{ block.shopify_attributes }}
                   >
