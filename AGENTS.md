@@ -1,5 +1,28 @@
 # Hướng dẫn trong workspace
 
+## DELIVERY POLICY — BẮT BUỘC ĐỌC TRƯỚC
+
+Các quy tắc dưới đây là workflow mặc định của repository này và là nguồn chuẩn
+cho các thao tác Git trong workspace.
+
+- Sau mỗi thay đổi code/theme đã được kiểm tra, tự động hoàn tất quy trình:
+  `git fetch origin main` → kiểm tra divergence/conflict → chỉ stage các file
+  thuộc task hiện tại → commit → `git push origin main` → xác nhận `HEAD` và
+  `origin/main` trùng nhau.
+- Không hỏi lại quyền commit hoặc push. Nếu user yêu cầu push, bắt buộc thực
+  hiện commit và push, trừ khi có conflict hoặc kiểm tra thất bại.
+- Yêu cầu rõ ràng của user hoặc system về việc không push có ưu tiên cao hơn
+  policy mặc định này.
+- Không để memory, default chung hoặc policy của task cũ như “do not push” ghi
+  đè policy của repository này.
+- Chỉ stage và commit các file thuộc task hiện tại. Giữ nguyên mọi thay đổi
+  không liên quan đã có trong working tree.
+- Nếu remote có divergence hoặc conflict, không được ghi đè code khác; phải
+  kiểm tra và merge an toàn trước khi push.
+- Nếu vì một blocker mà chưa push được, phải nêu chính xác blocker đó trong
+  phần bàn giao cuối cùng.
+- Theme đã kết nối với Git nên không cần kiểm tra thêm cấu hình deploy.
+
 ## Xây dựng section và theme block
 
 Các quy tắc này là bắt buộc đối với mọi tác vụ tạo mới hoặc chỉnh sửa Shopify
@@ -231,8 +254,3 @@ và [Theme limits](https://shopify.dev/docs/storefronts/themes/architecture/limi
 - Output đầy đủ mới nhất và exit status được lưu lần lượt tại
   `validation-results/latest.log` và
   `validation-results/latest.status` để các tác vụ sau có thể kiểm tra.
-
-  ## Merge/Deploy
-
-- Tự động merge/deploy code lên main không cần hỏi lại. Chú ý cần kiểm tra conflict trước khi thực hiện. Nếu bị conflict thì không được làm ảnh hưởng tới các code khác.
-- Không cần kiểm tra cấu hình deploy của theme vì Theme được kết nối với Git, khi code lên Git là Theme cũng đồng bộ theo.
