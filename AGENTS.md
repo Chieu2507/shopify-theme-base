@@ -174,6 +174,20 @@ và [Theme limits](https://shopify.dev/docs/storefronts/themes/architecture/limi
 7. Trong phần bàn giao cuối cùng, tóm tắt các thành phần đã tái sử dụng, mọi
    ngoại lệ so với bộ option chuẩn và kết quả validation.
 
+### Lifecycle trong Shopify Theme Editor và scroll lock
+
+- Các handler `shopify:section:*` và `shopify:block:*` phải giới hạn đúng
+  `event.target`, `sectionId` hoặc block ID tương ứng; không xử lý lifecycle
+  của section hoặc block khác như component của mình.
+- Mọi lock đặt trên `html` hoặc `body` (class, attribute, `position`,
+  `overflow`, `top`, `width`...) phải có cleanup đối xứng khi section được
+  re-render hoặc bị xóa. Không được chỉ dựa vào `shopify:section:load` để
+  unlock sau `shopify:section:unload`, vì thao tác xóa có thể không phát sinh
+  một lần load tiếp theo.
+- QA trong Theme Editor phải bao gồm đổi option gây re-render, reload section,
+  xóa section, xóa block và sắp xếp lại block; sau mỗi thao tác phải xác nhận
+  trang vẫn scroll được và không còn lock trạng thái trên `html` hoặc `body`.
+
 ## Kiểm tra tính hợp lệ của Shopify theme
 <!--
 - Không tự động chạy Validator hoặc Theme Check trừ khi tôi yêu cầu. Nếu được yêu cầu thì làm theo các phần ở dưới. -->
