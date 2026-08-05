@@ -106,6 +106,7 @@
         this.handle?.addEventListener('touchend', (event) => this.endTouchHandleDrag(event), { signal });
         this.handle?.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
       }
+      window.addEventListener('resize', () => this.syncBackdropOffset(), { passive: true, signal });
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && this.isOpen) this.close();
         if (event.key === 'Tab' && this.isOpen) this.trapFocus(event);
@@ -266,10 +267,23 @@
       return Number(match[1]) * (match[2] === 's' ? 1000 : 1);
     }
 
+    syncBackdropOffset() {
+      if (!this.mobileDrawer?.matches) {
+        this.style.removeProperty('--cart-drawer-backdrop-top');
+        return;
+      }
+
+      const header = document.querySelector('[data-header]');
+      const headerBottom = header?.getBoundingClientRect().bottom || 0;
+      const offset = Math.max(0, Math.min(window.innerHeight, headerBottom));
+      this.style.setProperty('--cart-drawer-backdrop-top', `${offset}px`);
+    }
+
     async open(trigger = null) {
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
       this.resetHandleDrag();
+      this.syncBackdropOffset();
       const shouldAnimateOpen = !(this.isOpen && this.classList.contains('is-open'));
       this.hidden = false;
       this.isOpen = true;
