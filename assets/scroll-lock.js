@@ -15,7 +15,19 @@
   let hadRootLockAttribute = false;
   let updateQueued = false;
 
-  const ownerMode = (owner) => owner === 'mega-menu' || owner === 'mobile-menu' ? 'overflow' : 'fixed';
+  const userAgent = navigator.userAgent;
+  const isIOS = /iP(?:ad|hone|od)/i.test(userAgent)
+    || (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  const isMobileSafari = isIOS
+    && /AppleWebKit/i.test(userAgent)
+    && /Safari/i.test(userAgent)
+    && !/(?:CriOS|FxiOS|EdgiOS|OPiOS)/i.test(userAgent);
+
+  const ownerMode = (owner) => {
+    if (owner === 'mega-menu' || owner === 'mobile-menu') return 'overflow';
+    if (owner === 'cart-drawer' && isMobileSafari) return 'overflow';
+    return 'fixed';
+  };
 
   const getDeclarativeOwner = (element) => {
     if (element.dataset.scrollLockOwner) return element.dataset.scrollLockOwner;

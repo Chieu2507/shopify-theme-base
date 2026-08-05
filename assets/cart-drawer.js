@@ -54,7 +54,6 @@
     disconnectedCallback() {
       this.abortController?.abort();
       this.backdropInteraction?.destroy();
-      this.restoreBrowserChromeColor();
       document.documentElement.classList.remove('cart-drawer-open');
       this.isOpen = false;
     }
@@ -232,7 +231,6 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
-      this.restoreBrowserChromeColor();
       document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
@@ -279,53 +277,6 @@
       return Number(match[1]) * (match[2] === 's' ? 1000 : 1);
     }
 
-    setBrowserChromeColor() {
-      if (this.browserChromeColorState) return;
-
-      const color = this.dataset.browserChromeColor || '#ffffff';
-      const root = document.documentElement;
-      const themeColorMetas = [...document.head.querySelectorAll('meta[name="theme-color"]')];
-      const state = {
-        rootColor: root.style.getPropertyValue('--cart-drawer-browser-chrome-color'),
-        metas: themeColorMetas.map((meta) => ({ meta, content: meta.getAttribute('content') })),
-        createdMeta: null
-      };
-
-      root.style.setProperty('--cart-drawer-browser-chrome-color', color);
-
-      if (themeColorMetas.length) {
-        themeColorMetas.forEach((meta) => meta.setAttribute('content', color));
-      } else {
-        const meta = document.createElement('meta');
-        meta.name = 'theme-color';
-        meta.content = color;
-        meta.dataset.cartDrawerThemeColor = '';
-        document.head.append(meta);
-        state.createdMeta = meta;
-      }
-
-      this.browserChromeColorState = state;
-    }
-
-    restoreBrowserChromeColor() {
-      const state = this.browserChromeColorState;
-      if (!state) return;
-
-      if (state.rootColor) {
-        document.documentElement.style.setProperty('--cart-drawer-browser-chrome-color', state.rootColor);
-      } else {
-        document.documentElement.style.removeProperty('--cart-drawer-browser-chrome-color');
-      }
-
-      state.metas.forEach(({ meta, content }) => {
-        if (!meta.isConnected) return;
-        if (content === null) meta.removeAttribute('content');
-        else meta.setAttribute('content', content);
-      });
-      state.createdMeta?.remove();
-      this.browserChromeColorState = null;
-    }
-
     async open(trigger = null) {
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
@@ -341,7 +292,6 @@
         this.panel?.getBoundingClientRect();
       }
       if (!this.classList.contains('is-open')) this.classList.add('is-open');
-      this.setBrowserChromeColor();
       document.documentElement.classList.add('cart-drawer-open');
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'true'));
       this.panel?.focus({ preventScroll: true });
@@ -354,7 +304,6 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
-      this.restoreBrowserChromeColor();
       document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
