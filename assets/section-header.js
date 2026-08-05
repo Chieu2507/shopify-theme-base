@@ -643,7 +643,7 @@ if (!window.SpinelHeaderMenus) {
     if (overflowsInlineEnd) details.dataset.flyoutReverse = 'true';
   };
 
-  const closeOtherHeaderSubmenus = (details) => {
+  const closeOtherHeaderSubmenus = (details, closeImmediately = false) => {
     const header = details.closest('[data-header]');
     const openMenus = details.matches('.header__submenu-nested-disclosure')
       ? details.closest('.header__submenu-disclosure')?.querySelectorAll('.header__submenu-nested-disclosure[open]')
@@ -651,7 +651,7 @@ if (!window.SpinelHeaderMenus) {
 
     openMenus?.forEach((menu) => {
       if (menu === details) return;
-      if (shouldAnimateHeaderSubmenu(menu)) closeMegaMenu(menu, isMobileHeaderViewport());
+      if (shouldAnimateHeaderSubmenu(menu)) closeMegaMenu(menu, closeImmediately || isMobileHeaderViewport());
       else menu.open = false;
     });
   };
@@ -674,7 +674,10 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    closeOtherHeaderSubmenus(details);
+    closeOtherHeaderSubmenus(
+      details,
+      supportsDesktopHeaderHover() && details.matches('.header__submenu-disclosure--hover')
+    );
     positionHeaderSubmenu(details);
     const responsiveHeader = details.closest('[data-transparent-header="true"], [data-floating-header="true"]');
     if (responsiveHeader?.dataset.transparentHeader === 'true' && !isMobileHeaderViewport()) {
