@@ -781,6 +781,14 @@ if (!window.SpinelHeaderMenus) {
         }
       }
 
+      if (!details.open && details.matches?.('.header__localization-selector')) {
+        const searchInput = details.querySelector('[data-header-localization-search]');
+        if (searchInput) {
+          searchInput.value = '';
+          details.querySelectorAll('[data-header-country-option]').forEach((option) => { option.hidden = false; });
+        }
+      }
+
       if (details.matches?.('.header__submenu-disclosure, .header__submenu-nested-disclosure')) {
         syncHeaderDisclosureAria(details);
       }
@@ -803,6 +811,16 @@ if (!window.SpinelHeaderMenus) {
     const mobileCloseButton = event.target.closest?.('[data-header-mobile-close]');
     if (mobileCloseButton) {
       closeMobileMenu(mobileCloseButton.closest('[data-header]')?.querySelector('.header__menu-disclosure[open]'));
+      return;
+    }
+
+    const localizationCloseButton = event.target.closest?.('[data-header-localization-close]');
+    if (localizationCloseButton && isMobileHeaderViewport()) {
+      const details = localizationCloseButton.closest('.header__localization-selector');
+      if (details) {
+        details.open = false;
+        details.querySelector(':scope > summary')?.focus();
+      }
       return;
     }
 
@@ -963,6 +981,17 @@ if (!window.SpinelHeaderMenus) {
 
     input.value = languageOption.dataset.languageCode;
     languageOption.closest('form')?.submit();
+  });
+
+  document.addEventListener('input', (event) => {
+    const searchInput = event.target.closest?.('[data-header-localization-search]');
+    if (!searchInput) return;
+
+    const searchTerm = searchInput.value.trim().toLocaleLowerCase();
+    const popover = searchInput.closest('[data-header-localization-popover]');
+    popover?.querySelectorAll('[data-header-country-option]').forEach((option) => {
+      option.hidden = searchTerm.length > 0 && !option.textContent.toLocaleLowerCase().includes(searchTerm);
+    });
   });
 
   document.addEventListener('shopify:block:select', (event) => {
