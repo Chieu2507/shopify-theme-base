@@ -8,6 +8,8 @@ if (!window.SpinelHeaderMenus) {
   const mobileMenuReturnFocus = new WeakMap();
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   const headerHoverCloseDelay = 500;
+  // Temporary visual test: render mega menus without Web Animations API motion.
+  const disableMegaMenuWebAnimations = true;
   let transparentHeaderFrame = 0;
   let headerScrollLockFallbackStyles = null;
 
@@ -488,6 +490,18 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const animateMegaMenuOpen = (details, focusAfterMotion = false) => {
+    if (disableMegaMenuWebAnimations) {
+      megaMenuAnimations.get(details)?.cancel();
+      megaMenuAnimations.delete(details);
+      mobileMegaMenuMotions.get(details)?.animation.cancel();
+      mobileMegaMenuMotions.delete(details);
+      delete details.dataset.opening;
+      delete details.dataset.closing;
+      syncHeaderDisclosureAria(details);
+      syncHeaderMenuScrollLock();
+      return Promise.resolve(false);
+    }
+
     const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
     if (type === 'mobile_slide') return runMobileMegaMenuMotion(details, true, focusAfterMotion);
     if (!panel || type === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve(false);
@@ -528,7 +542,7 @@ if (!window.SpinelHeaderMenus) {
       });
     }
 
-    if (immediate || !panel || type === 'none' || reduceMotion) {
+    if (immediate || disableMegaMenuWebAnimations || !panel || type === 'none' || reduceMotion) {
       megaMenuAnimations.get(details)?.cancel();
       megaMenuAnimations.delete(details);
       mobileMegaMenuMotions.get(details)?.animation.cancel();
