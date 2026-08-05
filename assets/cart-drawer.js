@@ -322,11 +322,6 @@
     }
 
     syncBackdropOffset() {
-      if (!this.mobileDrawer?.matches) {
-        this.style.removeProperty('--cart-drawer-backdrop-top');
-        return;
-      }
-
       const header = document.querySelector('[data-header]');
       const headerBottom = header?.getBoundingClientRect().bottom || 0;
       const offset = Math.max(0, Math.min(window.innerHeight, headerBottom));
