@@ -26,6 +26,7 @@
       this.handleDrag = null;
       this.handleDragTimer = null;
       this.mobileDrawer = window.matchMedia('(max-width: 989px)');
+      this.panelAnimation = null;
       this.bind();
       this.renderEmpty();
       this.handleProductAdd = (event) => {
@@ -55,6 +56,7 @@
     disconnectedCallback() {
       this.abortController?.abort();
       this.backdropInteraction?.destroy();
+      this.cancelPanelMotion();
       document.documentElement.classList.remove('cart-drawer-open');
     }
 
@@ -169,6 +171,7 @@
       if (!this.panel || !this.handle || !this.isOpen || !this.mobileDrawer.matches || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
 
       window.clearTimeout(this.handleDragTimer);
+      this.cancelPanelMotion();
       this.handleDrag = {
         pointerId: event.pointerId,
         startY: event.clientY,
@@ -226,6 +229,7 @@
 
     closeFromHandle() {
       if (!this.isOpen) return;
+      this.cancelPanelMotion();
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
@@ -260,10 +264,60 @@
       this.panel?.style.removeProperty('transition');
     }
 
+    cancelPanelMotion() {
+      this.panelAnimation?.cancel();
+      this.panelAnimation = null;
+    }
+
+    runMobilePanelMotion(opening) {
+      if (!this.panel || !this.mobileDrawer?.matches) return;
+
+      const duration = this.getMotionDuration();
+      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      if (reduceMotion || duration <= 0 || typeof this.panel.animate !== 'function') {
+        this.cancelPanelMotion();
+        this.panel.style.transform = opening ? 'translateX(0)' : 'translateX(100%)';
+        return;
+      }
+
+      let animation = this.panelAnimation;
+      if (!animation || animation.playState === 'idle') {
+        animation = this.panel.animate(
+          [
+            { opacity: 1, transform: 'translateX(100%)' },
+            { opacity: 1, transform: 'translateX(0)' }
+          ],
+          {
+            duration,
+            easing: 'ease-in-out',
+            fill: 'both'
+          }
+        );
+        this.panelAnimation = animation;
+      }
+
+      animation.onfinish = () => {
+        if (this.panelAnimation !== animation || opening) return;
+        this.panelAnimation = null;
+        animation.cancel();
+        this.panel.style.removeProperty('transform');
+      };
+      animation.currentTime = opening ? 0 : duration;
+      animation.playbackRate = opening ? 1 : -1;
+      animation.play();
+    }
+
     getMotionDuration() {
       const value = getComputedStyle(this).getPropertyValue('--cart-drawer-motion-duration').trim();
       const match = value.match(/^([\d.]+)(ms|s)$/);
       if (!match) return 350;
+      return Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+    }
+
+    getBackdropMotionDuration() {
+      const value = getComputedStyle(this).getPropertyValue('--cart-drawer-backdrop-duration').trim();
+      const match = value.match(/^([\d.]+)(ms|s)$/);
+      if (!match) return this.getMotionDuration();
       return Number(match[1]) * (match[2] === 's' ? 1000 : 1);
     }
 
@@ -295,6 +349,7 @@
         this.panel?.getBoundingClientRect();
       }
       if (!this.classList.contains('is-open')) this.classList.add('is-open');
+      if (shouldAnimateOpen) this.runMobilePanelMotion(true);
       document.documentElement.classList.add('cart-drawer-open');
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'true'));
       this.panel?.focus({ preventScroll: true });
@@ -307,14 +362,16 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
+      this.runMobilePanelMotion(false);
       document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
       this.lastFocusedElement?.focus?.({ preventScroll: true });
+      const closeDuration = Math.max(this.getMotionDuration(), this.getBackdropMotionDuration());
       this.closeTimer = window.setTimeout(() => {
         this.hidden = true;
         this.classList.remove('is-closing');
-      }, this.getMotionDuration());
+      }, closeDuration);
     }
 
     async refresh() {
