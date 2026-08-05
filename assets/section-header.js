@@ -155,23 +155,18 @@ if (!window.SpinelHeaderMenus) {
     const isMobile = window.matchMedia('(max-width: 899px)').matches;
     const openMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-open="true"]:not([data-motion-state="closing"])');
     const closingMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-motion-state="closing"]');
-    const openCartDrawer = document.querySelector('[data-cart-drawer].is-open:not(.is-closing)');
-    const closingCartDrawer = document.querySelector('[data-cart-drawer].is-closing');
     const shouldLock = isMobile
       ? Boolean(openMobileDrawer || closingMobileDrawer)
       : Boolean(document.querySelector('.header__submenu-disclosure[open]'));
     const shouldShowOverlay = isMobile
-      ? Boolean(openMobileDrawer || openCartDrawer)
-      : Boolean(document.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])') || openCartDrawer);
-    const shouldShowClosingOverlay = !shouldShowOverlay && (isMobile
-      ? Boolean(closingMobileDrawer || closingCartDrawer)
-      : Boolean(closingCartDrawer));
+      ? Boolean(openMobileDrawer)
+      : Boolean(document.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])'));
     const root = document.documentElement;
     const isLocked = root.classList.contains('header-menu-scroll-locked');
 
     const body = document.body;
     root.classList.toggle('header-menu-overlay-visible', shouldShowOverlay);
-    root.classList.toggle('header-menu-overlay-closing', shouldShowClosingOverlay);
+    root.classList.toggle('header-menu-overlay-closing', isMobile && Boolean(closingMobileDrawer));
 
     if (shouldLock && !isLocked) window.SpinelSmoothScroll?.cancel();
 
@@ -222,8 +217,6 @@ if (!window.SpinelHeaderMenus) {
       root.style.setProperty('--header-menu-scrollbar-width', `${scrollbarWidth}px`);
     }
   };
-
-  window.SpinelHeaderMenusSync = syncHeaderMenuScrollLock;
 
   const setTransparentHeaderColorScheme = (header, showSurface) => {
     const defaultColorClass = header.dataset.defaultColorClass;

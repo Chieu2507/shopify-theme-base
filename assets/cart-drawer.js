@@ -56,7 +56,6 @@
       this.backdropInteraction?.destroy();
       document.documentElement.classList.remove('cart-drawer-open');
       this.isOpen = false;
-      this.syncHeaderOverlayState();
     }
 
     bind() {
@@ -76,14 +75,9 @@
           return;
         }
 
-        const overlay = event.target.closest?.('[data-header-menu-overlay]');
-        if (overlay && this.isOpen) {
-          event.preventDefault();
-          this.close();
-        }
       }, { signal });
       this.addEventListener('click', (event) => {
-        if (event.target.closest('[data-cart-drawer-close]')) {
+        if (event.target.closest('[data-cart-drawer-close], [data-cart-drawer-overlay]')) {
           event.preventDefault();
           this.close();
           return;
@@ -237,7 +231,6 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
-      this.syncHeaderOverlayState();
       document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
@@ -254,7 +247,6 @@
         this.hidden = true;
         this.classList.remove('is-closing');
         this.resetHandleDrag();
-        this.syncHeaderOverlayState();
       }, closeDuration);
     }
 
@@ -269,10 +261,6 @@
       this.panel?.style.removeProperty('transform');
       this.panel?.style.removeProperty('opacity');
       this.panel?.style.removeProperty('transition');
-    }
-
-    syncHeaderOverlayState() {
-      window.SpinelHeaderMenusSync?.();
     }
 
     getMotionDuration() {
@@ -304,7 +292,6 @@
         this.panel?.getBoundingClientRect();
       }
       if (!this.classList.contains('is-open')) this.classList.add('is-open');
-      this.syncHeaderOverlayState();
       document.documentElement.classList.add('cart-drawer-open');
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'true'));
       this.panel?.focus({ preventScroll: true });
@@ -317,7 +304,6 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
-      this.syncHeaderOverlayState();
       document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
@@ -326,7 +312,6 @@
       this.closeTimer = window.setTimeout(() => {
         this.hidden = true;
         this.classList.remove('is-closing');
-        this.syncHeaderOverlayState();
       }, closeDuration);
     }
 
