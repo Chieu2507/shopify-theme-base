@@ -259,6 +259,13 @@
       this.panel?.style.removeProperty('transition');
     }
 
+    getMotionDuration() {
+      const value = getComputedStyle(this).getPropertyValue('--cart-drawer-motion-duration').trim();
+      const match = value.match(/^([\d.]+)(ms|s)$/);
+      if (!match) return 350;
+      return Number(match[1]) * (match[2] === 's' ? 1000 : 1);
+    }
+
     async open(trigger = null) {
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
@@ -286,7 +293,7 @@
       this.closeTimer = window.setTimeout(() => {
         this.hidden = true;
         this.classList.remove('is-closing');
-      }, 350);
+      }, this.getMotionDuration());
     }
 
     async refresh() {

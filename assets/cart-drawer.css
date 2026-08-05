@@ -1,6 +1,6 @@
 html.cart-drawer-open { overflow: hidden; }
 .cart-drawer[hidden] { display: none; }
-.cart-drawer, .cart-drawer.color-scheme { position: fixed; z-index: 110; inset: 0; visibility: hidden; background: transparent; color: var(--color-text); opacity: 0; pointer-events: none; transition: opacity .35s ease, visibility 0s linear .35s; }
+.cart-drawer, .cart-drawer.color-scheme { --cart-drawer-motion-duration: .35s; position: fixed; z-index: 110; inset: 0; visibility: hidden; background: transparent; color: var(--color-text); opacity: 0; pointer-events: none; transition: opacity .35s ease, visibility 0s linear .35s; }
 .cart-drawer.is-open, .cart-drawer.is-closing { visibility: visible; opacity: 1; pointer-events: auto; transition-delay: 0s; }
 .cart-drawer__backdrop { position: absolute; z-index: 0; inset: 0; width: 100%; height: 100%; border: 0; padding: 0; background: color-mix(in srgb, var(--color-heading) 30%, transparent); cursor: default; backdrop-filter: blur(10px) saturate(.9); -webkit-backdrop-filter: blur(10px) saturate(.9); }
 .cart-drawer__panel { position: absolute; z-index: 1; inset: 0 0 0 auto; display: flex; width: min(var(--cart-drawer-width, 450px), 100vw); max-width: 100%; flex-direction: column; background: var(--color-background, #fff); box-shadow: -14px 0 42px rgb(0 0 0 / 12%); outline: 0; transform: translateX(100%); }
@@ -76,16 +76,12 @@ html.cart-drawer-open { overflow: hidden; }
 @keyframes cart-drawer-panel-in { from { transform: translateX(100%); } to { transform: translateX(0); } }
 @keyframes cart-drawer-panel-out { from { transform: translateX(0); } to { transform: translateX(100%); } }
 @media (max-width: 989px) {
-  .cart-drawer__panel { inset: auto 0 0; width: 100%; height: 85dvh; max-height: 85dvh; overflow: hidden; border-radius: 14px 14px 0 0; transform: translateY(100%); }
-  .cart-drawer.is-open:not(.is-closing) .cart-drawer__panel { transform: translateY(0); }
-  .cart-drawer__handle { display: grid; width: 100%; height: 28px; flex: 0 0 28px; place-items: center; background: var(--color-background, #fff); cursor: grab; touch-action: none; user-select: none; -webkit-tap-highlight-color: transparent; }
-  .cart-drawer__handle::before { width: 48px; height: 4px; border-radius: 999px; background: color-mix(in srgb, var(--color-heading) 14%, transparent); content: ''; }
-  .cart-drawer__panel.is-handle-dragging .cart-drawer__handle { cursor: grabbing; }
-  .cart-drawer.is-open .cart-drawer__panel { animation-name: cart-drawer-panel-in-mobile; }
-  .cart-drawer.is-closing .cart-drawer__panel { animation-name: cart-drawer-panel-out-mobile; }
+  .cart-drawer, .cart-drawer.color-scheme { --cart-drawer-motion-duration: .5s; }
+  .cart-drawer__panel { inset: 8px 8px 8px auto; width: min(var(--cart-drawer-width, 450px), calc(100% - 16px)); height: auto; max-height: none; overflow: hidden; border-radius: 16px; transform: translateX(100%); will-change: transform; backface-visibility: hidden; -webkit-backface-visibility: hidden; transition: transform var(--cart-drawer-motion-duration) cubic-bezier(.7, 0, .2, 1); }
+  .cart-drawer.is-open:not(.is-closing) .cart-drawer__panel { animation: none; transform: translateX(0); }
+  .cart-drawer.is-closing .cart-drawer__panel { animation: none; transform: translateX(100%); }
+  .cart-drawer__handle { display: none; }
 }
-@keyframes cart-drawer-panel-in-mobile { from { transform: translateY(100%); } to { transform: translateY(0); } }
-@keyframes cart-drawer-panel-out-mobile { from { transform: translateY(0); } to { transform: translateY(100%); } }
 @keyframes cart-drawer-spinner { to { transform: rotate(360deg); } }
 @media (max-width: 749px) { .cart-drawer__header { min-height: 74px; padding-inline: 30px; } .cart-drawer__items, .cart-drawer__recommendations, .cart-drawer__footer { padding-inline: 30px; } .cart-drawer__item { grid-template-columns: 96px minmax(0, 1fr); gap: 16px; } }
-@media (prefers-reduced-motion: reduce) { .cart-drawer, .cart-drawer__panel { transition: none; animation-duration: .01ms !important; } }
+@media (prefers-reduced-motion: reduce) { .cart-drawer { --cart-drawer-motion-duration: .01ms; } .cart-drawer, .cart-drawer__panel { transition: none; animation-duration: .01ms !important; } }
