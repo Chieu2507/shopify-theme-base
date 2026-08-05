@@ -3,7 +3,6 @@
 
   class CartDrawer extends HTMLElement {
     connectedCallback() {
-      this.backdrop = this.querySelector('[data-cart-drawer-close]');
       this.backdropPointer = this.querySelector('.cart-drawer__backdrop-pointer');
       this.panel = this.querySelector('.cart-drawer__panel');
       this.handle = this.querySelector('[data-cart-drawer-handle]');
@@ -26,7 +25,6 @@
       this.handleDrag = null;
       this.handleDragTimer = null;
       this.mobileDrawer = window.matchMedia('(max-width: 989px)');
-      this.panelAnimation = null;
       this.bind();
       this.renderEmpty();
       this.handleProductAdd = (event) => {
@@ -56,8 +54,9 @@
     disconnectedCallback() {
       this.abortController?.abort();
       this.backdropInteraction?.destroy();
-      this.cancelPanelMotion();
       document.documentElement.classList.remove('cart-drawer-open');
+      this.isOpen = false;
+      this.syncHeaderOverlayState();
     }
 
     bind() {
@@ -70,10 +69,18 @@
         isOpen: () => this.isOpen,
       });
       document.addEventListener('click', (event) => {
-        const trigger = event.target.closest('[data-cart-drawer-open]');
-        if (!trigger) return;
-        event.preventDefault();
-        this.open(trigger);
+        const trigger = event.target.closest?.('[data-cart-drawer-open]');
+        if (trigger) {
+          event.preventDefault();
+          this.open(trigger);
+          return;
+        }
+
+        const overlay = event.target.closest?.('[data-header-menu-overlay]');
+        if (overlay && this.isOpen) {
+          event.preventDefault();
+          this.close();
+        }
       }, { signal });
       this.addEventListener('click', (event) => {
         if (event.target.closest('[data-cart-drawer-close]')) {
@@ -108,7 +115,6 @@
         this.handle?.addEventListener('touchend', (event) => this.endTouchHandleDrag(event), { signal });
         this.handle?.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
       }
-      window.addEventListener('resize', () => this.syncBackdropOffset(), { passive: true, signal });
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && this.isOpen) this.close();
         if (event.key === 'Tab' && this.isOpen) this.trapFocus(event);
@@ -171,7 +177,6 @@
       if (!this.panel || !this.handle || !this.isOpen || !this.mobileDrawer.matches || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
 
       window.clearTimeout(this.handleDragTimer);
-      this.cancelPanelMotion();
       this.handleDrag = {
         pointerId: event.pointerId,
         startY: event.clientY,
@@ -229,10 +234,10 @@
 
     closeFromHandle() {
       if (!this.isOpen) return;
-      this.cancelPanelMotion();
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
+      this.syncHeaderOverlayState();
       document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
@@ -244,11 +249,13 @@
         this.panel.style.opacity = '0';
       });
       window.clearTimeout(this.closeTimer);
+      const closeDuration = Math.max(this.getMotionDuration(), this.getOverlayMotionDuration());
       this.closeTimer = window.setTimeout(() => {
         this.hidden = true;
         this.classList.remove('is-closing');
         this.resetHandleDrag();
-      }, 240);
+        this.syncHeaderOverlayState();
+      }, closeDuration);
     }
 
     resetHandleDrag() {
@@ -264,47 +271,8 @@
       this.panel?.style.removeProperty('transition');
     }
 
-    cancelPanelMotion() {
-      this.panelAnimation?.cancel();
-      this.panelAnimation = null;
-    }
-
-    runMobilePanelMotion(opening) {
-      if (!this.panel || !this.mobileDrawer?.matches) return;
-
-      const duration = this.getMotionDuration();
-      const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-      if (reduceMotion || duration <= 0 || typeof this.panel.animate !== 'function') {
-        this.cancelPanelMotion();
-        this.panel.style.transform = opening ? 'translateX(0)' : 'translateX(100%)';
-        return;
-      }
-
-      let animation = this.panelAnimation;
-      if (!animation || animation.playState === 'idle') {
-        animation = this.panel.animate(
-          [
-            { opacity: 1, transform: 'translateX(100%)' },
-            { opacity: 1, transform: 'translateX(0)' }
-          ],
-          {
-            duration,
-            easing: 'ease-in-out',
-            fill: 'both'
-          }
-        );
-        this.panelAnimation = animation;
-      }
-
-      animation.onfinish = () => {
-        if (this.panelAnimation !== animation || opening) return;
-        this.panelAnimation = null;
-        animation.cancel();
-        this.panel.style.removeProperty('transform');
-      };
-      animation.currentTime = opening ? 0 : duration;
-      animation.playbackRate = opening ? 1 : -1;
-      animation.play();
+    syncHeaderOverlayState() {
+      window.SpinelHeaderMenusSync?.();
     }
 
     getMotionDuration() {
@@ -314,25 +282,17 @@
       return Number(match[1]) * (match[2] === 's' ? 1000 : 1);
     }
 
-    getBackdropMotionDuration() {
-      const value = getComputedStyle(this).getPropertyValue('--cart-drawer-backdrop-duration').trim();
+    getOverlayMotionDuration() {
+      const value = getComputedStyle(this).getPropertyValue('--cart-drawer-overlay-duration').trim();
       const match = value.match(/^([\d.]+)(ms|s)$/);
       if (!match) return this.getMotionDuration();
       return Number(match[1]) * (match[2] === 's' ? 1000 : 1);
-    }
-
-    syncBackdropOffset() {
-      const header = document.querySelector('[data-header]');
-      const headerBottom = header?.getBoundingClientRect().bottom || 0;
-      const offset = Math.max(0, Math.min(window.innerHeight, headerBottom));
-      this.style.setProperty('--cart-drawer-backdrop-top', `${offset}px`);
     }
 
     async open(trigger = null) {
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
       this.resetHandleDrag();
-      this.syncBackdropOffset();
       const shouldAnimateOpen = !(this.isOpen && this.classList.contains('is-open'));
       this.hidden = false;
       this.isOpen = true;
@@ -344,7 +304,7 @@
         this.panel?.getBoundingClientRect();
       }
       if (!this.classList.contains('is-open')) this.classList.add('is-open');
-      if (shouldAnimateOpen) this.runMobilePanelMotion(true);
+      this.syncHeaderOverlayState();
       document.documentElement.classList.add('cart-drawer-open');
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'true'));
       this.panel?.focus({ preventScroll: true });
@@ -357,15 +317,16 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
-      this.runMobilePanelMotion(false);
+      this.syncHeaderOverlayState();
       document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
       this.lastFocusedElement?.focus?.({ preventScroll: true });
-      const closeDuration = Math.max(this.getMotionDuration(), this.getBackdropMotionDuration());
+      const closeDuration = Math.max(this.getMotionDuration(), this.getOverlayMotionDuration());
       this.closeTimer = window.setTimeout(() => {
         this.hidden = true;
         this.classList.remove('is-closing');
+        this.syncHeaderOverlayState();
       }, closeDuration);
     }
 
