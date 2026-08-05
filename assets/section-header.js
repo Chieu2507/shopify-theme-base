@@ -600,16 +600,11 @@ if (!window.SpinelHeaderMenus) {
     '.header__submenu-disclosure--hover[open]'
   ) || [];
 
-  const clearHeaderHoverTimers = (header) => {
-    getOpenHoverMenus(header).forEach(clearMegaMenuHoverTimer);
-  };
-
   const scheduleMegaMenuClose = (details, delay = 160) => {
     clearMegaMenuHoverTimer(details);
-    const header = details.closest('[data-header]');
     megaMenuHoverTimers.set(details, window.setTimeout(() => {
       megaMenuHoverTimers.delete(details);
-      if (header?.matches(':hover')) return;
+      if (details.matches(':hover')) return;
       closeMegaMenu(details);
     }, delay));
   };
@@ -712,9 +707,6 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    const header = event.target.closest?.('[data-header]');
-    if (header) clearHeaderHoverTimers(header);
-
     const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
     if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
       clearMegaMenuHoverTimer(nestedDetails);
@@ -735,20 +727,13 @@ if (!window.SpinelHeaderMenus) {
       clearMegaMenuHoverTimer(nestedDetails);
       megaMenuHoverTimers.set(nestedDetails, window.setTimeout(() => closeMegaMenu(nestedDetails), 180));
       const parentDetails = nestedDetails.closest('.header__submenu-disclosure--hover');
-      const header = nestedDetails.closest('[data-header]');
-      if (parentDetails && !header?.contains(event.relatedTarget)) scheduleMegaMenuClose(parentDetails);
+      if (parentDetails && !parentDetails.contains(event.relatedTarget)) scheduleMegaMenuClose(parentDetails);
       return;
     }
 
     const details = event.target.closest?.('.header__submenu-disclosure--hover');
     if (details) {
       if (details.contains(event.relatedTarget)) return;
-
-      const header = details.closest('[data-header]');
-      if (header?.contains(event.relatedTarget)) {
-        clearMegaMenuHoverTimer(details);
-        return;
-      }
 
       scheduleMegaMenuClose(details);
       return;
