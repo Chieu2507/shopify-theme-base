@@ -557,7 +557,7 @@ if (!window.SpinelHeaderMenus) {
 
     clearResponsiveHeaderEntry(header);
     header.style.setProperty('--header-scroll-exit-offset', `${currentTop - targetTop}px`);
-    header.dataset.scrollExiting = 'true';
+    header.dataset.scrollExiting = 'preparing';
     header.classList.remove('header--scrolled');
     header.getBoundingClientRect();
 
@@ -569,6 +569,8 @@ if (!window.SpinelHeaderMenus) {
         return;
       }
 
+      header.dataset.scrollExiting = 'true';
+      header.getBoundingClientRect();
       header.style.setProperty('--header-scroll-exit-offset', '0px');
       const duration = getTransitionTotalMs(header, 'transform');
       if (!duration) {
