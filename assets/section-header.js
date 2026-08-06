@@ -506,6 +506,15 @@ if (!window.SpinelHeaderMenus) {
       return 0;
     }
 
+    // A standard submenu may already be opening while the previous mega menu
+    // is closing. Do not re-enable the shared mega surface for that handoff.
+    if (!preferredDetails && header.querySelector(
+      '.header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open]:not([data-closing="true"])'
+    )) {
+      resetDesktopMegaMenuBackground(header);
+      return 0;
+    }
+
     const preferredIsActive = preferredDetails?.matches('.header__submenu-disclosure--mega')
       && preferredDetails.open
       && preferredDetails.dataset.closing !== 'true';
