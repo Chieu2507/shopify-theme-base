@@ -18,6 +18,16 @@
       this.recommendations = this.querySelector('[data-cart-drawer-recommendations]');
       this.recommendationList = this.querySelector('[data-cart-drawer-recommendation-list]');
       this.recommendationDots = this.querySelector('[data-cart-drawer-recommendation-dots]');
+      this.shippingProgress = this.querySelector('[data-cart-drawer-shipping-progress]');
+      this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
+      this.shippingProgressValue = this.querySelector('[data-cart-drawer-shipping-progress-value]');
+      this.shippingCopy = this.querySelector('[data-cart-drawer-shipping-copy]');
+      this.addons = this.querySelector('[data-cart-drawer-addons]');
+      this.shippingEstimator = this.querySelector('[data-cart-drawer-shipping-estimator]');
+      this.shippingRates = this.querySelector('[data-cart-drawer-shipping-rates]');
+      this.complementaryProducts = this.readComplementaryProducts();
+      this.recommendationTimer = null;
+      this.recommendationPaused = false;
       this.currency = this.dataset.currency || 'USD';
       this.isOpen = false;
       this.busy = false;
@@ -55,6 +65,7 @@
       this.abortController?.abort();
       this.backdropInteraction?.destroy();
       window.clearTimeout(this.closeTimer);
+      window.clearInterval(this.recommendationTimer);
       this.unlockPageScroll();
       this.isOpen = false;
     }
@@ -99,6 +110,14 @@
       }, { signal });
       this.querySelector('[data-cart-drawer-save-note]')?.addEventListener('click', () => this.saveNote(), { signal });
       this.recommendationList?.addEventListener('scroll', () => this.updateRecommendationDot(), { passive: true, signal });
+      this.recommendationList?.addEventListener('pointerenter', () => { this.recommendationPaused = true; }, { signal });
+      this.recommendationList?.addEventListener('pointerleave', () => { this.recommendationPaused = false; }, { signal });
+      this.recommendationList?.addEventListener('focusin', () => { this.recommendationPaused = true; }, { signal });
+      this.recommendationList?.addEventListener('focusout', () => { this.recommendationPaused = false; }, { signal });
+      this.querySelectorAll('[data-cart-drawer-addon]').forEach((input) => {
+        input.addEventListener('change', () => this.toggleAddon(input), { signal });
+      });
+      this.shippingEstimator?.addEventListener('submit', (event) => this.estimateShipping(event), { signal });
       if ('PointerEvent' in window) {
         this.handle?.addEventListener('pointerdown', (event) => this.startHandleDrag(event), { signal });
         this.handle?.addEventListener('pointermove', (event) => this.moveHandleDrag(event), { signal });
@@ -354,6 +373,8 @@
       if (this.checkoutTotal) this.checkoutTotal.textContent = total;
       if (this.taxNote) this.taxNote.textContent = cart.taxes_included ? this.dataset.taxesIncludedLabel : this.dataset.taxesNoteLabel;
       this.renderDiscounts(cart);
+      this.renderShippingProgress(cart);
+      this.syncAddons(cart);
       const note = this.querySelector('[data-cart-drawer-note]');
       if (note && document.activeElement !== note) note.value = cart.note || '';
     }
@@ -362,9 +383,15 @@
       const emptyLink = this.dataset.emptyLink
         ? `<a class="cart-drawer__empty-link button button--primary" href="${this.escape(this.dataset.emptyLink)}">${this.escape(this.dataset.emptyLinkLabel || 'Continue shopping')}</a>`
         : '';
-      this.items.innerHTML = `<div class="cart-drawer__empty"><p>${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</p>${emptyLink}</div>`;
+      const emptyImage = this.dataset.emptyImage
+        ? `<img class="cart-drawer__empty-image cart-drawer__empty-image--${this.escape(this.dataset.emptyImageRatio || 'adapt')}" src="${this.escape(this.dataset.emptyImage)}" alt="" loading="lazy">`
+        : '';
+      this.items.innerHTML = `<div class="cart-drawer__empty">${emptyImage}<p>${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</p>${emptyLink}</div>`;
       this.footer.hidden = true;
-      this.recommendations.hidden = true;
+      if (this.recommendations) this.recommendations.hidden = true;
+      this.addons && (this.addons.hidden = true);
+      this.shippingProgress && (this.shippingProgress.hidden = true);
+      window.clearInterval(this.recommendationTimer);
       if (this.discounts) {
         this.discounts.hidden = true;
         this.discounts.replaceChildren();
@@ -464,22 +491,137 @@
       }
     }
 
-    async loadRecommendations(cart) {
-      if (this.dataset.recommendationsEnabled !== 'true' || !cart.items.length) {
-        this.recommendations.hidden = true;
+    readComplementaryProducts() {
+      const source = this.querySelector('[data-cart-drawer-complementary-products]');
+      if (!source?.textContent) return [];
+      try {
+        const products = JSON.parse(source.textContent);
+        return Array.isArray(products) ? products : [];
+      } catch (error) {
+        console.warn('[Spinel] Complementary products could not be read.', error);
+        return [];
+      }
+    }
+
+    renderShippingProgress(cart) {
+      if (!this.shippingProgress) return;
+      const threshold = Number(this.dataset.shippingThreshold || 0);
+      if (!threshold) {
+        this.shippingProgress.hidden = true;
         return;
       }
-      const productId = cart.items[0].product_id;
+      const total = Number(cart.items_subtotal_price ?? cart.total_price ?? 0);
+      const remaining = Math.max(0, threshold - total);
+      const unlocked = remaining === 0;
+      const template = unlocked ? this.shippingCopy?.dataset.success : this.shippingCopy?.dataset.pending;
+      if (this.shippingMessage) this.shippingMessage.textContent = String(template || '').replace('{{ amount }}', this.formatMoney(remaining));
+      if (this.shippingProgressValue) this.shippingProgressValue.style.width = `${Math.min(100, Math.round((total / threshold) * 100))}%`;
+      this.shippingProgress.hidden = false;
+      this.shippingProgress.dataset.unlocked = String(unlocked);
+    }
+
+    syncAddons(cart) {
+      if (!this.addons) return;
+      const items = cart.items || [];
+      let hasAddon = false;
+      this.addons.querySelectorAll('[data-cart-drawer-addon]').forEach((input) => {
+        const variantId = Number(input.dataset.variantId || 0);
+        const item = items.find((candidate) => Number(candidate.variant_id) === variantId);
+        input.checked = Boolean(item);
+        input.closest('[data-cart-drawer-addon-wrapper]')?.classList.toggle('is-selected', Boolean(item));
+        hasAddon = hasAddon || Boolean(input.dataset.variantId);
+      });
+      this.addons.hidden = !hasAddon;
+    }
+
+    async toggleAddon(input) {
+      const variantId = input?.dataset.variantId;
+      if (!variantId || input.disabled) return;
+      input.disabled = true;
+      try {
+        const existingItem = (this.cart?.items || []).find((item) => String(item.variant_id) === String(variantId));
+        let response;
+        if (input.checked) {
+          response = await fetch(this.localeUrl('cart/add.js'), {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ items: [{ id: Number(variantId), quantity: 1 }] })
+          });
+        } else if (existingItem) {
+          response = await fetch(this.localeUrl('cart/change.js'), {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ id: existingItem.key, quantity: 0 })
+          });
+        }
+        if (!response?.ok) throw new Error(this.dataset.cartUpdateErrorLabel);
+        await this.refresh();
+      } catch (error) {
+        console.error('[Spinel] Cart add-on update failed', error);
+        input.checked = !input.checked;
+        this.setMessage(error.message, true);
+      } finally {
+        input.disabled = false;
+      }
+    }
+
+    async estimateShipping(event) {
+      event.preventDefault();
+      const form = event.currentTarget;
+      const data = new FormData(form);
+      const country = String(data.get('country') || '').trim();
+      const zip = String(data.get('zip') || '').trim();
+      if (!country || !zip) return;
+      const query = new URLSearchParams({ 'shipping_address[country]': country, 'shipping_address[zip]': zip });
+      this.shippingRates.textContent = this.dataset.shippingCalculatingLabel || 'Calculating shipping rates';
+      try {
+        const prepare = await fetch(this.localeUrl(`cart/prepare_shipping_rates.json?${query}`), {
+          method: 'POST',
+          headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+          credentials: 'same-origin'
+        });
+        if (!prepare.ok && prepare.status !== 202) throw new Error(this.dataset.shippingErrorLabel);
+        const rates = await this.pollShippingRates(query);
+        this.shippingRates.innerHTML = rates.length
+          ? `<span>${rates.map((rate) => `${this.escape(rate.presentment_name || rate.name)}: ${this.escape(rate.price)} ${this.escape(rate.currency || this.currency)}`).join('</span><span>')}</span>`
+          : this.escape(this.dataset.shippingErrorLabel);
+      } catch (error) {
+        this.shippingRates.textContent = error.message || this.dataset.shippingErrorLabel;
+      }
+    }
+
+    async pollShippingRates(query) {
+      for (let attempt = 0; attempt < 12; attempt += 1) {
+        const response = await fetch(this.localeUrl(`cart/async_shipping_rates.json?${query}`), { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+        if (response.ok) {
+          const result = await response.json();
+          if (Array.isArray(result.shipping_rates)) return result.shipping_rates;
+        }
+        await new Promise((resolve) => window.setTimeout(resolve, 500));
+      }
+      throw new Error(this.dataset.shippingErrorLabel);
+    }
+
+    async loadRecommendations(cart) {
+      if (!this.recommendations || !this.recommendationList || !this.recommendationDots || this.dataset.recommendationsEnabled !== 'true' || !cart.items.length) {
+        if (this.recommendations) this.recommendations.hidden = true;
+        return;
+      }
       const limit = Number(this.dataset.recommendationsLimit || 4);
       try {
-        const url = new URL(this.localeUrl('recommendations/products.json'), window.location.origin);
-        url.searchParams.set('product_id', productId);
-        url.searchParams.set('limit', Math.min(8, Math.max(2, limit)));
-        url.searchParams.set('intent', 'related');
-        const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
-        if (!response.ok) throw new Error('Recommendations unavailable');
-        const data = await response.json();
-        const products = (data.products || []).filter((product) => !cart.items.some((item) => item.product_id === product.id));
+        let products;
+        if (this.dataset.recommendationsSource === 'manual') {
+          products = this.complementaryProducts.filter((product) => !cart.items.some((item) => Number(item.product_id) === Number(product.id)));
+        } else {
+          const url = new URL(this.localeUrl('recommendations/products.json'), window.location.origin);
+          url.searchParams.set('product_id', cart.items[0].product_id);
+          url.searchParams.set('limit', Math.min(8, Math.max(2, limit)));
+          url.searchParams.set('intent', 'related');
+          const response = await fetch(url, { headers: { Accept: 'application/json' }, credentials: 'same-origin' });
+          if (!response.ok) throw new Error('Recommendations unavailable');
+          const data = await response.json();
+          products = (data.products || []).filter((product) => !cart.items.some((item) => item.product_id === product.id));
+        }
         if (!products.length) {
           this.recommendations.hidden = true;
           return;
@@ -490,6 +632,7 @@
           return `<button type="button" class="cart-drawer__recommendation-dot" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="${this.escape(label)}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`;
         }).join('');
         this.recommendations.hidden = false;
+        this.startRecommendationRotation(products.length);
       } catch (error) {
         this.recommendations.hidden = true;
       }
@@ -517,7 +660,7 @@
     }
 
     recommendationTemplate(product) {
-      const variant = product.variants?.find((candidate) => candidate.available) || product.variants?.[0];
+      const variant = product.variants?.find((candidate) => candidate.available) || product.variants?.[0] || (product.variant_id ? { id: product.variant_id, available: product.available, price: product.price } : null);
       const image = product.featured_image || product.images?.[0];
       const requiredAllocation = (product.requires_selling_plan || variant?.requires_selling_plan)
         ? variant?.selling_plan_allocations?.[0]
@@ -528,7 +671,7 @@
         || variant?.requires_selling_plan
         || variant?.selling_plan_allocations?.length
       );
-      const action = requiresSellingPlanSelection
+      const action = !variant?.available || requiresSellingPlanSelection
         ? `<a class="cart-drawer__text-button" href="${this.escape(product.url)}">${this.escape(this.dataset.chooseOptionsLabel)}</a>`
         : `<button type="button" class="cart-drawer__text-button" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}">${this.escape(this.dataset.addToCartLabel)}</button>`;
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
@@ -536,6 +679,17 @@
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="lazy">` : ''}</a>
         <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
       </article>`;
+    }
+
+    startRecommendationRotation(count) {
+      window.clearInterval(this.recommendationTimer);
+      if (this.dataset.recommendationsAutoRotate !== 'true' || count < 2) return;
+      const interval = Math.max(3, Number(this.dataset.recommendationsInterval || 8)) * 1000;
+      this.recommendationTimer = window.setInterval(() => {
+        if (this.dataset.recommendationsPauseOnHover === 'true' && this.recommendationPaused) return;
+        const current = [...(this.recommendationDots?.querySelectorAll('[data-cart-drawer-recommendation-dot]') || [])].findIndex((dot) => dot.getAttribute('aria-current') === 'true');
+        this.goToRecommendation((current + 1) % count);
+      }, interval);
     }
 
     async applyDiscount(event) {
