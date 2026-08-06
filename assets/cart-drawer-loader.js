@@ -1,4 +1,10 @@
 (() => {
+  // A Theme Editor section re-render can execute this loader again after the
+  // custom element has already been registered. The new cart-drawer element
+  // connects itself automatically, so registering another document-level
+  // loader would duplicate product-add and click listeners.
+  if (customElements.get('cart-drawer')) return;
+
   const loaderScript = document.currentScript;
   const source = loaderScript?.dataset.cartDrawerModule;
   const triggerSelector = '[data-cart-drawer-open]';
