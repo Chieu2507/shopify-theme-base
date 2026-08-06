@@ -175,6 +175,69 @@ if (!window.SpinelHeaderMenus) {
     }, 0);
   };
 
+  const getAnimationTotalMs = (element) => {
+    if (!element) return 0;
+    const style = getComputedStyle(element);
+    const durations = style.animationDuration.split(',').map((value) => value.trim());
+    const delays = style.animationDelay.split(',').map((value) => value.trim());
+    return durations.reduce((maximum, duration, index) => Math.max(
+      maximum,
+      getCssTimeMs(duration) + getCssTimeMs(delays[index % delays.length] || '0s')
+    ), 0);
+  };
+
+  const clearLocalizationSheetMotion = (details) => {
+    const state = localizationSheetMotions.get(details);
+    if (!state) return;
+    window.clearTimeout(state.timer);
+    localizationSheetMotions.delete(details);
+    details.removeAttribute('data-motion-state');
+  };
+
+  const closeLocalizationSheet = (details, restoreFocus = true, immediate = false) => {
+    if (!details?.matches?.('.header__localization-selector') || !details.open) return;
+
+    const existingState = localizationSheetMotions.get(details);
+    if (existingState) {
+      existingState.restoreFocus ||= restoreFocus;
+      return;
+    }
+
+    details.removeAttribute('data-motion-state');
+    const popover = details.querySelector(':scope > [data-header-localization-popover]');
+    const sheet = popover?.querySelector('.header__localization-sheet');
+    const backdrop = popover?.querySelector('.header__localization-backdrop');
+    const state = {
+      finish: null,
+      restoreFocus,
+      timer: 0,
+    };
+    const finish = () => {
+      if (localizationSheetMotions.get(details) !== state) return;
+      window.clearTimeout(state.timer);
+      localizationSheetMotions.delete(details);
+      details.removeAttribute('data-motion-state');
+      localizationSheetFinalizing.add(details);
+      details.open = false;
+      syncHeaderLocalizationAria(details);
+      if (state.restoreFocus) {
+        window.requestAnimationFrame(() => focusWithoutScroll(details.querySelector(':scope > summary')));
+      }
+    };
+    state.finish = finish;
+    localizationSheetMotions.set(details, state);
+    details.dataset.motionState = 'closing';
+    syncHeaderLocalizationAria(details);
+
+    const duration = Math.max(getAnimationTotalMs(sheet), getAnimationTotalMs(backdrop));
+    if (immediate || window.matchMedia('(prefers-reduced-motion: reduce)').matches || !duration) {
+      finish();
+      return;
+    }
+
+    state.timer = window.setTimeout(finish, duration + 80);
+  };
+
   const getMobileDrawer = (disclosure) => {
     const drawer = disclosure?.nextElementSibling;
     return drawer?.matches?.('[data-header-mobile-drawer]') ? drawer : null;
@@ -241,6 +304,13 @@ if (!window.SpinelHeaderMenus) {
     const header = disclosure.closest('[data-header]');
     const drawer = getMobileDrawer(disclosure);
     const returnFocus = mobileMenuReturnFocus.get(drawer) || disclosure.querySelector(':scope > summary');
+
+    if (isMobileHeaderViewport()) {
+      header?.querySelectorAll('.header__localization-selector[open]').forEach((details) => {
+        closeLocalizationSheet(details, false, true);
+      });
+    }
+
     const finalize = () => {
       header?.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => {
         closeMegaMenu(details, true);
