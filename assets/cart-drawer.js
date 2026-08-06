@@ -529,7 +529,7 @@
       const remaining = Math.max(0, threshold - total);
       const unlocked = remaining === 0;
       const template = unlocked ? this.shippingCopy?.dataset.success : this.shippingCopy?.dataset.pending;
-      if (this.shippingMessage) this.shippingMessage.textContent = String(template || '').replace('{{ amount }}', this.formatMoney(remaining));
+      if (this.shippingMessage) this.shippingMessage.textContent = String(template || '').replace(/\{\{ ?amount ?\}\}|\{amount\}/g, this.formatMoney(remaining));
       if (this.shippingProgressValue) this.shippingProgressValue.style.width = `${Math.min(100, Math.round((total / threshold) * 100))}%`;
       this.shippingProgress.hidden = false;
       this.shippingProgress.dataset.unlocked = String(unlocked);
