@@ -4,8 +4,15 @@
   assign cart_title_case = section.settings.product_title_case | default: 'none'
   assign cart_image_radius = section.settings.image_radius | default: 0
   assign empty_cart_link = section.settings.empty_link | default: routes.all_products_collection_url
-  assign gift_wrap_variant = section.settings.gift_wrap_product.selected_or_first_available_variant
-  assign shipping_protection_variant = section.settings.shipping_protection_product.selected_or_first_available_variant
+  assign has_cart_addons = false
+
+  for block in section.blocks
+    assign addon_variant = block.settings.product.selected_or_first_available_variant
+    if addon_variant != blank
+      assign has_cart_addons = true
+      break
+    endif
+  endfor
 %}
 
 {% if settings.cart_action == 'drawer' %}
@@ -86,24 +93,19 @@
         <div class="cart-drawer__loading" data-cart-drawer-loading hidden aria-hidden="true"><span class="cart-drawer__loading-spinner"></span></div>
         <div class="cart-drawer__items" data-cart-drawer-items></div>
 
-        {% if section.settings.gift_wrap_enable or section.settings.shipping_protection_enable %}
+        {% if has_cart_addons %}
           <section class="cart-drawer__addons" data-cart-drawer-addons hidden aria-label="Cart add-ons">
-            {% if section.settings.gift_wrap_enable and gift_wrap_variant != blank %}
-              <label class="cart-drawer__addon" data-cart-drawer-addon-wrapper>
-                <input type="checkbox" data-cart-drawer-addon data-variant-id="{{ gift_wrap_variant.id }}">
-                <span class="cart-drawer__addon-icon" aria-hidden="true">{% render 'icon', name: 'sparkles' %}</span>
-                <span><strong>{{ section.settings.gift_wrap_label | escape }}</strong>{% if section.settings.gift_wrap_description != blank %}<small>{{ section.settings.gift_wrap_description | escape }}</small>{% endif %}</span>
-                <span class="cart-drawer__addon-price">{{ gift_wrap_variant.price | money }}</span>
-              </label>
-            {% endif %}
-            {% if section.settings.shipping_protection_enable and shipping_protection_variant != blank %}
-              <label class="cart-drawer__addon" data-cart-drawer-addon-wrapper>
-                <input type="checkbox" data-cart-drawer-addon data-variant-id="{{ shipping_protection_variant.id }}">
-                <span class="cart-drawer__addon-icon" aria-hidden="true">{% render 'icon', name: 'shield' %}</span>
-                <span><strong>{{ section.settings.shipping_protection_label | escape }}</strong>{% if section.settings.shipping_protection_description != blank %}<small>{{ section.settings.shipping_protection_description | escape }}</small>{% endif %}</span>
-                <span class="cart-drawer__addon-price">{{ shipping_protection_variant.price | money }}</span>
-              </label>
-            {% endif %}
+            {% for block in section.blocks %}
+              {% assign addon_variant = block.settings.product.selected_or_first_available_variant %}
+              {% if addon_variant != blank %}
+                <label class="cart-drawer__addon" data-cart-drawer-addon-wrapper {{ block.shopify_attributes }}>
+                  <input type="checkbox" data-cart-drawer-addon data-variant-id="{{ addon_variant.id }}">
+                  <span class="cart-drawer__addon-icon" aria-hidden="true">{% if block.type == 'gift_wrap' %}{% render 'icon', name: 'sparkles' %}{% else %}{% render 'icon', name: 'shield' %}{% endif %}</span>
+                  <span><strong>{{ block.settings.label | escape }}</strong>{% if block.settings.description != blank %}<small>{{ block.settings.description | escape }}</small>{% endif %}</span>
+                  <span class="cart-drawer__addon-price">{{ addon_variant.price | money }}</span>
+                </label>
+              {% endif %}
+            {% endfor %}
           </section>
         {% endif %}
 
@@ -195,15 +197,6 @@
     { "type": "text", "id": "shipping_estimator_country_label", "label": "Country label", "default": "Country", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
     { "type": "text", "id": "shipping_estimator_postal_label", "label": "Postal-code label", "default": "Postal code", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
     { "type": "text", "id": "shipping_estimator_button_label", "label": "Estimator button label", "default": "Calculate", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "header", "content": "Cart add-ons" },
-    { "type": "checkbox", "id": "gift_wrap_enable", "label": "Enable gift wrap", "default": false },
-    { "type": "product", "id": "gift_wrap_product", "label": "Gift-wrap product" },
-    { "type": "text", "id": "gift_wrap_label", "label": "Gift-wrap label", "default": "Add gift wrapping", "visible_if": "{{ section.settings.gift_wrap_enable }}" },
-    { "type": "text", "id": "gift_wrap_description", "label": "Gift-wrap description", "default": "Make this order ready to give.", "visible_if": "{{ section.settings.gift_wrap_enable }}" },
-    { "type": "checkbox", "id": "shipping_protection_enable", "label": "Enable shipping protection", "default": false },
-    { "type": "product", "id": "shipping_protection_product", "label": "Shipping-protection product" },
-    { "type": "text", "id": "shipping_protection_label", "label": "Shipping-protection label", "default": "Add shipping protection", "visible_if": "{{ section.settings.shipping_protection_enable }}" },
-    { "type": "text", "id": "shipping_protection_description", "label": "Shipping-protection description", "default": "Protect this delivery against loss or damage.", "visible_if": "{{ section.settings.shipping_protection_enable }}" },
     { "type": "header", "content": "Promotion bar" },
     { "type": "checkbox", "id": "promotion_enable", "label": "Show promotion bar", "default": false },
     { "type": "text", "id": "promotion_message", "label": "Message", "default": "Complimentary shipping on every order", "visible_if": "{{ section.settings.promotion_enable }}" },
@@ -240,6 +233,29 @@
     { "type": "select", "id": "product_title_case", "label": "Product title case", "options": [{ "value": "none", "label": "Original" }, { "value": "uppercase", "label": "Uppercase" }], "default": "none" },
     { "type": "select", "id": "price_font", "label": "Price font", "options": [{ "value": "body", "label": "Body" }, { "value": "subheading", "label": "Utility" }, { "value": "heading", "label": "Display" }, { "value": "accent", "label": "Accent" }], "default": "subheading" },
     { "type": "range", "id": "image_radius", "label": "Product image corners", "min": 0, "max": 24, "step": 2, "unit": "px", "default": 0 }
+  ],
+  "max_blocks": 2,
+  "blocks": [
+    {
+      "type": "gift_wrap",
+      "name": "Gift wrap",
+      "limit": 1,
+      "settings": [
+        { "type": "product", "id": "product", "label": "Gift-wrap product" },
+        { "type": "text", "id": "label", "label": "Label", "default": "Add gift wrapping" },
+        { "type": "text", "id": "description", "label": "Description", "default": "Make this order ready to give." }
+      ]
+    },
+    {
+      "type": "shipping_protection",
+      "name": "Shipping protection",
+      "limit": 1,
+      "settings": [
+        { "type": "product", "id": "product", "label": "Shipping-protection product" },
+        { "type": "text", "id": "label", "label": "Label", "default": "Add shipping protection" },
+        { "type": "text", "id": "description", "label": "Description", "default": "Protect this delivery against loss or damage." }
+      ]
+    }
   ]
 }
 {% endschema %}
