@@ -234,7 +234,7 @@ class EditorialSlideshow extends HTMLElement {
     if (!this.navigator) return;
 
     this.navigator.classList.add('is-vertical-sizing');
-    const targetHeight = this.navigator.scrollHeight;
+    const targetHeight = this.navigator.offsetHeight;
     this.navigator.style.height = '52px';
     void this.navigator.offsetHeight;
     this.navigator.style.height = `${targetHeight}px`;
