@@ -1335,7 +1335,6 @@ if (!window.SpinelHeaderMenus) {
     const details = event.target.closest?.('.header__submenu-disclosure--hover');
     if (details) {
       if (details.contains(event.relatedTarget)) return;
-      if (details.matches('.header__submenu-disclosure') && details.closest('[data-header]')?.contains(event.relatedTarget)) return;
 
       scheduleMegaMenuClose(details);
       return;
