@@ -18,6 +18,8 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDurationFallback = 300;
+  const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
+  const headerBrowserChromeProperty = '--header-browser-chrome-color';
   // Let non-sticky transparent headers clear the announcement bar before changing palette.
   const desktopTransparentHeaderSurfaceThreshold = 20;
   const mobileStickyHeaderHideThreshold = 40;
@@ -28,6 +30,7 @@ if (!window.SpinelHeaderMenus) {
   let headerBreakpointFocusContext = null;
   let localizationSheetDrag = null;
   let localizationSheetDragTimer = null;
+  let headerBrowserChromeColorState = null;
   const responsiveHeaderEntryFrames = new WeakMap();
   const responsiveHeaderExitMotions = new WeakMap();
   const mobileStickyHeaderStates = new WeakMap();
@@ -256,6 +259,81 @@ if (!window.SpinelHeaderMenus) {
     return drawer?.matches?.('[data-header-mobile-drawer]') ? drawer : null;
   };
 
+  const getHeaderBrowserChromeColor = (drawer) => {
+    const surface = drawer?.querySelector('.header__mobile-drawer-surface');
+    const surfaceStyles = surface ? getComputedStyle(surface) : null;
+    const surfaceColor = surfaceStyles?.getPropertyValue('--color-background').trim();
+
+    if (surfaceColor) return surfaceColor;
+
+    const bodyColor = getComputedStyle(document.body).backgroundColor;
+    return bodyColor && bodyColor !== 'transparent' ? bodyColor : '#ffffff';
+  };
+
+  const setHeaderBrowserChromeColor = (color) => {
+    const root = document.documentElement;
+    const safeColor = color || '#ffffff';
+
+    if (!headerBrowserChromeColorState) {
+      const themeColorMetas = [...document.head.querySelectorAll('meta[name="theme-color"]')];
+
+      headerBrowserChromeColorState = {
+        rootColor: root.style.getPropertyValue(headerBrowserChromeProperty),
+        metas: themeColorMetas.map((meta) => ({
+          meta,
+          content: meta.getAttribute('content'),
+        })),
+        createdMeta: null,
+      };
+
+      if (!themeColorMetas.length) {
+        const meta = document.createElement('meta');
+        meta.name = 'theme-color';
+        meta.dataset.spinelThemeColor = '';
+        document.head.appendChild(meta);
+        headerBrowserChromeColorState.createdMeta = meta;
+        headerBrowserChromeColorState.metas.push({ meta, content: null });
+      }
+    }
+
+    headerBrowserChromeColorState.metas.forEach(({ meta }) => {
+      meta.setAttribute('content', safeColor);
+    });
+
+    root.style.setProperty(headerBrowserChromeProperty, safeColor);
+    root.classList.add(headerBrowserChromeClass);
+  };
+
+  const restoreHeaderBrowserChromeColor = () => {
+    const root = document.documentElement;
+    const state = headerBrowserChromeColorState;
+
+    if (!state) {
+      root.classList.remove(headerBrowserChromeClass);
+      return;
+    }
+
+    state.metas.forEach(({ meta, content }) => {
+      if (!meta.isConnected) return;
+      if (content === null) {
+        meta.removeAttribute('content');
+      } else {
+        meta.setAttribute('content', content);
+      }
+    });
+
+    state.createdMeta?.remove();
+
+    if (state.rootColor) {
+      root.style.setProperty(headerBrowserChromeProperty, state.rootColor);
+    } else {
+      root.style.removeProperty(headerBrowserChromeProperty);
+    }
+
+    root.classList.remove(headerBrowserChromeClass);
+    headerBrowserChromeColorState = null;
+  };
+
   const cancelLocalizationSheetOpen = (details) => {
     const request = localizationSheetOpenRequests.get(details);
 
@@ -451,6 +529,12 @@ if (!window.SpinelHeaderMenus) {
       : Boolean(document.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])'));
     const root = document.documentElement;
     const isLocked = root.classList.contains('header-menu-scroll-locked');
+
+    if (isMobile && (openMobileDrawer || closingMobileDrawer)) {
+      setHeaderBrowserChromeColor(getHeaderBrowserChromeColor(openMobileDrawer || closingMobileDrawer));
+    } else {
+      restoreHeaderBrowserChromeColor();
+    }
 
     const body = document.body;
     root.classList.toggle('header-menu-overlay-visible', shouldShowOverlay);
