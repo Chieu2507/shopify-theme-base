@@ -18,7 +18,7 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDurationFallback = 300;
-  const desktopTransparentHeaderScrollThreshold = 20;
+  const desktopTransparentHeaderSurfaceThreshold = 20;
   // Desktop top-level menus use the CSS motion below; keep the legacy Web Animations fallback disabled.
   const disableLegacyMegaMenuWebAnimations = true;
   let transparentHeaderFrame = 0;
@@ -577,14 +577,17 @@ if (!window.SpinelHeaderMenus) {
       ? sectionWrapper.getBoundingClientRect().top + window.scrollY
       : header.getBoundingClientRect().top + window.scrollY;
     const isMobile = isMobileHeaderViewport();
-    const scrollThreshold = isTransparentHeader && !isMobile
-      ? desktopTransparentHeaderScrollThreshold
+    const isDesktopStickyTransparentHeader = isTransparentHeader
+      && !isMobile
+      && header.classList.contains('header--sticky');
+    const scrollThreshold = isTransparentHeader && !isMobile && !isDesktopStickyTransparentHeader
+      ? desktopTransparentHeaderSurfaceThreshold
       : 1;
     const isScrolled = window.scrollY > origin + scrollThreshold;
     syncResponsiveHeaderScrollState(
       header,
       isScrolled,
-      isTransparentHeader && !isMobile && header.classList.contains('header--sticky')
+      isDesktopStickyTransparentHeader
     );
 
     if (!isTransparentHeader) return;
