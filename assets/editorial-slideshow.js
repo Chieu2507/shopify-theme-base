@@ -19,6 +19,10 @@ class EditorialSlideshow extends HTMLElement {
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
     this.autoplayManuallyPaused = false;
+    this.manualPauseProgress = null;
+    this.progressStartedAt = null;
+    this.progressStartElapsed = 0;
+    this.progressStartIndex = null;
     this.navigatorRevealTimer = null;
     this.navigatorRevealFallbackTimer = null;
     this.navigatorMorphTimer = null;
@@ -194,6 +198,10 @@ class EditorialSlideshow extends HTMLElement {
     });
 
     if (restartProgress) {
+      this.manualPauseProgress = null;
+      this.progressStartedAt = null;
+      this.progressStartElapsed = 0;
+      this.progressStartIndex = activeIndex;
       this.resetProgress();
       this.syncPlayback();
     }
@@ -377,6 +385,13 @@ class EditorialSlideshow extends HTMLElement {
   toggleAutoplay() {
     if (!this.autoplaySetting) return;
 
+    if (!this.autoplayManuallyPaused) {
+      this.manualPauseProgress = {
+        elapsed: this.getCurrentProgressElapsed(),
+        index: this.activeIndex || 0,
+      };
+    }
+
     this.autoplayManuallyPaused = !this.autoplayManuallyPaused;
     this.updateAutoplayToggle();
     this.syncPlayback();
@@ -396,6 +411,7 @@ class EditorialSlideshow extends HTMLElement {
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
     const activeIndex = this.activeIndex || 0;
+    this.progressStartedAt = null;
     this.progressBars.forEach((bar, index) => {
       bar.style.transition = 'none';
       bar.style.transform = this.autoplayManuallyPaused && index === activeIndex ? 'scaleX(1)' : 'scaleX(0)';
@@ -406,13 +422,33 @@ class EditorialSlideshow extends HTMLElement {
     const progressBar = this.progressBars[activeIndex];
     if (!progressBar) return;
 
-    progressBar.style.transition = `transform ${this.autoplayDelay}ms linear`;
-    progressBar.style.transform = 'scaleX(1)';
+    const resumeElapsed = this.manualPauseProgress?.index === activeIndex
+      ? this.manualPauseProgress.elapsed
+      : 0;
+    const remainingDelay = Math.max(0, this.autoplayDelay - resumeElapsed);
+    this.manualPauseProgress = null;
+
+    progressBar.style.transform = `scaleX(${resumeElapsed / this.autoplayDelay})`;
     this.progressFrame = window.requestAnimationFrame(() => {
+      progressBar.style.transition = `transform ${remainingDelay}ms linear`;
+      progressBar.style.transform = 'scaleX(1)';
+      this.progressStartedAt = performance.now();
+      this.progressStartElapsed = resumeElapsed;
+      this.progressStartIndex = activeIndex;
       this.autoplayTimer = window.setTimeout(() => {
         this.swiper?.slideNext();
-      }, this.autoplayDelay);
+      }, remainingDelay);
     });
+  }
+
+  getCurrentProgressElapsed() {
+    const activeIndex = this.activeIndex || 0;
+    if (this.progressStartedAt === null || this.progressStartIndex !== activeIndex) return 0;
+
+    return Math.min(
+      this.autoplayDelay,
+      this.progressStartElapsed + performance.now() - this.progressStartedAt,
+    );
   }
 
   resetProgress() {
