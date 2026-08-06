@@ -18,6 +18,7 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDurationFallback = 300;
+  // Let non-sticky transparent headers clear the announcement bar before changing palette.
   const desktopTransparentHeaderSurfaceThreshold = 20;
   const mobileStickyHeaderHideThreshold = 40;
   // Desktop top-level menus use the CSS motion below; keep the legacy Web Animations fallback disabled.
@@ -573,7 +574,13 @@ if (!window.SpinelHeaderMenus) {
     const isMobile = isMobileHeaderViewport();
     const currentScrollY = window.scrollY;
 
-    document.querySelectorAll('[data-header].header--sticky').forEach((header) => {
+    document.querySelectorAll('[data-header]').forEach((header) => {
+      if (!header.classList.contains('header--sticky')) {
+        mobileStickyHeaderStates.delete(header);
+        header.classList.remove('header--mobile-hidden');
+        return;
+      }
+
       const previousState = mobileStickyHeaderStates.get(header) || {
         lastScrollY: currentScrollY,
         hidden: false
