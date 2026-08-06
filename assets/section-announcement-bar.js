@@ -4,6 +4,8 @@ import Swiper from './swiper-12.2.0.min.mjs';
 if (!customElements.get('announcement-bar')) {
   class AnnouncementBar extends HTMLElement {
     connectedCallback() {
+      if (this.dataset.layout === 'marquee') return;
+
       this.slider = this.querySelector('[data-announcement-slider]');
       this.items = Array.from(this.querySelectorAll('[data-announcement-item]'));
       this.navigator = this.querySelector('[data-announcement-navigator]');
