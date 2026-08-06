@@ -194,9 +194,10 @@ if (!window.SpinelHeaderMenus) {
       drawer.removeAttribute('role');
       drawer.removeAttribute('aria-modal');
       drawer.removeAttribute('aria-labelledby');
-      drawer.removeAttribute('aria-hidden');
+      drawer.setAttribute('aria-hidden', 'true');
+      drawer.inert = true;
     }
-    drawer.inert = isMobileHeaderViewport() ? !isOpen : false;
+    if (isMobileHeaderViewport()) drawer.inert = !isOpen;
 
     if (isOpen && focusDrawer) {
       mobileMenuReturnFocus.set(drawer, disclosure.querySelector(':scope > summary'));
