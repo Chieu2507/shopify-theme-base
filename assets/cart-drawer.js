@@ -88,6 +88,9 @@
         }
 
       }, { signal });
+      document.addEventListener('shopify:section:select', (event) => {
+        if (this.isSectionEvent(event)) this.open();
+      }, { signal });
       this.addEventListener('click', (event) => {
         if (event.target.closest('[data-cart-drawer-close], [data-cart-drawer-overlay]')) {
           event.preventDefault();
@@ -133,6 +136,13 @@
         if (event.key === 'Escape' && this.isOpen) this.close();
         if (event.key === 'Tab' && this.isOpen) this.trapFocus(event);
       }, { signal });
+    }
+
+    isSectionEvent(event) {
+      const sectionId = this.dataset.sectionId;
+      if (!sectionId) return false;
+      return event.detail?.sectionId === sectionId
+        || event.target?.id === `shopify-section-${sectionId}`;
     }
 
     trapFocus(event) {
