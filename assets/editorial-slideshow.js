@@ -1,8 +1,4 @@
-import Swiper from './swiper-12.2.0.min.mjs';
-import A11y from './swiper-12.2.0-a11y.min.mjs';
-import EffectFade from './swiper-12.2.0-effect-fade.min.mjs';
-import Navigation from './swiper-12.2.0-navigation.min.mjs';
-import Parallax from './swiper-12.2.0-parallax.min.mjs';
+import { A11y, EffectFade, Navigation, Swiper } from './swiper-loader.js';
 
 class EditorialSlideshow extends HTMLElement {
   connectedCallback() {
@@ -15,15 +11,21 @@ class EditorialSlideshow extends HTMLElement {
     this.previousButton = this.querySelector('[data-editorial-previous]');
     this.nextButton = this.querySelector('[data-editorial-next]');
     this.autoplayToggle = this.querySelector('[data-editorial-autoplay-toggle]');
+    this.navigatorToggle = this.querySelector('[data-editorial-navigator-toggle]');
     this.tabs = [...this.querySelectorAll('[data-editorial-slide-tab]')];
     this.progressBars = [...this.querySelectorAll('.editorial-slideshow__tab-progress span')];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.hoverMedia = window.matchMedia('(hover: hover) and (pointer: fine)');
+    this.desktopNavigator = window.matchMedia('(min-width: 900px)');
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
     this.autoplayManuallyPaused = false;
     this.navigatorRevealTimer = null;
     this.navigatorRevealFallbackTimer = null;
+    this.navigatorMorphTimer = null;
+    this.navigatorSizeTimer = null;
+    this.navigatorSettleFrame = null;
+    this.pointerFocusTimer = null;
+    this.isPointerFocus = false;
     this.pauseReasons = new Set();
     this.isInViewport = !('IntersectionObserver' in window);
 
@@ -31,10 +33,11 @@ class EditorialSlideshow extends HTMLElement {
     this.handleBlockSelect = this.handleBlockSelect.bind(this);
     this.handleMotionPreferenceChange = this.handleMotionPreferenceChange.bind(this);
     this.handleKeydown = this.handleKeydown.bind(this);
+    this.handlePointerDown = this.handlePointerDown.bind(this);
+    this.handleDesktopNavigatorChange = this.handleDesktopNavigatorChange.bind(this);
 
     this.addEventListener('keydown', this.handleKeydown, { signal });
-    this.addEventListener('mouseenter', () => this.handleMouseEnter(), { signal });
-    this.addEventListener('mouseleave', () => this.handleMouseLeave(), { signal });
+    this.addEventListener('pointerdown', this.handlePointerDown, { signal });
     this.addEventListener('focusin', () => this.handleFocusIn(), { signal });
     this.addEventListener('focusout', (event) => this.handleFocusOut(event), { signal });
     this.tabs.forEach((tab) => {
@@ -43,9 +46,11 @@ class EditorialSlideshow extends HTMLElement {
       }, { signal });
     });
     this.autoplayToggle?.addEventListener('click', () => this.toggleAutoplay(), { signal });
+    this.navigatorToggle?.addEventListener('click', () => this.toggleNavigator(), { signal });
     document.addEventListener('visibilitychange', this.handleVisibilityChange, { signal });
     document.addEventListener('shopify:block:select', this.handleBlockSelect, { signal });
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
+    this.desktopNavigator.addEventListener?.('change', this.handleDesktopNavigatorChange, { signal });
 
     if (this.autoplayToggle && !this.autoplaySetting) {
       this.autoplayToggle.disabled = true;
@@ -74,7 +79,12 @@ class EditorialSlideshow extends HTMLElement {
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
     this.clearNavigatorRevealTimer();
+    this.clearNavigatorMorph();
+    if (this.pointerFocusTimer) window.clearTimeout(this.pointerFocusTimer);
+    this.pointerFocusTimer = null;
+    this.isPointerFocus = false;
     this.navigator?.classList.remove('is-transitioning');
+    this.navigator?.classList.remove('is-collapsed');
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.pauseReasons?.clear();
@@ -88,7 +98,7 @@ class EditorialSlideshow extends HTMLElement {
     this.classList.add('editorial-slideshow--ready');
 
     this.swiper = new Swiper(this.slider, {
-      modules: [A11y, EffectFade, Navigation, Parallax],
+      modules: [A11y, EffectFade, Navigation],
       slidesPerView: 1,
       speed: this.reduceMotion.matches ? 0 : 1000,
       effect: 'fade',
@@ -96,7 +106,6 @@ class EditorialSlideshow extends HTMLElement {
         crossFade: true,
       },
       loop: slideCount > 1,
-      parallax: true,
       watchOverflow: true,
       grabCursor: slideCount > 1,
       navigation: {
@@ -138,7 +147,7 @@ class EditorialSlideshow extends HTMLElement {
     this.clearNavigatorRevealTimer();
 
     if (isTransitioning) {
-      this.navigator.classList.add('is-transitioning');
+      if (!this.navigator.classList.contains('is-collapsed')) this.navigator.classList.add('is-transitioning');
 
       const transitionDuration = this.reduceMotion.matches ? 0 : Number(this.swiper?.params.speed) || 0;
       if (transitionDuration > 0) {
@@ -198,14 +207,109 @@ class EditorialSlideshow extends HTMLElement {
     this.swiper.slideToLoop(nextIndex);
   }
 
+  toggleNavigator() {
+    this.setNavigatorCollapsed(!this.navigator?.classList.contains('is-collapsed'));
+  }
+
+  clearNavigatorMorph() {
+    if (this.navigatorMorphTimer) window.clearTimeout(this.navigatorMorphTimer);
+    if (this.navigatorSizeTimer) window.clearTimeout(this.navigatorSizeTimer);
+    if (this.navigatorSettleFrame) window.cancelAnimationFrame(this.navigatorSettleFrame);
+    this.navigatorMorphTimer = null;
+    this.navigatorSizeTimer = null;
+    this.navigatorSettleFrame = null;
+    this.navigator?.classList.remove('is-collapsing', 'is-expanding', 'is-settling', 'is-vertical-sizing');
+    this.navigator?.style.removeProperty('height');
+  }
+
+  animateCollapsedNavigatorHeight() {
+    if (!this.navigator) return;
+
+    this.navigator.classList.add('is-vertical-sizing');
+    const targetHeight = this.navigator.scrollHeight;
+    this.navigator.style.height = '52px';
+    void this.navigator.offsetHeight;
+    this.navigator.style.height = `${targetHeight}px`;
+    this.navigatorSizeTimer = window.setTimeout(() => {
+      this.navigator?.classList.remove('is-vertical-sizing');
+      this.navigator?.style.removeProperty('height');
+      this.navigatorSizeTimer = null;
+    }, 430);
+  }
+
+  animateExpandedNavigatorHeight() {
+    if (!this.navigator) return;
+
+    const currentHeight = this.navigator.offsetHeight;
+    this.navigator.classList.add('is-vertical-sizing');
+    this.navigator.style.height = `${currentHeight}px`;
+    void this.navigator.offsetHeight;
+    this.navigator.style.height = '52px';
+  }
+
+  setNavigatorCollapsed(isCollapsed) {
+    if (!this.navigator || !this.desktopNavigator.matches) return;
+
+    this.clearNavigatorMorph();
+    this.navigator.classList.remove('is-transitioning');
+
+    this.navigatorToggle?.setAttribute('aria-expanded', String(!isCollapsed));
+    this.navigatorToggle?.setAttribute(
+      'aria-label',
+      isCollapsed
+        ? this.navigatorToggle.dataset.labelExpand || 'Expand slideshow navigation'
+        : this.navigatorToggle.dataset.labelCollapse || 'Collapse slideshow navigation',
+    );
+
+    if (this.reduceMotion.matches) {
+      this.navigator.classList.toggle('is-collapsed', isCollapsed);
+      return;
+    }
+
+    this.navigator.classList.add(isCollapsed ? 'is-collapsing' : 'is-expanding');
+    if (!isCollapsed) {
+      this.animateExpandedNavigatorHeight();
+      this.navigatorMorphTimer = window.setTimeout(() => {
+        this.navigator?.classList.remove('is-collapsed', 'is-vertical-sizing');
+        this.navigator?.style.removeProperty('height');
+        this.navigatorMorphTimer = window.setTimeout(() => {
+          this.navigator?.classList.remove('is-expanding');
+          this.navigatorMorphTimer = null;
+        }, 260);
+      }, 420);
+      return;
+    }
+
+    this.navigatorMorphTimer = window.setTimeout(() => {
+      this.navigator?.classList.toggle('is-collapsed', isCollapsed);
+      this.navigator?.classList.remove('is-collapsing');
+      this.animateCollapsedNavigatorHeight();
+      this.navigatorMorphTimer = null;
+    }, 420);
+  }
+
+  handleDesktopNavigatorChange(event) {
+    if (!event.matches) this.setNavigatorExpandedForMobile();
+  }
+
+  setNavigatorExpandedForMobile() {
+    this.clearNavigatorMorph();
+    this.navigator?.classList.remove('is-collapsed', 'is-transitioning');
+    this.navigatorToggle?.setAttribute('aria-expanded', 'true');
+    this.navigatorToggle?.setAttribute(
+      'aria-label',
+      this.navigatorToggle.dataset.labelCollapse || 'Collapse slideshow navigation',
+    );
+  }
+
   handleKeydown(event) {
     if (!event.target.closest('[data-editorial-slide-tab]')) return;
 
     const currentIndex = this.activeIndex || 0;
-    if (event.key === 'ArrowRight') {
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') {
       event.preventDefault();
       this.selectIndex(currentIndex + 1, true);
-    } else if (event.key === 'ArrowLeft') {
+    } else if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') {
       event.preventDefault();
       this.selectIndex(currentIndex - 1, true);
     } else if (event.key === 'Home') {
@@ -217,19 +321,20 @@ class EditorialSlideshow extends HTMLElement {
     }
   }
 
-  handleMouseEnter() {
-    if (this.hoverMedia.matches) {
-      this.pauseReasons.add('hover');
-      this.syncPlayback();
-    }
-  }
-
-  handleMouseLeave() {
-    this.pauseReasons.delete('hover');
+  handlePointerDown() {
+    this.isPointerFocus = true;
+    this.pauseReasons.delete('focus');
     this.syncPlayback();
+
+    if (this.pointerFocusTimer) window.clearTimeout(this.pointerFocusTimer);
+    this.pointerFocusTimer = window.setTimeout(() => {
+      this.isPointerFocus = false;
+      this.pointerFocusTimer = null;
+    }, 0);
   }
 
   handleFocusIn() {
+    if (this.isPointerFocus) return;
     this.pauseReasons.add('focus');
     this.syncPlayback();
   }
@@ -290,14 +395,15 @@ class EditorialSlideshow extends HTMLElement {
   syncPlayback() {
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
-    this.progressBars.forEach((bar) => {
+    const activeIndex = this.activeIndex || 0;
+    this.progressBars.forEach((bar, index) => {
       bar.style.transition = 'none';
-      bar.style.transform = 'scaleX(0)';
+      bar.style.transform = this.autoplayManuallyPaused && index === activeIndex ? 'scaleX(1)' : 'scaleX(0)';
     });
 
     if (!this.isPlaying) return;
 
-    const progressBar = this.progressBars[this.activeIndex || 0];
+    const progressBar = this.progressBars[activeIndex];
     if (!progressBar) return;
 
     progressBar.style.transition = `transform ${this.autoplayDelay}ms linear`;
