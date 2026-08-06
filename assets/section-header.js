@@ -607,7 +607,7 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    const entryOffset = Math.min(0, header.getBoundingClientRect().top);
+    const entryOffset = header.getBoundingClientRect().top;
     clearResponsiveHeaderExit(header);
     if (!animateEntry) {
       clearResponsiveHeaderEntry(header);
