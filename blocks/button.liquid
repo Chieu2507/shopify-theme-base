@@ -10,7 +10,12 @@
 %}
 
 {% if block.settings.label != blank %}
-  <div class="content-button" {{ block.shopify_attributes }}>
+  <div
+    class="content-button block-animation"
+    style="--block-animation-delay: {{ block.settings.animation_delay | default: 0 }}ms;"
+    data-block-animation="{{ block.settings.animation_type | default: 'fade_up' }}"
+    {{ block.shopify_attributes }}
+  >
     {% render 'cta',
       label: block.settings.label,
       url: button_url,
@@ -81,6 +86,36 @@
         }
       ],
       "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "t:typography_blocks.animation"
+    },
+    {
+      "type": "select",
+      "id": "animation_type",
+      "label": "t:typography_blocks.type",
+      "options": [
+        { "value": "none", "label": "t:typography_options.none" },
+        { "value": "fade_in", "label": "t:typography_options.fade_in" },
+        { "value": "fade_up", "label": "t:typography_options.fade_up" },
+        { "value": "slide_in_left", "label": "t:typography_options.slide_in_left" },
+        { "value": "slide_in_right", "label": "t:typography_options.slide_in_right" },
+        { "value": "zoom_in", "label": "t:typography_options.zoom_in" },
+        { "value": "zoom_out", "label": "t:typography_options.zoom_out" }
+      ],
+      "default": "fade_up"
+    },
+    {
+      "type": "range",
+      "id": "animation_delay",
+      "label": "t:typography_blocks.animation_delay",
+      "min": 0,
+      "max": 1000,
+      "step": 25,
+      "unit": "ms",
+      "default": 0,
+      "visible_if": "{{ block.settings.animation_type != 'none' }}"
     }
   ],
   "presets": [

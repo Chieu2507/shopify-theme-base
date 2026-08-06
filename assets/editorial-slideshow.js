@@ -182,7 +182,7 @@ class EditorialSlideshow extends HTMLElement {
     this.navigatorRevealTimer = window.setTimeout(() => {
       this.navigator?.classList.remove('is-transitioning');
       this.navigatorRevealTimer = null;
-    }, 120);
+    }, 60);
   }
 
   get canAutoplay() {

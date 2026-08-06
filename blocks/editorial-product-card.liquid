@@ -11,7 +11,7 @@
 %}
 
 {% if title != blank or product != blank %}
-  <aside class="editorial-slideshow__product-card color-scheme color-{{ block.settings.color_scheme.id }}" aria-label="{{ title | escape }}" {{ block.shopify_attributes }}>
+  <aside class="editorial-slideshow__product-card color-scheme color-{{ block.settings.color_scheme.id }} block-animation" style="--block-animation-delay: {{ block.settings.animation_delay | default: 0 }}ms;" data-block-animation="{{ block.settings.animation_type | default: 'fade_up' }}" aria-label="{{ title | escape }}" {{ block.shopify_attributes }}>
     <div class="editorial-slideshow__product-copy">
       {% if product_url != blank %}<a class="editorial-slideshow__product-title" href="{{ product_url }}">{{ title | escape }}</a>{% else %}<span class="editorial-slideshow__product-title">{{ title | escape }}</span>{% endif %}
       {% if block.settings.meta != blank %}<span class="editorial-slideshow__product-meta">{{ block.settings.meta | escape }}</span>{% endif %}
@@ -52,6 +52,36 @@
       "id": "color_scheme",
       "label": "Color scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:typography_blocks.animation"
+    },
+    {
+      "type": "select",
+      "id": "animation_type",
+      "label": "t:typography_blocks.type",
+      "options": [
+        { "value": "none", "label": "t:typography_options.none" },
+        { "value": "fade_in", "label": "t:typography_options.fade_in" },
+        { "value": "fade_up", "label": "t:typography_options.fade_up" },
+        { "value": "slide_in_left", "label": "t:typography_options.slide_in_left" },
+        { "value": "slide_in_right", "label": "t:typography_options.slide_in_right" },
+        { "value": "zoom_in", "label": "t:typography_options.zoom_in" },
+        { "value": "zoom_out", "label": "t:typography_options.zoom_out" }
+      ],
+      "default": "fade_up"
+    },
+    {
+      "type": "range",
+      "id": "animation_delay",
+      "label": "t:typography_blocks.animation_delay",
+      "min": 0,
+      "max": 1000,
+      "step": 25,
+      "unit": "ms",
+      "default": 0,
+      "visible_if": "{{ block.settings.animation_type != 'none' }}"
     }
   ]
 }
