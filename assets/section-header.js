@@ -502,16 +502,31 @@ if (!window.SpinelHeaderMenus) {
     // submenus keep their original compact surface and must never opt the
     // header into the full-width mega-menu presentation.
     if (preferredDetails && !preferredDetails.matches('.header__submenu-disclosure--mega')) {
-      resetDesktopMegaMenuBackground(header);
-      return 0;
+      const megaDetails = header.querySelector('.header__submenu-disclosure--mega[open]');
+      if (!megaDetails) {
+        resetDesktopMegaMenuBackground(header);
+        return 0;
+      }
+
+      // Keep the previous mega surface alive for the crossfade. Its close
+      // path retargets the height to zero after the standard submenu opens.
+      if (megaDetails.dataset.closing === 'true' && header.classList.contains('is-menu-open')) {
+        header.style.setProperty('--header-mega-background-height', '0px');
+      }
+      return measureDesktopMegaMenuPanelHeight(megaDetails);
     }
 
-    // A standard submenu may already be opening while the previous mega menu
-    // is closing. Do not re-enable the shared mega surface for that handoff.
+    // During a mega-to-standard handoff, keep the shared surface visible while
+    // the old mega panel collapses; remove it only after both menus settle.
     if (!preferredDetails && header.querySelector(
       '.header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open]:not([data-closing="true"])'
     )) {
-      resetDesktopMegaMenuBackground(header);
+      const closingMega = header.querySelector('.header__submenu-disclosure--mega[open][data-closing="true"]');
+      if (closingMega && header.classList.contains('is-menu-open')) {
+        header.style.setProperty('--header-mega-background-height', '0px');
+      } else if (!closingMega) {
+        resetDesktopMegaMenuBackground(header);
+      }
       return 0;
     }
 
