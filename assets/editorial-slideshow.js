@@ -226,7 +226,7 @@ class EditorialSlideshow extends HTMLElement {
     this.navigatorMorphTimer = null;
     this.navigatorSizeTimer = null;
     this.navigatorSettleFrame = null;
-    this.navigator?.classList.remove('is-collapsing', 'is-expanding', 'is-settling', 'is-vertical-sizing');
+    this.navigator?.classList.remove('is-collapsing', 'is-expanding', 'is-settling', 'is-toggle-revealing', 'is-vertical-sizing');
     this.navigator?.style.removeProperty('height');
   }
 
@@ -241,7 +241,11 @@ class EditorialSlideshow extends HTMLElement {
     this.navigatorSizeTimer = window.setTimeout(() => {
       this.navigator?.classList.remove('is-vertical-sizing');
       this.navigator?.style.removeProperty('height');
-      this.navigatorSizeTimer = null;
+      this.navigator?.classList.add('is-toggle-revealing');
+      this.navigatorSizeTimer = window.setTimeout(() => {
+        this.navigator?.classList.remove('is-toggle-revealing');
+        this.navigatorSizeTimer = null;
+      }, 240);
     }, 430);
   }
 
