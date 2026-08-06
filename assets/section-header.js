@@ -559,6 +559,7 @@ if (!window.SpinelHeaderMenus) {
     header.style.setProperty('--header-scroll-exit-offset', `${currentTop - targetTop}px`);
     header.dataset.scrollExiting = 'true';
     header.classList.remove('header--scrolled');
+    header.getBoundingClientRect();
 
     motion.frame = window.requestAnimationFrame(() => {
       if (responsiveHeaderExitMotions.get(header) !== motion) return;
@@ -583,6 +584,7 @@ if (!window.SpinelHeaderMenus) {
     if (frame) window.cancelAnimationFrame(frame);
     responsiveHeaderEntryFrames.delete(header);
     header.removeAttribute('data-scroll-entering');
+    header.style.removeProperty('--header-scroll-entry-offset');
     header.style.removeProperty('--header-scroll-entry-top');
   };
 
@@ -603,7 +605,7 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    const entryTop = Math.max(0, header.getBoundingClientRect().top);
+    const entryOffset = Math.min(0, header.getBoundingClientRect().top);
     clearResponsiveHeaderExit(header);
     if (!animateEntry) {
       clearResponsiveHeaderEntry(header);
@@ -612,16 +614,17 @@ if (!window.SpinelHeaderMenus) {
     }
 
     clearResponsiveHeaderEntry(header);
-    header.style.setProperty('--header-scroll-entry-top', `${entryTop}px`);
+    header.style.setProperty('--header-scroll-entry-offset', `${entryOffset}px`);
     header.dataset.scrollEntering = 'true';
     header.classList.add('header--scrolled');
+    header.getBoundingClientRect();
 
     const frame = window.requestAnimationFrame(() => {
       if (responsiveHeaderEntryFrames.get(header) !== frame) return;
       responsiveHeaderEntryFrames.delete(header);
       if (!header.isConnected || !header.classList.contains('header--scrolled')) return;
+      header.style.setProperty('--header-scroll-entry-offset', '0px');
       header.removeAttribute('data-scroll-entering');
-      header.style.setProperty('--header-scroll-entry-top', '0px');
     });
     responsiveHeaderEntryFrames.set(header, frame);
   };
