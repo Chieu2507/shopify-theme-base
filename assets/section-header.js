@@ -14,7 +14,7 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDuration = 300;
-  // Keep the current mobile and non-mega baseline; desktop mega menus use the CSS motion below.
+  // Desktop top-level menus use the CSS motion below; keep the legacy Web Animations fallback disabled.
   const disableLegacyMegaMenuWebAnimations = true;
   let transparentHeaderFrame = 0;
   let headerScrollLockFallbackStyles = null;
@@ -318,7 +318,7 @@ if (!window.SpinelHeaderMenus) {
       });
       document.querySelectorAll('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(clearMegaMenuHoverTimer);
       document.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => closeMegaMenu(details, true));
-      document.querySelectorAll('.header__submenu-disclosure--mega').forEach(resetDesktopMegaMenuPresentation);
+      document.querySelectorAll('.header__submenu-disclosure').forEach(resetDesktopMegaMenuPresentation);
       document.querySelectorAll('[data-header]').forEach(resetDesktopMegaMenuBackground);
       if (breakpointFocusTargets.length) {
         window.requestAnimationFrame(() => {
@@ -326,7 +326,7 @@ if (!window.SpinelHeaderMenus) {
         });
       }
     } else if (!isMobile) {
-      document.querySelectorAll('.header__submenu-disclosure--mega[open]:not([data-closing="true"])').forEach(syncDesktopMegaMenuPanelHeight);
+      document.querySelectorAll('.header__submenu-disclosure[open]:not([data-closing="true"])').forEach(syncDesktopMegaMenuPanelHeight);
     }
     document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => {
       if (crossedHeaderBreakpoint) {
@@ -470,10 +470,14 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const usesDesktopMegaMenuCssMotion = (details) => (
-    !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure--mega')
+    !isMobileHeaderViewport()
+    && details.matches('.header__submenu-disclosure')
+    && Boolean(details.querySelector(':scope > .header__mega-panel, :scope > .header__submenu'))
   );
 
-  const getDesktopMegaMenuPanel = (details) => details.querySelector(':scope > .header__mega-panel');
+  const getDesktopMegaMenuPanel = (details) => details.querySelector(
+    ':scope > .header__mega-panel, :scope > .header__submenu'
+  );
 
   const resetDesktopMegaMenuBackground = (header) => {
     if (!header) return;
@@ -497,9 +501,9 @@ if (!window.SpinelHeaderMenus) {
     const preferredIsActive = preferredDetails?.open && preferredDetails.dataset.closing !== 'true';
     const activeDetails = preferredIsActive
       ? preferredDetails
-      : header.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])');
+      : header.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])');
     if (!activeDetails) {
-      const closingDetails = header.querySelector('.header__submenu-disclosure--mega[open][data-closing="true"]');
+      const closingDetails = header.querySelector('.header__submenu-disclosure[open][data-closing="true"]');
       if (closingDetails) {
         header.style.setProperty('--header-mega-background-height', '0px');
         header.classList.add('is-menu-open');
@@ -527,10 +531,23 @@ if (!window.SpinelHeaderMenus) {
     state.resolve(result);
   };
 
+  const getDesktopMegaMenuRevealTargets = (details) => {
+    const panel = getDesktopMegaMenuPanel(details);
+    if (!panel) return [];
+    if (details.matches('.header__submenu-disclosure--mega')) {
+      return Array.from(panel.querySelectorAll(
+        '.header__mega-heading, .header__mega-list, .header__mega-promo'
+      ));
+    }
+    return Array.from(panel.children).filter((element) => (
+      !element.matches('.header__mobile-submenu-back-item')
+    ));
+  };
+
   const clearDesktopMegaMenuRevealDelays = (details) => {
-    getDesktopMegaMenuPanel(details)?.querySelectorAll(
-      '.header__mega-heading, .header__mega-list, .header__mega-promo'
-    ).forEach((element) => element.style.removeProperty('--header-mega-reveal-delay'));
+    getDesktopMegaMenuRevealTargets(details).forEach((element) => {
+      element.style.removeProperty('--header-mega-reveal-delay');
+    });
   };
 
   const clearDesktopMegaMenuHeightGuard = (details) => {
@@ -558,6 +575,13 @@ if (!window.SpinelHeaderMenus) {
   const updateDesktopMegaMenuRevealDelays = (details) => {
     const panel = getDesktopMegaMenuPanel(details);
     if (!panel) return;
+    if (!details.matches('.header__submenu-disclosure--mega')) {
+      const items = getDesktopMegaMenuRevealTargets(details);
+      items.forEach((item, index) => {
+        item.style.setProperty('--header-mega-reveal-delay', `${200 + (index * 50)}ms`);
+      });
+      return items.length ? 200 + ((items.length - 1) * 50) + 400 : 0;
+    }
     const heading = panel.querySelector('.header__mega-heading');
     const columns = Array.from(panel.querySelectorAll('.header__mega-list'));
     const promotions = Array.from(panel.querySelectorAll('.header__mega-promo'));
@@ -715,19 +739,22 @@ if (!window.SpinelHeaderMenus) {
 
   const observeDesktopMegaMenu = (details) => {
     if (!window.ResizeObserver || desktopMegaMenuResizeObservers.has(details)) return;
-    const surface = getDesktopMegaMenuPanel(details)?.querySelector(':scope > .header__mega-surface');
-    if (!surface) return;
+    const panel = getDesktopMegaMenuPanel(details);
+    if (!panel) return;
+    const surface = panel.querySelector(':scope > .header__mega-surface');
+    const observedElements = [surface || panel];
+    if (!surface) observedElements.push(...Array.from(panel.children));
     const observer = new ResizeObserver(() => {
       if (usesDesktopMegaMenuCssMotion(details) && details.open && details.dataset.closing !== 'true') {
         syncDesktopMegaMenuPanelHeight(details);
       }
     });
-    observer.observe(surface);
+    observedElements.forEach((element) => observer.observe(element));
     desktopMegaMenuResizeObservers.set(details, observer);
   };
 
   const initializeDesktopMegaMenuObservers = (scope = document) => {
-    scope.querySelectorAll?.('.header__submenu-disclosure--mega').forEach(observeDesktopMegaMenu);
+    scope.querySelectorAll?.('.header__submenu-disclosure').forEach(observeDesktopMegaMenu);
   };
 
   const disconnectDesktopMegaMenuObserver = (details) => {
@@ -997,7 +1024,7 @@ if (!window.SpinelHeaderMenus) {
   ) || [];
 
   const scheduleMegaMenuClose = (details, delay) => {
-    const closeDelay = delay ?? (details.matches('.header__submenu-disclosure--mega')
+    const closeDelay = delay ?? (details.matches('.header__submenu-disclosure')
       ? desktopMegaMenuHoverCloseDelay
       : headerHoverCloseDelay);
     clearMegaMenuHoverTimer(details);
@@ -1062,7 +1089,7 @@ if (!window.SpinelHeaderMenus) {
 
   const openHeaderSubmenu = (details) => {
     clearMegaMenuHoverTimer(details);
-    const isDesktopMegaMenu = usesDesktopMegaMenuCssMotion(details);
+    const isDesktopAnimatedMenu = usesDesktopMegaMenuCssMotion(details);
     const isDesktopTopLevelMenu = !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure');
 
     if (details.open) {
@@ -1075,14 +1102,14 @@ if (!window.SpinelHeaderMenus) {
         }
       }
       animateMegaMenuOpen(details, isMobileHeaderViewport());
-      if (isDesktopMegaMenu) {
+      if (isDesktopAnimatedMenu) {
         closeOtherHeaderSubmenus(details);
       }
       if (isDesktopTopLevelMenu) closeDesktopMenusInOtherHeaders(details);
       return;
     }
 
-    if (!isDesktopMegaMenu) {
+    if (!isDesktopAnimatedMenu) {
       closeOtherHeaderSubmenus(
         details,
         supportsDesktopHeaderHover() && details.matches('.header__submenu-disclosure--hover')
@@ -1106,7 +1133,7 @@ if (!window.SpinelHeaderMenus) {
       scheduleResponsiveHeaderSync();
     }
     animateMegaMenuOpen(details, isMobileHeaderViewport());
-    if (isDesktopMegaMenu) {
+    if (isDesktopAnimatedMenu) {
       closeOtherHeaderSubmenus(details);
     }
     if (isDesktopTopLevelMenu) closeDesktopMenusInOtherHeaders(details);
@@ -1154,7 +1181,7 @@ if (!window.SpinelHeaderMenus) {
     const details = event.target.closest?.('.header__submenu-disclosure--hover');
     if (details) {
       if (details.contains(event.relatedTarget)) return;
-      if (details.matches('.header__submenu-disclosure--mega') && details.closest('[data-header]')?.contains(event.relatedTarget)) return;
+      if (details.matches('.header__submenu-disclosure') && details.closest('[data-header]')?.contains(event.relatedTarget)) return;
 
       scheduleMegaMenuClose(details);
       return;
