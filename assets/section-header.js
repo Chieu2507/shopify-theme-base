@@ -29,6 +29,7 @@ if (!window.SpinelHeaderMenus) {
   let localizationSheetDrag = null;
   let localizationSheetDragTimer = null;
   const responsiveHeaderEntryFrames = new WeakMap();
+  const responsiveHeaderExitMotions = new WeakMap();
   const mobileStickyHeaderStates = new WeakMap();
   let wasMobileHeaderViewport = window.matchMedia('(max-width: 899px)').matches;
 
@@ -527,6 +528,55 @@ if (!window.SpinelHeaderMenus) {
     if (activeColorClass) header.classList.add(activeColorClass);
   };
 
+  const clearResponsiveHeaderExit = (header) => {
+    const motion = responsiveHeaderExitMotions.get(header);
+    if (motion?.frame) window.cancelAnimationFrame(motion.frame);
+    if (motion?.timer) window.clearTimeout(motion.timer);
+    responsiveHeaderExitMotions.delete(header);
+    header.removeAttribute('data-scroll-exiting');
+    header.style.removeProperty('--header-scroll-exit-offset');
+  };
+
+  const finishResponsiveHeaderExit = (header, motion) => {
+    if (responsiveHeaderExitMotions.get(header) !== motion) return;
+    responsiveHeaderExitMotions.delete(header);
+    if (motion.frame) window.cancelAnimationFrame(motion.frame);
+    if (motion.timer) window.clearTimeout(motion.timer);
+    header.removeAttribute('data-scroll-exiting');
+    header.style.removeProperty('--header-scroll-exit-offset');
+  };
+
+  const startResponsiveHeaderExit = (header) => {
+    if (responsiveHeaderExitMotions.has(header)) return;
+
+    const sectionWrapper = header.parentElement;
+    const currentTop = header.getBoundingClientRect().top;
+    const targetTop = sectionWrapper?.getBoundingClientRect().top ?? currentTop;
+    const motion = { frame: 0, timer: 0 };
+    responsiveHeaderExitMotions.set(header, motion);
+
+    header.style.setProperty('--header-scroll-exit-offset', `${currentTop - targetTop}px`);
+    header.dataset.scrollExiting = 'true';
+    header.classList.remove('header--scrolled');
+
+    motion.frame = window.requestAnimationFrame(() => {
+      if (responsiveHeaderExitMotions.get(header) !== motion) return;
+      motion.frame = 0;
+      if (!header.isConnected || header.classList.contains('header--scrolled')) {
+        finishResponsiveHeaderExit(header, motion);
+        return;
+      }
+
+      header.style.setProperty('--header-scroll-exit-offset', '0px');
+      const duration = getTransitionTotalMs(header, 'transform');
+      if (!duration) {
+        finishResponsiveHeaderExit(header, motion);
+        return;
+      }
+      motion.timer = window.setTimeout(() => finishResponsiveHeaderExit(header, motion), duration + 80);
+    });
+  };
+
   const clearResponsiveHeaderEntry = (header) => {
     const frame = responsiveHeaderEntryFrames.get(header);
     if (frame) window.cancelAnimationFrame(frame);
@@ -543,18 +593,23 @@ if (!window.SpinelHeaderMenus) {
     }
 
     if (!isScrolled) {
-      clearResponsiveHeaderEntry(header);
-      header.classList.remove('header--scrolled');
+      if (animateEntry) {
+        startResponsiveHeaderExit(header);
+      } else {
+        clearResponsiveHeaderEntry(header);
+        header.classList.remove('header--scrolled');
+      }
       return;
     }
 
+    const entryTop = Math.max(0, header.getBoundingClientRect().top);
+    clearResponsiveHeaderExit(header);
     if (!animateEntry) {
       clearResponsiveHeaderEntry(header);
       header.classList.add('header--scrolled');
       return;
     }
 
-    const entryTop = Math.max(0, header.getBoundingClientRect().top);
     clearResponsiveHeaderEntry(header);
     header.style.setProperty('--header-scroll-entry-top', `${entryTop}px`);
     header.dataset.scrollEntering = 'true';
@@ -610,17 +665,16 @@ if (!window.SpinelHeaderMenus) {
       ? sectionWrapper.getBoundingClientRect().top + window.scrollY
       : header.getBoundingClientRect().top + window.scrollY;
     const isMobile = isMobileHeaderViewport();
-    const isDesktopStickyTransparentHeader = isTransparentHeader
-      && !isMobile
+    const isStickyTransparentHeader = isTransparentHeader
       && header.classList.contains('header--sticky');
-    const scrollThreshold = isTransparentHeader && !isMobile && !isDesktopStickyTransparentHeader
+    const scrollThreshold = isTransparentHeader && !isMobile && !isStickyTransparentHeader
       ? desktopTransparentHeaderSurfaceThreshold
       : 1;
     const isScrolled = window.scrollY > origin + scrollThreshold;
     syncResponsiveHeaderScrollState(
       header,
       isScrolled,
-      isDesktopStickyTransparentHeader
+      isStickyTransparentHeader
     );
 
     if (!isTransparentHeader) return;
@@ -1988,6 +2042,7 @@ if (!window.SpinelHeaderMenus) {
     if (event.target.contains?.(headerBreakpointFocusContext?.header)) headerBreakpointFocusContext = null;
     event.target.querySelectorAll?.('[data-header]').forEach((header) => {
       clearResponsiveHeaderEntry(header);
+      clearResponsiveHeaderExit(header);
       mobileStickyHeaderStates.delete(header);
       header.classList.remove('header--mobile-hidden');
       desktopMegaMenuHandoffs.delete(header);
