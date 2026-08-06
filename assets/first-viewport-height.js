@@ -1,0 +1,86 @@
+const sectionSelector = '.shopify-section';
+
+function getViewportHeight() {
+  return window.visualViewport?.height || window.innerHeight;
+}
+
+function hasOnlyAnnouncementBarsBefore(section) {
+  let previousSection = section.previousElementSibling;
+
+  while (previousSection) {
+    if (
+      previousSection.matches(sectionSelector)
+      && !previousSection.querySelector('announcement-bar')
+    ) {
+      return false;
+    }
+
+    previousSection = previousSection.previousElementSibling;
+  }
+
+  return true;
+}
+
+/**
+ * Makes a full-screen slideshow fill only the remaining first viewport.
+ * The element's document position naturally includes every in-flow bar above
+ * it, including any number of announcement bars and the site header.
+ */
+export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {}) {
+  let animationFrame;
+  const abortController = new AbortController();
+  const { signal } = abortController;
+  const mobileQuery = window.matchMedia(`(max-width: ${mobileBreakpoint}px)`);
+  const section = element.closest(sectionSelector);
+
+  const update = () => {
+    animationFrame = undefined;
+
+    const isFullScreen = mobileQuery.matches
+      ? element.classList.contains('slideshow--height-mobile-full')
+      : element.classList.contains('slideshow--height-desktop-full');
+    const viewportHeight = getViewportHeight();
+    const top = element.getBoundingClientRect().top + window.scrollY;
+    const startsInFirstViewport = top >= 0 && top < viewportHeight;
+    const canFillFirstViewport = isFullScreen
+      && startsInFirstViewport
+      && (!section || hasOnlyAnnouncementBarsBefore(section));
+
+    element.classList.toggle('slideshow--fills-first-viewport', canFillFirstViewport);
+
+    if (canFillFirstViewport) {
+      element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round((viewportHeight - top) * 100) / 100)}px`);
+    } else {
+      element.style.removeProperty('--slideshow-first-viewport-height');
+    }
+  };
+
+  const scheduleUpdate = () => {
+    if (animationFrame) return;
+    animationFrame = window.requestAnimationFrame(update);
+  };
+
+  const resizeObserver = 'ResizeObserver' in window ? new ResizeObserver(scheduleUpdate) : null;
+  document.querySelectorAll(sectionSelector).forEach((candidate) => {
+    if (!section || candidate === section || candidate.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING) {
+      resizeObserver?.observe(candidate);
+    }
+  });
+
+  window.addEventListener('resize', scheduleUpdate, { signal });
+  window.visualViewport?.addEventListener('resize', scheduleUpdate, { signal });
+  mobileQuery.addEventListener?.('change', scheduleUpdate, { signal });
+  document.addEventListener('shopify:section:load', scheduleUpdate, { signal });
+  document.addEventListener('shopify:section:unload', scheduleUpdate, { signal });
+  document.addEventListener('shopify:section:reorder', scheduleUpdate, { signal });
+  document.fonts?.ready.then(scheduleUpdate);
+  scheduleUpdate();
+
+  return () => {
+    abortController.abort();
+    resizeObserver?.disconnect();
+    if (animationFrame) window.cancelAnimationFrame(animationFrame);
+    element.classList.remove('slideshow--fills-first-viewport');
+    element.style.removeProperty('--slideshow-first-viewport-height');
+  };
+}

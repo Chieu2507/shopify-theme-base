@@ -2,6 +2,7 @@ import Swiper from './swiper-12.2.0.min.mjs';
 import A11y from './swiper-12.2.0-a11y.min.mjs';
 import Navigation from './swiper-12.2.0-navigation.min.mjs';
 import Parallax from './swiper-12.2.0-parallax.min.mjs';
+import { setupFirstViewportHeight } from './first-viewport-height.js';
 
 class SpinelSlideshow extends HTMLElement {
   connectedCallback() {
@@ -20,6 +21,7 @@ class SpinelSlideshow extends HTMLElement {
     this.onVisibilityChange = this.handleVisibilityChange.bind(this);
     this.onMouseEnter = this.pauseAutoplay.bind(this);
     this.onMouseLeave = this.scheduleAutoplay.bind(this);
+    this.destroyFirstViewportHeight = setupFirstViewportHeight(this);
 
     document.addEventListener('shopify:block:select', this.onBlockSelect);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
@@ -40,6 +42,8 @@ class SpinelSlideshow extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.destroyFirstViewportHeight?.();
+    this.destroyFirstViewportHeight = null;
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.isDesktop?.removeEventListener?.('change', this.onViewportChange);

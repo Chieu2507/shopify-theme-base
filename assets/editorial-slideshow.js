@@ -1,4 +1,5 @@
 import { A11y, EffectFade, Navigation, Swiper } from './swiper-loader.js';
+import { setupFirstViewportHeight } from './first-viewport-height.js';
 
 class EditorialSlideshow extends HTMLElement {
   connectedCallback() {
@@ -36,6 +37,7 @@ class EditorialSlideshow extends HTMLElement {
     this.isPointerFocus = false;
     this.pauseReasons = new Set();
     this.isInViewport = !('IntersectionObserver' in window);
+    this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 899 });
 
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
     this.handleBlockSelect = this.handleBlockSelect.bind(this);
@@ -80,6 +82,8 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.destroyFirstViewportHeight?.();
+    this.destroyFirstViewportHeight = null;
     this.abortController?.abort();
     this.abortController = null;
     this.visibilityObserver?.disconnect();
