@@ -20,9 +20,123 @@ if (!window.SpinelHeaderMenus) {
   let transparentHeaderFrame = 0;
   let headerScrollLockFallbackStyles = null;
   let headerBreakpointFocusContext = null;
+  let localizationSheetDrag = null;
+  let localizationSheetDragTimer = null;
   let wasMobileHeaderViewport = window.matchMedia('(max-width: 899px)').matches;
 
   const isMobileHeaderViewport = () => window.matchMedia('(max-width: 899px)').matches;
+
+  const resetLocalizationSheetDrag = () => {
+    window.clearTimeout(localizationSheetDragTimer);
+    localizationSheetDragTimer = null;
+
+    const drag = localizationSheetDrag;
+    if (drag) {
+      try { drag.handle.releasePointerCapture(drag.pointerId); } catch (_) {}
+    }
+
+    localizationSheetDrag = null;
+    drag?.sheet?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
+    drag?.sheet?.style.removeProperty('transform');
+    drag?.sheet?.style.removeProperty('opacity');
+  };
+
+  const closeLocalizationSheetFromHandle = (drag) => {
+    const { details, sheet } = drag;
+    sheet.classList.add('is-handle-closing');
+    sheet.style.opacity = '1';
+
+    window.requestAnimationFrame(() => {
+      sheet.style.transform = `translate3d(0, ${Math.max(window.innerHeight, sheet.offsetHeight + 60)}px, 0)`;
+      sheet.style.opacity = '0';
+    });
+
+    localizationSheetDragTimer = window.setTimeout(() => {
+      if (details.open) {
+        details.open = false;
+        details.querySelector(':scope > summary')?.focus({ preventScroll: true });
+      }
+      sheet.classList.remove('is-handle-closing');
+      sheet.style.removeProperty('transform');
+      sheet.style.removeProperty('opacity');
+      localizationSheetDragTimer = null;
+    }, 240);
+  };
+
+  const startLocalizationSheetDrag = (event) => {
+    const handle = event.target instanceof Element
+      ? event.target.closest('.header__localization-sheet-handle')
+      : null;
+    const sheet = handle?.closest('.header__localization-sheet');
+    const details = sheet?.closest('.header__localization-selector[open]');
+
+    if (!handle || !sheet || !details || !isMobileHeaderViewport() || !event.isPrimary || event.button > 0) return;
+
+    resetLocalizationSheetDrag();
+    localizationSheetDrag = {
+      pointerId: event.pointerId,
+      handle,
+      sheet,
+      details,
+      startY: event.clientY,
+      distance: 0,
+    };
+    sheet.classList.add('is-handle-dragging');
+    sheet.style.transform = 'translate3d(0, 0, 0)';
+    sheet.style.opacity = '1';
+    try { handle.setPointerCapture(event.pointerId); } catch (_) {}
+    event.preventDefault();
+  };
+
+  const moveLocalizationSheetDrag = (event) => {
+    const drag = localizationSheetDrag;
+    if (!drag || event.pointerId !== drag.pointerId) return;
+
+    drag.distance = Math.max(0, event.clientY - drag.startY);
+    drag.sheet.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+    event.preventDefault();
+  };
+
+  const endLocalizationSheetDrag = (event, cancelled = false) => {
+    const drag = localizationSheetDrag;
+    if (!drag || event.pointerId !== drag.pointerId) return;
+
+    try { drag.handle.releasePointerCapture(event.pointerId); } catch (_) {}
+    localizationSheetDrag = null;
+    drag.sheet.classList.remove('is-handle-dragging');
+
+    if (!cancelled && drag.distance >= drag.sheet.getBoundingClientRect().height * 0.2) {
+      closeLocalizationSheetFromHandle(drag);
+      return;
+    }
+
+    drag.sheet.classList.add('is-handle-settling');
+    window.requestAnimationFrame(() => {
+      drag.sheet.style.transform = 'translate3d(0, 0, 0)';
+      drag.sheet.style.opacity = '1';
+    });
+    localizationSheetDragTimer = window.setTimeout(() => {
+      drag.sheet.classList.remove('is-handle-settling');
+      drag.sheet.style.removeProperty('transform');
+      drag.sheet.style.removeProperty('opacity');
+    }, 240);
+  };
+
+  const localizationSheetTouchEvent = (event, callback, cancelled = false) => {
+    const activePointerId = localizationSheetDrag?.pointerId;
+    const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === activePointerId)
+      || event.changedTouches[0];
+    if (!touch) return;
+
+    callback({
+      target: event.target,
+      isPrimary: true,
+      button: 0,
+      pointerId: touch.identifier,
+      clientY: touch.clientY,
+      preventDefault: () => event.preventDefault(),
+    }, cancelled);
+  };
 
   const focusWithoutScroll = (target, scroller, savedScroll) => {
     if (!target) return;
@@ -1480,6 +1594,18 @@ if (!window.SpinelHeaderMenus) {
     });
   });
 
+  if ('PointerEvent' in window) {
+    document.addEventListener('pointerdown', startLocalizationSheetDrag);
+    document.addEventListener('pointermove', moveLocalizationSheetDrag, { passive: false });
+    document.addEventListener('pointerup', endLocalizationSheetDrag);
+    document.addEventListener('pointercancel', (event) => endLocalizationSheetDrag(event, true));
+  } else {
+    document.addEventListener('touchstart', (event) => localizationSheetTouchEvent(event, startLocalizationSheetDrag), { passive: false });
+    document.addEventListener('touchmove', (event) => localizationSheetTouchEvent(event, moveLocalizationSheetDrag), { passive: false });
+    document.addEventListener('touchend', (event) => localizationSheetTouchEvent(event, endLocalizationSheetDrag));
+    document.addEventListener('touchcancel', (event) => localizationSheetTouchEvent(event, endLocalizationSheetDrag, true));
+  }
+
   document.addEventListener('keydown', (event) => {
     if (event.key === 'Tab' && isMobileHeaderViewport()) {
       const drawer = event.target.closest?.('[data-header-mobile-drawer][data-open="true"]');
@@ -1569,6 +1695,9 @@ if (!window.SpinelHeaderMenus) {
     syncHeaderMenuScrollLock();
   });
   document.addEventListener('shopify:section:unload', (event) => {
+    if (localizationSheetDrag?.details && event.target.contains(localizationSheetDrag.details)) {
+      resetLocalizationSheetDrag();
+    }
     if (event.target.contains?.(headerBreakpointFocusContext?.header)) headerBreakpointFocusContext = null;
     event.target.querySelectorAll?.('[data-header]').forEach((header) => {
       desktopMegaMenuHandoffs.delete(header);
