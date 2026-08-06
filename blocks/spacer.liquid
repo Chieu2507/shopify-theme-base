@@ -1,0 +1,80 @@
+{% doc %}
+  Renders responsive vertical space between content blocks.
+
+  @example
+  {% content_for 'block', type: 'spacer', id: 'spacer' %}
+{% enddoc %}
+
+<div
+  class="spacer"
+  style="
+    --spacer-space-desktop: {{ block.settings.space_desktop | default: 50 }}px;
+    --spacer-space-tablet: {{ block.settings.space_tablet | default: 50 }}px;
+    --spacer-space-mobile: {{ block.settings.space_mobile | default: 50 }}px;
+  "
+  aria-hidden="true"
+  {{ block.shopify_attributes }}
+></div>
+
+{% stylesheet %}
+  .spacer {
+    width: 100%;
+    height: var(--spacer-space-mobile, 50px);
+    flex: 0 0 auto;
+  }
+
+  @media screen and (min-width: 750px) and (max-width: 989px) {
+    .spacer {
+      height: var(--spacer-space-tablet, 50px);
+    }
+  }
+
+  @media screen and (min-width: 990px) {
+    .spacer {
+      height: var(--spacer-space-desktop, 50px);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Spacer",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Spacing"
+    },
+    {
+      "type": "range",
+      "id": "space_desktop",
+      "label": "Space",
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "space_tablet",
+      "label": "Tablet space",
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "space_mobile",
+      "label": "Mobile space",
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 50
+    }
+  ]
+}
+{% endschema %}
