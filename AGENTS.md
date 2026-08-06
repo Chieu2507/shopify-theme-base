@@ -1,255 +1,183 @@
-# Hướng dẫn trong workspace
+# Spinel Theme — Quy trình bắt buộc
 
-## Shopify plugin — BẮT BUỘC SỬ DỤNG VÀ THAM KHẢO
+## 1. Bắt đầu và nguồn chuẩn
 
-- Với mọi tác vụ trong workspace này, phải sử dụng và tham khảo plugin
-  `@shopify` (`shopify@openai-curated-remote`) khi plugin hoặc capability phù
-  hợp đang khả dụng.
-- Trước khi đưa ra quyết định về Shopify theme, Liquid, schema, Theme Editor,
-  Storefront hoặc Shopify CLI/API, phải ưu tiên hướng dẫn, tài liệu và công cụ
-  từ plugin `@shopify` làm nguồn tham chiếu.
-- Nếu capability cần thiết của plugin không khả dụng trong phiên làm việc, phải
-  nêu rõ giới hạn này và tiếp tục bằng nguồn chính thức hoặc mã nguồn hiện có
-  phù hợp; không được bỏ qua việc tham khảo plugin khi capability đó khả dụng.
+1. Đọc toàn bộ `AGENTS.md` trước mỗi tác vụ, kể cả tác vụ tiếp nối.
+2. Luôn dùng và tham khảo plugin `@shopify`
+   (`shopify@openai-curated-remote`) trước khi quyết định về Liquid, schema,
+   section/block, Theme Editor, Storefront, Shopify CLI/API hoặc Theme Store.
+   Ưu tiên capability tra cứu tài liệu; chỉ thao tác dữ liệu store khi user yêu
+   cầu rõ ràng. Nếu capability phù hợp không khả dụng, phải nêu giới hạn và dùng
+   Shopify Dev Docs chính thức cùng code Spinel hiện tại.
+3. Trước khi sửa file, chạy `git status --short --branch`, xác nhận branch/target,
+   fetch `origin/main` và kiểm tra divergence. Giữ nguyên mọi thay đổi ngoài task;
+   không tự stash hoặc thao tác chúng.
+4. Áp dụng nguồn chuẩn theo vai trò:
 
-## DELIVERY POLICY — BẮT BUỘC ĐỌC TRƯỚC
+   - Requirement hiện tại của user ưu tiên; demo bổ sung hình ảnh, responsive và
+     interaction chưa được requirement ghi rõ.
+   - Code Spinel hiện tại là chuẩn cho convention, setting và tương thích ngược.
+   - Shopify Dev Docs hiện hành, truy cập qua `@shopify`, là chuẩn nền tảng.
+   - `AGENTS.md` quyết định workflow QA và delivery.
 
-Các quy tắc dưới đây là workflow mặc định của repository này và là nguồn chuẩn
-cho các thao tác Git trong workspace.
+5. Chỉ hỏi lại khi điểm mơ hồ có thể làm đổi kiến trúc, dữ liệu hoặc merchant
+   UX. Với phần còn lại, suy luận từ demo và convention hiện có, rồi ghi giả
+   định vào checklist nghiệm thu.
 
-- Sau mỗi thay đổi code/theme đã được kiểm tra, tự động hoàn tất quy trình:
-  `git fetch origin main` → kiểm tra divergence/conflict → chỉ stage các file
-  thuộc task hiện tại → commit → `git push origin main` → xác nhận `HEAD` và
-  `origin/main` trùng nhau.
-- Không hỏi lại quyền commit hoặc push. Nếu user yêu cầu push, bắt buộc thực
-  hiện commit và push, trừ khi có conflict hoặc kiểm tra thất bại.
-- Yêu cầu rõ ràng của user hoặc system về việc không push có ưu tiên cao hơn
-  policy mặc định này.
-- Không để memory, default chung hoặc policy của task cũ như “do not push” ghi
-  đè policy của repository này.
-- Chỉ stage và commit các file thuộc task hiện tại. Giữ nguyên mọi thay đổi
-  không liên quan đã có trong working tree.
-- Nếu remote có divergence hoặc conflict, không được ghi đè code khác; phải
-  kiểm tra và merge an toàn trước khi push.
-- Nếu vì một blocker mà chưa push được, phải nêu chính xác blocker đó trong
-  phần bàn giao cuối cùng.
-- Theme đã kết nối với Git nên không cần kiểm tra thêm cấu hình deploy.
+## 2. Requirement và phạm vi
 
-## Xây dựng section và theme block
+Trước khi code, chuyển requirement/demo thành checklist có thể quan sát được,
+bao gồm cấu trúc/nội dung, trạng thái dữ liệu, desktop/mobile, interaction,
+animation, merchant settings, Theme Editor, accessibility, performance, khác
+biệt được phép và phần ngoài phạm vi.
 
-Các quy tắc này là bắt buộc đối với mọi tác vụ tạo mới hoặc chỉnh sửa Shopify
-section, theme block, block nội bộ của section, schema, preset hoặc hành vi
-storefront có liên quan.
+- Chỉ sửa phần cần thiết để đạt checklist; không refactor, format hoặc đổi API
+  ngoài phạm vi.
+- Với bug, tái hiện khi có thể và xác định nguyên nhân gốc trước khi sửa. Nếu
+  không thể tái hiện, ghi bằng chứng/giả thuyết và phần runtime chưa xác minh.
+- Với demo storefront Spinel bị khóa, dùng password `1`; không dùng password này
+  cho Shopify Admin, GitHub, API hoặc hệ thống khác.
+- Khi sửa block, snippet, asset hoặc setting dùng chung, dùng `rg` tìm toàn bộ
+  call site, xác định blast radius và regression-test các nhóm usage bị ảnh hưởng.
 
-### Nguồn chuẩn
+## 3. Kiến trúc section và block
 
-- Sử dụng file `AGENTS.md` này cùng với kĩ năng `shopify` và phần triển khai Liquid hiện tại làm nguồn chuẩn
-  cho kiến trúc section/block. Không phụ thuộc vào các tài liệu Markdown khác,
-  trừ khi người dùng yêu cầu rõ ràng một tài liệu cụ thể.
-- Trước khi thêm một option, hãy tìm trong các file hiện có ở `blocks/`,
-  `sections/` và các snippet render liên quan để xác định thành phần tương
-  đương gần nhất. Không tự tạo setting ID, kiểu setting, giá trị option, giá trị
-  mặc định, cách đặt label hoặc hành vi render mới khi Spinel đã có thành phần
-  tương đương.
-- Trong quá trình thực hiện tác vụ, phải đọc lại các file block chuẩn có liên
-  quan. Không tái tạo bộ option dựa trên trí nhớ từ cuộc trò chuyện hoặc từ một
-  danh sách đã sao chép có thể không còn cập nhật.
-- Demo được cung cấp quyết định kết quả hình ảnh, hành vi responsive và tương
-  tác cần đạt được. Code hiện có của Spinel quyết định kiến trúc component và
-  quy ước option trong Theme Editor. Khi bắt đầu tác vụ, phải lập một checklist
-  nghiệm thu ngắn gọn bao gồm cấu trúc, thứ bậc nội dung, hành vi desktop/mobile,
-  animation, các tùy chỉnh dành cho merchant và những khác biệt được phép. Trong
-  bước QA cuối cùng, phải đối chiếu lại demo theo checklist đó.
+Trước tiên xác định section đang dùng local blocks hay theme blocks. Section
+local hiện hữu phải giữ local blocks. Trước khi tạo mới, đọc component tương
+đương và template/preset đang dùng nó.
 
-### Thông tin truy cập storefront demo
-
-- Password page của tất cả storefront demo đang dùng theme Spinel hiện tại là
-  `1`. Khi cần mở storefront hoặc preview bị khóa trong phạm vi này, dùng mật
-  khẩu `1` và không hỏi lại người dùng.
-- Chỉ áp dụng giá trị này cho storefront demo và theme Spinel hiện tại. Không
-  suy rộng sang Shopify Admin, tài khoản Shopify, VPS, GitHub, API, token hoặc
-  bất kỳ môi trường nào khác.
-
-### Thứ tự ưu tiên bắt buộc khi xây dựng cấu trúc
-
-Chọn phương án phù hợp về kỹ thuật đầu tiên theo đúng thứ tự sau:
+Với section mới hoặc tương thích theme blocks, ưu tiên theo đúng thứ tự:
 
 1. Tái sử dụng theme block hiện có.
-2. Kết hợp các block hiện có dưới dạng nested block khi merchant cần có khả
-   năng thêm, xóa hoặc sắp xếp lại nội dung.
-3. Chỉ tạo theme block dùng chung mới khi không có block phù hợp và thành phần
-   đó có khả năng được tái sử dụng.
-4. Chỉ khai báo content setting trực tiếp trong section hoặc block nội bộ của
-   section khi cơ chế của section, markup cố định, mối quan hệ dữ liệu hoặc
-   tương tác khiến theme block độc lập không phù hợp.
+2. Kết hợp các block hiện có bằng nested block khi merchant cần thêm, xóa, nhân
+   bản hoặc sắp xếp nội dung.
+3. Tạo theme block dùng chung mới khi không có block phù hợp và có khả năng tái
+   sử dụng thực tế.
+4. Chỉ đặt content setting trực tiếp trong section/local block khi markup, quan
+   hệ dữ liệu hoặc interaction khiến theme block không phù hợp; phải nêu lý do
+   kỹ thuật trong bàn giao.
 
-Không đưa toàn bộ nội dung trực tiếp vào section chỉ vì cách đó code nhanh hơn.
-Nếu bắt buộc phải dùng phương án thứ tư, phải nêu rõ lý do kỹ thuật trong phần
-bàn giao cuối cùng.
+Các invariant bắt buộc:
 
-### Quy tắc tương thích giữa section block và theme block
+- Một section chỉ dùng một cơ chế: local section blocks hoặc theme blocks. Không
+  trộn `section.blocks`/`block_order` với `{% content_for 'blocks' %}`.
+- Dùng dynamic theme block cho nội dung merchant được sắp xếp; dùng static theme
+  block cho vị trí/quan hệ cố định. Lệnh `content_for "block"` phải có literal
+  `id` duy nhất trong parent trực tiếp. Khi khai báo trong preset/JSON, dùng cùng
+  `id`, thêm `"static": true` và không đưa vào `block_order`; preset có thể bỏ
+  qua static block để Shopify dùng default.
+- Mặc định section quản lý container/layout; block quản lý nội dung và layout nội
+  bộ. Mọi selector, DOM ID và JS instance phải an toàn khi có nhiều instance.
+- Kiểm tra giới hạn nesting, số block/file và schema hiện hành qua `@shopify`
+  thay vì dựa vào số liệu nhớ từ task cũ.
 
-- Một section phải chọn một cơ chế block nhất quán: local section block (khai
-  báo trong `schema.blocks` và render qua `section.blocks`/`block_order`) hoặc
-  theme block (khai báo trong `blocks/` và render qua
-  `{% content_for 'blocks' %}`). Shopify không cho phép trộn section block và
-  theme block trong cùng một section.
-- Vì vậy, nếu section hiện tại hoặc section mới được xây dựng theo local
-  section block, phải tiếp tục dùng local block trong section đó. Không chuyển
-  sang theme block chỉ vì quy tắc ưu tiên tái sử dụng hoặc nested composition
-  ở trên.
-- Chỉ chọn kiến trúc theme block khi toàn bộ cơ chế block của section tương
-  thích với theme block. Trước khi triển khai phải kiểm tra schema, Liquid
-  render, preset và JSON template để bảo đảm không có hai cơ chế block cùng
-  xuất hiện trong một section.
+## 4. Setting và tương thích ngược
 
-### Nested theme blocks và static theme blocks
+- `blocks/heading.liquid` là nguồn chuẩn cho heading; subheading là preset của
+  heading. `blocks/text.liquid` là nguồn chuẩn cho body text. Với button, media,
+  group và primitive khác, phải đọc block hiện có trước khi triển khai.
+- Nếu không thể tái sử dụng block, sao chép đầy đủ nhóm option liên quan: semantic
+  ID, type, option/order, default, limit, condition và render behavior. Chỉ đổi
+  ID/prefix hoặc `visible_if` khi ngữ cảnh mới bắt buộc; ghi rõ mọi ngoại lệ.
+- Không xóa hoặc đổi persisted setting ID, block/schema type, translation key hay
+  stored JSON nếu chưa có migration/chấp thuận. Chỉ đổi default hoặc documented/
+  external DOM hook sau khi review call site và tác động tương thích.
+- Setting phải thực sự tác động đúng label, theo naming/i18n/order của Spinel:
+  nội dung → giao diện → layout → hành vi. Dùng `visible_if` cho setting phụ thuộc.
+- Dùng default an toàn và placeholder có nghĩa. Không hard-code nội dung merchant
+  cần sửa; chỉ thêm control desktop/mobile riêng khi thiết kế thực sự cần.
 
-- Theme block dùng chung được khai báo bằng file Liquid trong `blocks/`. Một
-  theme block có thể nhận theme block hoặc app block con thông qua thuộc tính
-  schema `blocks`, ví dụ `{ "type": "@theme" }` và `{ "type": "@app" }`.
-  Có thể thay `@theme` bằng type cụ thể để giới hạn block con được phép dùng.
-- Render các block con theo thứ tự được lưu trong JSON template bằng
-  `{% content_for 'blocks' %}`. Theme block được nesting tối đa 8 cấp, không
-  tính cấp section.
-- Theme block không khai báo local block trong schema như section block. Section
-  block chỉ dùng trong section chứa nó, chỉ hỗ trợ một cấp và không thể dùng
-  chung với theme block trong cùng section. Nếu section cần local block, hãy
-  giữ nguyên kiến trúc local block và các thao tác `section.blocks` tương ứng.
-- Khi merchant cần tự do thêm, xóa, nhân bản hoặc sắp xếp nội dung, dùng block
-  động với `{% content_for 'blocks' %}`. Khi một phần tử phải giữ quan hệ hoặc
-  vị trí cố định trong parent, dùng static theme block với:
-  `{% content_for "block", type: "<type>", id: "<id>" %}`.
-- Static block vẫn cho merchant chỉnh setting và ẩn block, nhưng không cho xóa,
-  nhân bản hoặc kéo-thả sắp xếp. Static block có thể render có điều kiện hoặc
-  trong vòng lặp, không tính vào giới hạn `max_blocks`.
-- `id` của static block là bắt buộc, phải là string literal và duy nhất trong
-  parent trực tiếp chứa block đó. Shopify không tự sinh ID; có thể dùng nhiều
-  static block cùng type nếu ID khác nhau.
-- Có thể truyền dữ liệu bổ sung cho static block ngay trong `content_for`, ví
-  dụ `color: "#111"`, sau đó block con đọc bằng cùng tên biến. Static block
-  cũng có quyền truy cập dynamic source như theme block thông thường.
-- Nếu static block được đặt trong điều kiện Liquid, Shopify hiển thị dấu hiệu
-  trạng thái điều kiện trong Theme Editor để merchant biết block có thể không
-  xuất hiện trên storefront.
-- Trong preset, static block cần thêm `"static": true` và đúng `"id"`. Nếu
-  không khai báo static block trong preset, Shopify vẫn thêm block đó khi tạo
-  preset bằng setting mặc định. Trong JSON data, static block có
-  `"static": true` và không nằm trong `block_order`; thứ tự được xác định bởi
-  vị trí render trong Liquid so với các block động.
-- Theme có tối đa 300 file `.liquid` trong `blocks/`; mọi file đều được tính,
-  kể cả file chưa được section hoặc template tham chiếu.
+## 5. Chất lượng triển khai
 
-Tham khảo Shopify Dev Docs: [Blocks](https://shopify.dev/docs/storefronts/themes/architecture/blocks),
-[Theme block schema](https://shopify.dev/docs/storefronts/themes/architecture/blocks/theme-blocks/schema),
-[Static blocks](https://shopify.dev/docs/storefronts/themes/architecture/blocks/theme-blocks/static-blocks)
-và [Theme limits](https://shopify.dev/docs/storefronts/themes/architecture/limits).
+- Liquid/schema và HTML render phải hợp lệ, xử lý `blank` an toàn. Local section
+  block phải gắn `{{ block.shopify_attributes }}` vào root; với theme block, không
+  gắn trùng default wrapper và chỉ xử lý thủ công theo hướng dẫn `@shopify` khi
+  dùng wrapper tùy chỉnh/disabled.
+- Dùng semantic HTML, đúng button/link, keyboard và visible focus; label/ID duy
+  nhất, mọi ảnh có `alt` phù hợp, ARIA state đúng và focus order theo DOM.
+  Dialog/drawer phải trap focus, hỗ trợ Esc và trả focus; animation tôn trọng
+  reduced motion. Đạt contrast 4.5:1 cho body text, 3:1 cho large text/non-text UI
+  và touch target tối thiểu 24×24 CSS px.
+- CSS/JS phải scoped theo component, ưu tiên token và primitive sẵn có. Không thêm
+  dependency/global bundle cho hành vi cục bộ và không tạo overflow ngoài ý muốn.
+- Shopify content image phải dùng `image_url`/`image_tag`, dimensions và `sizes`
+  phù hợp. Lazy-load dưới fold; không lazy ảnh above-fold; chỉ preload tài nguyên
+  critical đã được đo. Xử lý SVG, CSS background và media khác theo đúng loại.
+- JS init phải idempotent theo instance và có teardown đối xứng cho listener,
+  observer, timer và component. Không nhân đôi handler trên `document`/`window`.
+- Handler `shopify:section:*` và `shopify:block:*` chỉ xử lý đúng target/ID liên
+  quan. Mọi scroll lock trên `html`/`body` phải cleanup khi unload, xóa hoặc
+  re-render; không chờ một lần load tương lai để unlock.
+- Chỉ dùng `request.design_mode`/`Shopify.designMode` để nhận biết editor; không
+  dò URL/`content_for_header` và không làm preview khác storefront thật.
 
-### Tái sử dụng bộ option chuẩn
+## 6. Validation và QA
 
-- `blocks/heading.liquid` là nguồn chuẩn cho bộ option của heading.
-- `blocks/text.liquid` là nguồn chuẩn cho bộ option của body text.
-- Subheading là một preset của `blocks/heading.liquid`. Không tạo block
-  subheading riêng.
-- Áp dụng cùng quy tắc tái sử dụng cho các thành phần cơ bản hiện có khác như
-  button, media và group: phải kiểm tra file block hiện tại trước khi triển khai
-  một thành phần tương đương.
-- Khi không thể sử dụng block độc lập, phải sao chép chính xác phần bộ option
-  chuẩn có liên quan vào section hoặc block nội bộ. Giữ nguyên các nhóm setting,
-  semantic ID, kiểu setting, giá trị và thứ tự option, giá trị mặc định, giới
-  hạn, điều kiện hiển thị và hành vi render.
-- Chỉ điều chỉnh những gì bối cảnh mới thực sự yêu cầu về mặt kỹ thuật. Có thể
-  thêm prefix hoặc sử dụng ID khác để tránh trùng lặp hoặc phân biệt nhiều phần
-  tử cố định. Biểu thức `visible_if` dành cho block phải được đổi sang đúng
-  ngữ cảnh section hoặc block nội bộ. Không được âm thầm loại bỏ tính năng khỏi
-  bộ option được sao chép.
-- Nếu demo yêu cầu một tính năng mà bộ option chuẩn chưa hỗ trợ, hãy mở rộng
-  nguồn dùng chung khi phần mở rộng đó có ích rộng rãi. Nếu không, chỉ thêm
-  option riêng nhỏ nhất cần thiết cho bối cảnh và báo cáo rõ ngoại lệ.
+Sau lần sửa cuối:
 
-### Phạm vi trách nhiệm
+1. Chạy `git diff --check -- <task-paths>` và tự review diff, file changed và
+   call site; tách rõ lỗi có sẵn ngoài task.
+2. Với file theme thay đổi, chạy validator chung từ root:
+   `scripts/validate-theme-8gb.sh '<file-1>,<file-2>'`.
+   Script là entrypoint bắt buộc vì cấu hình Node heap 8 GB. Dùng full-theme
+   validation khi thay đổi shared/global, nhiều file liên kết hoặc release.
+3. Đọc `validation-results/latest.status` và `validation-results/latest.log` của
+   lần chạy mới nhất; không dùng log cũ. Với JS/build script, chạy thêm syntax,
+   build hoặc targeted test sẵn có. Docs-only không cần theme validator.
+4. Storefront QA là bắt buộc cho work theo demo, visual/responsive, interaction,
+   shared/global JS, scroll lock hoặc explicit audit/test: chạy
+   `shopify theme dev` và kiểm tra desktop/mobile. Không kết luận chỉ từ code.
+5. QA theo phạm vi ảnh hưởng: default/empty/long/missing data, nhiều instance,
+   keyboard, interaction, responsive và không có console error. Với Theme Editor,
+   kiểm tra add/remove/duplicate/reorder/select/deselect/re-render/unload khi liên
+   quan; xác nhận không còn listener trùng hoặc scroll lock.
+6. Đối chiếu từng mục checklist và ghi `PASS`, `FAIL` hoặc `NOT TESTED` kèm bằng
+   chứng. Không báo cáo runtime/audit đã hoàn tất nếu chưa chạy được.
+7. Với thay đổi ảnh, asset shared, CSS/JS loading, layout hoặc LCP, so sánh
+   Lighthouse/network trước–sau trên surface ảnh hưởng và không chấp nhận
+   regression chưa giải thích.
 
-- Section chủ yếu quản lý layout của container, chiều rộng, spacing, background,
-  hành vi áp dụng cho toàn section và cách sắp xếp các block con.
-- Block chủ yếu quản lý nội dung, cách hiển thị và hành vi ở cấp phần tử của
-  chính block đó.
-- Ưu tiên nested composition cho card, slide, column hoặc các cấu trúc lặp lại
-  có chứa heading, text, button, media hay các nội dung con tương tự. Giữ cấu
-  trúc lồng nhau gọn và dễ hiểu đối với merchant.
-- Duy trì các thao tác cần thiết trong Shopify Theme Editor: thêm, xóa, sắp xếp
-  lại, nhân bản, chọn và render nhiều instance mà không bị trùng ID.
+Validation fail hoặc regression quan sát được thì không commit/push. Nếu runtime
+QA bắt buộc không thể chạy, ghi `NOT TESTED` và chặn delivery; chỉ docs/non-runtime
+change được phép bỏ qua với lý do rõ ràng.
 
-### Chất lượng option dành cho merchant
+## 7. Submit và Git delivery
 
-- Chỉ cung cấp các tùy chỉnh thực sự hoạt động và hữu ích cho merchant. Mỗi
-  setting được hiển thị phải tác động lên storefront đúng như label mô tả.
-- Tuân theo quy ước hiện có của Spinel về cách đặt tên, bản dịch, nhóm, thứ tự,
-  phạm vi, giá trị option và giá trị mặc định. Tái sử dụng tùy chỉnh hiện có
-  thay vì tạo các tùy chỉnh trùng chức năng.
-- Sắp xếp các tùy chỉnh theo thứ tự: nội dung, giao diện, layout rồi đến hành
-  vi. Sử dụng điều kiện hiển thị để ẩn các setting phụ thuộc khi chúng không
-  liên quan.
-- Cung cấp giá trị mặc định an toàn và nội dung placeholder có ý nghĩa để
-  merchant có thể hiểu section mới ngay cả trước khi cấu hình.
-- Chỉ thêm tùy chỉnh desktop/mobile riêng biệt khi thiết kế thực sự có nhu cầu
-  responsive. Tránh các switch không cần thiết và các tùy chỉnh quá vụn.
-- Không hard-code nội dung mà merchant cần chỉnh sửa chỉ để khớp với demo.
+Delivery mặc định là Git vì theme đã kết nối Git; không chạy
+`shopify theme push`/`shopify theme publish` và không kiểm tra lại deploy config
+trừ khi user yêu cầu.
 
-### Quy trình triển khai và QA
+Sau khi các gate áp dụng đã đạt:
 
-1. Kiểm tra demo hoặc yêu cầu và lập checklist nghiệm thu.
-2. Tìm kiếm và kiểm tra các section, block và snippet hiện có có liên quan.
-3. Xác định cây section/block dự kiến và quyết định bộ option nào sẽ được tái
-   sử dụng, lồng nhau, sao chép, mở rộng hoặc tạo mới.
-4. Triển khai kiến trúc nhỏ gọn nhất đáp ứng yêu cầu và thứ tự ưu tiên xây dựng
-   cấu trúc ở trên.
-5. Kiểm tra tính hợp lệ của schema, render mặc định, các tùy chỉnh trong Theme
-   Editor, nhiều instance, thao tác thêm/xóa/sắp xếp block, layout
-   desktop/mobile và các tương tác.
-6. Chạy quy trình validation của repository được quy định bên dưới cho mọi file
-   theme đã thay đổi.
-7. Trong phần bàn giao cuối cùng, tóm tắt các thành phần đã tái sử dụng, mọi
-   ngoại lệ so với bộ option chuẩn và kết quả validation.
+1. Xác nhận current branch là `main`. Nếu không, dừng và reconcile target trước
+   khi commit.
+2. Stage explicit file/hunk thuộc task; review `git diff --cached`. Không stage
+   thay đổi không liên quan, validation log hoặc artifact nếu không được yêu cầu.
+3. Commit với message mô tả outcome, fetch lại `origin/main`, rồi kiểm tra
+   divergence. Nếu remote advanced, tích hợp task commit an toàn; không tự stash
+   unrelated changes, không force-push. Dùng isolated worktree hoặc báo blocker
+   khi dirty state làm integration không an toàn.
+4. Sau integration/conflict resolution, chạy lại các check bị ảnh hưởng; rồi
+   `git push origin main` mà không hỏi lại.
+5. Fetch/verify lần cuối để xác nhận `HEAD` và `origin/main` cùng commit; working
+   tree không mất thay đổi ngoài task.
 
-### Lifecycle trong Shopify Theme Editor và scroll lock
+Chỉ bỏ commit/push khi user hoặc system nói rõ không push. Nếu delivery bị chặn,
+phải báo chính xác command, lỗi và trạng thái repository.
 
-- Các handler `shopify:section:*` và `shopify:block:*` phải giới hạn đúng
-  `event.target`, `sectionId` hoặc block ID tương ứng; không xử lý lifecycle
-  của section hoặc block khác như component của mình.
-- Mọi lock đặt trên `html` hoặc `body` (class, attribute, `position`,
-  `overflow`, `top`, `width`...) phải có cleanup đối xứng khi section được
-  re-render hoặc bị xóa. Không được chỉ dựa vào `shopify:section:load` để
-  unlock sau `shopify:section:unload`, vì thao tác xóa có thể không phát sinh
-  một lần load tiếp theo.
-- QA trong Theme Editor phải bao gồm đổi option gây re-render, reload section,
-  xóa section, xóa block và sắp xếp lại block; sau mỗi thao tác phải xác nhận
-  trang vẫn scroll được và không còn lock trạng thái trên `html` hoặc `body`.
+Nếu user yêu cầu rõ ràng package/submit Shopify Theme Store:
 
-### Audit/test storefront local (OPTIONAL)
+- Tra yêu cầu Theme Store hiện hành qua `@shopify`, chạy full validation và QA
+  home/product/collection có dữ liệu trên desktop/mobile, accessibility,
+  performance, browser support, navigation và product form khi tắt JavaScript.
+- Chạy `node scripts/package-theme-store.mjs` (thêm `--output` khi user chỉ định),
+  kiểm tra report, SHA-256 và cấu trúc ZIP theo requirement hiện hành. Không sửa
+  source để loại demo binding thủ công vì script xử lý trên staging copy.
+- Kiểm tra version/release notes và mọi requirement hiện hành trước khi bàn giao.
+  Chỉ thực hiện hành động publish/submission bên ngoài khi user yêu cầu rõ ràng.
 
-- Mọi tác vụ audit hoặc test theme có thể chạy `shopify theme dev` từ thư mục
-  gốc workspace, mở storefront tại URL local do Shopify CLI cung cấp và kiểm tra
-  trực tiếp trên trình duyệt trước khi kết luận kết quả khi cần, ko bắt buộc.
-- Việc kiểm tra local phải bao gồm các trạng thái và tương tác liên quan đến
-  thay đổi hiện tại, tối thiểu trên desktop và mobile khi có ảnh hưởng
-  responsive. Không được chỉ dựa vào validator, kiểm tra tĩnh hoặc đọc code.
-- Nếu `shopify theme dev` không thể khởi chạy hoặc storefront local không thể
-  truy cập, phải ghi rõ blocker và không được báo cáo audit/test là đã hoàn tất.
+## 8. Bàn giao cuối
 
-## Kiểm tra tính hợp lệ của Shopify theme
-<!--
-- Không tự động chạy Validator hoặc Theme Check trừ khi tôi yêu cầu. Nếu được yêu cầu thì làm theo các phần ở dưới. -->
-- Chạy validator dùng chung bằng `scripts/validate-theme-8gb.sh` từ thư mục
-  gốc của workspace.
-- Validator phải chạy với Node.js heap 8 GB
-  (`--max-old-space-size=8192`). Không chạy Shopify Liquid validator nếu
-  thiếu thiết lập heap này.
-- Khi không truyền tham số, script sẽ kiểm tra mọi file trong tám thư mục của
-  Shopify theme: `assets`, `blocks`, `config`, `layout`, `locales`,
-  `sections`, `snippets` và `templates`.
-- Để chỉ kiểm tra các file được chọn, hãy truyền một danh sách đường dẫn được
-  phân tách bằng dấu phẩy và tính từ thư mục gốc của workspace. Ví dụ:
-  `scripts/validate-theme-8gb.sh 'sections/header.liquid,templates/index.json'`.
-- Output đầy đủ mới nhất và exit status được lưu lần lượt tại
-  `validation-results/latest.log` và
-  `validation-results/latest.status` để các tác vụ sau có thể kiểm tra.
+Bàn giao ngắn gọn và chỉ gồm các mục áp dụng: outcome/file đã đổi; checklist cùng
+phần chưa test; reuse/ngoại lệ kiến trúc; kết quả validator/runtime QA; commit,
+trạng thái push hoặc blocker chính xác.
