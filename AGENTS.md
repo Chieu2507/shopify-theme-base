@@ -32,7 +32,7 @@ storefront có liên quan.
 ### Kỹ năng Shopify bắt buộc
 
 - Khi tạo mới hoặc chỉnh sửa theme, section hay block, phải nạp và áp dụng cả
-  bốn kỹ năng sau nếu chúng khả dụng trong phiên làm việc:
+  bốn kỹ năng sau:
   `shopify:shopify-liquid` (Shopify Liquid),
   `shopify:shopify-use-shopify-cli` (Shopify CLI),
   `shopify:shopify-dev` (Shopify Dev) và
