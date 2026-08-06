@@ -555,6 +555,7 @@ if (!window.SpinelHeaderMenus) {
     const motion = { frame: 0, timer: 0 };
     responsiveHeaderExitMotions.set(header, motion);
 
+    clearResponsiveHeaderEntry(header);
     header.style.setProperty('--header-scroll-exit-offset', `${currentTop - targetTop}px`);
     header.dataset.scrollExiting = 'true';
     header.classList.remove('header--scrolled');
