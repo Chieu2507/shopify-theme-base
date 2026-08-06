@@ -19,6 +19,7 @@ if (!window.SpinelHeaderMenus) {
   const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDurationFallback = 300;
   const desktopTransparentHeaderSurfaceThreshold = 20;
+  const mobileStickyHeaderHideThreshold = 40;
   // Desktop top-level menus use the CSS motion below; keep the legacy Web Animations fallback disabled.
   const disableLegacyMegaMenuWebAnimations = true;
   let transparentHeaderFrame = 0;
@@ -27,6 +28,7 @@ if (!window.SpinelHeaderMenus) {
   let localizationSheetDrag = null;
   let localizationSheetDragTimer = null;
   const responsiveHeaderEntryFrames = new WeakMap();
+  const mobileStickyHeaderStates = new WeakMap();
   let wasMobileHeaderViewport = window.matchMedia('(max-width: 899px)').matches;
 
   const isMobileHeaderViewport = () => window.matchMedia('(max-width: 899px)').matches;
@@ -567,6 +569,30 @@ if (!window.SpinelHeaderMenus) {
     responsiveHeaderEntryFrames.set(header, frame);
   };
 
+  const syncMobileStickyHeaders = () => {
+    const isMobile = isMobileHeaderViewport();
+    const currentScrollY = window.scrollY;
+
+    document.querySelectorAll('[data-header].header--sticky').forEach((header) => {
+      const previousState = mobileStickyHeaderStates.get(header) || {
+        lastScrollY: currentScrollY,
+        hidden: false
+      };
+      let hidden = previousState.hidden;
+
+      if (!isMobile || currentScrollY <= mobileStickyHeaderHideThreshold) {
+        hidden = false;
+      } else if (currentScrollY > previousState.lastScrollY + 0.5) {
+        hidden = true;
+      } else if (currentScrollY < previousState.lastScrollY - 0.5) {
+        hidden = false;
+      }
+
+      header.classList.toggle('header--mobile-hidden', hidden);
+      mobileStickyHeaderStates.set(header, { lastScrollY: currentScrollY, hidden });
+    });
+  };
+
   const syncResponsiveHeader = (header) => {
     const isFloatingHeader = header.dataset.floatingHeader === 'true';
     const isTransparentHeader = header.dataset.transparentHeader === 'true';
@@ -601,6 +627,7 @@ if (!window.SpinelHeaderMenus) {
 
   const syncResponsiveHeaders = () => {
     transparentHeaderFrame = 0;
+    syncMobileStickyHeaders();
     document.querySelectorAll('[data-transparent-header="true"], [data-floating-header="true"]').forEach(syncResponsiveHeader);
   };
 
@@ -613,6 +640,7 @@ if (!window.SpinelHeaderMenus) {
     scope.querySelectorAll?.('[data-transparent-header="true"], [data-floating-header="true"]').forEach((header) => {
       syncResponsiveHeader(header);
     });
+    syncMobileStickyHeaders();
   };
 
   initializeResponsiveHeaders();
@@ -1953,6 +1981,8 @@ if (!window.SpinelHeaderMenus) {
     if (event.target.contains?.(headerBreakpointFocusContext?.header)) headerBreakpointFocusContext = null;
     event.target.querySelectorAll?.('[data-header]').forEach((header) => {
       clearResponsiveHeaderEntry(header);
+      mobileStickyHeaderStates.delete(header);
+      header.classList.remove('header--mobile-hidden');
       desktopMegaMenuHandoffs.delete(header);
       resetDesktopMegaMenuBackground(header);
     });
