@@ -1,4 +1,5 @@
 const sectionSelector = '.shopify-section';
+const compactEditorialViewportHeight = 720;
 
 function getViewportHeight() {
   return window.visualViewport?.height || window.innerHeight;
@@ -32,6 +33,7 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
   const { signal } = abortController;
   const mobileQuery = window.matchMedia(`(max-width: ${mobileBreakpoint}px)`);
   const section = element.closest(sectionSelector);
+  const isEditorialSlideshow = element.matches('editorial-slideshow');
 
   const update = () => {
     animationFrame = undefined;
@@ -47,11 +49,19 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
     const canFillFirstViewport = isFullScreen
       && startsInFirstViewport
       && (!section || hasOnlyAnnouncementBarsBefore(section));
+    const remainingViewportHeight = viewportHeight - top;
 
     element.classList.toggle('slideshow--fills-first-viewport', canFillFirstViewport);
 
+    if (isEditorialSlideshow) {
+      element.classList.toggle(
+        'editorial-slideshow--compact-viewport',
+        canFillFirstViewport && remainingViewportHeight < compactEditorialViewportHeight,
+      );
+    }
+
     if (canFillFirstViewport) {
-      element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round((viewportHeight - top) * 100) / 100)}px`);
+      element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round(remainingViewportHeight * 100) / 100)}px`);
     } else {
       element.style.removeProperty('--slideshow-first-viewport-height');
     }
@@ -83,6 +93,7 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
     resizeObserver?.disconnect();
     if (animationFrame) window.cancelAnimationFrame(animationFrame);
     element.classList.remove('slideshow--fills-first-viewport');
+    element.classList.remove('editorial-slideshow--compact-viewport');
     element.style.removeProperty('--slideshow-first-viewport-height');
   };
 }
