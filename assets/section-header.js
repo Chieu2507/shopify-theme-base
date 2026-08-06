@@ -1204,8 +1204,15 @@ if (!window.SpinelHeaderMenus) {
     if (stateLabel) summary.setAttribute('aria-label', stateLabel);
   };
 
+  const syncHeaderLocalizationAria = (details) => {
+    const summary = details.querySelector(':scope > summary');
+    if (!summary) return;
+    summary.setAttribute('aria-expanded', String(details.open));
+  };
+
   const initializeHeaderDisclosures = (scope = document) => {
     scope.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(syncHeaderDisclosureAria);
+    scope.querySelectorAll?.('.header__localization-selector').forEach(syncHeaderLocalizationAria);
   };
 
   const clearMegaMenuHoverTimer = (details) => {
@@ -1496,6 +1503,10 @@ if (!window.SpinelHeaderMenus) {
             if (otherDetails !== details) otherDetails.open = false;
           });
         }
+      }
+
+      if (details.matches?.('.header__localization-selector')) {
+        syncHeaderLocalizationAria(details);
       }
 
       if (!details.open && details.matches?.('.header__localization-selector')) {
