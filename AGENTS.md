@@ -29,33 +29,9 @@ Các quy tắc này là bắt buộc đối với mọi tác vụ tạo mới ho
 section, theme block, block nội bộ của section, schema, preset hoặc hành vi
 storefront có liên quan.
 
-### Kỹ năng Shopify bắt buộc
-
-- Khi tạo mới hoặc chỉnh sửa theme, section hay block, phải nạp và áp dụng cả
-  bốn kỹ năng sau:
-  `shopify:shopify-liquid` (Shopify Liquid),
-  `shopify:shopify-use-shopify-cli` (Shopify CLI),
-  `shopify:shopify-dev` (Shopify Dev) và
-  `shopify:shopify-custom-data` (Shopify Custom Data).
-- `shopify:shopify-liquid` là kỹ năng chính để quyết định kiến trúc theme,
-  Liquid, schema, section, block, nested block, snippet và cách render trong
-  Theme Editor.
-- `shopify:shopify-use-shopify-cli` được dùng cho quy trình phát triển, preview,
-  kiểm tra và các thao tác Shopify CLI phù hợp với tác vụ.
-- `shopify:shopify-dev` được dùng để tra cứu tài liệu Shopify chính thức cho
-  các vấn đề liên quan nhiều phần hoặc chưa được kỹ năng chuyên biệt bao phủ;
-  không dùng nó để thay thế hướng dẫn chuyên biệt của Shopify Liquid.
-- `shopify:shopify-custom-data` được dùng để kiểm tra và triển khai đúng
-  metafield, metaobject, dynamic source hoặc dữ liệu tùy chỉnh nếu section/block
-  có liên quan. Không tự thêm custom data khi yêu cầu không cần tới nó. Nếu tác
-  vụ đề cập metafield hoặc metaobject, phải nạp kỹ năng này trước các kỹ năng
-  Shopify còn lại.
-- Nếu giới hạn của phiên làm việc chỉ cho phép chọn hoặc sử dụng một kỹ năng,
-  bắt buộc chọn `shopify:shopify-liquid` (Shopify Liquid).
-
 ### Nguồn chuẩn
 
-- Sử dụng file `AGENTS.md` này và phần triển khai Liquid hiện tại làm nguồn chuẩn
+- Sử dụng file `AGENTS.md` này cùng với kĩ năng `shopify` và phần triển khai Liquid hiện tại làm nguồn chuẩn
   cho kiến trúc section/block. Không phụ thuộc vào các tài liệu Markdown khác,
   trừ khi người dùng yêu cầu rõ ràng một tài liệu cụ thể.
 - Trước khi thêm một option, hãy tìm trong các file hiện có ở `blocks/`,
