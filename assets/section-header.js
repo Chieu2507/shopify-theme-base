@@ -523,7 +523,10 @@ if (!window.SpinelHeaderMenus) {
 
     const handoff = desktopMegaMenuHandoffs.get(header);
     if (handoff?.fromIsMega && !handoff.toIsMega) {
-      delete header.dataset.megaBackgroundClosing;
+      // Fade and collapse the shared mega surface with the outgoing panel.
+      // Waiting for the compact submenu to finish first leaves a white tail
+      // behind the new panel during a fast hover handoff.
+      header.dataset.megaBackgroundClosing = 'true';
       const panelHeight = Number.isFinite(handoff.backgroundHeight) && handoff.backgroundHeight > 0
         ? handoff.backgroundHeight
         : measureDesktopMegaMenuPanelHeight(handoff.from);
@@ -532,11 +535,8 @@ if (!window.SpinelHeaderMenus) {
       return panelHeight;
     }
 
-    // The shared viewport background belongs to mega menus only. During a
-    // mega-to-submenu handoff, keep its last geometry until the closing mega
-    // panel has finished. Retargeting it to 0px here makes the full-width
-    // surface collapse underneath the incoming compact submenu and produces a
-    // white frame.
+    // The shared viewport background belongs to mega menus only. A compact
+    // submenu never claims it after a mega-to-submenu handoff.
     const preferredIsActive = preferredDetails?.matches('.header__submenu-disclosure--mega')
       && preferredDetails.open
       && preferredDetails.dataset.closing !== 'true';
