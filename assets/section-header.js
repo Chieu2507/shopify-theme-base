@@ -1572,11 +1572,23 @@ if (!window.SpinelHeaderMenus) {
         syncHeaderMenuScrollLock();
       }
 
+      if (details.matches?.('.header__localization-selector')) {
+        if (!details.open) {
+          if (localizationSheetFinalizing.has(details)) {
+            localizationSheetFinalizing.delete(details);
+          } else if (isMobileHeaderViewport()) {
+            details.open = true;
+            closeLocalizationSheet(details);
+            return;
+          }
+        }
+      }
+
       if (details.open && details.matches?.('.header__localization-selector')) {
         const mobileUtilities = details.closest?.('.header__mobile-utilities');
         if (mobileUtilities) {
           mobileUtilities.querySelectorAll('.header__localization-selector[open]').forEach((otherDetails) => {
-            if (otherDetails !== details) otherDetails.open = false;
+            if (otherDetails !== details) closeLocalizationSheet(otherDetails, false, true);
           });
         }
       }
@@ -1621,10 +1633,7 @@ if (!window.SpinelHeaderMenus) {
     const localizationCloseButton = event.target.closest?.('[data-header-localization-close]');
     if (localizationCloseButton && isMobileHeaderViewport()) {
       const details = localizationCloseButton.closest('.header__localization-selector');
-      if (details) {
-        details.open = false;
-        details.querySelector(':scope > summary')?.focus();
-      }
+      if (details) closeLocalizationSheet(details);
       return;
     }
 
@@ -1653,6 +1662,13 @@ if (!window.SpinelHeaderMenus) {
 
     const summary = event.target.closest?.('summary');
     const submenu = summary?.parentElement;
+    if (submenu?.matches('.header__localization-selector') && isMobileHeaderViewport()) {
+      event.preventDefault();
+      if (submenu.open) closeLocalizationSheet(submenu);
+      else submenu.open = true;
+      return;
+    }
+
     if (submenu?.matches('.header__submenu-disclosure--hover') && supportsDesktopHeaderHover()) {
       event.preventDefault();
       if (submenu.open) closeMegaMenu(submenu);
@@ -1675,6 +1691,8 @@ if (!window.SpinelHeaderMenus) {
       header.querySelectorAll('details[open]').forEach((details) => {
         if (details.matches('.header__submenu-disclosure, .header__submenu-nested-disclosure') && shouldAnimateHeaderSubmenu(details)) {
           closeMegaMenu(details);
+        } else if (details.matches('.header__localization-selector') && isMobileHeaderViewport()) {
+          closeLocalizationSheet(details);
         } else {
           details.open = false;
         }
