@@ -13,7 +13,7 @@ if (!window.SpinelHeaderMenus) {
   const mobileMenuReturnFocus = new WeakMap();
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   const headerHoverCloseDelay = 500;
-  const desktopMegaMenuHoverCloseDelay = 360;
+  const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDurationFallback = 300;
   // Desktop top-level menus use the CSS motion below; keep the legacy Web Animations fallback disabled.
   const disableLegacyMegaMenuWebAnimations = true;
@@ -194,9 +194,10 @@ if (!window.SpinelHeaderMenus) {
       drawer.removeAttribute('role');
       drawer.removeAttribute('aria-modal');
       drawer.removeAttribute('aria-labelledby');
-      drawer.removeAttribute('aria-hidden');
+      drawer.setAttribute('aria-hidden', 'true');
+      drawer.inert = true;
     }
-    drawer.inert = isMobileHeaderViewport() ? !isOpen : false;
+    if (isMobileHeaderViewport()) drawer.inert = !isOpen;
 
     if (isOpen && focusDrawer) {
       mobileMenuReturnFocus.set(drawer, disclosure.querySelector(':scope > summary'));
