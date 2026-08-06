@@ -1,4 +1,6 @@
-{% render 'swiper-stylesheet' %}
+{% unless section.settings.layout == 'marquee' %}
+  {% render 'swiper-stylesheet' %}
+{% endunless %}
 
 {% comment %}
   Keep the announcement-bar destinations optional in Shopify's global Footer
@@ -23,9 +25,18 @@
   assign announcement_pinterest_url = settings.pinterest_url | default: 'https://www.pinterest.com'
   assign announcement_instagram_url = settings.instagram_url | default: 'https://www.instagram.com'
   assign announcement_social_count = 4
+  assign announcement_layout = section.settings.layout | default: 'slider'
+  assign announcement_module = 'section-announcement-bar.js'
+  assign show_side_content = false
+
+  if announcement_layout == 'marquee'
+    assign announcement_module = 'section-marquee.js'
+  elsif section.settings.section_width == 'page'
+    assign show_side_content = true
+  endif
 
   assign show_navigation = false
-  if announcement_item_count > 1
+  if announcement_layout == 'slider' and announcement_item_count > 1
     assign show_navigation = true
   endif
 
@@ -37,16 +48,35 @@
 
 {% if section.blocks.size > 0 %}
   <announcement-bar
-    class="announcement-bar color-scheme color-{{ section.settings.color_scheme.id }} full-width"
+    class="announcement-bar announcement-bar--{{ announcement_layout }} announcement-bar--{{ section.settings.section_width | default: 'full' }} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
     style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px;"
     data-section-id="{{ section.id }}"
     data-behavior="{% if section.settings.enable_rotation %}rotate{% else %}show_all{% endif %}"
     data-interval="{{ section.settings.autoplay_interval | times: 1000 }}"
-    data-deferred-module="{{ 'section-announcement-bar.js' | asset_url }}"
+    data-layout="{{ announcement_layout }}"
+    data-deferred-module="{{ announcement_module | asset_url }}"
     aria-label="{{ 'announcement_bar.announcement' | t | escape }}"
   >
-    <div class="announcement-bar__inner{% if section.settings.section_width == 'page' %} announcement-bar__inner--contained{% endif %}">
-      {% if announcement_social_count > 0 %}
+    <div class="announcement-bar__inner{% if show_side_content %} announcement-bar__inner--contained{% endif %}">
+      {% if announcement_layout == 'marquee' %}
+        <theme-marquee
+          class="announcement-bar__marquee marquee marquee--direction-{{ section.settings.marquee_direction }}{% if section.settings.marquee_pause_on_hover %} marquee--pause-on-hover{% endif %}"
+          style="--marquee-duration: {{ section.settings.marquee_speed }}s; --marquee-item-gap: 32px; --marquee-min-height: var(--announcement-bar-height); --marquee-min-height-mobile: var(--announcement-bar-height-mobile); --marquee-item-alignment: center;"
+        >
+          <div class="marquee__viewport">
+            <div class="marquee__track">
+              <div class="marquee__group">
+                {% for block in section.blocks %}
+                  {% if block.type == 'text_slide' and block.settings.text != blank %}
+                    <span class="announcement-bar__marquee-item announcement-bar__item--{{ block.settings.text_size | default: 'small' }}" {{ block.shopify_attributes }}>{{ block.settings.text }}</span>
+                  {% endif %}
+                {% endfor %}
+              </div>
+            </div>
+          </div>
+        </theme-marquee>
+      {% else %}
+      {% if show_side_content and announcement_social_count > 0 %}
         <nav class="announcement-bar__social" aria-label="{{ 'footer.social_links' | t | escape }}">
           <ul class="announcement-bar__social-list" role="list">
             {% if announcement_x_url != blank %}
@@ -132,7 +162,7 @@
         </div>
       {% endif %}
 
-      {% if section.settings.appointment_label != blank %}
+      {% if show_side_content and section.settings.appointment_label != blank %}
         {% if section.settings.appointment_link != blank %}
           <a class="announcement-bar__appointment" href="{{ section.settings.appointment_link | escape }}">
             {{ section.settings.appointment_label | escape }} <span aria-hidden="true">↗</span>
@@ -142,6 +172,7 @@
             {{ section.settings.appointment_label | escape }} <span aria-hidden="true">↗</span>
           </span>
         {% endif %}
+      {% endif %}
       {% endif %}
     </div>
   </announcement-bar>
@@ -177,12 +208,82 @@
     margin-inline: auto;
   }
 
+  .announcement-bar--full .announcement-bar__inner {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
   .announcement-bar__content {
     display: block;
     min-width: 0;
     grid-column: 2;
     grid-row: 1;
     text-align: center;
+  }
+
+  .announcement-bar--full .announcement-bar__content {
+    width: 100%;
+    grid-column: 1;
+  }
+
+  .announcement-bar--full .announcement-bar__message-row {
+    display: grid;
+    grid-template-columns: max-content max-content minmax(0, 1fr) max-content max-content;
+  }
+
+  .announcement-bar--full .announcement-bar__messages { width: 100%; }
+
+  .announcement-bar--marquee .announcement-bar__inner {
+    display: block;
+    overflow: hidden;
+    padding-inline: 0;
+  }
+
+  .announcement-bar__marquee,
+  .announcement-bar__marquee .marquee__viewport {
+    display: block;
+    width: 100%;
+    min-height: var(--announcement-bar-height-mobile);
+    overflow: hidden;
+  }
+
+  .announcement-bar__marquee .marquee__track,
+  .announcement-bar__marquee .marquee__group {
+    display: flex;
+    width: max-content;
+    min-height: inherit;
+    align-items: center;
+  }
+
+  .announcement-bar__marquee .marquee__track {
+    gap: var(--marquee-item-gap);
+    animation: announcement-bar-marquee-scroll var(--marquee-duration) linear infinite;
+    animation-play-state: paused;
+    will-change: transform;
+  }
+
+  .announcement-bar__marquee .marquee__group {
+    flex-shrink: 0;
+    gap: var(--marquee-item-gap);
+  }
+
+  .announcement-bar__marquee.is-active .marquee__track { animation-play-state: running; }
+  .announcement-bar__marquee.marquee--direction-right .marquee__track { animation-direction: reverse; }
+  .announcement-bar__marquee.marquee--pause-on-hover:hover .marquee__track,
+  .announcement-bar__marquee.marquee--pause-on-hover:focus-within .marquee__track { animation-play-state: paused; }
+
+  .announcement-bar__marquee-item {
+    display: block;
+    flex-shrink: 0;
+    padding-inline: 4px;
+    color: inherit;
+    font-weight: 500;
+    line-height: var(--spinel-type-line-label);
+    letter-spacing: var(--spinel-type-tracking-label);
+    white-space: nowrap;
+  }
+
+  @keyframes announcement-bar-marquee-scroll {
+    to { transform: translateX(calc(-50% - var(--marquee-item-gap) / 2)); }
   }
 
   .announcement-bar__appointment {
@@ -375,10 +476,17 @@
     .announcement-bar__counter { font-size: 9px; }
   }
 
+  @media screen and (min-width: 750px) {
+    .announcement-bar__marquee,
+    .announcement-bar__marquee .marquee__viewport { min-height: var(--announcement-bar-height); }
+  }
+
   @media (prefers-reduced-motion: reduce) {
     .announcement-bar__navigator-arrow,
-    .announcement-bar__messages.swiper-vertical .announcement-bar__item {
+    .announcement-bar__messages.swiper-vertical .announcement-bar__item,
+    .announcement-bar__marquee .marquee__track {
       transition: none;
+      animation-play-state: paused;
     }
   }
 {% endstylesheet %}
@@ -407,6 +515,22 @@
     {
       "type": "header",
       "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "layout",
+      "label": "Layout",
+      "options": [
+        {
+          "value": "slider",
+          "label": "Slider"
+        },
+        {
+          "value": "marquee",
+          "label": "Infinite marquee"
+        }
+      ],
+      "default": "slider"
     },
     {
       "type": "select",
@@ -444,6 +568,41 @@
       "label": "Autoplay interval",
       "default": 5,
       "visible_if": "{{ section.settings.enable_rotation }}"
+    },
+    {
+      "type": "select",
+      "id": "marquee_direction",
+      "label": "Marquee direction",
+      "options": [
+        {
+          "value": "left",
+          "label": "Left"
+        },
+        {
+          "value": "right",
+          "label": "Right"
+        }
+      ],
+      "default": "left",
+      "visible_if": "{{ section.settings.layout == 'marquee' }}"
+    },
+    {
+      "type": "range",
+      "id": "marquee_speed",
+      "min": 10,
+      "max": 100,
+      "step": 5,
+      "unit": "s",
+      "label": "Marquee duration",
+      "default": 35,
+      "visible_if": "{{ section.settings.layout == 'marquee' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "marquee_pause_on_hover",
+      "label": "Pause marquee on hover or focus",
+      "default": true,
+      "visible_if": "{{ section.settings.layout == 'marquee' }}"
     },
     {
       "type": "range",
