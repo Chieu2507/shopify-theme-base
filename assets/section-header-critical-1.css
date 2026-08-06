@@ -332,14 +332,20 @@ html[scroll-lock] .header__menu-overlay {
       inset-inline-end: auto;
       width: min(260px, calc(100vw - 40px));
       min-width: 0;
-      min-height: 90px;
-      padding: 28px 30px;
+      min-height: 0;
+      padding: 0 30px;
       border: 0;
       border-radius: 0 0 20px 20px;
       box-shadow: none;
     }
     .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu li + li {
       margin-top: 0;
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu::before,
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu::after {
+      display: block;
+      height: 28px;
+      content: '';
     }
     .header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-link {
       position: relative;
@@ -495,6 +501,12 @@ html[scroll-lock] .header__menu-overlay {
     .header__submenu-disclosure--mega[open][data-mega-panel-visible='true']:not([data-opening='true']):not([data-closing='true']) > .header__mega-panel {
       overflow-x: hidden;
       overflow-y: auto;
+      /* Keep tall menus scrollable without adding a visible scrollbar gutter. */
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+    }
+    .header__submenu-disclosure--mega > .header__mega-panel::-webkit-scrollbar {
+      display: none;
     }
     .header__submenu-disclosure--mega .header__mega-heading,
     .header__submenu-disclosure--mega .header__mega-list,
@@ -505,6 +517,38 @@ html[scroll-lock] .header__menu-overlay {
     .header__submenu-disclosure--mega[open][data-mega-panel-visible='true'] .header__mega-heading,
     .header__submenu-disclosure--mega[open][data-mega-panel-visible='true'] .header__mega-list,
     .header__submenu-disclosure--mega[open][data-mega-panel-visible='true'] .header__mega-promo {
+      animation: header-mega-panel-reveal 400ms ease forwards;
+      animation-delay: var(--header-mega-reveal-delay, 200ms);
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu {
+      min-height: 0;
+      height: 0;
+      overflow: hidden;
+      opacity: 0;
+      pointer-events: none;
+      transition:
+        height 300ms cubic-bezier(.6, .14, 0, 1),
+        opacity 200ms cubic-bezier(.6, .14, 0, 1),
+        visibility 0s linear 300ms;
+      visibility: hidden;
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open][data-mega-panel-visible='true']:not([data-closing='true']) > .header__submenu {
+      min-height: 0;
+      height: var(--header-mega-panel-height, 0px);
+      opacity: 1;
+      pointer-events: auto;
+      transition-delay: 0s;
+      visibility: visible;
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open][data-mega-panel-visible='true']:not([data-opening='true']):not([data-closing='true']) > .header__submenu {
+      min-height: 90px;
+      overflow: visible;
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu > li:not(.header__mobile-submenu-back-item) {
+      opacity: 0;
+      transform: translate3d(0, 15px, 0);
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open][data-mega-panel-visible='true'] > .header__submenu > li:not(.header__mobile-submenu-back-item) {
       animation: header-mega-panel-reveal 400ms ease forwards;
       animation-delay: var(--header-mega-reveal-delay, 200ms);
     }
@@ -530,6 +574,15 @@ html[scroll-lock] .header__menu-overlay {
     .header__submenu-disclosure--mega[open][data-mega-panel-visible='true'] .header__mega-heading,
     .header__submenu-disclosure--mega[open][data-mega-panel-visible='true'] .header__mega-list,
     .header__submenu-disclosure--mega[open][data-mega-panel-visible='true'] .header__mega-promo {
+      opacity: 1;
+      transform: none;
+      animation: none;
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu {
+      transition: none;
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu > li:not(.header__mobile-submenu-back-item),
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open][data-mega-panel-visible='true'] > .header__submenu > li:not(.header__mobile-submenu-back-item) {
       opacity: 1;
       transform: none;
       animation: none;
