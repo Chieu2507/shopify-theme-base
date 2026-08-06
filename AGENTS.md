@@ -237,11 +237,11 @@ và [Theme limits](https://shopify.dev/docs/storefronts/themes/architecture/limi
   xóa section, xóa block và sắp xếp lại block; sau mỗi thao tác phải xác nhận
   trang vẫn scroll được và không còn lock trạng thái trên `html` hoặc `body`.
 
-### Audit/test storefront local — BẮT BUỘC
+### Audit/test storefront local (OPTIONAL)
 
-- Mọi tác vụ audit hoặc test theme phải chạy `shopify theme dev` từ thư mục
+- Mọi tác vụ audit hoặc test theme có thể chạy `shopify theme dev` từ thư mục
   gốc workspace, mở storefront tại URL local do Shopify CLI cung cấp và kiểm tra
-  trực tiếp trên trình duyệt trước khi kết luận kết quả.
+  trực tiếp trên trình duyệt trước khi kết luận kết quả khi cần, ko bắt buộc.
 - Việc kiểm tra local phải bao gồm các trạng thái và tương tác liên quan đến
   thay đổi hiện tại, tối thiểu trên desktop và mobile khi có ảnh hưởng
   responsive. Không được chỉ dựa vào validator, kiểm tra tĩnh hoặc đọc code.
