@@ -5,6 +5,7 @@ if (!window.SpinelHeaderMenus) {
   const desktopMegaMenuRevealEnds = new WeakMap();
   const desktopMegaMenuResizeObservers = new WeakMap();
   const desktopMegaMenuHeightTimers = new WeakMap();
+  const desktopMegaMenuHandoffs = new WeakMap();
   const mobileMegaMenuMotions = new WeakMap();
   const mobileDrawerMotions = new WeakMap();
   const megaMenuHoverTimers = new WeakMap();
@@ -322,7 +323,10 @@ if (!window.SpinelHeaderMenus) {
       document.querySelectorAll('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(clearMegaMenuHoverTimer);
       document.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => closeMegaMenu(details, true));
       document.querySelectorAll('.header__submenu-disclosure').forEach(resetDesktopMegaMenuPresentation);
-      document.querySelectorAll('[data-header]').forEach(resetDesktopMegaMenuBackground);
+      document.querySelectorAll('[data-header]').forEach((header) => {
+        desktopMegaMenuHandoffs.delete(header);
+        resetDesktopMegaMenuBackground(header);
+      });
       if (breakpointFocusTargets.length) {
         window.requestAnimationFrame(() => {
           if (breakpointFocusTargets[0].isConnected) focusWithoutScroll(breakpointFocusTargets[0]);
@@ -516,6 +520,16 @@ if (!window.SpinelHeaderMenus) {
       return 0;
     }
 
+    const handoff = desktopMegaMenuHandoffs.get(header);
+    if (handoff?.fromIsMega && !handoff.toIsMega) {
+      const panelHeight = Number.isFinite(handoff.backgroundHeight) && handoff.backgroundHeight > 0
+        ? handoff.backgroundHeight
+        : measureDesktopMegaMenuPanelHeight(handoff.from);
+      header.style.setProperty('--header-mega-background-height', `${panelHeight}px`);
+      header.classList.add('is-menu-open');
+      return panelHeight;
+    }
+
     // The shared viewport background belongs to mega menus only. During a
     // mega-to-submenu handoff, keep its last geometry until the closing mega
     // panel has finished. Retargeting it to 0px here makes the full-width
@@ -559,6 +573,7 @@ if (!window.SpinelHeaderMenus) {
     if (!state) return;
     if (state.frame) window.cancelAnimationFrame(state.frame);
     window.clearTimeout(state.timer);
+    window.clearTimeout(state.heightTimer);
     state.panel.removeEventListener('transitionend', state.onTransitionEnd);
     desktopMegaMenuMotions.delete(details);
     state.resolve(result);
@@ -675,7 +690,7 @@ if (!window.SpinelHeaderMenus) {
     return panelHeight;
   };
 
-  const runDesktopMegaMenuCssMotion = (details, opening, focusAfterMotion = false) => {
+  const runDesktopMegaMenuCssMotion = (details, opening, focusAfterMotion = false, motionOptions = {}) => {
     const panel = getDesktopMegaMenuPanel(details);
     if (!panel) return Promise.resolve(false);
 
@@ -719,9 +734,16 @@ if (!window.SpinelHeaderMenus) {
 
     let resolveMotion;
     const motionPromise = new Promise((resolve) => { resolveMotion = resolve; });
+    let heightTransitionNotified = false;
+    const notifyHeightTransition = () => {
+      if (heightTransitionNotified) return;
+      heightTransitionNotified = true;
+      motionOptions.onHeightTransitionEnd?.();
+    };
     const finish = () => {
       const state = desktopMegaMenuMotions.get(details);
       if (!state || state.finish !== finish) return;
+      if (!opening) notifyHeightTransition();
       clearDesktopMegaMenuMotion(details, true);
       panel.style.removeProperty('height');
       if (opening) {
@@ -741,15 +763,19 @@ if (!window.SpinelHeaderMenus) {
       syncHeaderMenuScrollLock();
       if (responsiveHeader) scheduleResponsiveHeaderSync();
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
+      motionOptions.onFinish?.(details, opening);
     };
     const onTransitionEnd = (event) => {
-      if (!opening && event.target === panel && event.propertyName === 'height') finish();
+      if (event.target !== panel || event.propertyName !== 'height') return;
+      notifyHeightTransition();
+      if (!opening) finish();
     };
     const state = {
       panel,
       opening,
       frame: 0,
       timer: 0,
+      heightTimer: 0,
       heightTransitionEndsAt: now + transitionDuration,
       revealEndsAt: opening ? revealEndsAt : now + transitionDuration,
       finish,
@@ -765,6 +791,9 @@ if (!window.SpinelHeaderMenus) {
       if (opening) details.dataset.megaPanelVisible = 'true';
       panel.style.removeProperty('height');
       state.heightTransitionEndsAt = performance.now() + transitionDuration;
+      state.heightTimer = window.setTimeout(() => {
+        if (desktopMegaMenuMotions.get(details) === state) notifyHeightTransition();
+      }, transitionDuration + 80);
       scheduleDesktopMegaMenuMotionFinish(state);
     });
 
@@ -889,7 +918,7 @@ if (!window.SpinelHeaderMenus) {
       .catch(() => false);
   };
 
-  const animateMegaMenuOpen = (details, focusAfterMotion = false) => {
+  const animateMegaMenuOpen = (details, focusAfterMotion = false, motionOptions = {}) => {
     if (usesDesktopMegaMenuCssMotion(details)) {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         clearDesktopMegaMenuMotion(details);
@@ -907,9 +936,11 @@ if (!window.SpinelHeaderMenus) {
         syncDesktopMegaMenuBackground(details.closest('[data-header]'), details, panelHeight);
         syncHeaderDisclosureAria(details);
         syncHeaderMenuScrollLock();
+        motionOptions.onHeightTransitionEnd?.();
+        motionOptions.onFinish?.(details, true);
         return Promise.resolve(true);
       }
-      return runDesktopMegaMenuCssMotion(details, true, focusAfterMotion);
+      return runDesktopMegaMenuCssMotion(details, true, focusAfterMotion, motionOptions);
     }
 
     const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
@@ -952,8 +983,14 @@ if (!window.SpinelHeaderMenus) {
       .catch(() => false);
   };
 
-  const closeMegaMenu = (details, immediate = false, focusAfterMotion = false) => {
+  const closeMegaMenu = (details, immediate = false, focusAfterMotion = false, motionOptions = {}) => {
     if (!details.open || (!immediate && details.dataset.closing === 'true')) return;
+
+    const header = details.closest('[data-header]');
+    if (usesDesktopMegaMenuCssMotion(details) && !motionOptions.handoff) {
+      const handoff = header && desktopMegaMenuHandoffs.get(header);
+      if (handoff && (handoff.from === details || handoff.to === details)) desktopMegaMenuHandoffs.delete(header);
+    }
 
     const { panel, type, duration, easing } = getMegaMenuAnimation(details);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -981,7 +1018,7 @@ if (!window.SpinelHeaderMenus) {
         if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
         return;
       }
-      return runDesktopMegaMenuCssMotion(details, false, focusAfterMotion);
+      return runDesktopMegaMenuCssMotion(details, false, focusAfterMotion, motionOptions);
     }
 
     if (!immediate && type === 'mobile_slide') return runMobileMegaMenuMotion(details, false, focusAfterMotion);
@@ -1138,10 +1175,67 @@ if (!window.SpinelHeaderMenus) {
     return { from, fromIsMega, toIsMega };
   };
 
+  const runDesktopTopLevelMenuHandoff = (details, handoff, focusAfterMotion = false) => {
+    const header = details.closest('[data-header]');
+    if (!header) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      animateMegaMenuOpen(details, focusAfterMotion);
+      closeMegaMenu(handoff.from, false, false);
+      return;
+    }
+
+    const currentBackgroundHeight = Number.parseFloat(
+      header.style.getPropertyValue('--header-mega-background-height')
+    );
+    const fromPanel = getDesktopMegaMenuPanel(handoff.from);
+    const backgroundHeight = Number.isFinite(currentBackgroundHeight) && currentBackgroundHeight > 0
+      ? currentBackgroundHeight
+      : Math.max(0, Math.ceil(fromPanel?.getBoundingClientRect().height || 0));
+    const handoffState = {
+      from: handoff.from,
+      to: details,
+      fromIsMega: handoff.fromIsMega,
+      toIsMega: handoff.toIsMega,
+      backgroundHeight,
+      sourceFinished: false,
+      targetHeightFinished: false
+    };
+    desktopMegaMenuHandoffs.set(header, handoffState);
+
+    const finishHandoff = () => {
+      if (desktopMegaMenuHandoffs.get(header) !== handoffState) return;
+      if (!handoffState.sourceFinished || !handoffState.targetHeightFinished) return;
+      desktopMegaMenuHandoffs.delete(header);
+      if (handoffState.fromIsMega && !handoffState.toIsMega) {
+        resetDesktopMegaMenuBackground(header);
+      } else {
+        syncDesktopMegaMenuBackground(header, details);
+      }
+    };
+
+    animateMegaMenuOpen(details, focusAfterMotion, {
+      onHeightTransitionEnd: () => {
+        handoffState.targetHeightFinished = true;
+        finishHandoff();
+      }
+    });
+    closeMegaMenu(handoff.from, false, false, {
+      handoff: handoffState,
+      onFinish: () => {
+        handoffState.sourceFinished = true;
+        finishHandoff();
+      }
+    });
+  };
+
   const openHeaderSubmenu = (details) => {
     clearMegaMenuHoverTimer(details);
     const isDesktopAnimatedMenu = usesDesktopMegaMenuCssMotion(details);
     const isDesktopTopLevelMenu = !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure');
+    const header = details.closest('[data-header]');
+    const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
+    if (activeHandoff && activeHandoff.to !== details) desktopMegaMenuHandoffs.delete(header);
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
@@ -1184,17 +1278,8 @@ if (!window.SpinelHeaderMenus) {
     if (responsiveHeader) {
       scheduleResponsiveHeaderSync();
     }
-    animateMegaMenuOpen(details, isMobileHeaderViewport());
-    if (desktopHandoff?.fromIsMega && !desktopHandoff.toIsMega) {
-      // Mega → submenu: keep the shared background at its last height while
-      // the old mega panel closes behind the incoming compact surface.
-      closeMegaMenu(desktopHandoff.from);
-    } else if (desktopHandoff?.fromIsMega === false && desktopHandoff.toIsMega) {
-      // Submenu → mega: the target already owns the shared background. Mark
-      // the old compact panel closing now; its desktop z-index rule places it
-      // below the incoming mega panel without toggling the overlay/lock.
-      closeMegaMenu(desktopHandoff.from);
-    }
+    if (desktopHandoff) runDesktopTopLevelMenuHandoff(details, desktopHandoff, isMobileHeaderViewport());
+    else animateMegaMenuOpen(details, isMobileHeaderViewport());
     if (isDesktopAnimatedMenu) {
       closeOtherHeaderSubmenus(details);
     }
@@ -1475,7 +1560,10 @@ if (!window.SpinelHeaderMenus) {
   });
   document.addEventListener('shopify:section:unload', (event) => {
     if (event.target.contains?.(headerBreakpointFocusContext?.header)) headerBreakpointFocusContext = null;
-    event.target.querySelectorAll?.('[data-header]').forEach(resetDesktopMegaMenuBackground);
+    event.target.querySelectorAll?.('[data-header]').forEach((header) => {
+      desktopMegaMenuHandoffs.delete(header);
+      resetDesktopMegaMenuBackground(header);
+    });
     event.target.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach((details) => {
       clearMegaMenuHoverTimer(details);
       resetDesktopMegaMenuPresentation(details);
