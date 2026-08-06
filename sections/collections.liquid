@@ -6,10 +6,15 @@
 
 {% capture collections_card_sizes %}(min-width: 990px) {{ collections_card_width_desktop }}vw, (min-width: 750px) {{ collections_card_width_tablet }}vw, {{ collections_card_width_mobile }}vw{% endcapture %}
 
-<section
-  class="collections-page color-scheme color-{{ section.settings.color_scheme.id }}"
-    style="--collections-columns-desktop: {{ section.settings.columns_desktop }}; --collections-columns-tablet: {{ section.settings.columns_desktop }}; --collections-columns-mobile: {{ section.settings.columns_mobile }}; --collections-grid-gap: {{ section.settings.grid_gap }}px; --collections-padding-top: {{ section.settings.padding_top }}px; --collections-padding-bottom: {{ section.settings.padding_bottom }}px;"
+<collection-list-page-reveal
+  data-deferred-module="{{ 'collection-list-page-reveal.js' | asset_url }}"
+  data-reveal-on-scroll="{{ section.settings.reveal_on_scroll }}"
+  data-motion-enabled="{{ settings.enable_motion }}"
 >
+  <section
+    class="collections-page color-scheme color-{{ section.settings.color_scheme.id }}"
+      style="--collections-columns-desktop: {{ section.settings.columns_desktop }}; --collections-columns-tablet: {{ section.settings.columns_desktop }}; --collections-columns-mobile: {{ section.settings.columns_mobile }}; --collections-grid-gap: {{ section.settings.grid_gap }}px; --collections-padding-top: {{ section.settings.padding_top }}px; --collections-padding-bottom: {{ section.settings.padding_bottom }}px;"
+  >
   <div class="collections-page__inner{% if section.settings.section_width == 'page' %} collections-page__inner--page{% endif %}">
     <header class="collections-page__header collections-page__header--{{ section.settings.text_alignment }}">
       <h1 class="collections-page__heading typo-h1">{{ section.settings.heading | escape }}</h1>
@@ -121,10 +126,12 @@
         {% endif %}
       {% endpaginate %}
     {% endif %}
-  </div>
-</section>
+    </div>
+  </section>
+</collection-list-page-reveal>
 
 {% stylesheet %}
+  collection-list-page-reveal { display: block; }
   .collections-page { padding: var(--collections-padding-top) var(--page-margin) var(--collections-padding-bottom); background: var(--gradient-background, var(--color-background)); color: var(--color-text); }
   .collections-page__inner { width: 100%; }
   .collections-page__inner--page { max-width: var(--page-width); margin-inline: auto; }
@@ -150,6 +157,8 @@
   .collections-page__content--right { justify-items: end; text-align: right; }
   .collections-page__title { color: #fff; font-family: var(--font-heading--family); font-size: var(--font-h4-size); font-style: var(--font-heading--style); font-weight: var(--font-heading--weight); line-height: var(--font-h4-line-height); }
   .collections-page__count { color: rgb(255 255 255 / 82%); font-size: var(--font-caption); line-height: 1.4; }
+  collection-list-page-reveal[data-reveal-ready='true'] .collections-page__item { opacity: 0; transform: translateY(24px); transition: opacity 600ms ease, transform 700ms cubic-bezier(.22, 1, .36, 1); }
+  collection-list-page-reveal[data-reveal-ready='true'] .collections-page__item.is-revealed { opacity: 1; transform: none; }
   .collections-page__card:hover .collections-page__image { transform: scale(1.035); }
   .collections-page__card:focus-visible { outline: 2px solid var(--color-heading); outline-offset: 4px; }
   .collections-page__pagination { display: flex; min-height: 88px; align-items: center; justify-content: center; gap: 6px; margin-top: 24px; }
@@ -158,7 +167,7 @@
   .collections-page__pagination-arrow svg { width: 14px; height: 14px; }
   @media screen and (min-width: 750px) and (max-width: 989px) { .collections-page__grid { grid-template-columns: repeat(var(--collections-columns-tablet), minmax(0, 1fr)); } }
   @media screen and (max-width: 749px) { .collections-page { padding-top: calc(var(--collections-padding-top) * 0.75); padding-bottom: calc(var(--collections-padding-bottom) * 0.75); } .collections-page__header { gap: 10px; margin-bottom: 32px; } .collections-page__grid { grid-template-columns: repeat(var(--collections-columns-mobile), minmax(0, 1fr)); } .collections-page__content { padding: 16px 14px; } .collections-page__title { font-size: var(--font-h5-size); line-height: var(--font-h5-line-height); } .collections-page__pagination { min-height: 72px; margin-top: 16px; } }
-  @media (prefers-reduced-motion: reduce) { .collections-page__image { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .collections-page__image, collection-list-page-reveal[data-reveal-ready='true'] .collections-page__item { opacity: 1; transform: none; transition: none; } }
 {% endstylesheet %}
 
 {% schema %}
@@ -197,6 +206,7 @@
       "type": "header",
       "content": "Appearance"
     },
+    { "type": "checkbox", "id": "reveal_on_scroll", "label": "Reveal on scroll", "info": "Show animation when the collection cards become visible.", "default": true },
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" }
   ],
   "presets": [{ "name": "Collection list page", "category": "Collections" }]
