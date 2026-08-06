@@ -613,6 +613,7 @@ if (!window.SpinelHeaderMenus) {
     delete details.dataset.opening;
     delete details.dataset.closing;
     delete details.dataset.megaPanelVisible;
+    delete details.dataset.megaMenuHandoff;
     const panel = getDesktopMegaMenuPanel(details);
     panel?.style.removeProperty('height');
     panel?.style.removeProperty('--header-mega-panel-height');
@@ -709,7 +710,9 @@ if (!window.SpinelHeaderMenus) {
       panel.inert = false;
       details.dataset.opening = 'true';
       delete details.dataset.closing;
-      const revealDuration = updateDesktopMegaMenuRevealDelays(details);
+      const skipRevealDelay = details.dataset.megaMenuHandoff === 'from-mega';
+      if (skipRevealDelay) clearDesktopMegaMenuRevealDelays(details);
+      const revealDuration = skipRevealDelay ? 0 : updateDesktopMegaMenuRevealDelays(details);
       if (!wasVisible) {
         revealEndsAt = now + revealDuration;
         desktopMegaMenuRevealEnds.set(details, revealEndsAt);
@@ -754,6 +757,7 @@ if (!window.SpinelHeaderMenus) {
         details.open = false;
         delete details.dataset.closing;
         delete details.dataset.megaPanelVisible;
+        delete details.dataset.megaMenuHandoff;
         desktopMegaMenuRevealEnds.delete(details);
         panel.style.removeProperty('--header-mega-panel-height');
         clearDesktopMegaMenuRevealDelays(details);
@@ -1201,6 +1205,9 @@ if (!window.SpinelHeaderMenus) {
       sourceFinished: false,
       targetHeightFinished: false
     };
+    if (handoff.fromIsMega && !handoff.toIsMega) {
+      details.dataset.megaMenuHandoff = 'from-mega';
+    }
     desktopMegaMenuHandoffs.set(header, handoffState);
 
     const finishHandoff = () => {
