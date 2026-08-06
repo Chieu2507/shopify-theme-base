@@ -1665,7 +1665,10 @@ if (!window.SpinelHeaderMenus) {
     if (submenu?.matches('.header__localization-selector') && isMobileHeaderViewport()) {
       event.preventDefault();
       if (submenu.open) closeLocalizationSheet(submenu);
-      else submenu.open = true;
+      else {
+        submenu.open = true;
+        syncHeaderLocalizationAria(submenu);
+      }
       return;
     }
 
