@@ -126,7 +126,11 @@ Sau lần sửa cuối:
    build hoặc targeted test sẵn có. Docs-only không cần theme validator.
 4. Storefront QA là bắt buộc cho work theo demo, visual/responsive, interaction,
    shared/global JS, scroll lock hoặc explicit audit/test: chạy
-   `shopify theme dev` và kiểm tra desktop/mobile. Không kết luận chỉ từ code.
+   `shopify theme dev --theme 144223469616` và kiểm tra desktop/mobile. Trước khi
+   chạy, xác nhận đúng store/theme bằng
+   `shopify theme info --theme 144223469616`. Nếu CLI nhận diện đây là live theme
+   hoặc yêu cầu `--allow-live`, phải dừng và báo blocker; không tự thêm flag đó.
+   Không kết luận chỉ từ code.
 5. QA theo phạm vi ảnh hưởng: default/empty/long/missing data, nhiều instance,
    keyboard, interaction, responsive và không có console error. Với Theme Editor,
    kiểm tra add/remove/duplicate/reorder/select/deselect/re-render/unload khi liên
