@@ -20,6 +20,7 @@
   data-autoplay="{{ section.settings.autoplay }}"
   data-autoplay-delay="{{ section.settings.autoplay_delay | times: 1000 }}"
   data-deferred-module="{{ 'editorial-slideshow.js' | asset_url }}"
+  style="--editorial-navigator-background-opacity: {{ section.settings.navigator_background_opacity | default: 80 }}%;"
 >
   <div class="editorial-slideshow__viewport swiper" data-editorial-slideshow-slider>
     <div class="editorial-slideshow__wrapper swiper-wrapper">
@@ -28,7 +29,12 @@
   </div>
 
   {% if has_multiple_slides %}
-    <nav class="editorial-slideshow__navigator" aria-label="{{ 'slideshow.pagination' | t | escape }}" data-editorial-navigator>
+    <nav
+      id="EditorialSlideshowNavigator-{{ section.id }}"
+      class="editorial-slideshow__navigator is-collapsed"
+      aria-label="{{ 'slideshow.pagination' | t | escape }}"
+      data-editorial-navigator
+    >
       <button
         class="editorial-slideshow__navigator-arrow editorial-slideshow__navigator-arrow--previous"
         type="button"
@@ -93,6 +99,19 @@
           <span class="editorial-slideshow__autoplay-label">AUTOPLAY</span>
           <span class="editorial-slideshow__autoplay-value" data-editorial-autoplay-value>{{ autoplay_delay_display }} SEC</span>
         </span>
+      </button>
+
+      <button
+        class="editorial-slideshow__navigator-toggle"
+        type="button"
+        aria-controls="EditorialSlideshowNavigator-{{ section.id }}"
+        aria-expanded="false"
+        aria-label="{{ 'slideshow.expand_navigation' | t | escape }}"
+        data-label-collapse="{{ 'slideshow.collapse_navigation' | t | escape }}"
+        data-label-expand="{{ 'slideshow.expand_navigation' | t | escape }}"
+        data-editorial-navigator-toggle
+      >
+        <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="m4.5 12.5 5.5-5.5 5.5 5.5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.4"/></svg>
       </button>
     </nav>
   {% endif %}
@@ -187,7 +206,17 @@
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "Color scheme",
-      "default": "scheme-3"
+      "default": "scheme-4"
+    },
+    {
+      "type": "range",
+      "id": "navigator_background_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "Navigator background opacity",
+      "default": 80
     }
   ],
   "blocks": [
@@ -204,7 +233,8 @@
         "autoplay_delay": 6,
         "enable_image_zoom": true,
         "section_width": "full",
-        "color_scheme": "scheme-3"
+        "color_scheme": "scheme-4",
+        "navigator_background_opacity": 80
       },
       "blocks": [
         {
@@ -214,20 +244,14 @@
           "type": "editorial-slide",
           "settings": {
             "nav_label": "Equinox",
-            "nav_detail": "SCULPTURAL LIGHT",
-            "product_title": "The Equinox",
-            "product_meta": "SCULPTURAL GOLD · ONE OF ONE",
-            "product_price": "$7,200"
+            "nav_detail": "SCULPTURAL LIGHT"
           }
         },
         {
           "type": "editorial-slide",
           "settings": {
             "nav_label": "Vesper",
-            "nav_detail": "WRIST STUDY",
-            "product_title": "The Vesper",
-            "product_meta": "POLISHED GOLD · ONE OF ONE",
-            "product_price": "$4,800"
+            "nav_detail": "WRIST STUDY"
           }
         }
       ]

@@ -11,13 +11,12 @@
   assign slide_mobile_image = block.settings.mobile_image
   assign slide_image_alt = block.settings.image_alt | default: slide_image.alt
   if slide_image_alt == blank
-    assign slide_image_alt = block.settings.product_title
+    assign slide_image_alt = block.settings.nav_label
   endif
   if slide_image_alt == blank
     assign slide_image_alt = 'accessibility.image' | t
   endif
 
-  assign slide_collection = block.settings.collection
   assign image_loading = 'lazy'
   assign image_priority = 'auto'
   assign first_slide = section.blocks | first
@@ -28,24 +27,6 @@
     endif
   endif
 
-  assign slide_product = block.settings.product
-  assign slide_product_variant = blank
-  if slide_product != blank
-    assign slide_product_variant = slide_product.selected_or_first_available_variant
-  endif
-  assign product_title = block.settings.product_title
-  assign product_url = block.settings.product_link
-  assign product_price = block.settings.product_price
-  if slide_product != blank
-    assign product_title = slide_product.title
-    assign product_url = slide_product.url
-  endif
-  if slide_product_variant != blank
-    assign product_price = slide_product_variant.price
-  endif
-  assign product_meta = block.settings.product_meta
-  assign product_cta_label = block.settings.product_cta_label | default: 'VIEW PRODUCT'
-  assign product_price_label = block.settings.product_price_label | default: 'PRICE'
 %}
 
 <article
@@ -61,7 +42,7 @@
   data-editorial-nav-detail="{{ block.settings.nav_detail | escape }}"
   {{ block.shopify_attributes }}
 >
-  <div class="editorial-slideshow__media" data-swiper-parallax-x="100%">
+  <div class="editorial-slideshow__media">
     {% if slide_image != blank %}
       {% render 'responsive-picture',
         image: slide_image,
@@ -92,66 +73,11 @@
     class="editorial-slideshow__content-positioner"
   >
     <div class="editorial-slideshow__content">
-      {% if block.settings.eyebrow != blank %}
-        <div class="editorial-slideshow__eyebrow">{{ block.settings.eyebrow }}</div>
-      {% endif %}
-
-      {% if block.settings.show_collection_list and slide_collection != blank %}
-        <nav class="editorial-slideshow__collection-list" aria-label="{{ slide_collection.title | escape }}">
-          <a class="editorial-slideshow__collection-title" href="{{ slide_collection.url }}">
-            {{ slide_collection.title | escape }}
-          </a>
-          {% for product in slide_collection.products limit: 4 %}
-            <a href="{{ product.url }}">{{ product.title | escape }}</a>
-          {% endfor %}
-        </nav>
-      {% endif %}
-
       {% content_for 'blocks' %}
-
-      {% if block.settings.spec_line != blank %}
-        <div class="editorial-slideshow__spec-line">{{ block.settings.spec_line }}</div>
-      {% endif %}
     </div>
   </div>
 
-  {% if product_title != blank or slide_product != blank %}
-    <aside
-      class="editorial-slideshow__product-card"
-      aria-label="{{ product_title | escape }}"
-    >
-      <div class="editorial-slideshow__product-copy">
-        {% if product_url != blank %}
-          <a class="editorial-slideshow__product-title" href="{{ product_url }}">{{ product_title | escape }}</a>
-        {% else %}
-          <span class="editorial-slideshow__product-title">{{ product_title | escape }}</span>
-        {% endif %}
-        {% if product_meta != blank %}
-          <span class="editorial-slideshow__product-meta">{{ product_meta | escape }}</span>
-        {% endif %}
-      </div>
-
-      {% if product_price != blank %}
-        <div class="editorial-slideshow__product-price">
-          <span class="editorial-slideshow__product-price-label">{{ product_price_label | escape }}</span>
-          <span class="editorial-slideshow__product-price-value">
-            {% if slide_product_variant != blank %}
-              {% render 'money', amount: product_price %}
-            {% else %}
-              {{ product_price | escape }}
-            {% endif %}
-          </span>
-        </div>
-      {% endif %}
-
-      {% if product_url != blank %}
-        <a class="editorial-slideshow__product-link" href="{{ product_url }}">
-          <span>{{ product_cta_label | escape }}</span>
-          <span aria-hidden="true">→</span>
-        </a>
-      {% endif %}
-    </aside>
-  {% endif %}
+  {% content_for "block", type: "editorial-product-card", id: "product_card" %}
 </article>
 
 {% schema %}
@@ -161,6 +87,7 @@
   "blocks": [
     { "type": "heading" },
     { "type": "text" },
+    { "type": "spacer" },
     { "type": "button-group" },
     { "type": "@app" }
   ],
@@ -202,34 +129,7 @@
     },
     {
       "type": "header",
-      "content": "Content"
-    },
-    {
-      "type": "inline_richtext",
-      "id": "eyebrow",
-      "label": "Eyebrow",
-      "default": "OBJECT 01 / THE HOUSE SIGNATURE"
-    },
-    {
-      "type": "inline_richtext",
-      "id": "spec_line",
-      "label": "Specification line",
-      "default": "NATURAL SPINEL · 18K YELLOW GOLD · ONE OF ONE"
-    },
-    {
-      "type": "header",
       "content": "Content layout"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_collection_list",
-      "label": "Show collection list",
-      "default": false
-    },
-    {
-      "type": "collection",
-      "id": "collection",
-      "label": "Collection"
     },
     {
       "type": "range",
@@ -282,10 +182,6 @@
       "default": "middle-left"
     },
     {
-      "type": "header",
-      "content": "Product panel"
-    },
-    {
       "type": "text",
       "id": "nav_label",
       "label": "Navigator label",
@@ -298,47 +194,6 @@
       "default": "HOUSE SIGNATURE"
     },
     {
-      "type": "product",
-      "id": "product",
-      "label": "Product"
-    },
-    {
-      "type": "text",
-      "id": "product_title",
-      "label": "Product title",
-      "default": "The Nocturne Collar"
-    },
-    {
-      "type": "text",
-      "id": "product_meta",
-      "label": "Product meta",
-      "default": "CUSHION-CUT · 22.4 CT · ONE OF ONE"
-    },
-    {
-      "type": "text",
-      "id": "product_price_label",
-      "label": "Price label",
-      "default": "PRICE"
-    },
-    {
-      "type": "text",
-      "id": "product_price",
-      "label": "Product price",
-      "default": "$8,600",
-      "info": "Used as a fallback when no product is selected."
-    },
-    {
-      "type": "url",
-      "id": "product_link",
-      "label": "Button link"
-    },
-    {
-      "type": "text",
-      "id": "product_cta_label",
-      "label": "Button label",
-      "default": "VIEW PRODUCT"
-    },
-    {
       "type": "header",
       "content": "Appearance"
     },
@@ -346,7 +201,7 @@
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "Color scheme",
-      "default": "scheme-3"
+      "default": "scheme-4"
     },
     {
       "type": "color",
@@ -374,9 +229,18 @@
         "content_alignment": "left",
         "content_position": "top-left",
         "content_position_mobile": "middle-left",
-        "color_scheme": "scheme-3"
+        "color_scheme": "scheme-4"
       },
       "blocks": [
+        {
+          "type": "heading",
+          "settings": {
+            "heading": "<p>OBJECT 01 / THE HOUSE SIGNATURE</p>",
+            "type_preset": "subheading",
+            "color": "text",
+            "alignment": "left"
+          }
+        },
         {
           "type": "heading",
           "settings": {
@@ -412,6 +276,15 @@
               }
             }
           ]
+        },
+        {
+          "type": "heading",
+          "settings": {
+            "heading": "<p>NATURAL SPINEL · 18K YELLOW GOLD · ONE OF ONE</p>",
+            "type_preset": "subheading",
+            "color": "text",
+            "alignment": "left"
+          }
         }
       ]
     }
