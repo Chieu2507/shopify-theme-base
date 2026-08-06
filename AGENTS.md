@@ -1,5 +1,17 @@
 # Hướng dẫn trong workspace
 
+## Shopify plugin — BẮT BUỘC SỬ DỤNG VÀ THAM KHẢO
+
+- Với mọi tác vụ trong workspace này, phải sử dụng và tham khảo plugin
+  `@shopify` (`shopify@openai-curated-remote`) khi plugin hoặc capability phù
+  hợp đang khả dụng.
+- Trước khi đưa ra quyết định về Shopify theme, Liquid, schema, Theme Editor,
+  Storefront hoặc Shopify CLI/API, phải ưu tiên hướng dẫn, tài liệu và công cụ
+  từ plugin `@shopify` làm nguồn tham chiếu.
+- Nếu capability cần thiết của plugin không khả dụng trong phiên làm việc, phải
+  nêu rõ giới hạn này và tiếp tục bằng nguồn chính thức hoặc mã nguồn hiện có
+  phù hợp; không được bỏ qua việc tham khảo plugin khi capability đó khả dụng.
+
 ## DELIVERY POLICY — BẮT BUỘC ĐỌC TRƯỚC
 
 Các quy tắc dưới đây là workflow mặc định của repository này và là nguồn chuẩn
