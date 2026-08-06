@@ -18,6 +18,7 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDurationFallback = 300;
+  const desktopTransparentHeaderScrollThreshold = 20;
   // Desktop top-level menus use the CSS motion below; keep the legacy Web Animations fallback disabled.
   const disableLegacyMegaMenuWebAnimations = true;
   let transparentHeaderFrame = 0;
@@ -25,6 +26,7 @@ if (!window.SpinelHeaderMenus) {
   let headerBreakpointFocusContext = null;
   let localizationSheetDrag = null;
   let localizationSheetDragTimer = null;
+  const responsiveHeaderEntryFrames = new WeakMap();
   let wasMobileHeaderViewport = window.matchMedia('(max-width: 899px)').matches;
 
   const isMobileHeaderViewport = () => window.matchMedia('(max-width: 899px)').matches;
@@ -522,6 +524,49 @@ if (!window.SpinelHeaderMenus) {
     if (activeColorClass) header.classList.add(activeColorClass);
   };
 
+  const clearResponsiveHeaderEntry = (header) => {
+    const frame = responsiveHeaderEntryFrames.get(header);
+    if (frame) window.cancelAnimationFrame(frame);
+    responsiveHeaderEntryFrames.delete(header);
+    header.removeAttribute('data-scroll-entering');
+    header.style.removeProperty('--header-scroll-entry-top');
+  };
+
+  const syncResponsiveHeaderScrollState = (header, isScrolled, animateEntry) => {
+    const wasScrolled = header.classList.contains('header--scrolled');
+    if (wasScrolled === isScrolled) {
+      if (!animateEntry || !isScrolled) clearResponsiveHeaderEntry(header);
+      return;
+    }
+
+    if (!isScrolled) {
+      clearResponsiveHeaderEntry(header);
+      header.classList.remove('header--scrolled');
+      return;
+    }
+
+    if (!animateEntry) {
+      clearResponsiveHeaderEntry(header);
+      header.classList.add('header--scrolled');
+      return;
+    }
+
+    const entryTop = Math.max(0, header.getBoundingClientRect().top);
+    clearResponsiveHeaderEntry(header);
+    header.style.setProperty('--header-scroll-entry-top', `${entryTop}px`);
+    header.dataset.scrollEntering = 'true';
+    header.classList.add('header--scrolled');
+
+    const frame = window.requestAnimationFrame(() => {
+      if (responsiveHeaderEntryFrames.get(header) !== frame) return;
+      responsiveHeaderEntryFrames.delete(header);
+      if (!header.isConnected || !header.classList.contains('header--scrolled')) return;
+      header.removeAttribute('data-scroll-entering');
+      header.style.setProperty('--header-scroll-entry-top', '0px');
+    });
+    responsiveHeaderEntryFrames.set(header, frame);
+  };
+
   const syncResponsiveHeader = (header) => {
     const isFloatingHeader = header.dataset.floatingHeader === 'true';
     const isTransparentHeader = header.dataset.transparentHeader === 'true';
@@ -531,12 +576,20 @@ if (!window.SpinelHeaderMenus) {
     const origin = sectionWrapper
       ? sectionWrapper.getBoundingClientRect().top + window.scrollY
       : header.getBoundingClientRect().top + window.scrollY;
-    const isScrolled = window.scrollY > origin + 1;
-    header.classList.toggle('header--scrolled', isScrolled);
+    const isMobile = isMobileHeaderViewport();
+    const scrollThreshold = isTransparentHeader && !isMobile
+      ? desktopTransparentHeaderScrollThreshold
+      : 1;
+    const isScrolled = window.scrollY > origin + scrollThreshold;
+    syncResponsiveHeaderScrollState(
+      header,
+      isScrolled,
+      isTransparentHeader && !isMobile && header.classList.contains('header--sticky')
+    );
 
     if (!isTransparentHeader) return;
 
-    const hasOpenDesktopMenu = !isMobileHeaderViewport()
+    const hasOpenDesktopMenu = !isMobile
       && Boolean(header.querySelector('.header__submenu-disclosure[open]'));
     const showSurface = isScrolled || hasOpenDesktopMenu;
     header.classList.toggle('header--surface-visible', showSurface);
@@ -1896,6 +1949,7 @@ if (!window.SpinelHeaderMenus) {
     }
     if (event.target.contains?.(headerBreakpointFocusContext?.header)) headerBreakpointFocusContext = null;
     event.target.querySelectorAll?.('[data-header]').forEach((header) => {
+      clearResponsiveHeaderEntry(header);
       desktopMegaMenuHandoffs.delete(header);
       resetDesktopMegaMenuBackground(header);
     });
