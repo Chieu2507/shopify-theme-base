@@ -1758,8 +1758,7 @@ if (!window.SpinelHeaderMenus) {
       const openLocalization = event.target.closest?.('.header__localization-selector[open]');
       if (openLocalization) {
         event.preventDefault();
-        openLocalization.open = false;
-        openLocalization.querySelector(':scope > summary')?.focus();
+        closeLocalizationSheet(openLocalization);
         return;
       }
 
@@ -1783,6 +1782,8 @@ if (!window.SpinelHeaderMenus) {
       if (details.matches('.header__menu-disclosure')) focusTargets.push(details.querySelector(':scope > summary'));
       if (details.matches('.header__submenu-disclosure, .header__submenu-nested-disclosure') && shouldAnimateHeaderSubmenu(details)) {
         closeMegaMenu(details);
+      } else if (details.matches('.header__localization-selector') && isMobileHeaderViewport()) {
+        closeLocalizationSheet(details);
       } else {
         details.open = false;
       }
@@ -1808,6 +1809,13 @@ if (!window.SpinelHeaderMenus) {
     event.target.querySelectorAll?.('[data-header]').forEach((header) => {
       desktopMegaMenuHandoffs.delete(header);
       resetDesktopMegaMenuBackground(header);
+    });
+    event.target.querySelectorAll?.('.header__localization-selector').forEach((details) => {
+      clearLocalizationSheetMotion(details);
+      localizationSheetFinalizing.delete(details);
+      details.removeAttribute('data-motion-state');
+      details.open = false;
+      syncHeaderLocalizationAria(details);
     });
     event.target.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach((details) => {
       clearMegaMenuHoverTimer(details);
