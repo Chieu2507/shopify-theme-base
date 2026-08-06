@@ -34,6 +34,21 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
   const mobileQuery = window.matchMedia(`(max-width: ${mobileBreakpoint}px)`);
   const section = element.closest(sectionSelector);
   const isEditorialSlideshow = element.matches('editorial-slideshow');
+  let viewportWidth = window.innerWidth;
+  let stableViewportHeight = getViewportHeight();
+
+  // Mobile Safari changes visualViewport.height while its browser chrome
+  // expands/collapses during scroll. Keep the first-viewport layout stable
+  // until the actual viewport width changes (orientation or breakpoint).
+  const getStableViewportHeight = () => {
+    const nextViewportWidth = window.innerWidth;
+    if (nextViewportWidth !== viewportWidth) {
+      viewportWidth = nextViewportWidth;
+      stableViewportHeight = getViewportHeight();
+    }
+
+    return stableViewportHeight;
+  };
 
   const update = () => {
     animationFrame = undefined;
@@ -43,7 +58,7 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
       : 'desktop-full';
     const isFullScreen = element.classList.contains(`slideshow--height-${fullScreenClass}`)
       || element.classList.contains(`editorial-slideshow--height-${fullScreenClass}`);
-    const viewportHeight = getViewportHeight();
+    const viewportHeight = getStableViewportHeight();
     const top = element.getBoundingClientRect().top + window.scrollY;
     const startsInFirstViewport = top >= 0 && top < viewportHeight;
     const canFillFirstViewport = isFullScreen
