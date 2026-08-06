@@ -54,7 +54,8 @@
     disconnectedCallback() {
       this.abortController?.abort();
       this.backdropInteraction?.destroy();
-      document.documentElement.classList.remove('cart-drawer-open');
+      window.clearTimeout(this.closeTimer);
+      this.releaseScrollLock();
       this.isOpen = false;
     }
 
@@ -231,7 +232,6 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
-      document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
       this.lastFocusedElement?.focus?.({ preventScroll: true });
@@ -244,10 +244,23 @@
       window.clearTimeout(this.closeTimer);
       const closeDuration = Math.max(this.getMotionDuration(), this.getOverlayMotionDuration());
       this.closeTimer = window.setTimeout(() => {
-        this.hidden = true;
-        this.classList.remove('is-closing');
+        this.finishClose();
         this.resetHandleDrag();
       }, closeDuration);
+    }
+
+    acquireScrollLock() {
+      window.themeScrollLock?.acquire('cart-drawer');
+    }
+
+    releaseScrollLock() {
+      window.themeScrollLock?.release('cart-drawer');
+    }
+
+    finishClose() {
+      this.hidden = true;
+      this.classList.remove('is-closing');
+      this.releaseScrollLock();
     }
 
     resetHandleDrag() {
@@ -281,6 +294,9 @@
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
       this.resetHandleDrag();
+      // Lock synchronously so the scrollbar is measured before any drawer
+      // state can hide it and trigger a desktop layout shift on close.
+      this.acquireScrollLock();
       const shouldAnimateOpen = !(this.isOpen && this.classList.contains('is-open'));
       this.hidden = false;
       this.isOpen = true;
@@ -292,7 +308,6 @@
         this.panel?.getBoundingClientRect();
       }
       if (!this.classList.contains('is-open')) this.classList.add('is-open');
-      document.documentElement.classList.add('cart-drawer-open');
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'true'));
       this.panel?.focus({ preventScroll: true });
       await this.refresh();
@@ -304,14 +319,12 @@
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
-      document.documentElement.classList.remove('cart-drawer-open');
       this.backdropInteraction?.hide();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
       this.lastFocusedElement?.focus?.({ preventScroll: true });
       const closeDuration = Math.max(this.getMotionDuration(), this.getOverlayMotionDuration());
       this.closeTimer = window.setTimeout(() => {
-        this.hidden = true;
-        this.classList.remove('is-closing');
+        this.finishClose();
       }, closeDuration);
     }
 
