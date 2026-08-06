@@ -504,6 +504,7 @@ if (!window.SpinelHeaderMenus) {
   const resetDesktopMegaMenuBackground = (header) => {
     if (!header) return;
     header.classList.remove('is-menu-open');
+    delete header.dataset.megaBackgroundClosing;
     header.style.removeProperty('--header-mega-background-height');
   };
 
@@ -522,6 +523,7 @@ if (!window.SpinelHeaderMenus) {
 
     const handoff = desktopMegaMenuHandoffs.get(header);
     if (handoff?.fromIsMega && !handoff.toIsMega) {
+      delete header.dataset.megaBackgroundClosing;
       const panelHeight = Number.isFinite(handoff.backgroundHeight) && handoff.backgroundHeight > 0
         ? handoff.backgroundHeight
         : measureDesktopMegaMenuPanelHeight(handoff.from);
@@ -544,6 +546,7 @@ if (!window.SpinelHeaderMenus) {
     const closingDetails = header.querySelector('.header__submenu-disclosure--mega[open][data-closing="true"]');
 
     if (activeDetails) {
+      delete header.dataset.megaBackgroundClosing;
       const panelHeight = activeDetails === preferredDetails && Number.isFinite(preferredHeight)
         ? preferredHeight
         : measureDesktopMegaMenuPanelHeight(activeDetails);
@@ -561,6 +564,7 @@ if (!window.SpinelHeaderMenus) {
         : measureDesktopMegaMenuPanelHeight(closingDetails);
       header.style.setProperty('--header-mega-background-height', `${panelHeight}px`);
       header.classList.add('is-menu-open');
+      header.dataset.megaBackgroundClosing = 'true';
       return panelHeight;
     }
 
