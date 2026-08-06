@@ -16,6 +16,10 @@ class EditorialSlideshow extends HTMLElement {
     this.progressBars = [...this.querySelectorAll('.editorial-slideshow__tab-progress span')];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.desktopNavigator = window.matchMedia('(min-width: 900px)');
+    this.classList.toggle(
+      'editorial-slideshow--navigator-collapsed',
+      this.desktopNavigator.matches && this.navigator?.classList.contains('is-collapsed'),
+    );
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
     this.autoplayManuallyPaused = false;
@@ -264,6 +268,7 @@ class EditorialSlideshow extends HTMLElement {
 
     this.clearNavigatorMorph();
     this.navigator.classList.remove('is-transitioning');
+    this.classList.toggle('editorial-slideshow--navigator-collapsed', isCollapsed);
 
     this.navigatorToggle?.setAttribute('aria-expanded', String(!isCollapsed));
     this.navigatorToggle?.setAttribute(
@@ -307,6 +312,7 @@ class EditorialSlideshow extends HTMLElement {
   setNavigatorExpandedForMobile() {
     this.clearNavigatorMorph();
     this.navigator?.classList.remove('is-collapsed', 'is-transitioning');
+    this.classList.remove('editorial-slideshow--navigator-collapsed');
     this.navigatorToggle?.setAttribute('aria-expanded', 'true');
     this.navigatorToggle?.setAttribute(
       'aria-label',
