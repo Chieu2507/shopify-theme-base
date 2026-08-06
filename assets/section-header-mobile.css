@@ -123,6 +123,8 @@
 
     .header__mobile-drawer {
       --header-mobile-drawer-inset: 0px;
+      --header-mobile-motion-duration: 500ms;
+      --header-mobile-motion-easing: cubic-bezier(.7, 0, .2, 1);
       position: fixed;
       z-index: 30;
       inset: 0;
@@ -161,7 +163,7 @@
       will-change: auto;
       backface-visibility: hidden;
       -webkit-backface-visibility: hidden;
-      transition: transform 500ms cubic-bezier(.7, 0, .2, 1);
+      transition: transform var(--header-mobile-motion-duration) var(--header-mobile-motion-easing);
     }
 
     .header__menu-disclosure[open] + .header__mobile-drawer:not([data-motion-state='closing']) .header__mobile-drawer-surface,
@@ -851,6 +853,22 @@
       pointer-events: auto;
     }
 
+    .header__mobile-language .header__localization-selector[data-motion-state='closing'] > .header__localization-popover,
+    .header__mobile-localization .header__localization-selector[data-motion-state='closing'] > .header__localization-popover {
+      display: block;
+      pointer-events: none;
+    }
+
+    .header__mobile-language .header__localization-selector[data-motion-state='closing'] .header__localization-backdrop,
+    .header__mobile-localization .header__localization-selector[data-motion-state='closing'] .header__localization-backdrop {
+      animation: header-mobile-localization-backdrop-out var(--header-mobile-motion-duration) var(--header-mobile-motion-easing) both;
+    }
+
+    .header__mobile-language .header__localization-selector[data-motion-state='closing'] .header__localization-sheet,
+    .header__mobile-localization .header__localization-selector[data-motion-state='closing'] .header__localization-sheet {
+      animation: header-mobile-localization-sheet-out var(--header-mobile-motion-duration) var(--header-mobile-motion-easing) both;
+    }
+
     .header__mobile-drawer-surface:has(.header__localization-selector[open]) {
       overflow: visible;
     }
@@ -868,7 +886,7 @@
       backdrop-filter: blur(8px);
       cursor: pointer;
       opacity: 0;
-      animation: header-mobile-localization-backdrop-in 220ms ease both;
+      animation: header-mobile-localization-backdrop-in var(--header-mobile-motion-duration) var(--header-mobile-motion-easing) both;
     }
 
     .header__localization-sheet {
@@ -883,7 +901,7 @@
       background: var(--gradient-background, var(--color-background));
       box-shadow: 0 -10px 36px rgb(0 0 0 / 10%);
       color: var(--color-text);
-      animation: header-mobile-localization-sheet-in 300ms cubic-bezier(.22, 1, .36, 1) both;
+      animation: header-mobile-localization-sheet-in var(--header-mobile-motion-duration) var(--header-mobile-motion-easing) both;
     }
 
     .header__localization-sheet.is-handle-dragging,
@@ -1128,9 +1146,19 @@
     to { opacity: 1; }
   }
 
+@keyframes header-mobile-localization-backdrop-out {
+    from { opacity: 1; }
+    to { opacity: 0; }
+  }
+
 @keyframes header-mobile-localization-sheet-in {
-    from { opacity: 0; transform: translateY(18px); }
+    from { opacity: 0; transform: translateY(100%); }
     to { opacity: 1; transform: translateY(0); }
+  }
+
+@keyframes header-mobile-localization-sheet-out {
+    from { opacity: 1; transform: translateY(0); }
+    to { opacity: 0; transform: translateY(100%); }
   }
 
 @media (prefers-reduced-motion: reduce) {

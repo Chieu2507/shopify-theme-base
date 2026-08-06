@@ -8,6 +8,8 @@ if (!window.SpinelHeaderMenus) {
   const desktopMegaMenuHandoffs = new WeakMap();
   const mobileMegaMenuMotions = new WeakMap();
   const mobileDrawerMotions = new WeakMap();
+  const localizationSheetMotions = new WeakMap();
+  const localizationSheetFinalizing = new WeakSet();
   const megaMenuHoverTimers = new WeakMap();
   const cartFeedbackHeaderStates = new WeakMap();
   const mobileMenuReturnFocus = new WeakMap();
@@ -53,6 +55,7 @@ if (!window.SpinelHeaderMenus) {
 
     localizationSheetDragTimer = window.setTimeout(() => {
       if (details.open) {
+        localizationSheetFinalizing.add(details);
         details.open = false;
         details.querySelector(':scope > summary')?.focus({ preventScroll: true });
       }
