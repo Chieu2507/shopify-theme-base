@@ -617,7 +617,7 @@ Các path này là reference, không phải tên file bắt buộc cho theme m�
 | Selling-plan layout guard | `assets/product-page.css` |
 | Card và quick-add guard | `snippets/product-card.liquid`, `assets/product-card.js` |
 | Cart-page discount | `sections/cart.liquid` |
-| Drawer discount và recommendation | `snippets/cart-drawer.liquid`, `assets/cart-drawer.js`, `assets/cart-drawer.css` |
+| Drawer discount và recommendation | `sections/cart-drawer.liquid`, `assets/cart-drawer.js`, `assets/cart-drawer.css` |
 | Announcement pause | `sections/announcement-bar.liquid`, `assets/section-announcement-bar.js` |
 | Font và badge default | `config/settings_schema.json`, `config/settings_data.json` |
 
