@@ -269,11 +269,26 @@
     }
 
     lockPageScroll() {
+      if (this.pageScrollLocked) return;
+      const root = document.documentElement;
+      const gutterProperty = '--cart-drawer-scrollbar-gutter';
+      this.previousScrollbarGutter = root.style.getPropertyValue(gutterProperty);
+      this.hadScrollbarGutter = this.previousScrollbarGutter !== '';
+      root.style.setProperty(gutterProperty, `${Math.max(0, window.innerWidth - root.clientWidth)}px`);
       document.body.classList.add('cart-drawer-open');
+      this.pageScrollLocked = true;
     }
 
     unlockPageScroll() {
+      if (!this.pageScrollLocked) return;
       document.body.classList.remove('cart-drawer-open');
+      const root = document.documentElement;
+      const gutterProperty = '--cart-drawer-scrollbar-gutter';
+      if (this.hadScrollbarGutter) root.style.setProperty(gutterProperty, this.previousScrollbarGutter);
+      else root.style.removeProperty(gutterProperty);
+      this.previousScrollbarGutter = null;
+      this.hadScrollbarGutter = false;
+      this.pageScrollLocked = false;
     }
 
     finishClose() {
