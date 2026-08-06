@@ -38,11 +38,20 @@
 
 @media (max-width: 899px) {
     /* Keep the complete mobile drawer above announcement bars and any
-       in-flow storefront section while it is open. Child z-index values
-       cannot escape the header section's stacking context on Safari. */
-    .shopify-section:has(> .header:has(.header__menu-disclosure[open])) {
+       in-flow storefront section while it is open. Use the global state
+       managed by section-header.js: Safari can paint before :has([open])
+       reflects a details toggle. */
+    html.header-menu-overlay-visible .shopify-section:has(> [data-header]) {
       position: relative;
-      z-index: 40;
+      z-index: 1000;
+    }
+
+    html.header-menu-overlay-visible [data-header] {
+      z-index: 1000;
+    }
+
+    html.header-menu-overlay-visible [data-header-mobile-drawer] {
+      z-index: 1001;
     }
 
     .header--underline-active .header__mobile-drawer a.header__menu-link--active,
