@@ -1655,6 +1655,13 @@ if (!window.SpinelHeaderMenus) {
       }
 
       if (details.matches?.('.header__localization-selector')) {
+        if (details.open && isMobileHeaderViewport() && !isLocalizationSheetReady(details)) {
+          localizationSheetFinalizing.add(details);
+          details.open = false;
+          openLocalizationSheet(details);
+          return;
+        }
+
         if (!details.open) {
           if (localizationSheetFinalizing.has(details)) {
             localizationSheetFinalizing.delete(details);
@@ -1747,10 +1754,7 @@ if (!window.SpinelHeaderMenus) {
     if (submenu?.matches('.header__localization-selector') && isMobileHeaderViewport()) {
       event.preventDefault();
       if (submenu.open) closeLocalizationSheet(submenu);
-      else {
-        submenu.open = true;
-        syncHeaderLocalizationAria(submenu);
-      }
+      else openLocalizationSheet(submenu);
       return;
     }
 
@@ -1896,6 +1900,7 @@ if (!window.SpinelHeaderMenus) {
       resetDesktopMegaMenuBackground(header);
     });
     event.target.querySelectorAll?.('.header__localization-selector').forEach((details) => {
+      cancelLocalizationSheetOpen(details);
       clearLocalizationSheetMotion(details);
       localizationSheetFinalizing.delete(details);
       details.removeAttribute('data-motion-state');
