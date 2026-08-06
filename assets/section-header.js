@@ -172,10 +172,10 @@ if (!window.SpinelHeaderMenus) {
     const closingMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-motion-state="closing"]');
     const shouldLock = isMobile
       ? Boolean(openMobileDrawer || closingMobileDrawer)
-      : Boolean(document.querySelector('.header__submenu-disclosure[open]'));
+      : Boolean(document.querySelector('.header__submenu-disclosure--mega[open]'));
     const shouldShowOverlay = isMobile
       ? Boolean(openMobileDrawer)
-      : Boolean(document.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])'));
+      : Boolean(document.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])'));
     const root = document.documentElement;
     const isLocked = root.classList.contains('header-menu-scroll-locked');
 
@@ -191,7 +191,7 @@ if (!window.SpinelHeaderMenus) {
       const isDrawerClosing = drawer?.dataset.motionState === 'closing';
       const overlayVisible = isMobile
         ? isOwnedMobileOverlay && drawer?.dataset.open === 'true' && !isDrawerClosing
-        : isOwnedDesktopOverlay && Boolean(header?.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])'));
+        : isOwnedDesktopOverlay && Boolean(header?.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])'));
       overlay.toggleAttribute('data-visible', Boolean(overlayVisible));
       overlay.toggleAttribute('data-closing', Boolean(isMobile && isOwnedMobileOverlay && isDrawerClosing));
     });
