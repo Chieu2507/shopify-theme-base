@@ -9,6 +9,7 @@ if (!window.SpinelHeaderMenus) {
   const mobileMegaMenuMotions = new WeakMap();
   const mobileDrawerMotions = new WeakMap();
   const localizationSheetMotions = new WeakMap();
+  const localizationSheetOpenRequests = new WeakMap();
   const localizationSheetFinalizing = new WeakSet();
   const megaMenuHoverTimers = new WeakMap();
   const cartFeedbackHeaderStates = new WeakMap();
@@ -195,7 +196,13 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const closeLocalizationSheet = (details, restoreFocus = true, immediate = false) => {
-    if (!details?.matches?.('.header__localization-selector') || !details.open) return;
+    if (!details?.matches?.('.header__localization-selector')) return;
+
+    cancelLocalizationSheetOpen(details);
+    if (!details.open) {
+      syncHeaderLocalizationAria(details);
+      return;
+    }
 
     const existingState = localizationSheetMotions.get(details);
     if (existingState) {
@@ -241,6 +248,75 @@ if (!window.SpinelHeaderMenus) {
   const getMobileDrawer = (disclosure) => {
     const drawer = disclosure?.nextElementSibling;
     return drawer?.matches?.('[data-header-mobile-drawer]') ? drawer : null;
+  };
+
+  const cancelLocalizationSheetOpen = (details) => {
+    const request = localizationSheetOpenRequests.get(details);
+
+    if (!request) return;
+
+    if (request.frame) window.cancelAnimationFrame(request.frame);
+    localizationSheetOpenRequests.delete(details);
+  };
+
+  const isLocalizationSheetReady = (details) => {
+    if (!details || !isMobileHeaderViewport()) return true;
+
+    const drawer = details.closest('[data-header-mobile-drawer]');
+    const surface = drawer?.querySelector('.header__mobile-drawer-surface');
+    const navigation = drawer?.querySelector('.header__navigation--mobile');
+    const utilities = drawer?.querySelector('.header__mobile-utilities');
+    const surfaceRect = surface?.getBoundingClientRect();
+    const hasActiveMotion = [surface, navigation, utilities]
+      .filter(Boolean)
+      .some((element) => element.getAnimations?.().some((animation) => animation.playState === 'running'));
+
+    return Boolean(
+      drawer?.dataset.open === 'true'
+      && drawer.dataset.motionState !== 'closing'
+      && surfaceRect
+      && surfaceRect.left >= -0.5
+      && !hasActiveMotion
+    );
+  };
+
+  const openLocalizationSheet = (details) => {
+    if (!details || !isMobileHeaderViewport()) return;
+
+    cancelLocalizationSheetOpen(details);
+
+    if (details.open || isLocalizationSheetReady(details)) {
+      details.open = true;
+      syncHeaderLocalizationAria(details);
+      return;
+    }
+
+    const request = {
+      frame: 0,
+      startedAt: performance.now(),
+    };
+    localizationSheetOpenRequests.set(details, request);
+
+    const openWhenReady = () => {
+      if (localizationSheetOpenRequests.get(details) !== request) return;
+
+      if (
+        !details.isConnected
+        || !isMobileHeaderViewport()
+        || request.startedAt + 800 <= performance.now()
+        || isLocalizationSheetReady(details)
+      ) {
+        localizationSheetOpenRequests.delete(details);
+        if (!details.isConnected || !isMobileHeaderViewport()) return;
+        details.open = true;
+        syncHeaderLocalizationAria(details);
+        return;
+      }
+
+      request.frame = window.requestAnimationFrame(openWhenReady);
+    };
+
+    request.frame = window.requestAnimationFrame(openWhenReady);
   };
 
   const syncMobileDrawer = (disclosure, focusDrawer = false) => {
@@ -306,6 +382,9 @@ if (!window.SpinelHeaderMenus) {
     const returnFocus = mobileMenuReturnFocus.get(drawer) || disclosure.querySelector(':scope > summary');
 
     if (isMobileHeaderViewport()) {
+      header?.querySelectorAll('.header__localization-selector').forEach((details) => {
+        cancelLocalizationSheetOpen(details);
+      });
       header?.querySelectorAll('.header__localization-selector[open]').forEach((details) => {
         closeLocalizationSheet(details, false, true);
       });
@@ -525,6 +604,9 @@ if (!window.SpinelHeaderMenus) {
     }
     document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => {
       if (crossedHeaderBreakpoint) {
+        document.querySelectorAll('.header__localization-selector').forEach((details) => {
+          cancelLocalizationSheetOpen(details);
+        });
         document.querySelectorAll('.header__localization-selector[open]').forEach((details) => {
           closeLocalizationSheet(details, false, true);
         });
