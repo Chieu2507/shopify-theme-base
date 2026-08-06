@@ -498,12 +498,22 @@ if (!window.SpinelHeaderMenus) {
       return 0;
     }
 
-    const preferredIsActive = preferredDetails?.open && preferredDetails.dataset.closing !== 'true';
+    // The shared viewport background belongs to mega menus only. Standard
+    // submenus keep their original compact surface and must never opt the
+    // header into the full-width mega-menu presentation.
+    if (preferredDetails && !preferredDetails.matches('.header__submenu-disclosure--mega')) {
+      resetDesktopMegaMenuBackground(header);
+      return 0;
+    }
+
+    const preferredIsActive = preferredDetails?.matches('.header__submenu-disclosure--mega')
+      && preferredDetails.open
+      && preferredDetails.dataset.closing !== 'true';
     const activeDetails = preferredIsActive
       ? preferredDetails
-      : header.querySelector('.header__submenu-disclosure[open]:not([data-closing="true"])');
+      : header.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])');
     if (!activeDetails) {
-      const closingDetails = header.querySelector('.header__submenu-disclosure[open][data-closing="true"]');
+      const closingDetails = header.querySelector('.header__submenu-disclosure--mega[open][data-closing="true"]');
       if (closingDetails) {
         header.style.setProperty('--header-mega-background-height', '0px');
         header.classList.add('is-menu-open');
