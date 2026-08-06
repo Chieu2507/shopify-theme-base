@@ -525,6 +525,9 @@ if (!window.SpinelHeaderMenus) {
     }
     document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => {
       if (crossedHeaderBreakpoint) {
+        document.querySelectorAll('.header__localization-selector[open]').forEach((details) => {
+          closeLocalizationSheet(details, false, true);
+        });
         clearMobileDrawerMotion(disclosure);
         disclosure.open = false;
         const drawer = getMobileDrawer(disclosure);
@@ -1280,7 +1283,7 @@ if (!window.SpinelHeaderMenus) {
   const syncHeaderLocalizationAria = (details) => {
     const summary = details.querySelector(':scope > summary');
     if (!summary) return;
-    summary.setAttribute('aria-expanded', String(details.open));
+    summary.setAttribute('aria-expanded', String(details.open && details.dataset.motionState !== 'closing'));
   };
 
   const initializeHeaderDisclosures = (scope = document) => {
