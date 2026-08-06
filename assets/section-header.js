@@ -5,6 +5,7 @@ if (!window.SpinelHeaderMenus) {
   const desktopMegaMenuRevealEnds = new WeakMap();
   const desktopMegaMenuResizeObservers = new WeakMap();
   const desktopMegaMenuHeightTimers = new WeakMap();
+  const desktopMegaMenuRevealDuration = 400;
   const desktopMegaMenuHandoffs = new WeakMap();
   const mobileMegaMenuMotions = new WeakMap();
   const mobileDrawerMotions = new WeakMap();
@@ -583,25 +584,6 @@ if (!window.SpinelHeaderMenus) {
     state.resolve(result);
   };
 
-  const getDesktopMegaMenuRevealTargets = (details) => {
-    const panel = getDesktopMegaMenuPanel(details);
-    if (!panel) return [];
-    if (details.matches('.header__submenu-disclosure--mega')) {
-      return Array.from(panel.querySelectorAll(
-        '.header__mega-heading, .header__mega-list, .header__mega-promo'
-      ));
-    }
-    return Array.from(panel.children).filter((element) => (
-      !element.matches('.header__mobile-submenu-back-item')
-    ));
-  };
-
-  const clearDesktopMegaMenuRevealDelays = (details) => {
-    getDesktopMegaMenuRevealTargets(details).forEach((element) => {
-      element.style.removeProperty('--header-mega-reveal-delay');
-    });
-  };
-
   const clearDesktopMegaMenuHeightGuard = (details) => {
     const timer = desktopMegaMenuHeightTimers.get(details);
     if (!timer) return;
@@ -622,36 +604,6 @@ if (!window.SpinelHeaderMenus) {
     panel?.style.removeProperty('height');
     panel?.style.removeProperty('--header-mega-panel-height');
     if (panel) panel.inert = false;
-    clearDesktopMegaMenuRevealDelays(details);
-  };
-
-  const updateDesktopMegaMenuRevealDelays = (details) => {
-    const panel = getDesktopMegaMenuPanel(details);
-    if (!panel) return;
-    if (!details.matches('.header__submenu-disclosure--mega')) {
-      const items = getDesktopMegaMenuRevealTargets(details);
-      items.forEach((item, index) => {
-        item.style.setProperty('--header-mega-reveal-delay', `${200 + (index * 50)}ms`);
-      });
-      return items.length ? 200 + ((items.length - 1) * 50) + 400 : 0;
-    }
-    const heading = panel.querySelector('.header__mega-heading');
-    const columns = Array.from(panel.querySelectorAll('.header__mega-list'));
-    const promotions = Array.from(panel.querySelectorAll('.header__mega-promo'));
-    heading?.style.setProperty('--header-mega-reveal-delay', '200ms');
-    columns.forEach((column, index) => {
-      column.style.setProperty('--header-mega-reveal-delay', `${200 + (index * 50)}ms`);
-    });
-    const promotionDelay = Math.max(350, Math.min(400, 200 + (columns.length * 50)));
-    promotions.forEach((promotion, index) => {
-      promotion.style.setProperty('--header-mega-reveal-delay', `${Math.min(400, promotionDelay + (index * 50))}ms`);
-    });
-    const revealDelays = [
-      heading ? 200 : 0,
-      ...columns.map((_, index) => 200 + (index * 50)),
-      ...promotions.map((_, index) => Math.min(400, promotionDelay + (index * 50)))
-    ];
-    return Math.max(0, ...revealDelays) + 400;
   };
 
   const scheduleDesktopMegaMenuMotionFinish = (state) => {
@@ -715,8 +667,7 @@ if (!window.SpinelHeaderMenus) {
       details.dataset.opening = 'true';
       delete details.dataset.closing;
       const skipRevealDelay = details.dataset.megaMenuHandoff === 'from-mega';
-      if (skipRevealDelay) clearDesktopMegaMenuRevealDelays(details);
-      const revealDuration = skipRevealDelay ? 0 : updateDesktopMegaMenuRevealDelays(details);
+      const revealDuration = skipRevealDelay ? 0 : desktopMegaMenuRevealDuration;
       if (!wasVisible) {
         revealEndsAt = now + revealDuration;
         desktopMegaMenuRevealEnds.set(details, revealEndsAt);
@@ -764,7 +715,6 @@ if (!window.SpinelHeaderMenus) {
         delete details.dataset.megaMenuHandoff;
         desktopMegaMenuRevealEnds.delete(details);
         panel.style.removeProperty('--header-mega-panel-height');
-        clearDesktopMegaMenuRevealDelays(details);
         syncDesktopMegaMenuBackground(header);
       }
       syncHeaderDisclosureAria(details);
@@ -936,7 +886,6 @@ if (!window.SpinelHeaderMenus) {
           panel.inert = false;
           panel.style.removeProperty('height');
         }
-        updateDesktopMegaMenuRevealDelays(details);
         const panelHeight = syncDesktopMegaMenuPanelHeight(details);
         details.dataset.megaPanelVisible = 'true';
         delete details.dataset.opening;
