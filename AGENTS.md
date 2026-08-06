@@ -1,27 +1,31 @@
 # Hướng dẫn trong workspace
 
-## DELIVERY POLICY — BẮT BUỘC ĐỌC TRƯỚC
+## Cá nhân hoá dự án
 
-Các quy tắc dưới đây là workflow mặc định của repository này và là nguồn chuẩn
-cho các thao tác Git trong workspace.
-
-- Sau mỗi thay đổi code/theme đã được kiểm tra, tự động hoàn tất quy trình:
-  `git fetch origin main` → kiểm tra divergence/conflict → chỉ stage các file
-  thuộc task hiện tại → commit → `git push origin main` → xác nhận `HEAD` và
-  `origin/main` trùng nhau.
-- Không hỏi lại quyền commit hoặc push. Nếu user yêu cầu push, bắt buộc thực
-  hiện commit và push, trừ khi có conflict hoặc kiểm tra thất bại.
-- Yêu cầu rõ ràng của user hoặc system về việc không push có ưu tiên cao hơn
-  policy mặc định này.
-- Không để memory, default chung hoặc policy của task cũ như “do not push” ghi
-  đè policy của repository này.
-- Chỉ stage và commit các file thuộc task hiện tại. Giữ nguyên mọi thay đổi
-  không liên quan đã có trong working tree.
-- Nếu remote có divergence hoặc conflict, không được ghi đè code khác; phải
-  kiểm tra và merge an toàn trước khi push.
-- Nếu vì một blocker mà chưa push được, phải nêu chính xác blocker đó trong
-  phần bàn giao cuối cùng.
-- Theme đã kết nối với Git nên không cần kiểm tra thêm cấu hình deploy.
+- Trước khi bắt đầu bất kỳ tác vụ triển khai, build, tạo mới hoặc chỉnh sửa
+  code nào, phải đọc lại toàn bộ file `AGENTS.md` hiện tại từ workspace. Không
+  chỉ dựa vào nội dung đã ghi nhớ từ cuộc trò chuyện hoặc từ lần đọc trước.
+- Mặc định thực hiện công việc phát triển trên nhánh
+  `codex/spinel-chieutt-dev` và không thay đổi nhánh `main`, trừ khi người dùng
+  yêu cầu rõ ràng một quy trình khác.
+- Khi chạy Shopify CLI để preview hoặc phát triển theme cho dự án này, dùng
+  store `spinel-theme.myshopify.com` và unpublished theme
+  `Spinel theme - chieutt` (theme ID `144392454192`). Luôn chỉ định theme ID
+  rõ ràng và dùng `--nodelete` cho `shopify theme dev`; không chạy vào live
+  theme nếu chưa có yêu cầu rõ ràng từ người dùng.
+- Không ghi storefront password, token hoặc thông tin xác thực vào repository.
+- Figma là nguồn tham chiếu hình ảnh chính cho dự án. URL file/frame chính thức:
+  https://www.figma.com/design/VVCbJ0WkvyV0PuScPgBDPV/SPINEL-%E2%80%94-THEME-SYSTEM---STOREFRONT?node-id=101-2120&view=variables&var-set-id=1-5&m=dev
+  (file key `VVCbJ0WkvyV0PuScPgBDPV`, node `101-2120`, variable set `1-5`).
+- Sau mỗi lần build hoặc hoàn tất một phần giao diện, phải review đối chiếu với
+  frame Figma tương ứng và báo cáo mức độ đạt được dựa trên bằng chứng (ảnh
+  chụp hoặc design context), không tự ước lượng phần trăm khi chưa có đối chiếu.
+  Checklist tối thiểu gồm: cấu trúc và thứ bậc nội dung, spacing/alignment và
+  kích thước, typography, màu/border/opacity, hình ảnh/icon, content, trạng
+  thái tương tác/animation, responsive desktop/mobile và accessibility.
+- Khi đã có URL Figma hợp lệ, phải lấy design context và screenshot của frame
+  trước khi triển khai; sau khi build phải kiểm tra lại cùng các mốc đó, ghi rõ
+  sai khác còn lại và nguyên nhân kỹ thuật nếu không thể đạt 1:1.
 
 ## Xây dựng section và theme block
 
@@ -72,15 +76,6 @@ storefront có liên quan.
   nghiệm thu ngắn gọn bao gồm cấu trúc, thứ bậc nội dung, hành vi desktop/mobile,
   animation, các tùy chỉnh dành cho merchant và những khác biệt được phép. Trong
   bước QA cuối cùng, phải đối chiếu lại demo theo checklist đó.
-
-### Thông tin truy cập storefront demo
-
-- Password page của tất cả storefront demo đang dùng theme Spinel hiện tại là
-  `1`. Khi cần mở storefront hoặc preview bị khóa trong phạm vi này, dùng mật
-  khẩu `1` và không hỏi lại người dùng.
-- Chỉ áp dụng giá trị này cho storefront demo và theme Spinel hiện tại. Không
-  suy rộng sang Shopify Admin, tài khoản Shopify, VPS, GitHub, API, token hoặc
-  bất kỳ môi trường nào khác.
 
 ### Thứ tự ưu tiên bắt buộc khi xây dựng cấu trúc
 
@@ -265,3 +260,8 @@ và [Theme limits](https://shopify.dev/docs/storefronts/themes/architecture/limi
 - Output đầy đủ mới nhất và exit status được lưu lần lượt tại
   `validation-results/latest.log` và
   `validation-results/latest.status` để các tác vụ sau có thể kiểm tra.
+
+  ## Merge/Deploy
+
+- Tự động merge/deploy code lên main không cần hỏi lại. Chú ý cần kiểm tra conflict trước khi thực hiện. Nếu bị conflict thì không được làm ảnh hưởng tới các code khác.
+- Không cần kiểm tra cấu hình deploy của theme vì Theme được kết nối với Git, khi code lên Git là Theme cũng đồng bộ theo.
