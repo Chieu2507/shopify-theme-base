@@ -5,6 +5,7 @@ if (!window.SpinelHeaderMenus) {
   const desktopMegaMenuRevealEnds = new WeakMap();
   const desktopMegaMenuResizeObservers = new WeakMap();
   const desktopMegaMenuHeightTimers = new WeakMap();
+  const desktopMegaMenuHandoffs = new WeakMap();
   const mobileMegaMenuMotions = new WeakMap();
   const mobileDrawerMotions = new WeakMap();
   const megaMenuHoverTimers = new WeakMap();
@@ -13,7 +14,7 @@ if (!window.SpinelHeaderMenus) {
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 120;
-  const desktopMegaMenuTransitionDuration = 300;
+  const desktopMegaMenuTransitionDurationFallback = 300;
   // Desktop top-level menus use the CSS motion below; keep the legacy Web Animations fallback disabled.
   const disableLegacyMegaMenuWebAnimations = true;
   let transparentHeaderFrame = 0;
@@ -37,19 +38,22 @@ if (!window.SpinelHeaderMenus) {
     if (window.scrollX !== pageX || window.scrollY !== pageY) window.scrollTo(pageX, pageY);
   };
 
+  const getCssTimeMs = (value) => {
+    const numericValue = Number.parseFloat(value);
+    if (!Number.isFinite(numericValue)) return 0;
+    return value.trim().endsWith('ms') ? numericValue : numericValue * 1000;
+  };
+
   const getTransitionTotalMs = (element, propertyName) => {
     if (!element) return 0;
     const style = getComputedStyle(element);
     const properties = style.transitionProperty.split(',').map((value) => value.trim());
     const durations = style.transitionDuration.split(',').map((value) => value.trim());
     const delays = style.transitionDelay.split(',').map((value) => value.trim());
-    const toMilliseconds = (value) => value.endsWith('ms')
-      ? Number.parseFloat(value)
-      : Number.parseFloat(value) * 1000;
     return properties.reduce((maximum, property, index) => {
       if (property !== propertyName && property !== 'all') return maximum;
-      const duration = toMilliseconds(durations[index % durations.length] || '0s');
-      const delay = toMilliseconds(delays[index % delays.length] || '0s');
+      const duration = getCssTimeMs(durations[index % durations.length] || '0s');
+      const delay = getCssTimeMs(delays[index % delays.length] || '0s');
       return Math.max(maximum, duration + delay);
     }, 0);
   };
@@ -319,7 +323,10 @@ if (!window.SpinelHeaderMenus) {
       document.querySelectorAll('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(clearMegaMenuHoverTimer);
       document.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => closeMegaMenu(details, true));
       document.querySelectorAll('.header__submenu-disclosure').forEach(resetDesktopMegaMenuPresentation);
-      document.querySelectorAll('[data-header]').forEach(resetDesktopMegaMenuBackground);
+      document.querySelectorAll('[data-header]').forEach((header) => {
+        desktopMegaMenuHandoffs.delete(header);
+        resetDesktopMegaMenuBackground(header);
+      });
       if (breakpointFocusTargets.length) {
         window.requestAnimationFrame(() => {
           if (breakpointFocusTargets[0].isConnected) focusWithoutScroll(breakpointFocusTargets[0]);
@@ -414,7 +421,7 @@ if (!window.SpinelHeaderMenus) {
       : isTopLevelMenu
         ? 'cascading_root'
         : 'slide_down';
-    const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '250', 10);
+    const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '300', 10);
     const isDesktopCascadingMenu = !isMobileDrawerMenu && (isTopLevelMenu || isNestedMenu);
     const duration = isMobileDrawerMenu
       ? 300
@@ -479,6 +486,21 @@ if (!window.SpinelHeaderMenus) {
     ':scope > .header__mega-panel, :scope > .header__submenu'
   );
 
+  const getDesktopMegaMenuTransitionDuration = (details) => {
+    const header = details?.closest('[data-header]');
+    const panel = getDesktopMegaMenuPanel(details);
+    const background = header?.querySelector(':scope > .header__mega-background');
+    const cssToken = header
+      ? getCssTimeMs(getComputedStyle(header).getPropertyValue('--header-mega-menu-transition-duration'))
+      : 0;
+    return Math.max(
+      cssToken,
+      getTransitionTotalMs(panel, 'height'),
+      getTransitionTotalMs(background, 'height'),
+      desktopMegaMenuTransitionDurationFallback
+    );
+  };
+
   const resetDesktopMegaMenuBackground = (header) => {
     if (!header) return;
     header.classList.remove('is-menu-open');
@@ -498,61 +520,52 @@ if (!window.SpinelHeaderMenus) {
       return 0;
     }
 
-    // The shared viewport background belongs to mega menus only. Standard
-    // submenus keep their original compact surface and must never opt the
-    // header into the full-width mega-menu presentation.
-    if (preferredDetails && !preferredDetails.matches('.header__submenu-disclosure--mega')) {
-      const megaDetails = header.querySelector('.header__submenu-disclosure--mega[open]');
-      if (!megaDetails) {
-        resetDesktopMegaMenuBackground(header);
-        return 0;
-      }
-
-      // Keep the previous mega surface alive for the crossfade. Its close
-      // path retargets the height to zero after the standard submenu opens.
-      if (megaDetails.dataset.closing === 'true' && header.classList.contains('is-menu-open')) {
-        header.style.setProperty('--header-mega-background-height', '0px');
-      }
-      return measureDesktopMegaMenuPanelHeight(megaDetails);
+    const handoff = desktopMegaMenuHandoffs.get(header);
+    if (handoff?.fromIsMega && !handoff.toIsMega) {
+      const panelHeight = Number.isFinite(handoff.backgroundHeight) && handoff.backgroundHeight > 0
+        ? handoff.backgroundHeight
+        : measureDesktopMegaMenuPanelHeight(handoff.from);
+      header.style.setProperty('--header-mega-background-height', `${panelHeight}px`);
+      header.classList.add('is-menu-open');
+      return panelHeight;
     }
 
-    // During a mega-to-standard handoff, keep the shared surface visible while
-    // the old mega panel collapses; remove it only after both menus settle.
-    if (!preferredDetails && header.querySelector(
-      '.header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open]:not([data-closing="true"])'
-    )) {
-      const closingMega = header.querySelector('.header__submenu-disclosure--mega[open][data-closing="true"]');
-      if (closingMega && header.classList.contains('is-menu-open')) {
-        header.style.setProperty('--header-mega-background-height', '0px');
-      } else if (!closingMega) {
-        resetDesktopMegaMenuBackground(header);
-      }
-      return 0;
-    }
-
+    // The shared viewport background belongs to mega menus only. During a
+    // mega-to-submenu handoff, keep its last geometry until the closing mega
+    // panel has finished. Retargeting it to 0px here makes the full-width
+    // surface collapse underneath the incoming compact submenu and produces a
+    // white frame.
     const preferredIsActive = preferredDetails?.matches('.header__submenu-disclosure--mega')
       && preferredDetails.open
       && preferredDetails.dataset.closing !== 'true';
     const activeDetails = preferredIsActive
       ? preferredDetails
       : header.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])');
-    if (!activeDetails) {
-      const closingDetails = header.querySelector('.header__submenu-disclosure--mega[open][data-closing="true"]');
-      if (closingDetails) {
-        header.style.setProperty('--header-mega-background-height', '0px');
-        header.classList.add('is-menu-open');
-      } else {
-        resetDesktopMegaMenuBackground(header);
-      }
-      return 0;
+    const closingDetails = header.querySelector('.header__submenu-disclosure--mega[open][data-closing="true"]');
+
+    if (activeDetails) {
+      const panelHeight = activeDetails === preferredDetails && Number.isFinite(preferredHeight)
+        ? preferredHeight
+        : measureDesktopMegaMenuPanelHeight(activeDetails);
+      header.style.setProperty('--header-mega-background-height', `${panelHeight}px`);
+      header.classList.add('is-menu-open');
+      return panelHeight;
     }
 
-    const panelHeight = activeDetails === preferredDetails && Number.isFinite(preferredHeight)
-      ? preferredHeight
-      : measureDesktopMegaMenuPanelHeight(activeDetails);
-    header.style.setProperty('--header-mega-background-height', `${panelHeight}px`);
-    header.classList.add('is-menu-open');
-    return panelHeight;
+    if (closingDetails) {
+      const currentBackgroundHeight = Number.parseFloat(
+        header.style.getPropertyValue('--header-mega-background-height')
+      );
+      const panelHeight = Number.isFinite(currentBackgroundHeight) && currentBackgroundHeight > 0
+        ? currentBackgroundHeight
+        : measureDesktopMegaMenuPanelHeight(closingDetails);
+      header.style.setProperty('--header-mega-background-height', `${panelHeight}px`);
+      header.classList.add('is-menu-open');
+      return panelHeight;
+    }
+
+    resetDesktopMegaMenuBackground(header);
+    return 0;
   };
 
   const clearDesktopMegaMenuMotion = (details, result = false) => {
@@ -560,6 +573,7 @@ if (!window.SpinelHeaderMenus) {
     if (!state) return;
     if (state.frame) window.cancelAnimationFrame(state.frame);
     window.clearTimeout(state.timer);
+    window.clearTimeout(state.heightTimer);
     state.panel.removeEventListener('transitionend', state.onTransitionEnd);
     desktopMegaMenuMotions.delete(details);
     state.resolve(result);
@@ -599,6 +613,7 @@ if (!window.SpinelHeaderMenus) {
     delete details.dataset.opening;
     delete details.dataset.closing;
     delete details.dataset.megaPanelVisible;
+    delete details.dataset.megaMenuHandoff;
     const panel = getDesktopMegaMenuPanel(details);
     panel?.style.removeProperty('height');
     panel?.style.removeProperty('--header-mega-panel-height');
@@ -663,7 +678,7 @@ if (!window.SpinelHeaderMenus) {
       syncDesktopMegaMenuBackground(details.closest('[data-header]'), details, panelHeight);
     }
     if (heightChanged && state?.opening) {
-      state.heightTransitionEndsAt = performance.now() + desktopMegaMenuTransitionDuration;
+      state.heightTransitionEndsAt = performance.now() + getDesktopMegaMenuTransitionDuration(details);
       scheduleDesktopMegaMenuMotionFinish(state);
     } else if (guardStableResize) {
       window.clearTimeout(desktopMegaMenuHeightTimers.get(details));
@@ -671,15 +686,16 @@ if (!window.SpinelHeaderMenus) {
         desktopMegaMenuHeightTimers.delete(details);
         if (desktopMegaMenuMotions.has(details) || !details.open || details.dataset.closing === 'true') return;
         delete details.dataset.opening;
-      }, desktopMegaMenuTransitionDuration + 80));
+      }, getDesktopMegaMenuTransitionDuration(details) + 80));
     }
     return panelHeight;
   };
 
-  const runDesktopMegaMenuCssMotion = (details, opening, focusAfterMotion = false) => {
+  const runDesktopMegaMenuCssMotion = (details, opening, focusAfterMotion = false, motionOptions = {}) => {
     const panel = getDesktopMegaMenuPanel(details);
     if (!panel) return Promise.resolve(false);
 
+    const transitionDuration = getDesktopMegaMenuTransitionDuration(details);
     const currentHeight = Math.max(0, panel.getBoundingClientRect().height);
     const wasVisible = details.dataset.megaPanelVisible === 'true';
     clearDesktopMegaMenuMotion(details);
@@ -694,7 +710,9 @@ if (!window.SpinelHeaderMenus) {
       panel.inert = false;
       details.dataset.opening = 'true';
       delete details.dataset.closing;
-      const revealDuration = updateDesktopMegaMenuRevealDelays(details);
+      const skipRevealDelay = details.dataset.megaMenuHandoff === 'from-mega';
+      if (skipRevealDelay) clearDesktopMegaMenuRevealDelays(details);
+      const revealDuration = skipRevealDelay ? 0 : updateDesktopMegaMenuRevealDelays(details);
       if (!wasVisible) {
         revealEndsAt = now + revealDuration;
         desktopMegaMenuRevealEnds.set(details, revealEndsAt);
@@ -719,9 +737,16 @@ if (!window.SpinelHeaderMenus) {
 
     let resolveMotion;
     const motionPromise = new Promise((resolve) => { resolveMotion = resolve; });
+    let heightTransitionNotified = false;
+    const notifyHeightTransition = () => {
+      if (heightTransitionNotified) return;
+      heightTransitionNotified = true;
+      motionOptions.onHeightTransitionEnd?.();
+    };
     const finish = () => {
       const state = desktopMegaMenuMotions.get(details);
       if (!state || state.finish !== finish) return;
+      if (!opening) notifyHeightTransition();
       clearDesktopMegaMenuMotion(details, true);
       panel.style.removeProperty('height');
       if (opening) {
@@ -732,6 +757,7 @@ if (!window.SpinelHeaderMenus) {
         details.open = false;
         delete details.dataset.closing;
         delete details.dataset.megaPanelVisible;
+        delete details.dataset.megaMenuHandoff;
         desktopMegaMenuRevealEnds.delete(details);
         panel.style.removeProperty('--header-mega-panel-height');
         clearDesktopMegaMenuRevealDelays(details);
@@ -741,17 +767,21 @@ if (!window.SpinelHeaderMenus) {
       syncHeaderMenuScrollLock();
       if (responsiveHeader) scheduleResponsiveHeaderSync();
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
+      motionOptions.onFinish?.(details, opening);
     };
     const onTransitionEnd = (event) => {
-      if (!opening && event.target === panel && event.propertyName === 'height') finish();
+      if (event.target !== panel || event.propertyName !== 'height') return;
+      notifyHeightTransition();
+      if (!opening) finish();
     };
     const state = {
       panel,
       opening,
       frame: 0,
       timer: 0,
-      heightTransitionEndsAt: now + desktopMegaMenuTransitionDuration,
-      revealEndsAt: opening ? revealEndsAt : now + desktopMegaMenuTransitionDuration,
+      heightTimer: 0,
+      heightTransitionEndsAt: now + transitionDuration,
+      revealEndsAt: opening ? revealEndsAt : now + transitionDuration,
       finish,
       onTransitionEnd,
       resolve: resolveMotion
@@ -764,7 +794,10 @@ if (!window.SpinelHeaderMenus) {
       if (desktopMegaMenuMotions.get(details) !== state) return;
       if (opening) details.dataset.megaPanelVisible = 'true';
       panel.style.removeProperty('height');
-      state.heightTransitionEndsAt = performance.now() + desktopMegaMenuTransitionDuration;
+      state.heightTransitionEndsAt = performance.now() + transitionDuration;
+      state.heightTimer = window.setTimeout(() => {
+        if (desktopMegaMenuMotions.get(details) === state) notifyHeightTransition();
+      }, transitionDuration + 80);
       scheduleDesktopMegaMenuMotionFinish(state);
     });
 
@@ -889,7 +922,7 @@ if (!window.SpinelHeaderMenus) {
       .catch(() => false);
   };
 
-  const animateMegaMenuOpen = (details, focusAfterMotion = false) => {
+  const animateMegaMenuOpen = (details, focusAfterMotion = false, motionOptions = {}) => {
     if (usesDesktopMegaMenuCssMotion(details)) {
       if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
         clearDesktopMegaMenuMotion(details);
@@ -907,9 +940,11 @@ if (!window.SpinelHeaderMenus) {
         syncDesktopMegaMenuBackground(details.closest('[data-header]'), details, panelHeight);
         syncHeaderDisclosureAria(details);
         syncHeaderMenuScrollLock();
+        motionOptions.onHeightTransitionEnd?.();
+        motionOptions.onFinish?.(details, true);
         return Promise.resolve(true);
       }
-      return runDesktopMegaMenuCssMotion(details, true, focusAfterMotion);
+      return runDesktopMegaMenuCssMotion(details, true, focusAfterMotion, motionOptions);
     }
 
     const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
@@ -952,8 +987,14 @@ if (!window.SpinelHeaderMenus) {
       .catch(() => false);
   };
 
-  const closeMegaMenu = (details, immediate = false, focusAfterMotion = false) => {
+  const closeMegaMenu = (details, immediate = false, focusAfterMotion = false, motionOptions = {}) => {
     if (!details.open || (!immediate && details.dataset.closing === 'true')) return;
+
+    const header = details.closest('[data-header]');
+    if (usesDesktopMegaMenuCssMotion(details) && !motionOptions.handoff) {
+      const handoff = header && desktopMegaMenuHandoffs.get(header);
+      if (handoff && (handoff.from === details || handoff.to === details)) desktopMegaMenuHandoffs.delete(header);
+    }
 
     const { panel, type, duration, easing } = getMegaMenuAnimation(details);
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -981,7 +1022,7 @@ if (!window.SpinelHeaderMenus) {
         if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
         return;
       }
-      return runDesktopMegaMenuCssMotion(details, false, focusAfterMotion);
+      return runDesktopMegaMenuCssMotion(details, false, focusAfterMotion, motionOptions);
     }
 
     if (!immediate && type === 'mobile_slide') return runMobileMegaMenuMotion(details, false, focusAfterMotion);
@@ -1122,10 +1163,86 @@ if (!window.SpinelHeaderMenus) {
     });
   };
 
+  const getDesktopTopLevelMenuHandoff = (details) => {
+    if (isMobileHeaderViewport() || !details.matches('.header__submenu-disclosure')) return null;
+    const header = details.closest('[data-header]');
+    if (!header) return null;
+
+    const openMenus = Array.from(header.querySelectorAll('.header__submenu-disclosure[open]'))
+      .filter((menu) => menu !== details);
+    const from = openMenus.find((menu) => menu.dataset.closing !== 'true') || openMenus[0];
+    if (!from || !usesDesktopMegaMenuCssMotion(from)) return null;
+
+    const fromIsMega = from.matches('.header__submenu-disclosure--mega');
+    const toIsMega = details.matches('.header__submenu-disclosure--mega');
+    if (fromIsMega === toIsMega) return null;
+    return { from, fromIsMega, toIsMega };
+  };
+
+  const runDesktopTopLevelMenuHandoff = (details, handoff, focusAfterMotion = false) => {
+    const header = details.closest('[data-header]');
+    if (!header) return;
+
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      animateMegaMenuOpen(details, focusAfterMotion);
+      closeMegaMenu(handoff.from, false, false);
+      return;
+    }
+
+    const currentBackgroundHeight = Number.parseFloat(
+      header.style.getPropertyValue('--header-mega-background-height')
+    );
+    const fromPanel = getDesktopMegaMenuPanel(handoff.from);
+    const backgroundHeight = Number.isFinite(currentBackgroundHeight) && currentBackgroundHeight > 0
+      ? currentBackgroundHeight
+      : Math.max(0, Math.ceil(fromPanel?.getBoundingClientRect().height || 0));
+    const handoffState = {
+      from: handoff.from,
+      to: details,
+      fromIsMega: handoff.fromIsMega,
+      toIsMega: handoff.toIsMega,
+      backgroundHeight,
+      sourceFinished: false,
+      targetHeightFinished: false
+    };
+    if (handoff.fromIsMega && !handoff.toIsMega) {
+      details.dataset.megaMenuHandoff = 'from-mega';
+    }
+    desktopMegaMenuHandoffs.set(header, handoffState);
+
+    const finishHandoff = () => {
+      if (desktopMegaMenuHandoffs.get(header) !== handoffState) return;
+      if (!handoffState.sourceFinished || !handoffState.targetHeightFinished) return;
+      desktopMegaMenuHandoffs.delete(header);
+      if (handoffState.fromIsMega && !handoffState.toIsMega) {
+        resetDesktopMegaMenuBackground(header);
+      } else {
+        syncDesktopMegaMenuBackground(header, details);
+      }
+    };
+
+    animateMegaMenuOpen(details, focusAfterMotion, {
+      onHeightTransitionEnd: () => {
+        handoffState.targetHeightFinished = true;
+        finishHandoff();
+      }
+    });
+    closeMegaMenu(handoff.from, false, false, {
+      handoff: handoffState,
+      onFinish: () => {
+        handoffState.sourceFinished = true;
+        finishHandoff();
+      }
+    });
+  };
+
   const openHeaderSubmenu = (details) => {
     clearMegaMenuHoverTimer(details);
     const isDesktopAnimatedMenu = usesDesktopMegaMenuCssMotion(details);
     const isDesktopTopLevelMenu = !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure');
+    const header = details.closest('[data-header]');
+    const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
+    if (activeHandoff && activeHandoff.to !== details) desktopMegaMenuHandoffs.delete(header);
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
@@ -1150,6 +1267,7 @@ if (!window.SpinelHeaderMenus) {
         supportsDesktopHeaderHover() && details.matches('.header__submenu-disclosure--hover')
       );
     }
+    const desktopHandoff = isDesktopTopLevelMenu ? getDesktopTopLevelMenuHandoff(details) : null;
     positionHeaderSubmenu(details);
     const responsiveHeader = details.closest('[data-transparent-header="true"], [data-floating-header="true"]');
     if (responsiveHeader?.dataset.transparentHeader === 'true' && !isMobileHeaderViewport()) {
@@ -1167,7 +1285,8 @@ if (!window.SpinelHeaderMenus) {
     if (responsiveHeader) {
       scheduleResponsiveHeaderSync();
     }
-    animateMegaMenuOpen(details, isMobileHeaderViewport());
+    if (desktopHandoff) runDesktopTopLevelMenuHandoff(details, desktopHandoff, isMobileHeaderViewport());
+    else animateMegaMenuOpen(details, isMobileHeaderViewport());
     if (isDesktopAnimatedMenu) {
       closeOtherHeaderSubmenus(details);
     }
@@ -1448,7 +1567,10 @@ if (!window.SpinelHeaderMenus) {
   });
   document.addEventListener('shopify:section:unload', (event) => {
     if (event.target.contains?.(headerBreakpointFocusContext?.header)) headerBreakpointFocusContext = null;
-    event.target.querySelectorAll?.('[data-header]').forEach(resetDesktopMegaMenuBackground);
+    event.target.querySelectorAll?.('[data-header]').forEach((header) => {
+      desktopMegaMenuHandoffs.delete(header);
+      resetDesktopMegaMenuBackground(header);
+    });
     event.target.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach((details) => {
       clearMegaMenuHoverTimer(details);
       resetDesktopMegaMenuPresentation(details);

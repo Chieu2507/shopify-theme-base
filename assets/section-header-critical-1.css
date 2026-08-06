@@ -19,6 +19,7 @@ html.header-menu-scroll-locked {
   }
 .header {
     --header-icon-size: 20px;
+    --header-mega-menu-transition-duration: 300ms;
     position: relative;
     z-index: 20;
     display: block;
@@ -252,9 +253,10 @@ html[scroll-lock] .header__menu-overlay {
     }
     .header--underline-active .header__submenu-disclosure--hover > .header__menu-link > .header__menu-link-title::after {
       position: absolute;
-      bottom: -4px;
+      bottom: -3px;
       left: 0;
-      height: 1.5px;
+      height: 1px;
+      text-decoration-line: underline;
       width: 0;
       background: currentColor;
       content: '';
@@ -472,8 +474,12 @@ html[scroll-lock] .header__menu-overlay {
       opacity: 0;
       pointer-events: none;
       transform: translateX(-50%);
-      transition: height 300ms cubic-bezier(.6, .14, 0, 1);
+      transition: height var(--header-mega-menu-transition-duration) cubic-bezier(.6, .14, 0, 1);
       visibility: hidden;
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega)[data-closing='true'] > .header__submenu {
+      /* Let an incoming mega panel render above the compact panel as it closes. */
+      z-index: 29;
     }
     .header.is-menu-open > .header__mega-background {
       height: calc(100% + var(--header-mega-background-height, 0px));
@@ -486,9 +492,9 @@ html[scroll-lock] .header__menu-overlay {
       opacity: 0;
       pointer-events: none;
       transition:
-        height 300ms cubic-bezier(.6, .14, 0, 1),
-        opacity 200ms cubic-bezier(.6, .14, 0, 1),
-        visibility 0s linear 300ms;
+        height var(--header-mega-menu-transition-duration) cubic-bezier(.6, .14, 0, 1),
+        opacity var(--header-mega-menu-transition-duration) cubic-bezier(.6, .14, 0, 1),
+        visibility 0s linear var(--header-mega-menu-transition-duration);
       visibility: hidden;
     }
     .header__submenu-disclosure--mega[open][data-mega-panel-visible='true']:not([data-closing='true']) > .header__mega-panel {
@@ -527,9 +533,9 @@ html[scroll-lock] .header__menu-overlay {
       opacity: 0;
       pointer-events: none;
       transition:
-        height 300ms cubic-bezier(.6, .14, 0, 1),
-        opacity 200ms cubic-bezier(.6, .14, 0, 1),
-        visibility 0s linear 300ms;
+        height var(--header-mega-menu-transition-duration) cubic-bezier(.6, .14, 0, 1),
+        opacity var(--header-mega-menu-transition-duration) cubic-bezier(.6, .14, 0, 1),
+        visibility 0s linear var(--header-mega-menu-transition-duration);
       visibility: hidden;
     }
     .header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open][data-mega-panel-visible='true']:not([data-closing='true']) > .header__submenu {
@@ -551,6 +557,11 @@ html[scroll-lock] .header__menu-overlay {
     .header__submenu-disclosure:not(.header__submenu-disclosure--mega)[open][data-mega-panel-visible='true'] > .header__submenu > li:not(.header__mobile-submenu-back-item) {
       animation: header-mega-panel-reveal 400ms ease forwards;
       animation-delay: var(--header-mega-reveal-delay, 200ms);
+    }
+    .header__submenu-disclosure:not(.header__submenu-disclosure--mega)[data-mega-menu-handoff='from-mega'][open][data-mega-panel-visible='true'] > .header__submenu > li:not(.header__mobile-submenu-back-item) {
+      animation: none;
+      opacity: 1;
+      transform: none;
     }
   }
 @keyframes header-mega-panel-reveal {
