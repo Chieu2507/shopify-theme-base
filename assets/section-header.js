@@ -878,6 +878,9 @@ if (!window.SpinelHeaderMenus) {
       return runDesktopMegaMenuCssMotion(details, true, focusAfterMotion);
     }
 
+    const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
+    if (type === 'mobile_slide') return runMobileMegaMenuMotion(details, true, focusAfterMotion);
+
     if (disableLegacyMegaMenuWebAnimations) {
       megaMenuAnimations.get(details)?.cancel();
       megaMenuAnimations.delete(details);
@@ -890,8 +893,6 @@ if (!window.SpinelHeaderMenus) {
       return Promise.resolve(false);
     }
 
-    const { panel, type, duration, delay, easing } = getMegaMenuAnimation(details);
-    if (type === 'mobile_slide') return runMobileMegaMenuMotion(details, true, focusAfterMotion);
     if (!panel || type === 'none' || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return Promise.resolve(false);
 
     const existingAnimation = megaMenuAnimations.get(details);
@@ -949,6 +950,8 @@ if (!window.SpinelHeaderMenus) {
       return runDesktopMegaMenuCssMotion(details, false, focusAfterMotion);
     }
 
+    if (!immediate && type === 'mobile_slide') return runMobileMegaMenuMotion(details, false, focusAfterMotion);
+
     if (immediate || disableLegacyMegaMenuWebAnimations || !panel || type === 'none' || reduceMotion) {
       resetDesktopMegaMenuPresentation(details);
       megaMenuAnimations.get(details)?.cancel();
@@ -963,8 +966,6 @@ if (!window.SpinelHeaderMenus) {
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       return;
     }
-
-    if (type === 'mobile_slide') return runMobileMegaMenuMotion(details, false, focusAfterMotion);
 
     megaMenuAnimations.get(details)?.cancel();
     details.dataset.closing = 'true';
