@@ -16,8 +16,31 @@
   assign logo_image_mobile = settings.logo_mobile | default: logo_image
   assign logo_image_transparent = settings.logo_transparent | default: logo_image
   assign logo_image_transparent_mobile = settings.logo_transparent_mobile | default: settings.logo_transparent | default: logo_image_mobile
-  assign logo_width_desktop = section.settings.logo_width_desktop | default: 170
-  assign logo_width_mobile = section.settings.logo_width_mobile | default: 120
+  assign legacy_logo_width_desktop = section.settings.logo_width_desktop | default: 170
+  assign legacy_logo_width_mobile = section.settings.logo_width_mobile | default: 120
+  assign logo_block = section.blocks | where: 'type', 'logo' | first
+  assign logo_width_desktop = legacy_logo_width_desktop
+  assign logo_width_mobile = legacy_logo_width_mobile
+  assign render_logo = false
+
+  if logo_block != blank
+    assign render_logo = true
+    assign logo_width_desktop = logo_block.settings.width_desktop | default: 170
+    assign logo_width_mobile = logo_block.settings.width_mobile | default: 120
+
+    if logo_width_desktop == 170 and legacy_logo_width_desktop != 170
+      assign logo_width_desktop = legacy_logo_width_desktop
+    endif
+
+    if logo_width_mobile == 120 and legacy_logo_width_mobile != 120
+      assign logo_width_mobile = legacy_logo_width_mobile
+    endif
+  elsif section.settings.logo_block_migrated != true
+    assign render_logo = true
+  endif
+
+  assign logo_text_size_desktop = logo_width_desktop | times: 16.0 | divided_by: 170.0 | round: 2
+  assign logo_text_size_mobile = logo_width_mobile | times: 14.0 | divided_by: 120.0 | round: 2
   assign navigation_menu = section.settings.menu
   assign menu_links = navigation_menu.links
   assign header_color_scheme = section.settings.color_scheme
@@ -122,13 +145,15 @@
         <div class="header__mobile-drawer-surface color-scheme color-{{ section.settings.color_scheme.id }}">
           <div class="header__mobile-drawer-header">
             <span id="HeaderMobileDrawerTitle-{{ section.id }}" class="visually-hidden">{{ 'header.primary_navigation' | t }}</span>
-            <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
-              {% if logo_image_mobile != blank %}
-                {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '120px', alt: shop.name, loading: 'eager' }}
-              {% else %}
-                <span class="header__logo-text">{{ shop.name | escape }}</span>
-              {% endif %}
-            </a>
+            {% if render_logo %}
+              <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
+                {% if logo_image_mobile != blank %}
+                  {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '(max-width: 959px) var(--header-logo-width-mobile), 120px', alt: shop.name, loading: 'eager' }}
+                {% else %}
+                  <span class="header__logo-text">{{ shop.name | escape }}</span>
+                {% endif %}
+              </a>
+            {% endif %}
             <button class="header__mobile-drawer-close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-mobile-close></button>
           </div>
 
@@ -519,25 +544,28 @@
       %}
     {% endif %}
 
-    <div
-      class="header__logo"
-      style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px;"
-    >
-        <a href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
-          {% if logo_image != blank %}
-            <picture class="header__logo-image header__logo-image--dark">
-              {% if logo_image_mobile != blank %}<source media="(max-width: 959px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
-              {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 959px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
-            </picture>
-            <picture class="header__logo-image header__logo-image--light">
-              {% if logo_image_transparent_mobile != blank %}<source media="(max-width: 959px)" srcset="{{ logo_image_transparent_mobile | image_url: width: 360 }}">{% endif %}
-              {{ logo_image_transparent | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 959px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image_transparent.alt | default: shop.name, loading: 'eager' }}
-            </picture>
-          {% else %}
-            <span class="header__logo-text">{{ shop.name | escape }}</span>
-          {% endif %}
-        </a>
-    </div>
+    {% if render_logo %}
+      <div
+        class="header__logo"
+        style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-text-size: {{ logo_text_size_desktop }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;"
+        {% if logo_block != blank %}{{ logo_block.shopify_attributes }}{% endif %}
+      >
+          <a href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+            {% if logo_image != blank %}
+              <picture class="header__logo-image header__logo-image--dark">
+                {% if logo_image_mobile != blank %}<source media="(max-width: 959px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
+                {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 959px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
+              </picture>
+              <picture class="header__logo-image header__logo-image--light">
+                {% if logo_image_transparent_mobile != blank %}<source media="(max-width: 959px)" srcset="{{ logo_image_transparent_mobile | image_url: width: 360 }}">{% endif %}
+                {{ logo_image_transparent | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 959px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image_transparent.alt | default: shop.name, loading: 'eager' }}
+              </picture>
+            {% else %}
+              <span class="header__logo-text">{{ shop.name | escape }}</span>
+            {% endif %}
+          </a>
+      </div>
+    {% endif %}
 
     <div class="header__actions">
       {% if section.settings.show_localization %}
@@ -702,10 +730,6 @@
       "content": "General"
     },
     {
-      "type": "paragraph",
-      "content": "Edit the logo and transparent-header logo in Theme settings > Brand."
-    },
-    {
       "type": "link_list",
       "id": "menu",
       "label": "Menu",
@@ -769,12 +793,9 @@
     },
     { "type": "range", "id": "height_desktop", "min": 64, "max": 112, "step": 2, "unit": "px", "label": "Desktop height", "default": 84 },
     { "type": "range", "id": "height_mobile", "min": 52, "max": 84, "step": 2, "unit": "px", "label": "Mobile height", "default": 60 },
-    {
-      "type": "header",
-      "content": "Logo sizing"
-    },
-    { "type": "range", "id": "logo_width_desktop", "min": 100, "max": 260, "step": 5, "unit": "px", "label": "Desktop logo width", "default": 170 },
-    { "type": "range", "id": "logo_width_mobile", "min": 80, "max": 180, "step": 5, "unit": "px", "label": "Mobile logo width", "default": 120 },
+    { "type": "range", "id": "logo_width_desktop", "min": 100, "max": 260, "step": 5, "unit": "px", "label": "Legacy desktop logo width", "default": 170, "visible_if": "{{ false }}" },
+    { "type": "range", "id": "logo_width_mobile", "min": 80, "max": 180, "step": 5, "unit": "px", "label": "Legacy mobile logo width", "default": 120, "visible_if": "{{ false }}" },
+    { "type": "checkbox", "id": "logo_block_migrated", "label": "Legacy logo block migration marker", "default": false, "visible_if": "{{ false }}" },
     { "type": "header", "content": "Actions" },
     { "type": "checkbox", "id": "show_search", "label": "Show search", "default": true },
     { "type": "checkbox", "id": "show_localization", "label": "Show country and currency", "default": true },
@@ -838,6 +859,23 @@
     }
   ],
   "blocks": [
+    {
+      "type": "logo",
+      "name": "Logo",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "paragraph",
+          "content": "Edit the logo and transparent-header logo in Theme settings > Brand."
+        },
+        {
+          "type": "header",
+          "content": "Logo sizing"
+        },
+        { "type": "range", "id": "width_desktop", "min": 100, "max": 260, "step": 5, "unit": "px", "label": "Desktop logo width", "default": 170 },
+        { "type": "range", "id": "width_mobile", "min": 80, "max": 180, "step": 5, "unit": "px", "label": "Mobile logo width", "default": 120 }
+      ]
+    },
     {
       "type": "menu_badge",
       "name": "Menu badge",
@@ -1072,7 +1110,17 @@
     {
       "name": "Header",
       "category": "Theme layout",
+      "settings": {
+        "logo_block_migrated": true
+      },
       "blocks": [
+        {
+          "type": "logo",
+          "settings": {
+            "width_desktop": 170,
+            "width_mobile": 120
+          }
+        },
         {
           "type": "mega_menu",
           "settings": {
