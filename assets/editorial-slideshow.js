@@ -394,9 +394,12 @@ class EditorialSlideshow extends HTMLElement {
     this.swiper.on('slideChange', () => {
       this.syncActiveState(this.swiper.realIndex, true);
     });
-    this.swiper.on('slideChangeTransitionStart', () => this.setNavigatorTransitioning(true));
+    this.swiper.on('slideChangeTransitionStart', () => {
+      this.setActiveContentSettled(false);
+      this.setNavigatorTransitioning(true);
+    });
     const revealNavigator = () => {
-      this.restartActiveContentAnimations();
+      this.setActiveContentSettled(true);
       this.setNavigatorTransitioning(false);
       this.syncPlayback();
     };
@@ -459,7 +462,6 @@ class EditorialSlideshow extends HTMLElement {
     const activeIndex = Math.max(0, Math.min(index, this.tabs.length - 1));
     this.activeIndex = activeIndex;
     this.preloadAdjacentSlides(activeIndex);
-    if (restartProgress) this.restartActiveContentAnimations();
     this.tabs.forEach((tab, tabIndex) => {
       const isActive = tabIndex === activeIndex;
       tab.classList.toggle('is-active', isActive);
@@ -477,15 +479,13 @@ class EditorialSlideshow extends HTMLElement {
     }
   }
 
-  restartActiveContentAnimations() {
-    const activeBlocks = this.slider?.querySelectorAll(
-      '.swiper-slide-active .editorial-slideshow__content > *, .swiper-slide-active .editorial-slideshow__product-card',
-    );
-    if (!activeBlocks?.length) return;
-
-    activeBlocks.forEach((block) => block.style.setProperty('animation', 'none', 'important'));
-    void this.slider.offsetHeight;
-    activeBlocks.forEach((block) => block.style.removeProperty('animation'));
+  setActiveContentSettled(isSettled) {
+    this.slider?.querySelectorAll('.swiper-slide').forEach((slide) => {
+      slide.classList.toggle(
+        'editorial-slideshow__slide--content-settled',
+        isSettled && slide.classList.contains('swiper-slide-active'),
+      );
+    });
   }
 
   selectIndex(index, moveFocus = false) {
