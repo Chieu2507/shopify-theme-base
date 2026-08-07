@@ -16,7 +16,7 @@ if (!window.SpinelHeaderMenus) {
   const mobileMenuReturnFocus = new WeakMap();
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   const headerHoverCloseDelay = 500;
-  const desktopMegaMenuHoverCloseDelay = 500;
+  const desktopMegaMenuHoverCloseDelay = 360;
   const desktopMegaMenuTransitionDurationFallback = 300;
   const transparentHeaderSchemeExitDelay = 500;
   const headerLocalizationHoverCloseDelay = 120;
@@ -628,9 +628,6 @@ if (!window.SpinelHeaderMenus) {
   const syncTransparentHeaderColorScheme = (header, showSurface) => {
     const defaultColorClass = header.dataset.defaultColorClass;
     const hasSurfaceScheme = Boolean(defaultColorClass && header.classList.contains(defaultColorClass));
-    const isClosingDesktopDropdown = Boolean(
-      header.querySelector('.header__submenu-disclosure[open][data-closing="true"]')
-    );
 
     if (showSurface) {
       clearTransparentHeaderSchemeExit(header);
@@ -640,12 +637,6 @@ if (!window.SpinelHeaderMenus) {
 
     if (!hasSurfaceScheme) {
       clearTransparentHeaderSchemeExit(header);
-      return;
-    }
-
-    if (isClosingDesktopDropdown || header.dataset.megaSurfaceImmediateClose === 'true') {
-      clearTransparentHeaderSchemeExit(header);
-      setTransparentHeaderColorScheme(header, false);
       return;
     }
 
