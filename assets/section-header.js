@@ -18,7 +18,7 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 1000;
   const desktopMegaMenuTransitionDurationFallback = 300;
-  const transparentHeaderSchemeExitDelay = 400;
+  const transparentHeaderSchemeExitDelay = 500;
   const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
