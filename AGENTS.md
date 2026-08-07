@@ -10,8 +10,9 @@
    cầu rõ ràng. Nếu capability phù hợp không khả dụng, phải nêu giới hạn và dùng
    Shopify Dev Docs chính thức cùng code Spinel hiện tại.
 3. Trước khi sửa file, chạy `git status --short --branch`, xác nhận branch/target,
-   fetch `origin/main` và kiểm tra divergence. Giữ nguyên mọi thay đổi ngoài task;
-   không tự stash hoặc thao tác chúng.
+   fetch **read-only** `origin/main` và kiểm tra divergence. Giữ nguyên mọi thay
+   đổi ngoài task; không tự stash hoặc thao tác chúng. Việc fetch không cho phép
+   checkout, merge, rebase, cherry-pick, commit hay push vào `main`.
 4. Áp dụng nguồn chuẩn theo vai trò:
 
    - Requirement hiện tại của user ưu tiên; demo bổ sung hình ảnh, responsive và
@@ -153,13 +154,15 @@ Sau lần sửa cuối:
 3. Đọc `validation-results/latest.status` và `validation-results/latest.log` của
    lần chạy mới nhất; không dùng log cũ. Với JS/build script, chạy thêm syntax,
    build hoặc targeted test sẵn có. Docs-only không cần theme validator.
-4. Runtime QA là opt-in, không chạy mặc định. Runtime QA bao gồm
-   `shopify theme dev`, storefront/browser, Theme Editor, console, responsive,
-   interaction và Lighthouse/network. Nếu user không ghi đúng cú pháp
-   `QA: ON` trong prompt, không chạy runtime QA; checklist phải ghi
-   `NOT TESTED — runtime QA not requested`. Khi có cú pháp này, chạy
-   `shopify theme dev --theme 144223469616 --allow-live` và kiểm tra
-   desktop/mobile theo các mục bên dưới.
+4. Runtime QA là opt-in, không chạy mặc định. Runtime QA bao gồm local preview,
+   storefront/browser, Theme Editor, console, responsive, interaction và
+   Lighthouse/network. Nếu user không ghi đúng cú pháp `QA: ON` trong prompt,
+   không chạy runtime QA; checklist phải ghi `NOT TESTED — runtime QA not requested`.
+   Khi có `QA: ON`, mặc định chỉ QA local preview. Chỉ được chạy
+   `shopify theme dev --allow-live` khi user trong cùng prompt chỉ rõ **development
+   theme** cần dùng; phải kiểm tra theme ID trước, xác nhận nó không gắn với
+   `spinel-theme/main`, và dừng process ngay khi QA xong. Tuyệt đối không chạy
+   live sync trên theme gắn với `main`.
 5. Khi `QA: ON`, QA theo phạm vi ảnh hưởng: default/empty/long/missing data,
    nhiều instance, keyboard, interaction, responsive và không có console error.
    Với Theme Editor, kiểm tra add/remove/duplicate/reorder/select/deselect/
@@ -178,29 +181,34 @@ Validation fail hoặc regression quan sát được thì không commit/push. N�
 delivery. Nếu không có cú pháp này, chỉ cần ghi rõ `NOT TESTED — runtime QA not
 requested`; docs/non-runtime change vẫn phải qua các gate tĩnh áp dụng.
 
-## 7. Submit và Git delivery
+## 7. Submit và Git delivery — Dev-only mặc định
 
-Delivery mặc định là Git vì theme đã kết nối Git; không chạy
-`shopify theme push`/`shopify theme publish` và không kiểm tra lại deploy config
-trừ khi user yêu cầu.
+**Mọi tác vụ chỉ được thực hiện trên nhánh development hiện tại** (hiện là
+`codex/spinel-chieutt-dev`). `main` là nhánh bảo vệ: không được thay đổi bởi một
+task thông thường, kể cả khi user nói “xong”, “push”, “merge”, “deploy” hoặc chỉ
+nói “cập nhật code”.
 
-Sau khi các gate áp dụng đã đạt:
+1. Xác nhận current branch là nhánh development đã được user chỉ định. Nếu đang
+   ở `main`, hoặc target chưa phải development branch, dừng trước khi sửa/commit.
+2. `origin/main` chỉ được fetch và so sánh read-only. Không tự merge, rebase,
+   cherry-pick, checkout, tạo worktree từ `main`, hoặc kéo thay đổi từ `main`
+   vào dev. Báo divergence để user quyết định rõ.
+3. Stage explicit file/hunk thuộc task, review `git diff --cached`, commit rồi
+   chỉ push về đúng remote dev branch hiện tại. Không stage thay đổi không liên
+   quan, validation log hoặc artifact nếu không được yêu cầu.
+4. Cấm `git push origin main`, force-push `main`, hoặc bất kỳ thao tác Shopify
+   nào có thể đồng bộ code vào theme/nhánh `spinel-theme/main`.
+5. Chỉ được chạm `main` khi **prompt hiện tại** nêu rõ cả target và hành động,
+   ví dụ: “merge nhánh dev vào main”, “push main”, hoặc “restore main”. Trước khi
+   làm, nêu commit/range dự kiến và xác nhận không có thay đổi ngoài phạm vi.
+   Không suy diễn quyền này từ các task trước hoặc từ yêu cầu QA/deploy.
+6. Delivery mặc định là commit/push nhánh dev. Sau khi push, fetch/verify remote
+   dev branch cùng commit và xác nhận working tree không mất thay đổi ngoài task.
 
-1. Xác nhận current branch là `main`. Nếu không, dừng và reconcile target trước
-   khi commit.
-2. Stage explicit file/hunk thuộc task; review `git diff --cached`. Không stage
-   thay đổi không liên quan, validation log hoặc artifact nếu không được yêu cầu.
-3. Commit với message mô tả outcome, fetch lại `origin/main`, rồi kiểm tra
-   divergence. Nếu remote advanced, tích hợp task commit an toàn; không tự stash
-   unrelated changes, không force-push. Dùng isolated worktree hoặc báo blocker
-   khi dirty state làm integration không an toàn.
-4. Sau integration/conflict resolution, chạy lại các check bị ảnh hưởng; rồi
-   `git push origin main` mà không hỏi lại.
-5. Fetch/verify lần cuối để xác nhận `HEAD` và `origin/main` cùng commit; working
-   tree không mất thay đổi ngoài task.
-
-Chỉ bỏ commit/push khi user hoặc system nói rõ không push. Nếu delivery bị chặn,
-phải báo chính xác command, lỗi và trạng thái repository.
+Không chạy `shopify theme push`/`shopify theme publish`. Không chạy
+`shopify theme dev --allow-live` vào một theme chưa được user xác nhận là dev
+theme trong prompt hiện tại. Nếu delivery bị chặn, phải báo chính xác command,
+lỗi và trạng thái repository.
 
 Nếu user yêu cầu rõ ràng package/submit Shopify Theme Store:
 
