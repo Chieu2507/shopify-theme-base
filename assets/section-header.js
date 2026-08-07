@@ -773,6 +773,16 @@ if (!window.SpinelHeaderMenus) {
         return;
       }
 
+      const isResponsiveHeader = header.dataset.transparentHeader === 'true'
+        || header.dataset.floatingHeader === 'true';
+      if (!isResponsiveHeader) {
+        const sectionWrapper = header.parentElement;
+        const headerOrigin = sectionWrapper
+          ? sectionWrapper.getBoundingClientRect().top + currentScrollY
+          : header.getBoundingClientRect().top + currentScrollY;
+        header.classList.toggle('header--scrolled', currentScrollY > headerOrigin);
+      }
+
       const previousState = mobileStickyHeaderStates.get(header) || {
         lastScrollY: currentScrollY,
         hidden: false
