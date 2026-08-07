@@ -17,6 +17,7 @@ class EditorialSlideshow extends HTMLElement {
     this.progressBars = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.desktopNavigator = window.matchMedia('(min-width: 900px)');
+    this.isDesktopNavigator = this.desktopNavigator.matches;
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
     this.autoplayManuallyPaused = false;
@@ -42,6 +43,7 @@ class EditorialSlideshow extends HTMLElement {
     this.handleKeydown = this.handleKeydown.bind(this);
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handleDesktopNavigatorChange = this.handleDesktopNavigatorChange.bind(this);
+    this.handleViewportResize = this.handleViewportResize.bind(this);
     this.handleFirstSlideImageChange = this.handleFirstSlideImageChange.bind(this);
 
     this.syncNavigatorViewportState();
@@ -61,6 +63,7 @@ class EditorialSlideshow extends HTMLElement {
     document.addEventListener('shopify:block:select', this.handleBlockSelect, { signal });
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
     this.desktopNavigator.addEventListener?.('change', this.handleDesktopNavigatorChange, { signal });
+    window.addEventListener('resize', this.handleViewportResize, { signal });
 
     if (this.dataset.heightMode === 'adapt') {
       this.firstSlideImage = this.slider?.querySelector('.editorial-slideshow__slide:first-child img');
@@ -437,7 +440,20 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   handleDesktopNavigatorChange(event) {
-    this.syncNavigatorViewportState({ resetDesktop: event.matches });
+    const isDesktop = Boolean(event.matches);
+    const crossedBreakpoint = isDesktop !== this.isDesktopNavigator;
+    this.isDesktopNavigator = isDesktop;
+    this.syncNavigatorViewportState({ resetDesktop: isDesktop && crossedBreakpoint });
+  }
+
+  handleViewportResize() {
+    const isDesktop = this.desktopNavigator.matches;
+    if (isDesktop !== this.isDesktopNavigator) {
+      this.handleDesktopNavigatorChange({ matches: isDesktop });
+      return;
+    }
+
+    this.syncNavigatorViewportState();
   }
 
   handleKeydown(event) {
