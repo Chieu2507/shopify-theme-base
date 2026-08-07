@@ -782,10 +782,8 @@ if (!window.SpinelHeaderMenus) {
         '.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'
       ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
-    const useSurfaceScheme = showSurface
-      && !header.querySelector('.header__submenu-disclosure[data-closing="true"], .header__actions .header__localization-selector[data-closing="true"]');
     header.classList.toggle('header--surface-visible', showSurface);
-    setTransparentHeaderColorScheme(header, useSurfaceScheme);
+    setTransparentHeaderColorScheme(header, showSurface);
   };
 
   const syncResponsiveHeaders = () => {
@@ -1834,6 +1832,7 @@ if (!window.SpinelHeaderMenus) {
       sourceFinished: false,
       targetHeightFinished: false
     };
+    header.dataset.megaSurfaceHandoff = 'true';
     if (handoff.fromIsMega && !handoff.toIsMega) {
       details.dataset.megaMenuHandoff = 'from-mega';
     }
@@ -1843,6 +1842,7 @@ if (!window.SpinelHeaderMenus) {
       if (desktopMegaMenuHandoffs.get(header) !== handoffState) return;
       if (!handoffState.sourceFinished || !handoffState.targetHeightFinished) return;
       desktopMegaMenuHandoffs.delete(header);
+      delete header.dataset.megaSurfaceHandoff;
       if (handoffState.fromIsMega && !handoffState.toIsMega) {
         resetDesktopMegaMenuBackground(header);
       } else {
@@ -1874,6 +1874,7 @@ if (!window.SpinelHeaderMenus) {
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
     if (activeHandoff && activeHandoff.to !== details) {
       desktopMegaMenuHandoffs.delete(header);
+      delete header.dataset.megaSurfaceHandoff;
     }
 
     if (details.open) {
