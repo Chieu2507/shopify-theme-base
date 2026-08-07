@@ -23,19 +23,16 @@
   {% if block.settings.page != blank %}
     {% if block.settings.show_page_popup %}
       {% assign page_popup_label = block.settings.page_popup_label | default: block.settings.page.title %}
-      <button class="product-usp-list__page-trigger" type="button" data-product-panel-open aria-controls="ProductBenefitPage-{{ block.id }}">{{ page_popup_label | escape }}</button>
-      <dialog class="product-size-chart product-benefit-page-modal" id="ProductBenefitPage-{{ block.id }}" data-product-panel-dialog aria-labelledby="ProductBenefitPageTitle-{{ block.id }}">
-        <button type="button" class="product-size-chart__backdrop modal-backdrop" data-product-panel-close aria-label="{{ 'size_chart.close' | t | escape }}"></button>
-        <span class="product-size-chart__backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
-        <div class="product-size-chart__panel modal-drag-target">
-          <div class="quick-view__handle product-size-chart__handle" data-size-chart-handle aria-hidden="true"></div>
-          <header class="product-size-chart__header">
-            <h2 id="ProductBenefitPageTitle-{{ block.id }}" class="product-size-chart__title typo-h2">{{ block.settings.page.title | escape }}</h2>
-            <button type="button" class="product-size-chart__close modal-close-button close-icon" data-product-panel-close aria-label="{{ 'size_chart.close' | t | escape }}"></button>
-          </header>
-          <div class="product-size-chart__content rte">{{ block.settings.page.content }}</div>
-        </div>
-      </dialog>
+      {% assign benefit_dialog_id = 'ProductBenefitPage-' | append: block.id %}
+      {% assign benefit_title_id = 'ProductBenefitPageTitle-' | append: block.id %}
+      <button class="product-usp-list__page-trigger" type="button" data-product-panel-open aria-controls="{{ benefit_dialog_id }}">{{ page_popup_label | escape }}</button>
+      {% render 'product-panel-dialog',
+        dialog_id: benefit_dialog_id,
+        title_id: benefit_title_id,
+        title: block.settings.page.title,
+        dialog_content: block.settings.page.content,
+        dialog_class: 'product-benefit-page-modal'
+      %}
     {% else %}
       <a class="product-usp-list__page-link" href="{{ block.settings.page.url }}">{{ block.settings.page.title | escape }}</a>
     {% endif %}

@@ -90,18 +90,14 @@
       </fieldset>
     {% endfor %}
     {% if block.settings.enable_size_chart and block.settings.size_chart != blank and block.settings.size_chart_page != blank %}
-      <dialog class="product-size-chart" id="SizeChart-{{ form_id }}" data-product-panel-dialog aria-labelledby="SizeChartTitle-{{ form_id }}">
-        <button type="button" class="product-size-chart__backdrop modal-backdrop" data-product-panel-close aria-label="{{ 'size_chart.close' | t | escape }}"></button>
-        <span class="product-size-chart__backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
-        <div class="product-size-chart__panel modal-drag-target">
-          <div class="quick-view__handle product-size-chart__handle" data-size-chart-handle aria-hidden="true"></div>
-          <header class="product-size-chart__header">
-            <h2 id="SizeChartTitle-{{ form_id }}" class="product-size-chart__title typo-h2">{{ block.settings.size_chart | escape }}</h2>
-            <button type="button" class="product-size-chart__close modal-close-button close-icon" data-product-panel-close aria-label="{{ 'size_chart.close' | t | escape }}"></button>
-          </header>
-          <div class="product-size-chart__content rte">{{ block.settings.size_chart_page.content }}</div>
-        </div>
-      </dialog>
+      {% assign size_chart_dialog_id = 'SizeChart-' | append: form_id %}
+      {% assign size_chart_title_id = 'SizeChartTitle-' | append: form_id %}
+      {% render 'product-panel-dialog',
+        dialog_id: size_chart_dialog_id,
+        title_id: size_chart_title_id,
+        title: block.settings.size_chart,
+        dialog_content: block.settings.size_chart_page.content
+      %}
     {% endif %}
   </div>
 {% endunless %}

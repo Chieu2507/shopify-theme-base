@@ -72,19 +72,17 @@
             <li class="collections-page__item">
               <a class="collections-page__card" href="{{ collection.url }}">
                 <div class="collections-page__media collections-page__media--{{ section.settings.image_ratio }}">
-                  {% if collection.featured_image != blank %}
-                    {% render 'responsive-image',
-                      image: collection.featured_image,
-                      max_width: 1400,
-                      widths: '320, 480, 640, 800, 1000, 1200, 1400',
-                      sizes: collections_card_sizes,
-                      class: 'collections-page__image',
-                      loading: 'lazy',
-                      alt: collection_image_alt
-                    %}
-                  {% else %}
-                    {% render 'media-placeholder', class_name: 'collections-page__placeholder', asset_name: 'placeholder-image-default-4.svg' %}
-                  {% endif %}
+                  {% render 'responsive-media',
+                    image: collection.featured_image,
+                    max_width: 1400,
+                    widths: '320, 480, 640, 800, 1000, 1200, 1400',
+                    sizes: collections_card_sizes,
+                    class: 'collections-page__image',
+                    loading: 'lazy',
+                    alt: collection_image_alt,
+                    placeholder_asset: 'placeholder-image-default-4.svg',
+                    placeholder_class: 'collections-page__placeholder'
+                  %}
                   <span class="collections-page__overlay" aria-hidden="true"></span>
                 </div>
                 <span class="collections-page__content collections-page__content--{{ section.settings.card_text_alignment }}">
@@ -99,31 +97,16 @@
         </ul>
 
         {% if paginate.pages > 1 %}
-          <nav class="collections-page__pagination" aria-label="{{ 'collection.pagination' | t | escape }}">
-            {% if paginate.previous %}
-              <a class="collections-page__pagination-arrow" href="{{ paginate.previous.url }}" aria-label="{{ 'collection.previous_page' | t | escape }}">
-                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                  <path d="m10.5 3-5 5 5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-            {% endif %}
-
-            {% for part in paginate.parts %}
-              {% if part.is_link %}
-                <a href="{{ part.url }}">{{ part.title }}</a>
-              {% else %}
-                <span{% if part.title == paginate.current_page %} class="is-current" aria-current="page"{% endif %}>{{ part.title }}</span>
-              {% endif %}
-            {% endfor %}
-
-            {% if paginate.next %}
-              <a class="collections-page__pagination-arrow" href="{{ paginate.next.url }}" aria-label="{{ 'collection.next_page' | t | escape }}">
-                <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                  <path d="m5.5 3 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                </svg>
-              </a>
-            {% endif %}
-          </nav>
+          {% assign collections_pagination_label = 'collection.pagination' | t %}
+          {% assign collections_previous_page_label = 'collection.previous_page' | t %}
+          {% assign collections_next_page_label = 'collection.next_page' | t %}
+          {% render 'pagination',
+            paginate: paginate,
+            base_class: 'collections-page__pagination',
+            aria_label: collections_pagination_label,
+            previous_label: collections_previous_page_label,
+            next_label: collections_next_page_label
+          %}
         {% endif %}
       {% endpaginate %}
     {% endif %}
