@@ -13,7 +13,7 @@
 
   for block in section.blocks
     case block.type
-      when 'text_slide'
+      when 'announcement', 'text_slide'
         if block.settings.text != blank
           assign announcement_item_count = announcement_item_count | plus: 1
         endif
@@ -67,17 +67,20 @@
             <div class="marquee__track">
               <div class="marquee__group">
                 {% for block in section.blocks %}
-                  {% if block.type == 'text_slide' and block.settings.text != blank %}
-                    <div class="announcement-bar__marquee-item" {{ block.shopify_attributes }}>
-                      {% render 'typography-block',
-                        block: block,
-                        content: block.settings.text,
-                        kind: 'text',
-                        default_preset: 'paragraph',
-                        default_font: 'body',
-                        include_shopify_attributes: false
-                      %}
-                    </div>
+                  {% if block.type == 'announcement' or block.type == 'text_slide' %}
+                    {% if block.settings.text != blank %}
+                      <div class="announcement-bar__marquee-item" {{ block.shopify_attributes }}>
+                        {% render 'typography-block',
+                          block: block,
+                          content: block.settings.text,
+                          kind: 'text',
+                          default_preset: 'subheading',
+                          default_font: 'body',
+                          force_preset: 'subheading',
+                          include_shopify_attributes: false
+                        %}
+                      </div>
+                    {% endif %}
                   {% endif %}
                 {% endfor %}
               </div>
@@ -139,7 +142,7 @@
                 {% assign announcement_item_index = 0 %}
                 {% for block in section.blocks %}
                   {% case block.type %}
-                    {% when 'text_slide' %}
+                    {% when 'announcement', 'text_slide' %}
                       {% if block.settings.text != blank %}
                         <div
                           class="announcement-bar__item swiper-slide"
@@ -152,8 +155,9 @@
                             block: block,
                             content: block.settings.text,
                             kind: 'text',
-                            default_preset: 'paragraph',
+                            default_preset: 'subheading',
                             default_font: 'body',
+                            force_preset: 'subheading',
                             include_shopify_attributes: false
                           %}
                         </div>
@@ -668,14 +672,14 @@
   ],
   "blocks": [
     {
-      "type": "text_slide",
-      "name": "Text slide",
+      "type": "announcement",
+      "name": "Announcement",
       "settings": [
         {
-          "type": "richtext",
+          "type": "inline_richtext",
           "id": "text",
           "label": "t:typography_blocks.text",
-          "default": "<p>Shipping options and pricing are calculated at checkout.</p>"
+          "default": "Shipping options and pricing are calculated at checkout."
         }
       ]
     }
@@ -691,7 +695,7 @@
         "color_scheme": "scheme-3"
       },
       "blocks": [
-        { "type": "text_slide" }
+        { "type": "announcement" }
       ]
     }
   ]

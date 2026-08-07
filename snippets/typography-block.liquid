@@ -8,6 +8,7 @@
   @param {string} kind - Either "heading" or "text".
   @param {string} default_preset - Fallback typography preset.
   @param {string} default_font - Fallback font role for legacy saved settings.
+  @param {string} [force_preset] - Optional typography preset that overrides saved block settings.
   @param {boolean} [include_shopify_attributes] - Whether to attach editor attributes to the rendered typography block.
 
   @example
@@ -22,6 +23,9 @@
 
 {% liquid
   assign preset = block.settings.type_preset | default: default_preset
+  if force_preset != blank
+    assign preset = force_preset
+  endif
   if preset == 'default'
     if kind == 'heading' and block.settings.heading_size != blank
       assign preset = block.settings.heading_size
