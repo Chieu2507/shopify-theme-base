@@ -18,6 +18,7 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDurationFallback = 300;
+  const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
   const headerMobileBreakpoint = 1099;
@@ -37,6 +38,7 @@ if (!window.SpinelHeaderMenus) {
   const responsiveHeaderEntryFrames = new WeakMap();
   const responsiveHeaderExitMotions = new WeakMap();
   const mobileStickyHeaderStates = new WeakMap();
+  const localizationHoverTimers = new WeakMap();
   let wasMobileHeaderViewport = window.matchMedia(headerMobileMediaQuery).matches;
 
   const isMobileHeaderViewport = () => window.matchMedia(headerMobileMediaQuery).matches;
@@ -1606,6 +1608,40 @@ if (!window.SpinelHeaderMenus) {
     summary.setAttribute('aria-expanded', String(details.open && details.dataset.motionState !== 'closing'));
   };
 
+  const clearLocalizationHoverTimer = (details) => {
+    const timer = localizationHoverTimers.get(details);
+    if (timer) window.clearTimeout(timer);
+    localizationHoverTimers.delete(details);
+  };
+
+  const closeHeaderLocalization = (details) => {
+    clearLocalizationHoverTimer(details);
+    if (!details?.open) return;
+    details.open = false;
+    syncHeaderLocalizationAria(details);
+  };
+
+  const scheduleHeaderLocalizationClose = (details) => {
+    clearLocalizationHoverTimer(details);
+    localizationHoverTimers.set(details, window.setTimeout(() => {
+      localizationHoverTimers.delete(details);
+      if (details.matches(':hover') || details.querySelector(':focus-visible')) return;
+      closeHeaderLocalization(details);
+    }, headerLocalizationHoverCloseDelay));
+  };
+
+  const openHeaderLocalization = (details) => {
+    clearLocalizationHoverTimer(details);
+    if (details.open) return;
+
+    document.querySelectorAll('[data-header] .header__localization-selector--hover[open]').forEach((otherDetails) => {
+      if (otherDetails !== details) closeHeaderLocalization(otherDetails);
+    });
+
+    details.open = true;
+    syncHeaderLocalizationAria(details);
+  };
+
   const initializeHeaderDisclosures = (scope = document) => {
     scope.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(syncHeaderDisclosureAria);
     scope.querySelectorAll?.('.header__localization-selector').forEach(syncHeaderLocalizationAria);
@@ -1823,6 +1859,12 @@ if (!window.SpinelHeaderMenus) {
   document.addEventListener('pointerover', (event) => {
     if (!supportsDesktopHeaderHover()) return;
 
+    const localization = event.target.closest?.('.header__localization-selector--hover');
+    if (localization && !localization.contains(event.relatedTarget)) {
+      openHeaderLocalization(localization);
+      return;
+    }
+
     const overlay = event.target.closest?.('.header__menu-overlay--desktop[data-header-menu-overlay]');
     if (overlay) {
       const header = document.getElementById(overlay.dataset.headerMenuOverlay);
@@ -1845,6 +1887,14 @@ if (!window.SpinelHeaderMenus) {
 
   document.addEventListener('pointerout', (event) => {
     if (!supportsDesktopHeaderHover()) return;
+
+    const localization = event.target.closest?.('.header__localization-selector--hover');
+    if (localization) {
+      if (localization.contains(event.relatedTarget)) return;
+      scheduleHeaderLocalizationClose(localization);
+      return;
+    }
+
     const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
     if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
       clearMegaMenuHoverTimer(nestedDetails);
@@ -1870,6 +1920,11 @@ if (!window.SpinelHeaderMenus) {
 
   document.addEventListener('focusout', (event) => {
     if (!supportsDesktopHeaderHover()) return;
+    const localization = event.target.closest?.('.header__localization-selector--hover[open]');
+    if (localization && !localization.contains(event.relatedTarget) && !localization.matches(':hover')) {
+      scheduleHeaderLocalizationClose(localization);
+      return;
+    }
     const details = event.target.closest?.('.header__submenu-disclosure--hover[open]');
     if (!details || details.contains(event.relatedTarget) || details.matches(':hover')) return;
     scheduleMegaMenuClose(details);
@@ -1994,6 +2049,9 @@ if (!window.SpinelHeaderMenus) {
       if (isMobileHeaderViewport()) {
         if (submenu.open || localizationSheetOpenRequests.has(submenu)) closeLocalizationSheet(submenu);
         else openLocalizationSheet(submenu);
+      } else if (submenu.matches('.header__localization-selector--hover') && supportsDesktopHeaderHover()) {
+        if (submenu.open) closeHeaderLocalization(submenu);
+        else openHeaderLocalization(submenu);
       } else {
         submenu.open = !submenu.open;
         syncHeaderLocalizationAria(submenu);
