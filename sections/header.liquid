@@ -8,8 +8,6 @@
   assign logo_block = section.blocks | where: 'type', 'logo' | first
   assign logo_width_desktop = legacy_logo_width_desktop
   assign logo_width_mobile = legacy_logo_width_mobile
-  assign logo_height_desktop = 48
-  assign logo_height_mobile = 38
   assign logo_block_type = 'image'
   assign logo_block_image = blank
   assign logo_block_transparent_image = blank
@@ -26,8 +24,6 @@
     assign logo_alignment = logo_block.settings.alignment | default: 'center'
     assign logo_width_desktop = logo_block.settings.width_desktop | default: 170
     assign logo_width_mobile = logo_block.settings.width_mobile | default: 120
-    assign logo_height_desktop = logo_block.settings.height_desktop | default: 48
-    assign logo_height_mobile = logo_block.settings.height_mobile | default: 38
 
     if logo_width_desktop == 170 and legacy_logo_width_desktop != 170
       assign logo_width_desktop = legacy_logo_width_desktop
@@ -161,7 +157,7 @@
           <div class="header__mobile-drawer-header">
             <span id="HeaderMobileDrawerTitle-{{ section.id }}" class="visually-hidden">{{ 'header.primary_navigation' | t }}</span>
             {% if render_logo %}
-              <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-height-mobile: {{ logo_height_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
+              <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
                 {% if logo_image_mobile != blank %}
                   {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '(max-width: 959px) var(--header-logo-width-mobile), 120px', alt: shop.name, loading: 'eager' }}
                 {% else %}
@@ -201,7 +197,7 @@
     {% if render_logo %}
       <div
         class="header__logo header__logo--align-{{ logo_alignment }}"
-        style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-height: {{ logo_height_desktop }}px; --header-logo-height-mobile: {{ logo_height_mobile }}px; --header-logo-text-size: {{ logo_text_size_desktop }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;"
+        style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-text-size: {{ logo_text_size_desktop }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;"
         {% if logo_block != blank %}{{ logo_block.shopify_attributes }}{% endif %}
       >
           <a href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}">
@@ -392,7 +388,7 @@
     {
       "type": "select",
       "id": "dropdown_trigger",
-      "label": "Dropdown trigger",
+      "label": "Desktop dropdown trigger",
       "info": "Mobile navigation always opens with a tap.",
       "options": [
         { "value": "click", "label": "Click" },
@@ -413,7 +409,7 @@
     {
       "type": "select",
       "id": "header_layout",
-      "label": "Logo position",
+      "label": "Desktop logo position",
       "info": "Controls the Header grid. Use the Logo block alignment setting to align the logo within this position.",
       "options": [
         { "value": "left", "label": "Logo left" },
@@ -459,18 +455,18 @@
     { "type": "checkbox", "id": "show_search", "label": "Show search", "default": true },
     { "type": "checkbox", "id": "show_localization", "label": "Show country and currency", "default": true },
     { "type": "checkbox", "id": "show_language", "label": "Show language", "default": true },
-    { "type": "checkbox", "id": "show_country_flag", "label": "Country flag", "default": true, "visible_if": "{{ section.settings.show_localization }}" },
+    { "type": "checkbox", "id": "show_country_flag", "label": "Show country flag", "default": true, "visible_if": "{{ section.settings.show_localization }}" },
     { "type": "checkbox", "id": "show_account", "label": "Show account", "default": true },
     {
       "type": "select",
       "id": "account_action",
-      "label": "Account action",
+      "label": "Account icon action",
       "visible_if": "{{ section.settings.show_account }}",
       "options": [
-        { "value": "panel", "label": "Account panel" },
+        { "value": "panel", "label": "Open account panel" },
         { "value": "redirect", "label": "Redirect to account page" },
         { "value": "new_tab", "label": "Open account page in new tab" },
-        { "value": "custom_url", "label": "Custom URL" }
+        { "value": "custom_url", "label": "Open custom URL" }
       ],
       "default": "panel"
     },
@@ -565,8 +561,6 @@
         },
         { "type": "range", "id": "width_desktop", "min": 100, "max": 260, "step": 5, "unit": "px", "label": "Desktop logo width", "default": 170 },
         { "type": "range", "id": "width_mobile", "min": 80, "max": 180, "step": 5, "unit": "px", "label": "Mobile logo width", "default": 120 },
-        { "type": "range", "id": "height_desktop", "min": 20, "max": 80, "step": 2, "unit": "px", "label": "Desktop logo height", "default": 48 },
-        { "type": "range", "id": "height_mobile", "min": 16, "max": 60, "step": 2, "unit": "px", "label": "Mobile logo height", "default": 38 },
         {
           "type": "header",
           "content": "Element alignment in block"
@@ -829,8 +823,6 @@
             "logo_type": "image",
             "width_desktop": 170,
             "width_mobile": 120,
-            "height_desktop": 48,
-            "height_mobile": 38,
             "alignment": "center"
           }
         },
