@@ -34,6 +34,9 @@ class EditorialSlideshow extends HTMLElement {
     this.pointerFocusTimer = null;
     this.isPointerFocus = false;
     this.pauseReasons = new Set();
+    this.slideSignature = '';
+    this.slideRefreshFrame = null;
+    this.slideObserver = null;
     this.isInViewport = !('IntersectionObserver' in window);
     this.loadFirstViewportHeight();
 
@@ -46,17 +49,12 @@ class EditorialSlideshow extends HTMLElement {
     this.handleViewportResize = this.handleViewportResize.bind(this);
     this.handleFirstSlideImageChange = this.handleFirstSlideImageChange.bind(this);
 
-    this.syncNavigatorViewportState();
     this.buildNavigatorTabs();
     this.addEventListener('keydown', this.handleKeydown, { signal });
     this.addEventListener('pointerdown', this.handlePointerDown, { signal });
     this.addEventListener('focusin', () => this.handleFocusIn(), { signal });
     this.addEventListener('focusout', (event) => this.handleFocusOut(event), { signal });
-    this.tabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        this.selectIndex(Number.parseInt(tab.dataset.editorialIndex, 10));
-      }, { signal });
-    });
+    this.bindNavigatorTabs();
     this.autoplayToggle?.addEventListener('click', () => this.toggleAutoplay(), { signal });
     this.navigatorToggle?.addEventListener('click', () => this.toggleNavigator(), { signal });
     document.addEventListener('visibilitychange', this.handleVisibilityChange, { signal });
@@ -78,6 +76,7 @@ class EditorialSlideshow extends HTMLElement {
     }
 
     this.initialize();
+    this.observeSlideCollection();
 
     if ('IntersectionObserver' in window) {
       this.visibilityObserver = new IntersectionObserver(
@@ -94,6 +93,10 @@ class EditorialSlideshow extends HTMLElement {
   disconnectedCallback() {
     this.destroyFirstViewportHeight?.();
     this.destroyFirstViewportHeight = null;
+    this.slideObserver?.disconnect();
+    this.slideObserver = null;
+    if (this.slideRefreshFrame) window.cancelAnimationFrame(this.slideRefreshFrame);
+    this.slideRefreshFrame = null;
     this.abortController?.abort();
     this.abortController = null;
     this.visibilityObserver?.disconnect();
@@ -123,6 +126,70 @@ class EditorialSlideshow extends HTMLElement {
       : [];
   }
 
+  getSlideSignature() {
+    return this.getSlides()
+      .map((slide) => [
+        slide.dataset.blockId,
+        slide.dataset.editorialNavLabel,
+        slide.dataset.editorialNavDetail,
+        slide.dataset.editorialDesktopRatio,
+        slide.dataset.editorialMobileRatio,
+      ].join('::'))
+      .join('|');
+  }
+
+  bindNavigatorTabs() {
+    this.tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        this.selectIndex(Number.parseInt(tab.dataset.editorialIndex, 10));
+      }, { signal: this.abortController?.signal });
+    });
+  }
+
+  observeSlideCollection() {
+    if (!this.slider || !('MutationObserver' in window)) return;
+
+    this.slideObserver = new MutationObserver(() => this.queueSlideRefresh());
+    this.slideObserver.observe(this.slider, {
+      attributes: true,
+      attributeFilter: [
+        'data-block-id',
+        'data-editorial-nav-label',
+        'data-editorial-nav-detail',
+        'data-editorial-desktop-ratio',
+        'data-editorial-mobile-ratio',
+      ],
+      childList: true,
+      subtree: true,
+    });
+  }
+
+  queueSlideRefresh() {
+    if (this.slideRefreshFrame) return;
+
+    this.slideRefreshFrame = window.requestAnimationFrame(() => {
+      this.slideRefreshFrame = window.requestAnimationFrame(() => {
+        this.slideRefreshFrame = null;
+        if (this.isConnected) this.refreshSlideCollection();
+      });
+    });
+  }
+
+  refreshSlideCollection() {
+    const nextSignature = this.getSlideSignature();
+    if (nextSignature === this.slideSignature) return;
+
+    const activeSlide = this.getSlides().find((slide) => slide.classList.contains('swiper-slide-active'));
+    const activeBlockId = activeSlide?.dataset.blockId;
+    this.destroySwiper();
+    this.buildNavigatorTabs();
+    this.bindNavigatorTabs();
+
+    const nextSlides = this.getSlides();
+    const nextActiveIndex = nextSlides.findIndex((slide) => slide.dataset.blockId === activeBlockId);
+    this.initialize(nextActiveIndex >= 0 ? nextActiveIndex : 0);
+  }
+
   updateNavigatorToggleState(isCollapsed) {
     if (!this.navigatorToggle) return;
 
@@ -137,6 +204,14 @@ class EditorialSlideshow extends HTMLElement {
 
   syncNavigatorViewportState({ resetDesktop = false } = {}) {
     if (!this.navigator) return;
+
+    if (!this.classList.contains('editorial-slideshow--has-navigator')) {
+      this.classList.remove('editorial-slideshow--navigator-collapsed');
+      const isDesktop = this.desktopNavigator.matches;
+      this.navigator.classList.toggle('is-collapsed', isDesktop);
+      this.updateNavigatorToggleState(isDesktop);
+      return;
+    }
 
     this.clearNavigatorMorph();
     this.navigator.classList.remove('is-transitioning');
@@ -234,16 +309,39 @@ class EditorialSlideshow extends HTMLElement {
     this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 989 });
   }
 
-  initialize() {
-    const slideCount = this.getSlides().length;
-    this.slideCount = slideCount;
+  syncNavigatorAvailability(slideCount) {
     const hasNavigator = Boolean(this.navigator && slideCount > 1 && this.tabs.length > 1);
     this.classList.toggle('editorial-slideshow--has-navigator', hasNavigator);
     this.navigator?.toggleAttribute('hidden', !hasNavigator);
-    if (!hasNavigator) this.classList.remove('editorial-slideshow--navigator-collapsed');
-    if (!slideCount) return;
 
-    this.classList.add('editorial-slideshow--ready');
+    if (hasNavigator) {
+      this.syncNavigatorViewportState();
+      return true;
+    }
+
+    this.clearNavigatorRevealTimer();
+    this.clearNavigatorMorph();
+    this.navigator?.classList.remove('is-transitioning');
+    this.classList.remove('editorial-slideshow--navigator-collapsed');
+    return false;
+  }
+
+  destroySwiper() {
+    this.clearNavigatorRevealTimer();
+    this.clearNavigatorMorph();
+    this.clearAutoplayTimer();
+    this.cancelProgressFrame();
+    this.swiper?.destroy(true, true);
+    this.swiper = null;
+  }
+
+  initialize(initialSlide = 0) {
+    const slideCount = this.getSlides().length;
+    this.slideCount = slideCount;
+    this.slideSignature = this.getSlideSignature();
+    this.syncNavigatorAvailability(slideCount);
+    this.classList.toggle('editorial-slideshow--ready', slideCount > 0);
+    if (!slideCount) return;
 
     this.swiper = new Swiper(this.slider, {
       modules: [A11y, EffectFade, Navigation],
@@ -253,6 +351,7 @@ class EditorialSlideshow extends HTMLElement {
       fadeEffect: {
         crossFade: true,
       },
+      initialSlide: Math.max(0, Math.min(initialSlide, slideCount - 1)),
       loop: slideCount > 1,
       watchOverflow: true,
       grabCursor: slideCount > 1,
