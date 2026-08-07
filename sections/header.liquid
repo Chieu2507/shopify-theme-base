@@ -12,19 +12,25 @@
   assign mobile_language_sheet_title_id = 'HeaderMobileLanguageSheetTitle-' | append: section.id
   assign mobile_country_search_id = 'HeaderMobileCountrySearch-' | append: section.id
   assign language_form_id = 'HeaderLanguageSelector-' | append: section.id
-  assign logo_image = settings.logo | default: settings.logo_mobile
-  assign logo_image_mobile = settings.logo_mobile | default: logo_image
-  assign logo_image_transparent = settings.logo_transparent | default: logo_image
-  assign logo_image_transparent_mobile = settings.logo_transparent_mobile | default: settings.logo_transparent | default: logo_image_mobile
   assign legacy_logo_width_desktop = section.settings.logo_width_desktop | default: 170
   assign legacy_logo_width_mobile = section.settings.logo_width_mobile | default: 120
   assign logo_block = section.blocks | where: 'type', 'logo' | first
   assign logo_width_desktop = legacy_logo_width_desktop
   assign logo_width_mobile = legacy_logo_width_mobile
+  assign logo_block_type = 'image'
+  assign logo_block_image = blank
+  assign logo_block_transparent_image = blank
+  assign logo_block_text = blank
+  assign logo_alignment = 'center'
   assign render_logo = false
 
   if logo_block != blank
     assign render_logo = true
+    assign logo_block_type = logo_block.settings.logo_type | default: 'image'
+    assign logo_block_image = logo_block.settings.image
+    assign logo_block_transparent_image = logo_block.settings.transparent_image
+    assign logo_block_text = logo_block.settings.logo_text
+    assign logo_alignment = logo_block.settings.alignment | default: 'center'
     assign logo_width_desktop = logo_block.settings.width_desktop | default: 170
     assign logo_width_mobile = logo_block.settings.width_mobile | default: 120
 
@@ -37,6 +43,20 @@
     endif
   elsif section.settings.logo_block_migrated != true
     assign render_logo = true
+  endif
+
+  if logo_block_type == 'text'
+    assign logo_image = blank
+    assign logo_image_mobile = blank
+    assign logo_image_transparent = blank
+    assign logo_image_transparent_mobile = blank
+    assign logo_text = logo_block_text | default: shop.name
+  else
+    assign logo_image = logo_block_image | default: settings.logo | default: settings.logo_mobile
+    assign logo_image_mobile = logo_block_image | default: settings.logo_mobile | default: logo_image
+    assign logo_image_transparent = logo_block_transparent_image | default: settings.logo_transparent | default: logo_image
+    assign logo_image_transparent_mobile = logo_block_transparent_image | default: settings.logo_transparent_mobile | default: settings.logo_transparent | default: logo_image_mobile
+    assign logo_text = shop.name
   endif
 
   assign logo_text_size_desktop = logo_width_desktop | times: 16.0 | divided_by: 170.0 | round: 2
@@ -146,11 +166,11 @@
           <div class="header__mobile-drawer-header">
             <span id="HeaderMobileDrawerTitle-{{ section.id }}" class="visually-hidden">{{ 'header.primary_navigation' | t }}</span>
             {% if render_logo %}
-              <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
+              <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
                 {% if logo_image_mobile != blank %}
                   {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '(max-width: 959px) var(--header-logo-width-mobile), 120px', alt: shop.name, loading: 'eager' }}
                 {% else %}
-                  <span class="header__logo-text">{{ shop.name | escape }}</span>
+                  <span class="header__logo-text">{{ logo_text | escape }}</span>
                 {% endif %}
               </a>
             {% endif %}
@@ -546,11 +566,11 @@
 
     {% if render_logo %}
       <div
-        class="header__logo"
+        class="header__logo header__logo--align-{{ logo_alignment }}"
         style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-text-size: {{ logo_text_size_desktop }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;"
         {% if logo_block != blank %}{{ logo_block.shopify_attributes }}{% endif %}
       >
-          <a href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+          <a href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}">
             {% if logo_image != blank %}
               <picture class="header__logo-image header__logo-image--dark">
                 {% if logo_image_mobile != blank %}<source media="(max-width: 959px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
@@ -561,7 +581,7 @@
                 {{ logo_image_transparent | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 959px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image_transparent.alt | default: shop.name, loading: 'eager' }}
               </picture>
             {% else %}
-              <span class="header__logo-text">{{ shop.name | escape }}</span>
+              <span class="header__logo-text">{{ logo_text | escape }}</span>
             {% endif %}
           </a>
       </div>
@@ -753,9 +773,14 @@
       "default": false
     },
     {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
       "type": "select",
       "id": "header_layout",
       "label": "Desktop logo position",
+      "info": "Controls the Header grid. Use the Logo block alignment setting to align the logo within this position.",
       "options": [
         { "value": "left", "label": "Logo left" },
         { "value": "center", "label": "Logo center" }
@@ -866,14 +891,66 @@
       "settings": [
         {
           "type": "paragraph",
-          "content": "Edit the logo and transparent-header logo in Theme settings > Brand."
+          "content": "Use this block to control the Header logo. Empty image fields fall back to Theme settings > Brand."
+        },
+        {
+          "type": "radio",
+          "id": "logo_type",
+          "label": "Logo type",
+          "options": [
+            { "value": "image", "label": "Image" },
+            { "value": "text", "label": "Text" }
+          ],
+          "default": "image"
+        },
+        {
+          "type": "header",
+          "content": "Image logo",
+          "visible_if": "{{ block.settings.logo_type == 'image' }}"
+        },
+        {
+          "type": "image_picker",
+          "id": "image",
+          "label": "Image",
+          "info": "Optional Header-only override. Applies on desktop and mobile, then falls back to the Brand logo.",
+          "visible_if": "{{ block.settings.logo_type == 'image' }}"
+        },
+        {
+          "type": "image_picker",
+          "id": "transparent_image",
+          "label": "Image for transparent header",
+          "info": "Optional Header-only override. Displays when the Header is transparent, then falls back to the Brand asset.",
+          "visible_if": "{{ block.settings.logo_type == 'image' }}"
+        },
+        {
+          "type": "text",
+          "id": "logo_text",
+          "label": "Text logo",
+          "info": "Leave blank to use the shop name.",
+          "visible_if": "{{ block.settings.logo_type == 'text' }}"
         },
         {
           "type": "header",
           "content": "Logo sizing"
         },
         { "type": "range", "id": "width_desktop", "min": 100, "max": 260, "step": 5, "unit": "px", "label": "Desktop logo width", "default": 170 },
-        { "type": "range", "id": "width_mobile", "min": 80, "max": 180, "step": 5, "unit": "px", "label": "Mobile logo width", "default": 120 }
+        { "type": "range", "id": "width_mobile", "min": 80, "max": 180, "step": 5, "unit": "px", "label": "Mobile logo width", "default": 120 },
+        {
+          "type": "header",
+          "content": "Element alignment in block"
+        },
+        {
+          "type": "radio",
+          "id": "alignment",
+          "label": "Horizontal alignment",
+          "info": "Aligns the logo inside its current Header position. The position itself is controlled in Header > Layout.",
+          "options": [
+            { "value": "left", "label": "Left" },
+            { "value": "center", "label": "Center" },
+            { "value": "right", "label": "Right" }
+          ],
+          "default": "center"
+        }
       ]
     },
     {
