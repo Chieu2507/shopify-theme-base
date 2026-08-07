@@ -62,6 +62,10 @@ html.header-menu-scroll-locked {
 .header--transparent.header--surface-visible::before {
     transform: translateY(0%);
   }
+.header--transparent.header--scrolled::before {
+    transform: translateY(0%);
+    transition: none;
+  }
 .header--transparent:not(.header--surface-visible)::before {
     transition-duration: 360ms;
   }
@@ -75,6 +79,11 @@ html.header-menu-scroll-locked {
 .header--transparent.header--surface-visible[data-mega-surface-immediate-close='true']::before {
     transform: translateY(-100%);
     transition-delay: 0ms;
+  }
+.header--transparent.header--scrolled:has(.header__submenu-disclosure[data-closing='true'])::before,
+.header--transparent.header--scrolled.header--surface-visible[data-mega-surface-immediate-close='true']::before {
+    transform: translateY(0%);
+    transition: none;
   }
 .header--transparent:has(.header__submenu-disclosure[data-closing='true']) {
     box-shadow: none;
@@ -428,7 +437,6 @@ html[scroll-lock] .header__menu-overlay {
       padding: 0 30px;
       border: 0;
       border-radius: 0;
-      box-shadow: none;
     }
     .header__submenu-disclosure:not(.header__submenu-disclosure--mega) > .header__submenu li + li {
       margin-top: 0;
@@ -558,13 +566,10 @@ html[scroll-lock] .header__menu-overlay {
     font-weight: var(--font-paragraph--weight);
   }
 @media (min-width: 960px) {
-    body:not(.template-index) .header:has(.header__submenu-disclosure--mega[open]) {
-      border-bottom: 1px solid var(--color-variant-border);
-    }
     .header--transparent:has(.header__submenu-disclosure--mega[open]) {
       box-shadow: none;
     }
-    .header.is-menu-open {
+    .header--transparent.is-menu-open {
       background: transparent;
     }
     .header.is-menu-open > .header__inner {
@@ -599,6 +604,12 @@ html[scroll-lock] .header__menu-overlay {
       height: 100%;
       opacity: 1;
       visibility: visible;
+    }
+    .header--scrolled > .header__mega-background {
+      display: none;
+    }
+    .header--scrolled .header__submenu-disclosure--mega > .header__mega-panel {
+      background: var(--header-surface-background, var(--gradient-background, var(--color-background)));
     }
     .header--transparent.is-menu-open[data-mega-background-closing='true'] {
       transition: none;

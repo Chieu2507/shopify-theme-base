@@ -528,9 +528,7 @@ if (!window.SpinelHeaderMenus) {
     const isMobile = window.matchMedia(headerMobileMediaQuery).matches;
     const openMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-open="true"]:not([data-motion-state="closing"])');
     const closingMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-motion-state="closing"]');
-    const shouldLock = isMobile
-      ? Boolean(openMobileDrawer || closingMobileDrawer)
-      : Boolean(document.querySelector('.header__submenu-disclosure--mega[open]'));
+    const shouldLock = Boolean(openMobileDrawer || closingMobileDrawer);
     const shouldShowOverlay = isMobile
       ? Boolean(openMobileDrawer)
       : Boolean(document.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])'));
@@ -613,9 +611,18 @@ if (!window.SpinelHeaderMenus) {
   const setTransparentHeaderColorScheme = (header, showSurface) => {
     const defaultColorClass = header.dataset.defaultColorClass;
     const transparentColorClass = header.dataset.transparentColorClass;
-    if (defaultColorClass) header.classList.remove(defaultColorClass);
-    if (transparentColorClass) header.classList.remove(transparentColorClass);
     const activeColorClass = showSurface ? defaultColorClass : transparentColorClass;
+    const inactiveColorClass = showSurface ? transparentColorClass : defaultColorClass;
+    const isActiveSchemeApplied = !activeColorClass || header.classList.contains(activeColorClass);
+    const isInactiveSchemeRemoved = !inactiveColorClass
+      || inactiveColorClass === activeColorClass
+      || !header.classList.contains(inactiveColorClass);
+
+    if (isActiveSchemeApplied && isInactiveSchemeRemoved) return;
+
+    if (inactiveColorClass && inactiveColorClass !== activeColorClass) {
+      header.classList.remove(inactiveColorClass);
+    }
     if (activeColorClass) header.classList.add(activeColorClass);
   };
 
@@ -762,6 +769,12 @@ if (!window.SpinelHeaderMenus) {
         mobileStickyHeaderStates.delete(header);
         header.classList.remove('header--mobile-hidden');
         return;
+      }
+
+      const isResponsiveHeader = header.dataset.transparentHeader === 'true'
+        || header.dataset.floatingHeader === 'true';
+      if (!isResponsiveHeader) {
+        header.classList.toggle('header--scrolled', currentScrollY > 1);
       }
 
       const previousState = mobileStickyHeaderStates.get(header) || {
@@ -1220,9 +1233,11 @@ if (!window.SpinelHeaderMenus) {
   const scheduleDesktopMegaMenuMotionFinish = (state) => {
     window.clearTimeout(state.timer);
     const transitionEndsAt = Math.max(state.heightTransitionEndsAt, state.revealEndsAt);
+    const remainingDuration = Math.max(0, transitionEndsAt - performance.now());
+    const finishDelay = state.opening ? remainingDuration + 80 : Math.min(remainingDuration, 600) + 80;
     state.timer = window.setTimeout(
       state.finish,
-      Math.max(0, transitionEndsAt - performance.now()) + 80
+      finishDelay
     );
   };
 
