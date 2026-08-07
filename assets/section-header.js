@@ -1872,10 +1872,7 @@ if (!window.SpinelHeaderMenus) {
     const header = details.closest('[data-header]');
     if (header) delete header.dataset.megaSurfaceImmediateClose;
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
-    if (activeHandoff && activeHandoff.to !== details) {
-      desktopMegaMenuHandoffs.delete(header);
-      delete header.dataset.megaSurfaceHandoff;
-    }
+    if (activeHandoff && activeHandoff.to !== details) desktopMegaMenuHandoffs.delete(header);
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
