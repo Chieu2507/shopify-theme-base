@@ -2206,7 +2206,8 @@ if (!window.SpinelHeaderMenus) {
   });
 
   document.addEventListener('shopify:block:select', (event) => {
-    const details = event.target.closest?.('.header__submenu-disclosure');
+    const details = event.target.closest?.('.header__submenu-disclosure')
+      || event.target.closest?.('.header__menu-item')?.querySelector(':scope > .header__submenu-disclosure');
     if (!details) return;
 
     const header = details.closest('[data-header]');
@@ -2247,7 +2248,7 @@ if (!window.SpinelHeaderMenus) {
     if (!products.length) {
       const empty = document.createElement('p');
       empty.className = 'header-search-modal__empty';
-      empty.textContent = 'No products found.';
+      empty.textContent = panel.closest('[data-header-search-modal]')?.dataset.noProductsText || 'No products found.';
       panel.append(empty);
       return;
     }
@@ -2305,7 +2306,11 @@ if (!window.SpinelHeaderMenus) {
       if (productCount !== undefined) {
         const count = document.createElement('span');
         count.className = 'header-search-modal__collection-count';
-        count.textContent = `${productCount} ${Number(productCount) === 1 ? 'Product' : 'Products'}`;
+        const dialog = panel.closest('[data-header-search-modal]');
+        const template = Number(productCount) === 1
+          ? dialog?.dataset.productCountOne
+          : dialog?.dataset.productCountOther;
+        count.textContent = (template || `${productCount} ${Number(productCount) === 1 ? 'Product' : 'Products'}`).replace('__count__', productCount);
         card.append(count);
       }
       grid.append(card);
@@ -2387,7 +2392,7 @@ if (!window.SpinelHeaderMenus) {
         if (products.length > 0) setHeaderSearchTab(dialog, 'products');
         else if (collections.length > 0) setHeaderSearchTab(dialog, 'collections');
         else {
-          empty.textContent = `No results found for “${term}”. Check the spelling or use a different word or phrase.`;
+          empty.textContent = (dialog.dataset.noResultsText || `No results found for “${term}”. Check the spelling or use a different word or phrase.`).replace('__term__', term);
           dialog.querySelectorAll('[data-header-search-panel]').forEach((panel) => { panel.hidden = true; });
         }
 
