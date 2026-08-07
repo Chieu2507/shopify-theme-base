@@ -628,16 +628,6 @@ if (!window.SpinelHeaderMenus) {
   const syncTransparentHeaderColorScheme = (header, showSurface) => {
     const defaultColorClass = header.dataset.defaultColorClass;
     const hasSurfaceScheme = Boolean(defaultColorClass && header.classList.contains(defaultColorClass));
-    const closesSurfaceImmediately = header.dataset.megaSurfaceImmediateClose === 'true';
-    const hasClosingDesktopMenu = Boolean(header.querySelector(
-      '.header__submenu-disclosure[data-closing="true"], .header__actions .header__localization-selector[data-closing="true"]'
-    ));
-
-    if (closesSurfaceImmediately && hasClosingDesktopMenu) {
-      clearTransparentHeaderSchemeExit(header);
-      setTransparentHeaderColorScheme(header, false);
-      return;
-    }
 
     if (showSurface) {
       clearTransparentHeaderSchemeExit(header);
@@ -650,7 +640,7 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    if (closesSurfaceImmediately) {
+    if (header.dataset.megaSurfaceImmediateClose === 'true') {
       clearTransparentHeaderSchemeExit(header);
       setTransparentHeaderColorScheme(header, false);
       return;
@@ -1345,13 +1335,13 @@ if (!window.SpinelHeaderMenus) {
         panel.style.removeProperty('--header-mega-panel-height');
         clearDesktopMegaMenuRevealDelays(details);
         syncDesktopMegaMenuBackground(header);
-        if (!header?.querySelector('.header__submenu-disclosure--mega[open]')) {
-          delete header?.dataset.megaSurfaceImmediateClose;
-        }
       }
       syncHeaderDisclosureAria(details);
       syncHeaderMenuScrollLock();
       if (responsiveHeader) syncResponsiveHeader(responsiveHeader);
+      if (!header?.querySelector('.header__submenu-disclosure--mega[open]')) {
+        delete header?.dataset.megaSurfaceImmediateClose;
+      }
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       motionOptions.onFinish?.(details, opening);
     };
