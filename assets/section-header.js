@@ -21,7 +21,7 @@ if (!window.SpinelHeaderMenus) {
   const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
-  const headerMobileBreakpoint = 1099;
+  const headerMobileBreakpoint = 959;
   const headerMobileMediaQuery = `(max-width: ${headerMobileBreakpoint}px)`;
   const headerDesktopMediaQuery = `(min-width: ${headerMobileBreakpoint + 1}px)`;
   // Let non-sticky transparent headers clear the announcement bar before changing palette.
