@@ -1986,10 +1986,15 @@ if (!window.SpinelHeaderMenus) {
 
     const summary = event.target.closest?.('summary');
     const submenu = summary?.parentElement;
-    if (submenu?.matches('.header__localization-selector') && isMobileHeaderViewport()) {
+    if (submenu?.matches('.header__localization-selector')) {
       event.preventDefault();
-      if (submenu.open || localizationSheetOpenRequests.has(submenu)) closeLocalizationSheet(submenu);
-      else openLocalizationSheet(submenu);
+      if (isMobileHeaderViewport()) {
+        if (submenu.open || localizationSheetOpenRequests.has(submenu)) closeLocalizationSheet(submenu);
+        else openLocalizationSheet(submenu);
+      } else {
+        submenu.open = !submenu.open;
+        syncHeaderLocalizationAria(submenu);
+      }
       return;
     }
 
