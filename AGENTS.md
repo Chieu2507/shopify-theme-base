@@ -153,30 +153,41 @@ Sau lần sửa cuối:
 3. Đọc `validation-results/latest.status` và `validation-results/latest.log` của
    lần chạy mới nhất; không dùng log cũ. Với JS/build script, chạy thêm syntax,
    build hoặc targeted test sẵn có. Docs-only không cần theme validator.
-4. Runtime QA là opt-in, không chạy mặc định. Runtime QA bao gồm
-   `shopify theme dev`, storefront/browser, Theme Editor, console, responsive,
-   interaction và Lighthouse/network. Nếu user không ghi đúng cú pháp
-   `QA: ON` trong prompt, không chạy runtime QA; checklist phải ghi
-   `NOT TESTED — runtime QA not requested`. Khi có cú pháp này, chạy
-   `shopify theme dev --theme 144223469616 --allow-live` và kiểm tra
-   desktop/mobile theo các mục bên dưới.
-5. Khi `QA: ON`, QA theo phạm vi ảnh hưởng: default/empty/long/missing data,
-   nhiều instance, keyboard, interaction, responsive và không có console error.
+4. Với task ảnh hưởng UI, layout, responsive, interaction hoặc visual
+   regression, runtime QA là mặc định. Dùng Playwright để kiểm tra storefront
+   qua preview URL khả dụng, gồm console, responsive, interaction và screenshot
+   trước/sau khi sửa. Không cần `QA: ON` để kích hoạt runtime QA cho nhóm task
+   này.
+   Trước khi sửa, phải chạy Playwright audit để tái hiện lỗi, chụp baseline,
+   ghi nhận viewport, DOM/computed style và console error liên quan, đồng thời
+   xác định nguyên nhân gốc. Sau khi sửa, phải chạy lại cùng scenario và
+   viewport để đối chiếu regression trước/sau.
+   Không kết luận đã fix nếu chưa có baseline hoặc không thể tái hiện, trừ khi
+   ghi rõ giới hạn xác minh.
+   Shopify Theme Dev chỉ chạy khi không có preview URL khả dụng hoặc khi cần
+   tạo preview từ code local mới nhất. Phải dùng development theme riêng;
+   tuyệt đối không dùng `--allow-live` cho runtime QA thông thường. Khi cần
+   xác minh Theme Editor, phải bảo đảm theme đó không kết nối trực tiếp với
+   production `main` trước khi khởi động preview.
+   Với task không ảnh hưởng runtime (docs-only, validator-only hoặc thay đổi
+   không render), runtime QA không bắt buộc.
+5. Runtime QA phải kiểm tra theo phạm vi ảnh hưởng: default/empty/long/missing
+   data, nhiều instance, keyboard, interaction, responsive tại các mốc
+   `749px`, `750px`, `989px`, `990px` khi liên quan, và không có console error.
    Với Theme Editor, kiểm tra add/remove/duplicate/reorder/select/deselect/
    re-render/unload khi liên quan; xác nhận không còn listener trùng hoặc scroll
    lock.
 6. Đối chiếu từng mục checklist và ghi `PASS`, `FAIL` hoặc `NOT TESTED` kèm bằng
-   chứng. Không báo cáo runtime/audit đã hoàn tất nếu chưa chạy được. Khi không
-   có `QA: ON`, `NOT TESTED — runtime QA not requested` là trạng thái hợp lệ và
-   không tự nó chặn delivery.
-7. Khi `QA: ON` và thay đổi ảnh, asset shared, CSS/JS loading, layout hoặc LCP,
-   so sánh Lighthouse/network trước–sau trên surface ảnh hưởng và không chấp
+   chứng. Không báo cáo runtime/audit đã hoàn tất nếu chưa chạy được. Nếu
+   preview không khả dụng và không thể khởi động `shopify theme dev`, ghi rõ
+   blocker và trạng thái `NOT TESTED`.
+7. Khi thay đổi ảnh, asset shared, CSS/JS loading, layout hoặc LCP, so sánh
+   Lighthouse/network trước–sau trên surface ảnh hưởng khi có thể; không chấp
    nhận regression chưa giải thích.
 
-Validation fail hoặc regression quan sát được thì không commit/push. Nếu có
-`QA: ON` nhưng runtime QA bắt buộc không thể chạy, ghi `NOT TESTED` và chặn
-delivery. Nếu không có cú pháp này, chỉ cần ghi rõ `NOT TESTED — runtime QA not
-requested`; docs/non-runtime change vẫn phải qua các gate tĩnh áp dụng.
+Validation fail hoặc regression quan sát được thì không commit/push. Với task UI,
+nếu runtime QA bắt buộc không thể chạy thì ghi `NOT TESTED` và chặn delivery.
+Docs/non-runtime change vẫn phải qua các gate tĩnh áp dụng.
 
 ## 7. Submit và Git delivery
 
