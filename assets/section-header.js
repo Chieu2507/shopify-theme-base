@@ -774,9 +774,12 @@ if (!window.SpinelHeaderMenus) {
 
     if (!isTransparentHeader) return;
 
+    // Keep the surface present until the closing panel has completed its own motion.
+    // This prevents the transparent header from exposing the hero between the
+    // mega menu's opacity and height transitions.
     const hasOpenDesktopDropdown = !isMobile
       && Boolean(header.querySelector(
-        '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
+        '.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'
       ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
     header.classList.toggle('header--surface-visible', showSurface);
