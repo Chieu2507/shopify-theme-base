@@ -775,7 +775,9 @@ if (!window.SpinelHeaderMenus) {
     if (!isTransparentHeader) return;
 
     const hasOpenDesktopDropdown = !isMobile
-      && Boolean(header.querySelector('.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'));
+      && Boolean(header.querySelector(
+        '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
+      ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
     header.classList.toggle('header--surface-visible', showSurface);
     setTransparentHeaderColorScheme(header, showSurface);
