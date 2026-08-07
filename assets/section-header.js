@@ -811,7 +811,7 @@ if (!window.SpinelHeaderMenus) {
       document.querySelectorAll('[data-header]').forEach((header) => {
         const activeElement = document.activeElement;
         const activeDisclosure = activeElement?.closest?.(
-          '.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open], [data-header-mobile-drawer][data-open="true"]'
+          '.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open], .header__localization-selector[open], [data-header-mobile-drawer][data-open="true"]'
         );
         const rememberedOwner = headerBreakpointFocusContext?.header === header
           ? headerBreakpointFocusContext.owner
@@ -829,6 +829,11 @@ if (!window.SpinelHeaderMenus) {
       });
       document.querySelectorAll('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(clearMegaMenuHoverTimer);
       document.querySelectorAll('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]').forEach((details) => closeMegaMenu(details, true));
+      document.querySelectorAll('.header__localization-selector').forEach(clearLocalizationHoverTimer);
+      document.querySelectorAll('.header__localization-selector[open]').forEach((details) => {
+        if (desktopMegaMenuMotions.has(details) || details.dataset.megaPanelVisible === 'true') closeMegaMenu(details, true);
+        else closeLocalizationSheet(details, false, true);
+      });
       document.querySelectorAll('.header__submenu-disclosure').forEach(resetDesktopMegaMenuPresentation);
       document.querySelectorAll('[data-header]').forEach((header) => {
         desktopMegaMenuHandoffs.delete(header);
@@ -840,7 +845,7 @@ if (!window.SpinelHeaderMenus) {
         });
       }
     } else if (!isMobile) {
-      document.querySelectorAll('.header__submenu-disclosure[open]:not([data-closing="true"])').forEach(syncDesktopMegaMenuPanelHeight);
+      document.querySelectorAll('.header__submenu-disclosure[open]:not([data-closing="true"]), .header__localization-selector[open]:not([data-closing="true"])').forEach(syncDesktopMegaMenuPanelHeight);
     }
     document.querySelectorAll('[data-header] > .header__inner > .header__menu-disclosure').forEach((disclosure) => {
       if (crossedHeaderBreakpoint) {
@@ -921,11 +926,15 @@ if (!window.SpinelHeaderMenus) {
     const isMegaMenu = details.matches('.header__submenu-disclosure--mega');
     const isTopLevelMenu = details.matches('.header__submenu-disclosure');
     const isNestedMenu = details.matches('.header__submenu-nested-disclosure');
+    const isLocalizationSelector = details.matches('.header__localization-selector');
+    const isDesktopLocalization = !isMobileHeaderViewport() && isLocalizationSelector;
     const isMobileDrawerMenu = isMobileHeaderViewport() && (isTopLevelMenu || isNestedMenu);
     const panel = isMegaMenu
       ? details.querySelector('.header__mega-panel')
       : isNestedMenu
         ? details.querySelector(':scope > .header__submenu-nested')
+        : isLocalizationSelector
+          ? details.querySelector(':scope > .header__localization-popover')
         : details.querySelector(':scope > .header__submenu');
     const type = isMobileDrawerMenu
       ? 'mobile_slide'
@@ -933,9 +942,11 @@ if (!window.SpinelHeaderMenus) {
       ? 'cascading_flyout'
       : isTopLevelMenu
         ? 'cascading_root'
+        : isDesktopLocalization
+          ? 'cascading_root'
         : 'slide_down';
     const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '300', 10);
-    const isDesktopCascadingMenu = !isMobileDrawerMenu && (isTopLevelMenu || isNestedMenu);
+    const isDesktopCascadingMenu = !isMobileDrawerMenu && (isTopLevelMenu || isNestedMenu || isDesktopLocalization);
     const duration = isMobileDrawerMenu
       ? 300
       : isDesktopCascadingMenu
@@ -991,12 +1002,12 @@ if (!window.SpinelHeaderMenus) {
 
   const usesDesktopMegaMenuCssMotion = (details) => (
     !isMobileHeaderViewport()
-    && details.matches('.header__submenu-disclosure')
-    && Boolean(details.querySelector(':scope > .header__mega-panel, :scope > .header__submenu'))
+    && details.matches('.header__submenu-disclosure, .header__localization-selector')
+    && Boolean(details.querySelector(':scope > .header__mega-panel, :scope > .header__submenu, :scope > .header__localization-popover'))
   );
 
   const getDesktopMegaMenuPanel = (details) => details.querySelector(
-    ':scope > .header__mega-panel, :scope > .header__submenu'
+    ':scope > .header__mega-panel, :scope > .header__submenu, :scope > .header__localization-popover'
   );
 
   const getDesktopMegaMenuTransitionDuration = (details) => {
@@ -1338,7 +1349,7 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const initializeDesktopMegaMenuObservers = (scope = document) => {
-    scope.querySelectorAll?.('.header__submenu-disclosure').forEach(observeDesktopMegaMenu);
+    scope.querySelectorAll?.('.header__submenu-disclosure, .header__localization-selector').forEach(observeDesktopMegaMenu);
   };
 
   const disconnectDesktopMegaMenuObserver = (details) => {
@@ -1594,6 +1605,10 @@ if (!window.SpinelHeaderMenus) {
   );
 
   const syncHeaderDisclosureAria = (details) => {
+    if (details.matches?.('.header__localization-selector')) {
+      syncHeaderLocalizationAria(details);
+      return;
+    }
     const summary = details.querySelector(':scope > summary[aria-controls]');
     if (!summary) return;
     const isOpen = details.open && !(usesDesktopMegaMenuCssMotion(details) && details.dataset.closing === 'true');
@@ -1617,8 +1632,15 @@ if (!window.SpinelHeaderMenus) {
   const closeHeaderLocalization = (details) => {
     clearLocalizationHoverTimer(details);
     if (!details?.open) return;
+    if (usesDesktopMegaMenuCssMotion(details)) {
+      closeMegaMenu(details);
+      return;
+    }
     details.open = false;
     syncHeaderLocalizationAria(details);
+    if (details.closest('[data-transparent-header="true"], [data-floating-header="true"]')) {
+      scheduleResponsiveHeaderSync();
+    }
   };
 
   const scheduleHeaderLocalizationClose = (details) => {
@@ -1632,14 +1654,35 @@ if (!window.SpinelHeaderMenus) {
 
   const openHeaderLocalization = (details) => {
     clearLocalizationHoverTimer(details);
-    if (details.open) return;
+    const isDesktopMotion = usesDesktopMegaMenuCssMotion(details);
+    if (details.open) {
+      if (!isDesktopMotion || details.dataset.closing !== 'true') return;
+      positionHeaderSubmenu(details);
+      const responsiveHeader = details.closest('[data-transparent-header="true"]');
+      if (responsiveHeader && !isMobileHeaderViewport()) {
+        responsiveHeader.classList.add('header--surface-visible');
+        setTransparentHeaderColorScheme(responsiveHeader, true);
+      }
+      animateMegaMenuOpen(details);
+      scheduleResponsiveHeaderSync();
+      return;
+    }
 
     document.querySelectorAll('[data-header] .header__localization-selector--hover[open]').forEach((otherDetails) => {
       if (otherDetails !== details) closeHeaderLocalization(otherDetails);
     });
 
+    positionHeaderSubmenu(details);
+    const responsiveHeader = details.closest('[data-transparent-header="true"]');
+    if (responsiveHeader && !isMobileHeaderViewport()) {
+      responsiveHeader.classList.add('header--surface-visible');
+      setTransparentHeaderColorScheme(responsiveHeader, true);
+    }
+    details.dataset.opening = 'true';
     details.open = true;
-    syncHeaderLocalizationAria(details);
+    syncHeaderDisclosureAria(details);
+    if (isDesktopMotion) animateMegaMenuOpen(details);
+    scheduleResponsiveHeaderSync();
   };
 
   const initializeHeaderDisclosures = (scope = document) => {
@@ -1670,10 +1713,10 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const positionHeaderSubmenu = (details) => {
-    if (
-      !details.matches('.header__submenu-disclosure:not(.header__submenu-disclosure--mega)') ||
-      window.matchMedia(headerMobileMediaQuery).matches
-    ) {
+    const isCompactDesktopDropdown = details.matches(
+      '.header__submenu-disclosure:not(.header__submenu-disclosure--mega), .header__localization-selector'
+    );
+    if (!isCompactDesktopDropdown || window.matchMedia(headerMobileMediaQuery).matches) {
       details.style.removeProperty('--header-submenu-top');
       return;
     }
@@ -1852,7 +1895,7 @@ if (!window.SpinelHeaderMenus) {
   };
 
   window.addEventListener('resize', () => {
-    document.querySelectorAll('.header__submenu-disclosure[open]').forEach(positionHeaderSubmenu);
+    document.querySelectorAll('.header__submenu-disclosure[open], .header__localization-selector[open]').forEach(positionHeaderSubmenu);
     document.querySelectorAll('.header__submenu-nested-disclosure[open]').forEach(positionNestedHeaderSubmenu);
   });
 
@@ -1980,6 +2023,12 @@ if (!window.SpinelHeaderMenus) {
         if (!isMobileHeaderViewport() && details.closest('[data-transparent-header="true"]')) {
           scheduleResponsiveHeaderSync();
         }
+        if (!isMobileHeaderViewport() && usesDesktopMegaMenuCssMotion(details)) {
+          positionHeaderSubmenu(details);
+          if (details.open && details.dataset.opening !== 'true' && details.dataset.closing !== 'true') {
+            animateMegaMenuOpen(details);
+          }
+        }
       }
 
       if (!details.open && details.matches?.('.header__localization-selector')) {
@@ -2056,8 +2105,8 @@ if (!window.SpinelHeaderMenus) {
         if (submenu.open) closeHeaderLocalization(submenu);
         else openHeaderLocalization(submenu);
       } else {
-        submenu.open = !submenu.open;
-        syncHeaderLocalizationAria(submenu);
+        if (submenu.open) closeHeaderLocalization(submenu);
+        else openHeaderLocalization(submenu);
       }
       return;
     }
@@ -2079,13 +2128,15 @@ if (!window.SpinelHeaderMenus) {
     if (isMobileHeaderViewport() && event.target.closest?.('[data-header-mobile-drawer]')) return;
 
     document.querySelectorAll('[data-header]').forEach((header) => {
-      const activeDisclosure = event.target.closest?.('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open]');
+      const activeDisclosure = event.target.closest?.('.header__submenu-disclosure[open], .header__submenu-nested-disclosure[open], .header__localization-selector[open]');
       if (activeDisclosure?.closest('[data-header]') === header) return;
       header.querySelectorAll('details[open]').forEach((details) => {
         if (details.matches('.header__submenu-disclosure, .header__submenu-nested-disclosure') && shouldAnimateHeaderSubmenu(details)) {
           closeMegaMenu(details);
         } else if (details.matches('.header__localization-selector') && isMobileHeaderViewport()) {
           closeLocalizationSheet(details);
+        } else if (details.matches('.header__localization-selector')) {
+          closeHeaderLocalization(details);
         } else {
           details.open = false;
         }
@@ -2177,6 +2228,9 @@ if (!window.SpinelHeaderMenus) {
         closeMegaMenu(details);
       } else if (details.matches('.header__localization-selector') && isMobileHeaderViewport()) {
         closeLocalizationSheet(details);
+      } else if (details.matches('.header__localization-selector')) {
+        focusTargets.push(details.querySelector(':scope > summary'));
+        closeHeaderLocalization(details);
       } else {
         details.open = false;
       }
@@ -2209,7 +2263,10 @@ if (!window.SpinelHeaderMenus) {
     });
     event.target.querySelectorAll?.('.header__localization-selector').forEach((details) => {
       cancelLocalizationSheetOpen(details);
+      clearLocalizationHoverTimer(details);
       clearLocalizationSheetMotion(details);
+      resetDesktopMegaMenuPresentation(details);
+      disconnectDesktopMegaMenuObserver(details);
       localizationSheetFinalizing.delete(details);
       details.removeAttribute('data-motion-state');
       details.open = false;
