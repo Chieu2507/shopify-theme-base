@@ -56,7 +56,17 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
     const fullScreenClass = mobileQuery.matches
       ? 'mobile-full'
       : 'desktop-full';
-    const isFullScreen = element.classList.contains(`slideshow--height-${fullScreenClass}`)
+    const editorialHeightMode = element.dataset.firstViewportHeightMode;
+    const editorialHeightPercent = Number(
+      mobileQuery.matches
+        ? element.dataset.firstViewportHeightMobilePercent
+        : element.dataset.firstViewportHeightDesktopPercent,
+    );
+    const isEditorialPercentFullScreen = isEditorialSlideshow
+      && editorialHeightMode === 'percent'
+      && editorialHeightPercent >= 100;
+    const isFullScreen = isEditorialPercentFullScreen
+      || element.classList.contains(`slideshow--height-${fullScreenClass}`)
       || element.classList.contains(`editorial-slideshow--height-${fullScreenClass}`);
     const viewportHeight = getStableViewportHeight();
     const top = element.getBoundingClientRect().top + window.scrollY;
