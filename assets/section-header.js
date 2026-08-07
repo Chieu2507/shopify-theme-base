@@ -1239,9 +1239,11 @@ if (!window.SpinelHeaderMenus) {
   const scheduleDesktopMegaMenuMotionFinish = (state) => {
     window.clearTimeout(state.timer);
     const transitionEndsAt = Math.max(state.heightTransitionEndsAt, state.revealEndsAt);
+    const remainingDuration = Math.max(0, transitionEndsAt - performance.now());
+    const finishDelay = state.opening ? remainingDuration + 80 : Math.min(remainingDuration, 600) + 80;
     state.timer = window.setTimeout(
       state.finish,
-      Math.max(0, transitionEndsAt - performance.now()) + 80
+      finishDelay
     );
   };
 
