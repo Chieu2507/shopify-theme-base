@@ -275,7 +275,7 @@
     </style>
   {% endif %}
   <div
-    class="content-block content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }} content-block--color-{{ color_class }}{% if typo_class != blank %} {{ typo_class }}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
+    class="content-block content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }} content-block--color-{{ color_class }}{% if kind == 'heading' %} content-heading content-heading--{{ alignment }}{% else %} text-block content-text content-text--{{ alignment }} rte{% endif %}{% if typo_class != blank %} {{ typo_class }}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
     {% if has_mobile_padding or has_mobile_font_size %}data-type-block-id="{{ responsive_scope | escape }}"{% endif %}
     {% if has_padding or use_inline_typography %}
       style="
@@ -296,17 +296,13 @@
     {% if include_shopify_attributes != false %}{{ block.shopify_attributes }}{% endif %}
   >
     {% if kind == 'heading' %}
-      <div class="content-block__content content-heading content-heading--{{ alignment }}">
-        {% if is_legacy_heading %}
-          <{{ legacy_heading_tag }}>{{ rendered_content }}</{{ legacy_heading_tag }}>
-        {% else %}
-          {{ rendered_content }}
-        {% endif %}
-      </div>
-    {% else %}
-      <div class="content-block__content text-block content-text content-text--{{ alignment }} rte">
+      {% if is_legacy_heading %}
+        <{{ legacy_heading_tag }}>{{ rendered_content }}</{{ legacy_heading_tag }}>
+      {% else %}
         {{ rendered_content }}
-      </div>
+      {% endif %}
+    {% else %}
+      {{ rendered_content }}
     {% endif %}
   </div>
 {% endif %}
@@ -316,10 +312,16 @@
     display: block;
     width: fit-content;
     max-width: 100%;
+    margin: 0;
     color: var(--color-heading);
+    text-wrap: pretty;
   }
 
-  .content-block--width-fill {
+  .content-block.content-block--width-fit {
+    width: fit-content;
+  }
+
+  .content-block.content-block--width-fill {
     width: 100%;
   }
 
@@ -327,15 +329,11 @@
     color: var(--color-text);
   }
 
-  .content-block__content,
-  .content-block__content :is(p, h1, h2, h3, h4, h5, h6) {
+  .content-block :is(p, h1, h2, h3, h4, h5, h6) {
     color: inherit !important;
   }
 
   .content-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
-    .content-block__content,
-  .content-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
-    .content-block__content
     :is(p, h1, h2, h3, h4, h5, h6) {
     font-family: inherit !important;
     font-size: inherit !important;
@@ -346,13 +344,14 @@
     text-transform: inherit !important;
   }
 
-  .content-block--inline-typography .content-block__content,
-  .content-block--inline-typography
-    .content-block__content
-    :is(p, h1, h2, h3, h4, h5, h6) {
-    font-family: inherit !important;
-    font-size: inherit !important;
+  .content-block--inline-typography {
     font-synthesis: weight;
+  }
+
+  .content-block--inline-typography
+    :is(p, h1, h2, h3, h4, h5, h6) {
+    font-family: inherit !important;
+    font-size: inherit !important;
     font-style: inherit !important;
     font-weight: inherit !important;
     letter-spacing: inherit !important;
@@ -360,25 +359,20 @@
     text-transform: inherit !important;
   }
 
-  .content-block__content {
-    margin: 0;
-    text-wrap: pretty;
-  }
-
-  .content-block__content > :first-child {
+  .content-block > :first-child {
     margin-block-start: 0;
   }
 
-  .content-block__content > :last-child {
+  .content-block > :last-child {
     margin-block-end: 0;
   }
 
   @media screen and (max-width: 749px) {
-    .content-block--width-mobile-fit {
+    .content-block.content-block--width-mobile-fit {
       width: fit-content;
     }
 
-    .content-block--width-mobile-fill {
+    .content-block.content-block--width-mobile-fill {
       width: 100%;
     }
 

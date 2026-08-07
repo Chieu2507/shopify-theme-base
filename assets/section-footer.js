@@ -89,12 +89,11 @@ if (!customElements.get('footer-wordmark')) {
     fit() {
       this.frame = null;
       const contentBlock = this.querySelector('.content-block');
-      const content = this.querySelector('.content-block__content');
-      if (!contentBlock || !content || this.clientWidth <= 0) return;
+      if (!contentBlock || this.clientWidth <= 0) return;
 
       this.style.removeProperty('--footer-wordmark-fitted-size');
       const naturalSize = Number.parseFloat(getComputedStyle(contentBlock).fontSize);
-      const naturalWidth = content.scrollWidth;
+      const naturalWidth = contentBlock.scrollWidth;
 
       if (naturalWidth > this.clientWidth) {
         const fittedSize = Math.max(42, naturalSize * (this.clientWidth / naturalWidth) * 0.985);
