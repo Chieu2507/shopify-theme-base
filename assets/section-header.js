@@ -16,8 +16,9 @@ if (!window.SpinelHeaderMenus) {
   const mobileMenuReturnFocus = new WeakMap();
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   const headerHoverCloseDelay = 500;
-  const desktopMegaMenuHoverCloseDelay = 120;
+  const desktopMegaMenuHoverCloseDelay = 360;
   const desktopMegaMenuTransitionDurationFallback = 300;
+  const transparentHeaderSchemeExitDelay = 50;
   const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
@@ -37,6 +38,7 @@ if (!window.SpinelHeaderMenus) {
   let headerBrowserChromeColorState = null;
   const responsiveHeaderEntryFrames = new WeakMap();
   const responsiveHeaderExitMotions = new WeakMap();
+  const transparentHeaderSchemeExitTimers = new WeakMap();
   const mobileStickyHeaderStates = new WeakMap();
   const localizationHoverTimers = new WeakMap();
   let wasMobileHeaderViewport = window.matchMedia(headerMobileMediaQuery).matches;
@@ -617,6 +619,37 @@ if (!window.SpinelHeaderMenus) {
     if (activeColorClass) header.classList.add(activeColorClass);
   };
 
+  const clearTransparentHeaderSchemeExit = (header) => {
+    const timer = transparentHeaderSchemeExitTimers.get(header);
+    if (timer) window.clearTimeout(timer);
+    transparentHeaderSchemeExitTimers.delete(header);
+  };
+
+  const syncTransparentHeaderColorScheme = (header, showSurface) => {
+    const defaultColorClass = header.dataset.defaultColorClass;
+    const hasSurfaceScheme = Boolean(defaultColorClass && header.classList.contains(defaultColorClass));
+
+    if (showSurface) {
+      clearTransparentHeaderSchemeExit(header);
+      setTransparentHeaderColorScheme(header, true);
+      return;
+    }
+
+    if (!hasSurfaceScheme) {
+      clearTransparentHeaderSchemeExit(header);
+      return;
+    }
+
+    if (transparentHeaderSchemeExitTimers.has(header)) return;
+    const timer = window.setTimeout(() => {
+      transparentHeaderSchemeExitTimers.delete(header);
+      if (!header.classList.contains('header--surface-visible')) {
+        setTransparentHeaderColorScheme(header, false);
+      }
+    }, transparentHeaderSchemeExitDelay);
+    transparentHeaderSchemeExitTimers.set(header, timer);
+  };
+
   const clearResponsiveHeaderExit = (header) => {
     const motion = responsiveHeaderExitMotions.get(header);
     if (motion?.frame) window.cancelAnimationFrame(motion.frame);
@@ -779,11 +812,11 @@ if (!window.SpinelHeaderMenus) {
     // mega menu's opacity and height transitions.
     const hasOpenDesktopDropdown = !isMobile
       && Boolean(header.querySelector(
-        '.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'
+        '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
       ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
     header.classList.toggle('header--surface-visible', showSurface);
-    setTransparentHeaderColorScheme(header, showSurface);
+    syncTransparentHeaderColorScheme(header, showSurface);
   };
 
   const syncResponsiveHeaders = () => {
@@ -1296,12 +1329,12 @@ if (!window.SpinelHeaderMenus) {
         panel.style.removeProperty('--header-mega-panel-height');
         clearDesktopMegaMenuRevealDelays(details);
         syncDesktopMegaMenuBackground(header);
-        if (!header?.querySelector('.header__submenu-disclosure--mega[open]')) {
-          delete header?.dataset.megaSurfaceImmediateClose;
-        }
       }
       syncHeaderDisclosureAria(details);
       syncHeaderMenuScrollLock();
+      if (!header?.querySelector('.header__submenu-disclosure--mega[open]')) {
+        delete header?.dataset.megaSurfaceImmediateClose;
+      }
       if (responsiveHeader) scheduleResponsiveHeaderSync();
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       motionOptions.onFinish?.(details, opening);
@@ -1721,8 +1754,7 @@ if (!window.SpinelHeaderMenus) {
       header.dataset.megaSurfaceImmediateClose = 'true';
     }
     getOpenHoverMenus(header).forEach((openMenu) => {
-      clearMegaMenuHoverTimer(openMenu);
-      closeMegaMenu(openMenu);
+      scheduleMegaMenuClose(openMenu, desktopMegaMenuHoverCloseDelay);
     });
   };
 
