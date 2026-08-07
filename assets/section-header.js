@@ -776,15 +776,7 @@ if (!window.SpinelHeaderMenus) {
       const isResponsiveHeader = header.dataset.transparentHeader === 'true'
         || header.dataset.floatingHeader === 'true';
       if (!isResponsiveHeader) {
-        const sectionWrapper = header.parentElement;
-        // A sticky section's bounding rect is pinned to the viewport once the
-        // page has scrolled, so it cannot be used to derive its document
-        // origin. Use offsetTop instead; this remains stable for standard
-        // headers on inner pages and lets their scrolled surface state update.
-        const headerOrigin = sectionWrapper
-          ? sectionWrapper.offsetTop
-          : header.offsetTop;
-        header.classList.toggle('header--scrolled', currentScrollY > headerOrigin);
+        header.classList.toggle('header--scrolled', currentScrollY > 1);
       }
 
       const previousState = mobileStickyHeaderStates.get(header) || {
