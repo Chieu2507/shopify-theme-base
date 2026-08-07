@@ -377,7 +377,8 @@ class EditorialSlideshow extends HTMLElement {
         crossFade: true,
       },
       initialSlide: Math.max(0, Math.min(initialSlide, slideCount - 1)),
-      loop: slideCount > 1,
+      loop: false,
+      rewind: slideCount > 1,
       watchOverflow: true,
       grabCursor: slideCount > 1,
       a11y: {
@@ -478,7 +479,7 @@ class EditorialSlideshow extends HTMLElement {
     const nextIndex = (index + this.slideCount) % this.slideCount;
     this.preloadAdjacentSlides(nextIndex);
     if (moveFocus) this.tabs[nextIndex]?.focus();
-    this.swiper.slideToLoop(nextIndex);
+    this.swiper.slideTo(nextIndex);
   }
 
   toggleNavigator() {
@@ -646,7 +647,7 @@ class EditorialSlideshow extends HTMLElement {
 
     this.autoplayManuallyPaused = true;
     this.updateAutoplayToggle();
-    this.swiper.slideToLoop(index, 0);
+    this.swiper.slideTo(index, 0);
     this.setNavigatorTransitioning(false);
   }
 
