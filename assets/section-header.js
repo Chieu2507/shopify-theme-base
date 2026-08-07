@@ -775,7 +775,9 @@ if (!window.SpinelHeaderMenus) {
     if (!isTransparentHeader) return;
 
     const hasOpenDesktopDropdown = !isMobile
-      && Boolean(header.querySelector('.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'));
+      && Boolean(header.querySelector(
+        '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
+      ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
     header.classList.toggle('header--surface-visible', showSurface);
     setTransparentHeaderColorScheme(header, showSurface);
@@ -1704,6 +1706,16 @@ if (!window.SpinelHeaderMenus) {
     '.header__submenu-disclosure--hover[open]'
   ) || [];
 
+  const closeOtherTopLevelHoverMenus = (menuItem) => {
+    const header = menuItem.closest('[data-header]');
+    const activeMenu = menuItem.querySelector(':scope > .header__submenu-disclosure--hover');
+    getOpenHoverMenus(header).forEach((openMenu) => {
+      if (openMenu === activeMenu) return;
+      clearMegaMenuHoverTimer(openMenu);
+      closeMegaMenu(openMenu, !openMenu.matches('.header__submenu-disclosure--mega'));
+    });
+  };
+
   const scheduleMegaMenuClose = (details, delay) => {
     const closeDelay = delay ?? (details.matches('.header__submenu-disclosure')
       ? desktopMegaMenuHoverCloseDelay
@@ -1919,6 +1931,11 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
+    const topLevelMenuItem = event.target.closest?.('.header__menu > .header__menu-item');
+    if (topLevelMenuItem && !topLevelMenuItem.contains(event.relatedTarget)) {
+      closeOtherTopLevelHoverMenus(topLevelMenuItem);
+    }
+
     const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
     if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
       clearMegaMenuHoverTimer(nestedDetails);
@@ -1953,7 +1970,8 @@ if (!window.SpinelHeaderMenus) {
 
     const details = event.target.closest?.('.header__submenu-disclosure--hover');
     if (details) {
-      if (details.contains(event.relatedTarget)) return;
+      const menuItem = details.closest('.header__menu-item--has-children');
+      if (details.contains(event.relatedTarget) || menuItem?.contains(event.relatedTarget)) return;
 
       scheduleMegaMenuClose(details);
       return;
