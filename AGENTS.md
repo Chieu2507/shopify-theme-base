@@ -31,6 +31,15 @@ bao gồm cấu trúc/nội dung, trạng thái dữ liệu, desktop/mobile, int
 animation, merchant settings, Theme Editor, accessibility, performance, khác
 biệt được phép và phần ngoài phạm vi.
 
+- Baseline responsive riêng của Theme Editor: khi dùng Chrome ở zoom 90% và mở
+  đồng thời hai sidebar của Theme Editor, phải lấy kích thước iframe preview ở
+  giữa làm viewport kiểm thử, khoảng 1025px CSS chiều rộng và 795px chiều cao
+  (đo thực tế khoảng 1025.35px × 794.90px), không lấy `innerWidth` của toàn bộ
+  cửa sổ editor khoảng 1633px làm breakpoint. Ở viewport này header vẫn phải
+  giữ desktop; logo phải hiển thị đầy đủ, navigation được phép wrap có chủ đích
+  (ví dụ `About Us` xuống dòng dưới `All Jewelry`) và không được chuyển thành
+  mobile sidebar. Nếu kích thước preview hoặc zoom thay đổi, ghi lại số đo mới
+  trong checklist nghiệm thu.
 - Chỉ sửa phần cần thiết để đạt checklist; không refactor, format hoặc đổi API
   ngoài phạm vi.
 - Với bug, tái hiện khi có thể và xác định nguyên nhân gốc trước khi sửa. Nếu
