@@ -613,9 +613,18 @@ if (!window.SpinelHeaderMenus) {
   const setTransparentHeaderColorScheme = (header, showSurface) => {
     const defaultColorClass = header.dataset.defaultColorClass;
     const transparentColorClass = header.dataset.transparentColorClass;
-    if (defaultColorClass) header.classList.remove(defaultColorClass);
-    if (transparentColorClass) header.classList.remove(transparentColorClass);
     const activeColorClass = showSurface ? defaultColorClass : transparentColorClass;
+    const inactiveColorClass = showSurface ? transparentColorClass : defaultColorClass;
+    const isActiveSchemeApplied = !activeColorClass || header.classList.contains(activeColorClass);
+    const isInactiveSchemeRemoved = !inactiveColorClass
+      || inactiveColorClass === activeColorClass
+      || !header.classList.contains(inactiveColorClass);
+
+    if (isActiveSchemeApplied && isInactiveSchemeRemoved) return;
+
+    if (inactiveColorClass && inactiveColorClass !== activeColorClass) {
+      header.classList.remove(inactiveColorClass);
+    }
     if (activeColorClass) header.classList.add(activeColorClass);
   };
 
