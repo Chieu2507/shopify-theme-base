@@ -1706,6 +1706,16 @@ if (!window.SpinelHeaderMenus) {
     '.header__submenu-disclosure--hover[open]'
   ) || [];
 
+  const closeOtherTopLevelHoverMenus = (menuItem) => {
+    const header = menuItem.closest('[data-header]');
+    const activeMenu = menuItem.querySelector(':scope > .header__submenu-disclosure--hover');
+    getOpenHoverMenus(header).forEach((openMenu) => {
+      if (openMenu === activeMenu) return;
+      clearMegaMenuHoverTimer(openMenu);
+      closeMegaMenu(openMenu);
+    });
+  };
+
   const scheduleMegaMenuClose = (details, delay) => {
     const closeDelay = delay ?? (details.matches('.header__submenu-disclosure')
       ? desktopMegaMenuHoverCloseDelay
@@ -1919,6 +1929,11 @@ if (!window.SpinelHeaderMenus) {
       const header = document.getElementById(overlay.dataset.headerMenuOverlay);
       getOpenHoverMenus(header).forEach((openDetails) => scheduleMegaMenuClose(openDetails));
       return;
+    }
+
+    const topLevelMenuItem = event.target.closest?.('.header__menu > .header__menu-item');
+    if (topLevelMenuItem && !topLevelMenuItem.contains(event.relatedTarget)) {
+      closeOtherTopLevelHoverMenus(topLevelMenuItem);
     }
 
     const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
