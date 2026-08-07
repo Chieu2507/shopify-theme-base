@@ -1953,7 +1953,8 @@ if (!window.SpinelHeaderMenus) {
 
     const details = event.target.closest?.('.header__submenu-disclosure--hover');
     if (details) {
-      if (details.contains(event.relatedTarget)) return;
+      const menuItem = details.closest('.header__menu-item--has-children');
+      if (details.contains(event.relatedTarget) || menuItem?.contains(event.relatedTarget)) return;
 
       scheduleMegaMenuClose(details);
       return;
