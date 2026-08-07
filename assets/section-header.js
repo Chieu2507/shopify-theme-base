@@ -1712,7 +1712,7 @@ if (!window.SpinelHeaderMenus) {
     getOpenHoverMenus(header).forEach((openMenu) => {
       if (openMenu === activeMenu) return;
       clearMegaMenuHoverTimer(openMenu);
-      closeMegaMenu(openMenu);
+      closeMegaMenu(openMenu, !openMenu.matches('.header__submenu-disclosure--mega'));
     });
   };
 
