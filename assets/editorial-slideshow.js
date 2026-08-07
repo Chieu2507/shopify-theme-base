@@ -16,7 +16,7 @@ class EditorialSlideshow extends HTMLElement {
     this.tabs = [];
     this.progressBars = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.desktopNavigator = window.matchMedia('(min-width: 900px)');
+    this.desktopNavigator = window.matchMedia('(min-width: 990px)');
     this.isDesktopNavigator = this.desktopNavigator.matches;
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
@@ -231,7 +231,7 @@ class EditorialSlideshow extends HTMLElement {
     const { setupFirstViewportHeight } = await import(moduleUrl);
     if (this.abortController !== abortController || !this.isConnected) return;
 
-    this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 899 });
+    this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 989 });
   }
 
   initialize() {
