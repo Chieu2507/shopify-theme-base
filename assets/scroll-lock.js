@@ -32,6 +32,7 @@
   const getDeclarativeOwner = (element) => {
     if (element.dataset.scrollLockOwner) return element.dataset.scrollLockOwner;
     if (element.matches('[data-cart-drawer]')) return 'cart-drawer';
+    if (element.matches('[data-header-mobile-drawer]')) return 'mobile-menu';
     if (element.matches('[data-header-search-modal], [data-search-filter-dialog]')) return 'search';
     return 'modal';
   };
@@ -72,9 +73,31 @@
       }
       modes.add(mode);
     });
-    document.querySelectorAll('[scroll-lock][open], [scroll-lock].is-open, [scroll-lock].is-closing').forEach((element) => {
+    // Native dialogs are modal surfaces even when legacy markup does not yet
+    // declare `scroll-lock`. Keep the state-driven drawers here too, so every
+    // modal surface uses the same reference-counted lock and cannot unlock the
+    // page while another surface is still open or animating out.
+    document.querySelectorAll([
+      '[scroll-lock][open]',
+      '[scroll-lock].is-open',
+      '[scroll-lock].is-closing',
+      'dialog[open]',
+      '[data-cart-drawer].is-open',
+      '[data-cart-drawer].is-closing',
+      '[data-header-mobile-drawer][data-open="true"]',
+      '[data-header-mobile-drawer][data-motion-state="closing"]',
+    ].join(', ')).forEach((element) => {
       modes.add(ownerMode(getDeclarativeOwner(element)));
     });
+
+    // On mobile, the localization sheet is a non-native dialog inside an open
+    // details element. Desktop localization remains a lightweight dropdown and
+    // must not lock the page.
+    if (window.matchMedia('(max-width: 959px)').matches) {
+      document.querySelectorAll('.header__localization-selector[open] .header__localization-sheet[role="dialog"][aria-modal="true"]').forEach((element) => {
+        modes.add(ownerMode(getDeclarativeOwner(element)));
+      });
+    }
     return modes;
   };
 
@@ -176,21 +199,24 @@
   const observer = new MutationObserver((mutations) => {
     if (mutations.some((mutation) => {
       if (mutation.type === 'childList') return true;
-      if (mutation.attributeName === 'open' || mutation.attributeName === 'scroll-lock') return true;
+      if (mutation.attributeName === 'open' || mutation.attributeName === 'scroll-lock' || mutation.attributeName === 'data-open' || mutation.attributeName === 'data-motion-state') return true;
       return mutation.target instanceof Element
         && mutation.target !== root
-        && mutation.target.hasAttribute('scroll-lock');
+        && mutation.target.matches('[scroll-lock], [data-cart-drawer], [data-header-mobile-drawer]');
     })) scheduleUpdate();
   });
   observer.observe(document.documentElement, {
     attributes: true,
-    attributeFilter: ['class', 'open', 'scroll-lock'],
+    attributeFilter: ['class', 'open', 'scroll-lock', 'data-open', 'data-motion-state'],
     childList: true,
     subtree: true
   });
 
   document.addEventListener('click', measureScrollbarWidth, true);
-  window.addEventListener('resize', measureScrollbarWidth);
+  window.addEventListener('resize', () => {
+    measureScrollbarWidth();
+    scheduleUpdate();
+  });
   window.addEventListener('pageshow', scheduleUpdate);
   document.addEventListener('shopify:section:unload', () => window.setTimeout(update, 0), true);
 
