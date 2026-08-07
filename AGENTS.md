@@ -24,6 +24,35 @@
    UX. Với phần còn lại, suy luận từ demo và convention hiện có, rồi ghi giả
    định vào checklist nghiệm thu.
 
+### Responsive convention của Spinel (theo Horizon)
+
+- Dùng CSS viewport và mobile-first cho layout cấp trang theo các mốc Horizon:
+  - Mobile: `0–749px` — layout mặc định, không cần media query.
+  - Tablet/medium: `750–989px` — bắt đầu tại
+    `@media screen and (min-width: 750px)`.
+  - Desktop: `≥990px` — bắt đầu tại
+    `@media screen and (min-width: 990px)`.
+- Dùng viewport breakpoint cho thay đổi cấu trúc cấp trang. Kiểm tra các mốc
+  biên `749px`, `750px`, `989px` và `990px` khi sửa layout.
+- Không dùng `max-width: 990px` để định nghĩa tablet vì sẽ chồng lấn breakpoint
+  desktop; nếu cần giới hạn tablet, dùng `min-width: 750px` và
+  `max-width: 989px`.
+- Với component tái sử dụng có thể nằm trong nhiều container, ưu tiên
+  container query thay vì thêm viewport breakpoint. Parent phải khai báo
+  `container-type: inline-size` hoặc shorthand `container`, đặt
+  `container-name` ổn định, rồi dùng `@container` theo chiều rộng thực tế của
+  component. Ngưỡng container là contract nội bộ của component, không mặc định
+  là `750px` hoặc `990px`.
+- Dùng layout fluid/container và hai viewport breakpoint hiện có trước khi thêm
+  breakpoint mới. Chỉ thêm breakpoint hoặc container threshold khác khi có lý do
+  kỹ thuật rõ ràng và ghi lại ngoại lệ.
+- Đây là convention viewport của Horizon dành cho storefront, không phải giới
+  hạn viewport bắt buộc của Shopify. Shopify yêu cầu theme mobile responsive
+  nhưng không quy định min/max cố định cho mobile, tablet hoặc desktop; desktop
+  cũng không có max-width viewport bắt buộc.
+- Không áp dụng các mốc storefront này cho `checkout.liquid`; checkout có phạm
+  vi CSS riêng.
+
 ## 2. Requirement và phạm vi
 
 Trước khi code, chuyển requirement/demo thành checklist có thể quan sát được,
