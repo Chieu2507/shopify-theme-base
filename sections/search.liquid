@@ -37,10 +37,10 @@
       <label class="visually-hidden" for="SearchInput-{{ section.id }}">{{ 'search.label' | t }}</label>
       <input id="SearchInput-{{ section.id }}" class="search-page__input search-field__input" type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" data-search-input>
       <button class="search-page__clear search-field__clear" type="button" aria-label="{{ 'search.clear_search' | t | escape }}" data-search-clear{% if search.terms == blank %} hidden{% endif %}>
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="m7 7 10 10M17 7 7 17" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        {% render 'icon', name: 'close' %}
       </button>
       <button class="search-page__submit search-field__submit" type="submit" aria-label="{{ 'search.submit' | t | escape }}">
-        <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><circle cx="10.8" cy="10.8" r="6.7" fill="none" stroke="currentColor" stroke-width="1.5"/><path d="m16 16 4.4 4.4" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/></svg>
+        {% render 'icon', name: 'search' %}
       </button>
     </form>
   </div>
@@ -51,7 +51,7 @@
         {% if section.settings.enable_filtering or section.settings.enable_sorting %}
           <div class="search-page__toolbar">
             <button class="search-page__filter-button button button--{{ section.settings.filter_button_style }}" type="button" aria-haspopup="dialog" aria-controls="SearchFilters-{{ section.id }}" data-search-filter-open>
-              <svg viewBox="0 0 18 18" aria-hidden="true" focusable="false"><path d="M3 5h12M5 9h8M7 13h4" fill="none" stroke="currentColor" stroke-linecap="round"/><circle cx="6" cy="5" r="1.2" fill="currentColor"/><circle cx="11" cy="9" r="1.2" fill="currentColor"/><circle cx="9" cy="13" r="1.2" fill="currentColor"/></svg>
+              {% render 'icon', name: 'filter' %}
               <span>{{ 'search.filter_and_sort' | t }}</span>{% if active_filter_count > 0 %}<span>({{ active_filter_count }})</span>{% endif %}
             </button>
           </div>
@@ -81,7 +81,7 @@
                 {% if section.settings.enable_sorting %}
                   <div class="search-page__sort-group">
                     <label for="SearchSort-{{ section.id }}">{{ 'search.sort_by' | t }}</label>
-                    <div class="search-page__select-wrap"><select id="SearchSort-{{ section.id }}" name="sort_by">{% for option in search.sort_options %}<option value="{{ option.value }}"{% if option.value == search_sort_by %} selected{% endif %}>{{ option.name }}</option>{% endfor %}</select><svg viewBox="0 0 12 8" aria-hidden="true"><path d="m1 1 5 5 5-5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg></div>
+                    <div class="search-page__select-wrap"><select id="SearchSort-{{ section.id }}" name="sort_by">{% for option in search.sort_options %}<option value="{{ option.value }}"{% if option.value == search_sort_by %} selected{% endif %}>{{ option.name }}</option>{% endfor %}</select>{% render 'icon', name: 'chevron-down' %}</div>
                   </div>
                 {% endif %}
 
@@ -105,7 +105,7 @@
                         endif
                       %}
                       <details class="search-page__filter-group"{% if filter_open %} open{% endif %}>
-                        <summary><span>{{ filter.label | escape }}</span><svg viewBox="0 0 12 12" aria-hidden="true"><path d="M2 6h8" stroke="currentColor" stroke-linecap="round"/></svg></summary>
+                        <summary><span>{{ filter.label | escape }}</span>{% render 'icon', name: 'minus' %}</summary>
                         {% if filter.type == 'price_range' %}
                           <div class="search-page__price-filter">
                             <div><label for="SearchFilter-{{ filter.label | handle }}-Min-{{ section.id }}">{{ 'search.price_from' | t }}</label><input id="SearchFilter-{{ filter.label | handle }}-Min-{{ section.id }}" type="number" name="{{ filter.min_value.param_name }}" min="0" max="{{ filter.range_max | money_without_currency | replace: ',', '' }}" placeholder="0"{% if filter.min_value.value != nil %} value="{{ filter.min_value.value | money_without_currency | replace: ',', '' }}"{% endif %}></div>
