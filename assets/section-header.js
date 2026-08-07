@@ -38,7 +38,6 @@ if (!window.SpinelHeaderMenus) {
   const responsiveHeaderEntryFrames = new WeakMap();
   const responsiveHeaderExitMotions = new WeakMap();
   const mobileStickyHeaderStates = new WeakMap();
-  const localizationHoverTimers = new WeakMap();
   let wasMobileHeaderViewport = window.matchMedia(headerMobileMediaQuery).matches;
 
   const isMobileHeaderViewport = () => window.matchMedia(headerMobileMediaQuery).matches;
