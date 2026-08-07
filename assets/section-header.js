@@ -1832,7 +1832,6 @@ if (!window.SpinelHeaderMenus) {
       sourceFinished: false,
       targetHeightFinished: false
     };
-    header.dataset.megaSurfaceHandoff = 'true';
     if (handoff.fromIsMega && !handoff.toIsMega) {
       details.dataset.megaMenuHandoff = 'from-mega';
     }
@@ -1842,7 +1841,6 @@ if (!window.SpinelHeaderMenus) {
       if (desktopMegaMenuHandoffs.get(header) !== handoffState) return;
       if (!handoffState.sourceFinished || !handoffState.targetHeightFinished) return;
       desktopMegaMenuHandoffs.delete(header);
-      delete header.dataset.megaSurfaceHandoff;
       if (handoffState.fromIsMega && !handoffState.toIsMega) {
         resetDesktopMegaMenuBackground(header);
       } else {
@@ -1874,7 +1872,6 @@ if (!window.SpinelHeaderMenus) {
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
     if (activeHandoff && activeHandoff.to !== details) {
       desktopMegaMenuHandoffs.delete(header);
-      delete header.dataset.megaSurfaceHandoff;
     }
 
     if (details.open) {
