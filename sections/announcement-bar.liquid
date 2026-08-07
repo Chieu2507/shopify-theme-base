@@ -20,10 +20,10 @@
     endcase
   endfor
 
-  assign announcement_x_url = settings.x_url | default: 'https://x.com'
-  assign announcement_facebook_url = settings.facebook_url | default: 'https://www.facebook.com'
-  assign announcement_pinterest_url = settings.pinterest_url | default: 'https://www.pinterest.com'
-  assign announcement_instagram_url = settings.instagram_url | default: 'https://www.instagram.com'
+  assign announcement_x_url = section.settings.x_url | default: settings.x_url | default: 'https://x.com'
+  assign announcement_facebook_url = section.settings.facebook_url | default: settings.facebook_url | default: 'https://www.facebook.com'
+  assign announcement_pinterest_url = section.settings.pinterest_url | default: settings.pinterest_url | default: 'https://www.pinterest.com'
+  assign announcement_instagram_url = section.settings.instagram_url | default: settings.instagram_url | default: 'https://www.instagram.com'
   assign announcement_social_count = 4
   assign announcement_type = section.settings.layout | default: 'slider'
   assign announcement_layout = announcement_type
@@ -66,6 +66,7 @@
     data-section-id="{{ section.id }}"
     data-behavior="{% if section.settings.enable_rotation %}rotate{% else %}show_all{% endif %}"
     data-interval="{{ section.settings.autoplay_interval | times: 1000 }}"
+    data-pause-on-hover="{{ section.settings.pause_on_hover }}"
     data-layout="{{ announcement_layout }}"
     data-deferred-module="{{ announcement_module | asset_url }}"
     aria-label="{{ 'announcement_bar.announcement' | t | escape }}"
@@ -528,14 +529,6 @@
   "settings": [
     {
       "type": "header",
-      "content": "Theme information"
-    },
-    {
-      "type": "paragraph",
-      "content": "Social icons display only when Type is set to Slider with social links."
-    },
-    {
-      "type": "header",
       "content": "Content",
       "visible_if": "{{ section.settings.layout == 'slider_social' }}"
     },
@@ -577,6 +570,50 @@
       "default": "slider"
     },
     {
+      "type": "url",
+      "id": "x_url",
+      "label": "X / Twitter",
+      "visible_if": "{{ section.settings.layout == 'slider_social' }}"
+    },
+    {
+      "type": "url",
+      "id": "facebook_url",
+      "label": "Facebook",
+      "visible_if": "{{ section.settings.layout == 'slider_social' }}"
+    },
+    {
+      "type": "url",
+      "id": "pinterest_url",
+      "label": "Pinterest",
+      "visible_if": "{{ section.settings.layout == 'slider_social' }}"
+    },
+    {
+      "type": "url",
+      "id": "instagram_url",
+      "label": "Instagram",
+      "visible_if": "{{ section.settings.layout == 'slider_social' }}"
+    },
+    {
+      "type": "range",
+      "id": "height_desktop",
+      "min": 37,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "label": "Desktop height",
+      "default": 37
+    },
+    {
+      "type": "range",
+      "id": "height_mobile",
+      "min": 32,
+      "max": 52,
+      "step": 1,
+      "unit": "px",
+      "label": "Mobile height",
+      "default": 32
+    },
+    {
       "type": "header",
       "content": "Slider behavior",
       "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
@@ -584,7 +621,14 @@
     {
       "type": "checkbox",
       "id": "enable_rotation",
-      "label": "Rotate",
+      "label": "Auto-rotate",
+      "default": true,
+      "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "pause_on_hover",
+      "label": "Pause on hover",
       "default": true,
       "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
     },
@@ -595,7 +639,7 @@
       "max": 10,
       "step": 1,
       "unit": "s",
-      "label": "Autoplay interval",
+      "label": "Change every",
       "default": 5,
       "visible_if": "{{ section.settings.layout == 'slider' and section.settings.enable_rotation or section.settings.layout == 'slider_social' and section.settings.enable_rotation }}"
     },
@@ -638,26 +682,6 @@
       "label": "Pause marquee on hover or focus",
       "default": true,
       "visible_if": "{{ section.settings.layout == 'marquee' }}"
-    },
-    {
-      "type": "range",
-      "id": "height_desktop",
-      "min": 37,
-      "max": 60,
-      "step": 1,
-      "unit": "px",
-      "label": "Desktop height",
-      "default": 37
-    },
-    {
-      "type": "range",
-      "id": "height_mobile",
-      "min": 32,
-      "max": 52,
-      "step": 1,
-      "unit": "px",
-      "label": "Mobile height",
-      "default": 32
     },
     {
       "type": "header",

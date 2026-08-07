@@ -13,6 +13,7 @@ if (!customElements.get('announcement-bar')) {
       this.nextButton = this.querySelector('[data-announcement-step="1"]');
       this.currentIndicator = this.querySelector('[data-announcement-current]');
       this.totalIndicator = this.querySelector('[data-announcement-total]');
+      this.pauseOnHover = this.dataset.pauseOnHover === 'true';
       this.index = 0;
       this.interval = Number(this.dataset.interval) || 5000;
       this.motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -159,11 +160,15 @@ if (!customElements.get('announcement-bar')) {
     }
 
     handleMouseEnter() {
+      if (!this.pauseOnHover) return;
+
       this.isPointerInside = true;
       this.stopRotation();
     }
 
     handleMouseLeave() {
+      if (!this.pauseOnHover) return;
+
       this.isPointerInside = false;
       this.startRotation();
     }
