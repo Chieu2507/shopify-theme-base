@@ -3,10 +3,8 @@
 
 {% liquid
   assign first_slide = section.blocks | first
-  assign first_slide_image = first_slide.settings.image | default: first_slide.settings.mobile_image
-  assign first_slide_mobile_image = first_slide.settings.mobile_image | default: first_slide_image
-  assign desktop_image_ratio = first_slide_image.aspect_ratio | default: 1.7778
-  assign mobile_image_ratio = first_slide_mobile_image.aspect_ratio | default: desktop_image_ratio
+  assign desktop_image_ratio = first_slide.settings.image.aspect_ratio | default: first_slide.settings.mobile_image.aspect_ratio | default: 1.7778
+  assign mobile_image_ratio = first_slide.settings.mobile_image.aspect_ratio | default: desktop_image_ratio
   assign slide_count = section.blocks.size
   assign has_multiple_slides = false
   if slide_count > 1
@@ -29,6 +27,7 @@
   data-motion-enabled="{{ settings.enable_motion }}"
   data-autoplay="{{ section.settings.autoplay }}"
   data-autoplay-delay="{{ section.settings.autoplay_delay | times: 1000 }}"
+  data-height-mode="{{ height_mode }}"
   data-deferred-module="{{ 'editorial-slideshow.js' | asset_url }}"
   data-first-viewport-height-module="{{ 'first-viewport-height.js' | asset_url }}"
   data-first-viewport-height-mode="{{ height_mode }}"
