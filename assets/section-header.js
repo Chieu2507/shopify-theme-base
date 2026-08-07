@@ -782,8 +782,10 @@ if (!window.SpinelHeaderMenus) {
         '.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'
       ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
+    const useSurfaceScheme = showSurface
+      && !header.querySelector('.header__submenu-disclosure[data-closing="true"], .header__actions .header__localization-selector[data-closing="true"]');
     header.classList.toggle('header--surface-visible', showSurface);
-    setTransparentHeaderColorScheme(header, showSurface);
+    setTransparentHeaderColorScheme(header, useSurfaceScheme);
   };
 
   const syncResponsiveHeaders = () => {
