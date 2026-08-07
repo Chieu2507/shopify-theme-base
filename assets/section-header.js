@@ -528,9 +528,7 @@ if (!window.SpinelHeaderMenus) {
     const isMobile = window.matchMedia(headerMobileMediaQuery).matches;
     const openMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-open="true"]:not([data-motion-state="closing"])');
     const closingMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-motion-state="closing"]');
-    const shouldLock = isMobile
-      ? Boolean(openMobileDrawer || closingMobileDrawer)
-      : Boolean(document.querySelector('.header__submenu-disclosure--mega[open]'));
+    const shouldLock = Boolean(openMobileDrawer || closingMobileDrawer);
     const shouldShowOverlay = isMobile
       ? Boolean(openMobileDrawer)
       : Boolean(document.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])'));
