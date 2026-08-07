@@ -25,6 +25,9 @@
       this.addons = this.querySelector('[data-cart-drawer-addons]');
       this.shippingEstimator = this.querySelector('[data-cart-drawer-shipping-estimator]');
       this.shippingRates = this.querySelector('[data-cart-drawer-shipping-rates]');
+      this.shippingCountry = this.querySelector('[data-cart-drawer-shipping-country]');
+      this.shippingProvinceField = this.querySelector('[data-cart-drawer-shipping-province-field]');
+      this.shippingProvince = this.querySelector('[data-cart-drawer-shipping-province]');
       this.complementaryProducts = this.readComplementaryProducts();
       this.recommendationTimer = null;
       this.recommendationPaused = false;
@@ -121,6 +124,9 @@
         input.addEventListener('change', () => this.toggleAddon(input), { signal });
       });
       this.shippingEstimator?.addEventListener('submit', (event) => this.estimateShipping(event), { signal });
+      this.shippingCountry?.addEventListener('change', () => this.updateShippingProvinces(), { signal });
+      this.shippingEstimator?.addEventListener('input', () => this.clearShippingFieldErrors(), { signal });
+      this.updateShippingProvinces();
       if ('PointerEvent' in window) {
         this.handle?.addEventListener('pointerdown', (event) => this.startHandleDrag(event), { signal });
         this.handle?.addEventListener('pointermove', (event) => this.moveHandleDrag(event), { signal });
@@ -595,9 +601,12 @@
       const form = event.currentTarget;
       const data = new FormData(form);
       const country = String(data.get('country') || '').trim();
+      const province = String(data.get('province') || '').trim();
       const zip = String(data.get('zip') || '').trim();
       if (!country || !zip) return;
+      this.clearShippingFieldErrors();
       const query = new URLSearchParams({ 'shipping_address[country]': country, 'shipping_address[zip]': zip });
+      if (province) query.set('shipping_address[province]', province);
       this.shippingRates.textContent = this.dataset.shippingCalculatingLabel || 'Calculating shipping rates';
       try {
         const prepare = await fetch(this.localeUrl(`cart/prepare_shipping_rates.json?${query}`), {
@@ -605,7 +614,7 @@
           headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
           credentials: 'same-origin'
         });
-        if (!prepare.ok && prepare.status !== 202) throw new Error(this.dataset.shippingErrorLabel);
+        if (!prepare.ok && prepare.status !== 202) throw await this.shippingErrorFromResponse(prepare);
         const rates = await this.pollShippingRates(query);
         this.shippingRates.innerHTML = rates.length
           ? `<span>${rates.map((rate) => `${this.escape(rate.presentment_name || rate.name)}: ${this.escape(rate.price)} ${this.escape(rate.currency || this.currency)}`).join('</span><span>')}</span>`
@@ -613,6 +622,51 @@
       } catch (error) {
         this.shippingRates.textContent = error.message || this.dataset.shippingErrorLabel;
       }
+    }
+
+    updateShippingProvinces() {
+      if (!this.shippingCountry || !this.shippingProvince || !this.shippingProvinceField) return;
+      const defaultCountry = this.shippingCountry.dataset.defaultCountry;
+      if (defaultCountry && !this.shippingCountry.value) this.shippingCountry.value = defaultCountry;
+      const country = this.shippingCountry.options[this.shippingCountry.selectedIndex];
+      let provinces = [];
+      try {
+        provinces = JSON.parse(country?.dataset.provinces || '[]');
+      } catch (_) {
+        provinces = [];
+      }
+      const hasProvinces = Array.isArray(provinces) && provinces.length > 0;
+      this.shippingProvince.replaceChildren();
+      if (hasProvinces) {
+        const placeholder = new Option('Select a state', '', true, true);
+        placeholder.disabled = true;
+        this.shippingProvince.add(placeholder);
+        provinces.forEach((province) => {
+          const [label, value] = Array.isArray(province)
+            ? province
+            : [province.name, province.code || province.name];
+          this.shippingProvince.add(new Option(label, value));
+        });
+      }
+      this.shippingProvince.required = hasProvinces;
+      this.shippingProvince.disabled = !hasProvinces;
+      this.shippingProvinceField.hidden = !hasProvinces;
+      this.clearShippingFieldErrors();
+    }
+
+    clearShippingFieldErrors() {
+      this.shippingEstimator?.querySelectorAll('[aria-invalid="true"]').forEach((field) => field.removeAttribute('aria-invalid'));
+    }
+
+    async shippingErrorFromResponse(response) {
+      const fallback = this.dataset.shippingErrorLabel || 'Shipping rates could not be calculated.';
+      const result = await response.json().catch(() => null);
+      if (!result || typeof result !== 'object') return new Error(fallback);
+      const [field, messages] = Object.entries(result)[0] || [];
+      const message = Array.isArray(messages) ? messages[0] : messages;
+      const input = field && this.shippingEstimator?.elements.namedItem(field);
+      input?.setAttribute('aria-invalid', 'true');
+      return new Error(message || fallback);
     }
 
     async pollShippingRates(query) {
