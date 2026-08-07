@@ -57,6 +57,12 @@ class EditorialSlideshow extends HTMLElement {
     this.bindNavigatorTabs();
     this.autoplayToggle?.addEventListener('click', () => this.toggleAutoplay(), { signal });
     this.navigatorToggle?.addEventListener('click', () => this.toggleNavigator(), { signal });
+    this.previousButton?.addEventListener('click', () => {
+      this.preloadAdjacentSlides((this.activeIndex || 0) - 1);
+    }, { signal });
+    this.nextButton?.addEventListener('click', () => {
+      this.preloadAdjacentSlides((this.activeIndex || 0) + 1);
+    }, { signal });
     document.addEventListener('visibilitychange', this.handleVisibilityChange, { signal });
     document.addEventListener('shopify:block:select', this.handleBlockSelect, { signal });
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
@@ -124,6 +130,22 @@ class EditorialSlideshow extends HTMLElement {
     return this.slider
       ? [...this.slider.querySelectorAll('.editorial-slideshow__slide:not(.swiper-slide-duplicate)')]
       : [];
+  }
+
+  preloadSlideImage(slide) {
+    slide?.querySelectorAll('img[loading="lazy"]').forEach((image) => {
+      if (!image.complete || image.naturalWidth === 0) image.loading = 'eager';
+    });
+  }
+
+  preloadAdjacentSlides(index = this.activeIndex || 0) {
+    const slides = this.getSlides();
+    if (slides.length < 2) return;
+
+    const normalizedIndex = (index + slides.length) % slides.length;
+    [normalizedIndex, normalizedIndex - 1, normalizedIndex + 1].forEach((slideIndex) => {
+      this.preloadSlideImage(slides[(slideIndex + slides.length) % slides.length]);
+    });
   }
 
   getSlideSignature() {
@@ -343,6 +365,8 @@ class EditorialSlideshow extends HTMLElement {
     this.classList.toggle('editorial-slideshow--ready', slideCount > 0);
     if (!slideCount) return;
 
+    this.preloadAdjacentSlides(initialSlide);
+
     this.swiper = new Swiper(this.slider, {
       modules: [A11y, EffectFade, Navigation],
       slidesPerView: 1,
@@ -433,6 +457,7 @@ class EditorialSlideshow extends HTMLElement {
 
     const activeIndex = Math.max(0, Math.min(index, this.tabs.length - 1));
     this.activeIndex = activeIndex;
+    this.preloadAdjacentSlides(activeIndex);
     this.tabs.forEach((tab, tabIndex) => {
       const isActive = tabIndex === activeIndex;
       tab.classList.toggle('is-active', isActive);
@@ -454,6 +479,7 @@ class EditorialSlideshow extends HTMLElement {
     if (!this.swiper || this.slideCount < 2) return;
 
     const nextIndex = (index + this.slideCount) % this.slideCount;
+    this.preloadAdjacentSlides(nextIndex);
     if (moveFocus) this.tabs[nextIndex]?.focus();
     this.swiper.slideToLoop(nextIndex);
   }
