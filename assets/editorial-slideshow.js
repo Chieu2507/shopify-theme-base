@@ -8,18 +8,16 @@ class EditorialSlideshow extends HTMLElement {
     const { signal } = this.abortController;
     this.slider = this.querySelector('[data-editorial-slideshow-slider]');
     this.navigator = this.querySelector('[data-editorial-navigator]');
+    this.tabsContainer = this.querySelector('[data-editorial-slide-tabs]');
     this.previousButton = this.querySelector('[data-editorial-previous]');
     this.nextButton = this.querySelector('[data-editorial-next]');
     this.autoplayToggle = this.querySelector('[data-editorial-autoplay-toggle]');
     this.navigatorToggle = this.querySelector('[data-editorial-navigator-toggle]');
-    this.tabs = [...this.querySelectorAll('[data-editorial-slide-tab]')];
-    this.progressBars = [...this.querySelectorAll('.editorial-slideshow__tab-progress span')];
+    this.tabs = [];
+    this.progressBars = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.desktopNavigator = window.matchMedia('(min-width: 900px)');
-    this.classList.toggle(
-      'editorial-slideshow--navigator-collapsed',
-      this.desktopNavigator.matches && this.navigator?.classList.contains('is-collapsed'),
-    );
+    this.desktopNavigator = window.matchMedia('(min-width: 990px)');
+    this.isDesktopNavigator = this.desktopNavigator.matches;
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
     this.autoplayManuallyPaused = false;
@@ -27,6 +25,7 @@ class EditorialSlideshow extends HTMLElement {
     this.progressStartedAt = null;
     this.progressStartElapsed = 0;
     this.progressStartIndex = null;
+    this.firstSlideImage = null;
     this.navigatorRevealTimer = null;
     this.navigatorRevealFallbackTimer = null;
     this.navigatorMorphTimer = null;
@@ -44,7 +43,11 @@ class EditorialSlideshow extends HTMLElement {
     this.handleKeydown = this.handleKeydown.bind(this);
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handleDesktopNavigatorChange = this.handleDesktopNavigatorChange.bind(this);
+    this.handleViewportResize = this.handleViewportResize.bind(this);
+    this.handleFirstSlideImageChange = this.handleFirstSlideImageChange.bind(this);
 
+    this.syncNavigatorViewportState();
+    this.buildNavigatorTabs();
     this.addEventListener('keydown', this.handleKeydown, { signal });
     this.addEventListener('pointerdown', this.handlePointerDown, { signal });
     this.addEventListener('focusin', () => this.handleFocusIn(), { signal });
@@ -60,6 +63,14 @@ class EditorialSlideshow extends HTMLElement {
     document.addEventListener('shopify:block:select', this.handleBlockSelect, { signal });
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
     this.desktopNavigator.addEventListener?.('change', this.handleDesktopNavigatorChange, { signal });
+    window.addEventListener('resize', this.handleViewportResize, { signal });
+
+    if (this.dataset.heightMode === 'adapt') {
+      this.firstSlideImage = this.slider?.querySelector('.editorial-slideshow__slide:first-child img');
+      this.firstSlideImage?.addEventListener('load', this.handleFirstSlideImageChange, { signal });
+      window.addEventListener('resize', this.handleFirstSlideImageChange, { signal });
+      this.updateFirstSlideImageRatio();
+    }
 
     if (this.autoplayToggle && !this.autoplaySetting) {
       this.autoplayToggle.disabled = true;
@@ -89,6 +100,9 @@ class EditorialSlideshow extends HTMLElement {
     this.visibilityObserver = null;
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
+    if (this.firstSlideImageRatioFrame) window.cancelAnimationFrame(this.firstSlideImageRatioFrame);
+    this.firstSlideImageRatioFrame = null;
+    this.firstSlideImage = null;
     this.clearNavigatorRevealTimer();
     this.clearNavigatorMorph();
     if (this.pointerFocusTimer) window.clearTimeout(this.pointerFocusTimer);
@@ -96,9 +110,117 @@ class EditorialSlideshow extends HTMLElement {
     this.isPointerFocus = false;
     this.navigator?.classList.remove('is-transitioning');
     this.navigator?.classList.remove('is-collapsed');
+    this.navigator?.setAttribute('hidden', '');
+    this.classList.remove('editorial-slideshow--navigator-collapsed', 'editorial-slideshow--has-navigator');
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.pauseReasons?.clear();
+  }
+
+  getSlides() {
+    return this.slider
+      ? [...this.slider.querySelectorAll('.editorial-slideshow__slide:not(.swiper-slide-duplicate)')]
+      : [];
+  }
+
+  updateNavigatorToggleState(isCollapsed) {
+    if (!this.navigatorToggle) return;
+
+    this.navigatorToggle.setAttribute('aria-expanded', String(!isCollapsed));
+    this.navigatorToggle.setAttribute(
+      'aria-label',
+      isCollapsed
+        ? this.navigatorToggle.dataset.labelExpand || 'Expand slideshow navigation'
+        : this.navigatorToggle.dataset.labelCollapse || 'Collapse slideshow navigation',
+    );
+  }
+
+  syncNavigatorViewportState({ resetDesktop = false } = {}) {
+    if (!this.navigator) return;
+
+    this.clearNavigatorMorph();
+    this.navigator.classList.remove('is-transitioning');
+
+    if (this.desktopNavigator.matches) {
+      if (resetDesktop) this.navigator.classList.add('is-collapsed');
+
+      const isCollapsed = this.navigator.classList.contains('is-collapsed');
+      this.classList.toggle('editorial-slideshow--navigator-collapsed', isCollapsed);
+      this.updateNavigatorToggleState(isCollapsed);
+      return;
+    }
+
+    this.navigator.classList.remove('is-collapsed');
+    this.classList.remove('editorial-slideshow--navigator-collapsed');
+    this.updateNavigatorToggleState(false);
+  }
+
+  syncSlideRatios() {
+    const firstSlide = this.getSlides()[0];
+    if (!firstSlide) return;
+
+    const desktopRatio = Number(firstSlide.dataset.editorialDesktopRatio);
+    const mobileRatio = Number(firstSlide.dataset.editorialMobileRatio);
+    if (desktopRatio > 0) this.style.setProperty('--editorial-slideshow-desktop-ratio', desktopRatio);
+    if (mobileRatio > 0) this.style.setProperty('--editorial-slideshow-mobile-ratio', mobileRatio);
+  }
+
+  buildNavigatorTabs() {
+    if (!this.tabsContainer) return;
+
+    this.tabsContainer.replaceChildren();
+    this.getSlides().forEach((slide, index) => {
+      const tab = document.createElement('button');
+      const label = document.createElement('span');
+      const detail = document.createElement('span');
+      const number = document.createElement('span');
+      const progress = document.createElement('span');
+      const progressBar = document.createElement('span');
+      const isActive = index === 0;
+
+      tab.className = `editorial-slideshow__tab${isActive ? ' is-active' : ''}`;
+      tab.type = 'button';
+      tab.setAttribute('role', 'tab');
+      tab.setAttribute('aria-selected', String(isActive));
+      tab.setAttribute('tabindex', isActive ? '0' : '-1');
+      tab.dataset.editorialSlideTab = '';
+      tab.dataset.editorialIndex = String(index);
+
+      label.className = 'editorial-slideshow__tab-label';
+      label.textContent = slide.dataset.editorialNavLabel || 'Slide';
+      detail.className = 'editorial-slideshow__tab-detail';
+      detail.textContent = slide.dataset.editorialNavDetail || 'EDITORIAL';
+      number.className = 'editorial-slideshow__tab-number';
+      number.textContent = String(index + 1).padStart(2, '0');
+      progress.className = 'editorial-slideshow__tab-progress';
+      progress.setAttribute('aria-hidden', 'true');
+      progressBar.setAttribute('aria-hidden', 'true');
+      progress.append(progressBar);
+      tab.append(label, detail, number, progress);
+      this.tabsContainer.append(tab);
+    });
+
+    this.tabs = [...this.tabsContainer.querySelectorAll('[data-editorial-slide-tab]')];
+    this.progressBars = [...this.tabsContainer.querySelectorAll('.editorial-slideshow__tab-progress span')];
+    this.syncSlideRatios();
+  }
+
+  handleFirstSlideImageChange() {
+    if (this.firstSlideImageRatioFrame) return;
+
+    this.firstSlideImageRatioFrame = window.requestAnimationFrame(() => {
+      this.firstSlideImageRatioFrame = null;
+      this.updateFirstSlideImageRatio();
+    });
+  }
+
+  updateFirstSlideImageRatio() {
+    if (this.dataset.heightMode !== 'adapt' || !this.firstSlideImage?.naturalWidth || !this.firstSlideImage?.naturalHeight) return;
+
+    this.style.setProperty(
+      '--editorial-slideshow-mobile-ratio',
+      this.firstSlideImage.naturalWidth / this.firstSlideImage.naturalHeight,
+    );
   }
 
   async loadFirstViewportHeight() {
@@ -109,14 +231,18 @@ class EditorialSlideshow extends HTMLElement {
     const { setupFirstViewportHeight } = await import(moduleUrl);
     if (this.abortController !== abortController || !this.isConnected) return;
 
-    this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 899 });
+    this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 989 });
   }
 
   initialize() {
-    if (!this.slider?.querySelector('.swiper-slide')) return;
-
-    const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
+    const slideCount = this.getSlides().length;
     this.slideCount = slideCount;
+    const hasNavigator = Boolean(this.navigator && slideCount > 1 && this.tabs.length > 1);
+    this.classList.toggle('editorial-slideshow--has-navigator', hasNavigator);
+    this.navigator?.toggleAttribute('hidden', !hasNavigator);
+    if (!hasNavigator) this.classList.remove('editorial-slideshow--navigator-collapsed');
+    if (!slideCount) return;
+
     this.classList.add('editorial-slideshow--ready');
 
     this.swiper = new Swiper(this.slider, {
@@ -284,13 +410,7 @@ class EditorialSlideshow extends HTMLElement {
     this.navigator.classList.remove('is-transitioning');
     this.classList.toggle('editorial-slideshow--navigator-collapsed', isCollapsed);
 
-    this.navigatorToggle?.setAttribute('aria-expanded', String(!isCollapsed));
-    this.navigatorToggle?.setAttribute(
-      'aria-label',
-      isCollapsed
-        ? this.navigatorToggle.dataset.labelExpand || 'Expand slideshow navigation'
-        : this.navigatorToggle.dataset.labelCollapse || 'Collapse slideshow navigation',
-    );
+    this.updateNavigatorToggleState(isCollapsed);
 
     if (this.reduceMotion.matches) {
       this.navigator.classList.toggle('is-collapsed', isCollapsed);
@@ -320,18 +440,20 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   handleDesktopNavigatorChange(event) {
-    if (!event.matches) this.setNavigatorExpandedForMobile();
+    const isDesktop = Boolean(event.matches);
+    const crossedBreakpoint = isDesktop !== this.isDesktopNavigator;
+    this.isDesktopNavigator = isDesktop;
+    this.syncNavigatorViewportState({ resetDesktop: isDesktop && crossedBreakpoint });
   }
 
-  setNavigatorExpandedForMobile() {
-    this.clearNavigatorMorph();
-    this.navigator?.classList.remove('is-collapsed', 'is-transitioning');
-    this.classList.remove('editorial-slideshow--navigator-collapsed');
-    this.navigatorToggle?.setAttribute('aria-expanded', 'true');
-    this.navigatorToggle?.setAttribute(
-      'aria-label',
-      this.navigatorToggle.dataset.labelCollapse || 'Collapse slideshow navigation',
-    );
+  handleViewportResize() {
+    const isDesktop = this.desktopNavigator.matches;
+    if (isDesktop !== this.isDesktopNavigator) {
+      this.handleDesktopNavigatorChange({ matches: isDesktop });
+      return;
+    }
+
+    this.syncNavigatorViewportState();
   }
 
   handleKeydown(event) {
@@ -443,14 +565,19 @@ class EditorialSlideshow extends HTMLElement {
 
     if (!this.isPlaying) return;
 
-    const progressBar = this.progressBars[activeIndex];
-    if (!progressBar) return;
-
     const resumeElapsed = this.manualPauseProgress?.index === activeIndex
       ? this.manualPauseProgress.elapsed
       : 0;
     const remainingDelay = Math.max(0, this.autoplayDelay - resumeElapsed);
     this.manualPauseProgress = null;
+
+    const progressBar = this.progressBars[activeIndex];
+    if (!progressBar) {
+      this.autoplayTimer = window.setTimeout(() => {
+        this.swiper?.slideNext();
+      }, remainingDelay);
+      return;
+    }
 
     progressBar.style.transform = `scaleX(${resumeElapsed / this.autoplayDelay})`;
     this.progressFrame = window.requestAnimationFrame(() => {
