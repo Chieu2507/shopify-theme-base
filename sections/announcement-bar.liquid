@@ -25,14 +25,27 @@
   assign announcement_pinterest_url = settings.pinterest_url | default: 'https://www.pinterest.com'
   assign announcement_instagram_url = settings.instagram_url | default: 'https://www.instagram.com'
   assign announcement_social_count = 4
-  assign announcement_layout = section.settings.layout | default: 'slider'
+  assign announcement_type = section.settings.layout | default: 'slider'
+  assign announcement_layout = announcement_type
+  assign announcement_section_width = 'full'
   assign announcement_module = 'section-announcement-bar.js'
   assign show_side_content = false
 
+  if announcement_type == 'slider_social'
+    assign announcement_layout = 'slider'
+    assign announcement_section_width = 'page'
+    assign show_side_content = true
+  elsif announcement_type == 'slider' and section.settings.section_width == 'page'
+    comment
+      Keep legacy Slider + Page width configurations working after Section width
+      is removed from the editor.
+    endcomment
+    assign announcement_section_width = 'page'
+    assign show_side_content = true
+  endif
+
   if announcement_layout == 'marquee'
     assign announcement_module = 'section-marquee.js'
-  elsif section.settings.section_width == 'page'
-    assign show_side_content = true
   endif
 
   assign show_navigation = false
@@ -48,7 +61,7 @@
 
 {% if section.blocks.size > 0 %}
   <announcement-bar
-    class="announcement-bar announcement-bar--{{ announcement_layout }} announcement-bar--{{ section.settings.section_width | default: 'full' }} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
+    class="announcement-bar announcement-bar--{{ announcement_layout }} announcement-bar--{{ announcement_section_width }} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
     style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px;"
     data-section-id="{{ section.id }}"
     data-behavior="{% if section.settings.enable_rotation %}rotate{% else %}show_all{% endif %}"
@@ -519,25 +532,25 @@
     },
     {
       "type": "paragraph",
-      "content": "Social icons display only when Type is set to Slider and Section width is set to Page width."
+      "content": "Social icons display only when Type is set to Slider with social links."
     },
     {
       "type": "header",
       "content": "Content",
-      "visible_if": "{{ section.settings.layout == 'slider' and section.settings.section_width == 'page' }}"
+      "visible_if": "{{ section.settings.layout == 'slider_social' }}"
     },
     {
       "type": "text",
       "id": "appointment_label",
       "label": "Right link label",
       "default": "PRIVATE APPOINTMENTS",
-      "visible_if": "{{ section.settings.layout == 'slider' and section.settings.section_width == 'page' }}"
+      "visible_if": "{{ section.settings.layout == 'slider_social' }}"
     },
     {
       "type": "url",
       "id": "appointment_link",
       "label": "Right link",
-      "visible_if": "{{ section.settings.layout == 'slider' and section.settings.section_width == 'page' }}"
+      "visible_if": "{{ section.settings.layout == 'slider_social' }}"
     },
     {
       "type": "header",
@@ -553,6 +566,10 @@
           "label": "Slider"
         },
         {
+          "value": "slider_social",
+          "label": "Slider with social links"
+        },
+        {
           "value": "marquee",
           "label": "Infinite marquee"
         }
@@ -560,33 +577,16 @@
       "default": "slider"
     },
     {
-      "type": "select",
-      "id": "section_width",
-      "label": "Section width",
-      "options": [
-        {
-          "value": "page",
-          "label": "Page width"
-        },
-        {
-          "value": "full",
-          "label": "Full width"
-        }
-      ],
-      "default": "full",
-      "visible_if": "{{ section.settings.layout == 'slider' }}"
-    },
-    {
       "type": "header",
       "content": "Slider behavior",
-      "visible_if": "{{ section.settings.layout == 'slider' }}"
+      "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
     },
     {
       "type": "checkbox",
       "id": "enable_rotation",
       "label": "Rotate",
       "default": true,
-      "visible_if": "{{ section.settings.layout == 'slider' }}"
+      "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
     },
     {
       "type": "range",
@@ -597,7 +597,7 @@
       "unit": "s",
       "label": "Autoplay interval",
       "default": 5,
-      "visible_if": "{{ section.settings.layout == 'slider' and section.settings.enable_rotation }}"
+      "visible_if": "{{ section.settings.layout == 'slider' and section.settings.enable_rotation or section.settings.layout == 'slider_social' and section.settings.enable_rotation }}"
     },
     {
       "type": "header",
