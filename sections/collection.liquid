@@ -49,19 +49,17 @@
         <div class="main-collection__promotion-card">
       {% endif %}
         <div class="main-collection__promotion-media">
-          {% if promotion_image != blank %}
-            {% render 'responsive-image',
-              image: promotion_image,
-              max_width: 1800,
-              widths: '480, 640, 800, 1000, 1200, 1400, 1600, 1800',
-              sizes: '(min-width: 990px) 50vw, 100vw',
-              class: 'main-collection__promotion-image',
-              loading: 'lazy',
-              alt: promotion_alt
-            %}
-          {% else %}
-            {% render 'media-placeholder', class_name: 'main-collection__promotion-placeholder', asset_name: 'placeholder-image-default-1.svg' %}
-          {% endif %}
+          {% render 'responsive-media',
+            image: promotion_image,
+            max_width: 1800,
+            widths: '480, 640, 800, 1000, 1200, 1400, 1600, 1800',
+            sizes: '(min-width: 990px) 50vw, 100vw',
+            class: 'main-collection__promotion-image',
+            loading: 'lazy',
+            alt: promotion_alt,
+            placeholder_asset: 'placeholder-image-default-1.svg',
+            placeholder_class: 'main-collection__promotion-placeholder'
+          %}
         </div>
         <span class="main-collection__promotion-overlay" aria-hidden="true"></span>
         <div class="main-collection__promotion-content main-collection__promotion-content--{{ promotion_block.settings.content_position }}">
@@ -487,31 +485,17 @@
           </ul>
 
           {% if paginate.pages > 1 %}
-            <nav class="main-collection__pagination" aria-label="{{ 'collection.pagination' | t | escape }}">
-              {% if paginate.previous %}
-                <a class="main-collection__pagination-arrow" href="{{ paginate.previous.url }}" aria-label="{{ 'collection.previous_page' | t | escape }}">
-                  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                    <path d="m10.5 3-5 5 5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </a>
-              {% endif %}
-
-              {% for part in paginate.parts %}
-                {% if part.is_link %}
-                  <a href="{{ part.url }}">{{ part.title }}</a>
-                {% else %}
-                  <span{% if part.title == paginate.current_page %} class="is-current" aria-current="page"{% endif %}>{{ part.title }}</span>
-                {% endif %}
-              {% endfor %}
-
-              {% if paginate.next %}
-                <a class="main-collection__pagination-arrow" href="{{ paginate.next.url }}" aria-label="{{ 'collection.next_page' | t | escape }}">
-                  <svg viewBox="0 0 16 16" aria-hidden="true" focusable="false">
-                    <path d="m5.5 3 5 5-5 5" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
-                  </svg>
-                </a>
-              {% endif %}
-            </nav>
+            {% assign collection_pagination_label = 'collection.pagination' | t %}
+            {% assign collection_previous_page_label = 'collection.previous_page' | t %}
+            {% assign collection_next_page_label = 'collection.next_page' | t %}
+            {% render 'pagination',
+              paginate: paginate,
+              base_class: 'main-collection__pagination',
+              arrow_class: 'main-collection__pagination-arrow',
+              aria_label: collection_pagination_label,
+              previous_label: collection_previous_page_label,
+              next_label: collection_next_page_label
+            %}
           {% endif %}
         {% else %}
           <div class="main-collection__empty">

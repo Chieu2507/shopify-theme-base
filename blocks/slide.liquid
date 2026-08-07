@@ -35,41 +35,24 @@
   {{ block.shopify_attributes }}
 >
   <div class="slideshow__media" data-swiper-parallax-x="100%">
-    {% if slide_image != blank %}
-      <picture>
-        {% if block.settings.mobile_image != blank %}
-          <source
-            media="(max-width: 749px)"
-            srcset="
-              {{ block.settings.mobile_image | image_url: width: 375 }} 375w,
-              {{ block.settings.mobile_image | image_url: width: 550 }} 550w,
-              {{ block.settings.mobile_image | image_url: width: 750 }} 750w,
-              {{ block.settings.mobile_image | image_url: width: 960 }} 960w,
-              {{ block.settings.mobile_image | image_url: width: 1280 }} 1280w
-            "
-            sizes="100vw"
-          >
-        {% endif %}
-        {{
-          slide_image
-          | image_url: width: 2400
-          | image_tag:
-            widths: '750, 960, 1200, 1600, 1920, 2400',
-            sizes: '100vw',
-            class: 'slideshow__image',
-            loading: image_loading,
-            fetchpriority: image_priority,
-            alt: slide_image_alt
-        }}
-      </picture>
-    {% else %}
-      {% render 'media-placeholder',
-        class_name: 'slideshow__placeholder',
-        asset_name: 'placeholder-image-default-2.svg',
-        loading: image_loading,
-        fetchpriority: image_priority
-      %}
-    {% endif %}
+    {% render 'responsive-media',
+      image: slide_image,
+      mobile_image: block.settings.mobile_image,
+      mobile_breakpoint: 749,
+      max_width: 2400,
+      mobile_max_width: 1280,
+      widths: '750, 960, 1200, 1600, 1920, 2400',
+      mobile_widths: '375, 550, 750, 960, 1280',
+      sizes: '100vw',
+      class: 'slideshow__image',
+      loading: image_loading,
+      fetchpriority: image_priority,
+      alt: slide_image_alt,
+      placeholder_asset: 'placeholder-image-default-2.svg',
+      placeholder_class: 'slideshow__placeholder',
+      placeholder_loading: image_loading,
+      placeholder_fetchpriority: image_priority
+    %}
   </div>
 
   <div class="slideshow__overlay" aria-hidden="true"></div>

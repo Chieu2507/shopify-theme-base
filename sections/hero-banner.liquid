@@ -19,34 +19,33 @@
               style="--hero-media-position: {{ block.settings.focal_point }};"
               {{ block.shopify_attributes }}
             >
-              {% if block.settings.image != blank %}
-                {% liquid
-                  assign image_alt = block.settings.alt_text | default: block.settings.image.alt
-                  assign image_loading = 'lazy'
-                  assign image_priority = 'auto'
-                  if media_index == 1 and request.page_type != 'index'
-                    assign image_loading = 'eager'
-                    assign image_priority = 'high'
-                  elsif media_index == 1 and section.index == 1
+              {% liquid
+                assign image_alt = block.settings.alt_text | default: block.settings.image.alt
+                assign image_loading = 'lazy'
+                assign image_priority = 'auto'
+                assign hero_placeholder_asset = 'placeholder-image-default-3.svg'
+                if media_index == 1
+                  assign hero_placeholder_asset = 'placeholder-image-default-2.svg'
+                  if request.page_type != 'index' or section.index == 1
                     assign image_loading = 'eager'
                     assign image_priority = 'high'
                   endif
-                %}
-                {% render 'responsive-image',
-                  image: block.settings.image,
-                  max_width: 2400,
-                  widths: '375, 550, 750, 960, 1200, 1600, 1920, 2400',
-                  sizes: '(min-width: 750px) 50vw, 100vw',
-                  class: 'hero-banner__image',
-                  alt: image_alt,
-                  loading: image_loading,
-                  fetchpriority: image_priority
-                %}
-              {% elsif media_index == 1 %}
-                {% render 'media-placeholder', class_name: 'hero-banner__placeholder', asset_name: 'placeholder-image-default-2.svg' %}
-              {% else %}
-                {% render 'media-placeholder', class_name: 'hero-banner__placeholder', asset_name: 'placeholder-image-default-3.svg' %}
-              {% endif %}
+                endif
+              %}
+              {% render 'responsive-media',
+                image: block.settings.image,
+                max_width: 2400,
+                widths: '375, 550, 750, 960, 1200, 1600, 1920, 2400',
+                sizes: '(min-width: 750px) 50vw, 100vw',
+                class: 'hero-banner__image',
+                alt: image_alt,
+                loading: image_loading,
+                fetchpriority: image_priority,
+                placeholder_asset: hero_placeholder_asset,
+                placeholder_class: 'hero-banner__placeholder',
+                placeholder_loading: image_loading,
+                placeholder_fetchpriority: image_priority
+              %}
             </div>
           {% endif %}
         {% endfor %}
