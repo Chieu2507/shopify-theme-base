@@ -31,12 +31,6 @@ bao gồm cấu trúc/nội dung, trạng thái dữ liệu, desktop/mobile, int
 animation, merchant settings, Theme Editor, accessibility, performance, khác
 biệt được phép và phần ngoài phạm vi.
 
-- Baseline viewport riêng của Theme Editor: khi dùng Chrome ở zoom 90% và mở
-  đồng thời hai sidebar, iframe preview ở giữa đo khoảng 1025px CSS chiều rộng
-  và 795px chiều cao (thực tế khoảng 1025.35px × 794.90px). Toàn bộ cửa sổ
-  editor đo khoảng 1633px CSS chiều rộng; khi audit responsive, ghi nhận rõ
-  đang dùng số đo của iframe preview hay của toàn bộ editor. Nếu kích thước
-  preview hoặc zoom thay đổi, ghi lại số đo mới trong checklist nghiệm thu.
 - Chỉ sửa phần cần thiết để đạt checklist; không refactor, format hoặc đổi API
   ngoài phạm vi.
 - Với bug, tái hiện khi có thể và xác định nguyên nhân gốc trước khi sửa. Nếu
