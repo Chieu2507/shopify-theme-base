@@ -16,7 +16,7 @@ if (!window.SpinelHeaderMenus) {
   const mobileMenuReturnFocus = new WeakMap();
   const headerMenuEasing = 'cubic-bezier(0.3, 1, 0.3, 1)';
   const headerHoverCloseDelay = 500;
-  const desktopMegaMenuHoverCloseDelay = 1000;
+  const desktopMegaMenuHoverCloseDelay = 500;
   const desktopMegaMenuTransitionDurationFallback = 300;
   const transparentHeaderSchemeExitDelay = 500;
   const headerLocalizationHoverCloseDelay = 120;
