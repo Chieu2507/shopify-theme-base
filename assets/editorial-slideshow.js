@@ -27,6 +27,7 @@ class EditorialSlideshow extends HTMLElement {
     this.progressStartedAt = null;
     this.progressStartElapsed = 0;
     this.progressStartIndex = null;
+    this.firstSlideImage = null;
     this.navigatorRevealTimer = null;
     this.navigatorRevealFallbackTimer = null;
     this.navigatorMorphTimer = null;
@@ -44,6 +45,7 @@ class EditorialSlideshow extends HTMLElement {
     this.handleKeydown = this.handleKeydown.bind(this);
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handleDesktopNavigatorChange = this.handleDesktopNavigatorChange.bind(this);
+    this.handleFirstSlideImageChange = this.handleFirstSlideImageChange.bind(this);
 
     this.addEventListener('keydown', this.handleKeydown, { signal });
     this.addEventListener('pointerdown', this.handlePointerDown, { signal });
@@ -60,6 +62,13 @@ class EditorialSlideshow extends HTMLElement {
     document.addEventListener('shopify:block:select', this.handleBlockSelect, { signal });
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
     this.desktopNavigator.addEventListener?.('change', this.handleDesktopNavigatorChange, { signal });
+
+    if (this.dataset.heightMode === 'adapt') {
+      this.firstSlideImage = this.slider?.querySelector('.editorial-slideshow__slide:first-child img');
+      this.firstSlideImage?.addEventListener('load', this.handleFirstSlideImageChange, { signal });
+      window.addEventListener('resize', this.handleFirstSlideImageChange, { signal });
+      this.updateFirstSlideImageRatio();
+    }
 
     if (this.autoplayToggle && !this.autoplaySetting) {
       this.autoplayToggle.disabled = true;
@@ -89,6 +98,9 @@ class EditorialSlideshow extends HTMLElement {
     this.visibilityObserver = null;
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
+    if (this.firstSlideImageRatioFrame) window.cancelAnimationFrame(this.firstSlideImageRatioFrame);
+    this.firstSlideImageRatioFrame = null;
+    this.firstSlideImage = null;
     this.clearNavigatorRevealTimer();
     this.clearNavigatorMorph();
     if (this.pointerFocusTimer) window.clearTimeout(this.pointerFocusTimer);
@@ -99,6 +111,24 @@ class EditorialSlideshow extends HTMLElement {
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.pauseReasons?.clear();
+  }
+
+  handleFirstSlideImageChange() {
+    if (this.firstSlideImageRatioFrame) return;
+
+    this.firstSlideImageRatioFrame = window.requestAnimationFrame(() => {
+      this.firstSlideImageRatioFrame = null;
+      this.updateFirstSlideImageRatio();
+    });
+  }
+
+  updateFirstSlideImageRatio() {
+    if (this.dataset.heightMode !== 'adapt' || !this.firstSlideImage?.naturalWidth || !this.firstSlideImage?.naturalHeight) return;
+
+    this.style.setProperty(
+      '--editorial-slideshow-mobile-ratio',
+      this.firstSlideImage.naturalWidth / this.firstSlideImage.naturalHeight,
+    );
   }
 
   async loadFirstViewportHeight() {
