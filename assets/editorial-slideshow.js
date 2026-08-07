@@ -458,6 +458,7 @@ class EditorialSlideshow extends HTMLElement {
     const activeIndex = Math.max(0, Math.min(index, this.tabs.length - 1));
     this.activeIndex = activeIndex;
     this.preloadAdjacentSlides(activeIndex);
+    if (restartProgress) this.restartActiveContentAnimations();
     this.tabs.forEach((tab, tabIndex) => {
       const isActive = tabIndex === activeIndex;
       tab.classList.toggle('is-active', isActive);
@@ -473,6 +474,17 @@ class EditorialSlideshow extends HTMLElement {
       this.resetProgress();
       this.syncPlayback();
     }
+  }
+
+  restartActiveContentAnimations() {
+    const activeBlocks = this.slider?.querySelectorAll(
+      '.swiper-slide-active .editorial-slideshow__content > *, .swiper-slide-active .editorial-slideshow__product-card',
+    );
+    if (!activeBlocks?.length) return;
+
+    activeBlocks.forEach((block) => block.style.setProperty('animation', 'none', 'important'));
+    void this.slider.offsetHeight;
+    activeBlocks.forEach((block) => block.style.removeProperty('animation'));
   }
 
   selectIndex(index, moveFocus = false) {
