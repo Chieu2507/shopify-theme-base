@@ -782,10 +782,8 @@ if (!window.SpinelHeaderMenus) {
         '.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'
       ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
-    const useSurfaceScheme = showSurface
-      && !header.querySelector('.header__submenu-disclosure[data-closing="true"], .header__actions .header__localization-selector[data-closing="true"]');
     header.classList.toggle('header--surface-visible', showSurface);
-    setTransparentHeaderColorScheme(header, useSurfaceScheme);
+    setTransparentHeaderColorScheme(header, showSurface);
   };
 
   const syncResponsiveHeaders = () => {
@@ -1304,7 +1302,7 @@ if (!window.SpinelHeaderMenus) {
       }
       syncHeaderDisclosureAria(details);
       syncHeaderMenuScrollLock();
-      if (responsiveHeader) syncResponsiveHeader(responsiveHeader);
+      if (responsiveHeader) scheduleResponsiveHeaderSync();
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       motionOptions.onFinish?.(details, opening);
     };
@@ -1872,9 +1870,7 @@ if (!window.SpinelHeaderMenus) {
     const header = details.closest('[data-header]');
     if (header) delete header.dataset.megaSurfaceImmediateClose;
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
-    if (activeHandoff && activeHandoff.to !== details) {
-      desktopMegaMenuHandoffs.delete(header);
-    }
+    if (activeHandoff && activeHandoff.to !== details) desktopMegaMenuHandoffs.delete(header);
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
