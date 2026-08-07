@@ -39,7 +39,6 @@ if (!customElements.get('announcement-bar')) {
       document.addEventListener('visibilitychange', this.onVisibilityChange);
 
       this.initializeSwiper();
-      this.classList.add('is-ready');
       this.startRotation();
     }
 
@@ -55,7 +54,6 @@ if (!customElements.get('announcement-bar')) {
       document.removeEventListener('visibilitychange', this.onVisibilityChange);
       this.swiper?.destroy(true, true);
       this.swiper = null;
-      this.classList.remove('is-ready');
     }
 
     initializeSwiper() {

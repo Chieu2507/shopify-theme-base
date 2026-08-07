@@ -774,18 +774,11 @@ if (!window.SpinelHeaderMenus) {
 
     if (!isTransparentHeader) return;
 
-    // Keep the surface present until the closing panel has completed its own motion.
-    // This prevents the transparent header from exposing the hero between the
-    // mega menu's opacity and height transitions.
     const hasOpenDesktopDropdown = !isMobile
-      && Boolean(header.querySelector(
-        '.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'
-      ));
+      && Boolean(header.querySelector('.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
-    const useSurfaceScheme = showSurface
-      && !header.querySelector('.header__submenu-disclosure[data-closing="true"], .header__actions .header__localization-selector[data-closing="true"]');
     header.classList.toggle('header--surface-visible', showSurface);
-    setTransparentHeaderColorScheme(header, useSurfaceScheme);
+    setTransparentHeaderColorScheme(header, showSurface);
   };
 
   const syncResponsiveHeaders = () => {
@@ -1159,28 +1152,27 @@ if (!window.SpinelHeaderMenus) {
   const updateDesktopMegaMenuRevealDelays = (details) => {
     const panel = getDesktopMegaMenuPanel(details);
     if (!panel) return;
-    const revealStart = getDesktopMegaMenuTransitionDuration(details);
     if (!details.matches('.header__submenu-disclosure--mega')) {
       const items = getDesktopMegaMenuRevealTargets(details);
       items.forEach((item, index) => {
-        item.style.setProperty('--header-mega-reveal-delay', `${revealStart + (index * 50)}ms`);
+        item.style.setProperty('--header-mega-reveal-delay', `${200 + (index * 50)}ms`);
       });
-      return items.length ? revealStart + ((items.length - 1) * 50) + 400 : 0;
+      return items.length ? 200 + ((items.length - 1) * 50) + 400 : 0;
     }
     const heading = panel.querySelector('.header__mega-heading');
     const columns = Array.from(panel.querySelectorAll('.header__mega-list'));
     const promotions = Array.from(panel.querySelectorAll('.header__mega-promo'));
-    heading?.style.setProperty('--header-mega-reveal-delay', `${revealStart}ms`);
+    heading?.style.setProperty('--header-mega-reveal-delay', '200ms');
     columns.forEach((column, index) => {
-      column.style.setProperty('--header-mega-reveal-delay', `${revealStart + (index * 50)}ms`);
+      column.style.setProperty('--header-mega-reveal-delay', `${200 + (index * 50)}ms`);
     });
-    const promotionDelay = Math.max(revealStart + 150, Math.min(revealStart + 200, revealStart + (columns.length * 50)));
+    const promotionDelay = Math.max(350, Math.min(400, 200 + (columns.length * 50)));
     promotions.forEach((promotion, index) => {
       promotion.style.setProperty('--header-mega-reveal-delay', `${Math.min(400, promotionDelay + (index * 50))}ms`);
     });
     const revealDelays = [
-      heading ? revealStart : 0,
-      ...columns.map((_, index) => revealStart + (index * 50)),
+      heading ? 200 : 0,
+      ...columns.map((_, index) => 200 + (index * 50)),
       ...promotions.map((_, index) => Math.min(400, promotionDelay + (index * 50)))
     ];
     return Math.max(0, ...revealDelays) + 400;
@@ -1298,13 +1290,10 @@ if (!window.SpinelHeaderMenus) {
         panel.style.removeProperty('--header-mega-panel-height');
         clearDesktopMegaMenuRevealDelays(details);
         syncDesktopMegaMenuBackground(header);
-        if (!header?.querySelector('.header__submenu-disclosure--mega[open]')) {
-          delete header?.dataset.megaSurfaceImmediateClose;
-        }
       }
       syncHeaderDisclosureAria(details);
       syncHeaderMenuScrollLock();
-      if (responsiveHeader) syncResponsiveHeader(responsiveHeader);
+      if (responsiveHeader) scheduleResponsiveHeaderSync();
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       motionOptions.onFinish?.(details, opening);
     };
@@ -1715,19 +1704,6 @@ if (!window.SpinelHeaderMenus) {
     '.header__submenu-disclosure--hover[open]'
   ) || [];
 
-  const closeOtherTopLevelHoverMenus = (menuItem) => {
-    const header = menuItem.closest('[data-header]');
-    const activeMenu = menuItem.querySelector(':scope > .header__submenu-disclosure--hover');
-    if (activeMenu) return;
-    if (header?.querySelector('.header__submenu-disclosure--mega[open]')) {
-      header.dataset.megaSurfaceImmediateClose = 'true';
-    }
-    getOpenHoverMenus(header).forEach((openMenu) => {
-      clearMegaMenuHoverTimer(openMenu);
-      closeMegaMenu(openMenu);
-    });
-  };
-
   const scheduleMegaMenuClose = (details, delay) => {
     const closeDelay = delay ?? (details.matches('.header__submenu-disclosure')
       ? desktopMegaMenuHoverCloseDelay
@@ -1870,11 +1846,8 @@ if (!window.SpinelHeaderMenus) {
     const isDesktopAnimatedMenu = usesDesktopMegaMenuCssMotion(details);
     const isDesktopTopLevelMenu = !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure');
     const header = details.closest('[data-header]');
-    if (header) delete header.dataset.megaSurfaceImmediateClose;
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
-    if (activeHandoff && activeHandoff.to !== details) {
-      desktopMegaMenuHandoffs.delete(header);
-    }
+    if (activeHandoff && activeHandoff.to !== details) desktopMegaMenuHandoffs.delete(header);
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
@@ -1946,11 +1919,6 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    const topLevelMenuItem = event.target.closest?.('.header__menu > .header__menu-item');
-    if (topLevelMenuItem && !topLevelMenuItem.contains(event.relatedTarget)) {
-      closeOtherTopLevelHoverMenus(topLevelMenuItem);
-    }
-
     const nestedDetails = event.target.closest?.('.header__submenu-disclosure:not(.header__submenu-disclosure--mega) .header__submenu-nested-disclosure');
     if (nestedDetails && !nestedDetails.contains(event.relatedTarget)) {
       clearMegaMenuHoverTimer(nestedDetails);
@@ -1985,8 +1953,7 @@ if (!window.SpinelHeaderMenus) {
 
     const details = event.target.closest?.('.header__submenu-disclosure--hover');
     if (details) {
-      const menuItem = details.closest('.header__menu-item--has-children');
-      if (details.contains(event.relatedTarget) || menuItem?.contains(event.relatedTarget)) return;
+      if (details.contains(event.relatedTarget)) return;
 
       scheduleMegaMenuClose(details);
       return;

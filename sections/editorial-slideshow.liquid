@@ -2,12 +2,11 @@
 {% render 'swiper-stylesheet' %}
 
 {% liquid
-  assign height_mode = section.settings.height_mode | default: 'percent'
-  assign height_percent_desktop = section.settings.height_percent_desktop | default: 100
-  assign height_percent_mobile = section.settings.height_percent_mobile | default: 100
-  assign height_pixels_desktop = section.settings.height_pixels_desktop | default: 780
-  assign height_pixels_mobile = section.settings.height_pixels_mobile | default: 700
-  assign slideshow_description = section.settings.slideshow_description | default: 'Slideshow about our brand'
+  assign slide_count = section.blocks.size
+  assign has_multiple_slides = false
+  if slide_count > 1
+    assign has_multiple_slides = true
+  endif
   assign autoplay_delay_display = section.settings.autoplay_delay
   if section.settings.autoplay_delay < 10
     assign autoplay_delay_display = '0' | append: section.settings.autoplay_delay
@@ -15,20 +14,14 @@
 %}
 
 <editorial-slideshow
-  class="editorial-slideshow color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.enable_image_zoom %} editorial-slideshow--image-zoom{% endif %} editorial-slideshow--height-mode-{{ height_mode }}"
-  role="region"
-  aria-label="{{ slideshow_description | escape }}"
+  class="editorial-slideshow color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.enable_image_zoom %} editorial-slideshow--image-zoom{% endif %} editorial-slideshow--height-desktop-{{ section.settings.height_desktop }} editorial-slideshow--height-mobile-{{ section.settings.height_mobile }}{% if has_multiple_slides %} editorial-slideshow--has-navigator{% endif %}"
   data-section-id="{{ section.id }}"
   data-motion-enabled="{{ settings.enable_motion }}"
   data-autoplay="{{ section.settings.autoplay }}"
   data-autoplay-delay="{{ section.settings.autoplay_delay | times: 1000 }}"
-  data-height-mode="{{ height_mode }}"
   data-deferred-module="{{ 'editorial-slideshow.js' | asset_url }}"
   data-first-viewport-height-module="{{ 'first-viewport-height.js' | asset_url }}"
-  data-first-viewport-height-mode="{{ height_mode }}"
-  data-first-viewport-height-desktop-percent="{{ height_percent_desktop }}"
-  data-first-viewport-height-mobile-percent="{{ height_percent_mobile }}"
-  style="--editorial-navigator-background-opacity: {{ section.settings.navigator_background_opacity | default: 80 }}%; --editorial-slideshow-desktop-ratio: 16 / 9; --editorial-slideshow-mobile-ratio: 3 / 4; --editorial-slideshow-height-desktop-percent: {{ height_percent_desktop }}svh; --editorial-slideshow-height-mobile-percent: {{ height_percent_mobile }}svh; --editorial-slideshow-height-desktop-pixels: {{ height_pixels_desktop }}px; --editorial-slideshow-height-mobile-pixels: {{ height_pixels_mobile }}px;"
+  style="--editorial-navigator-background-opacity: {{ section.settings.navigator_background_opacity | default: 80 }}%;"
 >
   <div class="editorial-slideshow__viewport swiper" data-editorial-slideshow-slider>
     <div class="editorial-slideshow__wrapper swiper-wrapper">
@@ -36,13 +29,12 @@
     </div>
   </div>
 
-  {% if section.settings.show_slideshow_controls %}
+  {% if has_multiple_slides %}
     <nav
       id="EditorialSlideshowNavigator-{{ section.id }}"
       class="editorial-slideshow__navigator is-collapsed"
       aria-label="{{ 'slideshow.pagination' | t | escape }}"
       data-editorial-navigator
-      hidden
     >
       <button
         class="editorial-slideshow__navigator-arrow editorial-slideshow__navigator-arrow--previous"
@@ -54,7 +46,32 @@
         <span class="editorial-slideshow__navigator-arrow-label">PREV</span>
       </button>
 
-      <div class="editorial-slideshow__tabs" role="tablist" data-editorial-slide-tabs></div>
+      <div class="editorial-slideshow__tabs" role="tablist">
+        {% for block in section.blocks %}
+          {% liquid
+            assign nav_label = block.settings.nav_label | default: 'Slide'
+            assign nav_detail = block.settings.nav_detail | default: 'EDITORIAL'
+            assign nav_number = forloop.index
+            if forloop.index < 10
+              assign nav_number = '0' | append: forloop.index
+            endif
+          %}
+          <button
+            class="editorial-slideshow__tab{% if forloop.first %} is-active{% endif %}"
+            type="button"
+            role="tab"
+            aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+            tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+            data-editorial-slide-tab
+            data-editorial-index="{{ forloop.index0 }}"
+          >
+            <span class="editorial-slideshow__tab-label">{{ nav_label | escape }}</span>
+            <span class="editorial-slideshow__tab-detail">{{ nav_detail | escape }}</span>
+            <span class="editorial-slideshow__tab-number">{{ nav_number }}</span>
+            <span class="editorial-slideshow__tab-progress" aria-hidden="true"><span></span></span>
+          </button>
+        {% endfor %}
+      </div>
 
       <button
         class="editorial-slideshow__navigator-arrow editorial-slideshow__navigator-arrow--next"
@@ -109,89 +126,27 @@
   "max_blocks": 8,
   "settings": [
     {
-      "type": "select",
-      "id": "height_mode",
-      "label": "Height mode",
-      "options": [
-        { "value": "adapt", "label": "Adapt to first image" },
-        { "value": "percent", "label": "Percents" },
-        { "value": "pixels", "label": "Pixels" }
-      ],
-      "default": "percent"
-    },
-    {
-      "type": "range",
-      "id": "height_percent_desktop",
-      "label": "Desktop height",
-      "min": 40,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "default": 100,
-      "visible_if": "{{ section.settings.height_mode == 'percent' }}"
-    },
-    {
-      "type": "range",
-      "id": "height_percent_mobile",
-      "label": "Mobile height",
-      "min": 40,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "default": 100,
-      "visible_if": "{{ section.settings.height_mode == 'percent' }}"
-    },
-    {
-      "type": "range",
-      "id": "height_pixels_desktop",
-      "label": "Desktop height",
-      "min": 480,
-      "max": 1000,
-      "step": 20,
-      "unit": "px",
-      "default": 780,
-      "visible_if": "{{ section.settings.height_mode == 'pixels' }}"
-    },
-    {
-      "type": "range",
-      "id": "height_pixels_mobile",
-      "label": "Mobile height",
-      "min": 440,
-      "max": 900,
-      "step": 20,
-      "unit": "px",
-      "default": 700,
-      "visible_if": "{{ section.settings.height_mode == 'pixels' }}"
+      "type": "header",
+      "content": "Slide layout"
     },
     {
       "type": "select",
-      "id": "section_width",
-      "label": "Section width",
+      "id": "height_desktop",
+      "label": "Slide height desktop",
       "options": [
-        { "value": "page", "label": "Page width" },
-        { "value": "full", "label": "Full width" }
+        { "value": "adapt", "label": "Adapt" },
+        { "value": "small", "label": "Small" },
+        { "value": "medium", "label": "Medium" },
+        { "value": "large", "label": "Large" },
+        { "value": "xlarge", "label": "X-large" },
+        { "value": "full", "label": "Full screen" }
       ],
       "default": "full"
     },
     {
       "type": "select",
-      "id": "height_desktop",
-      "label": "Legacy slide height desktop",
-      "options": [
-        { "value": "adapt", "label": "Adapt" },
-        { "value": "small", "label": "Small" },
-        { "value": "medium", "label": "Medium" },
-        { "value": "large", "label": "Large" },
-        { "value": "xlarge", "label": "X-large" },
-        { "value": "full", "label": "Full screen" }
-      ],
-      "default": "full",
-      "visible_if": "{{ false }}"
-    },
-    {
-      "type": "select",
       "id": "height_mobile",
-      "label": "Legacy slide height mobile",
+      "label": "Slide height mobile",
       "options": [
         { "value": "adapt", "label": "Adapt" },
         { "value": "small", "label": "Small" },
@@ -200,12 +155,11 @@
         { "value": "xlarge", "label": "X-large" },
         { "value": "full", "label": "Full screen" }
       ],
-      "default": "full",
-      "visible_if": "{{ false }}"
+      "default": "full"
     },
     {
       "type": "header",
-      "content": "Slideshow"
+      "content": "Playback"
     },
     {
       "type": "checkbox",
@@ -216,30 +170,34 @@
     {
       "type": "range",
       "id": "autoplay_delay",
-      "min": 3,
+      "min": 1,
       "max": 10,
       "step": 1,
       "unit": "s",
-      "label": "Autoplay interval",
+      "label": "Time between slides",
       "default": 6,
       "visible_if": "{{ section.settings.autoplay }}"
     },
     {
       "type": "checkbox",
-      "id": "show_slideshow_controls",
-      "label": "Show slideshow controls",
+      "id": "enable_image_zoom",
+      "label": "Enable image zoom animation",
+      "info": "Inactive images are enlarged and smoothly return to their original size when active.",
       "default": true
     },
     {
       "type": "header",
-      "content": "Accessibility"
+      "content": "Section"
     },
     {
-      "type": "textarea",
-      "id": "slideshow_description",
-      "label": "Slideshow description",
-      "info": "Describe the slideshow for those using screen readers. This text will not be visible on the page.",
-      "default": "Slideshow about our brand"
+      "type": "select",
+      "id": "section_width",
+      "label": "Section width",
+      "options": [
+        { "value": "page", "label": "Page width" },
+        { "value": "full", "label": "Full width" }
+      ],
+      "default": "full"
     },
     {
       "type": "header",
@@ -258,15 +216,8 @@
       "max": 100,
       "step": 1,
       "unit": "%",
-      "label": "Navigator opacity",
+      "label": "Navigator background opacity",
       "default": 80
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_image_zoom",
-      "label": "Enable image zoom animation",
-      "info": "Inactive images are enlarged and smoothly return to their original size when active.",
-      "default": true
     }
   ],
   "blocks": [
@@ -277,16 +228,11 @@
       "name": "Editorial slideshow",
       "category": "Banners",
       "settings": {
-        "height_mode": "percent",
-        "height_percent_desktop": 100,
-        "height_percent_mobile": 100,
-        "height_pixels_desktop": 780,
-        "height_pixels_mobile": 700,
+        "height_desktop": "full",
+        "height_mobile": "full",
         "autoplay": true,
         "autoplay_delay": 6,
-        "show_slideshow_controls": true,
         "enable_image_zoom": true,
-        "slideshow_description": "Slideshow about our brand",
         "section_width": "full",
         "color_scheme": "scheme-4",
         "navigator_background_opacity": 80
