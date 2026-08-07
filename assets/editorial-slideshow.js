@@ -1,4 +1,4 @@
-import { A11y, EffectFade, Navigation, Swiper } from './swiper-loader.js';
+import { A11y, EffectFade, Swiper } from './swiper-loader.js';
 
 class EditorialSlideshow extends HTMLElement {
   connectedCallback() {
@@ -57,12 +57,8 @@ class EditorialSlideshow extends HTMLElement {
     this.bindNavigatorTabs();
     this.autoplayToggle?.addEventListener('click', () => this.toggleAutoplay(), { signal });
     this.navigatorToggle?.addEventListener('click', () => this.toggleNavigator(), { signal });
-    this.previousButton?.addEventListener('click', () => {
-      this.preloadAdjacentSlides((this.activeIndex || 0) - 1);
-    }, { signal });
-    this.nextButton?.addEventListener('click', () => {
-      this.preloadAdjacentSlides((this.activeIndex || 0) + 1);
-    }, { signal });
+    this.previousButton?.addEventListener('click', () => this.selectIndex((this.activeIndex || 0) - 1), { signal });
+    this.nextButton?.addEventListener('click', () => this.selectIndex((this.activeIndex || 0) + 1), { signal });
     document.addEventListener('visibilitychange', this.handleVisibilityChange, { signal });
     document.addEventListener('shopify:block:select', this.handleBlockSelect, { signal });
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
@@ -373,7 +369,7 @@ class EditorialSlideshow extends HTMLElement {
     this.preloadAdjacentSlides(initialSlide);
 
     this.swiper = new Swiper(this.slider, {
-      modules: [A11y, EffectFade, Navigation],
+      modules: [A11y, EffectFade],
       slidesPerView: 1,
       speed: this.reduceMotion.matches ? 0 : 1000,
       effect: 'fade',
@@ -384,10 +380,6 @@ class EditorialSlideshow extends HTMLElement {
       loop: slideCount > 1,
       watchOverflow: true,
       grabCursor: slideCount > 1,
-      navigation: {
-        prevEl: this.previousButton,
-        nextEl: this.nextButton,
-      },
       a11y: {
         enabled: true,
         prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
@@ -399,12 +391,8 @@ class EditorialSlideshow extends HTMLElement {
     this.swiper.on('slideChange', () => {
       this.syncActiveState(this.swiper.realIndex, true);
     });
-    this.swiper.on('slideChangeTransitionStart', () => {
-      this.setActiveContentSettled(false);
-      this.setNavigatorTransitioning(true);
-    });
+    this.swiper.on('slideChangeTransitionStart', () => this.setNavigatorTransitioning(true));
     const revealNavigator = () => {
-      this.setActiveContentSettled(true);
       this.setNavigatorTransitioning(false);
       this.syncPlayback();
     };
@@ -482,15 +470,6 @@ class EditorialSlideshow extends HTMLElement {
       this.resetProgress();
       this.syncPlayback();
     }
-  }
-
-  setActiveContentSettled(isSettled) {
-    this.slider?.querySelectorAll('.swiper-slide').forEach((slide) => {
-      slide.classList.toggle(
-        'editorial-slideshow__slide--content-settled',
-        isSettled && slide.classList.contains('swiper-slide-active'),
-      );
-    });
   }
 
   selectIndex(index, moveFocus = false) {
@@ -717,7 +696,7 @@ class EditorialSlideshow extends HTMLElement {
     const progressBar = this.progressBars[activeIndex];
     if (!progressBar) {
       this.autoplayTimer = window.setTimeout(() => {
-        this.swiper?.slideNext();
+        this.selectIndex(activeIndex + 1);
       }, remainingDelay);
       return;
     }
@@ -730,7 +709,7 @@ class EditorialSlideshow extends HTMLElement {
       this.progressStartElapsed = resumeElapsed;
       this.progressStartIndex = activeIndex;
       this.autoplayTimer = window.setTimeout(() => {
-        this.swiper?.slideNext();
+        this.selectIndex(activeIndex + 1);
       }, remainingDelay);
     });
   }
