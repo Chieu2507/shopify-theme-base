@@ -18,6 +18,7 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 120;
   const desktopMegaMenuTransitionDurationFallback = 300;
+  const transparentHeaderSchemeExitDelay = 180;
   const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
@@ -37,6 +38,7 @@ if (!window.SpinelHeaderMenus) {
   let headerBrowserChromeColorState = null;
   const responsiveHeaderEntryFrames = new WeakMap();
   const responsiveHeaderExitMotions = new WeakMap();
+  const transparentHeaderSchemeExitTimers = new WeakMap();
   const mobileStickyHeaderStates = new WeakMap();
   const localizationHoverTimers = new WeakMap();
   let wasMobileHeaderViewport = window.matchMedia(headerMobileMediaQuery).matches;
@@ -617,6 +619,53 @@ if (!window.SpinelHeaderMenus) {
     if (activeColorClass) header.classList.add(activeColorClass);
   };
 
+  const clearTransparentHeaderSchemeExit = (header) => {
+    const timer = transparentHeaderSchemeExitTimers.get(header);
+    if (timer) window.clearTimeout(timer);
+    transparentHeaderSchemeExitTimers.delete(header);
+  };
+
+  const syncTransparentHeaderColorScheme = (header, showSurface) => {
+    const defaultColorClass = header.dataset.defaultColorClass;
+    const hasSurfaceScheme = Boolean(defaultColorClass && header.classList.contains(defaultColorClass));
+    const closesSurfaceImmediately = header.dataset.megaSurfaceImmediateClose === 'true';
+    const hasClosingDesktopMenu = Boolean(header.querySelector(
+      '.header__submenu-disclosure[data-closing="true"], .header__actions .header__localization-selector[data-closing="true"]'
+    ));
+
+    if (closesSurfaceImmediately && hasClosingDesktopMenu) {
+      clearTransparentHeaderSchemeExit(header);
+      setTransparentHeaderColorScheme(header, false);
+      return;
+    }
+
+    if (showSurface) {
+      clearTransparentHeaderSchemeExit(header);
+      setTransparentHeaderColorScheme(header, true);
+      return;
+    }
+
+    if (!hasSurfaceScheme) {
+      clearTransparentHeaderSchemeExit(header);
+      return;
+    }
+
+    if (closesSurfaceImmediately) {
+      clearTransparentHeaderSchemeExit(header);
+      setTransparentHeaderColorScheme(header, false);
+      return;
+    }
+
+    if (transparentHeaderSchemeExitTimers.has(header)) return;
+    const timer = window.setTimeout(() => {
+      transparentHeaderSchemeExitTimers.delete(header);
+      if (!header.classList.contains('header--surface-visible')) {
+        setTransparentHeaderColorScheme(header, false);
+      }
+    }, transparentHeaderSchemeExitDelay);
+    transparentHeaderSchemeExitTimers.set(header, timer);
+  };
+
   const clearResponsiveHeaderExit = (header) => {
     const motion = responsiveHeaderExitMotions.get(header);
     if (motion?.frame) window.cancelAnimationFrame(motion.frame);
@@ -782,10 +831,8 @@ if (!window.SpinelHeaderMenus) {
         '.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'
       ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
-    const useSurfaceScheme = showSurface
-      && !header.querySelector('.header__submenu-disclosure[data-closing="true"], .header__actions .header__localization-selector[data-closing="true"]');
     header.classList.toggle('header--surface-visible', showSurface);
-    setTransparentHeaderColorScheme(header, useSurfaceScheme);
+    syncTransparentHeaderColorScheme(header, showSurface);
   };
 
   const syncResponsiveHeaders = () => {
