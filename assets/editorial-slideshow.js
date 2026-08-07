@@ -473,14 +473,19 @@ class EditorialSlideshow extends HTMLElement {
 
     if (!this.isPlaying) return;
 
-    const progressBar = this.progressBars[activeIndex];
-    if (!progressBar) return;
-
     const resumeElapsed = this.manualPauseProgress?.index === activeIndex
       ? this.manualPauseProgress.elapsed
       : 0;
     const remainingDelay = Math.max(0, this.autoplayDelay - resumeElapsed);
     this.manualPauseProgress = null;
+
+    const progressBar = this.progressBars[activeIndex];
+    if (!progressBar) {
+      this.autoplayTimer = window.setTimeout(() => {
+        this.swiper?.slideNext();
+      }, remainingDelay);
+      return;
+    }
 
     progressBar.style.transform = `scaleX(${resumeElapsed / this.autoplayDelay})`;
     this.progressFrame = window.requestAnimationFrame(() => {
