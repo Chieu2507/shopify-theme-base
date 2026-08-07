@@ -1988,7 +1988,7 @@ if (!window.SpinelHeaderMenus) {
     const submenu = summary?.parentElement;
     if (submenu?.matches('.header__localization-selector') && isMobileHeaderViewport()) {
       event.preventDefault();
-      if (submenu.open) closeLocalizationSheet(submenu);
+      if (submenu.open || localizationSheetOpenRequests.has(submenu)) closeLocalizationSheet(submenu);
       else openLocalizationSheet(submenu);
       return;
     }
