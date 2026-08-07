@@ -286,30 +286,29 @@ html[scroll-lock] .header__menu-overlay {
     height: 12px;
     color: color-mix(in srgb, var(--color-heading) 70%, transparent);
   }
-.header--underline-active a.header__menu-link--active,
-  .header--underline-active .header__menu-link--active > .header__menu-link-title {
-    text-decoration: underline;
-    text-underline-offset: 4px;
-  }
 @media (min-width: 960px) and (hover: hover) and (pointer: fine) {
-    .header--underline-active .header__submenu-disclosure--hover > .header__menu-link > .header__menu-link-title {
+    .header__menu-link > :is(.header__menu-link-title, .header__navigation-label) {
       position: relative;
       display: inline-block;
       text-decoration: none;
     }
-    .header--underline-active .header__submenu-disclosure--hover > .header__menu-link > .header__menu-link-title::after {
+    .header__menu-link > :is(.header__menu-link-title, .header__navigation-label)::after {
       position: absolute;
-      bottom: -3px;
+      right: 0;
+      bottom: -.22em;
       left: 0;
       height: 1px;
-      text-decoration-line: underline;
-      width: 0;
       background: currentColor;
       content: '';
-      transition: width 400ms ease;
+      transform: scaleX(0);
+      transform-origin: left center;
+      transition: transform 220ms cubic-bezier(.22, 1, .36, 1);
     }
-    .header--underline-active .header__submenu-disclosure--hover[open]:not([data-closing='true']) > .header__menu-link > .header__menu-link-title::after {
-      width: 100%;
+    .header__menu-link:hover > :is(.header__menu-link-title, .header__navigation-label)::after,
+    .header__menu-link:focus-visible > :is(.header__menu-link-title, .header__navigation-label)::after,
+    .header--underline-active .header__menu-link--active > :is(.header__menu-link-title, .header__navigation-label)::after,
+    .header__submenu-disclosure[open]:not([data-closing='true']) > .header__menu-link > :is(.header__menu-link-title, .header__navigation-label)::after {
+      transform: scaleX(1);
     }
   }
 .header__submenu-disclosure[open] > .header__menu-link .header__dropdown-icon--chevron {
@@ -563,10 +562,6 @@ html[scroll-lock] .header__menu-overlay {
       height: 100%;
       opacity: 0;
       visibility: visible;
-    }
-    .header.is-menu-open[data-mega-background-closing='true'] {
-      /* Keep the header surface opaque while only the mega extension closes. */
-      background: var(--gradient-background, var(--color-background));
     }
     .header--transparent.is-menu-open[data-mega-background-closing='true'] {
       transition: none;
