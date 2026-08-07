@@ -396,6 +396,7 @@ class EditorialSlideshow extends HTMLElement {
     });
     this.swiper.on('slideChangeTransitionStart', () => this.setNavigatorTransitioning(true));
     const revealNavigator = () => {
+      this.restartActiveContentAnimations();
       this.setNavigatorTransitioning(false);
       this.syncPlayback();
     };
