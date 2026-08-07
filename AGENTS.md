@@ -2,7 +2,9 @@
 
 ## 1. Bắt đầu và nguồn chuẩn
 
-1. Đọc toàn bộ `AGENTS.md` trước mỗi tác vụ, kể cả tác vụ tiếp nối.
+1. Không tự động đọc hoặc áp dụng toàn bộ `AGENTS.md`. Chỉ đọc toàn bộ file
+   khi người dùng yêu cầu rõ bằng lệnh `READ:AGENT`; nếu không có lệnh này, bỏ qua
+   file trong tác vụ hiện tại.
 2. Luôn dùng và tham khảo plugin `@shopify`
    (`shopify@openai-curated-remote`) trước khi quyết định về Liquid, schema,
    section/block, Theme Editor, Storefront, Shopify CLI/API hoặc Theme Store.
