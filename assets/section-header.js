@@ -20,6 +20,9 @@ if (!window.SpinelHeaderMenus) {
   const desktopMegaMenuTransitionDurationFallback = 300;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
+  const headerMobileBreakpoint = 1099;
+  const headerMobileMediaQuery = `(max-width: ${headerMobileBreakpoint}px)`;
+  const headerDesktopMediaQuery = `(min-width: ${headerMobileBreakpoint + 1}px)`;
   // Let non-sticky transparent headers clear the announcement bar before changing palette.
   const desktopTransparentHeaderSurfaceThreshold = 20;
   const mobileStickyHeaderHideThreshold = 40;
@@ -34,9 +37,9 @@ if (!window.SpinelHeaderMenus) {
   const responsiveHeaderEntryFrames = new WeakMap();
   const responsiveHeaderExitMotions = new WeakMap();
   const mobileStickyHeaderStates = new WeakMap();
-  let wasMobileHeaderViewport = window.matchMedia('(max-width: 899px)').matches;
+  let wasMobileHeaderViewport = window.matchMedia(headerMobileMediaQuery).matches;
 
-  const isMobileHeaderViewport = () => window.matchMedia('(max-width: 899px)').matches;
+  const isMobileHeaderViewport = () => window.matchMedia(headerMobileMediaQuery).matches;
 
   const resetLocalizationSheetDrag = () => {
     window.clearTimeout(localizationSheetDragTimer);
@@ -518,7 +521,7 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const syncHeaderMenuScrollLock = () => {
-    const isMobile = window.matchMedia('(max-width: 899px)').matches;
+    const isMobile = window.matchMedia(headerMobileMediaQuery).matches;
     const openMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-open="true"]:not([data-motion-state="closing"])');
     const closingMobileDrawer = document.querySelector('[data-header-mobile-drawer][data-motion-state="closing"]');
     const shouldLock = isMobile
@@ -1583,7 +1586,7 @@ if (!window.SpinelHeaderMenus) {
       .catch(() => {});
   };
 
-  const supportsDesktopHeaderHover = () => window.matchMedia('(min-width: 900px) and (hover: hover) and (pointer: fine)').matches;
+  const supportsDesktopHeaderHover = () => window.matchMedia(`${headerDesktopMediaQuery} and (hover: hover) and (pointer: fine)`).matches;
   const shouldAnimateHeaderSubmenu = (details) => details.matches(
     '.header__submenu-disclosure, .header__submenu-nested-disclosure'
   );
@@ -1633,7 +1636,7 @@ if (!window.SpinelHeaderMenus) {
   const positionHeaderSubmenu = (details) => {
     if (
       !details.matches('.header__submenu-disclosure:not(.header__submenu-disclosure--mega)') ||
-      window.matchMedia('(max-width: 899px)').matches
+      window.matchMedia(headerMobileMediaQuery).matches
     ) {
       details.style.removeProperty('--header-submenu-top');
       return;
@@ -1647,7 +1650,7 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const positionNestedHeaderSubmenu = (details) => {
-    if (!details.matches('.header__submenu-nested-disclosure') || window.matchMedia('(max-width: 899px)').matches) {
+    if (!details.matches('.header__submenu-nested-disclosure') || window.matchMedia(headerMobileMediaQuery).matches) {
       delete details.dataset.flyoutReverse;
       return;
     }
@@ -2212,7 +2215,7 @@ if (!window.SpinelHeaderMenus) {
 
     const header = details.closest('[data-header]');
     const mobileDrawer = header?.querySelector('.header__menu-disclosure');
-    if (mobileDrawer && window.matchMedia('(max-width: 899px)').matches) mobileDrawer.open = true;
+    if (mobileDrawer && window.matchMedia(headerMobileMediaQuery).matches) mobileDrawer.open = true;
     openHeaderSubmenu(details);
   });
 
