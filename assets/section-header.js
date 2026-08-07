@@ -1620,7 +1620,11 @@ if (!window.SpinelHeaderMenus) {
   const syncHeaderLocalizationAria = (details) => {
     const summary = details.querySelector(':scope > summary');
     if (!summary) return;
-    summary.setAttribute('aria-expanded', String(details.open && details.dataset.motionState !== 'closing'));
+    summary.setAttribute('aria-expanded', String(
+      details.open
+      && details.dataset.motionState !== 'closing'
+      && details.dataset.closing !== 'true'
+    ));
   };
 
   const clearLocalizationHoverTimer = (details) => {
@@ -1668,7 +1672,7 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    document.querySelectorAll('[data-header] .header__localization-selector--hover[open]').forEach((otherDetails) => {
+    document.querySelectorAll('[data-header] .header__localization-selector[open]').forEach((otherDetails) => {
       if (otherDetails !== details) closeHeaderLocalization(otherDetails);
     });
 
