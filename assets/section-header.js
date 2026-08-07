@@ -628,6 +628,9 @@ if (!window.SpinelHeaderMenus) {
   const syncTransparentHeaderColorScheme = (header, showSurface) => {
     const defaultColorClass = header.dataset.defaultColorClass;
     const hasSurfaceScheme = Boolean(defaultColorClass && header.classList.contains(defaultColorClass));
+    const isClosingDesktopDropdown = Boolean(
+      header.querySelector('.header__submenu-disclosure[open][data-closing="true"]')
+    );
 
     if (showSurface) {
       clearTransparentHeaderSchemeExit(header);
@@ -640,7 +643,7 @@ if (!window.SpinelHeaderMenus) {
       return;
     }
 
-    if (header.dataset.megaSurfaceImmediateClose === 'true') {
+    if (isClosingDesktopDropdown || header.dataset.megaSurfaceImmediateClose === 'true') {
       clearTransparentHeaderSchemeExit(header);
       setTransparentHeaderColorScheme(header, false);
       return;
@@ -818,7 +821,7 @@ if (!window.SpinelHeaderMenus) {
     // mega menu's opacity and height transitions.
     const hasOpenDesktopDropdown = !isMobile
       && Boolean(header.querySelector(
-        '.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'
+        '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
       ));
     const showSurface = isScrolled || hasOpenDesktopDropdown;
     header.classList.toggle('header--surface-visible', showSurface);
