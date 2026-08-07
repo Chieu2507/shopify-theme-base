@@ -143,8 +143,12 @@ class EditorialSlideshow extends HTMLElement {
     if (slides.length < 2) return;
 
     const normalizedIndex = (index + slides.length) % slides.length;
+    const getSlideAtIndex = (slideIndex) => {
+      const blockId = this.tabs[slideIndex]?.dataset.editorialBlockId;
+      return slides.find((slide) => slide.dataset.blockId === blockId) || slides[slideIndex];
+    };
     [normalizedIndex, normalizedIndex - 1, normalizedIndex + 1].forEach((slideIndex) => {
-      this.preloadSlideImage(slides[(slideIndex + slides.length) % slides.length]);
+      this.preloadSlideImage(getSlideAtIndex((slideIndex + slides.length) % slides.length));
     });
   }
 
@@ -282,6 +286,7 @@ class EditorialSlideshow extends HTMLElement {
       tab.setAttribute('tabindex', isActive ? '0' : '-1');
       tab.dataset.editorialSlideTab = '';
       tab.dataset.editorialIndex = String(index);
+      tab.dataset.editorialBlockId = slide.dataset.blockId || '';
 
       label.className = 'editorial-slideshow__tab-label';
       label.textContent = slide.dataset.editorialNavLabel || 'Slide';
