@@ -124,22 +124,30 @@ Sau lần sửa cuối:
 3. Đọc `validation-results/latest.status` và `validation-results/latest.log` của
    lần chạy mới nhất; không dùng log cũ. Với JS/build script, chạy thêm syntax,
    build hoặc targeted test sẵn có. Docs-only không cần theme validator.
-4. Storefront QA là bắt buộc cho work theo demo, visual/responsive, interaction,
-   shared/global JS, scroll lock hoặc explicit audit/test: chạy
-   `shopify theme dev --theme 144223469616 --allow-live` và kiểm tra desktop/mobile. 
-5. QA theo phạm vi ảnh hưởng: default/empty/long/missing data, nhiều instance,
-   keyboard, interaction, responsive và không có console error. Với Theme Editor,
-   kiểm tra add/remove/duplicate/reorder/select/deselect/re-render/unload khi liên
-   quan; xác nhận không còn listener trùng hoặc scroll lock.
+4. Runtime QA là opt-in, không chạy mặc định. Runtime QA bao gồm
+   `shopify theme dev`, storefront/browser, Theme Editor, console, responsive,
+   interaction và Lighthouse/network. Nếu user không ghi đúng cú pháp
+   `QA: ON` trong prompt, không chạy runtime QA; checklist phải ghi
+   `NOT TESTED — runtime QA not requested`. Khi có cú pháp này, chạy
+   `shopify theme dev --theme 144223469616 --allow-live` và kiểm tra
+   desktop/mobile theo các mục bên dưới.
+5. Khi `QA: ON`, QA theo phạm vi ảnh hưởng: default/empty/long/missing data,
+   nhiều instance, keyboard, interaction, responsive và không có console error.
+   Với Theme Editor, kiểm tra add/remove/duplicate/reorder/select/deselect/
+   re-render/unload khi liên quan; xác nhận không còn listener trùng hoặc scroll
+   lock.
 6. Đối chiếu từng mục checklist và ghi `PASS`, `FAIL` hoặc `NOT TESTED` kèm bằng
-   chứng. Không báo cáo runtime/audit đã hoàn tất nếu chưa chạy được.
-7. Với thay đổi ảnh, asset shared, CSS/JS loading, layout hoặc LCP, so sánh
-   Lighthouse/network trước–sau trên surface ảnh hưởng và không chấp nhận
-   regression chưa giải thích.
+   chứng. Không báo cáo runtime/audit đã hoàn tất nếu chưa chạy được. Khi không
+   có `QA: ON`, `NOT TESTED — runtime QA not requested` là trạng thái hợp lệ và
+   không tự nó chặn delivery.
+7. Khi `QA: ON` và thay đổi ảnh, asset shared, CSS/JS loading, layout hoặc LCP,
+   so sánh Lighthouse/network trước–sau trên surface ảnh hưởng và không chấp
+   nhận regression chưa giải thích.
 
-Validation fail hoặc regression quan sát được thì không commit/push. Nếu runtime
-QA bắt buộc không thể chạy, ghi `NOT TESTED` và chặn delivery; chỉ docs/non-runtime
-change được phép bỏ qua với lý do rõ ràng.
+Validation fail hoặc regression quan sát được thì không commit/push. Nếu có
+`QA: ON` nhưng runtime QA bắt buộc không thể chạy, ghi `NOT TESTED` và chặn
+delivery. Nếu không có cú pháp này, chỉ cần ghi rõ `NOT TESTED — runtime QA not
+requested`; docs/non-runtime change vẫn phải qua các gate tĩnh áp dụng.
 
 ## 7. Submit và Git delivery
 
