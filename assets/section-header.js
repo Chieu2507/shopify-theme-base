@@ -1157,27 +1157,28 @@ if (!window.SpinelHeaderMenus) {
   const updateDesktopMegaMenuRevealDelays = (details) => {
     const panel = getDesktopMegaMenuPanel(details);
     if (!panel) return;
+    const revealStart = getDesktopMegaMenuTransitionDuration(details);
     if (!details.matches('.header__submenu-disclosure--mega')) {
       const items = getDesktopMegaMenuRevealTargets(details);
       items.forEach((item, index) => {
-        item.style.setProperty('--header-mega-reveal-delay', `${200 + (index * 50)}ms`);
+        item.style.setProperty('--header-mega-reveal-delay', `${revealStart + (index * 50)}ms`);
       });
-      return items.length ? 200 + ((items.length - 1) * 50) + 400 : 0;
+      return items.length ? revealStart + ((items.length - 1) * 50) + 400 : 0;
     }
     const heading = panel.querySelector('.header__mega-heading');
     const columns = Array.from(panel.querySelectorAll('.header__mega-list'));
     const promotions = Array.from(panel.querySelectorAll('.header__mega-promo'));
-    heading?.style.setProperty('--header-mega-reveal-delay', '200ms');
+    heading?.style.setProperty('--header-mega-reveal-delay', `${revealStart}ms`);
     columns.forEach((column, index) => {
-      column.style.setProperty('--header-mega-reveal-delay', `${200 + (index * 50)}ms`);
+      column.style.setProperty('--header-mega-reveal-delay', `${revealStart + (index * 50)}ms`);
     });
-    const promotionDelay = Math.max(350, Math.min(400, 200 + (columns.length * 50)));
+    const promotionDelay = Math.max(revealStart + 150, Math.min(revealStart + 200, revealStart + (columns.length * 50)));
     promotions.forEach((promotion, index) => {
       promotion.style.setProperty('--header-mega-reveal-delay', `${Math.min(400, promotionDelay + (index * 50))}ms`);
     });
     const revealDelays = [
-      heading ? 200 : 0,
-      ...columns.map((_, index) => 200 + (index * 50)),
+      heading ? revealStart : 0,
+      ...columns.map((_, index) => revealStart + (index * 50)),
       ...promotions.map((_, index) => Math.min(400, promotionDelay + (index * 50)))
     ];
     return Math.max(0, ...revealDelays) + 400;
@@ -1712,10 +1713,10 @@ if (!window.SpinelHeaderMenus) {
   const closeOtherTopLevelHoverMenus = (menuItem) => {
     const header = menuItem.closest('[data-header]');
     const activeMenu = menuItem.querySelector(':scope > .header__submenu-disclosure--hover');
+    if (activeMenu) return;
     getOpenHoverMenus(header).forEach((openMenu) => {
-      if (openMenu === activeMenu) return;
       clearMegaMenuHoverTimer(openMenu);
-      closeMegaMenu(openMenu, !openMenu.matches('.header__submenu-disclosure--mega'));
+      closeMegaMenu(openMenu);
     });
   };
 
