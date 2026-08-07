@@ -1296,6 +1296,9 @@ if (!window.SpinelHeaderMenus) {
         panel.style.removeProperty('--header-mega-panel-height');
         clearDesktopMegaMenuRevealDelays(details);
         syncDesktopMegaMenuBackground(header);
+        if (!header?.querySelector('.header__submenu-disclosure--mega[open]')) {
+          delete header?.dataset.megaSurfaceImmediateClose;
+        }
       }
       syncHeaderDisclosureAria(details);
       syncHeaderMenuScrollLock();
@@ -1714,6 +1717,9 @@ if (!window.SpinelHeaderMenus) {
     const header = menuItem.closest('[data-header]');
     const activeMenu = menuItem.querySelector(':scope > .header__submenu-disclosure--hover');
     if (activeMenu) return;
+    if (header?.querySelector('.header__submenu-disclosure--mega[open]')) {
+      header.dataset.megaSurfaceImmediateClose = 'true';
+    }
     getOpenHoverMenus(header).forEach((openMenu) => {
       clearMegaMenuHoverTimer(openMenu);
       closeMegaMenu(openMenu);
@@ -1862,6 +1868,7 @@ if (!window.SpinelHeaderMenus) {
     const isDesktopAnimatedMenu = usesDesktopMegaMenuCssMotion(details);
     const isDesktopTopLevelMenu = !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure');
     const header = details.closest('[data-header]');
+    if (header) delete header.dataset.megaSurfaceImmediateClose;
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
     if (activeHandoff && activeHandoff.to !== details) desktopMegaMenuHandoffs.delete(header);
 
