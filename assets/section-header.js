@@ -773,9 +773,9 @@ if (!window.SpinelHeaderMenus) {
 
     if (!isTransparentHeader) return;
 
-    const hasOpenDesktopMenu = !isMobile
-      && Boolean(header.querySelector('.header__submenu-disclosure[open]'));
-    const showSurface = isScrolled || hasOpenDesktopMenu;
+    const hasOpenDesktopDropdown = !isMobile
+      && Boolean(header.querySelector('.header__submenu-disclosure[open], .header__actions .header__localization-selector[open]'));
+    const showSurface = isScrolled || hasOpenDesktopDropdown;
     header.classList.toggle('header--surface-visible', showSurface);
     setTransparentHeaderColorScheme(header, showSurface);
   };
@@ -1976,6 +1976,9 @@ if (!window.SpinelHeaderMenus) {
 
       if (details.matches?.('.header__localization-selector')) {
         syncHeaderLocalizationAria(details);
+        if (!isMobileHeaderViewport() && details.closest('[data-transparent-header="true"]')) {
+          scheduleResponsiveHeaderSync();
+        }
       }
 
       if (!details.open && details.matches?.('.header__localization-selector')) {
