@@ -12,7 +12,7 @@
   @param {boolean} [include_shopify_attributes] - Whether to attach editor attributes to the rendered typography block.
 
   @example
-  {% render 'typography-block',
+  {% render 'content-block',
     block: block,
     content: block.settings.text,
     kind: 'text',
@@ -193,22 +193,53 @@
       assign line_height = 'var(--leading-' | append: custom_line_height | append: ')'
   endcase
 
-  assign color = 'var(--color-heading)'
-  if block.settings.color == 'subtext'
-    assign color = 'var(--color-text)'
-  endif
-
   assign width = block.settings.width | default: 'fit-content'
   assign width_mobile = block.settings.width_mobile | default: width
+  assign width_class = 'fit'
+  if width == '100%'
+    assign width_class = 'fill'
+  endif
+  assign width_mobile_class = 'fit'
+  if width_mobile == '100%'
+    assign width_mobile_class = 'fill'
+  endif
+
+  assign color_class = 'heading'
+  if block.settings.color == 'subtext'
+    assign color_class = 'text'
+  endif
+
   assign alignment = block.settings.alignment | default: 'left'
+  assign padding_top = block.settings.padding_top | default: 0
+  assign padding_bottom = block.settings.padding_bottom | default: 0
+  assign padding_left = block.settings.padding_left | default: 0
+  assign padding_right = block.settings.padding_right | default: 0
+  assign mobile_scale = block.settings.mobile_scale | default: 100
   assign padding_scale = block.settings.mobile_scale | default: 100 | divided_by: 100.0
-  assign padding_top_mobile = block.settings.padding_top | default: 0 | times: padding_scale
-  assign padding_bottom_mobile = block.settings.padding_bottom | default: 0 | times: padding_scale
-  assign padding_left_mobile = block.settings.padding_left | default: 0 | times: padding_scale
-  assign padding_right_mobile = block.settings.padding_right | default: 0 | times: padding_scale
+  assign padding_top_mobile = padding_top | times: padding_scale
+  assign padding_bottom_mobile = padding_bottom | times: padding_scale
+  assign padding_left_mobile = padding_left | times: padding_scale
+  assign padding_right_mobile = padding_right | times: padding_scale
+
+  assign has_padding = false
+  if padding_top != 0 or padding_bottom != 0 or padding_left != 0 or padding_right != 0
+    assign has_padding = true
+  endif
+
+  assign has_mobile_padding = false
+  if has_padding and mobile_scale != 100
+    assign has_mobile_padding = true
+  endif
+
+  assign has_mobile_font_size = false
+  if use_inline_typography and font_size_mobile != font_size
+    assign has_mobile_font_size = true
+  endif
+
+  assign responsive_scope = block.id | default: kind
   assign rendered_content = content
   if block.settings.disable_line_break_mobile
-    assign line_break_markup = '<span class="typography-block__line-break"><br></span>'
+    assign line_break_markup = '<span class="content-block__line-break"><br></span>'
     assign rendered_content = rendered_content | replace: '<br>', line_break_markup
     assign rendered_content = rendered_content | replace: '<br/>', line_break_markup
     assign rendered_content = rendered_content | replace: '<br />', line_break_markup
@@ -229,36 +260,43 @@
 %}
 
 {% if content != blank %}
+  {% if has_mobile_padding or has_mobile_font_size %}
+    <style>
+      @media screen and (max-width: 749px) {
+        [data-type-block-id="{{ responsive_scope | escape }}"] {
+          {% if has_mobile_padding %}
+            padding: {{ padding_top_mobile }}px {{ padding_right_mobile }}px {{ padding_bottom_mobile }}px {{ padding_left_mobile }}px !important;
+          {% endif %}
+          {% if has_mobile_font_size %}
+            font-size: {{ font_size_mobile }} !important;
+          {% endif %}
+        }
+      }
+    </style>
+  {% endif %}
   <div
-    class="typography-block typography-block--{{ kind }} typography-block--preset-{{ preset }}{% if typo_class != blank %} {{ typo_class }}{% endif %}{% if use_inline_typography %} typography-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} typography-block--disable-mobile-breaks{% endif %}"
-    style="
-      --typography-width: {{ width }};
-      --typography-width-mobile: {{ width_mobile }};
-      {% if use_inline_typography %}
-        --typography-font-family: {{ font_family }};
-        --typography-font-style: {{ font_style }};
-        --typography-font-weight: {{ font_weight }};
-        --typography-font-size: {{ font_size }};
-        --typography-font-size-mobile: {{ font_size_mobile }};
-        --typography-line-height: {{ line_height }};
-        --typography-letter-spacing: {{ letter_spacing }};
-        --typography-text-case: {{ text_case }};
-      {% endif %}
-      --typography-color: {{ color }};
-      --typography-alignment: {{ alignment }};
-      --typography-padding-top: {{ block.settings.padding_top | default: 0 }}px;
-      --typography-padding-bottom: {{ block.settings.padding_bottom | default: 0 }}px;
-      --typography-padding-left: {{ block.settings.padding_left | default: 0 }}px;
-      --typography-padding-right: {{ block.settings.padding_right | default: 0 }}px;
-      --typography-padding-top-mobile: {{ padding_top_mobile }}px;
-      --typography-padding-bottom-mobile: {{ padding_bottom_mobile }}px;
-      --typography-padding-left-mobile: {{ padding_left_mobile }}px;
-      --typography-padding-right-mobile: {{ padding_right_mobile }}px;
-    "
+    class="content-block content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }} content-block--color-{{ color_class }}{% if typo_class != blank %} {{ typo_class }}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
+    {% if has_mobile_padding or has_mobile_font_size %}data-type-block-id="{{ responsive_scope | escape }}"{% endif %}
+    {% if has_padding or use_inline_typography %}
+      style="
+        {% if has_padding %}
+          padding: {{ padding_top }}px {{ padding_right }}px {{ padding_bottom }}px {{ padding_left }}px;
+        {% endif %}
+        {% if use_inline_typography %}
+          font-family: {{ font_family }};
+          font-style: {{ font_style }};
+          font-weight: {{ font_weight }};
+          font-size: {{ font_size }};
+          line-height: {{ line_height }};
+          letter-spacing: {{ letter_spacing }};
+          text-transform: {{ text_case }};
+        {% endif %}
+      "
+    {% endif %}
     {% if include_shopify_attributes != false %}{{ block.shopify_attributes }}{% endif %}
   >
     {% if kind == 'heading' %}
-      <div class="typography-block__content content-heading content-heading--{{ alignment }}">
+      <div class="content-block__content content-heading content-heading--{{ alignment }}">
         {% if is_legacy_heading %}
           <{{ legacy_heading_tag }}>{{ rendered_content }}</{{ legacy_heading_tag }}>
         {% else %}
@@ -266,7 +304,7 @@
         {% endif %}
       </div>
     {% else %}
-      <div class="typography-block__content text-block content-text content-text--{{ alignment }} rte">
+      <div class="content-block__content text-block content-text content-text--{{ alignment }} rte">
         {{ rendered_content }}
       </div>
     {% endif %}
@@ -274,28 +312,30 @@
 {% endif %}
 
 {% stylesheet %}
-  .typography-block {
+  .content-block {
     display: block;
-    width: var(--typography-width);
+    width: fit-content;
     max-width: 100%;
-    padding:
-      var(--typography-padding-top)
-      var(--typography-padding-right)
-      var(--typography-padding-bottom)
-      var(--typography-padding-left);
-    color: var(--typography-color);
+    color: var(--color-heading);
   }
 
-  .typography-block__content,
-  .typography-block__content :is(p, h1, h2, h3, h4, h5, h6) {
+  .content-block--width-fill {
+    width: 100%;
+  }
+
+  .content-block.content-block--color-text {
+    color: var(--color-text);
+  }
+
+  .content-block__content,
+  .content-block__content :is(p, h1, h2, h3, h4, h5, h6) {
     color: inherit !important;
-    text-align: var(--typography-alignment);
   }
 
-  .typography-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
-    .typography-block__content,
-  .typography-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
-    .typography-block__content
+  .content-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
+    .content-block__content,
+  .content-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
+    .content-block__content
     :is(p, h1, h2, h3, h4, h5, h6) {
     font-family: inherit !important;
     font-size: inherit !important;
@@ -306,55 +346,47 @@
     text-transform: inherit !important;
   }
 
-  .typography-block--inline-typography .typography-block__content,
-  .typography-block--inline-typography
-    .typography-block__content
+  .content-block--inline-typography .content-block__content,
+  .content-block--inline-typography
+    .content-block__content
     :is(p, h1, h2, h3, h4, h5, h6) {
-    font-family: var(--typography-font-family) !important;
-    font-size: var(--typography-font-size) !important;
+    font-family: inherit !important;
+    font-size: inherit !important;
     font-synthesis: weight;
-    font-style: var(--typography-font-style) !important;
-    font-weight: var(--typography-font-weight) !important;
-    letter-spacing: var(--typography-letter-spacing) !important;
-    line-height: var(--typography-line-height) !important;
-    text-transform: var(--typography-text-case) !important;
+    font-style: inherit !important;
+    font-weight: inherit !important;
+    letter-spacing: inherit !important;
+    line-height: inherit !important;
+    text-transform: inherit !important;
   }
 
-  .typography-block__content {
+  .content-block__content {
     margin: 0;
     text-wrap: pretty;
   }
 
-  .typography-block__content > :first-child {
+  .content-block__content > :first-child {
     margin-block-start: 0;
   }
 
-  .typography-block__content > :last-child {
+  .content-block__content > :last-child {
     margin-block-end: 0;
   }
 
   @media screen and (max-width: 749px) {
-    .typography-block {
-      width: var(--typography-width-mobile);
-      padding:
-        var(--typography-padding-top-mobile)
-        var(--typography-padding-right-mobile)
-        var(--typography-padding-bottom-mobile)
-        var(--typography-padding-left-mobile);
+    .content-block--width-mobile-fit {
+      width: fit-content;
     }
 
-    .typography-block--inline-typography .typography-block__content,
-    .typography-block--inline-typography
-      .typography-block__content
-      :is(p, h1, h2, h3, h4, h5, h6) {
-      font-size: var(--typography-font-size-mobile) !important;
+    .content-block--width-mobile-fill {
+      width: 100%;
     }
 
-    .typography-block--disable-mobile-breaks .typography-block__line-break br {
+    .content-block--disable-mobile-breaks .content-block__line-break br {
       display: none;
     }
 
-    .typography-block--disable-mobile-breaks .typography-block__line-break::after {
+    .content-block--disable-mobile-breaks .content-block__line-break::after {
       content: ' ';
     }
   }
