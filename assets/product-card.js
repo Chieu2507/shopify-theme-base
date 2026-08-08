@@ -302,27 +302,15 @@ class QuickViewModal {
 
   async fetchQuickViewSection(url, signal) {
     const requestUrl = new URL(url);
-    requestUrl.searchParams.set('section_id', 'main');
-    let response = await fetch(requestUrl.href, {
+    const response = await fetch(requestUrl.href, {
       headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
       credentials: 'same-origin',
       cache: 'no-store',
       signal
     });
-    let quickViewSection = response.ok ? this.parseQuickViewSection(await response.text()) : null;
+    if (!response.ok) throw new Error(`Unable to load quick view (${response.status}).`);
 
-    if (!quickViewSection) {
-      requestUrl.searchParams.delete('section_id');
-      response = await fetch(requestUrl.href, {
-        headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'same-origin',
-        cache: 'no-store',
-        signal
-      });
-      if (!response.ok) throw new Error(`Unable to load quick view (${response.status}).`);
-      quickViewSection = this.parseQuickViewSection(await response.text());
-    }
-
+    const quickViewSection = this.parseQuickViewSection(await response.text());
     if (!quickViewSection) throw new Error('Quick view template was not returned.');
     return quickViewSection;
   }

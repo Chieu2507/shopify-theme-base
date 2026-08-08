@@ -41,7 +41,7 @@
               {% if block.settings.label != blank %}<span>{{ block.settings.label | escape }}</span>{% endif %}
               {% if block.settings.show_facebook %}<a href="https://www.facebook.com/sharer/sharer.php?u={{ shop.url | append: article.url | url_encode }}" target="_blank" rel="noopener">{{ 'article.share_facebook' | t }}</a>{% endif %}
               {% if block.settings.show_x %}<a href="https://twitter.com/intent/tweet?url={{ shop.url | append: article.url | url_encode }}" target="_blank" rel="noopener">{{ 'article.share_x' | t }}</a>{% endif %}
-              {% if block.settings.show_email %}<a href="mailto:?subject={{ article.title | url_encode }}&body={{ shop.url | append: article.url | url_encode }}">{{ 'article.share_email' | t }}</a>{% endif %}
+              {% if block.settings.show_email %}<a href="mailto:?subject={{ article.title | url_encode | escape }}&amp;body={{ shop.url | append: article.url | url_encode | escape }}">{{ 'article.share_email' | t }}</a>{% endif %}
             </div>
 
           {% when 'related_articles' %}
@@ -54,11 +54,11 @@
                     {% if related.id != article.id and related_count < block.settings.article_count %}
                       {% assign related_count = related_count | plus: 1 %}
                       <article class="article__related-card">
-                        <a class="article__related-media" href="{{ related.url }}">
+                        <a class="article__related-media" href="{{ related.url | escape }}">
                           {% assign related_image_alt = related.image.alt | default: related.title %}
                           {% render 'responsive-media', image: related.image, max_width: 700, widths: '320, 480, 700', sizes: '(min-width: 990px) 33vw, (min-width: 750px) 50vw, 100vw', class: 'article__related-image media-cover', loading: 'lazy', alt: related_image_alt, placeholder_asset: 'placeholder-image-product-1.svg', placeholder_class: 'article__related-image media-cover' %}
                         </a>
-                        <h3 class="typo-h3"><a href="{{ related.url }}">{{ related.title | escape }}</a></h3>
+                        <h3 class="typo-h3"><a href="{{ related.url | escape }}">{{ related.title | escape }}</a></h3>
                         {% if block.settings.show_date %}<p class="article__meta">{{ related.published_at | time_tag: format: 'date' }}</p>{% endif %}
                       </article>
                     {% endif %}

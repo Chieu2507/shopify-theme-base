@@ -166,7 +166,7 @@
           <div class="header__mobile-drawer-header">
             <span id="HeaderMobileDrawerTitle-{{ section.id }}" class="visually-hidden">{{ 'header.primary_navigation' | t }}</span>
             {% if render_logo %}
-              <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-height-mobile: {{ logo_height_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
+              <a class="header__mobile-drawer-logo" href="{{ routes.root_url | escape }}" aria-label="{{ logo_text | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-height-mobile: {{ logo_height_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
                 {% if logo_image_mobile != blank %}
                   {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '(max-width: 959px) var(--header-logo-width-mobile), 120px', alt: shop.name, loading: 'eager' }}
                 {% else %}
@@ -210,7 +210,7 @@
         style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-height: {{ logo_height_desktop }}px; --header-logo-height-mobile: {{ logo_height_mobile }}px; --header-logo-text-size: {{ logo_text_size_desktop }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;"
         {% if logo_block != blank %}{{ logo_block.shopify_attributes }}{% endif %}
       >
-          <a href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}">
+          <a href="{{ routes.root_url | escape }}" aria-label="{{ logo_text | escape }}">
             {% if logo_image != blank %}
               <picture class="header__logo-image header__logo-image--dark">
                 {% if logo_image_mobile != blank %}<source media="(max-width: 959px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
@@ -309,7 +309,7 @@
       {% endif %}
 
       {% if section.settings.show_search %}
-        <a class="header__action header__search-trigger" href="{{ routes.search_url }}" aria-label="{{ 'header.search' | t | escape }}" aria-haspopup="dialog" aria-controls="HeaderSearch-{{ section.id }}" data-header-search-open>
+        <a class="header__action header__search-trigger" href="{{ routes.search_url | escape }}" aria-label="{{ 'header.search' | t | escape }}" aria-haspopup="dialog" aria-controls="HeaderSearch-{{ section.id }}" data-header-search-open>
           {% render 'icon', name: 'search' %}
         </a>
       {% endif %}
@@ -320,14 +320,14 @@
             <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
           </shopify-account>
         {% else %}
-          <a class="header__action header__action--account" href="{{ account_href }}" aria-label="{{ 'header.login' | t | escape }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>
+          <a class="header__action header__action--account" href="{{ account_href | escape }}" aria-label="{{ 'header.login' | t | escape }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>
             {% render 'icon', name: 'account' %}
           </a>
         {% endif %}
       {% endif %}
 
       {% if section.settings.show_cart %}
-        <a class="header__action header__cart" href="{{ routes.cart_url }}" aria-label="{{ 'header.cart' | t | escape }}" data-cart-count-label="{{ 'header.cart_count' | t: count: '__count__' | escape }}"{% if settings.cart_action == 'drawer' %} data-cart-drawer-open aria-controls="CartDrawer" aria-expanded="false"{% endif %}>
+        <a class="header__action header__cart" href="{{ routes.cart_url | escape }}" aria-label="{{ 'header.cart' | t | escape }}" data-cart-count-label="{{ 'header.cart_count' | t: count: '__count__' | escape }}"{% if settings.cart_action == 'drawer' %} data-cart-drawer-open aria-controls="CartDrawer" aria-expanded="false"{% endif %}>
           {% render 'icon', name: 'bag' %}
           {% if cart.item_count > 0 %}
             <span class="header__cart-count" aria-label="{{ 'header.cart_count' | t: count: cart.item_count | escape }}">
@@ -340,10 +340,10 @@
   </div>
 
   {% if section.settings.show_search %}
-    <dialog scroll-lock data-scroll-lock-owner="search" class="header-search-modal color-scheme color-{{ section.settings.color_scheme.id }}" id="HeaderSearch-{{ section.id }}" aria-labelledby="HeaderSearchLabel-{{ section.id }}" data-header-search-modal data-predictive-search-url="{{ routes.predictive_search_url }}" data-currency-code="{{ localization.country.currency.iso_code | default: shop.currency | escape }}" data-no-products-text="{{ 'search.no_products' | t | escape }}" data-no-results-text="{{ 'search.no_results' | t: term: '__term__' | escape }}" data-product-count-one="{{ 'search.product_count.one' | t: count: '__count__' | escape }}" data-product-count-other="{{ 'search.product_count.other' | t: count: '__count__' | escape }}">
+    <dialog scroll-lock data-scroll-lock-owner="search" class="header-search-modal color-scheme color-{{ section.settings.color_scheme.id }}" id="HeaderSearch-{{ section.id }}" aria-labelledby="HeaderSearchLabel-{{ section.id }}" data-header-search-modal data-predictive-search-url="{{ routes.predictive_search_url | escape }}" data-currency-code="{{ localization.country.currency.iso_code | default: shop.currency | escape }}" data-no-products-text="{{ 'search.no_products' | t | escape }}" data-no-results-text="{{ 'search.no_results' | t: term: '__term__' | escape }}" data-product-count-one="{{ 'search.product_count.one' | t: count: '__count__' | escape }}" data-product-count-other="{{ 'search.product_count.other' | t: count: '__count__' | escape }}">
       <div class="header-search-modal__inner">
         <button class="header-search-modal__close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_search' | t | escape }}" data-header-search-close></button>
-        <form class="header-search-modal__form search-field" action="{{ routes.search_url }}" method="get" role="search" data-header-search-form>
+        <form class="header-search-modal__form search-field" action="{{ routes.search_url | escape }}" method="get" role="search" data-header-search-form>
           <label class="visually-hidden" id="HeaderSearchLabel-{{ section.id }}" for="HeaderSearchInput-{{ section.id }}">{{ 'search.label' | t }}</label>
           <input id="HeaderSearchInput-{{ section.id }}" class="header-search-modal__input search-field__input" type="search" name="q" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="HeaderSearchPanel-{{ section.id }}-products" data-header-search-input>
           <button class="header-search-modal__clear search-field__clear" type="button" aria-label="{{ 'search.clear_search' | t | escape }}" data-header-search-clear hidden>
@@ -364,7 +364,7 @@
             <div id="HeaderSearchPanel-{{ section.id }}-collections" role="tabpanel" aria-labelledby="HeaderSearchTab-{{ section.id }}-collections" hidden data-header-search-panel="collections"></div>
             <p class="header-search-modal__empty" data-header-search-empty hidden></p>
           </div>
-          <a class="button button--primary header-search-modal__view-all" href="{{ routes.search_url }}" data-header-search-view-all>{{ 'search.view_all_results' | t }}</a>
+          <a class="button button--primary header-search-modal__view-all" href="{{ routes.search_url | escape }}" data-header-search-view-all>{{ 'search.view_all_results' | t }}</a>
         </div>
       </div>
     </dialog>

@@ -37,8 +37,8 @@
       <div class="cart-page__empty">
         <p class="cart-page__empty-message">{{ section.settings.empty_message | escape }}</p>
         <div class="cart-page__empty-actions">
-          <a class="button button--primary" href="{{ routes.account_login_url }}">{{ section.settings.login_label | escape }}</a>
-          <a class="button button--secondary" href="{{ continue_url }}">{{ section.settings.continue_label | escape }}</a>
+          <a class="button button--primary" href="{{ routes.account_login_url | escape }}">{{ section.settings.login_label | escape }}</a>
+          <a class="button button--secondary" href="{{ continue_url | escape }}">{{ section.settings.continue_label | escape }}</a>
         </div>
       </div>
     {% else %}
@@ -47,12 +47,12 @@
           <div class="cart-page__items-heading"><span>{{ section.settings.items_label | escape }}</span><span>{{ section.settings.price_label | escape }}</span></div>
           {% for item in cart.items %}
             <article class="cart-page__item">
-              <a class="cart-page__item-media" href="{{ item.url }}">
+              <a class="cart-page__item-media" href="{{ item.url | escape }}">
                 {% assign item_image_alt = item.image.alt | default: item.product.title %}
                 {% render 'responsive-media', image: item.image, max_width: 480, widths: '180, 280, 400, 480', sizes: '(min-width: 990px) 160px, 30vw', class: 'cart-page__item-image', loading: 'lazy', alt: item_image_alt, placeholder_asset: 'placeholder-image-product-1.svg', placeholder_class: 'cart-page__item-image' %}
               </a>
               <div class="cart-page__item-info">
-                <h2 class="cart-page__item-title typo-h2"><a href="{{ item.url }}">{{ item.product.title | escape }}</a></h2>
+                <h2 class="cart-page__item-title typo-h2"><a href="{{ item.url | escape }}">{{ item.product.title | escape }}</a></h2>
                 {% unless item.product.has_only_default_variant %}
                   <dl class="cart-page__item-options">
                     {% for option in item.options_with_values %}
@@ -62,7 +62,7 @@
                 {% endunless %}
                 {% if item.selling_plan_allocation != blank %}<p class="cart-page__item-selling-plan">{{ item.selling_plan_allocation.selling_plan.name | escape }}</p>{% endif %}
                 {% if item.properties != empty %}<dl class="cart-page__item-properties">{% for property in item.properties %}{% assign property_first_char = property.first | slice: 0 %}{% unless property.last == blank or property_first_char == '_' %}<div><dt>{{ property.first | escape }}:</dt><dd>{{ property.last | escape }}</dd></div>{% endunless %}{% endfor %}</dl>{% endif %}
-                <a class="cart-page__remove" href="{{ item.url_to_remove }}">{{ section.settings.remove_label | escape }}</a>
+                <a class="cart-page__remove" href="{{ item.url_to_remove | escape }}">{{ section.settings.remove_label | escape }}</a>
                 <label class="cart-page__quantity-label" for="Quantity-{{ section.id }}-{{ forloop.index }}">{{ section.settings.quantity_label | escape }}</label>
                 <input class="cart-page__quantity" id="Quantity-{{ section.id }}-{{ forloop.index }}" type="number" name="updates[]" value="{{ item.quantity }}" min="0" aria-label="{{ section.settings.quantity_label | escape }}: {{ item.product.title | escape }}">
               </div>
@@ -162,8 +162,8 @@
                   class="cart-page__block cart-page__block--discount"
                   data-cart-page-discount
                   data-discount-error-label="{{ 'cart_drawer.discount_error' | t | escape }}"
-                  data-cart-json-url="{{ routes.cart_url }}.js"
-                  data-cart-update-url="{{ routes.cart_update_url }}.js"
+                  data-cart-json-url="{{ routes.cart_url | escape }}.js"
+                  data-cart-update-url="{{ routes.cart_update_url | escape }}.js"
                   {{ block.shopify_attributes }}
                 >
                   <label for="CartDiscount-{{ section.id }}">{{ block.settings.label | escape }}</label>
@@ -190,7 +190,7 @@
                 </div>
             {% endcase %}
           {% endfor %}
-          <a class="cart-page__clear" href="{{ routes.cart_clear_url }}">{{ section.settings.clear_label | escape }}</a>
+          <a class="cart-page__clear" href="{{ routes.cart_clear_url | escape }}">{{ section.settings.clear_label | escape }}</a>
         </aside>
       {% endform %}
     {% endif %}

@@ -44,7 +44,7 @@
       {{ promotion_block.shopify_attributes }}
     >
       {% if promotion_link != blank %}
-        <a class="main-collection__promotion-card" href="{{ promotion_link }}">
+        <a class="main-collection__promotion-card" href="{{ promotion_link | escape }}">
       {% else %}
         <div class="main-collection__promotion-card">
       {% endif %}
@@ -162,7 +162,7 @@
           </span>
 
           {% if section.settings.enable_sorting %}
-            <form class="main-collection__sort-form{% if section.settings.enable_filtering and collection.filters.size > 0 %} main-collection__sort-form--mobile-hidden{% endif %}" action="{{ collection.url }}" method="get" data-collection-sort-form>
+            <form class="main-collection__sort-form{% if section.settings.enable_filtering and collection.filters.size > 0 %} main-collection__sort-form--mobile-hidden{% endif %}" action="{{ collection.url | escape }}" method="get" data-collection-sort-form>
             {% for filter in collection.filters %}
               {% for value in filter.active_values %}
                 <input type="hidden" name="{{ value.param_name }}" value="{{ value.value }}">
@@ -255,7 +255,7 @@
         data-collection-filter-dialog
       >
         <span class="main-collection__filter-backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
-        <form class="main-collection__filter-form" action="{{ collection.url }}" method="get">
+        <form class="main-collection__filter-form" action="{{ collection.url | escape }}" method="get">
           <div class="quick-view__handle main-collection__filter-handle" data-collection-filter-handle aria-hidden="true"></div>
           <header class="main-collection__filter-header">
             <h2 id="CollectionFiltersTitle-{{ section.id }}" class="typo-h2">{{ 'collection.filters' | t }}</h2>
@@ -267,21 +267,21 @@
               <div class="main-collection__active-filters">
               {% for filter in collection.filters %}
                 {% for value in filter.active_values %}
-                  <a href="{{ value.url_to_remove }}">
+                  <a href="{{ value.url_to_remove | escape }}">
                     <span>{{ value.label | escape }}</span>
                     <span aria-hidden="true">×</span>
                   </a>
                 {% endfor %}
                 {% if filter.type == 'price_range' %}
                   {% if filter.min_value.value != nil or filter.max_value.value != nil %}
-                    <a href="{{ filter.url_to_remove }}">
+                    <a href="{{ filter.url_to_remove | escape }}">
                       <span>{{ filter.label | escape }}</span>
                       <span aria-hidden="true">×</span>
                     </a>
                   {% endif %}
                 {% endif %}
               {% endfor %}
-              <a class="main-collection__clear-link" href="{{ collection.url }}">{{ 'collection.clear_all' | t }}</a>
+              <a class="main-collection__clear-link" href="{{ collection.url | escape }}">{{ 'collection.clear_all' | t }}</a>
               </div>
             {% endif %}
 
@@ -434,7 +434,7 @@
             <button class="button button--primary" type="submit">
               {{ 'collection.apply_filters' | t: count: collection.products_count }}
             </button>
-            <a class="button button--secondary" href="{{ collection.url }}">{{ 'collection.clear_all' | t }}</a>
+            <a class="button button--secondary" href="{{ collection.url | escape }}">{{ 'collection.clear_all' | t }}</a>
           </footer>
         </form>
       </dialog>
@@ -494,7 +494,7 @@
             <h2 class="typo-h2">{{ 'collection.empty' | t }}</h2>
             <p>{{ 'collection.empty_help' | t }}</p>
             {% if active_filter_count > 0 %}
-              <a class="button button--primary" href="{{ collection.url }}">{{ 'collection.clear_all' | t }}</a>
+              <a class="button button--primary" href="{{ collection.url | escape }}">{{ 'collection.clear_all' | t }}</a>
             {% endif %}
           </div>
         {% endif %}
