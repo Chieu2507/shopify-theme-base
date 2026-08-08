@@ -1,11 +1,16 @@
 {% render 'section-stylesheet', asset: 'section-slideshow-critical.css', inline_on_home: true %}
 
+{% comment %}
+  Theme blocks are rendered once by {% content_for 'blocks' %} below.
+  section.blocks is read-only metadata for the first-slide ratio, count and fallback state.
+{% endcomment %}
 {% liquid
+  assign configured_slide_count = section.blocks.size
   assign first_slide = section.blocks | first
   assign first_slide_image = first_slide.settings.image | default: first_slide.settings.mobile_image
   assign desktop_ratio = first_slide_image.aspect_ratio | default: 1.7778
   assign mobile_ratio = first_slide.settings.mobile_image.aspect_ratio | default: desktop_ratio
-  assign slide_count = section.blocks.size
+  assign slide_count = configured_slide_count
   assign is_double_slide = false
   if section.settings.slideshow_style == 'double'
     assign is_double_slide = true
@@ -46,7 +51,7 @@
     <div class="slideshow__wrapper swiper-wrapper">
       {% content_for 'blocks' %}
 
-      {% if is_double_slide and section.blocks.size < 2 %}
+      {% if is_double_slide and configured_slide_count < 2 %}
         <article
           class="slideshow__slide slideshow__slide--default swiper-slide color-scheme color-scheme-3 slideshow__slide--desktop-bottom-left slideshow__slide--mobile-bottom-left slideshow__slide--align-left"
           style="
