@@ -26,6 +26,7 @@ const listResourceKeys = new Set([
   'result_products',
 ]);
 const allowedMenuHandles = new Set(['main-menu']);
+const demoResourceLinkPattern = /^shopify:\/\/(articles|blogs|collections|pages|products)(?:\/.*)?$/;
 const args = process.argv.slice(2);
 
 function readArgument(name, fallback) {
@@ -86,7 +87,7 @@ function sanitizeValue(value, key, file, pathParts = []) {
       recordReplacement(file, 'demoMenus');
       return '';
     }
-    if (key === 'link' && /^shopify:\/\/(articles|blogs|collections|pages|products)\/.+/.test(value)) {
+    if (key === 'link' && demoResourceLinkPattern.test(value)) {
       recordReplacement(file, 'resourceLinks');
       return '';
     }
@@ -156,9 +157,10 @@ async function sanitizeDemoFavicon(stagingRoot) {
   const replacement = `    {% if settings.favicon != blank %}
       <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 32, height: 32 }}">
     {% endif %}`;
-  if (!source.includes(fallback)) throw new Error('Unable to locate the demo favicon fallback in layout/theme.liquid.');
-  await writeFile(layoutPath, source.replace(fallback, replacement));
-  recordReplacement(file, 'faviconFallback');
+  if (source.includes(fallback)) {
+    await writeFile(layoutPath, source.replace(fallback, replacement));
+    recordReplacement(file, 'faviconFallback');
+  }
 
   const assetPath = join(stagingRoot, 'assets', 'spinel-favicon.png');
   if (existsSync(assetPath)) {
@@ -172,7 +174,7 @@ function collectForbiddenResources(value, key, location, findings) {
     if (value.startsWith('shopify://shop_images/')) findings.push(`${location}: ${value}`);
     if (singularResourceKeys.has(key) && value !== '') findings.push(`${location}: ${key}=${value}`);
     if (key === 'menu' && value !== '' && !allowedMenuHandles.has(value)) findings.push(`${location}: menu=${value}`);
-    if (key === 'link' && /^shopify:\/\/(articles|blogs|collections|pages|products)\/.+/.test(value)) findings.push(`${location}: link=${value}`);
+    if (key === 'link' && demoResourceLinkPattern.test(value)) findings.push(`${location}: link=${value}`);
     return;
   }
   if (Array.isArray(value)) {

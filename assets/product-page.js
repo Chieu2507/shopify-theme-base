@@ -451,7 +451,7 @@ class ProductPage extends HTMLElement {
         slidesPerView: 'auto',
         spaceBetween: thumbnailGap,
         direction: !isMobile && gallery.classList.contains('product-gallery--thumbs-left') ? 'vertical' : 'horizontal',
-        loop: shouldLoop,
+        loop: false,
         watchSlidesProgress: true,
         slideToClickedSlide: true,
         a11y: { enabled: true },

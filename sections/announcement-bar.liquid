@@ -87,10 +87,9 @@
                         {% render 'content-block',
                           block: block,
                           content: block.settings.text,
-                          kind: 'heading',
-                          default_preset: '2xs',
-                          default_font: 'heading',
-                          force_preset: '2xs',
+                          kind: 'text',
+                          default_preset: 'subheading',
+                          default_font: 'body',
                           include_shopify_attributes: false
                         %}
                       </div>
@@ -168,10 +167,9 @@
                           {% render 'content-block',
                             block: block,
                             content: block.settings.text,
-                            kind: 'heading',
-                            default_preset: '2xs',
-                            default_font: 'heading',
-                            force_preset: '2xs',
+                            kind: 'text',
+                            default_preset: 'subheading',
+                            default_font: 'body',
                             include_shopify_attributes: false
                           %}
                         </div>
@@ -401,17 +399,13 @@
   }
 
   .announcement-bar__messages.swiper-vertical .announcement-bar__item {
-    opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition-property: opacity;
-    transition-duration: var(--announcement-bar-transition-duration, 420ms);
-    transition-timing-function: ease;
-    will-change: opacity;
   }
 
   .announcement-bar__messages.swiper-vertical .announcement-bar__item.swiper-slide-active {
+    visibility: visible;
     pointer-events: auto;
-    opacity: 1;
   }
 
   .announcement-bar__messages .announcement-bar__item {
@@ -468,7 +462,7 @@
   }
 
   .announcement-bar__counter {
-    color: var(--color-secondary-button-outline, currentcolor);
+    color: var(--color-heading);
     font-size: var(--spinel-type-size-label);
     font-variant-numeric: tabular-nums;
     line-height: var(--spinel-type-line-label);
@@ -544,11 +538,11 @@
       "options": [
         {
           "value": "slider",
-          "label": "Slider"
+          "label": "Slideshow"
         },
         {
           "value": "slider_social",
-          "label": "Slider with social links"
+          "label": "Slideshow with social links"
         },
         {
           "value": "marquee",
@@ -616,7 +610,7 @@
     },
     {
       "type": "header",
-      "content": "Slider behavior",
+      "content": "Slideshow behavior",
       "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
     },
     {
@@ -705,6 +699,41 @@
           "id": "text",
           "label": "t:typography_blocks.text",
           "default": "Shipping options and pricing are calculated at checkout."
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "t:typography_blocks.text_size",
+          "options": [
+            { "value": "lg", "label": "t:typography_options.body_large" },
+            { "value": "md", "label": "t:typography_options.body_medium" },
+            { "value": "sm", "label": "t:typography_options.body_small" },
+            { "value": "xs", "label": "t:typography_options.body_extra_small" },
+            { "value": "custom", "label": "t:typography_options.custom" }
+          ],
+          "default": "sm"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "t:typography_blocks.size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 16,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "t:typography_blocks.mobile_size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 14,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         }
       ]
     }
