@@ -199,10 +199,12 @@ class EditorialSlideshow extends HTMLElement {
 
   refreshSlideCollection() {
     const nextSignature = this.getSlideSignature();
-    if (nextSignature === this.slideSignature) return;
-
     const activeSlide = this.getSlides().find((slide) => slide.classList.contains('swiper-slide-active'));
-    const activeBlockId = activeSlide?.dataset.blockId;
+    if (nextSignature === this.slideSignature && activeSlide) return;
+
+    const activeBlockId = activeSlide?.dataset.blockId
+      || this.tabs[this.activeIndex || 0]?.dataset.editorialBlockId;
+    this.classList.remove('editorial-slideshow--ready');
     this.destroySwiper();
     this.buildNavigatorTabs();
     this.bindNavigatorTabs();
@@ -363,7 +365,7 @@ class EditorialSlideshow extends HTMLElement {
     this.slideCount = slideCount;
     this.slideSignature = this.getSlideSignature();
     this.syncNavigatorAvailability(slideCount);
-    this.classList.toggle('editorial-slideshow--ready', slideCount > 0);
+    this.classList.remove('editorial-slideshow--ready');
     if (!slideCount) return;
 
     this.preloadAdjacentSlides(initialSlide);
@@ -388,6 +390,7 @@ class EditorialSlideshow extends HTMLElement {
         slideRole: 'group',
       },
     });
+    this.classList.add('editorial-slideshow--ready');
 
     this.swiper.on('slideChange', () => {
       this.syncActiveState(this.swiper.realIndex, true);
