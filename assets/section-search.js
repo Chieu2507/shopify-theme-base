@@ -34,10 +34,15 @@ if (!customElements.get('search-results')) {
       this.closeButton = this.querySelector('[data-search-filter-close]');
       this.onOpen = () => this.dialog && this.dialog.showModal();
       this.onClose = () => this.dialog && this.dialog.close();
+      this.onDialogClick = (event) => { if (event.target === this.dialog) this.dialog.close(); };
       this.openButton?.addEventListener('click', this.onOpen);
       this.closeButton?.addEventListener('click', this.onClose);
-      this.dialog?.addEventListener('click', (event) => { if (event.target === this.dialog) this.dialog.close(); });
+      this.dialog?.addEventListener('click', this.onDialogClick);
     }
-    disconnectedCallback() { this.openButton?.removeEventListener('click', this.onOpen); this.closeButton?.removeEventListener('click', this.onClose); }
+    disconnectedCallback() {
+      this.openButton?.removeEventListener('click', this.onOpen);
+      this.closeButton?.removeEventListener('click', this.onClose);
+      this.dialog?.removeEventListener('click', this.onDialogClick);
+    }
   });
 }
