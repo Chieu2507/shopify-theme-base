@@ -1347,10 +1347,10 @@ if (!window.SpinelHeaderMenus) {
       }
       syncHeaderDisclosureAria(details);
       syncHeaderMenuScrollLock();
-      if (responsiveHeader) syncResponsiveHeader(responsiveHeader);
       if (!header?.querySelector('.header__submenu-disclosure--mega[open]')) {
         delete header?.dataset.megaSurfaceImmediateClose;
       }
+      if (responsiveHeader) scheduleResponsiveHeaderSync();
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       motionOptions.onFinish?.(details, opening);
     };
@@ -1917,9 +1917,7 @@ if (!window.SpinelHeaderMenus) {
     const header = details.closest('[data-header]');
     if (header) delete header.dataset.megaSurfaceImmediateClose;
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
-    if (activeHandoff && activeHandoff.to !== details) {
-      desktopMegaMenuHandoffs.delete(header);
-    }
+    if (activeHandoff && activeHandoff.to !== details) desktopMegaMenuHandoffs.delete(header);
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
