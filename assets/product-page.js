@@ -715,14 +715,6 @@ initializeLightboxSwiper() {
       event.preventDefault();
       event.stopPropagation();
       const swiper = this.lightboxSwiper;
-      // console.log('[Product lightbox] navigation click', {
-      //   direction: direction > 0 ? 'next' : 'previous',
-      //   available: Boolean(swiper && !swiper.destroyed),
-      //   activeIndex: swiper?.activeIndex,
-      //   realIndex: swiper?.realIndex,
-      //   loop: swiper?.params?.loop,
-      //   animating: swiper?.animating,
-      // });
       if (!swiper || swiper.destroyed) return;
       const targetIndex = (swiper.realIndex + direction + slideCount) % slideCount;
       if (swiper.params.loop) swiper.slideToLoop(targetIndex, swiper.params.speed, true);
@@ -787,7 +779,7 @@ openLightbox(mediaId, restoreTarget = null) {
   const targetIndex = swiper?.params.loop ? swiper.getSlideIndexByData(this.lightboxIndex) : this.lightboxIndex;
   if (swiper && Number.isFinite(targetIndex)) swiper.slideTo(targetIndex, 0, false);
   this.updateLightbox();
-  lightbox.querySelector('[data-lightbox-close]')?.focus({ preventScroll: true });
+  lightbox.querySelector('.product-lightbox__close')?.focus({ preventScroll: true });
 }
 
 closeLightbox() {
