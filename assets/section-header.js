@@ -18,7 +18,9 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 360;
   const desktopMegaMenuTransitionDurationFallback = 300;
-  const transparentHeaderSchemeExitDelay = 50;
+  // Keep the palette until the desktop header surface has finished retracting.
+  // This matches the transparent header's 360ms close transition.
+  const transparentHeaderSchemeExitDelay = 360;
   const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
