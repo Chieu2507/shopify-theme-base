@@ -5,10 +5,14 @@ if (!customElements.get('horizontal-scrolling-banners')) {
       this.sticky = this.querySelector('[data-horizontal-banners-sticky]');
       this.track = this.querySelector('[data-horizontal-banners-track]');
       this.panels = Array.from(this.querySelectorAll('[data-horizontal-banners-panel]'));
+      this.videos = Array.from(this.querySelectorAll('video.horizontal-banners__media-element'));
+      this.motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+      this.handleVideoMotionChange = this.updateVideoPlayback.bind(this);
+      this.motionQuery.addEventListener('change', this.handleVideoMotionChange);
+      this.updateVideoPlayback();
       if (!this.scene || !this.sticky || !this.track || this.panels.length < 2) return;
 
       this.desktopQuery = window.matchMedia('(min-width: 990px)');
-      this.motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.handleScroll = this.handleScroll.bind(this);
       this.handleResize = this.measure.bind(this);
       this.handleModeChange = this.setup.bind(this);
@@ -39,6 +43,7 @@ if (!customElements.get('horizontal-scrolling-banners')) {
       window.removeEventListener('scroll', this.handleScroll);
       this.desktopQuery?.removeEventListener('change', this.handleModeChange);
       this.motionQuery?.removeEventListener('change', this.handleModeChange);
+      this.motionQuery?.removeEventListener('change', this.handleVideoMotionChange);
       window.visualViewport?.removeEventListener('resize', this.handleResize);
       this.track?.removeEventListener('scroll', this.handleRailScroll);
       this.track?.removeEventListener('pointerdown', this.handlePointerDown);
@@ -57,6 +62,7 @@ if (!customElements.get('horizontal-scrolling-banners')) {
       this.scene.style.removeProperty('--horizontal-banners-scene-height');
       this.track.style.removeProperty('transform');
       this.style.setProperty('--horizontal-banners-progress', '0');
+      this.updateVideoPlayback();
 
       if (!this.motionQuery.matches) {
         this.classList.add('is-scroll-linked');
@@ -65,6 +71,22 @@ if (!customElements.get('horizontal-scrolling-banners')) {
       } else {
         this.updateRailProgress();
       }
+    }
+
+    updateVideoPlayback() {
+      if (!this.videos?.length) return;
+
+      this.videos.forEach((video) => {
+        if (this.motionQuery?.matches) {
+          video.pause();
+          return;
+        }
+
+        const playRequest = video.play();
+        if (playRequest && typeof playRequest.catch === 'function') {
+          playRequest.catch(() => {});
+        }
+      });
     }
 
     measure() {

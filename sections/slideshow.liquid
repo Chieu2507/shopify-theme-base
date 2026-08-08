@@ -1,8 +1,9 @@
 {% render 'section-stylesheet', asset: 'section-slideshow-critical.css', inline_on_home: true %}
 
 {% comment %}
-  Theme blocks are rendered once by {% content_for 'blocks' %} below.
-  section.blocks is read-only metadata for the first-slide ratio, count and fallback state.
+  Theme blocks are manually rendered below so section.blocks can provide the
+  first-slide metadata needed for layout and fallback decisions. Nested slide
+  content remains delegated to the slide block.
 {% endcomment %}
 {% liquid
   assign configured_slide_count = section.blocks.size
@@ -49,7 +50,9 @@
 >
   <div class="slideshow__viewport swiper" data-slideshow-slider>
     <div class="slideshow__wrapper swiper-wrapper">
-      {% content_for 'blocks' %}
+      {% for block in section.blocks %}
+        {% render block %}
+      {% endfor %}
 
       {% if is_double_slide and configured_slide_count < 2 %}
         <article

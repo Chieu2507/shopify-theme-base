@@ -1,8 +1,8 @@
 {% render 'section-stylesheet', asset: 'section-image-comparison.css', defer_on_home: true %}
 
 {% comment %}
-  Theme blocks are rendered once by {% content_for 'blocks' %} below.
-  image_blocks is read-only metadata for image count, before-image detection and aspect ratio.
+  Theme blocks are manually rendered below so section.blocks can provide the
+  image count, before-image detection and aspect ratio metadata.
 {% endcomment %}
 {% liquid
   assign image_blocks = section.blocks | where: 'type', '_image-comparison-image'
@@ -31,7 +31,9 @@
       data-deferred-module="{{ 'section-image-comparison.js' | asset_url }}"
       aria-label="{{ 'image_comparison.comparison_label' | t | escape }}"
     >
-      {% content_for 'blocks' %}
+      {% for block in section.blocks %}
+        {% render block %}
+      {% endfor %}
 
       <button
         class="image-comparison__handle"
