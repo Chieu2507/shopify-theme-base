@@ -1,4 +1,4 @@
-import { A11y, EffectFade, Swiper } from './swiper-loader.js';
+import { A11y, EffectFade, Navigation, Swiper } from './swiper-loader.js';
 
 class EditorialSlideshow extends HTMLElement {
   connectedCallback() {
@@ -34,9 +34,6 @@ class EditorialSlideshow extends HTMLElement {
     this.pointerFocusTimer = null;
     this.isPointerFocus = false;
     this.pauseReasons = new Set();
-    this.slideSignature = '';
-    this.slideRefreshFrame = null;
-    this.slideObserver = null;
     this.isInViewport = !('IntersectionObserver' in window);
     this.loadFirstViewportHeight();
 
@@ -49,16 +46,19 @@ class EditorialSlideshow extends HTMLElement {
     this.handleViewportResize = this.handleViewportResize.bind(this);
     this.handleFirstSlideImageChange = this.handleFirstSlideImageChange.bind(this);
 
+    this.syncNavigatorViewportState();
     this.buildNavigatorTabs();
     this.addEventListener('keydown', this.handleKeydown, { signal });
     this.addEventListener('pointerdown', this.handlePointerDown, { signal });
     this.addEventListener('focusin', () => this.handleFocusIn(), { signal });
     this.addEventListener('focusout', (event) => this.handleFocusOut(event), { signal });
-    this.bindNavigatorTabs();
+    this.tabs.forEach((tab) => {
+      tab.addEventListener('click', () => {
+        this.selectIndex(Number.parseInt(tab.dataset.editorialIndex, 10));
+      }, { signal });
+    });
     this.autoplayToggle?.addEventListener('click', () => this.toggleAutoplay(), { signal });
     this.navigatorToggle?.addEventListener('click', () => this.toggleNavigator(), { signal });
-    this.previousButton?.addEventListener('click', () => this.selectIndex((this.activeIndex || 0) - 1), { signal });
-    this.nextButton?.addEventListener('click', () => this.selectIndex((this.activeIndex || 0) + 1), { signal });
     document.addEventListener('visibilitychange', this.handleVisibilityChange, { signal });
     document.addEventListener('shopify:block:select', this.handleBlockSelect, { signal });
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
@@ -78,7 +78,6 @@ class EditorialSlideshow extends HTMLElement {
     }
 
     this.initialize();
-    this.observeSlideCollection();
 
     if ('IntersectionObserver' in window) {
       this.visibilityObserver = new IntersectionObserver(
@@ -95,10 +94,6 @@ class EditorialSlideshow extends HTMLElement {
   disconnectedCallback() {
     this.destroyFirstViewportHeight?.();
     this.destroyFirstViewportHeight = null;
-    this.slideObserver?.disconnect();
-    this.slideObserver = null;
-    if (this.slideRefreshFrame) window.cancelAnimationFrame(this.slideRefreshFrame);
-    this.slideRefreshFrame = null;
     this.abortController?.abort();
     this.abortController = null;
     this.visibilityObserver?.disconnect();
@@ -128,90 +123,6 @@ class EditorialSlideshow extends HTMLElement {
       : [];
   }
 
-  preloadSlideImage(slide) {
-    slide?.querySelectorAll('img[loading="lazy"]').forEach((image) => {
-      if (!image.complete || image.naturalWidth === 0) image.loading = 'eager';
-    });
-  }
-
-  preloadAdjacentSlides(index = this.activeIndex || 0) {
-    const slides = this.getSlides();
-    if (slides.length < 2) return;
-
-    const normalizedIndex = (index + slides.length) % slides.length;
-    const getSlideAtIndex = (slideIndex) => {
-      const blockId = this.tabs[slideIndex]?.dataset.editorialBlockId;
-      return slides.find((slide) => slide.dataset.blockId === blockId) || slides[slideIndex];
-    };
-    [normalizedIndex, normalizedIndex - 1, normalizedIndex + 1].forEach((slideIndex) => {
-      this.preloadSlideImage(getSlideAtIndex((slideIndex + slides.length) % slides.length));
-    });
-  }
-
-  getSlideSignature() {
-    return this.getSlides()
-      .map((slide) => [
-        slide.dataset.blockId,
-        slide.dataset.editorialNavLabel,
-        slide.dataset.editorialNavDetail,
-        slide.dataset.editorialDesktopRatio,
-        slide.dataset.editorialMobileRatio,
-      ].join('::'))
-      .join('|');
-  }
-
-  bindNavigatorTabs() {
-    this.tabs.forEach((tab) => {
-      tab.addEventListener('click', () => {
-        this.selectIndex(Number.parseInt(tab.dataset.editorialIndex, 10));
-      }, { signal: this.abortController?.signal });
-    });
-  }
-
-  observeSlideCollection() {
-    if (!this.slider || !('MutationObserver' in window)) return;
-
-    this.slideObserver = new MutationObserver(() => this.queueSlideRefresh());
-    this.slideObserver.observe(this.slider, {
-      attributes: true,
-      attributeFilter: [
-        'data-block-id',
-        'data-editorial-nav-label',
-        'data-editorial-nav-detail',
-        'data-editorial-desktop-ratio',
-        'data-editorial-mobile-ratio',
-      ],
-      childList: true,
-      subtree: true,
-    });
-  }
-
-  queueSlideRefresh() {
-    if (this.slideRefreshFrame) return;
-
-    this.slideRefreshFrame = window.requestAnimationFrame(() => {
-      this.slideRefreshFrame = window.requestAnimationFrame(() => {
-        this.slideRefreshFrame = null;
-        if (this.isConnected) this.refreshSlideCollection();
-      });
-    });
-  }
-
-  refreshSlideCollection() {
-    const nextSignature = this.getSlideSignature();
-    if (nextSignature === this.slideSignature) return;
-
-    const activeSlide = this.getSlides().find((slide) => slide.classList.contains('swiper-slide-active'));
-    const activeBlockId = activeSlide?.dataset.blockId;
-    this.destroySwiper();
-    this.buildNavigatorTabs();
-    this.bindNavigatorTabs();
-
-    const nextSlides = this.getSlides();
-    const nextActiveIndex = nextSlides.findIndex((slide) => slide.dataset.blockId === activeBlockId);
-    this.initialize(nextActiveIndex >= 0 ? nextActiveIndex : 0);
-  }
-
   updateNavigatorToggleState(isCollapsed) {
     if (!this.navigatorToggle) return;
 
@@ -226,14 +137,6 @@ class EditorialSlideshow extends HTMLElement {
 
   syncNavigatorViewportState({ resetDesktop = false } = {}) {
     if (!this.navigator) return;
-
-    if (!this.classList.contains('editorial-slideshow--has-navigator')) {
-      this.classList.remove('editorial-slideshow--navigator-collapsed');
-      const isDesktop = this.desktopNavigator.matches;
-      this.navigator.classList.toggle('is-collapsed', isDesktop);
-      this.updateNavigatorToggleState(isDesktop);
-      return;
-    }
 
     this.clearNavigatorMorph();
     this.navigator.classList.remove('is-transitioning');
@@ -282,7 +185,6 @@ class EditorialSlideshow extends HTMLElement {
       tab.setAttribute('tabindex', isActive ? '0' : '-1');
       tab.dataset.editorialSlideTab = '';
       tab.dataset.editorialIndex = String(index);
-      tab.dataset.editorialBlockId = slide.dataset.blockId || '';
 
       label.className = 'editorial-slideshow__tab-label';
       label.textContent = slide.dataset.editorialNavLabel || 'Slide';
@@ -332,55 +234,32 @@ class EditorialSlideshow extends HTMLElement {
     this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 989 });
   }
 
-  syncNavigatorAvailability(slideCount) {
+  initialize() {
+    const slideCount = this.getSlides().length;
+    this.slideCount = slideCount;
     const hasNavigator = Boolean(this.navigator && slideCount > 1 && this.tabs.length > 1);
     this.classList.toggle('editorial-slideshow--has-navigator', hasNavigator);
     this.navigator?.toggleAttribute('hidden', !hasNavigator);
-
-    if (hasNavigator) {
-      this.syncNavigatorViewportState();
-      return true;
-    }
-
-    this.clearNavigatorRevealTimer();
-    this.clearNavigatorMorph();
-    this.navigator?.classList.remove('is-transitioning');
-    this.classList.remove('editorial-slideshow--navigator-collapsed');
-    return false;
-  }
-
-  destroySwiper() {
-    this.clearNavigatorRevealTimer();
-    this.clearNavigatorMorph();
-    this.clearAutoplayTimer();
-    this.cancelProgressFrame();
-    this.swiper?.destroy(true, true);
-    this.swiper = null;
-  }
-
-  initialize(initialSlide = 0) {
-    const slideCount = this.getSlides().length;
-    this.slideCount = slideCount;
-    this.slideSignature = this.getSlideSignature();
-    this.syncNavigatorAvailability(slideCount);
-    this.classList.toggle('editorial-slideshow--ready', slideCount > 0);
+    if (!hasNavigator) this.classList.remove('editorial-slideshow--navigator-collapsed');
     if (!slideCount) return;
 
-    this.preloadAdjacentSlides(initialSlide);
+    this.classList.add('editorial-slideshow--ready');
 
     this.swiper = new Swiper(this.slider, {
-      modules: [A11y, EffectFade],
+      modules: [A11y, EffectFade, Navigation],
       slidesPerView: 1,
       speed: this.reduceMotion.matches ? 0 : 1000,
       effect: 'fade',
       fadeEffect: {
         crossFade: true,
       },
-      initialSlide: Math.max(0, Math.min(initialSlide, slideCount - 1)),
-      loop: false,
-      rewind: slideCount > 1,
+      loop: slideCount > 1,
       watchOverflow: true,
       grabCursor: slideCount > 1,
+      navigation: {
+        prevEl: this.previousButton,
+        nextEl: this.nextButton,
+      },
       a11y: {
         enabled: true,
         prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
@@ -455,7 +334,6 @@ class EditorialSlideshow extends HTMLElement {
 
     const activeIndex = Math.max(0, Math.min(index, this.tabs.length - 1));
     this.activeIndex = activeIndex;
-    this.preloadAdjacentSlides(activeIndex);
     this.tabs.forEach((tab, tabIndex) => {
       const isActive = tabIndex === activeIndex;
       tab.classList.toggle('is-active', isActive);
@@ -477,9 +355,8 @@ class EditorialSlideshow extends HTMLElement {
     if (!this.swiper || this.slideCount < 2) return;
 
     const nextIndex = (index + this.slideCount) % this.slideCount;
-    this.preloadAdjacentSlides(nextIndex);
     if (moveFocus) this.tabs[nextIndex]?.focus();
-    this.swiper.slideTo(nextIndex);
+    this.swiper.slideToLoop(nextIndex);
   }
 
   toggleNavigator() {
@@ -647,7 +524,7 @@ class EditorialSlideshow extends HTMLElement {
 
     this.autoplayManuallyPaused = true;
     this.updateAutoplayToggle();
-    this.swiper.slideTo(index, 0);
+    this.swiper.slideToLoop(index, 0);
     this.setNavigatorTransitioning(false);
   }
 
@@ -697,7 +574,7 @@ class EditorialSlideshow extends HTMLElement {
     const progressBar = this.progressBars[activeIndex];
     if (!progressBar) {
       this.autoplayTimer = window.setTimeout(() => {
-        this.selectIndex(activeIndex + 1);
+        this.swiper?.slideNext();
       }, remainingDelay);
       return;
     }
@@ -710,7 +587,7 @@ class EditorialSlideshow extends HTMLElement {
       this.progressStartElapsed = resumeElapsed;
       this.progressStartIndex = activeIndex;
       this.autoplayTimer = window.setTimeout(() => {
-        this.selectIndex(activeIndex + 1);
+        this.swiper?.slideNext();
       }, remainingDelay);
     });
   }
