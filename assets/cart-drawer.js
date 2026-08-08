@@ -638,7 +638,7 @@
       const hasProvinces = Array.isArray(provinces) && provinces.length > 0;
       this.shippingProvince.replaceChildren();
       if (hasProvinces) {
-        const placeholder = new Option('Select a state', '', true, true);
+        const placeholder = new Option(this.dataset.shippingProvincePlaceholder || '', '', true, true);
         placeholder.disabled = true;
         this.shippingProvince.add(placeholder);
         provinces.forEach((province) => {

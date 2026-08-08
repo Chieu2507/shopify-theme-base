@@ -572,7 +572,12 @@ this.addEventListener('pointercancel', (event) => this.finishLightboxDrag(event)
     }
 
     if (!this.lightbox?.classList.contains('is-open')) return;
-    if (event.key === 'Escape') this.closeLightbox();
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      this.closeLightbox();
+      return;
+    }
     if (event.key === 'ArrowLeft') this.changeLightboxSlide(-1);
     if (event.key === 'ArrowRight') this.changeLightboxSlide(1);
     if (event.key === 'Tab') {
