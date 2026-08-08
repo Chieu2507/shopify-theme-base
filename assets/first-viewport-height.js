@@ -34,15 +34,17 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
   const mobileQuery = window.matchMedia(`(max-width: ${mobileBreakpoint}px)`);
   const section = element.closest(sectionSelector);
   const isEditorialSlideshow = element.matches('editorial-slideshow');
+  const coarsePointerQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
   let viewportWidth = window.innerWidth;
   let stableViewportHeight = getViewportHeight();
 
   // Mobile Safari changes visualViewport.height while its browser chrome
-  // expands/collapses during scroll. Keep the first-viewport layout stable
-  // until the actual viewport width changes (orientation or breakpoint).
+  // expands/collapses during scroll. Preserve the first-viewport layout only
+  // on touch mobile viewports; desktop resizes must always use the new height.
   const getStableViewportHeight = () => {
     const nextViewportWidth = window.innerWidth;
-    if (nextViewportWidth !== viewportWidth) {
+    const shouldStabilizeMobileViewport = mobileQuery.matches && coarsePointerQuery.matches;
+    if (!shouldStabilizeMobileViewport || nextViewportWidth !== viewportWidth) {
       viewportWidth = nextViewportWidth;
       stableViewportHeight = getViewportHeight();
     }
