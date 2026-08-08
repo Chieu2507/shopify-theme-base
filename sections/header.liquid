@@ -62,6 +62,7 @@
   assign account_action = section.settings.account_action | default: 'panel'
   assign account_href = routes.account_url
   assign account_open_new_tab = false
+  assign use_shopify_account_component = true
   assign floating_header_enabled = false
   assign transparent_header_enabled = false
   assign has_menu = false
@@ -91,6 +92,10 @@
 
   if account_action == 'new_tab'
     assign account_open_new_tab = true
+  endif
+
+  if request.host == 'localhost' or request.host == '127.0.0.1'
+    assign use_shopify_account_component = false
   endif
 
   if section.settings.show_localization
@@ -180,7 +185,8 @@
             can_change_country: can_change_country,
             account_href: account_href,
             account_open_new_tab: account_open_new_tab,
-            account_action: account_action
+            account_action: account_action,
+            use_shopify_account_component: use_shopify_account_component
           %}
         </div>
       </div>
@@ -309,7 +315,7 @@
       {% endif %}
 
       {% if section.settings.show_account and shop.customer_accounts_enabled %}
-        {% if account_action == 'panel' %}
+        {% if account_action == 'panel' and use_shopify_account_component %}
           <shopify-account class="header__action header__action--account"{% if section.settings.customer_account_menu != blank and section.settings.customer_account_menu != 'customer-account-main-menu' %} menu="{{ section.settings.customer_account_menu }}"{% endif %}>
             <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
           </shopify-account>
