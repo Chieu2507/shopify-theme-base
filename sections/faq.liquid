@@ -12,7 +12,28 @@
       {% assign has_questions = false %}
       {% for block in section.blocks %}
         {% if block.type == 'group_heading' %}
-          <div class="faq__group" id="faq-group-{{ block.settings.anchor_id | handleize }}" {{ block.shopify_attributes }}>
+          {% assign faq_anchor = block.settings.anchor_id | handleize %}
+          {% if faq_anchor == blank %}
+            {% assign faq_anchor_id = 'faq-group-' | append: section.id | append: '-' | append: block.id | handleize %}
+          {% else %}
+            {% assign faq_anchor_id = faq_anchor %}
+            {% assign faq_anchor_occurrence = 1 %}
+            {% for previous_block in section.blocks %}
+              {% if previous_block.id == block.id %}
+                {% break %}
+              {% endif %}
+              {% if previous_block.type == 'group_heading' %}
+                {% assign previous_anchor = previous_block.settings.anchor_id | handleize %}
+                {% if previous_anchor == faq_anchor %}
+                  {% assign faq_anchor_occurrence = faq_anchor_occurrence | plus: 1 %}
+                {% endif %}
+              {% endif %}
+            {% endfor %}
+            {% if faq_anchor_occurrence > 1 %}
+              {% assign faq_anchor_id = faq_anchor | append: '-' | append: faq_anchor_occurrence %}
+            {% endif %}
+          {% endif %}
+          <div class="faq__group" id="{{ faq_anchor_id | escape }}" {{ block.shopify_attributes }}>
             {% if block.settings.heading != blank %}
               <{{ block.settings.heading_tag | default: 'h3' }} class="faq__group-title {% render 'typography-class', preset: block.settings.heading_size, fallback: 'h3' %}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}>
             {% endif %}
