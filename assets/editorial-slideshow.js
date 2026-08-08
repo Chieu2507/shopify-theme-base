@@ -365,32 +365,36 @@ class EditorialSlideshow extends HTMLElement {
     this.slideCount = slideCount;
     this.slideSignature = this.getSlideSignature();
     this.syncNavigatorAvailability(slideCount);
-    this.classList.remove('editorial-slideshow--ready');
+    this.classList.toggle('editorial-slideshow--ready', slideCount > 0);
     if (!slideCount) return;
 
     this.preloadAdjacentSlides(initialSlide);
 
-    this.swiper = new Swiper(this.slider, {
-      modules: [A11y, EffectFade],
-      slidesPerView: 1,
-      speed: this.reduceMotion.matches ? 0 : 1000,
-      effect: 'fade',
-      fadeEffect: {
-        crossFade: true,
-      },
-      initialSlide: Math.max(0, Math.min(initialSlide, slideCount - 1)),
-      loop: false,
-      rewind: slideCount > 1,
-      watchOverflow: true,
-      grabCursor: slideCount > 1,
-      a11y: {
-        enabled: true,
-        prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
-        nextSlideMessage: this.nextButton?.getAttribute('aria-label') || '',
-        slideRole: 'group',
-      },
-    });
-    this.classList.add('editorial-slideshow--ready');
+    try {
+      this.swiper = new Swiper(this.slider, {
+        modules: [A11y, EffectFade],
+        slidesPerView: 1,
+        speed: this.reduceMotion.matches ? 0 : 1000,
+        effect: 'fade',
+        fadeEffect: {
+          crossFade: true,
+        },
+        initialSlide: Math.max(0, Math.min(initialSlide, slideCount - 1)),
+        loop: false,
+        rewind: slideCount > 1,
+        watchOverflow: true,
+        grabCursor: slideCount > 1,
+        a11y: {
+          enabled: true,
+          prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
+          nextSlideMessage: this.nextButton?.getAttribute('aria-label') || '',
+          slideRole: 'group',
+        },
+      });
+    } catch (error) {
+      this.classList.remove('editorial-slideshow--ready');
+      throw error;
+    }
 
     this.swiper.on('slideChange', () => {
       this.syncActiveState(this.swiper.realIndex, true);
