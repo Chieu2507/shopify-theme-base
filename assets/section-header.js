@@ -18,7 +18,7 @@ if (!window.SpinelHeaderMenus) {
   const headerHoverCloseDelay = 500;
   const desktopMegaMenuHoverCloseDelay = 360;
   const desktopMegaMenuTransitionDurationFallback = 300;
-  const transparentHeaderSchemeExitDelay = 50;
+  const transparentHeaderSchemeExitDelay = 90;
   const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
@@ -1347,10 +1347,10 @@ if (!window.SpinelHeaderMenus) {
       }
       syncHeaderDisclosureAria(details);
       syncHeaderMenuScrollLock();
+      if (responsiveHeader) syncResponsiveHeader(responsiveHeader);
       if (!header?.querySelector('.header__submenu-disclosure--mega[open]')) {
         delete header?.dataset.megaSurfaceImmediateClose;
       }
-      if (responsiveHeader) scheduleResponsiveHeaderSync();
       if (focusAfterMotion) focusWithoutScroll(details.querySelector(':scope > summary'));
       motionOptions.onFinish?.(details, opening);
     };
@@ -1917,7 +1917,9 @@ if (!window.SpinelHeaderMenus) {
     const header = details.closest('[data-header]');
     if (header) delete header.dataset.megaSurfaceImmediateClose;
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
-    if (activeHandoff && activeHandoff.to !== details) desktopMegaMenuHandoffs.delete(header);
+    if (activeHandoff && activeHandoff.to !== details) {
+      desktopMegaMenuHandoffs.delete(header);
+    }
 
     if (details.open) {
       if (details.dataset.closing !== 'true') return;
