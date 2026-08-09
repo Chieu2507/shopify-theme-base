@@ -46,7 +46,7 @@
 
           {% when 'related_articles' %}
             {% if article_blog != blank %}
-              <section class="article__related" aria-labelledby="ArticleRelated-{{ block.id }}" style="--article-related-columns: {{ block.settings.article_count }};" {{ block.shopify_attributes }}>
+              <section class="article__related"{% if block.settings.heading != blank %} aria-labelledby="ArticleRelated-{{ block.id }}"{% endif %} style="--article-related-columns: {{ block.settings.article_count }};" {{ block.shopify_attributes }}>
                 {% if block.settings.heading != blank %}<h2 id="ArticleRelated-{{ block.id }}" class="typo-h2">{{ block.settings.heading | escape }}</h2>{% endif %}
                 <div class="article__related-grid">
                   {% assign related_count = 0 %}
@@ -69,7 +69,13 @@
 
           {% when 'comments' %}
             {% if article_blog.comments_enabled? %}
-              <section class="article__comments" id="comments" aria-labelledby="ArticleComments-{{ block.id }}" {{ block.shopify_attributes }}>
+              {% liquid
+                assign comments_id = 'Comments-' | append: section.id | append: '-' | append: block.id
+                if section.id == 'main' or section.id contains '__main'
+                  assign comments_id = 'comments'
+                endif
+              %}
+              <section class="article__comments" id="{{ comments_id }}"{% if block.settings.heading != blank %} aria-labelledby="ArticleComments-{{ block.id }}"{% endif %} {{ block.shopify_attributes }}>
                 {% if block.settings.heading != blank %}<h2 id="ArticleComments-{{ block.id }}" class="typo-h2">{{ block.settings.heading | escape }}</h2>{% endif %}
                 {% paginate article.comments by 10 %}
                   {% if article.comments_count > 0 %}

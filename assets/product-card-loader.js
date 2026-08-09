@@ -16,8 +16,9 @@ const observedCards = new WeakSet();
 const productCardObserver = 'IntersectionObserver' in window
   ? new IntersectionObserver((entries, observer) => {
     if (!entries.some((entry) => entry.isIntersecting)) return;
-    observer.disconnect();
-    loadProductCardFeatures().catch(() => {});
+    loadProductCardFeatures()
+      .then(() => observer.disconnect())
+      .catch(() => {});
   }, { rootMargin: '480px 0px' })
   : null;
 

@@ -2432,15 +2432,18 @@ if (!window.SpinelHeaderMenus) {
     const link = document.createElement('a');
     link.className = className;
     link.href = url;
-    link.setAttribute('role', 'option');
     if (label) link.textContent = label;
     return link;
   };
 
-  const formatHeaderSearchPrice = (price, currencyCode) => {
+  const formatHeaderSearchPrice = (price, currencyCode, showCurrencyCode = false) => {
     const numericPrice = Number(price);
     if (Number.isNaN(numericPrice)) return price || '';
-    return new Intl.NumberFormat(document.documentElement.lang || undefined, {
+    const cents = Math.round(numericPrice * 100);
+    return window.SpinelMoney?.format(cents, {
+      currency: currencyCode || 'USD',
+      showCurrencyCode,
+    }) || new Intl.NumberFormat(document.documentElement.lang || undefined, {
       style: 'currency',
       currency: currencyCode || 'USD',
     }).format(numericPrice);
@@ -2458,7 +2461,6 @@ if (!window.SpinelHeaderMenus) {
 
     const grid = document.createElement('div');
     grid.className = 'header-search-modal__product-grid';
-    grid.setAttribute('role', 'listbox');
     products.slice(0, 6).forEach((product) => {
       const card = createHeaderSearchLink('', product.url, 'header-search-modal__product');
       if (product.image) {
@@ -2476,7 +2478,8 @@ if (!window.SpinelHeaderMenus) {
       if (product.price !== undefined && product.price !== null) {
         const price = document.createElement('span');
         price.className = 'header-search-modal__product-price';
-        price.textContent = formatHeaderSearchPrice(product.price, panel.closest('[data-header-search-modal]')?.dataset.currencyCode);
+        const dialog = panel.closest('[data-header-search-modal]');
+        price.textContent = formatHeaderSearchPrice(product.price, dialog?.dataset.currencyCode, dialog?.dataset.showCurrencyCode === 'true');
         card.append(price);
       }
       grid.append(card);
@@ -2490,7 +2493,6 @@ if (!window.SpinelHeaderMenus) {
 
     const grid = document.createElement('div');
     grid.className = 'header-search-modal__collection-grid';
-    grid.setAttribute('role', 'listbox');
     collections.slice(0, 6).forEach((collection) => {
       const card = createHeaderSearchLink('', collection.url, 'header-search-modal__collection');
       if (collection.image) {
@@ -2522,7 +2524,6 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const setHeaderSearchTab = (dialog, tabName) => {
-    const input = dialog.querySelector('[data-header-search-input]');
     dialog.querySelectorAll('[data-header-search-tab]').forEach((tab) => {
       const isActive = tab.dataset.headerSearchTab === tabName;
       tab.setAttribute('aria-selected', String(!tab.hidden && isActive));
@@ -2531,7 +2532,6 @@ if (!window.SpinelHeaderMenus) {
     dialog.querySelectorAll('[data-header-search-panel]').forEach((panel) => {
       const isActive = panel.dataset.headerSearchPanel === tabName;
       panel.hidden = !isActive;
-      if (isActive && input) input.setAttribute('aria-controls', panel.id);
     });
   };
 
@@ -2540,7 +2540,6 @@ if (!window.SpinelHeaderMenus) {
     window.clearTimeout(headerSearchTimers.get(dialog));
     dialog.querySelector('[data-header-search-predictive]')?.setAttribute('hidden', '');
     dialog.querySelector('[data-header-search-navigation]')?.removeAttribute('hidden');
-    dialog.querySelector('[data-header-search-input]')?.setAttribute('aria-expanded', 'false');
   };
 
   const requestHeaderPredictiveSearch = (input) => {
@@ -2607,7 +2606,6 @@ if (!window.SpinelHeaderMenus) {
         }
         dialog.querySelector('[data-header-search-navigation]')?.setAttribute('hidden', '');
         dialog.querySelector('[data-header-search-predictive]')?.removeAttribute('hidden');
-        input.setAttribute('aria-expanded', 'true');
       } catch (error) {
         if (error.name !== 'AbortError') clearHeaderPredictiveSearch(dialog);
       }

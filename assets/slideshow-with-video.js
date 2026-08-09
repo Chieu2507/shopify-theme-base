@@ -16,8 +16,8 @@ class SpinelSlideshow extends HTMLElement {
     this.finePointer = window.matchMedia('(hover: hover) and (pointer: fine)');
     this.onBlockSelect = this.handleBlockSelect.bind(this);
     this.onVisibilityChange = this.handleVisibilityChange.bind(this);
-    this.onMouseEnter = this.pauseAutoplay.bind(this);
-    this.onMouseLeave = this.scheduleAutoplay.bind(this);
+    this.onMouseEnter = this.pauseForHover.bind(this);
+    this.onMouseLeave = this.resumeAfterHover.bind(this);
     this.onFocusIn = this.pauseForFocus.bind(this);
     this.onAutoplayToggle = this.toggleAutoplay.bind(this);
     this.onClick = this.handleClick.bind(this);
@@ -25,6 +25,7 @@ class SpinelSlideshow extends HTMLElement {
     this.onPointerLeave = this.hideCursor.bind(this);
     this.onVideoEnded = this.handleVideoEnded.bind(this);
     this.onProgressFrame = this.updateProgress.bind(this);
+    this.autoplayHoverPaused = false;
     this.destroyFirstViewportHeight = setupFirstViewportHeight(this);
 
     document.addEventListener('shopify:block:select', this.onBlockSelect);
@@ -47,6 +48,7 @@ class SpinelSlideshow extends HTMLElement {
           this.scheduleAutoplay();
         } else {
           this.pauseAutoplay();
+          this.pauseActiveVideo();
         }
       });
       this.visibilityObserver.observe(this);
@@ -151,6 +153,7 @@ class SpinelSlideshow extends HTMLElement {
   handleVisibilityChange() {
     if (document.hidden) {
       this.pauseAutoplay();
+      this.pauseActiveVideo();
     } else {
       this.playActiveVideo();
       this.scheduleAutoplay();
@@ -159,24 +162,32 @@ class SpinelSlideshow extends HTMLElement {
 
   scheduleAutoplay() {
     window.clearTimeout(this.autoplayTimer);
-    if (!this.autoplayManuallyPaused && this.getActiveVideo()) {
-      this.startProgressTracking();
-      return;
-    }
-
-    if (!this.autoplayEnabled || this.autoplayManuallyPaused || document.hidden || !this.isVisible || !this.swiper) {
-      this.resetProgress();
+    if (!this.autoplayEnabled || this.autoplayManuallyPaused || this.autoplayHoverPaused || document.hidden || !this.isVisible || !this.swiper) {
+      this.pauseProgressTracking();
       return;
     }
 
     this.startProgressTracking();
+    if (this.getActiveVideo()) return;
     const remainingDelay = Math.max(0, this.autoplayDelay - (this.autoplayProgressElapsed || 0));
     this.autoplayTimer = window.setTimeout(() => this.goToNextSlide(), remainingDelay);
   }
 
   pauseAutoplay() {
     window.clearTimeout(this.autoplayTimer);
-    if (!this.getActiveVideo()) this.pauseProgressTracking();
+    this.pauseProgressTracking();
+  }
+
+  pauseForHover() {
+    this.autoplayHoverPaused = true;
+    this.pauseAutoplay();
+    this.pauseActiveVideo();
+  }
+
+  resumeAfterHover() {
+    this.autoplayHoverPaused = false;
+    this.playActiveVideo();
+    this.scheduleAutoplay();
   }
 
   pauseForFocus(event) {
@@ -223,12 +234,17 @@ class SpinelSlideshow extends HTMLElement {
 
   playActiveVideo() {
     const video = this.getActiveVideo();
-    if (!video || !this.autoplayEnabled || this.autoplayManuallyPaused || document.hidden || !this.isVisible) return;
+    if (!video || !this.autoplayEnabled || this.autoplayManuallyPaused || this.autoplayHoverPaused || document.hidden || !this.isVisible) return;
 
     video.play().catch(() => {});
   }
 
+  pauseActiveVideo() {
+    this.getActiveVideo()?.pause();
+  }
+
   startProgressTracking() {
+    if (!this.autoplayEnabled || this.autoplayManuallyPaused || this.autoplayHoverPaused || document.hidden || !this.isVisible) return;
     window.cancelAnimationFrame(this.progressFrame);
     if (!this.autoplayProgressStartedAt && !this.getActiveVideo()) {
       this.autoplayProgressStartedAt = performance.now();
@@ -237,6 +253,10 @@ class SpinelSlideshow extends HTMLElement {
   }
 
   updateProgress() {
+    if (!this.autoplayEnabled || this.autoplayManuallyPaused || this.autoplayHoverPaused || document.hidden || !this.isVisible) {
+      this.pauseProgressTracking();
+      return;
+    }
     const video = this.getActiveVideo();
     let ratio = 0;
 

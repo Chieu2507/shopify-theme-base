@@ -180,8 +180,7 @@ class FeaturedCollection extends HTMLElement {
   }
 
   formatMoney(cents) {
-    if (window.Shopify?.formatMoney) return window.Shopify.formatMoney(cents, window.theme?.moneyWithCurrencyFormat || window.theme?.moneyFormat);
-    return new Intl.NumberFormat(document.documentElement.lang || 'en', { style: 'currency', currency: window.Shopify?.currency?.active || 'USD' }).format(Number(cents || 0) / 100);
+    return window.SpinelMoney?.format(cents) || String(cents || 0);
   }
 
   selectTab(tab, moveFocus = false) {

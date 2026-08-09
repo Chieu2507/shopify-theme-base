@@ -11,6 +11,13 @@
   if section.settings.autoplay
     assign video_muted = true
   endif
+
+  assign poster_loading = 'lazy'
+  assign poster_fetchpriority = 'auto'
+  if section.index == 1
+    assign poster_loading = 'eager'
+    assign poster_fetchpriority = 'high'
+  endif
 %}
 
 {% if section.blocks.size > 0 %}
@@ -66,10 +73,13 @@
               widths: '480, 750, 1100, 1500, 1920, 2400',
               sizes: '100vw',
               class: 'video-banner__poster media-cover',
-              loading: 'lazy',
+              loading: poster_loading,
+              fetchpriority: poster_fetchpriority,
               alt: video_block.settings.accessibility_label,
               placeholder_asset: 'placeholder-image-video.svg',
-              placeholder_class: 'video-banner__placeholder media-cover'
+              placeholder_class: 'video-banner__placeholder media-cover',
+              placeholder_loading: poster_loading,
+              placeholder_fetchpriority: poster_fetchpriority
             %}
           {% endif %}
 

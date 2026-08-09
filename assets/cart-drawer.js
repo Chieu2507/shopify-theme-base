@@ -34,6 +34,10 @@
       this.currency = this.dataset.currency || 'USD';
       this.isOpen = false;
       this.busy = false;
+      this.lineMutationInFlight = false;
+      this.refreshPending = false;
+      this.pendingLineMutations = new Map();
+      this.lineDesiredQuantities = new Map();
       this.lastFocusedElement = null;
       this.handleDrag = null;
       this.handleDragTimer = null;
@@ -71,6 +75,8 @@
       window.clearInterval(this.recommendationTimer);
       this.unlockPageScroll();
       this.isOpen = false;
+      this.pendingLineMutations?.clear();
+      this.lineDesiredQuantities?.clear();
     }
 
     bind() {
@@ -101,7 +107,13 @@
           return;
         }
         const change = event.target.closest('[data-cart-drawer-change]');
-        if (change) this.changeLine(change.dataset.line, Number(change.dataset.quantity));
+        if (change) {
+          this.queueLineChange(
+            change.dataset.line,
+            Number(change.dataset.quantity),
+            Number(change.dataset.quantityDelta),
+          );
+        }
         const relatedAdd = event.target.closest('[data-cart-drawer-related-add]');
         if (relatedAdd) this.addRelatedProduct(relatedAdd);
         const recommendationDot = event.target.closest('[data-cart-drawer-recommendation-dot]');
@@ -370,7 +382,10 @@
     }
 
     async refresh() {
-      if (this.busy) return;
+      if (this.busy || this.lineMutationInFlight) {
+        this.refreshPending = true;
+        return;
+      }
       this.busy = true;
       this.setStatus(this.dataset.updatingLabel);
       try {
@@ -388,6 +403,11 @@
       } finally {
         this.busy = false;
         this.setStatus('');
+        if (this.pendingLineMutations.size) this.processLineMutations();
+        else if (this.refreshPending) {
+          this.refreshPending = false;
+          this.refresh();
+        }
       }
     }
 
@@ -451,6 +471,11 @@
         : '<span class="cart-drawer__image-placeholder" aria-hidden="true"></span>';
       const options = item.product_has_only_default_variant ? '' : (item.options_with_values || []).map((option) => `<div><dt>${this.escape(option.name)}:</dt><dd>${this.escape(option.value)}</dd></div>`).join('');
       const variant = options ? `<dl class="cart-drawer__item-options">${options}</dl>` : '';
+      const publicProperties = Object.entries(item.properties || {})
+        .filter(([key, value]) => key && !key.startsWith('_') && value != null && String(value).trim() !== '')
+        .map(([key, value]) => `<div><dt>${this.escape(key)}:</dt><dd>${this.escape(value)}</dd></div>`)
+        .join('');
+      const properties = publicProperties ? `<dl class="cart-drawer__item-properties">${publicProperties}</dl>` : '';
       const sellingPlan = item.selling_plan_allocation?.selling_plan?.name ? `<p class="cart-drawer__item-selling-plan">${this.escape(item.selling_plan_allocation.selling_plan.name)}</p>` : '';
       const originalLinePrice = Number(item.original_line_price ?? item.line_price ?? 0);
       const finalLinePrice = Number(item.final_line_price ?? item.line_price ?? 0);
@@ -467,36 +492,94 @@
         <div class="cart-drawer__item-info">
           <h3 class="cart-drawer__item-title"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
           ${variant}
+          ${properties}
           ${sellingPlan}
           <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
           ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
           <div class="cart-drawer__quantity">
-            <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${Math.max(0, item.quantity - 1)}">−</button>
-            <span aria-live="polite">${item.quantity}</span>
-            <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="${item.quantity + 1}">+</button>
+            <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="-1">−</button>
+            <span aria-live="polite" data-cart-drawer-quantity-value>${item.quantity}</span>
+            <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="1">+</button>
           </div>
           <button class="cart-drawer__remove" type="button" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${this.escape(this.dataset.removeLabel)}</button>
         </div>
       </article>`;
     }
 
-    async changeLine(line, quantity) {
-      if (!line || !Number.isFinite(quantity)) return;
+    queueLineChange(line, quantity, delta) {
+      if (!line) return;
+      const item = (this.cart?.items || []).find((candidate) => candidate.key === line);
+      const currentQuantity = this.lineDesiredQuantities.has(line)
+        ? this.lineDesiredQuantities.get(line)
+        : Number(item?.quantity || 0);
+      const desiredQuantity = Number.isFinite(delta)
+        ? Math.max(0, currentQuantity + delta)
+        : Math.max(0, quantity);
+      if (!Number.isFinite(desiredQuantity)) return;
+
+      this.lineDesiredQuantities.set(line, desiredQuantity);
+      this.pendingLineMutations.set(line, desiredQuantity);
+      this.updateOptimisticLineQuantities();
+      this.processLineMutations();
+    }
+
+    async processLineMutations() {
+      if (this.lineMutationInFlight || this.busy || !this.pendingLineMutations.size) return;
+      this.lineMutationInFlight = true;
+      this.items?.setAttribute('aria-busy', 'true');
       try {
-        this.setStatus(this.dataset.updatingLabel);
-        const response = await fetch(this.localeUrl('cart/change.js'), {
-          method: 'POST',
-          headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-          body: JSON.stringify({ id: line, quantity })
-        });
-        if (!response.ok) throw new Error(this.dataset.cartUpdateErrorLabel);
-        await this.refresh();
+        while (this.pendingLineMutations.size) {
+          const [line, quantity] = this.pendingLineMutations.entries().next().value;
+          this.pendingLineMutations.delete(line);
+          this.setStatus(this.dataset.updatingLabel);
+          const response = await fetch(this.localeUrl('cart/change.js'), {
+            method: 'POST',
+            headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+            body: JSON.stringify({ id: line, quantity }),
+            signal: this.abortController?.signal,
+          });
+          const cart = await response.json().catch(() => ({}));
+          if (!response.ok) throw new Error(cart.description || cart.message || this.dataset.cartUpdateErrorLabel);
+          if (!this.pendingLineMutations.has(line) && this.lineDesiredQuantities.get(line) === quantity) {
+            this.lineDesiredQuantities.delete(line);
+          }
+          this.syncCart(cart);
+          this.updateOptimisticLineQuantities();
+        }
+        await this.loadRecommendations(this.cart);
       } catch (error) {
+        if (error.name === 'AbortError') return;
         console.error('[Spinel] Cart drawer line update failed', error);
+        this.pendingLineMutations.clear();
+        this.lineDesiredQuantities.clear();
+        try {
+          const cart = await this.fetchCart();
+          this.syncCart(cart);
+          await this.loadRecommendations(cart);
+        } catch (_) {
+          // Preserve the original mutation error when cart recovery also fails.
+        }
         this.setMessage(error.message, true);
       } finally {
+        this.lineMutationInFlight = false;
+        this.items?.removeAttribute('aria-busy');
         this.setStatus('');
+        if (this.pendingLineMutations.size) this.processLineMutations();
+        else if (this.refreshPending) {
+          this.refreshPending = false;
+          this.refresh();
+        }
       }
+    }
+
+    updateOptimisticLineQuantities() {
+      this.lineDesiredQuantities.forEach((quantity, line) => {
+        this.querySelectorAll('[data-cart-line]').forEach((item) => {
+          if (item.dataset.cartLine !== line) return;
+          const value = item.querySelector('[data-cart-drawer-quantity-value]');
+          if (value) value.textContent = quantity;
+        });
+      });
     }
 
     async addRelatedProduct(button) {
@@ -617,7 +700,7 @@
         if (!prepare.ok && prepare.status !== 202) throw await this.shippingErrorFromResponse(prepare);
         const rates = await this.pollShippingRates(query);
         this.shippingRates.innerHTML = rates.length
-          ? `<span>${rates.map((rate) => `${this.escape(rate.presentment_name || rate.name)}: ${this.escape(rate.price)} ${this.escape(rate.currency || this.currency)}`).join('</span><span>')}</span>`
+          ? `<span>${rates.map((rate) => `${this.escape(rate.presentment_name || rate.name)}: ${this.escape(this.formatMoney(Math.round(Number(rate.price || 0) * 100)))}`).join('</span><span>')}</span>`
           : this.escape(this.dataset.shippingErrorLabel);
       } catch (error) {
         this.shippingRates.textContent = error.message || this.dataset.shippingErrorLabel;
@@ -708,7 +791,7 @@
         this.recommendationList.innerHTML = products.slice(0, limit).map((product) => this.recommendationTemplate(product)).join('');
         this.recommendationDots.innerHTML = products.slice(0, limit).map((_, index) => {
           const label = (this.dataset.relatedProductLabel || '').replace('__index__', String(index + 1));
-          return `<button type="button" class="cart-drawer__recommendation-dot" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="${this.escape(label)}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`;
+          return `<button type="button" class="cart-drawer__recommendation-dot" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="${this.escape(label)}" aria-controls="${this.escape(this.recommendationList?.id || '')}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`;
         }).join('');
         this.recommendations.hidden = false;
         this.startRecommendationRotation(products.length);
@@ -943,12 +1026,10 @@
     }
 
     formatMoney(cents) {
-      const value = Number(cents || 0) / 100;
-      try {
-        return new Intl.NumberFormat(document.documentElement.lang || 'en', { style: 'currency', currency: this.currency }).format(value);
-      } catch {
-        return `${value.toFixed(2)} ${this.currency}`;
-      }
+      return window.SpinelMoney?.format(cents, {
+        currency: this.currency,
+        showCurrencyCode: this.dataset.showCurrencyCode === 'true',
+      }) || String(cents || 0);
     }
 
     escape(value) {

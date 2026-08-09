@@ -138,6 +138,62 @@ class ProductPage extends HTMLElement {
     this.querySelectorAll('[data-quantity-increase], [data-quantity-decrease]').forEach((button) => button.addEventListener('click', () => this.changeQuantity(button.hasAttribute('data-quantity-increase') ? 1 : -1), { signal: this.signal }));
     this.querySelector('[data-quantity-input]')?.addEventListener('change', () => this.normalizeQuantity(), { signal: this.signal });
     this.form?.addEventListener('submit', (event) => this.addToCart(event), { signal: this.signal });
+    this.bindGiftCardRecipientForm();
+  }
+
+  bindGiftCardRecipientForm() {
+    this.recipientForm = this.querySelector('[data-gift-card-recipient-form]');
+    if (!this.recipientForm) return;
+    this.recipientToggle = this.recipientForm.querySelector('[data-gift-card-recipient-toggle]');
+    this.recipientFields = this.recipientForm.querySelector('[data-gift-card-recipient-fields]');
+    this.recipientEmail = this.recipientForm.querySelector('[data-gift-card-recipient-email]');
+    this.recipientOffset = this.recipientForm.querySelector('[data-gift-card-recipient-offset]');
+    this.recipientError = this.recipientForm.querySelector('[data-gift-card-recipient-error]');
+    this.recipientToggle?.addEventListener('change', () => this.syncGiftCardRecipientForm(), { signal: this.signal });
+    this.recipientForm.querySelectorAll('[data-gift-card-recipient-field]').forEach((field) => {
+      field.addEventListener('input', () => this.setGiftCardRecipientError(''), { signal: this.signal });
+    });
+    this.syncGiftCardRecipientForm();
+  }
+
+  syncGiftCardRecipientForm() {
+    if (!this.recipientForm || !this.recipientToggle) return;
+    const enabled = this.recipientToggle.checked;
+    this.recipientFields.hidden = !enabled;
+    this.recipientForm.querySelectorAll('[data-gift-card-recipient-field]').forEach((field) => {
+      field.disabled = !enabled;
+    });
+    if (this.recipientEmail) this.recipientEmail.required = enabled;
+    if (this.recipientOffset) {
+      this.recipientOffset.disabled = !enabled;
+      this.recipientOffset.value = enabled ? String(new Date().getTimezoneOffset()) : '';
+    }
+    if (!enabled) this.setGiftCardRecipientError('');
+  }
+
+  validateGiftCardRecipientForm() {
+    if (!this.recipientToggle?.checked || !this.recipientEmail) return true;
+    if (this.recipientEmail.checkValidity()) return true;
+    this.setGiftCardRecipientError(this.recipientEmail.validationMessage || this.dataset.addToCartError, true);
+    this.recipientEmail.focus({ preventScroll: false });
+    return false;
+  }
+
+  setGiftCardRecipientError(message, emailInvalid = false) {
+    if (!this.recipientError) return;
+    this.recipientError.textContent = message || '';
+    this.recipientError.hidden = !message;
+    this.recipientEmail?.toggleAttribute('aria-invalid', Boolean(message) && emailInvalid);
+  }
+
+  resetGiftCardRecipientForm() {
+    if (!this.recipientForm) return;
+    if (this.recipientToggle) this.recipientToggle.checked = false;
+    this.recipientForm.querySelectorAll('[data-gift-card-recipient-field]').forEach((field) => {
+      field.value = '';
+    });
+    this.recipientForm.removeAttribute('open');
+    this.syncGiftCardRecipientForm();
   }
 
   bindSizeChart() {
@@ -971,7 +1027,7 @@ changeLightboxSlide(delta) {
       titleLink.href = product.url;
       titleLink.textContent = product.title;
       const price = document.createElement('span');
-      price.textContent = product.price;
+      price.textContent = this.formatPrice(product.price);
       heading.append(titleLink, price);
       item.append(imageLink, heading);
       return item;
@@ -1222,16 +1278,17 @@ changeLightboxSlide(delta) {
   }
 
   formatMoney(amount) {
-    return new Intl.NumberFormat(document.documentElement.lang || 'en', {
-      style: 'currency',
-      currency: this.dataset.currency || "USD",
-      currencyDisplay: "symbol",
-    }).format(Number(amount || 0) / 100);
+    return window.SpinelMoney?.format(amount, {
+      currency: this.dataset.currency || 'USD',
+      showCurrencyCode: false,
+    }) || String(amount || 0);
   }
 
   formatPrice(amount) {
-    const money = this.formatMoney(amount);
-    return this.dataset.showCurrencyCode === "true" ? `${money} ${this.dataset.currency || "USD"}` : money;
+    return window.SpinelMoney?.format(amount, {
+      currency: this.dataset.currency || 'USD',
+      showCurrencyCode: this.dataset.showCurrencyCode === 'true',
+    }) || this.formatMoney(amount);
   }
 
   resolveFromUrl() {
@@ -1303,6 +1360,8 @@ changeLightboxSlide(delta) {
     event?.preventDefault();
     if (!this.isPurchaseAvailable() || !this.form) return;
     this.normalizeQuantity();
+    if (!this.validateGiftCardRecipientForm()) return;
+    this.setGiftCardRecipientError('');
     const primaryButton = this.querySelector('[data-add-to-cart]');
     const buttons = [...new Set([primaryButton, sourceButton].filter(Boolean))];
     if (!buttons.length) return;
@@ -1328,6 +1387,7 @@ changeLightboxSlide(delta) {
         throw error;
       }
       this.setStatus('');
+      this.resetGiftCardRecipientForm();
       buttons.forEach((button) => this.showAddedState(button));
       let cart = null;
       try { cart = await this.refreshCartCount(); } catch { /* Cart count refresh is non-blocking after a successful add. */ }
@@ -1344,6 +1404,18 @@ changeLightboxSlide(delta) {
       });
       const availableQuantity = await this.resolveAvailableStock(error.payload);
       if (availableQuantity !== null) this.showInventoryWarning(availableQuantity);
+      const recipientErrorText = [
+        error.message,
+        error.payload?.description,
+        error.payload?.message,
+        ...Object.keys(error.payload?.errors || {}),
+      ].filter(Boolean).join(' ');
+      if (this.recipientToggle?.checked && /recipient|send on|delivery date|__shopify_(?:send_gift_card|offset)/i.test(recipientErrorText)) {
+        this.setGiftCardRecipientError(
+          error.message || this.dataset.addToCartError,
+          /recipient[ _-]*email|\bemail\b/i.test(recipientErrorText),
+        );
+      }
       this.setStatus(error.message, true);
       this.dispatch('product:add:error', { error, availableQuantity });
     } finally {

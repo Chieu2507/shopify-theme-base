@@ -13,21 +13,34 @@ class SpinelSlideshow extends HTMLElement {
     this.totalSlides = this.querySelector('[data-slideshow-total]');
     this.progress = this.querySelector('[data-slideshow-progress]');
     this.progressBar = this.querySelector('[data-slideshow-progress-bar]');
+    this.autoplayToggle = this.querySelector('[data-slideshow-autoplay-toggle]');
+    this.autoplayIcon = this.querySelector('[data-slideshow-autoplay-icon]');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.isDoubleSlide = this.dataset.desktopStyle === 'double';
     this.isDesktop = window.matchMedia('(min-width: 750px)');
     this.onViewportChange = () => this.updateControls();
+    this.onMotionChange = this.handleMotionChange.bind(this);
     this.onBlockSelect = this.handleBlockSelect.bind(this);
     this.onVisibilityChange = this.handleVisibilityChange.bind(this);
-    this.onMouseEnter = this.pauseAutoplay.bind(this);
-    this.onMouseLeave = this.scheduleAutoplay.bind(this);
+    this.onMouseEnter = this.pauseForHover.bind(this);
+    this.onMouseLeave = this.resumeAfterHover.bind(this);
+    this.onFocusIn = this.pauseForFocus.bind(this);
+    this.onFocusOut = this.resumeAfterFocus.bind(this);
+    this.onAutoplayToggle = this.toggleAutoplay.bind(this);
+    this.autoplayManuallyPaused = false;
+    this.autoplayHoverPaused = false;
+    this.autoplayFocusPaused = false;
     this.destroyFirstViewportHeight = setupFirstViewportHeight(this);
 
     document.addEventListener('shopify:block:select', this.onBlockSelect);
     document.addEventListener('visibilitychange', this.onVisibilityChange);
     this.isDesktop.addEventListener?.('change', this.onViewportChange);
+    this.reduceMotion.addEventListener?.('change', this.onMotionChange);
     this.addEventListener('mouseenter', this.onMouseEnter);
     this.addEventListener('mouseleave', this.onMouseLeave);
+    this.addEventListener('focusin', this.onFocusIn);
+    this.addEventListener('focusout', this.onFocusOut);
+    this.autoplayToggle?.addEventListener('click', this.onAutoplayToggle);
     this.isVisible = !('IntersectionObserver' in window);
     this.initialize();
 
@@ -47,8 +60,12 @@ class SpinelSlideshow extends HTMLElement {
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     document.removeEventListener('visibilitychange', this.onVisibilityChange);
     this.isDesktop?.removeEventListener?.('change', this.onViewportChange);
+    this.reduceMotion?.removeEventListener?.('change', this.onMotionChange);
     this.removeEventListener('mouseenter', this.onMouseEnter);
     this.removeEventListener('mouseleave', this.onMouseLeave);
+    this.removeEventListener('focusin', this.onFocusIn);
+    this.removeEventListener('focusout', this.onFocusOut);
+    this.autoplayToggle?.removeEventListener('click', this.onAutoplayToggle);
     this.visibilityObserver?.disconnect();
     window.clearTimeout(this.autoplayTimer);
     window.cancelAnimationFrame(this.autoplayProgressFrame);
@@ -98,6 +115,7 @@ class SpinelSlideshow extends HTMLElement {
     });
 
     this.updateControls();
+    this.updateAutoplayToggle();
     this.swiper.on('slideChange', () => {
       this.resetAutoplayProgress();
       this.updateControls();
@@ -143,9 +161,66 @@ class SpinelSlideshow extends HTMLElement {
     }
   }
 
+  handleMotionChange() {
+    this.autoplayEnabled = this.dataset.autoplay === 'true' && !this.reduceMotion.matches && this.slideCount > 1;
+    if (this.autoplayEnabled) this.scheduleAutoplay();
+    else this.pauseAutoplay();
+    this.updateAutoplayToggle();
+  }
+
+  pauseForHover() {
+    this.autoplayHoverPaused = true;
+    this.pauseAutoplay();
+  }
+
+  resumeAfterHover() {
+    this.autoplayHoverPaused = false;
+    this.scheduleAutoplay();
+  }
+
+  pauseForFocus(event) {
+    if (event.target.closest('[data-slideshow-autoplay-toggle]')) return;
+    this.autoplayFocusPaused = true;
+    this.pauseAutoplay();
+  }
+
+  resumeAfterFocus(event) {
+    if (event.relatedTarget && this.contains(event.relatedTarget)) return;
+    this.autoplayFocusPaused = false;
+    this.scheduleAutoplay();
+  }
+
+  toggleAutoplay() {
+    if (!this.autoplayEnabled) return;
+    this.autoplayManuallyPaused = !this.autoplayManuallyPaused;
+    if (this.autoplayManuallyPaused) this.pauseAutoplay();
+    else this.scheduleAutoplay();
+    this.updateAutoplayToggle();
+  }
+
+  updateAutoplayToggle() {
+    if (!this.autoplayToggle) return;
+    const isPaused = this.autoplayManuallyPaused || !this.autoplayEnabled;
+    this.autoplayToggle.setAttribute('aria-label', isPaused ? this.autoplayToggle.dataset.resumeLabel : this.autoplayToggle.dataset.pauseLabel);
+    this.autoplayToggle.setAttribute('aria-pressed', String(this.autoplayManuallyPaused));
+    this.autoplayToggle.disabled = !this.autoplayEnabled;
+    if (this.autoplayIcon) {
+      this.autoplayIcon.setAttribute('d', isPaused ? 'm8 5.5 6 4.5-6 4.5z' : 'M7 5.5v9M13 5.5v9');
+      this.autoplayIcon.setAttribute('fill', isPaused ? 'currentColor' : 'none');
+    }
+  }
+
   scheduleAutoplay() {
     window.clearTimeout(this.autoplayTimer);
-    if (!this.autoplayEnabled || document.hidden || !this.isVisible || !this.swiper) {
+    if (
+      !this.autoplayEnabled
+      || this.autoplayManuallyPaused
+      || this.autoplayHoverPaused
+      || this.autoplayFocusPaused
+      || document.hidden
+      || !this.isVisible
+      || !this.swiper
+    ) {
       this.resetAutoplayProgress();
       return;
     }

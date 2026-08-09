@@ -14,11 +14,14 @@
   let renderedPosition = window.scrollY;
   let isAnimating = false;
   let lastFrameTime = window.performance.now();
+  let animationFrame = 0;
 
   const getMaximumScroll = () => Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
   const clamp = (value, minimum, maximum) => Math.min(maximum, Math.max(minimum, value));
 
   const cancel = () => {
+    window.cancelAnimationFrame(animationFrame);
+    animationFrame = 0;
     isAnimating = false;
     destination = window.scrollY;
     renderedPosition = window.scrollY;
@@ -60,33 +63,40 @@
     return delta;
   };
 
+  const requestUpdate = () => {
+    if (!animationFrame) animationFrame = window.requestAnimationFrame(update);
+  };
+
   const update = (time) => {
+    animationFrame = 0;
     const elapsed = clamp(time - lastFrameTime, 0, 64) / 1000;
     lastFrameTime = time;
 
     if (!isActive()) {
       cancel();
-    } else if (isAnimating) {
-      const maximumScroll = getMaximumScroll();
-      destination = clamp(destination, 0, maximumScroll);
-      const distance = destination - renderedPosition;
+      return;
+    }
+    if (!isAnimating) return;
 
-      if (Math.round(renderedPosition) === destination) {
-        renderedPosition = destination;
-        isAnimating = false;
-      } else {
-        const easing = 1 - Math.exp(-dampingRate * elapsed);
-        renderedPosition += distance * easing;
-      }
+    const maximumScroll = getMaximumScroll();
+    destination = clamp(destination, 0, maximumScroll);
+    const distance = destination - renderedPosition;
 
-      window.scrollTo({
-        top: renderedPosition,
-        left: window.scrollX,
-        behavior: 'instant'
-      });
+    if (Math.round(renderedPosition) === destination) {
+      renderedPosition = destination;
+      isAnimating = false;
+    } else {
+      const easing = 1 - Math.exp(-dampingRate * elapsed);
+      renderedPosition += distance * easing;
     }
 
-    window.requestAnimationFrame(update);
+    window.scrollTo({
+      top: renderedPosition,
+      left: window.scrollX,
+      behavior: 'instant'
+    });
+
+    if (isAnimating) requestUpdate();
   };
 
   const onWheel = (event) => {
@@ -116,6 +126,8 @@
     }
     destination = clamp(Math.round(destination + delta), 0, maximumScroll);
     isAnimating = true;
+    lastFrameTime = window.performance.now();
+    requestUpdate();
   };
 
   window.addEventListener('wheel', onWheel, { passive: false });
@@ -141,5 +153,4 @@
   reducedMotion.addEventListener?.('change', cancel);
   desktopViewport.addEventListener?.('change', cancel);
   window.SpinelSmoothScroll = { cancel };
-  window.requestAnimationFrame(update);
 })();
