@@ -592,8 +592,6 @@ if (!window.SpinelHeaderMenus) {
       overlay.toggleAttribute('data-closing', Boolean(isMobile && isOwnedMobileOverlay && isDrawerClosing));
     });
 
-    if (shouldLock && !isLocked) window.SpinelSmoothScroll?.cancel();
-
     const scrollLock = window.themeScrollLock;
     if (scrollLock?.acquire && headerScrollLockFallbackStyles) {
       root.classList.remove('header-menu-scroll-locked');
