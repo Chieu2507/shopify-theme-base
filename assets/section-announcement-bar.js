@@ -1,26 +1,30 @@
-import A11y from './swiper-12.2.0-a11y.min.mjs';
 import Swiper from './swiper-12.2.0.min.mjs';
 
 if (!customElements.get('announcement-bar')) {
   class AnnouncementBar extends HTMLElement {
     connectedCallback() {
-      if (this.dataset.layout === 'marquee') return;
+      if (this.initialized || this.dataset.layout === 'marquee') return;
+      this.initialized = true;
 
       this.slider = this.querySelector('[data-announcement-slider]');
       this.items = Array.from(this.querySelectorAll('[data-announcement-item]'));
-      this.navigator = this.querySelector('[data-announcement-navigator]');
-      this.previousButton = this.querySelector('[data-announcement-step="-1"]');
-      this.nextButton = this.querySelector('[data-announcement-step="1"]');
       this.currentIndicator = this.querySelector('[data-announcement-current]');
       this.totalIndicator = this.querySelector('[data-announcement-total]');
-      this.pauseOnHover = this.dataset.pauseOnHover === 'true';
-      this.index = 0;
+      this.status = this.querySelector('[data-announcement-status]');
+      this.motionEnabled = this.dataset.motionEnabled !== 'false';
       this.interval = Number(this.dataset.interval) || 5000;
       this.motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
-      this.reduceMotion = this.motionPreference.matches;
-      this.isPointerInside = false;
-      this.hasFocusWithin = false;
+      this.reduceMotion = this.motionPreference.matches || !this.motionEnabled;
+      this.index = 0;
+      this.isPointerInside = this.matches(':hover');
+      this.hasFocusWithin = this.contains(document.activeElement);
+      this.rotationStoppedByUser = false;
+      this.editorPaused = false;
+      this.selectedEditorBlockId = null;
+      this.announceNextChange = false;
+
       this.onBlockSelect = this.handleBlockSelect.bind(this);
+      this.onBlockDeselect = this.handleBlockDeselect.bind(this);
       this.onMouseEnter = this.handleMouseEnter.bind(this);
       this.onMouseLeave = this.handleMouseLeave.bind(this);
       this.onFocusIn = this.handleFocusIn.bind(this);
@@ -33,9 +37,10 @@ if (!customElements.get('announcement-bar')) {
       this.addEventListener('mouseleave', this.onMouseLeave);
       this.addEventListener('focusin', this.onFocusIn);
       this.addEventListener('focusout', this.onFocusOut);
-      this.navigator?.addEventListener('click', this.onNavigatorClick);
+      this.addEventListener('click', this.onNavigatorClick);
       this.motionPreference.addEventListener('change', this.onMotionPreferenceChange);
       document.addEventListener('shopify:block:select', this.onBlockSelect);
+      document.addEventListener('shopify:block:deselect', this.onBlockDeselect);
       document.addEventListener('visibilitychange', this.onVisibilityChange);
 
       this.initializeSwiper();
@@ -44,14 +49,19 @@ if (!customElements.get('announcement-bar')) {
     }
 
     disconnectedCallback() {
+      if (!this.initialized) return;
+      this.initialized = false;
       this.stopRotation();
+      cancelAnimationFrame(this.measureFrame);
+      this.resizeObserver?.disconnect();
       this.removeEventListener('mouseenter', this.onMouseEnter);
       this.removeEventListener('mouseleave', this.onMouseLeave);
       this.removeEventListener('focusin', this.onFocusIn);
       this.removeEventListener('focusout', this.onFocusOut);
-      this.navigator?.removeEventListener('click', this.onNavigatorClick);
+      this.removeEventListener('click', this.onNavigatorClick);
       this.motionPreference?.removeEventListener('change', this.onMotionPreferenceChange);
       document.removeEventListener('shopify:block:select', this.onBlockSelect);
+      document.removeEventListener('shopify:block:deselect', this.onBlockDeselect);
       document.removeEventListener('visibilitychange', this.onVisibilityChange);
       this.swiper?.destroy(true, true);
       this.swiper = null;
@@ -59,55 +69,85 @@ if (!customElements.get('announcement-bar')) {
     }
 
     initializeSwiper() {
-      if (!this.slider || !this.items.length) {
+      if (!this.slider || this.items.length < 2) {
         this.updateCounter();
         return;
       }
 
-      const slideCount = this.items.length;
+      this.measureSliderHeight();
       const transitionSpeed = this.reduceMotion ? 0 : 420;
-      const slideHeight = this.slider.clientHeight || 37;
-      const shortTravel = Math.max(4, Math.round(slideHeight * 0.7));
       this.slider.style.setProperty('--announcement-bar-transition-duration', `${transitionSpeed}ms`);
 
       this.swiper = new Swiper(this.slider, {
-        modules: [A11y],
         direction: 'vertical',
         slidesPerView: 1,
-        spaceBetween: -shortTravel,
-        loop: slideCount > 1,
+        spaceBetween: 0,
+        loop: true,
         speed: transitionSpeed,
         watchOverflow: true,
-        grabCursor: slideCount > 1 && !this.reduceMotion,
-        allowTouchMove: slideCount > 1,
-        a11y: {
-          enabled: true,
-          prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
-          nextSlideMessage: this.nextButton?.getAttribute('aria-label') || '',
-          slideRole: 'group',
-        },
+        grabCursor: !this.reduceMotion,
+        allowTouchMove: true,
       });
 
       this.swiper.on('slideChange', () => {
         this.index = this.swiper.realIndex;
         this.updateCounter();
+        this.updateSlideAccessibility();
+        if (this.announceNextChange) {
+          this.announceCurrentSlide();
+          this.announceNextChange = false;
+        }
       });
+      this.swiper.on('sliderFirstMove', () => this.handleManualInteraction(true));
+
+      this.resizeObserver = new ResizeObserver((entries) => {
+        const width = Math.round(entries[0]?.contentRect.width || 0);
+        if (!width || width === this.lastMeasuredWidth) return;
+        this.lastMeasuredWidth = width;
+        this.scheduleHeightMeasurement();
+      });
+      this.resizeObserver.observe(this.slider);
+      document.fonts?.ready.then(() => {
+        if (this.initialized) this.scheduleHeightMeasurement();
+      });
+
       this.updateCounter();
+      this.updateSlideAccessibility();
+    }
+
+    scheduleHeightMeasurement() {
+      cancelAnimationFrame(this.measureFrame);
+      this.measureFrame = requestAnimationFrame(() => this.measureSliderHeight());
+    }
+
+    measureSliderHeight() {
+      if (!this.slider || !this.items.length) return;
+      const currentHeight = this.slider.style.height;
+      this.slider.style.height = 'auto';
+      this.items.forEach((item) => item.style.removeProperty('height'));
+      const tallestSlide = Math.max(...this.items.map((item) => Math.ceil(item.scrollHeight)));
+      this.slider.style.height = tallestSlide > 0 ? `${tallestSlide}px` : currentHeight;
+      this.swiper?.update();
     }
 
     startRotation() {
       this.stopRotation();
       if (
-        this.dataset.behavior !== 'rotate' ||
-        this.items.length < 2 ||
-        this.reduceMotion ||
-        this.isPointerInside ||
-        this.hasFocusWithin ||
-        document.hidden ||
-        !this.swiper
+        this.dataset.behavior !== 'rotate'
+        || this.items.length < 2
+        || this.reduceMotion
+        || this.rotationStoppedByUser
+        || this.editorPaused
+        || this.isPointerInside
+        || this.hasFocusWithin
+        || document.hidden
+        || !this.swiper
       ) return;
 
-      this.rotationTimer = window.setInterval(() => this.showItem(this.index + 1, 'next'), this.interval);
+      this.rotationTimer = window.setInterval(() => {
+        const current = this.swiper?.realIndex ?? this.index;
+        this.showItem(current + 1, 'next');
+      }, this.interval);
     }
 
     stopRotation() {
@@ -123,7 +163,7 @@ if (!customElements.get('announcement-bar')) {
       this.startRotation();
     }
 
-    showItem(index, direction = null) {
+    showItem(index, direction = null, speedOverride = null) {
       if (!this.swiper || this.items.length < 2) return;
 
       const nextIndex = (index + this.items.length) % this.items.length;
@@ -131,7 +171,7 @@ if (!customElements.get('announcement-bar')) {
       if (nextIndex === currentIndex) return;
 
       this.index = nextIndex;
-      const speed = this.reduceMotion ? 0 : this.swiper.params.speed;
+      const speed = speedOverride ?? (this.reduceMotion ? 0 : this.swiper.params.speed);
       if (direction === 'next') {
         this.swiper.slideNext(speed);
       } else if (direction === 'prev') {
@@ -147,30 +187,54 @@ if (!customElements.get('announcement-bar')) {
       if (this.totalIndicator) this.totalIndicator.textContent = this.formatCounter(this.items.length);
     }
 
+    updateSlideAccessibility() {
+      requestAnimationFrame(() => {
+        this.slider?.querySelectorAll('.swiper-slide').forEach((slide) => {
+          const isActive = slide.classList.contains('swiper-slide-active');
+          slide.setAttribute('aria-hidden', String(!isActive));
+          slide.toggleAttribute('inert', !isActive);
+        });
+      });
+    }
+
+    announceCurrentSlide() {
+      if (!this.status) return;
+      const current = (this.swiper?.realIndex ?? this.index) + 1;
+      const template = this.status.dataset.statusTemplate || 'Announcement [current] of [total]';
+      this.status.textContent = template
+        .replace('[current]', String(current))
+        .replace('[total]', String(this.items.length));
+    }
+
     formatCounter(value) {
       return String(value).padStart(2, '0');
     }
 
     handleBlockSelect(event) {
       if (event.detail?.sectionId !== this.dataset.sectionId) return;
-
       const selectedSlide = this.items.find((item) => item.dataset.blockId === event.detail.blockId);
       if (!selectedSlide) return;
 
+      this.editorPaused = true;
+      this.selectedEditorBlockId = event.detail.blockId;
       this.stopRotation();
-      this.showItem(this.items.indexOf(selectedSlide));
+      this.showItem(this.items.indexOf(selectedSlide), null, 0);
+    }
+
+    handleBlockDeselect(event) {
+      if (event.detail?.sectionId !== this.dataset.sectionId) return;
+      if (this.selectedEditorBlockId !== event.detail.blockId) return;
+      this.editorPaused = false;
+      this.selectedEditorBlockId = null;
+      this.startRotation();
     }
 
     handleMouseEnter() {
-      if (!this.pauseOnHover) return;
-
       this.isPointerInside = true;
       this.stopRotation();
     }
 
     handleMouseLeave() {
-      if (!this.pauseOnHover) return;
-
       this.isPointerInside = false;
       this.startRotation();
     }
@@ -188,20 +252,27 @@ if (!customElements.get('announcement-bar')) {
 
     handleNavigatorClick(event) {
       const control = event.target.closest('[data-announcement-step]');
-      if (!control || !this.navigator?.contains(control)) return;
+      if (!control || !this.contains(control)) return;
 
       event.preventDefault();
-      this.stopRotation();
+      this.handleManualInteraction(true);
       const step = Number(control.dataset.announcementStep);
-      this.showItem(this.index + step, step > 0 ? 'next' : 'prev');
-      this.startRotation();
+      const current = this.swiper?.realIndex ?? this.index;
+      this.showItem(current + step, step > 0 ? 'next' : 'prev');
+    }
+
+    handleManualInteraction(announceChange = false) {
+      this.rotationStoppedByUser = true;
+      this.announceNextChange = announceChange;
+      this.stopRotation();
     }
 
     handleMotionPreferenceChange(event) {
-      this.reduceMotion = event.matches;
+      this.reduceMotion = event.matches || !this.motionEnabled;
       if (this.swiper) {
         const transitionSpeed = this.reduceMotion ? 0 : 420;
         this.swiper.params.speed = transitionSpeed;
+        this.swiper.params.grabCursor = !this.reduceMotion;
         this.slider?.style.setProperty('--announcement-bar-transition-duration', `${transitionSpeed}ms`);
         this.swiper.allowTouchMove = this.items.length > 1;
       }

@@ -18,7 +18,18 @@
   assign mobile_country_sheet_title_id = 'HeaderMobileCountrySheetTitle-' | append: section.id
   assign mobile_language_sheet_title_id = 'HeaderMobileLanguageSheetTitle-' | append: section.id
   assign mobile_country_search_id = 'HeaderMobileCountrySearch-' | append: section.id
-  assign navigation_account_action = account_action | default: section.settings.account_action | default: 'panel'
+  assign desktop_visible_items = 3
+  assign use_desktop_more_menu = false
+  assign desktop_more_menu_active = false
+  if is_mobile_navigation == false and menu_links.size > 4
+    assign use_desktop_more_menu = true
+    for overflow_state_link in menu_links offset: desktop_visible_items
+      if overflow_state_link.current or overflow_state_link.child_active
+        assign desktop_more_menu_active = true
+        break
+      endif
+    endfor
+  endif
   assign show_language = true
   if section.settings.show_language == false
     assign show_language = false
@@ -65,15 +76,25 @@
           if link.links != blank or mega_menu_block != nil
             assign has_submenu = true
           endif
+          assign link_has_destination = false
+          if link.url != blank and link.url != '#'
+            assign link_has_destination = true
+          endif
+          assign show_top_level_item = true
+          if use_desktop_more_menu and forloop.index > desktop_visible_items
+            assign show_top_level_item = false
+          endif
         %}
+        {% if show_top_level_item %}
         <li class="header__menu-item{% if has_submenu %} header__menu-item--has-children{% endif %}{% if mega_menu_block != nil and has_submenu %} header__menu-item--mega{% endif %}">
           {% if has_submenu %}
-            {% if is_mobile_navigation and link.url != blank %}
-              <a class="header__mobile-menu-direct-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" href="{{ link.url | escape }}"{% if link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ link.title | escape }}</span></a>
+            {% if is_mobile_navigation and link_has_destination %}
+              <a class="header__mobile-menu-direct-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" href="{{ link.url | escape }}"{% if link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ link.title | escape }}</span>{% if badge_block != nil and badge_block.settings.text != blank %}<span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>{% endif %}</a>
             {% endif %}
-            <details class="header__submenu-disclosure{% if link.url == blank %} header__submenu-disclosure--no-direct-link{% endif %}{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% endif %}{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
-              <summary class="header__menu-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" aria-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-open-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-close-label="{{ 'header.close_submenu' | t: item: link.title | escape }}" aria-expanded="false" aria-controls="{{ submenu_id }}">
-                <span class="header__menu-link-title">{{ link.title | escape }}</span>
+            <details class="header__submenu-disclosure{% unless link_has_destination %} header__submenu-disclosure--no-direct-link{% endunless %}{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% endif %}{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
+              <summary class="header__menu-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" data-open-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-close-label="{{ 'header.close_submenu' | t: item: link.title | escape }}" aria-controls="{{ submenu_id }}">
+                <span class="header__menu-link-title" title="{{ link.title | escape }}">{{ link.title | escape }}</span>
+                {% if badge_block != nil and badge_block.settings.text != blank %}<span class="header__menu-badge header__menu-badge--summary"{% unless is_mobile_navigation and link_has_destination %} {{ badge_block.shopify_attributes }}{% endunless %}>{{ badge_block.settings.text | escape }}</span>{% endif %}
                 <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
               </summary>
               {% if mega_menu_block != nil %}
@@ -119,6 +140,12 @@
                   if has_promotion_2
                     assign promotion_count = promotion_count | plus: 1
                   endif
+                  assign show_mega_navigation = false
+                  if mega_menu_links != blank
+                    assign show_mega_navigation = true
+                  elsif is_mobile_navigation == false and link_has_destination
+                    assign show_mega_navigation = true
+                  endif
                 %}
                 <div id="{{ submenu_id }}" class="header__mega-panel header__mega-panel--text-{{ mega_menu_block.settings.text_size | default: 'medium' }}" {{ mega_menu_block.shopify_attributes }}>
                   {% if is_mobile_navigation %}
@@ -129,10 +156,14 @@
                   {% endif %}
                   <div class="header__mega-surface">
                     <div class="header__mega-inner{% if promotion_count == 0 %} header__mega-inner--links-only{% endif %}">
-                      {% if mega_menu_links != blank %}
+                      {% if show_mega_navigation %}
                         <div class="header__mega-navigation">
-                          {% if mega_menu_block.settings.column_heading != blank %}<p class="header__mega-heading">{{ mega_menu_block.settings.column_heading | escape }}</p>{% endif %}
-                          <div class="header__mega-lists" style="--header-mega-columns: {{ mega_columns }};">
+                          {% unless is_mobile_navigation %}
+                            {% if link_has_destination %}<a class="header__mega-view-all" href="{{ link.url | escape }}">{{ 'header.view_all' | t: item: link.title }}</a>{% endif %}
+                          {% endunless %}
+                          {% if mega_menu_links != blank %}
+                            {% if mega_menu_block.settings.column_heading != blank %}<p class="header__mega-heading">{{ mega_menu_block.settings.column_heading | escape }}</p>{% endif %}
+                            <div class="header__mega-lists" style="--header-mega-columns: {{ mega_columns }};">
                             {% for column in (1..mega_columns) %}
                               {% liquid
                                 assign column_index = column | minus: 1
@@ -146,23 +177,23 @@
                                       <li>
                                         {% if child_link.links != blank %}
                                           {% if is_mobile_navigation %}
-                                            {% if child_link.url != blank %}
+                                            {% if child_link.url != blank and child_link.url != '#' %}
                                               <a class="header__mobile-menu-direct-link" href="{{ child_link.url | escape }}"{% if child_link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ child_link.title | escape }}</span></a>
                                             {% else %}
                                               <span class="header__mega-category-title">{{ child_link.title | escape }}</span>
                                             {% endif %}
-                                          {% elsif child_link.url != blank %}
+                                          {% elsif child_link.url != blank and child_link.url != '#' %}
                                             <a class="header__mega-category-link" href="{{ child_link.url | escape }}"{% if child_link.current %} aria-current="page"{% endif %}>{{ child_link.title | escape }}</a>
                                           {% else %}
                                             <span class="header__mega-category-title">{{ child_link.title | escape }}</span>
                                           {% endif %}
                                               <ul class="header__mega-nested" role="list">
                                             {% for grandchild_link in child_link.links %}
-                                              <li><a class="header__mega-link header__mega-link--nested{% if grandchild_link.current %} header__mega-link--active{% endif %}" href="{{ grandchild_link.url | escape }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ grandchild_link.title | escape }}</span></a></li>
+                                              <li>{% if grandchild_link.url != blank and grandchild_link.url != '#' %}<a class="header__mega-link header__mega-link--nested{% if grandchild_link.current %} header__mega-link--active{% endif %}" href="{{ grandchild_link.url | escape }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ grandchild_link.title | escape }}</span></a>{% else %}<span class="header__mega-link header__mega-link--nested"><span class="{{ navigation_label_class }}">{{ grandchild_link.title | escape }}</span></span>{% endif %}</li>
                                             {% endfor %}
                                           </ul>
                                         {% else %}
-                                          <a class="header__mega-link{% if child_link.current %} header__mega-link--active{% endif %}" href="{{ child_link.url | escape }}"{% if child_link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ child_link.title | escape }}</span></a>
+                                          {% if child_link.url != blank and child_link.url != '#' %}<a class="header__mega-link{% if child_link.current %} header__mega-link--active{% endif %}" href="{{ child_link.url | escape }}"{% if child_link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ child_link.title | escape }}</span></a>{% else %}<span class="header__mega-link"><span class="{{ navigation_label_class }}">{{ child_link.title | escape }}</span></span>{% endif %}
                                         {% endif %}
                                       </li>
                                     {% endfor %}
@@ -170,7 +201,8 @@
                                 </div>
                               {% endif %}
                             {% endfor %}
-                          </div>
+                            </div>
+                          {% endif %}
                         </div>
                       {% endif %}
                       {% if promotion_count > 0 %}
@@ -179,7 +211,7 @@
                             <article class="header__mega-promo">
                               {% if mega_menu_block.settings.promotion_1_image != blank %}
                                 {% assign promotion_1_image_alt = mega_menu_block.settings.promotion_1_image.alt | default: mega_menu_block.settings.promotion_1_heading %}
-                                {% render 'responsive-image', image: mega_menu_block.settings.promotion_1_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 960px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_1_image_alt %}
+                                {% render 'responsive-image', image: mega_menu_block.settings.promotion_1_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 990px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_1_image_alt %}
                               {% else %}
                                 {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
                               {% endif %}
@@ -194,7 +226,7 @@
                             <article class="header__mega-promo">
                               {% if mega_menu_block.settings.promotion_2_image != blank %}
                                 {% assign promotion_2_image_alt = mega_menu_block.settings.promotion_2_image.alt | default: mega_menu_block.settings.promotion_2_heading %}
-                                {% render 'responsive-image', image: mega_menu_block.settings.promotion_2_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 960px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_2_image_alt %}
+                                {% render 'responsive-image', image: mega_menu_block.settings.promotion_2_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 990px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: promotion_2_image_alt %}
                               {% else %}
                                 {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
                               {% endif %}
@@ -220,15 +252,20 @@
                       </button>
                     </li>
                   {% endif %}
+                  {% unless is_mobile_navigation %}
+                    {% if link_has_destination %}
+                      <li class="header__submenu-parent-link"><a class="header__submenu-link" href="{{ link.url | escape }}">{{ 'header.view_all' | t: item: link.title }}</a></li>
+                    {% endif %}
+                  {% endunless %}
                   {% for child_link in link.links %}
                     <li{% if child_link.links != blank %} class="header__submenu-item--has-children"{% endif %}>
                       {% if child_link.links != blank %}
                         {% assign nested_submenu_id = submenu_id | append: '-' | append: forloop.index %}
-                        {% if is_mobile_navigation and child_link.url != blank %}
+                        {% if is_mobile_navigation and child_link.url != blank and child_link.url != '#' %}
                           <a class="header__mobile-menu-direct-link{% if child_link.current or child_link.child_active %} header__menu-link--active{% endif %}" href="{{ child_link.url | escape }}"{% if child_link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ child_link.title | escape }}</span></a>
                         {% endif %}
                         <details class="header__submenu-nested-disclosure">
-                          <summary class="header__submenu-link header__mega-category-title{% if child_link.current or child_link.child_active %} header__submenu-link--active{% endif %}" aria-expanded="false" aria-controls="{{ nested_submenu_id }}">
+                          <summary class="header__submenu-link header__mega-category-title{% if child_link.current or child_link.child_active %} header__submenu-link--active{% endif %}" aria-controls="{{ nested_submenu_id }}">
                             <span class="header__submenu-link-text">{{ child_link.title | escape }}</span>
                             <span class="header__submenu-caret header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
                           </summary>
@@ -240,16 +277,16 @@
                                   <span class="{{ navigation_label_class }}">{{ child_link.title | escape }}</span>
                                 </button>
                               </li>
-                            {% elsif child_link.url != blank %}
+                            {% elsif child_link.url != blank and child_link.url != '#' %}
                               <li class="header__submenu-parent-link">
                                 <a class="header__submenu-link" href="{{ child_link.url | escape }}">{{ 'header.view_all' | t: item: child_link.title }}</a>
                               </li>
                             {% endif %}
-                            {% for grandchild_link in child_link.links %}<li><a class="header__submenu-link{% if grandchild_link.current %} header__submenu-link--active{% endif %}" href="{{ grandchild_link.url | escape }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></a></li>{% endfor %}
+                            {% for grandchild_link in child_link.links %}<li>{% if grandchild_link.url != blank and grandchild_link.url != '#' %}<a class="header__submenu-link{% if grandchild_link.current %} header__submenu-link--active{% endif %}" href="{{ grandchild_link.url | escape }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></a>{% else %}<span class="header__submenu-link"><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></span>{% endif %}</li>{% endfor %}
                           </ul>
                         </details>
                       {% else %}
-                        <a class="header__submenu-link{% if child_link.current %} header__submenu-link--active{% endif %}" href="{{ child_link.url | escape }}"{% if child_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ child_link.title | escape }}</span></a>
+                        {% if child_link.url != blank and child_link.url != '#' %}<a class="header__submenu-link{% if child_link.current %} header__submenu-link--active{% endif %}" href="{{ child_link.url | escape }}"{% if child_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ child_link.title | escape }}</span></a>{% else %}<span class="header__submenu-link"><span class="header__submenu-link-text">{{ child_link.title | escape }}</span></span>{% endif %}
                       {% endif %}
                     </li>
                   {% endfor %}
@@ -257,44 +294,185 @@
               {% endif %}
             </details>
           {% else %}
-            <a
-              class="header__menu-link{% if link.current %} header__menu-link--active{% endif %}"
-              href="{{ link.url | escape }}"
-              {% if link.current %}aria-current="page"{% endif %}
-            >
-              <span class="{{ navigation_label_class }}">{{ link.title | escape }}</span>
-            </a>
-          {% endif %}
-
-          {% if badge_block != nil and badge_block.settings.text != blank %}
-            <span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>
+            {% if link_has_destination %}
+              <a
+                class="header__menu-link{% if link.current %} header__menu-link--active{% endif %}"
+                href="{{ link.url | escape }}"
+                {% if link.current %}aria-current="page"{% endif %}
+              >
+                <span class="{{ navigation_label_class }}" title="{{ link.title | escape }}">{{ link.title | escape }}</span>
+                {% if badge_block != nil and badge_block.settings.text != blank %}<span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>{% endif %}
+              </a>
+            {% else %}
+              <span class="header__menu-link header__menu-link--disabled" aria-disabled="true">
+                <span class="{{ navigation_label_class }}" title="{{ link.title | escape }}">{{ link.title | escape }}</span>
+                {% if badge_block != nil and badge_block.settings.text != blank %}<span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>{% endif %}
+              </span>
+            {% endif %}
           {% endif %}
         </li>
+        {% endif %}
       {% endfor %}
+      {% if use_desktop_more_menu %}
+        {% assign more_submenu_id = 'HeaderSubmenu-' | append: section.id | append: '-more-desktop' %}
+        <li class="header__menu-item header__menu-item--has-children header__menu-item--mega header__menu-item--more">
+          <details class="header__submenu-disclosure header__submenu-disclosure--mega{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
+            <summary class="header__menu-link{% if desktop_more_menu_active %} header__menu-link--active{% endif %}" data-open-label="{{ 'header.open_more' | t | escape }}" data-close-label="{{ 'header.close_more' | t | escape }}" aria-controls="{{ more_submenu_id }}">
+              <span class="header__menu-link-title">{{ 'header.more' | t }}</span>
+              <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+            </summary>
+            <div id="{{ more_submenu_id }}" class="header__mega-panel header__overflow-mega-panel">
+              <div class="header__mega-surface">
+                <div class="header__mega-inner header__mega-inner--links-only header__overflow-mega-inner">
+                  {% for overflow_link in menu_links offset: desktop_visible_items %}
+                    {% liquid
+                      assign overflow_badge_block = nil
+                      assign overflow_mega_menu_block = nil
+                      assign overflow_link_title = overflow_link.title | strip | downcase
+                      for block in section.blocks
+                        assign overflow_block_menu_item = block.settings.menu_item | strip | downcase
+                        if block.type == 'menu_badge' and overflow_block_menu_item != blank and overflow_block_menu_item == overflow_link_title
+                          assign overflow_badge_block = block
+                        endif
+                        if block.type == 'mega_menu' and block.settings.menu_item != blank
+                          assign overflow_mega_menu_items = block.settings.menu_item | split: ';'
+                          for overflow_mega_menu_item in overflow_mega_menu_items
+                            assign overflow_mega_menu_item_name = overflow_mega_menu_item | strip | downcase
+                            if overflow_mega_menu_item_name == overflow_link_title
+                              assign overflow_mega_menu_block = block
+                              break
+                            endif
+                          endfor
+                        endif
+                      endfor
+
+                      assign overflow_mega_columns = 1
+                      if overflow_mega_menu_block != nil
+                        assign overflow_mega_columns = overflow_mega_menu_block.settings.columns | plus: 0
+                        if overflow_mega_columns < 1
+                          assign overflow_mega_columns = 1
+                        endif
+                      endif
+                      assign overflow_links_per_column = overflow_link.links.size | plus: overflow_mega_columns | minus: 1 | divided_by: overflow_mega_columns
+
+                      assign overflow_promotion_count = 0
+                      assign overflow_promotion_1_visible = false
+                      assign overflow_promotion_2_visible = false
+                      if overflow_mega_menu_block != nil
+                        if overflow_mega_menu_block.settings.promotion_1_image != blank or overflow_mega_menu_block.settings.promotion_1_heading != blank or overflow_mega_menu_block.settings.promotion_1_text != blank or overflow_mega_menu_block.settings.promotion_1_link_label != blank
+                          assign overflow_promotion_1_visible = true
+                          assign overflow_promotion_count = overflow_promotion_count | plus: 1
+                        endif
+                        if overflow_mega_menu_block.settings.promotion_2_image != blank or overflow_mega_menu_block.settings.promotion_2_heading != blank or overflow_mega_menu_block.settings.promotion_2_text != blank or overflow_mega_menu_block.settings.promotion_2_link_label != blank
+                          assign overflow_promotion_2_visible = true
+                          assign overflow_promotion_count = overflow_promotion_count | plus: 1
+                        endif
+                      endif
+                      assign overflow_promotion_1_tag = overflow_mega_menu_block.settings.promotion_1_heading_tag | default: 'h3'
+                      assign overflow_promotion_2_tag = overflow_mega_menu_block.settings.promotion_2_heading_tag | default: 'h3'
+                      if overflow_promotion_1_tag == 'h1'
+                        assign overflow_promotion_1_tag = 'h2'
+                      endif
+                      if overflow_promotion_2_tag == 'h1'
+                        assign overflow_promotion_2_tag = 'h2'
+                      endif
+                    %}
+                    <div class="header__overflow-group header__mega-panel--text-{{ overflow_mega_menu_block.settings.text_size | default: 'medium' }}{% if overflow_promotion_count == 0 %} header__overflow-group--links-only{% endif %}"{% if overflow_mega_menu_block != nil %} {{ overflow_mega_menu_block.shopify_attributes }}{% endif %}>
+                      <div class="header__mega-navigation header__overflow-navigation">
+                        <div class="header__mega-list">
+                          <div class="header__overflow-parent-row">
+                            {% if overflow_link.url != blank and overflow_link.url != '#' %}
+                              <a class="header__mega-category-link{% if overflow_link.current or overflow_link.child_active %} header__mega-link--active{% endif %}" href="{{ overflow_link.url | escape }}"{% if overflow_link.current %} aria-current="page"{% endif %}>{{ overflow_link.title | escape }}</a>
+                            {% else %}
+                              <span class="header__mega-category-title">{{ overflow_link.title | escape }}</span>
+                            {% endif %}
+                            {% if overflow_badge_block != nil and overflow_badge_block.settings.text != blank %}<span class="header__menu-badge" {{ overflow_badge_block.shopify_attributes }}>{{ overflow_badge_block.settings.text | escape }}</span>{% endif %}
+                          </div>
+                          {% if overflow_mega_menu_block.settings.column_heading != blank %}<p class="header__overflow-column-heading">{{ overflow_mega_menu_block.settings.column_heading | escape }}</p>{% endif %}
+                          {% if overflow_link.links != blank %}
+                            <div class="header__mega-lists" style="--header-mega-columns: {{ overflow_mega_columns }};">
+                              {% for overflow_column in (1..overflow_mega_columns) %}
+                                {% liquid
+                                  assign overflow_column_index = overflow_column | minus: 1
+                                  assign overflow_column_offset = overflow_column_index | times: overflow_links_per_column
+                                  assign overflow_column_links = overflow_link.links | slice: overflow_column_offset, overflow_links_per_column
+                                %}
+                                {% if overflow_column_links.size > 0 %}
+                                  <div class="header__mega-list">
+                                    <ul role="list">
+                                      {% for overflow_child in overflow_column_links %}
+                                        <li>
+                                          {% if overflow_child.url != blank and overflow_child.url != '#' %}<a class="header__mega-link{% if overflow_child.current or overflow_child.child_active %} header__mega-link--active{% endif %}" href="{{ overflow_child.url | escape }}"{% if overflow_child.current %} aria-current="page"{% endif %}>{{ overflow_child.title | escape }}</a>{% else %}<span class="header__mega-category-title">{{ overflow_child.title | escape }}</span>{% endif %}
+                                          {% if overflow_child.links != blank %}
+                                            <ul class="header__mega-nested" role="list">
+                                              {% for overflow_grandchild in overflow_child.links %}
+                                                <li>{% if overflow_grandchild.url != blank and overflow_grandchild.url != '#' %}<a class="header__mega-link header__mega-link--nested{% if overflow_grandchild.current %} header__mega-link--active{% endif %}" href="{{ overflow_grandchild.url | escape }}"{% if overflow_grandchild.current %} aria-current="page"{% endif %}>{{ overflow_grandchild.title | escape }}</a>{% else %}<span class="header__mega-link header__mega-link--nested">{{ overflow_grandchild.title | escape }}</span>{% endif %}</li>
+                                              {% endfor %}
+                                            </ul>
+                                          {% endif %}
+                                        </li>
+                                      {% endfor %}
+                                    </ul>
+                                  </div>
+                                {% endif %}
+                              {% endfor %}
+                            </div>
+                          {% endif %}
+                        </div>
+                      </div>
+                      {% if overflow_promotion_count > 0 %}
+                        <div class="header__mega-promotions header__overflow-promotions">
+                          {% if overflow_promotion_1_visible %}
+                            <article class="header__mega-promo">
+                              {% if overflow_mega_menu_block.settings.promotion_1_image != blank %}
+                                {% assign overflow_promotion_1_alt = overflow_mega_menu_block.settings.promotion_1_image.alt | default: overflow_mega_menu_block.settings.promotion_1_heading %}
+                                {% render 'responsive-image', image: overflow_mega_menu_block.settings.promotion_1_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 990px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: overflow_promotion_1_alt %}
+                              {% else %}
+                                {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
+                              {% endif %}
+                              <div class="header__mega-promo-content">
+                                {% if overflow_mega_menu_block.settings.promotion_1_heading != blank %}<{{ overflow_promotion_1_tag }} class="header__mega-promo-title {% render 'typography-class', preset: overflow_mega_menu_block.settings.promotion_1_heading_size, fallback: 'medium' %}">{{ overflow_mega_menu_block.settings.promotion_1_heading | escape }}</{{ overflow_promotion_1_tag }}>{% endif %}
+                                {% if overflow_mega_menu_block.settings.promotion_1_text != blank %}<div class="header__mega-promo-text rte spinel-text--{{ overflow_mega_menu_block.settings.promotion_1_text_size | default: 'medium' }} content-text content-text--{{ overflow_mega_menu_block.settings.promotion_1_text_alignment | default: 'left' }}">{{ overflow_mega_menu_block.settings.promotion_1_text }}</div>{% endif %}
+                                {% if overflow_mega_menu_block.settings.promotion_1_link_label != blank and overflow_mega_menu_block.settings.promotion_1_link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ overflow_mega_menu_block.settings.promotion_1_link | escape }}">{{ overflow_mega_menu_block.settings.promotion_1_link_label | escape }}</a>{% endif %}
+                              </div>
+                            </article>
+                          {% endif %}
+                          {% if overflow_promotion_2_visible %}
+                            <article class="header__mega-promo">
+                              {% if overflow_mega_menu_block.settings.promotion_2_image != blank %}
+                                {% assign overflow_promotion_2_alt = overflow_mega_menu_block.settings.promotion_2_image.alt | default: overflow_mega_menu_block.settings.promotion_2_heading %}
+                                {% render 'responsive-image', image: overflow_mega_menu_block.settings.promotion_2_image, max_width: 700, widths: '320, 480, 640, 700', sizes: '(min-width: 990px) min(21vw, 320px), 70vw', class: 'header__mega-promo-image', loading: 'lazy', alt: overflow_promotion_2_alt %}
+                              {% else %}
+                                {% render 'media-placeholder', class_name: 'header__mega-promo-image', asset_name: 'placeholder-image-default-4.svg' %}
+                              {% endif %}
+                              <div class="header__mega-promo-content">
+                                {% if overflow_mega_menu_block.settings.promotion_2_heading != blank %}<{{ overflow_promotion_2_tag }} class="header__mega-promo-title {% render 'typography-class', preset: overflow_mega_menu_block.settings.promotion_2_heading_size, fallback: 'medium' %}">{{ overflow_mega_menu_block.settings.promotion_2_heading | escape }}</{{ overflow_promotion_2_tag }}>{% endif %}
+                                {% if overflow_mega_menu_block.settings.promotion_2_text != blank %}<div class="header__mega-promo-text rte spinel-text--{{ overflow_mega_menu_block.settings.promotion_2_text_size | default: 'medium' }} content-text content-text--{{ overflow_mega_menu_block.settings.promotion_2_text_alignment | default: 'left' }}">{{ overflow_mega_menu_block.settings.promotion_2_text }}</div>{% endif %}
+                                {% if overflow_mega_menu_block.settings.promotion_2_link_label != blank and overflow_mega_menu_block.settings.promotion_2_link != blank %}<a class="header__mega-promo-link button button--tertiary" href="{{ overflow_mega_menu_block.settings.promotion_2_link | escape }}">{{ overflow_mega_menu_block.settings.promotion_2_link_label | escape }}</a>{% endif %}
+                              </div>
+                            </article>
+                          {% endif %}
+                        </div>
+                      {% endif %}
+                    </div>
+                  {% endfor %}
+                </div>
+              </div>
+            </div>
+          </details>
+        </li>
+      {% endif %}
     </ul>
   </div>
 
   {% if is_mobile_navigation %}
     <div class="header__mobile-drawer-bottom">
-      {% if section.settings.show_account and shop.customer_accounts_enabled %}
-        {% if navigation_account_action == 'panel' and use_shopify_account_component %}
-          <shopify-account class="header__mobile-account"{% if section.settings.customer_account_menu != blank and section.settings.customer_account_menu != 'customer-account-main-menu' %} menu="{{ section.settings.customer_account_menu }}"{% endif %}>
-            <span slot="signed-out-avatar" class="header__mobile-account-avatar">
-              <span aria-hidden="true">{% render 'icon', name: 'account' %}</span>
-              <span>{{ 'header.account' | t }}</span>
-            </span>
-          </shopify-account>
-        {% else %}
-          <a class="header__mobile-login" href="{{ account_href | escape }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>{{ 'header.login' | t }}</a>
-        {% endif %}
-      {% endif %}
-
       <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
         {% if section.settings.show_localization %}
           <div class="header__mobile-localization">
             {% if can_change_country %}
               <details class="header__localization-selector">
-                <summary aria-label="{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}" aria-expanded="false" aria-controls="{{ mobile_country_form_id }}-Sheet">
+                <summary aria-label="{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}" aria-controls="{{ mobile_country_form_id }}-Sheet">
                   <span class="header__mobile-action-icon" aria-hidden="true">
                     {% if section.settings.show_country_flag %}
                       {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
@@ -311,7 +489,7 @@
                 </summary>
                 <div id="{{ mobile_country_form_id }}-Sheet" class="header__localization-popover" data-header-localization-popover>
                   <button class="header__localization-backdrop" type="button" tabindex="-1" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
-                  <div class="header__localization-sheet" role="dialog" aria-modal="true" aria-labelledby="{{ mobile_country_sheet_title_id }}">
+                  <div class="header__localization-sheet" aria-labelledby="{{ mobile_country_sheet_title_id }}">
                     <div class="header__localization-sheet-header">
                       <span class="header__localization-sheet-handle" aria-hidden="true"></span>
                       <h2 id="{{ mobile_country_sheet_title_id }}">{{ 'header.country_region' | t }}</h2>
@@ -336,6 +514,7 @@
                             </button>
                           {% endfor %}
                         </div>
+                        <p class="header__localization-empty" data-header-localization-empty role="status" aria-live="polite" hidden>{{ 'header.no_countries_found' | t }}</p>
                       </div>
                       <noscript>
                         <select name="country_code">
@@ -371,7 +550,7 @@
         {% if show_language and localization.available_languages.size > 1 %}
           <div class="header__mobile-language">
             <details class="header__localization-selector header__language-selector">
-              <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}" aria-expanded="false" aria-controls="{{ mobile_language_form_id }}-Sheet">
+              <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}" aria-controls="{{ mobile_language_form_id }}-Sheet">
                 <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
                 <span class="header__mobile-localization-copy">
                   <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
@@ -382,7 +561,7 @@
               </summary>
               <div id="{{ mobile_language_form_id }}-Sheet" class="header__localization-popover" data-header-localization-popover>
                 <button class="header__localization-backdrop" type="button" tabindex="-1" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
-                <div class="header__localization-sheet" role="dialog" aria-modal="true" aria-labelledby="{{ mobile_language_sheet_title_id }}">
+                <div class="header__localization-sheet" aria-labelledby="{{ mobile_language_sheet_title_id }}">
                   <div class="header__localization-sheet-header">
                     <span class="header__localization-sheet-handle" aria-hidden="true"></span>
                     <h2 id="{{ mobile_language_sheet_title_id }}">{{ 'header.language' | t }}</h2>
@@ -401,6 +580,14 @@
                         {% endfor %}
                       </div>
                     </div>
+                    <noscript>
+                      <select name="language_code">
+                        {% for language in localization.available_languages %}
+                          <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | default: language.name | escape }}</option>
+                        {% endfor %}
+                      </select>
+                      <button type="submit">{{ 'header.apply' | t }}</button>
+                    </noscript>
                   {% endform %}
                 </div>
               </div>

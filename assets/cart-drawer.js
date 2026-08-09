@@ -451,17 +451,24 @@
 
     updateHeaderCount(cart) {
       document.querySelectorAll('.header__cart').forEach((cartLink) => {
+        const previousCount = Number(cartLink.dataset.cartCurrentCount);
         const count = cartLink.querySelector('.header__cart-count');
         if (cart.item_count > 0) {
           const nextCount = count || document.createElement('span');
           nextCount.className = 'header__cart-count';
-          const countLabel = cartLink.dataset.cartCountLabel?.replace('__count__', String(cart.item_count));
-          if (countLabel) nextCount.setAttribute('aria-label', countLabel);
-          nextCount.textContent = cart.item_count;
+          const countTemplate = cart.item_count === 1 ? cartLink.dataset.cartCountOneLabel : cartLink.dataset.cartCountLabel;
+          const countLabel = countTemplate?.replace('__count__', String(cart.item_count));
+          if (countLabel) cartLink.setAttribute('aria-label', countLabel);
+          nextCount.setAttribute('aria-hidden', 'true');
+          nextCount.textContent = cart.item_count > 99 ? '99+' : cart.item_count;
           if (!count) cartLink.append(nextCount);
         } else {
           count?.remove();
+          cartLink.setAttribute('aria-label', cartLink.dataset.cartEmptyLabel || 'Cart');
         }
+        const status = cartLink.closest('[data-header]')?.querySelector('[data-cart-count-status]');
+        if (status && previousCount !== cart.item_count) status.textContent = cartLink.getAttribute('aria-label') || '';
+        cartLink.dataset.cartCurrentCount = String(cart.item_count);
       });
     }
 

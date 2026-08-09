@@ -5,28 +5,15 @@ import { tmpdir } from 'node:os';
 import { dirname, extname, join, relative, resolve } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { spawnSync } from 'node:child_process';
+import {
+  collectForbiddenThemeResources,
+  extractLiquidSchemas,
+  sanitizeThemeValue,
+} from './package-theme-store-policy.mjs';
 
 const scriptDirectory = dirname(fileURLToPath(import.meta.url));
 const themeRoot = resolve(scriptDirectory, '..');
 const themeDirectories = ['assets', 'blocks', 'config', 'layout', 'locales', 'sections', 'snippets', 'templates'];
-const singularResourceKeys = new Set([
-  'article',
-  'blog',
-  'collection',
-  'fallback_collection',
-  'page',
-  'product',
-  'result_collection',
-  'video',
-]);
-const listResourceKeys = new Set([
-  'collections',
-  'fallback_products',
-  'products',
-  'result_products',
-]);
-const allowedMenuHandles = new Set(['main-menu']);
-const demoResourceLinkPattern = /^shopify:\/\/(articles|blogs|collections|pages|products)(?:\/.*)?$/;
 const args = process.argv.slice(2);
 
 function readArgument(name, fallback) {
@@ -73,47 +60,6 @@ function recordReplacement(file, type) {
   report.files[file][type] = (report.files[file][type] || 0) + 1;
 }
 
-function sanitizeValue(value, key, file, pathParts = []) {
-  if (typeof value === 'string') {
-    if (value.startsWith('shopify://shop_images/')) {
-      recordReplacement(file, 'shopImages');
-      return '';
-    }
-    if (singularResourceKeys.has(key) && value !== '') {
-      recordReplacement(file, 'singularResources');
-      return '';
-    }
-    if (key === 'menu' && value !== '' && !allowedMenuHandles.has(value)) {
-      recordReplacement(file, 'demoMenus');
-      return '';
-    }
-    if (key === 'link' && demoResourceLinkPattern.test(value)) {
-      recordReplacement(file, 'resourceLinks');
-      return '';
-    }
-    return value;
-  }
-
-  if (Array.isArray(value)) {
-    if (listResourceKeys.has(key) && value.length > 0) {
-      recordReplacement(file, 'resourceLists');
-      return [];
-    }
-    return value.map((item, index) => sanitizeValue(item, String(index), file, [...pathParts, String(index)]));
-  }
-
-  if (value && typeof value === 'object') {
-    return Object.fromEntries(
-      Object.entries(value).map(([childKey, childValue]) => [
-        childKey,
-        sanitizeValue(childValue, childKey, file, [...pathParts, childKey]),
-      ]),
-    );
-  }
-
-  return value;
-}
-
 async function listFiles(directory) {
   const entries = await readdir(directory, { withFileTypes: true });
   const files = [];
@@ -129,13 +75,42 @@ async function sanitizeJsonFile(filePath, stagingRoot) {
   const file = relative(stagingRoot, filePath);
   const raw = await readFile(filePath, 'utf8');
   const json = JSON.parse(raw.replace(/^\s*\/\*[\s\S]*?\*\//, ''));
-  const sanitized = sanitizeValue(json, '', file);
+  const sanitized = sanitizeThemeValue(json, '', (type) => recordReplacement(file, type));
   await writeFile(filePath, JSON.stringify(sanitized, null, 2) + '\n');
 }
 
 async function sanitizeJsonResources(stagingRoot) {
   for (const file of await resourceJsonFiles(stagingRoot)) {
     await sanitizeJsonFile(file, stagingRoot);
+  }
+}
+
+async function liquidSchemaFiles(stagingRoot) {
+  const directories = ['sections', 'blocks'];
+  const files = [];
+  for (const directory of directories) {
+    files.push(...(await listFiles(join(stagingRoot, directory))).filter((file) => extname(file) === '.liquid'));
+  }
+  return files;
+}
+
+async function sanitizeLiquidSchemaFile(filePath, stagingRoot) {
+  const file = relative(stagingRoot, filePath);
+  const source = await readFile(filePath, 'utf8');
+  const sanitized = source.replace(
+    /({%\s*schema\s*%})([\s\S]*?)({%\s*endschema\s*%})/g,
+    (match, openingTag, schemaSource, closingTag) => {
+      const schema = JSON.parse(schemaSource);
+      const sanitizedSchema = sanitizeThemeValue(schema, '', (type) => recordReplacement(file, type));
+      return `${openingTag}\n${JSON.stringify(sanitizedSchema, null, 2)}\n${closingTag}`;
+    },
+  );
+  if (sanitized !== source) await writeFile(filePath, sanitized);
+}
+
+async function sanitizeLiquidSchemas(stagingRoot) {
+  for (const file of await liquidSchemaFiles(stagingRoot)) {
+    await sanitizeLiquidSchemaFile(file, stagingRoot);
   }
 }
 
@@ -169,33 +144,20 @@ async function sanitizeDemoFavicon(stagingRoot) {
   }
 }
 
-function collectForbiddenResources(value, key, location, findings) {
-  if (typeof value === 'string') {
-    if (value.startsWith('shopify://shop_images/')) findings.push(`${location}: ${value}`);
-    if (singularResourceKeys.has(key) && value !== '') findings.push(`${location}: ${key}=${value}`);
-    if (key === 'menu' && value !== '' && !allowedMenuHandles.has(value)) findings.push(`${location}: menu=${value}`);
-    if (key === 'link' && demoResourceLinkPattern.test(value)) findings.push(`${location}: link=${value}`);
-    return;
-  }
-  if (Array.isArray(value)) {
-    if (listResourceKeys.has(key) && value.length > 0) findings.push(`${location}: ${key} has ${value.length} entries`);
-    value.forEach((item, index) => collectForbiddenResources(item, String(index), `${location}[${index}]`, findings));
-    return;
-  }
-  if (value && typeof value === 'object') {
-    Object.entries(value).forEach(([childKey, childValue]) => {
-      collectForbiddenResources(childValue, childKey, `${location}.${childKey}`, findings);
-    });
-  }
-}
-
 async function verifyStaging(stagingRoot) {
   const findings = [];
   const allFiles = await listFiles(stagingRoot);
   for (const filePath of await resourceJsonFiles(stagingRoot)) {
     const file = relative(stagingRoot, filePath);
     const json = JSON.parse((await readFile(filePath, 'utf8')).replace(/^\s*\/\*[\s\S]*?\*\//, ''));
-    collectForbiddenResources(json, '', file, findings);
+    collectForbiddenThemeResources(json, '', file, findings);
+  }
+  for (const filePath of await liquidSchemaFiles(stagingRoot)) {
+    const file = relative(stagingRoot, filePath);
+    const source = await readFile(filePath, 'utf8');
+    extractLiquidSchemas(source, file).forEach((schema, index) => {
+      collectForbiddenThemeResources(schema, '', `${file}#schema[${index + 1}]`, findings);
+    });
   }
   for (const filePath of allFiles) {
     const file = relative(stagingRoot, filePath);
@@ -247,6 +209,7 @@ try {
     await cp(join(themeRoot, directory), join(stagingRoot, directory), { recursive: true });
   }
   await sanitizeJsonResources(stagingRoot);
+  await sanitizeLiquidSchemas(stagingRoot);
   await sanitizeDemoFavicon(stagingRoot);
   await verifyStaging(stagingRoot);
   await createPackage(stagingRoot);
