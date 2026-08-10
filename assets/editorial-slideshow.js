@@ -9,6 +9,9 @@ class EditorialSlideshow extends HTMLElement {
     this.slider = this.querySelector('[data-editorial-slideshow-slider]');
     this.navigator = this.querySelector('[data-editorial-navigator]');
     this.tabsContainer = this.querySelector('[data-editorial-slide-tabs]');
+    this.mobileCurrent = this.querySelector('[data-editorial-mobile-current]');
+    this.mobileTotal = this.querySelector('[data-editorial-mobile-total]');
+    this.mobileLabel = this.querySelector('[data-editorial-mobile-label]');
     this.previousButton = this.querySelector('[data-editorial-previous]');
     this.nextButton = this.querySelector('[data-editorial-next]');
     this.autoplayToggle = this.querySelector('[data-editorial-autoplay-toggle]');
@@ -296,6 +299,7 @@ class EditorialSlideshow extends HTMLElement {
       detail.textContent = slide.dataset.editorialNavDetail || 'EDITORIAL';
       number.className = 'editorial-slideshow__tab-number';
       number.textContent = String(index + 1).padStart(2, '0');
+      tab.setAttribute('aria-label', `${number.textContent} ${label.textContent}`);
       progress.className = 'editorial-slideshow__tab-progress';
       progress.setAttribute('aria-hidden', 'true');
       progressBar.setAttribute('aria-hidden', 'true');
@@ -306,6 +310,9 @@ class EditorialSlideshow extends HTMLElement {
 
     this.tabs = [...this.tabsContainer.querySelectorAll('[data-editorial-slide-tab]')];
     this.progressBars = [...this.tabsContainer.querySelectorAll('.editorial-slideshow__tab-progress span')];
+    if (this.mobileTotal) this.mobileTotal.textContent = String(this.tabs.length).padStart(2, '0');
+    if (this.mobileCurrent) this.mobileCurrent.textContent = '01';
+    if (this.mobileLabel) this.mobileLabel.textContent = this.getSlides()[0]?.dataset.editorialNavLabel || 'Slide';
     this.syncSlideRatios();
   }
 
@@ -473,6 +480,10 @@ class EditorialSlideshow extends HTMLElement {
       tab.setAttribute('aria-selected', String(isActive));
       tab.setAttribute('tabindex', isActive ? '0' : '-1');
     });
+    if (this.mobileCurrent) this.mobileCurrent.textContent = String(activeIndex + 1).padStart(2, '0');
+    if (this.mobileLabel) {
+      this.mobileLabel.textContent = this.getSlides()[activeIndex]?.dataset.editorialNavLabel || 'Slide';
+    }
 
     if (restartProgress) {
       this.manualPauseProgress = null;
