@@ -1,15 +1,38 @@
+const giftSpinelInstances = new Set();
+const giftSpinelLayoutOwners = new Set();
+
+const syncGiftSpinelLayoutState = () => {
+  document.documentElement.classList.toggle('gift-spinel-layout-changing', giftSpinelLayoutOwners.size > 0);
+};
+
+const handleGiftSpinelDocumentClick = (event) => {
+  const link = event.target.closest?.('[data-gift-spinel-link]');
+  if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+  const destination = new URL(link.href, window.location.href);
+  if (destination.origin !== window.location.origin || destination.pathname !== window.location.pathname) return;
+
+  const target = destination.hash === '#gift-spinel'
+    ? document.querySelector('gift-spinel')
+    : document.getElementById(destination.hash.slice(1));
+  if (!(target instanceof GiftSpinel) || !destination.hash.startsWith('#gift-spinel')) return;
+
+  event.preventDefault();
+  target.scrollToAnchor(destination.hash);
+};
+
 class GiftSpinel extends HTMLElement {
   connectedCallback() {
     if (!this.isBound) {
       this.isBound = true;
       this.onClick = this.handleClick.bind(this);
-      this.onGiftAnchorClick = this.handleGiftAnchorClick.bind(this);
       this.onBlockSelect = this.handleBlockSelect.bind(this);
       this.onSectionLoad = this.handleSectionLoad.bind(this);
       this.addEventListener('click', this.onClick);
-      document.addEventListener('click', this.onGiftAnchorClick);
       document.addEventListener('shopify:block:select', this.onBlockSelect);
       document.addEventListener('shopify:section:load', this.onSectionLoad);
+      giftSpinelInstances.add(this);
+      if (giftSpinelInstances.size === 1) document.addEventListener('click', handleGiftSpinelDocumentClick);
       this.editorObserver = new MutationObserver((records) => {
         if (records.some((record) => record.target === this)) this.scheduleInitialize();
       });
@@ -17,21 +40,27 @@ class GiftSpinel extends HTMLElement {
     }
 
     this.initialize();
+    if (window.location.hash === `#${this.id}` || (window.location.hash === '#gift-spinel' && document.querySelector('gift-spinel') === this)) {
+      this.anchorScrollFrame = window.requestAnimationFrame(() => this.scrollToAnchor(window.location.hash, false));
+    }
   }
 
   disconnectedCallback() {
     this.removeEventListener('click', this.onClick);
-    document.removeEventListener('click', this.onGiftAnchorClick);
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     document.removeEventListener('shopify:section:load', this.onSectionLoad);
+    giftSpinelInstances.delete(this);
+    if (giftSpinelInstances.size === 0) document.removeEventListener('click', handleGiftSpinelDocumentClick);
     this.editorObserver?.disconnect();
     this.cancelPanelTransition();
     window.clearTimeout(this.transitionTimer);
     window.clearTimeout(this.anchorTimer);
     window.cancelAnimationFrame(this.initializeFrame);
+    window.cancelAnimationFrame(this.anchorScrollFrame);
     window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
     window.cancelAnimationFrame(this.editorScrollFrame);
-    document.documentElement.classList.remove('gift-spinel-layout-changing');
+    giftSpinelLayoutOwners.delete(this);
+    syncGiftSpinelLayoutState();
     this.isBound = false;
   }
 
@@ -40,7 +69,8 @@ class GiftSpinel extends HTMLElement {
     this.panelAnimations = [];
     this.isPanelTransitioning = false;
     window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
-    document.documentElement.classList.remove('gift-spinel-layout-changing');
+    giftSpinelLayoutOwners.delete(this);
+    syncGiftSpinelLayoutState();
     if (!this.finder) return;
     this.finder.style.removeProperty('height');
     this.finder.style.removeProperty('overflow');
@@ -49,14 +79,16 @@ class GiftSpinel extends HTMLElement {
 
   disableScrollAnchoring() {
     window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
-    document.documentElement.classList.add('gift-spinel-layout-changing');
+    giftSpinelLayoutOwners.add(this);
+    syncGiftSpinelLayoutState();
   }
 
   releaseScrollAnchoring() {
     window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
     this.scrollAnchorReleaseFrame = window.requestAnimationFrame(() => {
       this.scrollAnchorReleaseFrame = window.requestAnimationFrame(() => {
-        document.documentElement.classList.remove('gift-spinel-layout-changing');
+        giftSpinelLayoutOwners.delete(this);
+        syncGiftSpinelLayoutState();
       });
     });
   }
@@ -95,19 +127,7 @@ class GiftSpinel extends HTMLElement {
     if (event.target === section || event.target?.contains(this)) this.scheduleInitialize();
   }
 
-  handleGiftAnchorClick(event) {
-    const link = event.target.closest?.('[data-gift-spinel-link]');
-    if (!link || event.defaultPrevented || event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
-
-    const destination = new URL(link.href, window.location.href);
-    if (
-      destination.origin !== window.location.origin
-      || destination.pathname !== window.location.pathname
-      || destination.hash !== '#gift-spinel'
-    ) return;
-
-    event.preventDefault();
-
+  scrollToAnchor(hash = `#${this.id}`, updateHistory = true) {
     document.querySelectorAll('[data-header] details[open]').forEach((details) => {
       details.open = false;
     });
@@ -120,7 +140,7 @@ class GiftSpinel extends HTMLElement {
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const duration = Math.min(1050, Math.max(480, Math.round(distance * 0.45)));
 
-    window.history.pushState(null, '', '#gift-spinel');
+    if (updateHistory) window.history.pushState(null, '', hash);
     this.classList.remove('is-anchor-target');
     void this.offsetWidth;
     this.classList.add('is-anchor-target');

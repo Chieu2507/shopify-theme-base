@@ -38,7 +38,7 @@
               %}
               {% if block.settings.link != blank %}
                 <a
-                  href="{{ block.settings.link }}"
+                  href="{{ block.settings.link | escape }}"
                   class="image-with-text__media image-with-text__media--{{ media_role }} image-with-text__media--{{ block.settings.desktop_image_ratio }} image-with-text__media--mobile-{{ block.settings.mobile_image_ratio }}"
                   style="--image-with-text-focal-point: {{ block.settings.focal_point }}; --image-with-text-media-ratio: {{ block.settings.image.aspect_ratio | default: 0.8 }};"
                   aria-label="{{ media_aria_label | escape }}"
@@ -74,19 +74,15 @@
             {% case block.type %}
               {% when 'heading' %}
                 {% if block.settings.heading != blank %}
-                  {% assign heading_class = 'image-with-text__heading-block image-with-text__heading' %}
-                  {% if block.settings.type_preset == 'subheading' %}
-                    {% assign heading_class = 'image-with-text__subheading' %}
-                  {% endif %}
-                  <div class="{{ heading_class }}">
-                    {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+                  <div class="image-with-text__heading-block image-with-text__heading">
+                    {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'xl', default_font: 'heading' %}
                   </div>
                 {% endif %}
 
               {% when 'text' %}
                 {% if block.settings.text != blank %}
                   <div class="image-with-text__text">
-                    {% render 'content-block', block: block, content: block.settings.text, kind: 'text', default_preset: 'paragraph', default_font: 'body' %}
+                    {% render 'content-block', block: block, content: block.settings.text, kind: 'text', default_preset: 'md', default_font: 'body' %}
                   </div>
                 {% endif %}
 
@@ -295,42 +291,41 @@
         {
           "type": "select",
           "id": "type_preset",
-          "label": "t:typography_blocks.preset",
+          "label": "t:typography_blocks.heading_size",
           "options": [
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.subheading"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            }
+            { "value": "3xl", "label": "t:typography_options.display_extra_large" },
+            { "value": "2xl", "label": "t:typography_options.display_large" },
+            { "value": "xl", "label": "t:typography_options.display_medium" },
+            { "value": "lg", "label": "t:typography_options.heading_extra_large" },
+            { "value": "md", "label": "t:typography_options.heading_large" },
+            { "value": "sm", "label": "t:typography_options.heading_medium" },
+            { "value": "xs", "label": "t:typography_options.heading_small" },
+            { "value": "2xs", "label": "t:typography_options.heading_extra_small" },
+            { "value": "custom", "label": "t:typography_options.custom" }
           ],
-          "default": "h2"
+          "default": "xl"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "t:typography_blocks.size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 50,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "t:typography_blocks.mobile_size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 30,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         },
         {
           "type": "select",
@@ -417,42 +412,37 @@
         {
           "type": "select",
           "id": "type_preset",
-          "label": "t:typography_blocks.preset",
+          "label": "t:typography_blocks.text_size",
           "options": [
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.subheading"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            }
+            { "value": "lg", "label": "t:typography_options.body_large" },
+            { "value": "md", "label": "t:typography_options.body_medium" },
+            { "value": "sm", "label": "t:typography_options.body_small" },
+            { "value": "xs", "label": "t:typography_options.body_extra_small" },
+            { "value": "custom", "label": "t:typography_options.custom" }
           ],
-          "default": "paragraph"
+          "default": "md"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "t:typography_blocks.size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 16,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "t:typography_blocks.mobile_size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 14,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         },
         {
           "type": "select",
@@ -536,14 +526,14 @@
           "type": "heading",
           "settings": {
             "heading": "<p>Our mission</p>",
-            "type_preset": "subheading"
+            "type_preset": "2xs"
           }
         },
         {
           "type": "heading",
           "settings": {
             "heading": "<h2>More Than Beauty, A Philosophy</h2>",
-            "type_preset": "h2"
+            "type_preset": "xl"
           }
         },
         {

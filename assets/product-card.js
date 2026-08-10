@@ -302,27 +302,15 @@ class QuickViewModal {
 
   async fetchQuickViewSection(url, signal) {
     const requestUrl = new URL(url);
-    requestUrl.searchParams.set('section_id', 'main');
-    let response = await fetch(requestUrl.href, {
+    const response = await fetch(requestUrl.href, {
       headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
       credentials: 'same-origin',
       cache: 'no-store',
       signal
     });
-    let quickViewSection = response.ok ? this.parseQuickViewSection(await response.text()) : null;
+    if (!response.ok) throw new Error(`Unable to load quick view (${response.status}).`);
 
-    if (!quickViewSection) {
-      requestUrl.searchParams.delete('section_id');
-      response = await fetch(requestUrl.href, {
-        headers: { Accept: 'text/html', 'X-Requested-With': 'XMLHttpRequest' },
-        credentials: 'same-origin',
-        cache: 'no-store',
-        signal
-      });
-      if (!response.ok) throw new Error(`Unable to load quick view (${response.status}).`);
-      quickViewSection = this.parseQuickViewSection(await response.text());
-    }
-
+    const quickViewSection = this.parseQuickViewSection(await response.text());
     if (!quickViewSection) throw new Error('Quick view template was not returned.');
     return quickViewSection;
   }
@@ -367,6 +355,8 @@ class QuickViewModal {
 class ProductCardVariants {
   constructor(card) {
     this.card = card;
+    this.abortController = new AbortController();
+    const { signal } = this.abortController;
     this.buttons = [...card.querySelectorAll('[data-product-card-variant]')];
     this.price = card.querySelector('[data-product-card-price]');
     this.currentPrice = card.querySelector('[data-product-card-current-price]');
@@ -380,16 +370,27 @@ class ProductCardVariants {
     this.quickViewTriggers = [...card.querySelectorAll('[data-product-card-quick-view-open]')];
     this.quickViewPrimary = card.querySelector('[data-product-card-quick-view-primary]');
     this.updateQuickViewUrls(card.dataset.selectedVariantId);
-    this.buttons.forEach((button) => button.addEventListener('click', () => this.select(button)));
+    this.buttons.forEach((button) => button.addEventListener('click', () => this.select(button), { signal }));
     this.buttons.forEach((button) => {
-      button.addEventListener('pointerenter', () => this.preload(button), { passive: true });
-      button.addEventListener('focus', () => this.preload(button));
-      button.addEventListener('pointerdown', () => this.preload(button), { passive: true });
+      button.addEventListener('pointerenter', () => this.preload(button), { passive: true, signal });
+      button.addEventListener('focus', () => this.preload(button), { signal });
+      button.addEventListener('pointerdown', () => this.preload(button), { passive: true, signal });
     });
-    this.mediaLink?.addEventListener('pointerenter', () => this.loadSecondaryImage(), { passive: true });
-    this.mediaLink?.addEventListener('focusin', () => this.loadSecondaryImage());
-    this.quickAdd?.addEventListener('click', () => this.addSelectedVariant());
+    this.mediaLink?.addEventListener('pointerenter', () => this.loadSecondaryImage(), { passive: true, signal });
+    this.mediaLink?.addEventListener('focusin', () => this.loadSecondaryImage(), { signal });
+    this.quickAdd?.addEventListener('click', () => this.addSelectedVariant(), { signal });
     this.preloadPrimaryAlternateWhenIdle();
+  }
+
+  destroy() {
+    if (this.destroyed) return;
+    this.destroyed = true;
+    this.preloadObserver?.disconnect();
+    this.preloadObserver = null;
+    this.cancelIdlePreload?.();
+    this.cancelIdlePreload = null;
+    this.abortController?.abort();
+    if (this.card?.productCardVariants === this) delete this.card.productCardVariants;
   }
 
   loadSecondaryImage() {
@@ -421,13 +422,25 @@ class ProductCardVariants {
     if (!alternate) return;
 
     const preloadAlternate = () => {
-      const schedule = window.requestIdleCallback || ((callback) => window.setTimeout(callback, 250));
-      schedule(() => this.preload(alternate), { timeout: 1600 });
+      if (this.destroyed) return;
+      if (window.requestIdleCallback) {
+        const idleId = window.requestIdleCallback(() => {
+          this.cancelIdlePreload = null;
+          if (!this.destroyed && this.card.isConnected) this.preload(alternate);
+        }, { timeout: 1600 });
+        this.cancelIdlePreload = () => window.cancelIdleCallback(idleId);
+      } else {
+        const timeoutId = window.setTimeout(() => {
+          this.cancelIdlePreload = null;
+          if (!this.destroyed && this.card.isConnected) this.preload(alternate);
+        }, 250);
+        this.cancelIdlePreload = () => window.clearTimeout(timeoutId);
+      }
     };
 
     if (!('IntersectionObserver' in window)) {
       if (document.readyState === 'complete') preloadAlternate();
-      else window.addEventListener('load', preloadAlternate, { once: true });
+      else window.addEventListener('load', preloadAlternate, { once: true, signal: this.abortController.signal });
       return;
     }
 
@@ -436,7 +449,7 @@ class ProductCardVariants {
       this.preloadObserver.disconnect();
       this.preloadObserver = null;
       if (document.readyState === 'complete') preloadAlternate();
-      else window.addEventListener('load', preloadAlternate, { once: true });
+      else window.addEventListener('load', preloadAlternate, { once: true, signal: this.abortController.signal });
     });
     this.preloadObserver.observe(this.card);
   }
@@ -497,6 +510,32 @@ const initializeProductCardVariants = (root = document) => {
   });
 };
 
+const destroyProductCardVariants = (root) => {
+  if (!(root instanceof Element)) return;
+  const cards = root.matches('[data-product-card]')
+    ? [root, ...root.querySelectorAll('[data-product-card]')]
+    : [...root.querySelectorAll('[data-product-card]')];
+  cards.forEach((card) => card.productCardVariants?.destroy());
+};
+
+const removedProductCardRoots = new Set();
+let removalCleanupScheduled = false;
+const productCardRemovalObserver = new MutationObserver((records) => {
+  records.forEach((record) => record.removedNodes.forEach((node) => {
+    if (node instanceof Element) removedProductCardRoots.add(node);
+  }));
+  if (removalCleanupScheduled || !removedProductCardRoots.size) return;
+  removalCleanupScheduled = true;
+  queueMicrotask(() => {
+    removedProductCardRoots.forEach((root) => {
+      if (!root.isConnected) destroyProductCardVariants(root);
+    });
+    removedProductCardRoots.clear();
+    removalCleanupScheduled = false;
+  });
+});
+productCardRemovalObserver.observe(document.documentElement, { childList: true, subtree: true });
+
 const initializeProductCards = () => {
   window.SpinelQuickView ||= new QuickViewModal();
   initializeProductCardVariants();
@@ -513,6 +552,7 @@ document.addEventListener('click', (event) => {
   window.SpinelQuickView.open(trigger.dataset.productCardQuickViewUrl, trigger);
 });
 document.addEventListener('shopify:section:load', (event) => initializeProductCardVariants(event.target));
+document.addEventListener('shopify:section:unload', (event) => destroyProductCardVariants(event.target));
 document.addEventListener('collection:products-loaded', (event) => {
   initializeProductCardVariants(event.target);
 });

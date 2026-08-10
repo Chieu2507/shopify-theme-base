@@ -22,7 +22,7 @@ if (!window.SpinelHeaderMenus) {
   const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
-  const headerMobileBreakpoint = 959;
+  const headerMobileBreakpoint = 989;
   const headerMobileMediaQuery = `(max-width: ${headerMobileBreakpoint}px)`;
   const headerDesktopMediaQuery = `(min-width: ${headerMobileBreakpoint + 1}px)`;
   // Let non-sticky transparent headers clear the announcement bar before changing palette.
@@ -35,6 +35,7 @@ if (!window.SpinelHeaderMenus) {
   let headerBreakpointFocusContext = null;
   let localizationSheetDrag = null;
   let localizationSheetDragTimer = null;
+  let localizationSheetSettling = null;
   let headerBrowserChromeColorState = null;
   const responsiveHeaderEntryFrames = new WeakMap();
   const responsiveHeaderExitMotions = new WeakMap();
@@ -50,14 +51,19 @@ if (!window.SpinelHeaderMenus) {
     localizationSheetDragTimer = null;
 
     const drag = localizationSheetDrag;
+    const settling = localizationSheetSettling;
     if (drag) {
       try { drag.handle.releasePointerCapture(drag.pointerId); } catch (_) {}
     }
 
     localizationSheetDrag = null;
+    localizationSheetSettling = null;
     drag?.sheet?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
     drag?.sheet?.style.removeProperty('transform');
     drag?.sheet?.style.removeProperty('opacity');
+    settling?.sheet?.classList.remove('is-handle-settling', 'is-handle-closing');
+    settling?.sheet?.style.removeProperty('transform');
+    settling?.sheet?.style.removeProperty('opacity');
   };
 
   const closeLocalizationSheetFromHandle = (drag) => {
@@ -70,7 +76,10 @@ if (!window.SpinelHeaderMenus) {
       sheet.style.opacity = '0';
     });
 
+    const settling = { sheet };
+    localizationSheetSettling = settling;
     localizationSheetDragTimer = window.setTimeout(() => {
+      if (localizationSheetSettling !== settling) return;
       if (details.open) {
         localizationSheetFinalizing.add(details);
         details.open = false;
@@ -79,6 +88,7 @@ if (!window.SpinelHeaderMenus) {
       sheet.classList.remove('is-handle-closing');
       sheet.style.removeProperty('transform');
       sheet.style.removeProperty('opacity');
+      localizationSheetSettling = null;
       localizationSheetDragTimer = null;
     }, 240);
   };
@@ -135,10 +145,15 @@ if (!window.SpinelHeaderMenus) {
       drag.sheet.style.transform = 'translate3d(0, 0, 0)';
       drag.sheet.style.opacity = '1';
     });
+    const settling = { sheet: drag.sheet };
+    localizationSheetSettling = settling;
     localizationSheetDragTimer = window.setTimeout(() => {
+      if (localizationSheetSettling !== settling) return;
       drag.sheet.classList.remove('is-handle-settling');
       drag.sheet.style.removeProperty('transform');
       drag.sheet.style.removeProperty('opacity');
+      localizationSheetSettling = null;
+      localizationSheetDragTimer = null;
     }, 240);
   };
 
@@ -371,6 +386,17 @@ if (!window.SpinelHeaderMenus) {
     );
   };
 
+  const focusLocalizationSheet = (details) => {
+    window.requestAnimationFrame(() => {
+      if (!details?.open || !details.isConnected) return;
+      const sheet = details.querySelector('.header__localization-sheet');
+      const target = sheet?.querySelector('[data-header-localization-search]')
+        || sheet?.querySelector('[role="option"][aria-selected="true"]')
+        || sheet?.querySelector('[data-header-localization-close]');
+      focusWithoutScroll(target, sheet);
+    });
+  };
+
   const openLocalizationSheet = (details) => {
     if (!details || !isMobileHeaderViewport()) return;
 
@@ -379,6 +405,7 @@ if (!window.SpinelHeaderMenus) {
     if (details.open || isLocalizationSheetReady(details)) {
       details.open = true;
       syncHeaderLocalizationAria(details);
+      focusLocalizationSheet(details);
       return;
     }
 
@@ -401,6 +428,7 @@ if (!window.SpinelHeaderMenus) {
         if (!details.isConnected || !isMobileHeaderViewport()) return;
         details.open = true;
         syncHeaderLocalizationAria(details);
+        focusLocalizationSheet(details);
         return;
       }
 
@@ -439,6 +467,10 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const getActiveMobileDrawerPanel = (drawer) => {
+    const localizationSheet = drawer.querySelector(
+      '.header__localization-selector[open]:not([data-motion-state="closing"]) .header__localization-sheet'
+    );
+    if (localizationSheet) return localizationSheet;
     const panels = Array.from(drawer.querySelectorAll(
       '.header__submenu-disclosure[open] > :is(.header__submenu, .header__mega-panel), .header__submenu-nested-disclosure[open] > .header__submenu-nested'
     ));
@@ -448,14 +480,16 @@ if (!window.SpinelHeaderMenus) {
   const getMobileDrawerFocusables = (drawer) => {
     const activePanel = getActiveMobileDrawerPanel(drawer);
     const elements = Array.from(activePanel.querySelectorAll(
-      'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      'a[href], button:not([disabled]), summary, input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
     ));
     const closeButton = drawer.querySelector('[data-header-mobile-close]');
-    if (activePanel !== drawer && closeButton) {
+    if (activePanel !== drawer && !activePanel.matches('.header__localization-sheet') && closeButton) {
       const backIndex = elements.findIndex((element) => element.matches('[data-header-mobile-back]'));
       elements.splice(backIndex + 1, 0, closeButton);
     }
-    return elements.filter((element) => element.offsetWidth > 0 || element.offsetHeight > 0 || element === document.activeElement);
+    return elements.filter((element) => element.tabIndex >= 0 && (
+      element.offsetWidth > 0 || element.offsetHeight > 0 || element === document.activeElement
+    ));
   };
 
   const clearMobileDrawerMotion = (disclosure) => {
@@ -557,8 +591,6 @@ if (!window.SpinelHeaderMenus) {
       overlay.toggleAttribute('data-visible', Boolean(overlayVisible));
       overlay.toggleAttribute('data-closing', Boolean(isMobile && isOwnedMobileOverlay && isDrawerClosing));
     });
-
-    if (shouldLock && !isLocked) window.SpinelSmoothScroll?.cancel();
 
     const scrollLock = window.themeScrollLock;
     if (scrollLock?.acquire && headerScrollLockFallbackStyles) {
@@ -1677,11 +1709,21 @@ if (!window.SpinelHeaderMenus) {
   const syncHeaderLocalizationAria = (details) => {
     const summary = details.querySelector(':scope > summary');
     if (!summary) return;
-    summary.setAttribute('aria-expanded', String(
+    const isOpen = (
       details.open
       && details.dataset.motionState !== 'closing'
       && details.dataset.closing !== 'true'
-    ));
+    );
+    summary.setAttribute('aria-expanded', String(isOpen));
+    const sheet = details.querySelector('.header__localization-sheet');
+    if (!sheet) return;
+    if (isMobileHeaderViewport() && isOpen) {
+      sheet.setAttribute('role', 'dialog');
+      sheet.setAttribute('aria-modal', 'true');
+    } else {
+      sheet.removeAttribute('role');
+      sheet.removeAttribute('aria-modal');
+    }
   };
 
   const clearLocalizationHoverTimer = (details) => {
@@ -1746,9 +1788,18 @@ if (!window.SpinelHeaderMenus) {
     scheduleResponsiveHeaderSync();
   };
 
+  const initializeLocalizationOptions = (scope = document) => {
+    scope.querySelectorAll?.('.header__localization-options').forEach((listbox) => {
+      const options = Array.from(listbox.querySelectorAll('[role="option"]'));
+      const selected = options.find((option) => option.getAttribute('aria-selected') === 'true') || options[0];
+      options.forEach((option) => { option.tabIndex = option === selected ? 0 : -1; });
+    });
+  };
+
   const initializeHeaderDisclosures = (scope = document) => {
     scope.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(syncHeaderDisclosureAria);
     scope.querySelectorAll?.('.header__localization-selector').forEach(syncHeaderLocalizationAria);
+    initializeLocalizationOptions(scope);
   };
 
   const clearMegaMenuHoverTimer = (details) => {
@@ -2118,6 +2169,9 @@ if (!window.SpinelHeaderMenus) {
         if (searchInput) {
           searchInput.value = '';
           details.querySelectorAll('[data-header-country-option]').forEach((option) => { option.hidden = false; });
+          initializeLocalizationOptions(details);
+          const empty = details.querySelector('[data-header-localization-empty]');
+          if (empty) empty.hidden = true;
         }
       }
 
@@ -2239,6 +2293,22 @@ if (!window.SpinelHeaderMenus) {
   }
 
   document.addEventListener('keydown', (event) => {
+    const localizationOption = event.target.closest?.('.header__localization-options [role="option"]');
+    if (localizationOption && ['ArrowDown', 'ArrowUp', 'Home', 'End'].includes(event.key)) {
+      const options = Array.from(localizationOption.closest('.header__localization-options').querySelectorAll('[role="option"]'))
+        .filter((option) => !option.hidden);
+      const currentIndex = options.indexOf(localizationOption);
+      let nextIndex = currentIndex;
+      if (event.key === 'ArrowDown') nextIndex = (currentIndex + 1) % options.length;
+      if (event.key === 'ArrowUp') nextIndex = (currentIndex - 1 + options.length) % options.length;
+      if (event.key === 'Home') nextIndex = 0;
+      if (event.key === 'End') nextIndex = options.length - 1;
+      event.preventDefault();
+      options.forEach((option, index) => { option.tabIndex = index === nextIndex ? 0 : -1; });
+      options[nextIndex]?.focus();
+      return;
+    }
+
     if (event.key === 'Tab' && isMobileHeaderViewport()) {
       const drawer = event.target.closest?.('[data-header-mobile-drawer][data-open="true"]');
       if (drawer) {
@@ -2331,11 +2401,13 @@ if (!window.SpinelHeaderMenus) {
     syncHeaderMenuScrollLock();
   });
   document.addEventListener('shopify:section:unload', (event) => {
-    if (localizationSheetDrag?.details && event.target.contains(localizationSheetDrag.details)) {
-      resetLocalizationSheetDrag();
-    }
+    if (event.target.querySelector?.('[data-header]')) resetLocalizationSheetDrag();
     if (event.target.contains?.(headerBreakpointFocusContext?.header)) headerBreakpointFocusContext = null;
     event.target.querySelectorAll?.('[data-header]').forEach((header) => {
+      const cartFeedbackState = cartFeedbackHeaderStates.get(header);
+      window.clearTimeout(cartFeedbackState?.timer);
+      if (header.parentElement && cartFeedbackState) header.parentElement.style.minHeight = cartFeedbackState.previousMinHeight;
+      cartFeedbackHeaderStates.delete(header);
       clearResponsiveHeaderEntry(header);
       clearResponsiveHeaderExit(header);
       mobileStickyHeaderStates.delete(header);
@@ -2370,6 +2442,11 @@ if (!window.SpinelHeaderMenus) {
       disclosure.open = false;
       syncMobileDrawer(disclosure);
     });
+    event.target.querySelectorAll?.('[data-header-search-modal]').forEach((dialog) => {
+      clearHeaderPredictiveSearch(dialog);
+      headerSearchReturnFocus.delete(dialog);
+      if (dialog.open) dialog.close();
+    });
     syncHeaderMenuScrollLock();
     scheduleResponsiveHeaderSync();
   });
@@ -2403,9 +2480,15 @@ if (!window.SpinelHeaderMenus) {
 
     const searchTerm = searchInput.value.trim().toLocaleLowerCase();
     const popover = searchInput.closest('[data-header-localization-popover]');
-    popover?.querySelectorAll('[data-header-country-option]').forEach((option) => {
+    const options = Array.from(popover?.querySelectorAll('[data-header-country-option]') || []);
+    options.forEach((option) => {
       option.hidden = searchTerm.length > 0 && !option.textContent.toLocaleLowerCase().includes(searchTerm);
     });
+    const visibleOptions = options.filter((option) => !option.hidden);
+    const selected = visibleOptions.find((option) => option.getAttribute('aria-selected') === 'true') || visibleOptions[0];
+    options.forEach((option) => { option.tabIndex = option === selected ? 0 : -1; });
+    const empty = popover?.querySelector('[data-header-localization-empty]');
+    if (empty) empty.hidden = visibleOptions.length > 0;
   });
 
   document.addEventListener('shopify:block:select', (event) => {
@@ -2432,15 +2515,18 @@ if (!window.SpinelHeaderMenus) {
     const link = document.createElement('a');
     link.className = className;
     link.href = url;
-    link.setAttribute('role', 'option');
     if (label) link.textContent = label;
     return link;
   };
 
-  const formatHeaderSearchPrice = (price, currencyCode) => {
+  const formatHeaderSearchPrice = (price, currencyCode, showCurrencyCode = false) => {
     const numericPrice = Number(price);
     if (Number.isNaN(numericPrice)) return price || '';
-    return new Intl.NumberFormat(document.documentElement.lang || undefined, {
+    const cents = Math.round(numericPrice * 100);
+    return window.SpinelMoney?.format(cents, {
+      currency: currencyCode || 'USD',
+      showCurrencyCode,
+    }) || new Intl.NumberFormat(document.documentElement.lang || undefined, {
       style: 'currency',
       currency: currencyCode || 'USD',
     }).format(numericPrice);
@@ -2458,14 +2544,14 @@ if (!window.SpinelHeaderMenus) {
 
     const grid = document.createElement('div');
     grid.className = 'header-search-modal__product-grid';
-    grid.setAttribute('role', 'listbox');
     products.slice(0, 6).forEach((product) => {
       const card = createHeaderSearchLink('', product.url, 'header-search-modal__product');
-      if (product.image) {
+      const productImage = product.featured_image?.url || product.image?.url || product.image;
+      if (productImage) {
         const image = document.createElement('img');
         image.className = 'header-search-modal__product-image';
-        image.src = product.image;
-        image.alt = product.image_alt || product.title;
+        image.src = productImage;
+        image.alt = product.featured_image?.alt || product.image_alt || product.title;
         image.loading = 'lazy';
         card.append(image);
       }
@@ -2476,7 +2562,8 @@ if (!window.SpinelHeaderMenus) {
       if (product.price !== undefined && product.price !== null) {
         const price = document.createElement('span');
         price.className = 'header-search-modal__product-price';
-        price.textContent = formatHeaderSearchPrice(product.price, panel.closest('[data-header-search-modal]')?.dataset.currencyCode);
+        const dialog = panel.closest('[data-header-search-modal]');
+        price.textContent = formatHeaderSearchPrice(product.price, dialog?.dataset.currencyCode, dialog?.dataset.showCurrencyCode === 'true');
         card.append(price);
       }
       grid.append(card);
@@ -2490,14 +2577,14 @@ if (!window.SpinelHeaderMenus) {
 
     const grid = document.createElement('div');
     grid.className = 'header-search-modal__collection-grid';
-    grid.setAttribute('role', 'listbox');
     collections.slice(0, 6).forEach((collection) => {
       const card = createHeaderSearchLink('', collection.url, 'header-search-modal__collection');
-      if (collection.image) {
+      const collectionImage = collection.featured_image?.url || collection.image?.url || collection.image;
+      if (collectionImage) {
         const image = document.createElement('img');
         image.className = 'header-search-modal__collection-image';
-        image.src = collection.image;
-        image.alt = collection.image_alt || collection.title;
+        image.src = collectionImage;
+        image.alt = collection.featured_image?.alt || collection.image_alt || collection.title;
         image.loading = 'lazy';
         card.append(image);
       }
@@ -2522,7 +2609,6 @@ if (!window.SpinelHeaderMenus) {
   };
 
   const setHeaderSearchTab = (dialog, tabName) => {
-    const input = dialog.querySelector('[data-header-search-input]');
     dialog.querySelectorAll('[data-header-search-tab]').forEach((tab) => {
       const isActive = tab.dataset.headerSearchTab === tabName;
       tab.setAttribute('aria-selected', String(!tab.hidden && isActive));
@@ -2531,16 +2617,45 @@ if (!window.SpinelHeaderMenus) {
     dialog.querySelectorAll('[data-header-search-panel]').forEach((panel) => {
       const isActive = panel.dataset.headerSearchPanel === tabName;
       panel.hidden = !isActive;
-      if (isActive && input) input.setAttribute('aria-controls', panel.id);
     });
   };
 
   const clearHeaderPredictiveSearch = (dialog) => {
     headerSearchRequests.get(dialog)?.abort();
+    headerSearchRequests.delete(dialog);
     window.clearTimeout(headerSearchTimers.get(dialog));
-    dialog.querySelector('[data-header-search-predictive]')?.setAttribute('hidden', '');
+    headerSearchTimers.delete(dialog);
+    const predictive = dialog.querySelector('[data-header-search-predictive]');
+    predictive?.setAttribute('hidden', '');
+    predictive?.setAttribute('aria-busy', 'false');
+    predictive?.classList.remove('is-loading', 'has-error');
+    const status = dialog.querySelector('[data-header-search-status]');
+    if (status) {
+      status.hidden = true;
+      status.textContent = '';
+      status.classList.remove('visually-hidden');
+    }
     dialog.querySelector('[data-header-search-navigation]')?.removeAttribute('hidden');
-    dialog.querySelector('[data-header-search-input]')?.setAttribute('aria-expanded', 'false');
+  };
+
+  const setHeaderSearchStatus = (dialog, message, state) => {
+    const predictive = dialog.querySelector('[data-header-search-predictive]');
+    const status = dialog.querySelector('[data-header-search-status]');
+    if (!predictive || !status) return;
+    predictive.hidden = false;
+    predictive.setAttribute('aria-busy', String(state === 'loading'));
+    predictive.classList.toggle('is-loading', state === 'loading');
+    predictive.classList.toggle('has-error', state === 'error');
+    status.hidden = false;
+    status.textContent = message;
+    status.classList.remove('visually-hidden');
+    const tabs = dialog.querySelector('.header-search-modal__tabs');
+    if (tabs) tabs.hidden = true;
+    dialog.querySelectorAll('[data-header-search-panel]').forEach((panel) => { panel.hidden = true; });
+    const empty = dialog.querySelector('[data-header-search-empty]');
+    if (empty) empty.hidden = true;
+    const viewAll = dialog.querySelector('[data-header-search-view-all]');
+    if (viewAll) viewAll.hidden = true;
   };
 
   const requestHeaderPredictiveSearch = (input) => {
@@ -2554,10 +2669,13 @@ if (!window.SpinelHeaderMenus) {
     }
 
     window.clearTimeout(headerSearchTimers.get(dialog));
+    headerSearchRequests.get(dialog)?.abort();
+    headerSearchRequests.delete(dialog);
     headerSearchTimers.set(dialog, window.setTimeout(async () => {
-      headerSearchRequests.get(dialog)?.abort();
+      headerSearchTimers.delete(dialog);
       const controller = new AbortController();
       headerSearchRequests.set(dialog, controller);
+      setHeaderSearchStatus(dialog, dialog.dataset.searchingText || 'Searching…', 'loading');
 
       try {
         const endpoint = new URL(dialog.dataset.predictiveSearchUrl, window.location.origin);
@@ -2566,21 +2684,14 @@ if (!window.SpinelHeaderMenus) {
         endpoint.searchParams.set('resources[limit]', '6');
         endpoint.searchParams.set('resources[limit_scope]', 'each');
         endpoint.searchParams.set('resources[options][unavailable_products]', 'hide');
-        const collectionEndpoint = new URL(endpoint);
-        collectionEndpoint.searchParams.set('resources[type]', 'collection');
-        collectionEndpoint.searchParams.set('resources[limit]', '6');
-        collectionEndpoint.searchParams.delete('resources[limit_scope]');
-        const [response, collectionResponse] = await Promise.all([
-          fetch(endpoint, { signal: controller.signal, headers: { Accept: 'application/json' } }),
-          fetch(collectionEndpoint, { signal: controller.signal, headers: { Accept: 'application/json' } }),
-        ]);
-        if (!response.ok || !collectionResponse.ok) throw new Error('Predictive search request failed');
-        const [payload, collectionPayload] = await Promise.all([response.json(), collectionResponse.json()]);
-        if (input.value.trim() !== term) return;
+        const response = await fetch(endpoint, { signal: controller.signal, headers: { Accept: 'application/json' } });
+        if (!response.ok) throw new Error(`Predictive search request failed (${response.status})`);
+        const payload = await response.json();
+        if (headerSearchRequests.get(dialog) !== controller || input.value.trim() !== term) return;
 
         const resources = payload.resources?.results || {};
         const products = resources.products || [];
-        const collections = collectionPayload.resources?.results?.collections || resources.collections || [];
+        const collections = resources.collections || [];
         renderHeaderSearchProducts(dialog.querySelector('[data-header-search-panel="products"]'), products);
         renderHeaderSearchCollections(dialog.querySelector('[data-header-search-panel="collections"]'), collections);
 
@@ -2604,12 +2715,31 @@ if (!window.SpinelHeaderMenus) {
           const allResultsUrl = new URL(input.closest('form').action, window.location.origin);
           allResultsUrl.searchParams.set('q', term);
           viewAll.href = allResultsUrl.toString();
+          viewAll.hidden = false;
         }
         dialog.querySelector('[data-header-search-navigation]')?.setAttribute('hidden', '');
-        dialog.querySelector('[data-header-search-predictive]')?.removeAttribute('hidden');
-        input.setAttribute('aria-expanded', 'true');
+        const predictive = dialog.querySelector('[data-header-search-predictive]');
+        predictive?.removeAttribute('hidden');
+        predictive?.setAttribute('aria-busy', 'false');
+        predictive?.classList.remove('is-loading', 'has-error');
+        const status = dialog.querySelector('[data-header-search-status]');
+        if (status) {
+          const totalResults = products.length + collections.length;
+          status.hidden = false;
+          status.classList.add('visually-hidden');
+          status.textContent = totalResults > 0
+            ? (dialog.dataset.resultsFoundText || '__count__ results found.').replace('__count__', String(totalResults))
+            : (dialog.dataset.noResultsText || `No results found for “${term}”.`).replace('__term__', term);
+        }
+        headerSearchRequests.delete(dialog);
       } catch (error) {
-        if (error.name !== 'AbortError') clearHeaderPredictiveSearch(dialog);
+        if (error.name === 'AbortError') return;
+        if (headerSearchRequests.get(dialog) !== controller) return;
+        headerSearchRequests.delete(dialog);
+        const tabs = dialog.querySelector('.header-search-modal__tabs');
+        if (tabs) tabs.hidden = true;
+        dialog.querySelectorAll('[data-header-search-panel]').forEach((panel) => { panel.hidden = true; });
+        setHeaderSearchStatus(dialog, dialog.dataset.searchErrorText || 'Search is temporarily unavailable.', 'error');
       }
     }, 180));
   };
@@ -2627,7 +2757,10 @@ if (!window.SpinelHeaderMenus) {
       window.requestAnimationFrame(() => {
         const input = dialog.querySelector('[data-header-search-input]');
         input?.focus();
-        if (input) syncHeaderSearchClearButton(input);
+        if (input) {
+          syncHeaderSearchClearButton(input);
+          if (input.value.trim().length >= 2) requestHeaderPredictiveSearch(input);
+        }
       });
       return;
     }

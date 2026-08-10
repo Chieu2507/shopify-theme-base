@@ -32,7 +32,7 @@
       {% endif %}
     </h1>
 
-    <form class="search-page__form search-field" action="{{ routes.search_url }}" method="get" role="search" data-search-form>
+    <form class="search-page__form search-field" action="{{ routes.search_url | escape }}" method="get" role="search" data-search-form>
       {% if section.settings.enable_prefix_search %}<input type="hidden" name="options[prefix]" value="last">{% endif %}
       <label class="visually-hidden" for="SearchInput-{{ section.id }}">{{ 'search.label' | t }}</label>
       <input id="SearchInput-{{ section.id }}" class="search-page__input search-field__input" type="search" name="q" value="{{ search.terms | escape }}" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" data-search-input>
@@ -57,7 +57,7 @@
           </div>
 
           <dialog scroll-lock class="search-page__filter-dialog" id="SearchFilters-{{ section.id }}" aria-labelledby="SearchFiltersTitle-{{ section.id }}" data-search-filter-dialog>
-            <form class="search-page__filter-form" action="{{ routes.search_url }}" method="get">
+            <form class="search-page__filter-form" action="{{ routes.search_url | escape }}" method="get">
               <input type="hidden" name="q" value="{{ search.terms | escape }}">
               {% if section.settings.enable_prefix_search %}<input type="hidden" name="options[prefix]" value="last">{% endif %}
               <header class="search-page__filter-header">
@@ -69,12 +69,12 @@
                 {% if active_filter_count > 0 %}
                   <div class="search-page__active-filters">
                     {% for filter in search.filters %}
-                      {% for value in filter.active_values %}<a href="{{ value.url_to_remove }}"><span>{{ value.label | escape }}</span><span aria-hidden="true">×</span></a>{% endfor %}
+                      {% for value in filter.active_values %}<a href="{{ value.url_to_remove | escape }}"><span>{{ value.label | escape }}</span><span aria-hidden="true">×</span></a>{% endfor %}
                       {% if filter.type == 'price_range' %}
-                        {% if filter.min_value.value != nil or filter.max_value.value != nil %}<a href="{{ filter.url_to_remove }}"><span>{{ filter.label | escape }}</span><span aria-hidden="true">×</span></a>{% endif %}
+                        {% if filter.min_value.value != nil or filter.max_value.value != nil %}<a href="{{ filter.url_to_remove | escape }}"><span>{{ filter.label | escape }}</span><span aria-hidden="true">×</span></a>{% endif %}
                       {% endif %}
                     {% endfor %}
-                    <a class="search-page__clear-link" href="{{ routes.search_url }}?q={{ search.terms | url_encode }}{% if section.settings.enable_prefix_search %}&options[prefix]=last{% endif %}">{{ 'search.clear_all' | t }}</a>
+                    <a class="search-page__clear-link" href="{{ routes.search_url | escape }}?q={{ search.terms | url_encode }}{% if section.settings.enable_prefix_search %}&amp;options[prefix]=last{% endif %}">{{ 'search.clear_all' | t }}</a>
                   </div>
                 {% endif %}
 
@@ -124,7 +124,7 @@
                   </div>
                 {% endif %}
               </div>
-              <footer class="search-page__filter-footer"><button class="button button--primary" type="submit">{{ 'search.apply_filters' | t: count: search.results_count }}</button><a class="button button--secondary" href="{{ routes.search_url }}?q={{ search.terms | url_encode }}{% if section.settings.enable_prefix_search %}&options[prefix]=last{% endif %}">{{ 'search.clear_all' | t }}</a></footer>
+              <footer class="search-page__filter-footer"><button class="button button--primary" type="submit">{{ 'search.apply_filters' | t: count: search.results_count }}</button><a class="button button--secondary" href="{{ routes.search_url | escape }}?q={{ search.terms | url_encode }}{% if section.settings.enable_prefix_search %}&amp;options[prefix]=last{% endif %}">{{ 'search.clear_all' | t }}</a></footer>
             </form>
           </dialog>
         {% endif %}
@@ -161,17 +161,17 @@
                     endif
                   %}
                   <article class="search-page__content-card">
-                    {% if result_image != blank and section.settings.show_article_image %}{% assign result_image_alt = result_image.alt | default: result.title %}<a class="search-page__content-media search-page__content-media--{{ section.settings.article_image_ratio }}" href="{{ result.url }}" aria-label="{{ result.title | escape }}">{% render 'responsive-image', image: result_image, max_width: 960, widths: '240, 360, 480, 640, 800, 960', sizes: product_card_sizes, class: 'search-page__content-image', loading: 'lazy', alt: result_image_alt %}</a>{% endif %}
-                    <div class="search-page__content-details"><span class="search-page__content-type">{{ result_type }}</span>{% if article_meta %}<p class="search-page__content-meta">{% if section.settings.show_article_date %}{{ result.published_at | date: '%B %d, %Y' }}{% endif %}{% if section.settings.show_article_date and section.settings.show_article_author %}<span aria-hidden="true"> · </span>{% endif %}{% if section.settings.show_article_author %}{{ result.author | escape }}{% endif %}</p>{% endif %}<h2 class="search-page__content-title typo-h2"><a href="{{ result.url }}">{{ result.title | escape }}</a></h2><a class="search-page__content-link" href="{{ result.url }}">{{ 'search.view_result' | t }}</a></div>
+                    {% if result_image != blank and section.settings.show_article_image %}{% assign result_image_alt = result_image.alt | default: result.title %}<a class="search-page__content-media search-page__content-media--{{ section.settings.article_image_ratio }}" href="{{ result.url | escape }}" aria-label="{{ result.title | escape }}">{% render 'responsive-image', image: result_image, max_width: 960, widths: '240, 360, 480, 640, 800, 960', sizes: product_card_sizes, class: 'search-page__content-image', loading: 'lazy', alt: result_image_alt %}</a>{% endif %}
+                    <div class="search-page__content-details"><span class="search-page__content-type">{{ result_type }}</span>{% if article_meta %}<p class="search-page__content-meta">{% if section.settings.show_article_date %}{{ result.published_at | date: '%B %d, %Y' }}{% endif %}{% if section.settings.show_article_date and section.settings.show_article_author %}<span aria-hidden="true"> · </span>{% endif %}{% if section.settings.show_article_author %}{{ result.author | escape }}{% endif %}</p>{% endif %}<h2 class="search-page__content-title typo-h2"><a href="{{ result.url | escape }}">{{ result.title | escape }}</a></h2><a class="search-page__content-link" href="{{ result.url | escape }}">{{ 'search.view_result' | t }}</a></div>
                   </article>
                 {% endif %}
               </li>
             {% endfor %}
           </ul>
-          {% if paginate.pages > 1 %}<nav class="search-page__pagination" aria-label="{{ 'search.pagination' | t | escape }}">{% if paginate.previous %}<a href="{{ paginate.previous.url }}" aria-label="{{ 'search.previous_page' | t | escape }}">←</a>{% endif %}{% for part in paginate.parts %}{% if part.is_link %}<a href="{{ part.url }}">{{ part.title }}</a>{% else %}<span{% if part.title == paginate.current_page %} class="is-current" aria-current="page"{% endif %}>{{ part.title }}</span>{% endif %}{% endfor %}{% if paginate.next %}<a href="{{ paginate.next.url }}" aria-label="{{ 'search.next_page' | t | escape }}">→</a>{% endif %}</nav>{% endif %}
+          {% if paginate.pages > 1 %}<nav class="search-page__pagination" aria-label="{{ 'search.pagination' | t | escape }}">{% if paginate.previous %}<a href="{{ paginate.previous.url | escape }}" aria-label="{{ 'search.previous_page' | t | escape }}">←</a>{% endif %}{% for part in paginate.parts %}{% if part.is_link %}<a href="{{ part.url | escape }}">{{ part.title }}</a>{% else %}<span{% if part.title == paginate.current_page %} class="is-current" aria-current="page"{% endif %}>{{ part.title }}</span>{% endif %}{% endfor %}{% if paginate.next %}<a href="{{ paginate.next.url | escape }}" aria-label="{{ 'search.next_page' | t | escape }}">→</a>{% endif %}</nav>{% endif %}
         {% endpaginate %}
       {% else %}
-        <div class="search-page__empty"><h2 class="typo-h2">{{ 'search.no_results_heading' | t }}</h2><p>{{ 'search.no_results_html' | t: terms: search.terms }}</p><a class="button button--primary" href="{{ routes.all_products_collection_url }}">{{ 'search.continue_shopping' | t }}</a></div>
+        <div class="search-page__empty"><h2 class="typo-h2">{{ 'search.no_results_heading' | t }}</h2><p>{{ 'search.no_results_html' | t: terms: search.terms }}</p><a class="button button--primary" href="{{ routes.all_products_collection_url | escape }}">{{ 'search.continue_shopping' | t }}</a></div>
       {% endif %}
     </search-results>
   {% endif %}

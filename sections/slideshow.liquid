@@ -1,11 +1,17 @@
 {% render 'section-stylesheet', asset: 'section-slideshow-critical.css', inline_on_home: true %}
 
+{% comment %}
+  Theme blocks are manually rendered below so section.blocks can provide the
+  first-slide metadata needed for layout and fallback decisions. Nested slide
+  content remains delegated to the slide block.
+{% endcomment %}
 {% liquid
+  assign configured_slide_count = section.blocks.size
   assign first_slide = section.blocks | first
   assign first_slide_image = first_slide.settings.image | default: first_slide.settings.mobile_image
   assign desktop_ratio = first_slide_image.aspect_ratio | default: 1.7778
   assign mobile_ratio = first_slide.settings.mobile_image.aspect_ratio | default: desktop_ratio
-  assign slide_count = section.blocks.size
+  assign slide_count = configured_slide_count
   assign is_double_slide = false
   if section.settings.slideshow_style == 'double'
     assign is_double_slide = true
@@ -44,9 +50,11 @@
 >
   <div class="slideshow__viewport swiper" data-slideshow-slider>
     <div class="slideshow__wrapper swiper-wrapper">
-      {% content_for 'blocks' %}
+      {% for block in section.blocks %}
+        {% render block %}
+      {% endfor %}
 
-      {% if is_double_slide and section.blocks.size < 2 %}
+      {% if is_double_slide and configured_slide_count < 2 %}
         <article
           class="slideshow__slide slideshow__slide--default swiper-slide color-scheme color-scheme-3 slideshow__slide--desktop-bottom-left slideshow__slide--mobile-bottom-left slideshow__slide--align-left"
           style="
@@ -114,6 +122,21 @@
         ><span class="slideshow__progress-bar" data-slideshow-progress-bar></span></span>
       </div>
       <div class="slideshow__arrows">
+        {% if section.settings.autoplay and section.blocks.size > 1 %}
+          <button
+            class="slideshow__arrow slideshow__autoplay-toggle"
+            type="button"
+            aria-label="{{ 'slideshow.pause' | t | escape }}"
+            aria-pressed="false"
+            data-slideshow-autoplay-toggle
+            data-pause-label="{{ 'slideshow.pause' | t | escape }}"
+            data-resume-label="{{ 'slideshow.resume' | t | escape }}"
+          >
+            <svg viewBox="0 0 20 20" aria-hidden="true" focusable="false">
+              <path d="M7 5.5v9M13 5.5v9" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="1.8" data-slideshow-autoplay-icon/>
+            </svg>
+          </button>
+        {% endif %}
         <button
           class="slideshow__arrow slideshow__arrow--previous"
           type="button"
@@ -301,7 +324,7 @@
               "type": "heading",
               "settings": {
                 "heading": "<h1>Designed for every day</h1>",
-                "type_preset": "h1",
+                "type_preset": "2xl",
                 "alignment": "left"
               }
             },
@@ -309,7 +332,7 @@
               "type": "text",
               "settings": {
                 "text": "<p>Discover pieces designed to bring a refined finish to every day.</p>",
-                "type_preset": "paragraph",
+                "type_preset": "md",
                 "color": "text",
                 "alignment": "left"
               }
@@ -341,7 +364,7 @@
               "type": "heading",
               "settings": {
                 "heading": "<h1>Made for every moment</h1>",
-                "type_preset": "h1",
+                "type_preset": "2xl",
                 "alignment": "left"
               }
             },
@@ -349,7 +372,7 @@
               "type": "text",
               "settings": {
                 "text": "<p>Timeless forms, thoughtful details, and a finish made to be worn your way.</p>",
-                "type_preset": "paragraph",
+                "type_preset": "md",
                 "color": "text",
                 "alignment": "left"
               }

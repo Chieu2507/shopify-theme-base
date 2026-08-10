@@ -59,9 +59,6 @@
   assign navigation_menu = section.settings.menu
   assign menu_links = navigation_menu.links
   assign header_color_scheme = section.settings.color_scheme
-  assign account_action = section.settings.account_action | default: 'panel'
-  assign account_href = routes.account_url
-  assign account_open_new_tab = false
   assign floating_header_enabled = false
   assign transparent_header_enabled = false
   assign has_menu = false
@@ -85,14 +82,6 @@
     assign header_color_scheme = section.settings.transparent_color_scheme
   endif
 
-  if account_action == 'custom_url' and section.settings.account_custom_url != blank
-    assign account_href = section.settings.account_custom_url
-  endif
-
-  if account_action == 'new_tab'
-    assign account_open_new_tab = true
-  endif
-
   if section.settings.show_localization
     assign has_mobile_utilities = true
   elsif show_language and localization.available_languages.size > 1
@@ -112,6 +101,22 @@
   if menu_links != blank
     assign has_menu = true
   endif
+
+  assign default_logo_loading = 'eager'
+  assign transparent_logo_loading = 'lazy'
+  if transparent_header_enabled
+    assign default_logo_loading = 'lazy'
+    assign transparent_logo_loading = 'eager'
+  endif
+
+  assign cart_accessible_label = 'header.cart' | t
+  if cart.item_count > 0
+    if cart.item_count == 1
+      assign cart_accessible_label = 'header.cart_count_one' | t: count: cart.item_count
+    else
+      assign cart_accessible_label = 'header.cart_count' | t: count: cart.item_count
+    endif
+  endif
 %}
 
 <span
@@ -123,7 +128,7 @@
 <header
   id="Header-{{ section.id }}"
   class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.underline_active_link %} header--underline-active{% endif %}{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}"
-  style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px; --header-surface-background: {{ section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background }};"
+  style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px; --header-surface-background: {{ section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background }}; --header-transparent-scrim-opacity: {{ section.settings.transparent_scrim_opacity | divided_by: 100.0 }};"
   data-sticky-behavior="{{ section.settings.sticky_behavior }}"
   data-mega-menu-animation="slide_down"
   data-mega-menu-animation-duration="300"
@@ -138,7 +143,7 @@
   <div class="header__inner">
     {% if has_menu or has_mobile_utilities %}
       <details class="header__menu-disclosure" data-open-label="{{ 'header.open_menu' | t | escape }}" data-close-label="{{ 'header.close_menu' | t | escape }}">
-        <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}" aria-expanded="false" aria-controls="HeaderMobileDrawer-{{ section.id }}">
+        <summary class="header__menu-toggle" aria-label="{{ 'header.open_menu' | t | escape }}" aria-controls="HeaderMobileDrawer-{{ section.id }}">
           <span class="header__menu-icon header__menu-icon--open header__burger-lines" aria-hidden="true">
             <span></span>
             <span></span>
@@ -161,9 +166,9 @@
           <div class="header__mobile-drawer-header">
             <span id="HeaderMobileDrawerTitle-{{ section.id }}" class="visually-hidden">{{ 'header.primary_navigation' | t }}</span>
             {% if render_logo %}
-              <a class="header__mobile-drawer-logo" href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-height-mobile: {{ logo_height_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
+              <a class="header__mobile-drawer-logo" href="{{ routes.root_url | escape }}" aria-label="{{ logo_text | escape }}" style="--header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-height-mobile: {{ logo_height_mobile }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;">
                 {% if logo_image_mobile != blank %}
-                  {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '(max-width: 959px) var(--header-logo-width-mobile), 120px', alt: shop.name, loading: 'eager' }}
+                  {{ logo_image_mobile | image_url: width: 360 | image_tag: widths: '120, 180, 240, 360', sizes: '(max-width: 989px) var(--header-logo-width-mobile), 120px', alt: shop.name, loading: 'lazy' }}
                 {% else %}
                   <span class="header__logo-text">{{ logo_text | escape }}</span>
                 {% endif %}
@@ -177,10 +182,7 @@
             menu_links: menu_links,
             navigation_variant: 'mobile',
             has_menu: has_menu,
-            can_change_country: can_change_country,
-            account_href: account_href,
-            account_open_new_tab: account_open_new_tab,
-            account_action: account_action
+            can_change_country: can_change_country
           %}
         </div>
       </div>
@@ -192,9 +194,7 @@
         menu_links: menu_links,
         navigation_variant: 'desktop',
         has_menu: has_menu,
-        can_change_country: can_change_country,
-        account_href: account_href,
-        account_open_new_tab: account_open_new_tab
+        can_change_country: can_change_country
       %}
     {% endif %}
 
@@ -204,15 +204,15 @@
         style="--header-logo-width: {{ logo_width_desktop }}px; --header-logo-width-mobile: {{ logo_width_mobile }}px; --header-logo-height: {{ logo_height_desktop }}px; --header-logo-height-mobile: {{ logo_height_mobile }}px; --header-logo-text-size: {{ logo_text_size_desktop }}px; --header-logo-text-size-mobile: {{ logo_text_size_mobile }}px;"
         {% if logo_block != blank %}{{ logo_block.shopify_attributes }}{% endif %}
       >
-          <a href="{{ routes.root_url }}" aria-label="{{ logo_text | escape }}">
+          <a href="{{ routes.root_url | escape }}" aria-label="{{ logo_text | escape }}">
             {% if logo_image != blank %}
               <picture class="header__logo-image header__logo-image--dark">
-                {% if logo_image_mobile != blank %}<source media="(max-width: 959px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
-                {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 959px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: 'eager' }}
+                {% if logo_image_mobile != blank %}<source media="(max-width: 989px)" srcset="{{ logo_image_mobile | image_url: width: 360 }}">{% endif %}
+                {{ logo_image | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 989px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image.alt | default: shop.name, loading: default_logo_loading }}
               </picture>
               <picture class="header__logo-image header__logo-image--light">
-                {% if logo_image_transparent_mobile != blank %}<source media="(max-width: 959px)" srcset="{{ logo_image_transparent_mobile | image_url: width: 360 }}">{% endif %}
-                {{ logo_image_transparent | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 959px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image_transparent.alt | default: shop.name, loading: 'eager' }}
+                {% if logo_image_transparent_mobile != blank %}<source media="(max-width: 989px)" srcset="{{ logo_image_transparent_mobile | image_url: width: 360 }}">{% endif %}
+                {{ logo_image_transparent | image_url: width: 600 | image_tag: widths: '120, 180, 240, 360, 480, 600', sizes: '(max-width: 989px) var(--header-logo-width-mobile), var(--header-logo-width)', alt: logo_image_transparent.alt | default: shop.name, loading: transparent_logo_loading }}
               </picture>
             {% else %}
               <span class="header__logo-text">{{ logo_text | escape }}</span>
@@ -226,7 +226,7 @@
         <div class="header__localization">
           {% if can_change_country %}
             <details class="header__localization-selector{% if section.settings.dropdown_trigger == 'hover' %} header__localization-selector--hover{% endif %}">
-              <summary aria-label="{{ 'header.country_region' | t | escape }}">
+              <summary aria-label="{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}">
                 {% if section.settings.show_country_flag %}
                   {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: localization.country.name, loading: 'lazy' }}
                 {% endif %}
@@ -303,43 +303,38 @@
       {% endif %}
 
       {% if section.settings.show_search %}
-        <a class="header__action header__search-trigger" href="{{ routes.search_url }}" aria-label="{{ 'header.search' | t | escape }}" aria-haspopup="dialog" aria-controls="HeaderSearch-{{ section.id }}" data-header-search-open>
+        <a class="header__action header__search-trigger" href="{{ routes.search_url | escape }}" aria-label="{{ 'header.search' | t | escape }}" aria-haspopup="dialog" aria-controls="HeaderSearch-{{ section.id }}" data-header-search-open>
           {% render 'icon', name: 'search' %}
         </a>
       {% endif %}
 
-      {% if section.settings.show_account and shop.customer_accounts_enabled %}
-        {% if account_action == 'panel' %}
-          <shopify-account class="header__action header__action--account"{% if section.settings.customer_account_menu != blank and section.settings.customer_account_menu != 'customer-account-main-menu' %} menu="{{ section.settings.customer_account_menu }}"{% endif %}>
-            <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
-          </shopify-account>
-        {% else %}
-          <a class="header__action header__action--account" href="{{ account_href }}" aria-label="{{ 'header.login' | t | escape }}"{% if account_open_new_tab %} target="_blank" rel="noopener"{% endif %}>
-            {% render 'icon', name: 'account' %}
-          </a>
-        {% endif %}
+      {% if shop.customer_accounts_enabled %}
+        <shopify-account class="header__action header__action--account"{% if section.settings.customer_account_menu != blank and section.settings.customer_account_menu != 'customer-account-main-menu' %} menu="{{ section.settings.customer_account_menu }}"{% endif %}>
+          <span slot="signed-out-avatar" class="header__account-avatar" aria-hidden="true">{% render 'icon', name: 'account' %}</span>
+        </shopify-account>
       {% endif %}
 
       {% if section.settings.show_cart %}
-        <a class="header__action header__cart" href="{{ routes.cart_url }}" aria-label="{{ 'header.cart' | t | escape }}" data-cart-count-label="{{ 'header.cart_count' | t: count: '__count__' | escape }}"{% if settings.cart_action == 'drawer' %} data-cart-drawer-open aria-controls="CartDrawer" aria-expanded="false"{% endif %}>
+        <a class="header__action header__cart" href="{{ routes.cart_url | escape }}" aria-label="{{ cart_accessible_label | escape }}" data-cart-current-count="{{ cart.item_count }}" data-cart-empty-label="{{ 'header.cart' | t | escape }}" data-cart-count-one-label="{{ 'header.cart_count_one' | t: count: '__count__' | escape }}" data-cart-count-label="{{ 'header.cart_count' | t: count: '__count__' | escape }}"{% if settings.cart_action == 'drawer' %} data-cart-drawer-open aria-controls="CartDrawer" aria-expanded="false"{% endif %}>
           {% render 'icon', name: 'bag' %}
           {% if cart.item_count > 0 %}
-            <span class="header__cart-count" aria-label="{{ 'header.cart_count' | t: count: cart.item_count | escape }}">
-              {{ cart.item_count }}
+            <span class="header__cart-count" aria-hidden="true">
+              {% if cart.item_count > 99 %}99+{% else %}{{ cart.item_count }}{% endif %}
             </span>
           {% endif %}
         </a>
+        <span class="visually-hidden" data-cart-count-status role="status" aria-live="polite" aria-atomic="true"></span>
       {% endif %}
     </div>
   </div>
 
   {% if section.settings.show_search %}
-    <dialog scroll-lock data-scroll-lock-owner="search" class="header-search-modal color-scheme color-{{ section.settings.color_scheme.id }}" id="HeaderSearch-{{ section.id }}" aria-labelledby="HeaderSearchLabel-{{ section.id }}" data-header-search-modal data-predictive-search-url="{{ routes.predictive_search_url }}" data-currency-code="{{ localization.country.currency.iso_code | default: shop.currency | escape }}" data-no-products-text="{{ 'search.no_products' | t | escape }}" data-no-results-text="{{ 'search.no_results' | t: term: '__term__' | escape }}" data-product-count-one="{{ 'search.product_count.one' | t: count: '__count__' | escape }}" data-product-count-other="{{ 'search.product_count.other' | t: count: '__count__' | escape }}">
+    <dialog scroll-lock data-scroll-lock-owner="search" class="header-search-modal color-scheme color-{{ section.settings.color_scheme.id }}" id="HeaderSearch-{{ section.id }}" aria-labelledby="HeaderSearchLabel-{{ section.id }}" data-header-search-modal data-predictive-search-url="{{ routes.predictive_search_url | escape }}" data-currency-code="{{ localization.country.currency.iso_code | default: shop.currency | escape }}" data-show-currency-code="{{ settings.show_currency_code }}" data-no-products-text="{{ 'search.no_products' | t | escape }}" data-no-results-text="{{ 'search.no_results' | t: term: '__term__' | escape }}" data-results-found-text="{{ 'search.results_found' | t: count: '__count__' | escape }}" data-searching-text="{{ 'search.searching' | t | escape }}" data-search-error-text="{{ 'search.error' | t | escape }}" data-product-count-one="{{ 'search.product_count.one' | t: count: '__count__' | escape }}" data-product-count-other="{{ 'search.product_count.other' | t: count: '__count__' | escape }}">
       <div class="header-search-modal__inner">
         <button class="header-search-modal__close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_search' | t | escape }}" data-header-search-close></button>
-        <form class="header-search-modal__form search-field" action="{{ routes.search_url }}" method="get" role="search" data-header-search-form>
+        <form class="header-search-modal__form search-field" action="{{ routes.search_url | escape }}" method="get" role="search" data-header-search-form>
           <label class="visually-hidden" id="HeaderSearchLabel-{{ section.id }}" for="HeaderSearchInput-{{ section.id }}">{{ 'search.label' | t }}</label>
-          <input id="HeaderSearchInput-{{ section.id }}" class="header-search-modal__input search-field__input" type="search" name="q" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" role="combobox" aria-autocomplete="list" aria-haspopup="listbox" aria-expanded="false" aria-controls="HeaderSearchPanel-{{ section.id }}-products" data-header-search-input>
+          <input id="HeaderSearchInput-{{ section.id }}" class="header-search-modal__input search-field__input" type="search" name="q" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" data-header-search-input>
           <button class="header-search-modal__clear search-field__clear" type="button" aria-label="{{ 'search.clear_search' | t | escape }}" data-header-search-clear hidden>
             {% render 'icon', name: 'close' %}
           </button>
@@ -348,7 +343,8 @@
           </button>
         </form>
 
-        <div class="header-search-modal__predictive" data-header-search-predictive aria-live="polite" aria-atomic="false" hidden>
+        <div class="header-search-modal__predictive" data-header-search-predictive aria-busy="false" hidden>
+          <p class="header-search-modal__status" data-header-search-status role="status" aria-live="polite" aria-atomic="true" hidden></p>
           <div class="header-search-modal__tabs" role="tablist" aria-label="{{ 'search.result_tabs' | t | escape }}">
             <button id="HeaderSearchTab-{{ section.id }}-products" type="button" role="tab" aria-selected="true" aria-controls="HeaderSearchPanel-{{ section.id }}-products" tabindex="0" data-header-search-tab="products">{{ 'search.products' | t }}</button>
             <button id="HeaderSearchTab-{{ section.id }}-collections" type="button" role="tab" aria-selected="false" aria-controls="HeaderSearchPanel-{{ section.id }}-collections" tabindex="-1" data-header-search-tab="collections">{{ 'search.collections' | t }}</button>
@@ -358,7 +354,7 @@
             <div id="HeaderSearchPanel-{{ section.id }}-collections" role="tabpanel" aria-labelledby="HeaderSearchTab-{{ section.id }}-collections" hidden data-header-search-panel="collections"></div>
             <p class="header-search-modal__empty" data-header-search-empty hidden></p>
           </div>
-          <a class="button button--primary header-search-modal__view-all" href="{{ routes.search_url }}" data-header-search-view-all>{{ 'search.view_all_results' | t }}</a>
+          <a class="button button--primary header-search-modal__view-all" href="{{ routes.search_url | escape }}" data-header-search-view-all>{{ 'search.view_all_results' | t }}</a>
         </div>
       </div>
     </dialog>
@@ -424,7 +420,7 @@
       "type": "select",
       "id": "header_style",
       "label": "Header style",
-      "info": "Floating and transparent styles apply on the homepage only.",
+      "info": "Floating and transparent styles apply on the home page only.",
       "options": [
         { "value": "none", "label": "Normal" },
         { "value": "floating", "label": "Floating" },
@@ -459,12 +455,12 @@
     { "type": "checkbox", "id": "show_localization", "label": "Show country and currency", "default": true },
     { "type": "checkbox", "id": "show_language", "label": "Show language", "default": true },
     { "type": "checkbox", "id": "show_country_flag", "label": "Country flag", "default": true, "visible_if": "{{ section.settings.show_localization }}" },
-    { "type": "checkbox", "id": "show_account", "label": "Show account", "default": true },
+    { "type": "checkbox", "id": "show_account", "label": "Show account", "default": true, "visible_if": "{{ false }}" },
     {
       "type": "select",
       "id": "account_action",
       "label": "Account action",
-      "visible_if": "{{ section.settings.show_account }}",
+      "visible_if": "{{ false }}",
       "options": [
         { "value": "panel", "label": "Account panel" },
         { "value": "redirect", "label": "Redirect to account page" },
@@ -477,7 +473,7 @@
       "type": "url",
       "id": "account_custom_url",
       "label": "Custom URL",
-      "visible_if": "{{ section.settings.show_account and section.settings.account_action == 'custom_url' }}"
+      "visible_if": "{{ false }}"
     },
     { "type": "checkbox", "id": "show_cart", "label": "Show cart", "default": true },
     {
@@ -492,9 +488,8 @@
       "type": "link_list",
       "id": "customer_account_menu",
       "label": "Menu",
-      "info": "Leave the standard menu selected to use Shopify's built-in account links, or choose a custom menu when needed.",
       "default": "customer-account-main-menu",
-      "visible_if": "{{ section.settings.show_account and section.settings.account_action == 'panel' }}"
+      "info": "Uses Shopify's standard customer account menu by default. Select a custom menu only when needed."
     },
     {
       "type": "header",
@@ -511,8 +506,20 @@
       "type": "color_scheme",
       "id": "transparent_color_scheme",
       "label": "Overlay color scheme",
-      "info": "Used while the header sits over homepage hero content.",
+      "info": "Used while the header sits over home page hero content.",
       "default": "scheme-3",
+      "visible_if": "{{ section.settings.header_style == 'transparent' }}"
+    },
+    {
+      "type": "range",
+      "id": "transparent_scrim_opacity",
+      "min": 0,
+      "max": 60,
+      "step": 5,
+      "unit": "%",
+      "label": "Overlay contrast",
+      "info": "Adds a subtle contrast layer behind the transparent header for light or detailed hero images.",
+      "default": 0,
       "visible_if": "{{ section.settings.header_style == 'transparent' }}"
     }
   ],
@@ -727,7 +734,7 @@
           "type": "text",
           "id": "promotion_1_link_label",
           "label": "Link label",
-          "info": "The CTA renders only when both label and link are filled."
+          "info": "The button renders only when both label and link are filled."
         },
         {
           "type": "url",
@@ -804,7 +811,7 @@
           "type": "text",
           "id": "promotion_2_link_label",
           "label": "Link label",
-          "info": "The CTA renders only when both label and link are filled."
+          "info": "The button renders only when both label and link are filled."
         },
         {
           "type": "url",
@@ -847,15 +854,13 @@
             "promotion_1_text_size": "medium",
             "promotion_1_text_alignment": "left",
             "promotion_1_link_label": "SHOP NEW ARRIVALS",
-            "promotion_1_link": "/collections/new-arrivals",
             "promotion_2_heading": "Best Sellers",
             "promotion_2_heading_size": "h4",
             "promotion_2_heading_tag": "h3",
             "promotion_2_text": "<p>Explore customer favorites loved for their exceptional craftsmanship and lasting beauty.</p>",
             "promotion_2_text_size": "medium",
             "promotion_2_text_alignment": "left",
-            "promotion_2_link_label": "SHOP BEST SELLERS",
-            "promotion_2_link": "/collections/best-sellers"
+            "promotion_2_link_label": "SHOP BEST SELLERS"
           }
         }
       ]

@@ -27,16 +27,16 @@
             block: heading_block,
             content: heading_block.settings.heading,
             kind: 'heading',
-            default_preset: 'subheading',
-            default_font: 'subheading'
+            default_preset: '2xs',
+            default_font: 'heading'
           %}
         {% else %}
           {% render 'content-block',
             block: heading_block,
             content: heading_block.settings.text,
-            kind: 'text',
-            default_preset: 'subheading',
-            default_font: 'subheading'
+            kind: 'heading',
+            default_preset: '2xs',
+            default_font: 'heading'
           %}
         {% endif %}
       </div>
@@ -107,7 +107,7 @@
                 mobile_max_width: 960,
                 widths: '480, 720, 840, 960, 1200',
                 mobile_widths: '320, 480, 640, 800, 960',
-                sizes: '(min-width: 1200px) 509px, (min-width: 768px) 50vw, calc(100vw - 40px)',
+                sizes: '(min-width: 1200px) 509px, (min-width: 750px) 50vw, calc(100vw - 40px)',
                 class: 'collection-showcase__image',
                 loading: 'lazy',
                 alt: item_image_alt,
@@ -125,7 +125,7 @@
                     {% if item_link != blank %}
                       <a
                         class="collection-showcase__product collection-showcase__product--more"
-                        href="{{ item_link }}"
+                        href="{{ item_link | escape }}"
                         aria-label="{{ 'collection_showcase.view_collection' | t: collection: item_title | escape }}"
                       >+</a>
                     {% endif %}
@@ -135,7 +135,7 @@
                           <div
                             class="collection-showcase__product"
                             data-product-card
-                            data-product-card-url="{{ preview_product.url }}"
+                            data-product-card-url="{{ preview_product.url | escape }}"
                             data-selected-variant-id="{{ preview_product.selected_or_first_available_variant.id }}"
                           >
                             <button
@@ -144,7 +144,7 @@
                               aria-label="{{ 'product_card.quick_view' | t | append: ': ' | append: preview_product.title | escape }}"
                               aria-haspopup="dialog"
                               data-product-card-quick-view-open
-                              data-product-card-quick-view-url="{{ preview_product.url }}"
+                              data-product-card-quick-view-url="{{ preview_product.url | escape }}"
                             >
                               {% render 'responsive-media',
                                 image: preview_product.featured_image,
@@ -229,7 +229,7 @@
               {% if item_link != blank %}
                 <a
                   class="collection-showcase__arrow"
-                  href="{{ item_link }}"
+                  href="{{ item_link | escape }}"
                   aria-label="{{ 'collection_showcase.view_collection' | t: collection: item_title | escape }}"
                   data-collection-showcase-action
                 >
@@ -351,42 +351,41 @@
         {
           "type": "select",
           "id": "type_preset",
-          "label": "t:typography_blocks.preset",
+          "label": "t:typography_blocks.heading_size",
           "options": [
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.subheading"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            }
+            { "value": "3xl", "label": "t:typography_options.display_extra_large" },
+            { "value": "2xl", "label": "t:typography_options.display_large" },
+            { "value": "xl", "label": "t:typography_options.display_medium" },
+            { "value": "lg", "label": "t:typography_options.heading_extra_large" },
+            { "value": "md", "label": "t:typography_options.heading_large" },
+            { "value": "sm", "label": "t:typography_options.heading_medium" },
+            { "value": "xs", "label": "t:typography_options.heading_small" },
+            { "value": "2xs", "label": "t:typography_options.heading_extra_small" },
+            { "value": "custom", "label": "t:typography_options.custom" }
           ],
-          "default": "subheading"
+          "default": "2xs"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "t:typography_blocks.size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 50,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "t:typography_blocks.mobile_size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 30,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         },
         {
           "type": "select",
@@ -542,7 +541,7 @@
           "type": "heading",
           "settings": {
             "heading": "<p>DREAM COME TRUE — AW ‘26 COLLECTION</p>",
-            "type_preset": "subheading"
+            "type_preset": "2xs"
           }
         },
         {

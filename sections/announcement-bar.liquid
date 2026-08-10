@@ -1,11 +1,7 @@
-{% unless section.settings.layout == 'marquee' %}
-  {% render 'swiper-stylesheet' %}
-{% endunless %}
-
 {% comment %}
-  Keep the announcement-bar destinations optional in Shopify's global Footer
-  settings. These fallbacks keep the social icons linked when those settings
-  are still blank, without adding required URL settings to this section.
+  Social and appointment destinations are intentionally optional. Blank URLs
+  hide their controls so a fresh install never links to a generic homepage or
+  presents a false affordance.
 {% endcomment %}
 
 {% liquid
@@ -20,15 +16,28 @@
     endcase
   endfor
 
-  assign announcement_x_url = section.settings.x_url | default: settings.x_url | default: 'https://x.com'
-  assign announcement_facebook_url = section.settings.facebook_url | default: settings.facebook_url | default: 'https://www.facebook.com'
-  assign announcement_pinterest_url = section.settings.pinterest_url | default: settings.pinterest_url | default: 'https://www.pinterest.com'
-  assign announcement_instagram_url = section.settings.instagram_url | default: settings.instagram_url | default: 'https://www.instagram.com'
-  assign announcement_social_count = 4
+  assign announcement_x_url = section.settings.x_url
+  assign announcement_facebook_url = section.settings.facebook_url
+  assign announcement_pinterest_url = section.settings.pinterest_url
+  assign announcement_instagram_url = section.settings.instagram_url
+  assign announcement_social_count = 0
+  if announcement_x_url != blank
+    assign announcement_social_count = announcement_social_count | plus: 1
+  endif
+  if announcement_facebook_url != blank
+    assign announcement_social_count = announcement_social_count | plus: 1
+  endif
+  if announcement_pinterest_url != blank
+    assign announcement_social_count = announcement_social_count | plus: 1
+  endif
+  if announcement_instagram_url != blank
+    assign announcement_social_count = announcement_social_count | plus: 1
+  endif
   assign announcement_type = section.settings.layout | default: 'slider'
   assign announcement_layout = announcement_type
   assign announcement_section_width = 'full'
-  assign announcement_module = 'section-announcement-bar.js'
+  assign announcement_module = blank
+  assign announcement_marquee_tag = 'div'
   assign show_side_content = false
 
   if announcement_type == 'slider_social'
@@ -44,13 +53,15 @@
     assign show_side_content = true
   endif
 
-  if announcement_layout == 'marquee'
+  if announcement_layout == 'marquee' and settings.enable_motion and announcement_item_count > 1
     assign announcement_module = 'section-marquee.js'
+    assign announcement_marquee_tag = 'theme-marquee'
   endif
 
   assign show_navigation = false
   if announcement_layout == 'slider' and announcement_item_count > 1
     assign show_navigation = true
+    assign announcement_module = 'section-announcement-bar.js'
   endif
 
   assign announcement_total_display = announcement_item_count
@@ -59,22 +70,27 @@
   endif
 %}
 
-{% if section.blocks.size > 0 %}
+{% if show_navigation %}
+  {% render 'swiper-stylesheet' %}
+{% endif %}
+
+{% if announcement_item_count > 0 %}
   <announcement-bar
-    class="announcement-bar announcement-bar--{{ announcement_layout }} announcement-bar--{{ announcement_section_width }} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
+    class="announcement-bar announcement-bar--{{ announcement_layout }} announcement-bar--{{ announcement_section_width }}{% if announcement_layout == 'marquee' and announcement_module == blank %} announcement-bar--static-motion{% endif %} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
     style="--announcement-bar-height: {{ section.settings.height_desktop }}px; --announcement-bar-height-mobile: {{ section.settings.height_mobile }}px;"
     data-section-id="{{ section.id }}"
     data-behavior="{% if section.settings.enable_rotation %}rotate{% else %}show_all{% endif %}"
     data-interval="{{ section.settings.autoplay_interval | times: 1000 }}"
-    data-pause-on-hover="{{ section.settings.pause_on_hover }}"
     data-layout="{{ announcement_layout }}"
-    data-deferred-module="{{ announcement_module | asset_url }}"
+    data-motion-enabled="{{ settings.enable_motion }}"
+    {% if announcement_module != blank %}data-deferred-module="{{ announcement_module | asset_url }}"{% endif %}
+    role="region"
     aria-label="{{ 'announcement_bar.announcement' | t | escape }}"
   >
     <div class="announcement-bar__inner{% if show_side_content %} announcement-bar__inner--contained{% endif %}">
       {% if announcement_layout == 'marquee' %}
-        <theme-marquee
-          class="announcement-bar__marquee marquee marquee--direction-{{ section.settings.marquee_direction }}{% if section.settings.marquee_pause_on_hover %} marquee--pause-on-hover{% endif %}"
+        <{{ announcement_marquee_tag }}
+          class="announcement-bar__marquee marquee marquee--direction-{{ section.settings.marquee_direction }} marquee--pause-on-hover{% if announcement_module == blank %} marquee--static{% endif %}"
           style="--marquee-duration: {{ section.settings.marquee_speed }}s; --marquee-item-gap: 32px; --marquee-min-height: var(--announcement-bar-height); --marquee-min-height-mobile: var(--announcement-bar-height-mobile); --marquee-item-alignment: center;"
         >
           <div class="marquee__viewport">
@@ -83,14 +99,21 @@
                 {% for block in section.blocks %}
                   {% if block.type == 'announcement' or block.type == 'text_slide' %}
                     {% if block.settings.text != blank %}
-                      <div class="announcement-bar__marquee-item" {{ block.shopify_attributes }}>
+                      {% liquid
+                        assign announcement_custom_size = block.settings.font_size | default: 16 | at_least: 10 | at_most: 24
+                        assign announcement_custom_size_mobile = block.settings.font_size_mobile | default: 14 | at_least: 10 | at_most: 20
+                      %}
+                      <div
+                        class="announcement-bar__marquee-item"
+                        style="--announcement-custom-size: {{ announcement_custom_size }}px; --announcement-custom-size-mobile: {{ announcement_custom_size_mobile }}px;"
+                        {{ block.shopify_attributes }}
+                      >
                         {% render 'content-block',
                           block: block,
                           content: block.settings.text,
                           kind: 'text',
                           default_preset: 'subheading',
                           default_font: 'body',
-                          force_preset: 'subheading',
                           include_shopify_attributes: false
                         %}
                       </div>
@@ -100,7 +123,7 @@
               </div>
             </div>
           </div>
-        </theme-marquee>
+        </{{ announcement_marquee_tag }}>
       {% else %}
       {% if show_side_content and announcement_social_count > 0 %}
         <nav class="announcement-bar__social" aria-label="{{ 'footer.social_links' | t | escape }}">
@@ -139,30 +162,36 @@
 
       {% if announcement_item_count > 0 %}
         <div class="announcement-bar__content">
-          <div class="announcement-bar__message-row{% if show_navigation %} announcement-bar__message-row--with-controls{% endif %}"{% if show_navigation %} data-announcement-navigator{% endif %}>
+          <div
+            class="announcement-bar__message-row{% if show_navigation %} announcement-bar__message-row--with-controls{% endif %}"
+            {% if show_navigation %}data-announcement-navigator role="group" aria-label="{{ 'announcement_bar.slide_navigation' | t | escape }}"{% endif %}
+          >
             {% if show_navigation %}
-              <nav class="announcement-bar__navigator" aria-label="{{ 'announcement_bar.slide_navigation' | t | escape }}">
-                <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="-1" aria-label="{{ 'announcement_bar.previous_slide' | t | escape }}">
-                  {% render 'icon', name: 'chevron-left' %}
-                </button>
-              </nav>
+              <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="-1" aria-label="{{ 'announcement_bar.previous_slide' | t | escape }}">
+                {% render 'icon', name: 'chevron-left' %}
+              </button>
               <span class="announcement-bar__counter announcement-bar__counter--spacer" aria-hidden="true">
                 <span>01</span><span aria-hidden="true"> / </span><span>{{ announcement_total_display }}</span>
               </span>
             {% endif %}
 
-            <div class="announcement-bar__messages swiper" data-announcement-slider aria-live="polite">
-              <div class="announcement-bar__slides swiper-wrapper">
+            <div class="announcement-bar__messages{% if show_navigation %} swiper{% endif %}"{% if show_navigation %} data-announcement-slider{% endif %}>
+              <div class="announcement-bar__slides{% if show_navigation %} swiper-wrapper{% endif %}">
                 {% assign announcement_item_index = 0 %}
                 {% for block in section.blocks %}
                   {% case block.type %}
                     {% when 'announcement', 'text_slide' %}
                       {% if block.settings.text != blank %}
+                        {% liquid
+                          assign announcement_custom_size = block.settings.font_size | default: 16 | at_least: 10 | at_most: 24
+                          assign announcement_custom_size_mobile = block.settings.font_size_mobile | default: 14 | at_least: 10 | at_most: 20
+                        %}
                         <div
-                          class="announcement-bar__item swiper-slide"
+                          class="announcement-bar__item{% if show_navigation %} swiper-slide{% endif %}"
                           data-announcement-item
                           data-block-id="{{ block.id }}"
-                          data-swiper-slide-index="{{ announcement_item_index }}"
+                          style="--announcement-custom-size: {{ announcement_custom_size }}px; --announcement-custom-size-mobile: {{ announcement_custom_size_mobile }}px;"
+                          {% if show_navigation %}data-swiper-slide-index="{{ announcement_item_index }}"{% endif %}
                           {{ block.shopify_attributes }}
                         >
                           {% render 'content-block',
@@ -171,7 +200,6 @@
                             kind: 'text',
                             default_preset: 'subheading',
                             default_font: 'body',
-                            force_preset: 'subheading',
                             include_shopify_attributes: false
                           %}
                         </div>
@@ -186,30 +214,40 @@
               <span class="announcement-bar__counter" aria-hidden="true">
                 <span data-announcement-current>01</span><span aria-hidden="true"> / </span><span data-announcement-total>{{ announcement_total_display }}</span>
               </span>
-              <nav class="announcement-bar__navigator" aria-label="{{ 'announcement_bar.slide_navigation' | t | escape }}">
-                <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="1" aria-label="{{ 'announcement_bar.next_slide' | t | escape }}">
-                  {% render 'icon', name: 'chevron-right' %}
-                </button>
-              </nav>
+              <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="1" aria-label="{{ 'announcement_bar.next_slide' | t | escape }}">
+                {% render 'icon', name: 'chevron-right' %}
+              </button>
+              <span
+                class="visually-hidden"
+                data-announcement-status
+                data-status-template="{{ 'announcement_bar.slide_status' | t: current: '[current]', total: '[total]' | escape }}"
+                role="status"
+                aria-live="polite"
+                aria-atomic="true"
+              ></span>
             {% endif %}
           </div>
         </div>
       {% endif %}
 
-      {% if show_side_content and section.settings.appointment_label != blank %}
-        {% if section.settings.appointment_link != blank %}
-          <a class="announcement-bar__appointment" href="{{ section.settings.appointment_link | escape }}">
-            {{ section.settings.appointment_label | escape }} <span aria-hidden="true">↗</span>
-          </a>
-        {% else %}
-          <span class="announcement-bar__appointment">
-            {{ section.settings.appointment_label | escape }} <span aria-hidden="true">↗</span>
-          </span>
-        {% endif %}
+      {% if show_side_content and section.settings.appointment_label != blank and section.settings.appointment_link != blank %}
+        <a class="announcement-bar__appointment" href="{{ section.settings.appointment_link | escape }}">
+          {{ section.settings.appointment_label | escape }} <span aria-hidden="true">↗</span>
+        </a>
       {% endif %}
       {% endif %}
     </div>
   </announcement-bar>
+{% elsif request.design_mode %}
+  <announcement-bar
+    class="announcement-bar announcement-bar--empty color-scheme color-{{ section.settings.color_scheme.id }} full-width"
+    role="region"
+    aria-label="{{ 'announcement_bar.announcement' | t | escape }}"
+  >
+    <p class="announcement-bar__empty-message">{{ 'announcement_bar.empty' | t }}</p>
+  </announcement-bar>
+{% else %}
+  <announcement-bar class="announcement-bar" hidden aria-hidden="true"></announcement-bar>
 {% endif %}
 
 {% stylesheet %}
@@ -226,6 +264,15 @@
     line-height: var(--spinel-type-line-label);
     letter-spacing: var(--spinel-type-tracking-label);
     text-transform: uppercase;
+  }
+
+  .announcement-bar[hidden] { display: none; }
+
+  .announcement-bar__empty-message {
+    min-height: var(--announcement-bar-height, 37px);
+    margin: 0;
+    padding: 8px 16px;
+    text-align: center;
   }
 
   .announcement-bar__inner {
@@ -259,7 +306,7 @@
     grid-column: 1;
   }
 
-  .announcement-bar--full .announcement-bar__message-row {
+  .announcement-bar--full .announcement-bar__message-row--with-controls {
     display: grid;
     grid-template-columns: max-content max-content minmax(0, 1fr) max-content max-content;
   }
@@ -310,14 +357,23 @@
     flex-shrink: 0;
     padding-inline: 4px;
     color: inherit;
-    overflow: hidden;
   }
 
-  .announcement-bar__marquee-item .content-block,
-  .announcement-bar__item .content-block {
+  .announcement-bar__marquee-item .content-block {
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
+  }
+
+  .announcement-bar__item .content-block {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    white-space: normal;
+  }
+
+  .announcement-bar__marquee-item .content-block--inline-typography,
+  .announcement-bar__item .content-block--inline-typography {
+    font-size: var(--announcement-custom-size) !important;
   }
 
   .announcement-bar__marquee-item .content-block > p,
@@ -359,12 +415,12 @@
 
   .announcement-bar__social-link {
     display: inline-flex;
-    width: 16px;
-    height: 16px;
+    width: 32px;
+    height: 32px;
     align-items: center;
     justify-content: center;
     color: inherit;
-    transition: opacity 180ms ease;
+    transition: opacity var(--motion-duration) ease;
   }
 
   .announcement-bar__social-link svg {
@@ -385,10 +441,13 @@
   }
 
   .announcement-bar__messages {
+    flex: 1 1 auto;
     width: min(62vw, 560px);
-    height: var(--announcement-bar-height);
+    min-height: var(--announcement-bar-height);
     min-width: 0;
   }
+
+  .announcement-bar__messages.swiper { overflow: hidden; }
 
   .announcement-bar__slides {
     align-items: center;
@@ -401,34 +460,30 @@
   }
 
   .announcement-bar__messages.swiper-vertical .announcement-bar__item {
-    opacity: 0;
+    visibility: hidden;
     pointer-events: none;
-    transition-property: opacity;
-    transition-duration: var(--announcement-bar-transition-duration, 420ms);
-    transition-timing-function: ease;
-    will-change: opacity;
   }
 
   .announcement-bar__messages.swiper-vertical .announcement-bar__item.swiper-slide-active {
+    visibility: visible;
     pointer-events: auto;
-    opacity: 1;
   }
 
   .announcement-bar__messages .announcement-bar__item {
     display: flex;
     width: 100%;
-    height: 100%;
+    min-height: var(--announcement-bar-height);
     min-width: 0;
     align-items: center;
     justify-content: center;
-    padding-inline: 4px;
+    padding: 6px 4px;
     color: inherit;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .announcement-bar__item > .content-block {
     min-width: 0;
-    overflow: hidden;
+    overflow: visible;
   }
 
   .announcement-bar__item .content-block {
@@ -436,15 +491,11 @@
     text-align: center;
   }
 
-  .announcement-bar__navigator {
-    display: contents;
-  }
-
   .announcement-bar__navigator-arrow {
     display: grid;
-    width: 24px;
-    height: 24px;
-    flex: 0 0 24px;
+    width: 32px;
+    height: 32px;
+    flex: 0 0 32px;
     padding: 0;
     border: 0;
     background: transparent;
@@ -452,7 +503,7 @@
     cursor: pointer;
     place-items: center;
     opacity: 0.8;
-    transition: opacity 180ms ease, transform 180ms ease;
+    transition: opacity var(--motion-duration) ease, transform var(--motion-duration) ease;
   }
 
   .announcement-bar__navigator-arrow:hover {
@@ -468,7 +519,7 @@
   }
 
   .announcement-bar__counter {
-    color: var(--color-secondary-button-outline, currentcolor);
+    color: var(--color-heading);
     font-size: var(--spinel-type-size-label);
     font-variant-numeric: tabular-nums;
     line-height: var(--spinel-type-line-label);
@@ -477,6 +528,61 @@
   }
 
   .announcement-bar__counter--spacer { visibility: hidden; }
+
+  .announcement-bar[data-motion-enabled='false'] .announcement-bar__marquee .marquee__viewport,
+  .announcement-bar__marquee.marquee--static .marquee__viewport {
+    overflow: visible;
+  }
+
+  .announcement-bar--static-motion .announcement-bar__inner,
+  .announcement-bar[data-motion-enabled='false'] .announcement-bar__inner {
+    overflow: visible;
+  }
+
+  .announcement-bar[data-motion-enabled='false'] .announcement-bar__marquee .marquee__track,
+  .announcement-bar[data-motion-enabled='false'] .announcement-bar__marquee .marquee__group,
+  .announcement-bar__marquee.marquee--static .marquee__track,
+  .announcement-bar__marquee.marquee--static .marquee__group {
+    width: 100%;
+    flex-wrap: wrap;
+    justify-content: center;
+    animation: none;
+    transform: none;
+  }
+
+  .announcement-bar--static-motion :is([data-marquee-clone], [data-marquee-duplicate]),
+  .announcement-bar[data-motion-enabled='false'] :is([data-marquee-clone], [data-marquee-duplicate]) {
+    display: none;
+  }
+
+  .announcement-bar--static-motion .announcement-bar__marquee-item,
+  .announcement-bar[data-motion-enabled='false'] .announcement-bar__marquee-item {
+    max-width: 100%;
+    flex: 1 1 100%;
+    overflow: visible;
+    text-align: center;
+  }
+
+  .announcement-bar--static-motion .announcement-bar__marquee-item .content-block,
+  .announcement-bar[data-motion-enabled='false'] .announcement-bar__marquee-item .content-block {
+    overflow: visible;
+    overflow-wrap: anywhere;
+    text-overflow: clip;
+    white-space: normal;
+  }
+
+  .no-js .announcement-bar__message-row--with-controls {
+    display: block;
+  }
+
+  .no-js .announcement-bar__navigator-arrow,
+  .no-js .announcement-bar__counter {
+    display: none;
+  }
+
+  .no-js .announcement-bar__messages {
+    width: 100%;
+  }
 
   @media (max-width: 899px) {
     .announcement-bar__social,
@@ -497,19 +603,54 @@
     .announcement-bar__content {
       width: 100%;
       grid-column: 1;
-      overflow: hidden;
+      overflow: visible;
     }
 
     .announcement-bar__messages {
-      width: calc(100vw - 124px);
-      height: var(--announcement-bar-height-mobile);
+      width: auto;
+      min-height: var(--announcement-bar-height-mobile);
     }
 
-    .announcement-bar__message-row { gap: 8px; }
+    .announcement-bar__message-row { gap: 6px; }
 
-    .announcement-bar__navigator-arrow { width: 24px; height: 24px; flex-basis: 24px; }
+    .announcement-bar__message-row--with-controls {
+      display: grid;
+      grid-template-columns: 32px minmax(0, 1fr) max-content 32px;
+    }
+
+    .announcement-bar--full .announcement-bar__message-row--with-controls {
+      grid-template-columns: 32px minmax(0, 1fr) max-content 32px;
+    }
+
+    .announcement-bar__message-row--with-controls .announcement-bar__counter--spacer { display: none; }
+    .announcement-bar__message-row--with-controls .announcement-bar__messages { grid-column: 2; }
+
+    .announcement-bar__navigator-arrow { width: 32px; height: 32px; flex-basis: 32px; }
     .announcement-bar__navigator-arrow svg { width: 10px; height: 10px; }
     .announcement-bar__counter { font-size: 9px; }
+
+    .announcement-bar__messages .announcement-bar__item {
+      min-height: var(--announcement-bar-height-mobile);
+      padding-block: 7px;
+    }
+
+    .announcement-bar__marquee-item .content-block--inline-typography,
+    .announcement-bar__item .content-block--inline-typography {
+      font-size: var(--announcement-custom-size-mobile) !important;
+    }
+  }
+
+  @media (max-width: 374px) {
+    .announcement-bar__message-row--with-controls {
+      grid-template-columns: 32px minmax(0, 1fr) 32px;
+    }
+
+    .announcement-bar--full .announcement-bar__message-row--with-controls {
+      grid-template-columns: 32px minmax(0, 1fr) 32px;
+    }
+
+    .announcement-bar__message-row--with-controls .announcement-bar__counter { display: none; }
+    .announcement-bar__message-row--with-controls .announcement-bar__messages { grid-column: 2; }
   }
 
   @media screen and (min-width: 750px) {
@@ -519,10 +660,40 @@
 
   @media (prefers-reduced-motion: reduce) {
     .announcement-bar__navigator-arrow,
+    .announcement-bar__social-link,
     .announcement-bar__messages.swiper-vertical .announcement-bar__item,
     .announcement-bar__marquee .marquee__track {
       transition: none;
       animation-play-state: paused;
+    }
+
+    .announcement-bar__marquee .marquee__viewport { overflow: visible; }
+
+    .announcement-bar--marquee .announcement-bar__inner { overflow: visible; }
+
+    .announcement-bar__marquee .marquee__track,
+    .announcement-bar__marquee .marquee__group {
+      width: 100%;
+      flex-wrap: wrap;
+      justify-content: center;
+      animation: none;
+      transform: none;
+    }
+
+    .announcement-bar :is([data-marquee-clone], [data-marquee-duplicate]) { display: none; }
+
+    .announcement-bar__marquee-item {
+      max-width: 100%;
+      flex: 1 1 100%;
+      overflow: visible;
+      text-align: center;
+    }
+
+    .announcement-bar__marquee-item .content-block {
+      overflow: visible;
+      overflow-wrap: anywhere;
+      text-overflow: clip;
+      white-space: normal;
     }
   }
 {% endstylesheet %}
@@ -544,11 +715,11 @@
       "options": [
         {
           "value": "slider",
-          "label": "Slider"
+          "label": "Slideshow"
         },
         {
           "value": "slider_social",
-          "label": "Slider with social links"
+          "label": "Slideshow with social links"
         },
         {
           "value": "marquee",
@@ -616,14 +787,14 @@
     },
     {
       "type": "header",
-      "content": "Slider behavior",
+      "content": "Slideshow behavior",
       "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
     },
     {
       "type": "checkbox",
       "id": "enable_rotation",
       "label": "Auto-rotate",
-      "default": true,
+      "default": false,
       "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
     },
     {
@@ -631,7 +802,7 @@
       "id": "pause_on_hover",
       "label": "Pause on hover",
       "default": true,
-      "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
+      "visible_if": "{{ false }}"
     },
     {
       "type": "range",
@@ -642,7 +813,7 @@
       "unit": "s",
       "label": "Change every",
       "default": 5,
-      "visible_if": "{{ section.settings.layout == 'slider' or section.settings.layout == 'slider_social' }}"
+      "visible_if": "{{ section.settings.enable_rotation and section.settings.layout != 'marquee' }}"
     },
     {
       "type": "header",
@@ -682,7 +853,7 @@
       "id": "marquee_pause_on_hover",
       "label": "Pause marquee on hover or focus",
       "default": true,
-      "visible_if": "{{ section.settings.layout == 'marquee' }}"
+      "visible_if": "{{ false }}"
     },
     {
       "type": "header",
@@ -705,6 +876,41 @@
           "id": "text",
           "label": "t:typography_blocks.text",
           "default": "Shipping options and pricing are calculated at checkout."
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "t:typography_blocks.text_size",
+          "options": [
+            { "value": "lg", "label": "t:typography_options.body_large" },
+            { "value": "md", "label": "t:typography_options.body_medium" },
+            { "value": "sm", "label": "t:typography_options.body_small" },
+            { "value": "xs", "label": "t:typography_options.body_extra_small" },
+            { "value": "custom", "label": "t:typography_options.custom" }
+          ],
+          "default": "sm"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "t:typography_blocks.size",
+          "min": 10,
+          "max": 24,
+          "step": 1,
+          "unit": "px",
+          "default": 16,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "t:typography_blocks.mobile_size",
+          "min": 10,
+          "max": 20,
+          "step": 1,
+          "unit": "px",
+          "default": 14,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         }
       ]
     }

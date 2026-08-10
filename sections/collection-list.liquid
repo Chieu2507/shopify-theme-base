@@ -52,7 +52,7 @@
       {% for block in section.blocks %}
         {% if block.type == 'heading' and block.settings.heading != blank %}
           <div class="collection-list__header collection-list__heading">
-            {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+            {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'xl', default_font: 'heading' %}
           </div>
         {% endif %}
       {% endfor %}
@@ -126,7 +126,7 @@
               {% if card_link != blank and section.settings.layout != 'split-promotions' %}
                 <a
                   class="collection-list__card collection-list__card--{{ section.settings.layout }} color-scheme color-{{ card_color_scheme.id }}"
-                  href="{{ card_link }}"
+                  href="{{ card_link | escape }}"
                   style="--collection-list-image-position: {{ block.settings.focal_point }}; --collection-list-overlay-color: {{ card_overlay_color }};"
                 >
               {% else %}
@@ -162,7 +162,7 @@
                       {{ card_title | escape }}
                     </{{ section.settings.card_heading_tag | default: 'h3' }}>
                     {% if block.settings.button_label != blank and card_link != blank %}
-                      <a class="collection-list__button button button--{{ block.settings.button_style | default: 'tertiary' }}" href="{{ card_link }}">
+                      <a class="collection-list__button button button--{{ block.settings.button_style | default: 'tertiary' }}" href="{{ card_link | escape }}">
                         {{ block.settings.button_label | escape }}
                       </a>
                     {% endif %}
@@ -300,7 +300,7 @@
         },
         {
           "value": "slider",
-          "label": "Slider"
+          "label": "Slideshow"
         }
       ],
       "default": "slider",
@@ -317,7 +317,7 @@
         },
         {
           "value": "slider",
-          "label": "Slider"
+          "label": "Slideshow"
         }
       ],
       "default": "slider",
@@ -326,7 +326,7 @@
     {
       "type": "checkbox",
       "id": "show_pagination",
-      "label": "Slider pagination",
+      "label": "Slideshow pagination",
       "default": true,
       "visible_if": "{{ section.settings.layout == 'grid' }}"
     },
@@ -577,42 +577,41 @@
         {
           "type": "select",
           "id": "type_preset",
-          "label": "t:typography_blocks.preset",
+          "label": "t:typography_blocks.heading_size",
           "options": [
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.subheading"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            }
+            { "value": "3xl", "label": "t:typography_options.display_extra_large" },
+            { "value": "2xl", "label": "t:typography_options.display_large" },
+            { "value": "xl", "label": "t:typography_options.display_medium" },
+            { "value": "lg", "label": "t:typography_options.heading_extra_large" },
+            { "value": "md", "label": "t:typography_options.heading_large" },
+            { "value": "sm", "label": "t:typography_options.heading_medium" },
+            { "value": "xs", "label": "t:typography_options.heading_small" },
+            { "value": "2xs", "label": "t:typography_options.heading_extra_small" },
+            { "value": "custom", "label": "t:typography_options.custom" }
           ],
-          "default": "h2"
+          "default": "xl"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "t:typography_blocks.size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 50,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "t:typography_blocks.mobile_size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 30,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         },
         {
           "type": "select",
@@ -679,7 +678,7 @@
         {
           "type": "select",
           "id": "button_style",
-          "label": "CTA",
+          "label": "Button style",
           "options": [
             {
               "value": "primary",

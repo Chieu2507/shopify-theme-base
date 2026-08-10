@@ -11,12 +11,20 @@
   if section.settings.autoplay
     assign video_muted = true
   endif
+
+  assign poster_loading = 'lazy'
+  assign poster_fetchpriority = 'auto'
+  if section.index == 1
+    assign poster_loading = 'eager'
+    assign poster_fetchpriority = 'high'
+  endif
 %}
 
 {% if section.blocks.size > 0 %}
   <video-banner
     class="video-banner video-banner--{{ section.settings.content_position }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.autoplay %} video-banner--autoplay{% endif %}"
     style="--video-banner-height-desktop: {{ section.settings.height_desktop }}px; --video-banner-height-tablet: {{ section.settings.height_tablet }}px; --video-banner-height-mobile: {{ section.settings.height_mobile }}px; --video-banner-content-width: {{ section.settings.content_width }}px; --video-banner-content-padding: {{ section.settings.content_padding }}px; --video-banner-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};"
+    data-autoplay="{{ section.settings.autoplay }}"
     data-deferred-module="{{ 'section-video-banner.js' | asset_url }}"
   >
     <div class="video-banner__inner">
@@ -36,7 +44,7 @@
                 | video_tag:
                   class: 'video-banner__video media-cover',
                   image_size: '2400x',
-                  autoplay: section.settings.autoplay,
+                  autoplay: false,
                   loop: section.settings.loop,
                   muted: video_muted,
                   controls: true,
@@ -50,7 +58,7 @@
                 | video_tag:
                   class: 'video-banner__video media-cover',
                   image_size: '2400x',
-                  autoplay: section.settings.autoplay,
+                  autoplay: false,
                   loop: section.settings.loop,
                   muted: video_muted,
                   controls: true,
@@ -65,10 +73,13 @@
               widths: '480, 750, 1100, 1500, 1920, 2400',
               sizes: '100vw',
               class: 'video-banner__poster media-cover',
-              loading: 'lazy',
+              loading: poster_loading,
+              fetchpriority: poster_fetchpriority,
               alt: video_block.settings.accessibility_label,
               placeholder_asset: 'placeholder-image-video.svg',
-              placeholder_class: 'video-banner__placeholder media-cover'
+              placeholder_class: 'video-banner__placeholder media-cover',
+              placeholder_loading: poster_loading,
+              placeholder_fetchpriority: poster_fetchpriority
             %}
           {% endif %}
 
@@ -99,9 +110,9 @@
                     {% render 'content-block',
                       block: block,
                       content: block.settings.text,
-                      kind: 'text',
-                      default_preset: 'subheading',
-                      default_font: 'subheading'
+                      kind: 'heading',
+                      default_preset: '2xs',
+                      default_font: 'heading'
                     %}
                   </div>
                 {% endif %}
@@ -109,7 +120,7 @@
               {% when 'heading' %}
                 {% if block.settings.heading != blank %}
                   <div class="video-banner__heading-block video-banner__heading">
-                    {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+                    {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'xl', default_font: 'heading' %}
                   </div>
                 {% endif %}
 
@@ -538,42 +549,41 @@
         {
           "type": "select",
           "id": "type_preset",
-          "label": "t:typography_blocks.preset",
+          "label": "t:typography_blocks.heading_size",
           "options": [
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.subheading"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            }
+            { "value": "3xl", "label": "t:typography_options.display_extra_large" },
+            { "value": "2xl", "label": "t:typography_options.display_large" },
+            { "value": "xl", "label": "t:typography_options.display_medium" },
+            { "value": "lg", "label": "t:typography_options.heading_extra_large" },
+            { "value": "md", "label": "t:typography_options.heading_large" },
+            { "value": "sm", "label": "t:typography_options.heading_medium" },
+            { "value": "xs", "label": "t:typography_options.heading_small" },
+            { "value": "2xs", "label": "t:typography_options.heading_extra_small" },
+            { "value": "custom", "label": "t:typography_options.custom" }
           ],
-          "default": "subheading"
+          "default": "2xs"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "t:typography_blocks.size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 50,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "t:typography_blocks.mobile_size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 30,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         },
         {
           "type": "select",
@@ -714,42 +724,41 @@
         {
           "type": "select",
           "id": "type_preset",
-          "label": "t:typography_blocks.preset",
+          "label": "t:typography_blocks.heading_size",
           "options": [
-            {
-              "value": "paragraph",
-              "label": "t:typography_options.paragraph"
-            },
-            {
-              "value": "subheading",
-              "label": "t:typography_options.subheading"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.h1"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.h2"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.h3"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.h4"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.h5"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.h6"
-            }
+            { "value": "3xl", "label": "t:typography_options.display_extra_large" },
+            { "value": "2xl", "label": "t:typography_options.display_large" },
+            { "value": "xl", "label": "t:typography_options.display_medium" },
+            { "value": "lg", "label": "t:typography_options.heading_extra_large" },
+            { "value": "md", "label": "t:typography_options.heading_large" },
+            { "value": "sm", "label": "t:typography_options.heading_medium" },
+            { "value": "xs", "label": "t:typography_options.heading_small" },
+            { "value": "2xs", "label": "t:typography_options.heading_extra_small" },
+            { "value": "custom", "label": "t:typography_options.custom" }
           ],
-          "default": "h2"
+          "default": "xl"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "t:typography_blocks.size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 50,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "t:typography_blocks.mobile_size",
+          "min": 8,
+          "max": 200,
+          "step": 2,
+          "unit": "px",
+          "default": 30,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         },
         {
           "type": "select",

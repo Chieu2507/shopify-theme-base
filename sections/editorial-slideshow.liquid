@@ -32,7 +32,9 @@
 >
   <div class="editorial-slideshow__viewport swiper" data-editorial-slideshow-slider>
     <div class="editorial-slideshow__wrapper swiper-wrapper">
-      {% content_for 'blocks' %}
+      {% for block in section.blocks %}
+        {% render block %}
+      {% endfor %}
     </div>
   </div>
 
@@ -51,7 +53,7 @@
         data-editorial-previous
       >
         {% render 'icon', name: 'chevron-left' %}
-        <span class="editorial-slideshow__navigator-arrow-label">PREV</span>
+        <span class="editorial-slideshow__navigator-arrow-label">{{ 'slideshow.previous_short' | t | escape }}</span>
       </button>
 
       <div class="editorial-slideshow__tabs" role="tablist" data-editorial-slide-tabs></div>
@@ -62,28 +64,30 @@
         aria-label="{{ 'slideshow.next' | t | escape }}"
         data-editorial-next
       >
-        <span class="editorial-slideshow__navigator-arrow-label">NEXT</span>
+        <span class="editorial-slideshow__navigator-arrow-label">{{ 'slideshow.next_short' | t | escape }}</span>
         {% render 'icon', name: 'chevron-right' %}
       </button>
 
-      <button
-        class="editorial-slideshow__autoplay"
-        type="button"
-        aria-label="{% if section.settings.autoplay %}{{ 'slideshow.pause' | t | escape }}{% else %}{{ 'slideshow.resume' | t | escape }}{% endif %}"
-        aria-pressed="{% if section.settings.autoplay %}true{% else %}false{% endif %}"
-        data-label-pause="{{ 'slideshow.pause' | t | escape }}"
-        data-label-resume="{{ 'slideshow.resume' | t | escape }}"
-        data-editorial-autoplay-toggle
-      >
-        <span class="editorial-slideshow__autoplay-icon" aria-hidden="true">
-          {% render 'icon', name: 'pause', class: 'editorial-slideshow__autoplay-icon--pause' %}
-          {% render 'icon', name: 'play-outline', class: 'editorial-slideshow__autoplay-icon--play' %}
-        </span>
-        <span class="editorial-slideshow__autoplay-copy">
-          <span class="editorial-slideshow__autoplay-label">AUTOPLAY</span>
-          <span class="editorial-slideshow__autoplay-value" data-editorial-autoplay-value>{{ autoplay_delay_display }} SEC</span>
-        </span>
-      </button>
+      {% if section.settings.autoplay and section.blocks.size > 1 %}
+        <button
+          class="editorial-slideshow__autoplay"
+          type="button"
+          aria-label="{{ 'slideshow.pause' | t | escape }}"
+          aria-pressed="true"
+          data-label-pause="{{ 'slideshow.pause' | t | escape }}"
+          data-label-resume="{{ 'slideshow.resume' | t | escape }}"
+          data-editorial-autoplay-toggle
+        >
+          <span class="editorial-slideshow__autoplay-icon" aria-hidden="true">
+            {% render 'icon', name: 'pause', class: 'editorial-slideshow__autoplay-icon--pause' %}
+            {% render 'icon', name: 'play-outline', class: 'editorial-slideshow__autoplay-icon--play' %}
+          </span>
+          <span class="editorial-slideshow__autoplay-copy">
+            <span class="editorial-slideshow__autoplay-label">{{ 'slideshow.autoplay' | t | escape }}</span>
+            <span class="editorial-slideshow__autoplay-value" data-editorial-autoplay-value>{{ autoplay_delay_display }} {{ 'slideshow.seconds_short' | t | escape }}</span>
+          </span>
+        </button>
+      {% endif %}
 
       <button
         class="editorial-slideshow__navigator-toggle"

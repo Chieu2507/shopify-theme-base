@@ -199,10 +199,12 @@ class EditorialSlideshow extends HTMLElement {
 
   refreshSlideCollection() {
     const nextSignature = this.getSlideSignature();
-    if (nextSignature === this.slideSignature) return;
-
     const activeSlide = this.getSlides().find((slide) => slide.classList.contains('swiper-slide-active'));
-    const activeBlockId = activeSlide?.dataset.blockId;
+    if (nextSignature === this.slideSignature && activeSlide) return;
+
+    const activeBlockId = activeSlide?.dataset.blockId
+      || this.tabs[this.activeIndex || 0]?.dataset.editorialBlockId;
+    this.classList.remove('editorial-slideshow--ready');
     this.destroySwiper();
     this.buildNavigatorTabs();
     this.bindNavigatorTabs();
@@ -368,26 +370,31 @@ class EditorialSlideshow extends HTMLElement {
 
     this.preloadAdjacentSlides(initialSlide);
 
-    this.swiper = new Swiper(this.slider, {
-      modules: [A11y, EffectFade],
-      slidesPerView: 1,
-      speed: this.reduceMotion.matches ? 0 : 1000,
-      effect: 'fade',
-      fadeEffect: {
-        crossFade: true,
-      },
-      initialSlide: Math.max(0, Math.min(initialSlide, slideCount - 1)),
-      loop: false,
-      rewind: slideCount > 1,
-      watchOverflow: true,
-      grabCursor: slideCount > 1,
-      a11y: {
-        enabled: true,
-        prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
-        nextSlideMessage: this.nextButton?.getAttribute('aria-label') || '',
-        slideRole: 'group',
-      },
-    });
+    try {
+      this.swiper = new Swiper(this.slider, {
+        modules: [A11y, EffectFade],
+        slidesPerView: 1,
+        speed: this.reduceMotion.matches ? 0 : 1000,
+        effect: 'fade',
+        fadeEffect: {
+          crossFade: true,
+        },
+        initialSlide: Math.max(0, Math.min(initialSlide, slideCount - 1)),
+        loop: false,
+        rewind: slideCount > 1,
+        watchOverflow: true,
+        grabCursor: slideCount > 1,
+        a11y: {
+          enabled: true,
+          prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
+          nextSlideMessage: this.nextButton?.getAttribute('aria-label') || '',
+          slideRole: 'group',
+        },
+      });
+    } catch (error) {
+      this.classList.remove('editorial-slideshow--ready');
+      throw error;
+    }
 
     this.swiper.on('slideChange', () => {
       this.syncActiveState(this.swiper.realIndex, true);

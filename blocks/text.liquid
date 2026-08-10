@@ -1,5 +1,5 @@
 {% doc %}
-  Renders a reusable text theme block with preset typography.
+  Renders a reusable text theme block with size-based typography.
 
   @example
   {% content_for 'block', type: 'text', id: 'text' %}
@@ -9,7 +9,7 @@
   block: block,
   content: block.settings.text,
   kind: 'text',
-  default_preset: 'paragraph',
+  default_preset: 'md',
   default_font: 'body'
 %}
 
@@ -31,18 +31,37 @@
     {
       "type": "select",
       "id": "type_preset",
-      "label": "t:typography_blocks.preset",
+      "label": "t:typography_blocks.text_size",
       "options": [
-        { "value": "paragraph", "label": "t:typography_options.paragraph" },
-        { "value": "subheading", "label": "t:typography_options.subheading" },
-        { "value": "h1", "label": "t:typography_options.h1" },
-        { "value": "h2", "label": "t:typography_options.h2" },
-        { "value": "h3", "label": "t:typography_options.h3" },
-        { "value": "h4", "label": "t:typography_options.h4" },
-        { "value": "h5", "label": "t:typography_options.h5" },
-        { "value": "h6", "label": "t:typography_options.h6" }
+        { "value": "lg", "label": "t:typography_options.body_large" },
+        { "value": "md", "label": "t:typography_options.body_medium" },
+        { "value": "sm", "label": "t:typography_options.body_small" },
+        { "value": "xs", "label": "t:typography_options.body_extra_small" },
+        { "value": "custom", "label": "t:typography_options.custom" }
       ],
-      "default": "paragraph"
+      "default": "md"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "label": "t:typography_blocks.size",
+      "min": 8,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 16,
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "range",
+      "id": "font_size_mobile",
+      "label": "t:typography_blocks.mobile_size",
+      "min": 8,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 14,
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
     },
     {
       "type": "select",
@@ -142,7 +161,7 @@
       "category": "t:typography_blocks.basic",
       "settings": {
         "text": "t:typography_defaults.text",
-        "type_preset": "paragraph"
+        "type_preset": "md"
       }
     }
   ]
