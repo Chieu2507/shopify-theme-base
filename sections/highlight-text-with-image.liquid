@@ -1,12 +1,18 @@
 {% render 'section-stylesheet', asset: 'section-highlight-text-with-image.css', defer_on_home: true %}
+<script src="{{ 'section-highlight-text-with-image.js' | asset_url }}" defer></script>
 
 {% liquid
   assign heading_tag = section.settings.heading_tag | default: 'h2'
   assign type_preset = section.settings.type_preset | default: 'md'
   assign rendered_heading = section.settings.heading | escape
+  assign marker_open = '<span class="highlight-text-with-image__marker highlight-text-with-image__marker--' | append: section.settings.marker_style | append: '">'
+  if rendered_heading contains '[[' and rendered_heading contains ']]'
+    assign rendered_heading = rendered_heading | replace: '[[', marker_open | replace: ']]', '</span>'
+  endif
 
   for block in section.blocks
-    assign placeholder = '[image' | append: forloop.index | append: ']'
+    assign placeholder = '[img' | append: forloop.index | append: ']'
+    assign legacy_placeholder = '[image' | append: forloop.index | append: ']'
     assign image_alt = block.settings.alt | default: block.settings.image.alt
     assign image_ratio = block.settings.image_ratio | default: 'adapt'
     assign link_label = block.settings.link_label | default: image_alt | default: 'View linked image'
@@ -40,11 +46,14 @@
     endcapture
 
     assign rendered_heading = rendered_heading | replace: placeholder, inline_media
+    assign rendered_heading = rendered_heading | replace: legacy_placeholder, inline_media
   endfor
 
   for index in (1..8)
-    assign unused_placeholder = '[image' | append: index | append: ']'
+    assign unused_placeholder = '[img' | append: index | append: ']'
+    assign unused_legacy_placeholder = '[image' | append: index | append: ']'
     assign rendered_heading = rendered_heading | replace: unused_placeholder, ''
+    assign rendered_heading = rendered_heading | replace: unused_legacy_placeholder, ''
   endfor
 
   assign heading_size = 'var(--' | append: heading_tag | append: '-size-' | append: type_preset | append: ')'
@@ -58,32 +67,38 @@
   endunless
 %}
 
-<section
-  class="highlight-text-with-image color-scheme color-{{ section.settings.color_scheme.id }} full-width"
-  style="
-    --highlight-padding-top: {{ section.settings.padding_top }}px;
-    --highlight-padding-bottom: {{ section.settings.padding_bottom }}px;
-    --highlight-padding-top-mobile: {{ section.settings.padding_top_mobile }}px;
-    --highlight-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;
-    --highlight-content-width: {{ section.settings.content_width }}px;
-    --text-align: {{ section.settings.alignment }};
-    --highlight-heading-size: {{ heading_size }};
-    --highlight-heading-size-mobile: {% if type_preset == 'custom' %}{{ section.settings.font_size_mobile }}px{% else %}var(--{{ heading_tag }}-size-{{ type_preset }}){% endif %};
-    --highlight-line-height: {{ line_height }};
-    --highlight-animation-duration: {% case section.settings.animation_speed %}{% when 'slow' %}900ms{% when 'fast' %}440ms{% else %}640ms{% endcase %};
-  "
+<highlight-text-with-image
+  class="highlight-text-with-image-controller"
+  data-animation-speed="{{ section.settings.animation_speed }}"
 >
-  <div class="highlight-text-with-image__inner highlight-text-with-image__inner--{{ section.settings.section_width }}">
-    {% if section.settings.heading != blank %}
-      <{{ heading_tag }}
-        class="highlight-text-with-image__heading typo-{{ heading_tag }} block-animation"
-        data-block-animation="{{ section.settings.animation_type }}"
-      >
-        {{ rendered_heading }}
-      </{{ heading_tag }}>
-    {% endif %}
-  </div>
-</section>
+  <section
+    class="highlight-text-with-image highlight-text-with-image--height-{{ section.settings.section_height }}{% if section.settings.equal_line_height %} highlight-text-with-image--equal-line-height{% endif %} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
+    {% if section.settings.heading != blank %}aria-labelledby="HighlightHeading-{{ section.id }}"{% endif %}
+    style="
+      --highlight-fill-stop: 100%;
+      --highlight-padding-top: {{ section.settings.padding_top }}px;
+      --highlight-padding-bottom: {{ section.settings.padding_bottom }}px;
+      --highlight-padding-top-mobile: {{ section.settings.padding_top_mobile }}px;
+      --highlight-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;
+      --highlight-content-width: {{ section.settings.content_width }}px;
+      --text-align: {{ section.settings.alignment }};
+      --highlight-heading-size: {{ heading_size }};
+      --highlight-heading-size-mobile: {% if type_preset == 'custom' %}{{ section.settings.font_size_mobile }}px{% else %}var(--{{ heading_tag }}-size-{{ type_preset }}){% endif %};
+      --highlight-line-height: {{ line_height }};
+    "
+  >
+    <div class="highlight-text-with-image__inner highlight-text-with-image__inner--{{ section.settings.section_width }}">
+      {% if section.settings.heading != blank %}
+        <{{ heading_tag }}
+          id="HighlightHeading-{{ section.id }}"
+          class="highlight-text-with-image__heading typo-{{ heading_tag }}"
+        >
+          {{ rendered_heading }}
+        </{{ heading_tag }}>
+      {% endif %}
+    </div>
+  </section>
+</highlight-text-with-image>
 
 {% schema %}
 {
@@ -98,7 +113,7 @@
       "settings": [
         {
           "type": "paragraph",
-          "content": "Images are inserted into the heading in block order using [image1], [image2], and so on."
+          "content": "Images are inserted into the heading in block order using [img1], [img2], and so on."
         },
         {
           "type": "image_picker",
@@ -190,8 +205,22 @@
       "type": "textarea",
       "id": "heading",
       "label": "Heading",
-      "info": "Use [image1], [image2], and so on to place inline image blocks.",
-      "default": "Jewels for [image1] the moments we mark, chosen with intention, [image2] worn with meaning, [image3] kept for generations."
+      "info": "Use [img1], [img2], and so on to place inline image blocks.",
+      "default": "Jewels for [img1] the moments we mark, chosen with intention, [img2] worn with meaning, [img3] kept for generations."
+    },
+    {
+      "type": "paragraph",
+      "content": "To specify image positions, insert placeholders [img1], [img2], and so on. The numbers correspond to the image order in the section. To add heading highlights, wrap your text between [[]]. E.g: Adding [[marker]] will underline [[highlight]] text."
+    },
+    {
+      "type": "select",
+      "id": "marker_style",
+      "label": "Marker",
+      "options": [
+        { "value": "underline", "label": "Underline" },
+        { "value": "font_highlight", "label": "Font highlight" }
+      ],
+      "default": "underline"
     },
     {
       "type": "select",
@@ -270,6 +299,23 @@
     },
     {
       "type": "select",
+      "id": "section_height",
+      "label": "Section height",
+      "options": [
+        { "value": "fit", "label": "Fit content" },
+        { "value": "fullscreen", "label": "Fullscreen" }
+      ],
+      "default": "fit"
+    },
+    {
+      "type": "checkbox",
+      "id": "equal_line_height",
+      "label": "Enable equal line height",
+      "info": "Ensures consistent line spacing when inline images have different heights.",
+      "default": false
+    },
+    {
+      "type": "select",
       "id": "section_width",
       "label": "Section width",
       "options": [
@@ -338,26 +384,18 @@
     },
     {
       "type": "select",
-      "id": "animation_type",
-      "label": "Animation",
-      "options": [
-        { "value": "none", "label": "None" },
-        { "value": "fade_in", "label": "Fade in" },
-        { "value": "fade_up", "label": "Fade up" }
-      ],
-      "default": "fade_up"
-    },
-    {
-      "type": "select",
       "id": "animation_speed",
-      "label": "Animation speed",
+      "label": "Scroll animation speed",
       "options": [
         { "value": "slow", "label": "Slow" },
         { "value": "medium", "label": "Medium" },
         { "value": "fast", "label": "Fast" }
       ],
-      "default": "medium",
-      "visible_if": "{{ section.settings.animation_type != 'none' }}"
+      "default": "medium"
+    },
+    {
+      "type": "paragraph",
+      "content": "With fit content height, animation timing also responds to the section's position within the viewport."
     },
     {
       "type": "header",
