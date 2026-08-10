@@ -453,7 +453,17 @@
 
   {% if is_mobile_navigation %}
     <div class="header__mobile-drawer-bottom">
-      <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
+      <div class="header__mobile-drawer-bottom-content">
+        {% if section.settings.show_account and shop.customer_accounts_enabled %}
+          <shopify-account class="header__mobile-account"{% if section.settings.customer_account_menu != blank and section.settings.customer_account_menu != 'customer-account-main-menu' %} menu="{{ section.settings.customer_account_menu }}"{% endif %}>
+            <span slot="signed-out-avatar" class="header__mobile-account-avatar">
+              <span aria-hidden="true">{% render 'icon', name: 'account' %}</span>
+              <span>{% if customer %}{{ 'header.account' | t }}{% else %}{{ 'header.login' | t }}{% endif %}</span>
+            </span>
+          </shopify-account>
+        {% endif %}
+
+        <div class="header__mobile-utilities{% if has_menu %} header__mobile-utilities--after-menu{% endif %}" role="group" aria-label="{{ 'header.mobile_utilities' | t | escape }}">
         {% if section.settings.show_localization %}
           <div class="header__mobile-localization">
             {% if can_change_country %}
@@ -587,6 +597,7 @@
             <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
           </div>
         {% endif %}
+        </div>
       </div>
     </div>
   {% endif %}
