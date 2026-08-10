@@ -1,3 +1,5 @@
+import { A11y, Swiper } from './swiper-loader.js';
+
 (() => {
   if (customElements.get('cart-drawer')) return;
 
@@ -20,6 +22,7 @@
       this.taxNote = this.querySelector('[data-cart-drawer-tax-note]');
       this.recommendations = this.querySelector('[data-cart-drawer-recommendations]');
       this.recommendationList = this.querySelector('[data-cart-drawer-recommendation-list]');
+      this.recommendationTrack = this.querySelector('[data-cart-drawer-recommendation-track]');
       this.recommendationDots = this.querySelector('[data-cart-drawer-recommendation-dots]');
       this.shippingProgress = this.querySelector('[data-cart-drawer-shipping-progress]');
       this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
@@ -33,7 +36,9 @@
       this.shippingProvince = this.querySelector('[data-cart-drawer-shipping-province]');
       this.complementaryProducts = this.readComplementaryProducts();
       this.recommendationTimer = null;
+      this.recommendationSwiper = null;
       this.recommendationPaused = false;
+      this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.currency = this.dataset.currency || 'USD';
       this.isOpen = false;
       this.busy = false;
@@ -77,6 +82,7 @@
       this.backdropInteraction?.destroy();
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
+      this.destroyRecommendationSwiper();
       this.unlockPageScroll();
       this.isOpen = false;
       this.pendingLineMutations?.clear();
@@ -142,7 +148,6 @@
         if (this.message?.dataset.error === 'true') this.setMessage('');
       }, { signal });
       this.querySelector('[data-cart-drawer-save-note]')?.addEventListener('click', () => this.saveNote(), { signal });
-      this.recommendationList?.addEventListener('scroll', () => this.updateRecommendationDot(), { passive: true, signal });
       this.recommendationList?.addEventListener('pointerenter', () => { this.recommendationPaused = true; }, { signal });
       this.recommendationList?.addEventListener('pointerleave', () => { this.recommendationPaused = false; }, { signal });
       this.recommendationList?.addEventListener('focusin', () => { this.recommendationPaused = true; }, { signal });
@@ -806,7 +811,8 @@
     }
 
     async loadRecommendations(cart) {
-      if (!this.recommendations || !this.recommendationList || !this.recommendationDots || this.dataset.recommendationsEnabled !== 'true' || !cart.items.length) {
+      if (!this.recommendations || !this.recommendationList || !this.recommendationTrack || !this.recommendationDots || this.dataset.recommendationsEnabled !== 'true' || !cart.items.length) {
+        this.destroyRecommendationSwiper();
         if (this.recommendations) this.recommendations.hidden = true;
         return;
       }
@@ -826,40 +832,66 @@
           products = (data.products || []).filter((product) => !cart.items.some((item) => item.product_id === product.id));
         }
         if (!products.length) {
+          this.destroyRecommendationSwiper();
           this.recommendations.hidden = true;
           return;
         }
-        this.recommendationList.innerHTML = products.slice(0, limit).map((product) => this.recommendationTemplate(product)).join('');
-        this.recommendationDots.innerHTML = products.slice(0, limit).map((_, index) => {
+        const visibleProducts = products.slice(0, limit);
+        this.destroyRecommendationSwiper();
+        this.recommendationTrack.innerHTML = visibleProducts.map((product) => this.recommendationTemplate(product)).join('');
+        this.recommendationDots.innerHTML = visibleProducts.map((_, index) => {
           const label = (this.dataset.relatedProductLabel || '').replace('__index__', String(index + 1));
           return `<button type="button" class="cart-drawer__recommendation-dot" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="${this.escape(label)}" aria-controls="${this.escape(this.recommendationList?.id || '')}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`;
         }).join('');
         this.recommendations.hidden = false;
-        this.startRecommendationRotation(products.length);
+        this.initializeRecommendationSwiper(visibleProducts.length);
+        this.startRecommendationRotation(visibleProducts.length);
       } catch (error) {
+        this.destroyRecommendationSwiper();
         this.recommendations.hidden = true;
       }
     }
 
     goToRecommendation(index) {
-      const slides = [...(this.recommendationList?.children || [])];
-      const slide = slides[index];
-      if (!slide) return;
-      this.recommendationList.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' });
-      this.updateRecommendationDot(index);
+      if (!this.recommendationSwiper) return;
+      if (this.recommendationSwiper.params.loop) this.recommendationSwiper.slideToLoop(index);
+      else this.recommendationSwiper.slideTo(index);
     }
 
     updateRecommendationDot(forcedIndex = null) {
-      const slides = [...(this.recommendationList?.children || [])];
-      if (!slides.length || !this.recommendationDots) return;
-      const index = forcedIndex ?? slides.reduce((closest, slide, slideIndex) => {
-        const currentDistance = Math.abs(slide.offsetLeft - this.recommendationList.scrollLeft);
-        const closestDistance = Math.abs(slides[closest].offsetLeft - this.recommendationList.scrollLeft);
-        return currentDistance < closestDistance ? slideIndex : closest;
-      }, 0);
+      if (!this.recommendationDots) return;
+      const index = forcedIndex ?? this.recommendationSwiper?.realIndex ?? 0;
       this.recommendationDots.querySelectorAll('[data-cart-drawer-recommendation-dot]').forEach((dot, dotIndex) => {
         dot.setAttribute('aria-current', String(dotIndex === index));
       });
+    }
+
+    initializeRecommendationSwiper(count) {
+      if (!this.recommendationList || !this.recommendationTrack || count < 1) return;
+      this.recommendationSwiper = new Swiper(this.recommendationList, {
+        modules: [A11y],
+        slidesPerView: 1,
+        spaceBetween: 0,
+        speed: this.reduceMotion.matches ? 0 : 360,
+        loop: count > 1,
+        watchOverflow: true,
+        grabCursor: count > 1,
+        allowTouchMove: count > 1,
+        a11y: {
+          enabled: true,
+          slideRole: 'group',
+        },
+      });
+      this.recommendationSwiper.on('slideChange', () => this.updateRecommendationDot());
+      this.recommendationSwiper.on('sliderFirstMove', () => this.startRecommendationRotation(count));
+      this.updateRecommendationDot(0);
+    }
+
+    destroyRecommendationSwiper() {
+      this.recommendationSwiper?.destroy(true, true);
+      this.recommendationSwiper = null;
+      window.clearInterval(this.recommendationTimer);
+      this.recommendationTimer = null;
     }
 
     recommendationTemplate(product) {
@@ -878,7 +910,7 @@
         ? `<a class="cart-drawer__text-button" href="${this.escape(product.url)}">${this.escape(this.dataset.chooseOptionsLabel)}</a>`
         : `<button type="button" class="cart-drawer__text-button" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}">${this.escape(this.dataset.addToCartLabel)}</button>`;
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
-      return `<article class="cart-drawer__recommendation">
+      return `<article class="cart-drawer__recommendation swiper-slide">
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="lazy">` : ''}</a>
         <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
       </article>`;
@@ -890,8 +922,8 @@
       const interval = Math.max(3, Number(this.dataset.recommendationsInterval || 8)) * 1000;
       this.recommendationTimer = window.setInterval(() => {
         if (this.dataset.recommendationsPauseOnHover === 'true' && this.recommendationPaused) return;
-        const current = [...(this.recommendationDots?.querySelectorAll('[data-cart-drawer-recommendation-dot]') || [])].findIndex((dot) => dot.getAttribute('aria-current') === 'true');
-        this.goToRecommendation((current + 1) % count);
+        if (!this.recommendationSwiper) return;
+        this.recommendationSwiper.slideNext();
       }, interval);
     }
 
