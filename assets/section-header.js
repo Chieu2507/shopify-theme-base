@@ -23,6 +23,8 @@ if (!window.SpinelHeaderMenus) {
   const headerLocalizationHoverCloseDelay = 120;
   const headerBrowserChromeClass = 'header-menu-browser-chrome-active';
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
+  const accountDialogTopProperty = '--shopify-account-dialog-position-top';
+  const accountDialogHeaderGap = 8;
   const headerMobileBreakpoint = 989;
   const headerMobileMediaQuery = `(max-width: ${headerMobileBreakpoint}px)`;
   const headerDesktopMediaQuery = `(min-width: ${headerMobileBreakpoint + 1}px)`;
@@ -46,6 +48,23 @@ if (!window.SpinelHeaderMenus) {
   let wasMobileHeaderViewport = window.matchMedia(headerMobileMediaQuery).matches;
 
   const isMobileHeaderViewport = () => window.matchMedia(headerMobileMediaQuery).matches;
+
+  const syncDesktopAccountDialogPosition = (account) => {
+    if (!account) return;
+    if (isMobileHeaderViewport()) {
+      account.style.removeProperty(accountDialogTopProperty);
+      return;
+    }
+
+    const header = account.closest('[data-header]');
+    if (!header) return;
+    const headerBottom = Math.max(0, header.getBoundingClientRect().bottom);
+    account.style.setProperty(accountDialogTopProperty, `${Math.round(headerBottom + accountDialogHeaderGap)}px`);
+  };
+
+  const syncDesktopAccountDialogPositions = (scope = document) => {
+    scope.querySelectorAll?.('shopify-account.header__action--account').forEach(syncDesktopAccountDialogPosition);
+  };
 
   const resetLocalizationSheetDrag = () => {
     window.clearTimeout(localizationSheetDragTimer);
@@ -876,6 +895,7 @@ if (!window.SpinelHeaderMenus) {
     transparentHeaderFrame = 0;
     syncMobileStickyHeaders();
     document.querySelectorAll('[data-transparent-header="true"], [data-floating-header="true"]').forEach(syncResponsiveHeader);
+    syncDesktopAccountDialogPositions();
   };
 
   const scheduleResponsiveHeaderSync = () => {
@@ -888,6 +908,7 @@ if (!window.SpinelHeaderMenus) {
       syncResponsiveHeader(header);
     });
     syncMobileStickyHeaders();
+    syncDesktopAccountDialogPositions(scope);
   };
 
   initializeResponsiveHeaders();
@@ -970,6 +991,11 @@ if (!window.SpinelHeaderMenus) {
     );
     headerBreakpointFocusContext = owner ? { header, owner } : null;
   });
+
+  document.addEventListener('click', (event) => {
+    const account = event.target.closest?.('shopify-account.header__action--account');
+    if (account) syncDesktopAccountDialogPosition(account);
+  }, true);
 
   const revealHeaderForCartFeedback = (duration = 2200) => {
     document.querySelectorAll('[data-header]').forEach((header) => {
