@@ -39,7 +39,7 @@
   };
 
   const isImperativeOwnerActive = (owner) => {
-    if (owner === 'mega-menu') return Boolean(document.querySelector('.header__submenu-disclosure[open]'));
+    if (owner === 'mega-menu') return Boolean(document.querySelector('.header__submenu-disclosure--mega[open]'));
     if (owner === 'mobile-menu') {
       return Boolean(document.querySelector(
         '[data-header-mobile-drawer][data-open="true"], [data-header-mobile-drawer][data-motion-state="closing"]',
