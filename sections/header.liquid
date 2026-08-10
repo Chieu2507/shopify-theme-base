@@ -12,7 +12,9 @@
   assign logo_height_mobile = 38
   assign logo_block_type = 'image'
   assign logo_block_image = blank
+  assign logo_block_mobile_image = blank
   assign logo_block_transparent_image = blank
+  assign logo_block_transparent_mobile_image = blank
   assign logo_block_text = blank
   assign logo_alignment = 'center'
   assign render_logo = false
@@ -21,7 +23,9 @@
     assign render_logo = true
     assign logo_block_type = logo_block.settings.logo_type | default: 'image'
     assign logo_block_image = logo_block.settings.image
+    assign logo_block_mobile_image = logo_block.settings.mobile_image
     assign logo_block_transparent_image = logo_block.settings.transparent_image
+    assign logo_block_transparent_mobile_image = logo_block.settings.transparent_mobile_image
     assign logo_block_text = logo_block.settings.logo_text
     assign logo_alignment = logo_block.settings.alignment | default: 'center'
     assign logo_width_desktop = logo_block.settings.width_desktop | default: 170
@@ -48,9 +52,9 @@
     assign logo_text = logo_block_text | default: shop.name
   else
     assign logo_image = logo_block_image | default: settings.logo | default: settings.logo_mobile
-    assign logo_image_mobile = logo_block_image | default: settings.logo_mobile | default: logo_image
+    assign logo_image_mobile = logo_block_mobile_image | default: settings.logo_mobile | default: logo_image
     assign logo_image_transparent = logo_block_transparent_image | default: settings.logo_transparent | default: logo_image
-    assign logo_image_transparent_mobile = logo_block_transparent_image | default: settings.logo_transparent_mobile | default: settings.logo_transparent | default: logo_image_mobile
+    assign logo_image_transparent_mobile = logo_block_transparent_mobile_image | default: settings.logo_transparent_mobile | default: logo_image_transparent | default: logo_image_mobile
     assign logo_text = shop.name
   endif
 
@@ -550,14 +554,28 @@
           "type": "image_picker",
           "id": "image",
           "label": "Image",
-          "info": "Optional Header-only override. Applies on desktop and mobile, then falls back to the Brand logo.",
+          "info": "Shown in the Header on desktop. Used on mobile when no mobile image is selected.",
+          "visible_if": "{{ block.settings.logo_type == 'image' }}"
+        },
+        {
+          "type": "image_picker",
+          "id": "mobile_image",
+          "label": "Image mobile",
+          "info": "Optional. Shown in the Header on mobile and falls back to Image when empty.",
           "visible_if": "{{ block.settings.logo_type == 'image' }}"
         },
         {
           "type": "image_picker",
           "id": "transparent_image",
           "label": "Image for transparent header",
-          "info": "Optional Header-only override. Displays when the Header is transparent, then falls back to the Brand asset.",
+          "info": "Optional. Shown on desktop when the Header is transparent and falls back to Image when empty.",
+          "visible_if": "{{ block.settings.logo_type == 'image' }}"
+        },
+        {
+          "type": "image_picker",
+          "id": "transparent_mobile_image",
+          "label": "Image mobile for transparent header",
+          "info": "Optional. Shown on mobile when the Header is transparent and falls back to the transparent image when empty.",
           "visible_if": "{{ block.settings.logo_type == 'image' }}"
         },
         {
