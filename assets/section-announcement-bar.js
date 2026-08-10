@@ -56,6 +56,7 @@ if (!customElements.get('announcement-bar')) {
       this.stopRotation();
       window.clearTimeout(this.slideDelayTimer);
       this.slideDelayTimer = null;
+      this.slider?.classList.remove('is-slide-preparing');
       cancelAnimationFrame(this.measureFrame);
       this.resizeObserver?.disconnect();
       this.removeEventListener('mouseenter', this.onMouseEnter);
@@ -164,6 +165,7 @@ if (!customElements.get('announcement-bar')) {
         this.stopRotation();
         window.clearTimeout(this.slideDelayTimer);
         this.slideDelayTimer = null;
+        this.slider?.classList.remove('is-slide-preparing');
         return;
       }
       this.startRotation();
@@ -174,6 +176,7 @@ if (!customElements.get('announcement-bar')) {
 
       window.clearTimeout(this.slideDelayTimer);
       this.slideDelayTimer = null;
+      this.slider.classList.remove('is-slide-preparing');
       const nextIndex = (index + this.items.length) % this.items.length;
       const currentIndex = this.swiper.realIndex ?? this.index;
       if (nextIndex === currentIndex) return;
@@ -181,7 +184,10 @@ if (!customElements.get('announcement-bar')) {
       const speed = speedOverride ?? (this.reduceMotion ? 0 : this.swiper.params.speed);
       const transition = () => {
         this.slideDelayTimer = null;
-        if (!this.initialized || !this.swiper) return;
+        if (!this.initialized || !this.swiper) {
+          this.slider?.classList.remove('is-slide-preparing');
+          return;
+        }
         if (direction === 'next') {
           this.swiper.slideNext(speed);
         } else if (direction === 'prev') {
@@ -189,12 +195,14 @@ if (!customElements.get('announcement-bar')) {
         } else {
           this.swiper.slideToLoop(nextIndex, speed);
         }
+        requestAnimationFrame(() => this.slider?.classList.remove('is-slide-preparing'));
       };
 
       if (speed === 0 || this.reduceMotion) {
         transition();
         return;
       }
+      this.slider.classList.add('is-slide-preparing');
       this.slideDelayTimer = window.setTimeout(transition, this.slideStartDelay);
     }
 
@@ -289,6 +297,7 @@ if (!customElements.get('announcement-bar')) {
       if (this.reduceMotion) {
         window.clearTimeout(this.slideDelayTimer);
         this.slideDelayTimer = null;
+        this.slider?.classList.remove('is-slide-preparing');
       }
       if (this.swiper) {
         const transitionSpeed = this.reduceMotion ? 0 : 420;
