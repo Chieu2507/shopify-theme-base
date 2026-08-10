@@ -378,7 +378,10 @@ class ProductCardVariants {
     });
     this.mediaLink?.addEventListener('pointerenter', () => this.loadSecondaryImage(), { passive: true, signal });
     this.mediaLink?.addEventListener('focusin', () => this.loadSecondaryImage(), { signal });
-    this.quickAdd?.addEventListener('click', () => this.addSelectedVariant(), { signal });
+    this.quickAdd?.addEventListener('click', (event) => {
+      event.preventDefault();
+      this.addSelectedVariant();
+    }, { signal });
     this.preloadPrimaryAlternateWhenIdle();
   }
 
