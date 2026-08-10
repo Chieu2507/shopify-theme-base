@@ -13,6 +13,7 @@
   let hadRootLockClass = false;
   let hadBodyLockClass = false;
   let hadRootLockAttribute = false;
+  let externalUnlockObserver = null;
   let updateQueued = false;
 
   const userAgent = navigator.userAgent;
@@ -58,7 +59,33 @@
     // Once the lock is applied, clientWidth no longer includes the scrollbar.
     // Keep the measurement captured immediately before locking until unlock.
     if (!locked) {
-      scrollbarWidth = Math.max(0, window.innerWidth - root.clientWidth);
+      const measuredWidth = Math.max(0, window.innerWidth - root.clientWidth);
+      const externalRootLockActive = root.style.overflow === 'hidden'
+        || root.style.touchAction === 'none';
+
+      // Shopify's account component locks the root from inside shadow DOM. A
+      // click dispatched while that lock is active reports a temporary width
+      // of zero, so preserve the pre-lock measurement and refresh on unlock.
+      if (measuredWidth === 0 && externalRootLockActive) {
+        if (!externalUnlockObserver) {
+          externalUnlockObserver = new MutationObserver(() => {
+            const isStillLocked = root.style.overflow === 'hidden'
+              || root.style.touchAction === 'none';
+            if (isStillLocked) return;
+
+            externalUnlockObserver.disconnect();
+            externalUnlockObserver = null;
+            measureScrollbarWidth();
+          });
+          externalUnlockObserver.observe(root, {
+            attributes: true,
+            attributeFilter: ['style']
+          });
+        }
+        return scrollbarWidth;
+      }
+
+      scrollbarWidth = measuredWidth;
       setScrollbarVariables(scrollbarWidth);
     }
     return scrollbarWidth;
