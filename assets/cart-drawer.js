@@ -7,10 +7,11 @@ import { A11y, Swiper } from './swiper-loader.js';
     connectedCallback() {
       this.backdropPointer = this.querySelector('.cart-drawer__backdrop-pointer');
       this.panel = this.querySelector('.cart-drawer__panel');
-      this.handle = this.querySelector('[data-cart-drawer-handle]');
+      this.handle = this.querySelector('[data-cart-drawer-order-options-handle]');
       this.items = this.querySelector('[data-cart-drawer-items]');
       this.footer = this.querySelector('[data-cart-drawer-footer]');
       this.orderOptionsPanel = this.querySelector('[data-cart-drawer-order-options]');
+      this.orderOptionsBackdrop = this.querySelector('.cart-drawer__order-options-backdrop');
       this.orderOptionsToggle = this.querySelector('[data-cart-drawer-order-options-toggle]');
       this.orderOptionsClose = this.querySelector('[data-cart-drawer-order-options-close]');
       this.status = this.querySelector('[data-cart-drawer-status]');
@@ -83,6 +84,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
       this.destroyRecommendationSwiper();
+      this.resetHandleDrag();
       this.unlockPageScroll();
       this.isOpen = false;
       this.pendingLineMutations?.clear();
@@ -243,7 +245,7 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     startHandleDrag(event) {
-      if (!this.panel || !this.handle || !this.isOpen || !this.mobileDrawer.matches || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
+      if (!this.orderOptionsPanel || !this.handle || !this.isOpen || !this.mobileDrawer.matches || this.orderOptionsPanel.getAttribute('aria-hidden') !== 'false' || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
 
       window.clearTimeout(this.handleDragTimer);
       this.handleDrag = {
@@ -254,12 +256,14 @@ import { A11y, Swiper } from './swiper-loader.js';
         velocity: 0,
         distance: 0
       };
-      this.panel.classList.remove('is-handle-settling', 'is-handle-closing');
-      this.panel.style.transform = 'translate3d(0, 0, 0)';
-      this.panel.style.opacity = '1';
-      this.panel.classList.add('is-handle-dragging');
-      this.panel.style.removeProperty('transition');
-      this.panel.style.removeProperty('opacity');
+      this.orderOptionsPanel.classList.remove('is-handle-settling', 'is-handle-closing');
+      this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
+      this.orderOptionsPanel.style.opacity = '1';
+      this.orderOptionsPanel.classList.add('is-handle-dragging');
+      if (this.orderOptionsBackdrop) {
+        this.orderOptionsBackdrop.style.transition = 'none';
+        this.orderOptionsBackdrop.style.opacity = '1';
+      }
       try { this.handle.setPointerCapture(event.pointerId); } catch (_) {}
       event.preventDefault();
     }
@@ -275,7 +279,11 @@ import { A11y, Swiper } from './swiper-loader.js';
       drag.lastY = event.clientY;
       drag.lastTime = now;
       drag.distance = Math.max(0, event.clientY - drag.startY);
-      this.panel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+      this.orderOptionsPanel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+      if (this.orderOptionsBackdrop) {
+        const fadeDistance = Math.max(this.orderOptionsPanel.getBoundingClientRect().height * 0.7, 1);
+        this.orderOptionsBackdrop.style.opacity = String(Math.max(0, 1 - (drag.distance / fadeDistance)));
+      }
       event.preventDefault();
     }
 
@@ -284,44 +292,40 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (!drag || event.pointerId !== drag.pointerId) return;
 
       try { this.handle?.releasePointerCapture(event.pointerId); } catch (_) {}
-      const closeDistance = Math.min(140, this.panel.getBoundingClientRect().height * 0.2);
+      const closeDistance = Math.min(140, this.orderOptionsPanel.getBoundingClientRect().height * 0.2);
       const shouldClose = !cancelled && (drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55));
       this.handleDrag = null;
-      this.panel.classList.remove('is-handle-dragging');
+      this.orderOptionsPanel.classList.remove('is-handle-dragging');
 
       if (shouldClose) {
         this.closeFromHandle();
         return;
       }
 
-      this.panel.classList.add('is-handle-settling');
+      this.orderOptionsPanel.classList.add('is-handle-settling');
+      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 240ms cubic-bezier(.22, 1, .36, 1)';
       requestAnimationFrame(() => {
-        this.panel.style.transform = 'translate3d(0, 0, 0)';
-        this.panel.style.opacity = '1';
+        this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
+        this.orderOptionsPanel.style.opacity = '1';
+        if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.opacity = '1';
       });
+      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), this.reduceMotion.matches ? 0 : 240);
     }
 
     closeFromHandle() {
-      if (!this.isOpen) return;
-      this.setOrderOptionsOpen(false);
-      this.isOpen = false;
-      this.classList.remove('is-open');
-      this.classList.add('is-closing');
-      this.backdropInteraction?.hide();
-      document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
-      this.lastFocusedElement?.focus?.({ preventScroll: true });
-      this.panel.classList.add('is-handle-closing');
-      this.panel.style.opacity = '1';
+      if (!this.isOpen || !this.orderOptionsPanel || this.orderOptionsPanel.getAttribute('aria-hidden') === 'true') return;
+      this.orderOptionsPanel.classList.add('is-handle-closing');
+      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 220ms ease';
       requestAnimationFrame(() => {
-        this.panel.style.transform = `translate3d(0, ${Math.max(window.innerHeight, this.panel.offsetHeight + 60)}px, 0)`;
-        this.panel.style.opacity = '0';
+        this.orderOptionsPanel.style.transform = 'translate3d(0, 100%, 0)';
+        this.orderOptionsPanel.style.opacity = '0';
+        if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.opacity = '0';
       });
-      window.clearTimeout(this.closeTimer);
-      const closeDuration = this.getMotionDuration();
-      this.closeTimer = window.setTimeout(() => {
-        this.finishClose();
+      window.clearTimeout(this.handleDragTimer);
+      this.handleDragTimer = window.setTimeout(() => {
+        this.setOrderOptionsOpen(false, true);
         this.resetHandleDrag();
-      }, closeDuration);
+      }, this.reduceMotion.matches ? 0 : 240);
     }
 
     lockPageScroll() {
@@ -379,10 +383,12 @@ import { A11y, Swiper } from './swiper-loader.js';
         try { this.handle?.releasePointerCapture(this.handleDrag.pointerId); } catch (_) {}
       }
       this.handleDrag = null;
-      this.panel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
-      this.panel?.style.removeProperty('transform');
-      this.panel?.style.removeProperty('opacity');
-      this.panel?.style.removeProperty('transition');
+      this.orderOptionsPanel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
+      this.orderOptionsPanel?.style.removeProperty('transform');
+      this.orderOptionsPanel?.style.removeProperty('opacity');
+      this.orderOptionsPanel?.style.removeProperty('transition');
+      this.orderOptionsBackdrop?.style.removeProperty('opacity');
+      this.orderOptionsBackdrop?.style.removeProperty('transition');
     }
 
     getMotionDuration() {

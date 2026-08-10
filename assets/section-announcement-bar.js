@@ -162,6 +162,8 @@ if (!customElements.get('announcement-bar')) {
     handleVisibilityChange() {
       if (document.hidden) {
         this.stopRotation();
+        window.clearTimeout(this.slideDelayTimer);
+        this.slideDelayTimer = null;
         return;
       }
       this.startRotation();
@@ -170,6 +172,8 @@ if (!customElements.get('announcement-bar')) {
     showItem(index, direction = null, speedOverride = null) {
       if (!this.swiper || this.items.length < 2) return;
 
+      window.clearTimeout(this.slideDelayTimer);
+      this.slideDelayTimer = null;
       const nextIndex = (index + this.items.length) % this.items.length;
       const currentIndex = this.swiper.realIndex ?? this.index;
       if (nextIndex === currentIndex) return;
@@ -187,7 +191,6 @@ if (!customElements.get('announcement-bar')) {
         }
       };
 
-      window.clearTimeout(this.slideDelayTimer);
       if (speed === 0 || this.reduceMotion) {
         transition();
         return;
@@ -283,6 +286,10 @@ if (!customElements.get('announcement-bar')) {
 
     handleMotionPreferenceChange(event) {
       this.reduceMotion = event.matches || !this.motionEnabled;
+      if (this.reduceMotion) {
+        window.clearTimeout(this.slideDelayTimer);
+        this.slideDelayTimer = null;
+      }
       if (this.swiper) {
         const transitionSpeed = this.reduceMotion ? 0 : 420;
         this.swiper.params.speed = transitionSpeed;
