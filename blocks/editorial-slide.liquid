@@ -29,8 +29,21 @@
     endif
   endif
 
+  assign placeholder_index = 1
+  for editorial_slide in section.blocks
+    if editorial_slide.id == block.id
+      assign placeholder_index = forloop.index | modulo: 3
+      if placeholder_index == 0
+        assign placeholder_index = 3
+      endif
+      break
+    endif
+  endfor
+  assign placeholder_name = 'hero-apparel-' | append: placeholder_index
+
 %}
 
+{% unless request.visual_preview_mode and block.settings.render_visual_preview != true %}
 <article
   class="editorial-slideshow__slide swiper-slide color-scheme color-{{ block.settings.color_scheme.id }} editorial-slideshow__slide--desktop-{{ block.settings.content_position | default: 'top-left' }} editorial-slideshow__slide--mobile-{{ block.settings.content_position_mobile | default: 'middle-left' }} editorial-slideshow__slide--align-{{ block.settings.content_alignment | default: 'left' }}"
   style="
@@ -47,24 +60,24 @@
   {{ block.shopify_attributes }}
 >
   <div class="editorial-slideshow__media">
-    {% render 'responsive-media',
-      image: slide_image,
-      mobile_image: slide_mobile_image,
-      mobile_breakpoint: 989,
-      max_width: 2400,
-      mobile_max_width: 1280,
-      widths: '750, 960, 1200, 1600, 1920, 2400',
-      mobile_widths: '375, 550, 750, 960, 1280',
-      sizes: '100vw',
-      class: 'editorial-slideshow__image',
-      loading: image_loading,
-      fetchpriority: image_priority,
-      alt: slide_image_alt,
-      placeholder_asset: 'placeholder-image-default-2.svg',
-      placeholder_class: 'editorial-slideshow__placeholder',
-      placeholder_loading: image_loading,
-      placeholder_fetchpriority: image_priority
-    %}
+    {% if slide_image != blank %}
+      {% render 'responsive-media',
+        image: slide_image,
+        mobile_image: slide_mobile_image,
+        mobile_breakpoint: 989,
+        max_width: 2400,
+        mobile_max_width: 1280,
+        widths: '750, 960, 1200, 1600, 1920, 2400',
+        mobile_widths: '375, 550, 750, 960, 1280',
+        sizes: '100vw',
+        class: 'editorial-slideshow__image',
+        loading: image_loading,
+        fetchpriority: image_priority,
+        alt: slide_image_alt
+      %}
+    {% else %}
+      {{ placeholder_name | placeholder_svg_tag: 'editorial-slideshow__placeholder' }}
+    {% endif %}
   </div>
 
   <div class="editorial-slideshow__overlay" aria-hidden="true"></div>
@@ -82,6 +95,7 @@
 
   {% content_for "block", type: "editorial-product-card", id: "product_card" %}
 </article>
+{% endunless %}
 
 {% schema %}
 {
@@ -231,6 +245,13 @@
       "unit": "%",
       "label": "Overlay opacity",
       "default": 30
+    },
+    {
+      "type": "checkbox",
+      "id": "render_visual_preview",
+      "label": "Render visual preview",
+      "default": false,
+      "visible_if": "{{ false }}"
     }
   ],
   "presets": [

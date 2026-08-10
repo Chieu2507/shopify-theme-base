@@ -143,8 +143,6 @@
                   assign show_mega_navigation = false
                   if mega_menu_links != blank
                     assign show_mega_navigation = true
-                  elsif is_mobile_navigation == false and link_has_destination
-                    assign show_mega_navigation = true
                   endif
                 %}
                 <div id="{{ submenu_id }}" class="header__mega-panel header__mega-panel--text-{{ mega_menu_block.settings.text_size | default: 'medium' }}" {{ mega_menu_block.shopify_attributes }}>
@@ -158,9 +156,6 @@
                     <div class="header__mega-inner{% if promotion_count == 0 %} header__mega-inner--links-only{% endif %}">
                       {% if show_mega_navigation %}
                         <div class="header__mega-navigation">
-                          {% unless is_mobile_navigation %}
-                            {% if link_has_destination %}<a class="header__mega-view-all" href="{{ link.url | escape }}">{{ 'header.view_all' | t: item: link.title }}</a>{% endif %}
-                          {% endunless %}
                           {% if mega_menu_links != blank %}
                             {% if mega_menu_block.settings.column_heading != blank %}<p class="header__mega-heading">{{ mega_menu_block.settings.column_heading | escape }}</p>{% endif %}
                             <div class="header__mega-lists" style="--header-mega-columns: {{ mega_columns }};">
@@ -252,11 +247,6 @@
                       </button>
                     </li>
                   {% endif %}
-                  {% unless is_mobile_navigation %}
-                    {% if link_has_destination %}
-                      <li class="header__submenu-parent-link"><a class="header__submenu-link" href="{{ link.url | escape }}">{{ 'header.view_all' | t: item: link.title }}</a></li>
-                    {% endif %}
-                  {% endunless %}
                   {% for child_link in link.links %}
                     <li{% if child_link.links != blank %} class="header__submenu-item--has-children"{% endif %}>
                       {% if child_link.links != blank %}
@@ -276,10 +266,6 @@
                                   <span class="header__mobile-submenu-back-icon" aria-hidden="true">{% render 'icon', name: 'caret-right' %}</span>
                                   <span class="{{ navigation_label_class }}">{{ child_link.title | escape }}</span>
                                 </button>
-                              </li>
-                            {% elsif child_link.url != blank and child_link.url != '#' %}
-                              <li class="header__submenu-parent-link">
-                                <a class="header__submenu-link" href="{{ child_link.url | escape }}">{{ 'header.view_all' | t: item: child_link.title }}</a>
                               </li>
                             {% endif %}
                             {% for grandchild_link in child_link.links %}<li>{% if grandchild_link.url != blank and grandchild_link.url != '#' %}<a class="header__submenu-link{% if grandchild_link.current %} header__submenu-link--active{% endif %}" href="{{ grandchild_link.url | escape }}"{% if grandchild_link.current %} aria-current="page"{% endif %}><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></a>{% else %}<span class="header__submenu-link"><span class="header__submenu-link-text">{{ grandchild_link.title | escape }}</span></span>{% endif %}</li>{% endfor %}

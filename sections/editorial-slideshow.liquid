@@ -15,7 +15,7 @@
 %}
 
 <editorial-slideshow
-  class="editorial-slideshow color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.enable_image_zoom %} editorial-slideshow--image-zoom{% endif %} editorial-slideshow--height-mode-{{ height_mode }}"
+  class="editorial-slideshow color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.enable_image_zoom %} editorial-slideshow--image-zoom{% endif %} editorial-slideshow--height-mode-{{ height_mode }}{% if request.visual_preview_mode %} editorial-slideshow--visual-preview{% endif %}"
   role="region"
   aria-label="{{ slideshow_description | escape }}"
   data-section-id="{{ section.id }}"
@@ -23,34 +23,35 @@
   data-autoplay="{{ section.settings.autoplay }}"
   data-autoplay-delay="{{ section.settings.autoplay_delay | times: 1000 }}"
   data-height-mode="{{ height_mode }}"
-  data-deferred-module="{{ 'editorial-slideshow.js' | asset_url }}"
-  data-first-viewport-height-module="{{ 'first-viewport-height.js' | asset_url }}"
-  data-first-viewport-height-mode="{{ height_mode }}"
-  data-first-viewport-height-desktop-percent="{{ height_percent_desktop }}"
-  data-first-viewport-height-mobile-percent="{{ height_percent_mobile }}"
+  {% unless request.visual_preview_mode %}
+    data-deferred-module="{{ 'editorial-slideshow.js' | asset_url }}"
+    data-first-viewport-height-module="{{ 'first-viewport-height.js' | asset_url }}"
+    data-first-viewport-height-mode="{{ height_mode }}"
+    data-first-viewport-height-desktop-percent="{{ height_percent_desktop }}"
+    data-first-viewport-height-mobile-percent="{{ height_percent_mobile }}"
+  {% endunless %}
   style="--editorial-navigator-background-opacity: {{ section.settings.navigator_background_opacity | default: 80 }}%; --editorial-slideshow-desktop-ratio: 16 / 9; --editorial-slideshow-mobile-ratio: 3 / 4; --editorial-slideshow-height-desktop-percent: {{ height_percent_desktop }}svh; --editorial-slideshow-height-mobile-percent: {{ height_percent_mobile }}svh; --editorial-slideshow-height-desktop-pixels: {{ height_pixels_desktop }}px; --editorial-slideshow-height-mobile-pixels: {{ height_pixels_mobile }}px;"
 >
   <div class="editorial-slideshow__viewport swiper" data-editorial-slideshow-slider>
     <div class="editorial-slideshow__wrapper swiper-wrapper">
-      {% for block in section.blocks %}
-        {% render block %}
-      {% endfor %}
+      {% content_for 'blocks' %}
     </div>
   </div>
 
   {% if section.settings.show_slideshow_controls %}
     <nav
       id="EditorialSlideshowNavigator-{{ section.id }}"
-      class="editorial-slideshow__navigator is-collapsed"
+      class="editorial-slideshow__navigator is-collapsed{% if request.visual_preview_mode %} editorial-slideshow__navigator--preview{% endif %}"
       aria-label="{{ 'slideshow.pagination' | t | escape }}"
       data-editorial-navigator
-      hidden
+      {% unless request.visual_preview_mode %}hidden{% endunless %}
     >
       <button
         class="editorial-slideshow__navigator-arrow editorial-slideshow__navigator-arrow--previous"
         type="button"
         aria-label="{{ 'slideshow.previous' | t | escape }}"
         data-editorial-previous
+        {% if request.visual_preview_mode %}disabled{% endif %}
       >
         {% render 'icon', name: 'chevron-left' %}
         <span class="editorial-slideshow__navigator-arrow-label">{{ 'slideshow.previous_short' | t | escape }}</span>
@@ -63,6 +64,7 @@
         type="button"
         aria-label="{{ 'slideshow.next' | t | escape }}"
         data-editorial-next
+        {% if request.visual_preview_mode %}disabled{% endif %}
       >
         <span class="editorial-slideshow__navigator-arrow-label">{{ 'slideshow.next_short' | t | escape }}</span>
         {% render 'icon', name: 'chevron-right' %}
@@ -290,28 +292,213 @@
         "autoplay_delay": 6,
         "show_slideshow_controls": true,
         "enable_image_zoom": true,
-        "slideshow_description": "Slideshow about our brand",
+        "slideshow_description": "Editorial slideshow",
         "section_width": "full",
         "color_scheme": "scheme-4",
         "navigator_background_opacity": 80
       },
       "blocks": [
         {
-          "type": "editorial-slide"
+          "type": "editorial-slide",
+          "settings": {
+            "content_width": 520,
+            "gap": 24,
+            "content_alignment": "left",
+            "content_position": "top-left",
+            "content_position_mobile": "middle-left",
+            "nav_label": "Story",
+            "nav_detail": "FEATURED EDIT",
+            "color_scheme": "scheme-4",
+            "overlay_color": "#000000",
+            "overlay_opacity": 30,
+            "render_visual_preview": true
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<p>FEATURED STORY</p>",
+                "type_preset": "2xs",
+                "color": "text"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h1>This is a heading</h1>",
+                "type_preset": "2xl"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Use this space to introduce your brand, product, or promotion.</p>",
+                "type_preset": "md",
+                "color": "text"
+              }
+            },
+            {
+              "type": "button-group",
+              "settings": {
+                "layout_direction": "horizontal",
+                "alignment": "left",
+                "gap": 0
+              },
+              "blocks": [
+                {
+                  "type": "button",
+                  "settings": {
+                    "label": "SHOP NOW",
+                    "link": "/collections/all",
+                    "style": "primary",
+                    "icon": "arrow-right"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<p>DESIGNED TO BE CUSTOMIZED</p>",
+                "type_preset": "2xs",
+                "color": "text"
+              }
+            }
+          ]
         },
         {
           "type": "editorial-slide",
           "settings": {
-            "nav_label": "Equinox",
-            "nav_detail": "SCULPTURAL LIGHT"
-          }
+            "content_width": 520,
+            "gap": 24,
+            "content_alignment": "left",
+            "content_position": "top-left",
+            "content_position_mobile": "middle-left",
+            "nav_label": "Collection",
+            "nav_detail": "NEW ARRIVALS",
+            "color_scheme": "scheme-4",
+            "overlay_color": "#000000",
+            "overlay_opacity": 30
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<p>FEATURED COLLECTION</p>",
+                "type_preset": "2xs",
+                "color": "text"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h1>Highlight your collection</h1>",
+                "type_preset": "2xl"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Share a short message to guide customers to your featured collection.</p>",
+                "type_preset": "md",
+                "color": "text"
+              }
+            },
+            {
+              "type": "button-group",
+              "settings": {
+                "layout_direction": "horizontal",
+                "alignment": "left",
+                "gap": 0
+              },
+              "blocks": [
+                {
+                  "type": "button",
+                  "settings": {
+                    "label": "VIEW COLLECTION",
+                    "link": "/collections/all",
+                    "style": "primary",
+                    "icon": "arrow-right"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<p>FLEXIBLE CONTENT · EDITABLE LAYOUT</p>",
+                "type_preset": "2xs",
+                "color": "text"
+              }
+            }
+          ]
         },
         {
           "type": "editorial-slide",
           "settings": {
-            "nav_label": "Vesper",
-            "nav_detail": "WRIST STUDY"
-          }
+            "content_width": 520,
+            "gap": 24,
+            "content_alignment": "left",
+            "content_position": "top-left",
+            "content_position_mobile": "middle-left",
+            "nav_label": "Campaign",
+            "nav_detail": "BRAND MOMENT",
+            "color_scheme": "scheme-4",
+            "overlay_color": "#000000",
+            "overlay_opacity": 30
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<p>FEATURED CAMPAIGN</p>",
+                "type_preset": "2xs",
+                "color": "text"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h1>Tell your next story</h1>",
+                "type_preset": "2xl"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Use this slide to feature a campaign, launch, or seasonal message.</p>",
+                "type_preset": "md",
+                "color": "text"
+              }
+            },
+            {
+              "type": "button-group",
+              "settings": {
+                "layout_direction": "horizontal",
+                "alignment": "left",
+                "gap": 0
+              },
+              "blocks": [
+                {
+                  "type": "button",
+                  "settings": {
+                    "label": "DISCOVER MORE",
+                    "link": "/collections/all",
+                    "style": "primary",
+                    "icon": "arrow-right"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<p>MAKE IT YOUR OWN</p>",
+                "type_preset": "2xs",
+                "color": "text"
+              }
+            }
+          ]
         }
       ]
     }
