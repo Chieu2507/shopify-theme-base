@@ -172,7 +172,13 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.handle?.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
       }
       document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && this.isOpen) this.close();
+        if (event.key === 'Escape' && this.isOpen) {
+          if (this.mobileDrawer.matches && this.orderOptionsPanel?.getAttribute('aria-hidden') === 'false') {
+            this.setOrderOptionsOpen(false, true);
+          } else {
+            this.close();
+          }
+        }
         if (event.key === 'Tab' && this.isOpen) this.trapFocus(event);
       }, { signal });
     }
@@ -333,6 +339,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (!this.orderOptionsPanel || !this.footer) return;
       const isMobile = this.mobileDrawer.matches;
       const isOpen = isMobile && open;
+      this.classList.toggle('is-order-options-open', isOpen);
       this.footer.classList.toggle('is-order-options-open', isOpen);
       this.orderOptionsPanel.setAttribute('aria-hidden', String(isMobile && !isOpen));
       this.orderOptionsPanel.inert = isMobile && !isOpen;
