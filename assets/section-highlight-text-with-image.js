@@ -231,10 +231,16 @@ if (!customElements.get('highlight-text-with-image')) {
 
         const localFill = Math.min(Math.max(filledWidth - start, 0), width);
         const transitionWidth = Math.min(Math.max(width * 0.08, 2), 8);
-        const localUnfill = Math.min(localFill + transitionWidth, width);
+        const localUnfill = localFill <= 0
+          ? 0
+          : localFill >= width
+            ? width
+            : Math.min(localFill + transitionWidth, width);
+        const tokenProgress = width > 0 ? localFill / width : normalizedProgress;
 
         token.style.setProperty('--highlight-fill-stop', `${localFill.toFixed(2)}px`);
         token.style.setProperty('--highlight-unfill-stop', `${localUnfill.toFixed(2)}px`);
+        token.style.setProperty('--highlight-token-progress', tokenProgress.toFixed(4));
       });
     }
   }
