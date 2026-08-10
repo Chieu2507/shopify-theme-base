@@ -158,6 +158,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.shippingEstimator?.addEventListener('submit', (event) => this.estimateShipping(event), { signal });
       this.shippingCountry?.addEventListener('change', () => this.updateShippingProvinces(), { signal });
       this.shippingEstimator?.addEventListener('input', () => this.clearShippingFieldErrors(), { signal });
+      this.mobileDrawer.addEventListener('change', () => this.setOrderOptionsOpen(false), { signal });
       this.updateShippingProvinces();
       if ('PointerEvent' in window) {
         this.handle?.addEventListener('pointerdown', (event) => this.startHandleDrag(event), { signal });
@@ -330,11 +331,13 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     setOrderOptionsOpen(open, restoreFocus = false) {
       if (!this.orderOptionsPanel || !this.footer) return;
-      this.footer.classList.toggle('is-order-options-open', open);
-      this.orderOptionsPanel.setAttribute('aria-hidden', String(!open));
-      this.orderOptionsPanel.inert = !open;
-      this.orderOptionsToggle?.setAttribute('aria-expanded', String(open));
-      if (restoreFocus) {
+      const isMobile = this.mobileDrawer.matches;
+      const isOpen = isMobile && open;
+      this.footer.classList.toggle('is-order-options-open', isOpen);
+      this.orderOptionsPanel.setAttribute('aria-hidden', String(isMobile && !isOpen));
+      this.orderOptionsPanel.inert = isMobile && !isOpen;
+      this.orderOptionsToggle?.setAttribute('aria-expanded', String(isOpen));
+      if (restoreFocus && isMobile) {
         (open ? this.orderOptionsClose : this.orderOptionsToggle)?.focus({ preventScroll: true });
       }
     }
