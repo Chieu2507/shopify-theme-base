@@ -164,14 +164,14 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.updateShippingProvinces();
       if ('PointerEvent' in window) {
         this.handle?.addEventListener('pointerdown', (event) => this.startHandleDrag(event), { signal });
-        this.handle?.addEventListener('pointermove', (event) => this.moveHandleDrag(event), { signal });
-        this.handle?.addEventListener('pointerup', (event) => this.endHandleDrag(event), { signal });
-        this.handle?.addEventListener('pointercancel', (event) => this.endHandleDrag(event, true), { signal });
+        window.addEventListener('pointermove', (event) => this.moveHandleDrag(event), { signal });
+        window.addEventListener('pointerup', (event) => this.endHandleDrag(event), { signal });
+        window.addEventListener('pointercancel', (event) => this.endHandleDrag(event, true), { signal });
       } else {
         this.handle?.addEventListener('touchstart', (event) => this.startTouchHandleDrag(event), { passive: false, signal });
-        this.handle?.addEventListener('touchmove', (event) => this.moveTouchHandleDrag(event), { passive: false, signal });
-        this.handle?.addEventListener('touchend', (event) => this.endTouchHandleDrag(event), { signal });
-        this.handle?.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
+        window.addEventListener('touchmove', (event) => this.moveTouchHandleDrag(event), { passive: false, signal });
+        window.addEventListener('touchend', (event) => this.endTouchHandleDrag(event), { signal });
+        window.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
       }
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && this.isOpen) {
