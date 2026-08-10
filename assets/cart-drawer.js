@@ -1,3 +1,5 @@
+import { A11y, Swiper } from './swiper-loader.js';
+
 (() => {
   if (customElements.get('cart-drawer')) return;
 
@@ -5,9 +7,14 @@
     connectedCallback() {
       this.backdropPointer = this.querySelector('.cart-drawer__backdrop-pointer');
       this.panel = this.querySelector('.cart-drawer__panel');
-      this.handle = this.querySelector('[data-cart-drawer-handle]');
+      this.handle = this.querySelector('[data-cart-drawer-order-options-handle]');
       this.items = this.querySelector('[data-cart-drawer-items]');
       this.footer = this.querySelector('[data-cart-drawer-footer]');
+      this.orderOptionsPanel = this.querySelector('[data-cart-drawer-order-options]');
+      this.orderOptionsBackdrop = this.querySelector('.cart-drawer__order-options-backdrop');
+      this.orderOptionsBackdropPointer = this.querySelector('.cart-drawer__order-options-backdrop-pointer');
+      this.orderOptionsToggle = this.querySelector('[data-cart-drawer-order-options-toggle]');
+      this.orderOptionsClose = this.querySelector('[data-cart-drawer-order-options-close]');
       this.status = this.querySelector('[data-cart-drawer-status]');
       this.loading = this.querySelector('[data-cart-drawer-loading]');
       this.message = this.querySelector('[data-cart-drawer-message]');
@@ -17,6 +24,7 @@
       this.taxNote = this.querySelector('[data-cart-drawer-tax-note]');
       this.recommendations = this.querySelector('[data-cart-drawer-recommendations]');
       this.recommendationList = this.querySelector('[data-cart-drawer-recommendation-list]');
+      this.recommendationTrack = this.querySelector('[data-cart-drawer-recommendation-track]');
       this.recommendationDots = this.querySelector('[data-cart-drawer-recommendation-dots]');
       this.shippingProgress = this.querySelector('[data-cart-drawer-shipping-progress]');
       this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
@@ -30,7 +38,9 @@
       this.shippingProvince = this.querySelector('[data-cart-drawer-shipping-province]');
       this.complementaryProducts = this.readComplementaryProducts();
       this.recommendationTimer = null;
+      this.recommendationSwiper = null;
       this.recommendationPaused = false;
+      this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.currency = this.dataset.currency || 'USD';
       this.isOpen = false;
       this.busy = false;
@@ -43,6 +53,7 @@
       this.handleDragTimer = null;
       this.mobileDrawer = window.matchMedia('(max-width: 989px)');
       this.bind();
+      this.setOrderOptionsOpen(false);
       this.renderEmpty();
       this.handleProductAdd = (event) => {
         if (!event.detail?.item) return;
@@ -71,8 +82,11 @@
     disconnectedCallback() {
       this.abortController?.abort();
       this.backdropInteraction?.destroy();
+      this.orderOptionsBackdropInteraction?.destroy();
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
+      this.destroyRecommendationSwiper();
+      this.resetHandleDrag();
       this.unlockPageScroll();
       this.isOpen = false;
       this.pendingLineMutations?.clear();
@@ -88,6 +102,14 @@
         pointer: this.backdropPointer,
         isOpen: () => this.isOpen,
       });
+      this.orderOptionsBackdropInteraction = new window.SpinelModalBackdropPointer({
+        root: this.panel,
+        panel: this.orderOptionsPanel,
+        pointer: this.orderOptionsBackdropPointer,
+        isOpen: () => this.isOpen && this.classList.contains('is-order-options-open'),
+        relativeToRoot: true,
+        isDisabled: () => !this.mobileDrawer.matches,
+      });
       document.addEventListener('click', (event) => {
         const trigger = event.target.closest?.('[data-cart-drawer-open]');
         if (trigger) {
@@ -101,6 +123,17 @@
         if (this.isSectionEvent(event)) this.open();
       }, { signal });
       this.addEventListener('click', (event) => {
+        const orderOptionsToggle = event.target.closest('[data-cart-drawer-order-options-toggle]');
+        if (orderOptionsToggle) {
+          event.preventDefault();
+          this.toggleOrderOptions();
+          return;
+        }
+        if (event.target.closest('[data-cart-drawer-order-options-close]')) {
+          event.preventDefault();
+          this.setOrderOptionsOpen(false, true);
+          return;
+        }
         if (event.target.closest('[data-cart-drawer-close], [data-cart-drawer-overlay]')) {
           event.preventDefault();
           this.close();
@@ -127,7 +160,6 @@
         if (this.message?.dataset.error === 'true') this.setMessage('');
       }, { signal });
       this.querySelector('[data-cart-drawer-save-note]')?.addEventListener('click', () => this.saveNote(), { signal });
-      this.recommendationList?.addEventListener('scroll', () => this.updateRecommendationDot(), { passive: true, signal });
       this.recommendationList?.addEventListener('pointerenter', () => { this.recommendationPaused = true; }, { signal });
       this.recommendationList?.addEventListener('pointerleave', () => { this.recommendationPaused = false; }, { signal });
       this.recommendationList?.addEventListener('focusin', () => { this.recommendationPaused = true; }, { signal });
@@ -138,20 +170,27 @@
       this.shippingEstimator?.addEventListener('submit', (event) => this.estimateShipping(event), { signal });
       this.shippingCountry?.addEventListener('change', () => this.updateShippingProvinces(), { signal });
       this.shippingEstimator?.addEventListener('input', () => this.clearShippingFieldErrors(), { signal });
+      this.mobileDrawer.addEventListener('change', () => this.setOrderOptionsOpen(false), { signal });
       this.updateShippingProvinces();
       if ('PointerEvent' in window) {
         this.handle?.addEventListener('pointerdown', (event) => this.startHandleDrag(event), { signal });
-        this.handle?.addEventListener('pointermove', (event) => this.moveHandleDrag(event), { signal });
-        this.handle?.addEventListener('pointerup', (event) => this.endHandleDrag(event), { signal });
-        this.handle?.addEventListener('pointercancel', (event) => this.endHandleDrag(event, true), { signal });
+        window.addEventListener('pointermove', (event) => this.moveHandleDrag(event), { signal });
+        window.addEventListener('pointerup', (event) => this.endHandleDrag(event), { signal });
+        window.addEventListener('pointercancel', (event) => this.endHandleDrag(event, true), { signal });
       } else {
         this.handle?.addEventListener('touchstart', (event) => this.startTouchHandleDrag(event), { passive: false, signal });
-        this.handle?.addEventListener('touchmove', (event) => this.moveTouchHandleDrag(event), { passive: false, signal });
-        this.handle?.addEventListener('touchend', (event) => this.endTouchHandleDrag(event), { signal });
-        this.handle?.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
+        window.addEventListener('touchmove', (event) => this.moveTouchHandleDrag(event), { passive: false, signal });
+        window.addEventListener('touchend', (event) => this.endTouchHandleDrag(event), { signal });
+        window.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
       }
       document.addEventListener('keydown', (event) => {
-        if (event.key === 'Escape' && this.isOpen) this.close();
+        if (event.key === 'Escape' && this.isOpen) {
+          if (this.mobileDrawer.matches && this.orderOptionsPanel?.getAttribute('aria-hidden') === 'false') {
+            this.setOrderOptionsOpen(false, true);
+          } else {
+            this.close();
+          }
+        }
         if (event.key === 'Tab' && this.isOpen) this.trapFocus(event);
       }, { signal });
     }
@@ -216,7 +255,7 @@
     }
 
     startHandleDrag(event) {
-      if (!this.panel || !this.handle || !this.isOpen || !this.mobileDrawer.matches || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
+      if (!this.orderOptionsPanel || !this.handle || !this.isOpen || !this.mobileDrawer.matches || this.orderOptionsPanel.getAttribute('aria-hidden') !== 'false' || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
 
       window.clearTimeout(this.handleDragTimer);
       this.handleDrag = {
@@ -227,12 +266,14 @@
         velocity: 0,
         distance: 0
       };
-      this.panel.classList.remove('is-handle-settling', 'is-handle-closing');
-      this.panel.style.transform = 'translate3d(0, 0, 0)';
-      this.panel.style.opacity = '1';
-      this.panel.classList.add('is-handle-dragging');
-      this.panel.style.removeProperty('transition');
-      this.panel.style.removeProperty('opacity');
+      this.orderOptionsPanel.classList.remove('is-handle-settling', 'is-handle-closing');
+      this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
+      this.orderOptionsPanel.style.opacity = '1';
+      this.orderOptionsPanel.classList.add('is-handle-dragging');
+      if (this.orderOptionsBackdrop) {
+        this.orderOptionsBackdrop.style.transition = 'none';
+        this.orderOptionsBackdrop.style.opacity = '1';
+      }
       try { this.handle.setPointerCapture(event.pointerId); } catch (_) {}
       event.preventDefault();
     }
@@ -248,7 +289,11 @@
       drag.lastY = event.clientY;
       drag.lastTime = now;
       drag.distance = Math.max(0, event.clientY - drag.startY);
-      this.panel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+      this.orderOptionsPanel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+      if (this.orderOptionsBackdrop) {
+        const fadeDistance = Math.max(this.orderOptionsPanel.getBoundingClientRect().height * 0.7, 1);
+        this.orderOptionsBackdrop.style.opacity = String(Math.max(0, 1 - (drag.distance / fadeDistance)));
+      }
       event.preventDefault();
     }
 
@@ -257,43 +302,40 @@
       if (!drag || event.pointerId !== drag.pointerId) return;
 
       try { this.handle?.releasePointerCapture(event.pointerId); } catch (_) {}
-      const closeDistance = Math.min(140, this.panel.getBoundingClientRect().height * 0.2);
+      const closeDistance = Math.min(140, this.orderOptionsPanel.getBoundingClientRect().height * 0.2);
       const shouldClose = !cancelled && (drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55));
       this.handleDrag = null;
-      this.panel.classList.remove('is-handle-dragging');
+      this.orderOptionsPanel.classList.remove('is-handle-dragging');
 
       if (shouldClose) {
         this.closeFromHandle();
         return;
       }
 
-      this.panel.classList.add('is-handle-settling');
+      this.orderOptionsPanel.classList.add('is-handle-settling');
+      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 240ms cubic-bezier(.22, 1, .36, 1)';
       requestAnimationFrame(() => {
-        this.panel.style.transform = 'translate3d(0, 0, 0)';
-        this.panel.style.opacity = '1';
+        this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
+        this.orderOptionsPanel.style.opacity = '1';
+        if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.opacity = '1';
       });
+      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), this.reduceMotion.matches ? 0 : 240);
     }
 
     closeFromHandle() {
-      if (!this.isOpen) return;
-      this.isOpen = false;
-      this.classList.remove('is-open');
-      this.classList.add('is-closing');
-      this.backdropInteraction?.hide();
-      document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'false'));
-      this.lastFocusedElement?.focus?.({ preventScroll: true });
-      this.panel.classList.add('is-handle-closing');
-      this.panel.style.opacity = '1';
+      if (!this.isOpen || !this.orderOptionsPanel || this.orderOptionsPanel.getAttribute('aria-hidden') === 'true') return;
+      this.orderOptionsPanel.classList.add('is-handle-closing');
+      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 220ms ease';
       requestAnimationFrame(() => {
-        this.panel.style.transform = `translate3d(0, ${Math.max(window.innerHeight, this.panel.offsetHeight + 60)}px, 0)`;
-        this.panel.style.opacity = '0';
+        this.orderOptionsPanel.style.transform = 'translate3d(0, 100%, 0)';
+        this.orderOptionsPanel.style.opacity = '0';
+        if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.opacity = '0';
       });
-      window.clearTimeout(this.closeTimer);
-      const closeDuration = this.getMotionDuration();
-      this.closeTimer = window.setTimeout(() => {
-        this.finishClose();
+      window.clearTimeout(this.handleDragTimer);
+      this.handleDragTimer = window.setTimeout(() => {
+        this.setOrderOptionsOpen(false, true);
         this.resetHandleDrag();
-      }, closeDuration);
+      }, this.reduceMotion.matches ? 0 : 240);
     }
 
     lockPageScroll() {
@@ -305,6 +347,26 @@
       root.style.setProperty(gutterProperty, `${Math.max(0, window.innerWidth - root.clientWidth)}px`);
       document.body.classList.add('cart-drawer-open');
       this.pageScrollLocked = true;
+    }
+
+    setOrderOptionsOpen(open, restoreFocus = false) {
+      if (!this.orderOptionsPanel || !this.footer) return;
+      const isMobile = this.mobileDrawer.matches;
+      const isOpen = isMobile && open;
+      this.classList.toggle('is-order-options-open', isOpen);
+      this.footer.classList.toggle('is-order-options-open', isOpen);
+      this.orderOptionsPanel.setAttribute('aria-hidden', String(isMobile && !isOpen));
+      this.orderOptionsPanel.inert = isMobile && !isOpen;
+      this.orderOptionsToggle?.setAttribute('aria-expanded', String(isOpen));
+      if (!isOpen) this.orderOptionsBackdropInteraction?.hide();
+      if (restoreFocus && isMobile) {
+        (open ? this.orderOptionsClose : this.orderOptionsToggle)?.focus({ preventScroll: true });
+      }
+    }
+
+    toggleOrderOptions() {
+      if (!this.orderOptionsPanel) return;
+      this.setOrderOptionsOpen(this.orderOptionsPanel.getAttribute('aria-hidden') === 'true', true);
     }
 
     unlockPageScroll() {
@@ -332,10 +394,12 @@
         try { this.handle?.releasePointerCapture(this.handleDrag.pointerId); } catch (_) {}
       }
       this.handleDrag = null;
-      this.panel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
-      this.panel?.style.removeProperty('transform');
-      this.panel?.style.removeProperty('opacity');
-      this.panel?.style.removeProperty('transition');
+      this.orderOptionsPanel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
+      this.orderOptionsPanel?.style.removeProperty('transform');
+      this.orderOptionsPanel?.style.removeProperty('opacity');
+      this.orderOptionsPanel?.style.removeProperty('transition');
+      this.orderOptionsBackdrop?.style.removeProperty('opacity');
+      this.orderOptionsBackdrop?.style.removeProperty('transition');
     }
 
     getMotionDuration() {
@@ -349,6 +413,7 @@
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
       this.resetHandleDrag();
+      this.setOrderOptionsOpen(false);
       this.lockPageScroll();
       const shouldAnimateOpen = !(this.isOpen && this.classList.contains('is-open'));
       this.hidden = false;
@@ -369,6 +434,7 @@
     close() {
       if (!this.isOpen) return;
       this.resetHandleDrag();
+      this.setOrderOptionsOpen(false);
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
@@ -772,7 +838,8 @@
     }
 
     async loadRecommendations(cart) {
-      if (!this.recommendations || !this.recommendationList || !this.recommendationDots || this.dataset.recommendationsEnabled !== 'true' || !cart.items.length) {
+      if (!this.recommendations || !this.recommendationList || !this.recommendationTrack || !this.recommendationDots || this.dataset.recommendationsEnabled !== 'true' || !cart.items.length) {
+        this.destroyRecommendationSwiper();
         if (this.recommendations) this.recommendations.hidden = true;
         return;
       }
@@ -792,40 +859,66 @@
           products = (data.products || []).filter((product) => !cart.items.some((item) => item.product_id === product.id));
         }
         if (!products.length) {
+          this.destroyRecommendationSwiper();
           this.recommendations.hidden = true;
           return;
         }
-        this.recommendationList.innerHTML = products.slice(0, limit).map((product) => this.recommendationTemplate(product)).join('');
-        this.recommendationDots.innerHTML = products.slice(0, limit).map((_, index) => {
+        const visibleProducts = products.slice(0, limit);
+        this.destroyRecommendationSwiper();
+        this.recommendationTrack.innerHTML = visibleProducts.map((product) => this.recommendationTemplate(product)).join('');
+        this.recommendationDots.innerHTML = visibleProducts.map((_, index) => {
           const label = (this.dataset.relatedProductLabel || '').replace('__index__', String(index + 1));
           return `<button type="button" class="cart-drawer__recommendation-dot" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="${this.escape(label)}" aria-controls="${this.escape(this.recommendationList?.id || '')}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`;
         }).join('');
         this.recommendations.hidden = false;
-        this.startRecommendationRotation(products.length);
+        this.initializeRecommendationSwiper(visibleProducts.length);
+        this.startRecommendationRotation(visibleProducts.length);
       } catch (error) {
+        this.destroyRecommendationSwiper();
         this.recommendations.hidden = true;
       }
     }
 
     goToRecommendation(index) {
-      const slides = [...(this.recommendationList?.children || [])];
-      const slide = slides[index];
-      if (!slide) return;
-      this.recommendationList.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' });
-      this.updateRecommendationDot(index);
+      if (!this.recommendationSwiper) return;
+      if (this.recommendationSwiper.params.loop) this.recommendationSwiper.slideToLoop(index);
+      else this.recommendationSwiper.slideTo(index);
     }
 
     updateRecommendationDot(forcedIndex = null) {
-      const slides = [...(this.recommendationList?.children || [])];
-      if (!slides.length || !this.recommendationDots) return;
-      const index = forcedIndex ?? slides.reduce((closest, slide, slideIndex) => {
-        const currentDistance = Math.abs(slide.offsetLeft - this.recommendationList.scrollLeft);
-        const closestDistance = Math.abs(slides[closest].offsetLeft - this.recommendationList.scrollLeft);
-        return currentDistance < closestDistance ? slideIndex : closest;
-      }, 0);
+      if (!this.recommendationDots) return;
+      const index = forcedIndex ?? this.recommendationSwiper?.realIndex ?? 0;
       this.recommendationDots.querySelectorAll('[data-cart-drawer-recommendation-dot]').forEach((dot, dotIndex) => {
         dot.setAttribute('aria-current', String(dotIndex === index));
       });
+    }
+
+    initializeRecommendationSwiper(count) {
+      if (!this.recommendationList || !this.recommendationTrack || count < 1) return;
+      this.recommendationSwiper = new Swiper(this.recommendationList, {
+        modules: [A11y],
+        slidesPerView: 1,
+        spaceBetween: 0,
+        speed: this.reduceMotion.matches ? 0 : 360,
+        loop: count > 1,
+        watchOverflow: true,
+        grabCursor: count > 1,
+        allowTouchMove: count > 1,
+        a11y: {
+          enabled: true,
+          slideRole: 'group',
+        },
+      });
+      this.recommendationSwiper.on('slideChange', () => this.updateRecommendationDot());
+      this.recommendationSwiper.on('sliderFirstMove', () => this.startRecommendationRotation(count));
+      this.updateRecommendationDot(0);
+    }
+
+    destroyRecommendationSwiper() {
+      this.recommendationSwiper?.destroy(true, true);
+      this.recommendationSwiper = null;
+      window.clearInterval(this.recommendationTimer);
+      this.recommendationTimer = null;
     }
 
     recommendationTemplate(product) {
@@ -844,7 +937,7 @@
         ? `<a class="cart-drawer__text-button" href="${this.escape(product.url)}">${this.escape(this.dataset.chooseOptionsLabel)}</a>`
         : `<button type="button" class="cart-drawer__text-button" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}">${this.escape(this.dataset.addToCartLabel)}</button>`;
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
-      return `<article class="cart-drawer__recommendation">
+      return `<article class="cart-drawer__recommendation swiper-slide">
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="lazy">` : ''}</a>
         <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
       </article>`;
@@ -856,8 +949,8 @@
       const interval = Math.max(3, Number(this.dataset.recommendationsInterval || 8)) * 1000;
       this.recommendationTimer = window.setInterval(() => {
         if (this.dataset.recommendationsPauseOnHover === 'true' && this.recommendationPaused) return;
-        const current = [...(this.recommendationDots?.querySelectorAll('[data-cart-drawer-recommendation-dot]') || [])].findIndex((dot) => dot.getAttribute('aria-current') === 'true');
-        this.goToRecommendation((current + 1) % count);
+        if (!this.recommendationSwiper) return;
+        this.recommendationSwiper.slideNext();
       }, interval);
     }
 

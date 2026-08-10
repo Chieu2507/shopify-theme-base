@@ -13,6 +13,9 @@ if (!customElements.get('announcement-bar')) {
       this.status = this.querySelector('[data-announcement-status]');
       this.motionEnabled = this.dataset.motionEnabled !== 'false';
       this.interval = Number(this.dataset.interval) || 5000;
+      // Let the current message fade in place before Swiper starts translating.
+      this.slideStartDelay = 100;
+      this.slideDelayTimer = null;
       this.motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.reduceMotion = this.motionPreference.matches || !this.motionEnabled;
       this.index = 0;
@@ -52,6 +55,9 @@ if (!customElements.get('announcement-bar')) {
       if (!this.initialized) return;
       this.initialized = false;
       this.stopRotation();
+      window.clearTimeout(this.slideDelayTimer);
+      this.slideDelayTimer = null;
+      this.slider?.classList.remove('is-slide-preparing');
       cancelAnimationFrame(this.measureFrame);
       this.resizeObserver?.disconnect();
       this.removeEventListener('mouseenter', this.onMouseEnter);
@@ -158,6 +164,9 @@ if (!customElements.get('announcement-bar')) {
     handleVisibilityChange() {
       if (document.hidden) {
         this.stopRotation();
+        window.clearTimeout(this.slideDelayTimer);
+        this.slideDelayTimer = null;
+        this.slider?.classList.remove('is-slide-preparing');
         return;
       }
       this.startRotation();
@@ -166,19 +175,36 @@ if (!customElements.get('announcement-bar')) {
     showItem(index, direction = null, speedOverride = null) {
       if (!this.swiper || this.items.length < 2) return;
 
+      window.clearTimeout(this.slideDelayTimer);
+      this.slideDelayTimer = null;
+      this.slider.classList.remove('is-slide-preparing');
       const nextIndex = (index + this.items.length) % this.items.length;
       const currentIndex = this.swiper.realIndex ?? this.index;
       if (nextIndex === currentIndex) return;
 
-      this.index = nextIndex;
       const speed = speedOverride ?? (this.reduceMotion ? 0 : this.swiper.params.speed);
-      if (direction === 'next') {
-        this.swiper.slideNext(speed);
-      } else if (direction === 'prev') {
-        this.swiper.slidePrev(speed);
-      } else {
-        this.swiper.slideToLoop(nextIndex, speed);
+      const transition = () => {
+        this.slideDelayTimer = null;
+        if (!this.initialized || !this.swiper) {
+          this.slider?.classList.remove('is-slide-preparing');
+          return;
+        }
+        if (direction === 'next') {
+          this.swiper.slideNext(speed);
+        } else if (direction === 'prev') {
+          this.swiper.slidePrev(speed);
+        } else {
+          this.swiper.slideToLoop(nextIndex, speed);
+        }
+        requestAnimationFrame(() => this.slider?.classList.remove('is-slide-preparing'));
+      };
+
+      if (speed === 0 || this.reduceMotion) {
+        transition();
+        return;
       }
+      this.slider.classList.add('is-slide-preparing');
+      this.slideDelayTimer = window.setTimeout(transition, this.slideStartDelay);
     }
 
     updateCounter() {
@@ -269,6 +295,11 @@ if (!customElements.get('announcement-bar')) {
 
     handleMotionPreferenceChange(event) {
       this.reduceMotion = event.matches || !this.motionEnabled;
+      if (this.reduceMotion) {
+        window.clearTimeout(this.slideDelayTimer);
+        this.slideDelayTimer = null;
+        this.slider?.classList.remove('is-slide-preparing');
+      }
       if (this.swiper) {
         const transitionSpeed = this.reduceMotion ? 0 : 420;
         this.swiper.params.speed = transitionSpeed;

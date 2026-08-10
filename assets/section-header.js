@@ -9,6 +9,7 @@ if (!window.SpinelHeaderMenus) {
   const mobileMegaMenuMotions = new WeakMap();
   const mobileDrawerMotions = new WeakMap();
   const localizationSheetMotions = new WeakMap();
+  const localizationBackdropInteractions = new WeakMap();
   const localizationSheetOpenRequests = new WeakMap();
   const localizationSheetFinalizing = new WeakSet();
   const megaMenuHoverTimers = new WeakMap();
@@ -109,6 +110,9 @@ if (!window.SpinelHeaderMenus) {
       sheet,
       details,
       startY: event.clientY,
+      lastY: event.clientY,
+      lastTime: performance.now(),
+      velocity: 0,
       distance: 0,
     };
     sheet.classList.add('is-handle-dragging');
@@ -122,6 +126,11 @@ if (!window.SpinelHeaderMenus) {
     const drag = localizationSheetDrag;
     if (!drag || event.pointerId !== drag.pointerId) return;
 
+    const now = performance.now();
+    const elapsed = Math.max(now - drag.lastTime, 1);
+    drag.velocity = (event.clientY - drag.lastY) / elapsed;
+    drag.lastY = event.clientY;
+    drag.lastTime = now;
     drag.distance = Math.max(0, event.clientY - drag.startY);
     drag.sheet.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
     event.preventDefault();
@@ -132,10 +141,15 @@ if (!window.SpinelHeaderMenus) {
     if (!drag || event.pointerId !== drag.pointerId) return;
 
     try { drag.handle.releasePointerCapture(event.pointerId); } catch (_) {}
+    const closeDistance = Math.min(140, drag.sheet.getBoundingClientRect().height * 0.2);
+    const shouldClose = !cancelled && (
+      drag.distance >= closeDistance
+      || (drag.distance >= 32 && drag.velocity > 0.55)
+    );
     localizationSheetDrag = null;
     drag.sheet.classList.remove('is-handle-dragging');
 
-    if (!cancelled && drag.distance >= drag.sheet.getBoundingClientRect().height * 0.2) {
+    if (shouldClose) {
       closeLocalizationSheetFromHandle(drag);
       return;
     }
@@ -147,14 +161,6 @@ if (!window.SpinelHeaderMenus) {
     });
     const settling = { sheet: drag.sheet };
     localizationSheetSettling = settling;
-    localizationSheetDragTimer = window.setTimeout(() => {
-      if (localizationSheetSettling !== settling) return;
-      drag.sheet.classList.remove('is-handle-settling');
-      drag.sheet.style.removeProperty('transform');
-      drag.sheet.style.removeProperty('opacity');
-      localizationSheetSettling = null;
-      localizationSheetDragTimer = null;
-    }, 240);
   };
 
   const localizationSheetTouchEvent = (event, callback, cancelled = false) => {
@@ -242,6 +248,7 @@ if (!window.SpinelHeaderMenus) {
     }
 
     details.removeAttribute('data-motion-state');
+    resetLocalizationSheetDrag();
     const popover = details.querySelector(':scope > [data-header-localization-popover]');
     const sheet = popover?.querySelector('.header__localization-sheet');
     const backdrop = popover?.querySelector('.header__localization-backdrop');
@@ -265,6 +272,7 @@ if (!window.SpinelHeaderMenus) {
     state.finish = finish;
     localizationSheetMotions.set(details, state);
     details.dataset.motionState = 'closing';
+    localizationBackdropInteractions.get(details)?.hide();
     syncHeaderLocalizationAria(details);
 
     const duration = Math.max(getAnimationTotalMs(sheet), getAnimationTotalMs(backdrop));
@@ -1796,10 +1804,32 @@ if (!window.SpinelHeaderMenus) {
     });
   };
 
+  const initializeLocalizationBackdropInteractions = (scope = document) => {
+    if (!window.SpinelModalBackdropPointer) return;
+
+    scope.querySelectorAll?.('.header__localization-selector').forEach((details) => {
+      if (localizationBackdropInteractions.has(details)) return;
+      const popover = details.querySelector(':scope > [data-header-localization-popover]');
+      const sheet = popover?.querySelector('.header__localization-sheet');
+      const pointer = popover?.querySelector('.header__localization-backdrop-pointer');
+      if (!popover || !sheet || !pointer) return;
+
+      localizationBackdropInteractions.set(details, new window.SpinelModalBackdropPointer({
+        root: popover,
+        panel: sheet,
+        pointer,
+        isOpen: () => details.open && details.dataset.motionState !== 'closing',
+        relativeToRoot: true,
+        isDisabled: () => !isMobileHeaderViewport(),
+      }));
+    });
+  };
+
   const initializeHeaderDisclosures = (scope = document) => {
     scope.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(syncHeaderDisclosureAria);
     scope.querySelectorAll?.('.header__localization-selector').forEach(syncHeaderLocalizationAria);
     initializeLocalizationOptions(scope);
+    initializeLocalizationBackdropInteractions(scope);
   };
 
   const clearMegaMenuHoverTimer = (details) => {
@@ -2416,6 +2446,8 @@ if (!window.SpinelHeaderMenus) {
       resetDesktopMegaMenuBackground(header);
     });
     event.target.querySelectorAll?.('.header__localization-selector').forEach((details) => {
+      localizationBackdropInteractions.get(details)?.destroy();
+      localizationBackdropInteractions.delete(details);
       cancelLocalizationSheetOpen(details);
       clearLocalizationHoverTimer(details);
       clearLocalizationSheetMotion(details);
