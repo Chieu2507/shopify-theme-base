@@ -69,9 +69,71 @@
   assign has_mobile_utilities = false
   assign can_change_country = false
   assign show_language = true
+  assign header_social_count = 0
 
   if section.settings.show_language == false
     assign show_language = false
+  endif
+
+  if section.settings.facebook_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.instagram_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.youtube_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.tiktok_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.x_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.snapchat_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.pinterest_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.tumblr_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.vimeo_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.linkedin_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.threads_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.whatsapp_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.wechat_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.reddit_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.line_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.spotify_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.discord_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.twitch_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.kakaotalk_url != blank
+    assign header_social_count = header_social_count | plus: 1
+  endif
+  if section.settings.weibo_url != blank
+    assign header_social_count = header_social_count | plus: 1
   endif
 
   if template.name == 'index'
@@ -91,6 +153,8 @@
   elsif section.settings.show_localization
     assign has_mobile_utilities = true
   elsif show_language and localization.available_languages.size > 1
+    assign has_mobile_utilities = true
+  elsif header_social_count > 0
     assign has_mobile_utilities = true
   endif
 
@@ -278,8 +342,8 @@
       {% if show_language and localization.available_languages.size > 1 %}
         <div class="header__localization header__language-localization">
           <details class="header__localization-selector header__language-selector{% if section.settings.dropdown_trigger == 'hover' %} header__localization-selector--hover{% endif %}">
-            <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}">
-              <span class="header__localization-label">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+            <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}">
+              <span class="header__localization-label">{{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}</span>
               <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
             </summary>
             <div class="header__localization-popover">
@@ -289,7 +353,7 @@
                   <div id="{{ language_form_id }}-Options" class="header__localization-options" role="listbox" aria-label="{{ 'header.language' | t | escape }}">
                     {% for language in localization.available_languages %}
                       <button class="header__localization-option{% if language.iso_code == localization.language.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if language.iso_code == localization.language.iso_code %}true{% else %}false{% endif %}" data-header-language-option data-language-code="{{ language.iso_code }}">
-                        <span>{{ language.endonym_name | default: language.name | escape }}</span>
+                        <span>{{ language.endonym_name | default: language.name | capitalize | escape }}</span>
                       </button>
                     {% endfor %}
                   </div>
@@ -297,7 +361,7 @@
                 <noscript>
                   <select name="language_code">
                     {% for language in localization.available_languages %}
-                      <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | default: language.name | escape }}</option>
+                      <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | default: language.name | capitalize | escape }}</option>
                     {% endfor %}
                   </select>
                   <button type="submit">{{ 'header.apply' | t }}</button>
@@ -459,6 +523,26 @@
     { "type": "header", "content": "Actions" },
     { "type": "checkbox", "id": "show_search", "label": "Show search", "default": true },
     { "type": "checkbox", "id": "show_localization", "label": "Show country and currency", "default": true },
+    { "type": "text", "id": "facebook_url", "label": "Facebook" },
+    { "type": "text", "id": "instagram_url", "label": "Instagram" },
+    { "type": "text", "id": "youtube_url", "label": "YouTube" },
+    { "type": "text", "id": "tiktok_url", "label": "TikTok" },
+    { "type": "text", "id": "x_url", "label": "X / Twitter" },
+    { "type": "text", "id": "snapchat_url", "label": "Snapchat" },
+    { "type": "text", "id": "pinterest_url", "label": "Pinterest" },
+    { "type": "text", "id": "tumblr_url", "label": "Tumblr" },
+    { "type": "text", "id": "vimeo_url", "label": "Vimeo" },
+    { "type": "text", "id": "linkedin_url", "label": "LinkedIn" },
+    { "type": "text", "id": "threads_url", "label": "Threads" },
+    { "type": "text", "id": "whatsapp_url", "label": "WhatsApp" },
+    { "type": "text", "id": "wechat_url", "label": "WeChat" },
+    { "type": "text", "id": "reddit_url", "label": "Reddit" },
+    { "type": "text", "id": "line_url", "label": "LINE" },
+    { "type": "text", "id": "spotify_url", "label": "Spotify" },
+    { "type": "text", "id": "discord_url", "label": "Discord" },
+    { "type": "text", "id": "twitch_url", "label": "Twitch" },
+    { "type": "text", "id": "kakaotalk_url", "label": "KakaoTalk" },
+    { "type": "text", "id": "weibo_url", "label": "Weibo" },
     { "type": "checkbox", "id": "show_language", "label": "Show language", "default": true },
     { "type": "checkbox", "id": "show_country_flag", "label": "Country flag", "default": true, "visible_if": "{{ section.settings.show_localization }}" },
     { "type": "checkbox", "id": "show_account", "label": "Show account", "default": true, "visible_if": "{{ false }}" },

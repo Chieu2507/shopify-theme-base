@@ -33,6 +33,11 @@
   if section.settings.show_language == false
     assign show_language = false
   endif
+
+  assign mobile_social_count = 0
+  if section.settings.facebook_url != blank or section.settings.instagram_url != blank or section.settings.youtube_url != blank or section.settings.tiktok_url != blank or section.settings.x_url != blank or section.settings.snapchat_url != blank or section.settings.pinterest_url != blank or section.settings.tumblr_url != blank or section.settings.vimeo_url != blank or section.settings.linkedin_url != blank or section.settings.threads_url != blank or section.settings.whatsapp_url != blank or section.settings.wechat_url != blank or section.settings.reddit_url != blank or section.settings.line_url != blank or section.settings.spotify_url != blank or section.settings.discord_url != blank or section.settings.twitch_url != blank or section.settings.kakaotalk_url != blank or section.settings.weibo_url != blank
+    assign mobile_social_count = 1
+  endif
 %}
 
 <nav
@@ -539,13 +544,13 @@
         {% if show_language and localization.available_languages.size > 1 %}
           <div class="header__mobile-language">
             <details class="header__localization-selector header__language-selector">
-              <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}" aria-controls="{{ mobile_language_form_id }}-Sheet">
+              <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}" aria-controls="{{ mobile_language_form_id }}-Sheet">
                 <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
                 <span class="header__mobile-localization-copy">
                   <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
-                  <span class="header__mobile-localization-full-value">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+                  <span class="header__mobile-localization-full-value">{{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}</span>
                 </span>
-                <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+                <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}</span>
                 <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
               </summary>
               <div id="{{ mobile_language_form_id }}-Sheet" class="header__localization-popover" data-header-localization-popover>
@@ -563,7 +568,7 @@
                       <div class="header__localization-options" role="listbox" aria-label="{{ 'header.language' | t | escape }}">
                         {% for language in localization.available_languages %}
                           <button class="header__localization-option{% if language.iso_code == localization.language.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if language.iso_code == localization.language.iso_code %}true{% else %}false{% endif %}" data-header-language-option data-language-code="{{ language.iso_code }}">
-                            <span>{{ language.endonym_name | default: language.name | escape }}</span>
+                            <span>{{ language.endonym_name | default: language.name | capitalize | escape }}</span>
                           </button>
                         {% endfor %}
                       </div>
@@ -571,7 +576,7 @@
                     <noscript>
                       <select name="language_code">
                         {% for language in localization.available_languages %}
-                          <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | default: language.name | escape }}</option>
+                          <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | default: language.name | capitalize | escape }}</option>
                         {% endfor %}
                       </select>
                       <button type="submit">{{ 'header.apply' | t }}</button>
@@ -582,17 +587,43 @@
             </details>
           </div>
         {% elsif show_language and localization.language != blank %}
-          <div class="header__mobile-language header__mobile-language--static" aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | escape }}">
+          <div class="header__mobile-language header__mobile-language--static" aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}">
             <span class="header__mobile-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
             <span class="header__mobile-localization-copy">
               <span class="header__mobile-localization-title">{{ 'header.language' | t }}</span>
-              <span class="header__mobile-localization-full-value">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+            <span class="header__mobile-localization-full-value">{{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}</span>
             </span>
-            <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | escape }}</span>
+          <span class="header__mobile-localization-compact-value" aria-hidden="true">{{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}</span>
           </div>
         {% endif %}
         </div>
       </div>
+      {% if mobile_social_count > 0 %}
+        <nav class="header__mobile-social" aria-label="Social links">
+          <ul class="header__mobile-social-list" role="list">
+            {% if section.settings.facebook_url != blank %}<li><a href="{{ section.settings.facebook_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Facebook">{% render 'social-icon', name: 'facebook' %}</a></li>{% endif %}
+            {% if section.settings.instagram_url != blank %}<li><a href="{{ section.settings.instagram_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Instagram">{% render 'social-icon', name: 'instagram' %}</a></li>{% endif %}
+            {% if section.settings.youtube_url != blank %}<li><a href="{{ section.settings.youtube_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="YouTube">{% render 'social-icon', name: 'youtube' %}</a></li>{% endif %}
+            {% if section.settings.tiktok_url != blank %}<li><a href="{{ section.settings.tiktok_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="TikTok">{% render 'social-icon', name: 'tiktok' %}</a></li>{% endif %}
+            {% if section.settings.x_url != blank %}<li><a href="{{ section.settings.x_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="X / Twitter">{% render 'social-icon', name: 'x' %}</a></li>{% endif %}
+            {% if section.settings.snapchat_url != blank %}<li><a href="{{ section.settings.snapchat_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Snapchat">{% render 'social-icon', name: 'snapchat' %}</a></li>{% endif %}
+            {% if section.settings.pinterest_url != blank %}<li><a href="{{ section.settings.pinterest_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Pinterest">{% render 'social-icon', name: 'pinterest' %}</a></li>{% endif %}
+            {% if section.settings.tumblr_url != blank %}<li><a href="{{ section.settings.tumblr_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Tumblr">{% render 'social-icon', name: 'tumblr' %}</a></li>{% endif %}
+            {% if section.settings.vimeo_url != blank %}<li><a href="{{ section.settings.vimeo_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Vimeo">{% render 'social-icon', name: 'vimeo' %}</a></li>{% endif %}
+            {% if section.settings.linkedin_url != blank %}<li><a href="{{ section.settings.linkedin_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="LinkedIn">{% render 'social-icon', name: 'linkedin' %}</a></li>{% endif %}
+            {% if section.settings.threads_url != blank %}<li><a href="{{ section.settings.threads_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Threads">{% render 'social-icon', name: 'threads' %}</a></li>{% endif %}
+            {% if section.settings.whatsapp_url != blank %}<li><a href="{{ section.settings.whatsapp_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="WhatsApp">{% render 'social-icon', name: 'whatsapp' %}</a></li>{% endif %}
+            {% if section.settings.wechat_url != blank %}<li><a href="{{ section.settings.wechat_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="WeChat">{% render 'social-icon', name: 'wechat' %}</a></li>{% endif %}
+            {% if section.settings.reddit_url != blank %}<li><a href="{{ section.settings.reddit_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Reddit">{% render 'social-icon', name: 'reddit' %}</a></li>{% endif %}
+            {% if section.settings.line_url != blank %}<li><a href="{{ section.settings.line_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="LINE">{% render 'social-icon', name: 'line' %}</a></li>{% endif %}
+            {% if section.settings.spotify_url != blank %}<li><a href="{{ section.settings.spotify_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Spotify">{% render 'social-icon', name: 'spotify' %}</a></li>{% endif %}
+            {% if section.settings.discord_url != blank %}<li><a href="{{ section.settings.discord_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Discord">{% render 'social-icon', name: 'discord' %}</a></li>{% endif %}
+            {% if section.settings.twitch_url != blank %}<li><a href="{{ section.settings.twitch_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Twitch">{% render 'social-icon', name: 'twitch' %}</a></li>{% endif %}
+            {% if section.settings.kakaotalk_url != blank %}<li><a href="{{ section.settings.kakaotalk_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="KakaoTalk">{% render 'social-icon', name: 'kakaotalk' %}</a></li>{% endif %}
+            {% if section.settings.weibo_url != blank %}<li><a href="{{ section.settings.weibo_url | escape }}" target="_blank" rel="noopener noreferrer" aria-label="Weibo">{% render 'social-icon', name: 'weibo' %}</a></li>{% endif %}
+          </ul>
+        </nav>
+      {% endif %}
     </div>
   {% endif %}
 </nav>
