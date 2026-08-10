@@ -66,6 +66,19 @@
     assign heading_line_height = heading_line_height | divided_by: 100.0
   endif
 
+  assign paragraph_font_family = 'var(--font-body--family)'
+  assign paragraph_font_style = 'var(--font-body--style)'
+  assign paragraph_font_weight = 'var(--font-body--weight)'
+  if settings.paragraph_font == 'label' or settings.paragraph_font == 'subheading'
+    assign paragraph_font_family = 'var(--font-label--family)'
+    assign paragraph_font_style = 'var(--font-label--style)'
+    assign paragraph_font_weight = 'var(--font-label--weight)'
+  elsif settings.paragraph_font == 'heading' or settings.paragraph_font == 'accent'
+    assign paragraph_font_family = 'var(--font-heading--family)'
+    assign paragraph_font_style = 'var(--font-heading--style)'
+    assign paragraph_font_weight = 'var(--font-heading--weight)'
+  endif
+
 %}
 
 {% style %}
@@ -75,6 +88,12 @@
   {{ settings.body_font | font_modify: 'weight', '700' | font_face: font_display: 'swap' }}
   {{ settings.body_font | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
   {{ settings.body_font | font_modify: 'style', 'italic' | font_modify: 'weight', '700' | font_face: font_display: 'swap' }}
+  {{ settings.label_font | font_face: font_display: 'swap' }}
+  {{ settings.label_font | font_modify: 'weight', '500' | font_face: font_display: 'swap' }}
+  {{ settings.label_font | font_modify: 'weight', '600' | font_face: font_display: 'swap' }}
+  {{ settings.label_font | font_modify: 'weight', '700' | font_face: font_display: 'swap' }}
+  {{ settings.label_font | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
+  {{ settings.label_font | font_modify: 'style', 'italic' | font_modify: 'weight', '700' | font_face: font_display: 'swap' }}
   {{ settings.heading_font | font_face: font_display: 'swap' }}
   {{ settings.heading_font | font_modify: 'weight', '700' | font_face: font_display: 'swap' }}
   {{ settings.heading_font | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
@@ -84,13 +103,13 @@
     /* Spinel type tokens exported from the Desktop and Mobile Figma modes. */
     --spinel-type-family-display: {{ settings.heading_font.family }}, {{ settings.heading_font.fallback_families }};
     --spinel-type-family-body: {{ settings.body_font.family }}, {{ settings.body_font.fallback_families }};
-    --spinel-type-family-accent: var(--spinel-type-family-display);
+    --spinel-type-family-label: {{ settings.label_font.family }}, {{ settings.label_font.fallback_families }};
     --spinel-type-style-display: {{ settings.heading_font.style }};
     --spinel-type-style-body-regular: {{ settings.body_font.style }};
     --spinel-type-style-body-medium: normal;
     --spinel-type-style-body-semibold: normal;
     --spinel-type-style-body-italic: italic;
-    --spinel-type-style-accent-italic: italic;
+    --spinel-type-style-label-regular: {{ settings.label_font.style }};
 
     --spinel-type-size-display-xl: {{ settings.display_xl_size_mobile }}px;
     --spinel-type-size-display-lg: {{ settings.h1_size_mobile }}px;
@@ -104,7 +123,11 @@
     --spinel-type-size-body-md: {{ settings.body_text_size_mobile }}px;
     --spinel-type-size-body-sm: {{ settings.body_small_size_mobile }}px;
     --spinel-type-size-body-xs: {{ settings.body_xsmall_size_mobile }}px;
-    --spinel-type-size-label: 10px;
+    --spinel-type-size-label-lg: {{ settings.label_large_size_mobile }}px;
+    --spinel-type-size-label-md: {{ settings.label_text_size_mobile }}px;
+    --spinel-type-size-label-sm: {{ settings.label_small_size_mobile }}px;
+    --spinel-type-size-label-xs: {{ settings.label_xsmall_size_mobile }}px;
+    --spinel-type-size-label: var(--spinel-type-size-label-xs);
     --spinel-type-size-action: 12px;
     --spinel-type-size-price-lg: 24px;
     --spinel-type-size-price-md: 18px;
@@ -193,14 +216,17 @@
     --font-body--family: var(--spinel-type-family-body);
     --font-body--style: var(--spinel-type-style-body-regular);
     --font-body--weight: {{ settings.body_font.weight }};
-    --font-subheading--family: var(--font-body--family);
-    --font-subheading--style: var(--font-body--style);
-    --font-subheading--weight: var(--font-body--weight);
+    --font-label--family: var(--spinel-type-family-label);
+    --font-label--style: var(--spinel-type-style-label-regular);
+    --font-label--weight: {{ settings.label_font.weight }};
+    --font-subheading--family: var(--font-label--family);
+    --font-subheading--style: var(--font-label--style);
+    --font-subheading--weight: var(--font-label--weight);
     --font-heading--family: var(--spinel-type-family-display);
     --font-heading--style: var(--spinel-type-style-display);
     --font-heading--weight: {{ settings.heading_font.weight }};
     --font-accent--family: var(--font-heading--family);
-    --font-accent--style: italic;
+    --font-accent--style: var(--font-heading--style);
     --font-accent--weight: var(--font-heading--weight);
     --font-h1--family: var(--font-heading--family);
     --font-h1--style: var(--font-heading--style);
@@ -220,9 +246,9 @@
     --font-h6--family: var(--font-heading--family);
     --font-h6--style: var(--font-heading--style);
     --font-h6--weight: var(--font-heading--weight);
-    --font-paragraph--family: var(--font-body--family);
-    --font-paragraph--style: var(--font-body--style);
-    --font-paragraph--weight: var(--font-body--weight);
+    --font-paragraph--family: {{ paragraph_font_family }};
+    --font-paragraph--style: {{ paragraph_font_style }};
+    --font-paragraph--weight: {{ paragraph_font_weight }};
     --font-subheading-preset--family: var(--font-subheading--family);
     --font-subheading-preset--style: var(--font-subheading--style);
     --font-subheading-preset--weight: var(--font-subheading--weight);
@@ -244,12 +270,18 @@
     --font-body-small: var(--body-size-sm);
     --font-body-base: var(--body-size-md);
     --font-body-large: var(--body-size-lg);
-    --font-caption: var(--body-size-xs);
+    --font-caption: var(--label-size-xs);
     --body-line-height: {{ settings.body_text_line_height_range | divided_by: 100.0 }};
     --body-letter-spacing: {% if settings.body_text_tracking_range == -0.8 %}var(--tracking-tight){% elsif settings.body_text_tracking_range == -0.2 %}var(--tracking-snug){% elsif settings.body_text_tracking_range == 0 %}var(--tracking-normal){% elsif settings.body_text_tracking_range == 0.8 %}var(--tracking-open){% elsif settings.body_text_tracking_range == 1.1 %}var(--tracking-loose){% else %}{{ settings.body_text_tracking_range }}px{% endif %};
-    --font-subheading-size: var(--body-size-xs);
-    --font-subheading-line-height: 1.4;
-    --font-subheading-letter-spacing: var(--tracking-open);
+    --label-size-lg: var(--spinel-type-size-label-lg);
+    --label-size-md: var(--spinel-type-size-label-md);
+    --label-size-sm: var(--spinel-type-size-label-sm);
+    --label-size-xs: var(--spinel-type-size-label-xs);
+    --label-line-height: {{ settings.label_text_line_height_range | divided_by: 100.0 }};
+    --label-letter-spacing: {% if settings.label_text_tracking_range == -0.8 %}var(--tracking-tight){% elsif settings.label_text_tracking_range == -0.2 %}var(--tracking-snug){% elsif settings.label_text_tracking_range == 0 %}var(--tracking-normal){% elsif settings.label_text_tracking_range == 0.8 %}var(--tracking-open){% elsif settings.label_text_tracking_range == 1.1 %}var(--tracking-loose){% else %}{{ settings.label_text_tracking_range }}px{% endif %};
+    --font-subheading-size: var(--label-size-xs);
+    --font-subheading-line-height: var(--label-line-height);
+    --font-subheading-letter-spacing: var(--label-letter-spacing);
     --font-subheading-text-case: none;
 
     --leading-tight: 1.1;
@@ -380,7 +412,11 @@
       --spinel-type-size-body-md: {{ settings.body_text_size_desktop }}px;
       --spinel-type-size-body-sm: {{ settings.body_small_size_desktop }}px;
       --spinel-type-size-body-xs: {{ settings.body_xsmall_size_desktop }}px;
-      --spinel-type-size-label: 10px;
+      --spinel-type-size-label-lg: {{ settings.label_large_size_desktop }}px;
+      --spinel-type-size-label-md: {{ settings.label_text_size_desktop }}px;
+      --spinel-type-size-label-sm: {{ settings.label_small_size_desktop }}px;
+      --spinel-type-size-label-xs: {{ settings.label_xsmall_size_desktop }}px;
+      --spinel-type-size-label: var(--spinel-type-size-label-xs);
       --spinel-type-size-action: 12px;
       --spinel-type-size-price-lg: 28px;
       --spinel-type-size-price-md: 20px;
