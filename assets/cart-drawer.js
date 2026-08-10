@@ -8,6 +8,9 @@
       this.handle = this.querySelector('[data-cart-drawer-handle]');
       this.items = this.querySelector('[data-cart-drawer-items]');
       this.footer = this.querySelector('[data-cart-drawer-footer]');
+      this.orderOptionsPanel = this.querySelector('[data-cart-drawer-order-options]');
+      this.orderOptionsToggle = this.querySelector('[data-cart-drawer-order-options-toggle]');
+      this.orderOptionsClose = this.querySelector('[data-cart-drawer-order-options-close]');
       this.status = this.querySelector('[data-cart-drawer-status]');
       this.loading = this.querySelector('[data-cart-drawer-loading]');
       this.message = this.querySelector('[data-cart-drawer-message]');
@@ -43,6 +46,7 @@
       this.handleDragTimer = null;
       this.mobileDrawer = window.matchMedia('(max-width: 989px)');
       this.bind();
+      this.setOrderOptionsOpen(false);
       this.renderEmpty();
       this.handleProductAdd = (event) => {
         if (!event.detail?.item) return;
@@ -101,6 +105,17 @@
         if (this.isSectionEvent(event)) this.open();
       }, { signal });
       this.addEventListener('click', (event) => {
+        const orderOptionsToggle = event.target.closest('[data-cart-drawer-order-options-toggle]');
+        if (orderOptionsToggle) {
+          event.preventDefault();
+          this.toggleOrderOptions();
+          return;
+        }
+        if (event.target.closest('[data-cart-drawer-order-options-close]')) {
+          event.preventDefault();
+          this.setOrderOptionsOpen(false, true);
+          return;
+        }
         if (event.target.closest('[data-cart-drawer-close], [data-cart-drawer-overlay]')) {
           event.preventDefault();
           this.close();
@@ -276,6 +291,7 @@
 
     closeFromHandle() {
       if (!this.isOpen) return;
+      this.setOrderOptionsOpen(false);
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
@@ -305,6 +321,22 @@
       root.style.setProperty(gutterProperty, `${Math.max(0, window.innerWidth - root.clientWidth)}px`);
       document.body.classList.add('cart-drawer-open');
       this.pageScrollLocked = true;
+    }
+
+    setOrderOptionsOpen(open, restoreFocus = false) {
+      if (!this.orderOptionsPanel || !this.footer) return;
+      this.footer.classList.toggle('is-order-options-open', open);
+      this.orderOptionsPanel.setAttribute('aria-hidden', String(!open));
+      this.orderOptionsPanel.inert = !open;
+      this.orderOptionsToggle?.setAttribute('aria-expanded', String(open));
+      if (restoreFocus) {
+        (open ? this.orderOptionsClose : this.orderOptionsToggle)?.focus({ preventScroll: true });
+      }
+    }
+
+    toggleOrderOptions() {
+      if (!this.orderOptionsPanel) return;
+      this.setOrderOptionsOpen(this.orderOptionsPanel.getAttribute('aria-hidden') === 'true', true);
     }
 
     unlockPageScroll() {
@@ -349,6 +381,7 @@
       this.lastFocusedElement = trigger || document.activeElement;
       window.clearTimeout(this.closeTimer);
       this.resetHandleDrag();
+      this.setOrderOptionsOpen(false);
       this.lockPageScroll();
       const shouldAnimateOpen = !(this.isOpen && this.classList.contains('is-open'));
       this.hidden = false;
@@ -369,6 +402,7 @@
     close() {
       if (!this.isOpen) return;
       this.resetHandleDrag();
+      this.setOrderOptionsOpen(false);
       this.isOpen = false;
       this.classList.remove('is-open');
       this.classList.add('is-closing');
