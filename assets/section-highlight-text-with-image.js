@@ -102,18 +102,20 @@ if (!customElements.get('highlight-text-with-image')) {
 
       const lines = [];
       let activeLine = [];
-      let activeTop = null;
+      let activeCenter = null;
+      const computedLineHeight = Number.parseFloat(getComputedStyle(this.heading).lineHeight) || 1;
+      const lineThreshold = Math.max(computedLineHeight * 0.55, 8);
 
       tokens.forEach((token) => {
         const rect = token.getClientRects()[0] || token.getBoundingClientRect();
-        const tokenTop = Math.round(rect.top);
+        const tokenCenter = rect.top + rect.height / 2;
 
-        if (activeTop !== null && Math.abs(tokenTop - activeTop) > 2) {
+        if (activeCenter !== null && Math.abs(tokenCenter - activeCenter) > lineThreshold) {
           lines.push(activeLine);
           activeLine = [];
         }
 
-        if (activeLine.length === 0) activeTop = tokenTop;
+        if (activeLine.length === 0) activeCenter = tokenCenter;
         activeLine.push(token);
       });
 
