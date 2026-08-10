@@ -882,11 +882,14 @@ if (!window.SpinelHeaderMenus) {
     // Keep the surface present until the closing panel has completed its own motion.
     // This prevents the transparent header from exposing the hero between the
     // mega menu's opacity and height transitions.
-    const hasOpenDesktopDropdown = !isMobile
-      && Boolean(header.querySelector(
-        '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
-      ));
-    const showSurface = isScrolled || hasOpenDesktopDropdown;
+    const hasOpenDesktopOverlay = !isMobile
+      && (
+        header.classList.contains('header--account-panel-open')
+        || Boolean(header.querySelector(
+          '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
+        ))
+      );
+    const showSurface = isScrolled || hasOpenDesktopOverlay;
     header.classList.toggle('header--surface-visible', showSurface);
     syncTransparentHeaderColorScheme(header, showSurface);
   };
@@ -995,6 +998,27 @@ if (!window.SpinelHeaderMenus) {
   document.addEventListener('click', (event) => {
     const account = event.target.closest?.('shopify-account.header__action--account');
     if (account) syncDesktopAccountDialogPosition(account);
+  }, true);
+
+  const syncAccountPanelHeaderState = (account, isOpen) => {
+    const header = account?.closest?.('[data-header]');
+    if (!header) return;
+    header.classList.toggle('header--account-panel-open', isOpen);
+    if (header.dataset.transparentHeader === 'true' || header.dataset.floatingHeader === 'true') {
+      scheduleResponsiveHeaderSync();
+    }
+  };
+
+  document.addEventListener('open', (event) => {
+    if (event.target.matches?.('shopify-account.header__action--account')) {
+      syncAccountPanelHeaderState(event.target, true);
+    }
+  }, true);
+
+  document.addEventListener('close', (event) => {
+    if (event.target.matches?.('shopify-account.header__action--account')) {
+      syncAccountPanelHeaderState(event.target, false);
+    }
   }, true);
 
   const revealHeaderForCartFeedback = (duration = 2200) => {
