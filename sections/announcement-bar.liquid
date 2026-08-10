@@ -64,10 +64,6 @@
     assign announcement_module = 'section-announcement-bar.js'
   endif
 
-  assign announcement_total_display = announcement_item_count
-  if announcement_item_count < 10
-    assign announcement_total_display = '0' | append: announcement_item_count
-  endif
 %}
 
 {% if show_navigation %}
@@ -170,9 +166,6 @@
               <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="-1" aria-label="{{ 'announcement_bar.previous_slide' | t | escape }}">
                 {% render 'icon', name: 'chevron-left' %}
               </button>
-              <span class="announcement-bar__counter announcement-bar__counter--spacer" aria-hidden="true">
-                <span>01</span><span aria-hidden="true"> / </span><span>{{ announcement_total_display }}</span>
-              </span>
             {% endif %}
 
             <div class="announcement-bar__messages{% if show_navigation %} swiper{% endif %}"{% if show_navigation %} data-announcement-slider{% endif %}>
@@ -211,9 +204,6 @@
             </div>
 
             {% if show_navigation %}
-              <span class="announcement-bar__counter" aria-hidden="true">
-                <span data-announcement-current>01</span><span aria-hidden="true"> / </span><span data-announcement-total>{{ announcement_total_display }}</span>
-              </span>
               <button class="announcement-bar__navigator-arrow" type="button" data-announcement-step="1" aria-label="{{ 'announcement_bar.next_slide' | t | escape }}">
                 {% render 'icon', name: 'chevron-right' %}
               </button>
@@ -310,7 +300,7 @@
 
   .announcement-bar--full .announcement-bar__message-row--with-controls {
     display: grid;
-    grid-template-columns: max-content max-content minmax(0, 1fr) max-content max-content;
+    grid-template-columns: max-content minmax(0, 1fr) max-content;
   }
 
   .announcement-bar--full .announcement-bar__messages { width: 100%; }
@@ -532,17 +522,6 @@
     outline-offset: 2px;
   }
 
-  .announcement-bar__counter {
-    color: var(--color-heading);
-    font-size: var(--spinel-type-size-label);
-    font-variant-numeric: tabular-nums;
-    line-height: var(--spinel-type-line-label);
-    letter-spacing: var(--spinel-type-tracking-label);
-    white-space: nowrap;
-  }
-
-  .announcement-bar__counter--spacer { visibility: hidden; }
-
   .announcement-bar[data-motion-enabled='false'] .announcement-bar__marquee .marquee__viewport,
   .announcement-bar__marquee.marquee--static .marquee__viewport {
     overflow: visible;
@@ -589,8 +568,7 @@
     display: block;
   }
 
-  .no-js .announcement-bar__navigator-arrow,
-  .no-js .announcement-bar__counter {
+  .no-js .announcement-bar__navigator-arrow {
     display: none;
   }
 
@@ -629,19 +607,17 @@
 
     .announcement-bar__message-row--with-controls {
       display: grid;
-      grid-template-columns: 32px minmax(0, 1fr) max-content 32px;
+      grid-template-columns: 32px minmax(0, 1fr) 32px;
     }
 
     .announcement-bar--full .announcement-bar__message-row--with-controls {
-      grid-template-columns: 32px minmax(0, 1fr) max-content 32px;
+      grid-template-columns: 32px minmax(0, 1fr) 32px;
     }
 
-    .announcement-bar__message-row--with-controls .announcement-bar__counter--spacer { display: none; }
     .announcement-bar__message-row--with-controls .announcement-bar__messages { grid-column: 2; }
 
     .announcement-bar__navigator-arrow { width: 32px; height: 32px; flex-basis: 32px; }
     .announcement-bar__navigator-arrow svg { width: 10px; height: 10px; }
-    .announcement-bar__counter { font-size: 9px; }
 
     .announcement-bar__messages .announcement-bar__item {
       min-height: var(--announcement-bar-height-mobile);
@@ -652,19 +628,6 @@
     .announcement-bar__item .content-block--inline-typography {
       font-size: var(--announcement-custom-size-mobile) !important;
     }
-  }
-
-  @media (max-width: 374px) {
-    .announcement-bar__message-row--with-controls {
-      grid-template-columns: 32px minmax(0, 1fr) 32px;
-    }
-
-    .announcement-bar--full .announcement-bar__message-row--with-controls {
-      grid-template-columns: 32px minmax(0, 1fr) 32px;
-    }
-
-    .announcement-bar__message-row--with-controls .announcement-bar__counter { display: none; }
-    .announcement-bar__message-row--with-controls .announcement-bar__messages { grid-column: 2; }
   }
 
   @media screen and (min-width: 750px) {

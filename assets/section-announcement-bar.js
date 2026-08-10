@@ -8,8 +8,6 @@ if (!customElements.get('announcement-bar')) {
 
       this.slider = this.querySelector('[data-announcement-slider]');
       this.items = Array.from(this.querySelectorAll('[data-announcement-item]'));
-      this.currentIndicator = this.querySelector('[data-announcement-current]');
-      this.totalIndicator = this.querySelector('[data-announcement-total]');
       this.status = this.querySelector('[data-announcement-status]');
       this.motionEnabled = this.dataset.motionEnabled !== 'false';
       this.interval = Number(this.dataset.interval) || 5000;
@@ -76,7 +74,6 @@ if (!customElements.get('announcement-bar')) {
 
     initializeSwiper() {
       if (!this.slider || this.items.length < 2) {
-        this.updateCounter();
         return;
       }
 
@@ -97,7 +94,6 @@ if (!customElements.get('announcement-bar')) {
 
       this.swiper.on('slideChange', () => {
         this.index = this.swiper.realIndex;
-        this.updateCounter();
         this.updateSlideAccessibility();
         if (this.announceNextChange) {
           this.announceCurrentSlide();
@@ -117,7 +113,6 @@ if (!customElements.get('announcement-bar')) {
         if (this.initialized) this.scheduleHeightMeasurement();
       });
 
-      this.updateCounter();
       this.updateSlideAccessibility();
     }
 
@@ -207,12 +202,6 @@ if (!customElements.get('announcement-bar')) {
       this.slideDelayTimer = window.setTimeout(transition, this.slideStartDelay);
     }
 
-    updateCounter() {
-      const current = this.swiper?.realIndex ?? this.index;
-      if (this.currentIndicator) this.currentIndicator.textContent = this.formatCounter(current + 1);
-      if (this.totalIndicator) this.totalIndicator.textContent = this.formatCounter(this.items.length);
-    }
-
     updateSlideAccessibility() {
       requestAnimationFrame(() => {
         this.slider?.querySelectorAll('.swiper-slide').forEach((slide) => {
@@ -230,10 +219,6 @@ if (!customElements.get('announcement-bar')) {
       this.status.textContent = template
         .replace('[current]', String(current))
         .replace('[total]', String(this.items.length));
-    }
-
-    formatCounter(value) {
-      return String(value).padStart(2, '0');
     }
 
     handleBlockSelect(event) {
