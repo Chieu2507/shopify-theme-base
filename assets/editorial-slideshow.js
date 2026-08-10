@@ -36,6 +36,8 @@ class EditorialSlideshow extends HTMLElement {
     this.slideSignature = '';
     this.slideRefreshFrame = null;
     this.slideObserver = null;
+    this.contentHeightFrame = null;
+    this.contentResizeObserver = null;
     this.isInViewport = !('IntersectionObserver' in window);
     this.loadFirstViewportHeight();
 
@@ -47,6 +49,7 @@ class EditorialSlideshow extends HTMLElement {
     this.handleCompactNavigatorChange = this.handleCompactNavigatorChange.bind(this);
     this.handleViewportResize = this.handleViewportResize.bind(this);
     this.handleFirstSlideImageChange = this.handleFirstSlideImageChange.bind(this);
+    this.handleContentResize = this.handleContentResize.bind(this);
 
     this.buildNavigatorTabs();
     this.addEventListener('keydown', this.handleKeydown, { signal });
@@ -77,6 +80,11 @@ class EditorialSlideshow extends HTMLElement {
 
     this.initialize();
     this.observeSlideCollection();
+    this.observeContentHeights();
+    this.queueContentHeightUpdate();
+    document.fonts?.ready.then(() => {
+      if (this.isConnected) this.queueContentHeightUpdate();
+    });
 
     if ('IntersectionObserver' in window) {
       this.visibilityObserver = new IntersectionObserver(
@@ -95,8 +103,12 @@ class EditorialSlideshow extends HTMLElement {
     this.destroyFirstViewportHeight = null;
     this.slideObserver?.disconnect();
     this.slideObserver = null;
+    this.contentResizeObserver?.disconnect();
+    this.contentResizeObserver = null;
     if (this.slideRefreshFrame) window.cancelAnimationFrame(this.slideRefreshFrame);
     this.slideRefreshFrame = null;
+    if (this.contentHeightFrame) window.cancelAnimationFrame(this.contentHeightFrame);
+    this.contentHeightFrame = null;
     this.abortController?.abort();
     this.abortController = null;
     this.visibilityObserver?.disconnect();
@@ -114,6 +126,7 @@ class EditorialSlideshow extends HTMLElement {
     this.navigator?.classList.remove('is-collapsed');
     this.navigator?.setAttribute('hidden', '');
     this.classList.remove('editorial-slideshow--navigator-collapsed', 'editorial-slideshow--has-navigator');
+    this.style.removeProperty('--editorial-slideshow-content-min-height');
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.pauseReasons?.clear();
@@ -183,6 +196,61 @@ class EditorialSlideshow extends HTMLElement {
     });
   }
 
+  observeContentHeights() {
+    this.contentResizeObserver?.disconnect();
+    this.contentResizeObserver = null;
+    if (!('ResizeObserver' in window)) return;
+
+    this.contentResizeObserver = new ResizeObserver(this.handleContentResize);
+    this.querySelectorAll('.editorial-slideshow__content-blocks, .editorial-slideshow__product-card').forEach((element) => {
+      this.contentResizeObserver.observe(element);
+    });
+  }
+
+  handleContentResize() {
+    this.queueContentHeightUpdate();
+  }
+
+  queueContentHeightUpdate() {
+    if (this.contentHeightFrame) return;
+
+    this.contentHeightFrame = window.requestAnimationFrame(() => {
+      this.contentHeightFrame = null;
+      if (this.isConnected) this.updateContentMinimumHeight();
+    });
+  }
+
+  updateContentMinimumHeight() {
+    const safeSpace = window.matchMedia('(max-width: 989px)').matches ? 24 : 32;
+    const requiredHeight = this.getSlides().reduce((largestHeight, slide) => {
+      const positioner = slide.querySelector('.editorial-slideshow__content-positioner');
+      const content = slide.querySelector('.editorial-slideshow__content');
+      const contentBlocks = slide.querySelector('.editorial-slideshow__content-blocks');
+      if (!positioner || !content || !contentBlocks) return largestHeight;
+
+      const positionerStyle = window.getComputedStyle(positioner);
+      const contentStyle = window.getComputedStyle(content);
+      const paddingTop = Number.parseFloat(positionerStyle.paddingTop) || 0;
+      const paddingBottom = Number.parseFloat(positionerStyle.paddingBottom) || 0;
+      const contentGap = Number.parseFloat(contentStyle.rowGap || contentStyle.gap) || 0;
+      const blocksHeight = contentBlocks.offsetHeight;
+      const productCardHeight = slide.querySelector('.editorial-slideshow__product-card')?.offsetHeight || 0;
+      const productGap = productCardHeight > 0 ? contentGap : 0;
+      const slideHeight = paddingTop
+        + blocksHeight
+        + productGap
+        + productCardHeight
+        + paddingBottom
+        + safeSpace;
+
+      return Math.max(largestHeight, slideHeight);
+    }, 0);
+
+    if (requiredHeight > 0) {
+      this.style.setProperty('--editorial-slideshow-content-min-height', `${Math.ceil(requiredHeight)}px`);
+    }
+  }
+
   queueSlideRefresh() {
     if (this.slideRefreshFrame) return;
 
@@ -195,6 +263,8 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   refreshSlideCollection() {
+    this.observeContentHeights();
+    this.queueContentHeightUpdate();
     const nextSignature = this.getSlideSignature();
     const activeSlide = this.getSlides().find((slide) => slide.classList.contains('swiper-slide-active'));
     if (nextSignature === this.slideSignature && activeSlide) return;
@@ -209,6 +279,8 @@ class EditorialSlideshow extends HTMLElement {
     const nextSlides = this.getSlides();
     const nextActiveIndex = nextSlides.findIndex((slide) => slide.dataset.blockId === activeBlockId);
     this.initialize(nextActiveIndex >= 0 ? nextActiveIndex : 0);
+    this.observeContentHeights();
+    this.queueContentHeightUpdate();
   }
 
   syncNavigatorViewportState() {
@@ -447,6 +519,7 @@ class EditorialSlideshow extends HTMLElement {
     if (this.mobileLabel) {
       this.mobileLabel.textContent = this.getSlides()[activeIndex]?.dataset.editorialNavLabel || 'Slide';
     }
+    this.queueContentHeightUpdate();
 
     if (restartProgress) {
       this.manualPauseProgress = null;
@@ -475,6 +548,7 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   handleViewportResize() {
+    this.queueContentHeightUpdate();
     const isCompact = this.compactNavigator.matches;
     if (isCompact !== this.isCompactNavigator) {
       this.handleCompactNavigatorChange({ matches: isCompact });
