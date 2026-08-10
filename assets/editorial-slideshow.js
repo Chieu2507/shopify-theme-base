@@ -15,13 +15,11 @@ class EditorialSlideshow extends HTMLElement {
     this.previousButton = this.querySelector('[data-editorial-previous]');
     this.nextButton = this.querySelector('[data-editorial-next]');
     this.autoplayToggle = this.querySelector('[data-editorial-autoplay-toggle]');
-    this.navigatorToggle = this.querySelector('[data-editorial-navigator-toggle]');
     this.tabs = [];
     this.progressBars = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.compactNavigator = window.matchMedia('(min-width: 750px) and (max-width: 1540px)');
     this.isCompactNavigator = this.compactNavigator.matches;
-    this.navigatorViewportInitialized = false;
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
     this.autoplayManuallyPaused = false;
@@ -32,9 +30,6 @@ class EditorialSlideshow extends HTMLElement {
     this.firstSlideImage = null;
     this.navigatorRevealTimer = null;
     this.navigatorRevealFallbackTimer = null;
-    this.navigatorMorphTimer = null;
-    this.navigatorSizeTimer = null;
-    this.navigatorSettleFrame = null;
     this.pointerFocusTimer = null;
     this.isPointerFocus = false;
     this.pauseReasons = new Set();
@@ -60,7 +55,6 @@ class EditorialSlideshow extends HTMLElement {
     this.addEventListener('focusout', (event) => this.handleFocusOut(event), { signal });
     this.bindNavigatorTabs();
     this.autoplayToggle?.addEventListener('click', () => this.toggleAutoplay(), { signal });
-    this.navigatorToggle?.addEventListener('click', () => this.toggleNavigator(), { signal });
     this.previousButton?.addEventListener('click', () => this.selectIndex((this.activeIndex || 0) - 1), { signal });
     this.nextButton?.addEventListener('click', () => this.selectIndex((this.activeIndex || 0) + 1), { signal });
     document.addEventListener('visibilitychange', this.handleVisibilityChange, { signal });
@@ -113,7 +107,6 @@ class EditorialSlideshow extends HTMLElement {
     this.firstSlideImageRatioFrame = null;
     this.firstSlideImage = null;
     this.clearNavigatorRevealTimer();
-    this.clearNavigatorMorph();
     if (this.pointerFocusTimer) window.clearTimeout(this.pointerFocusTimer);
     this.pointerFocusTimer = null;
     this.isPointerFocus = false;
@@ -121,7 +114,6 @@ class EditorialSlideshow extends HTMLElement {
     this.navigator?.classList.remove('is-collapsed');
     this.navigator?.setAttribute('hidden', '');
     this.classList.remove('editorial-slideshow--navigator-collapsed', 'editorial-slideshow--has-navigator');
-    this.navigatorViewportInitialized = false;
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.pauseReasons?.clear();
@@ -219,46 +211,19 @@ class EditorialSlideshow extends HTMLElement {
     this.initialize(nextActiveIndex >= 0 ? nextActiveIndex : 0);
   }
 
-  updateNavigatorToggleState(isCollapsed) {
-    if (!this.navigatorToggle) return;
-
-    this.navigatorToggle.setAttribute('aria-expanded', String(!isCollapsed));
-    this.navigatorToggle.setAttribute(
-      'aria-label',
-      isCollapsed
-        ? this.navigatorToggle.dataset.labelExpand || 'Expand slideshow navigation'
-        : this.navigatorToggle.dataset.labelCollapse || 'Collapse slideshow navigation',
-    );
-  }
-
-  syncNavigatorViewportState({ resetCompact = false } = {}) {
+  syncNavigatorViewportState() {
     if (!this.navigator) return;
+
+    const isCompact = this.compactNavigator.matches;
+    this.navigator.classList.remove('is-transitioning');
+    this.navigator.classList.toggle('is-collapsed', isCompact);
 
     if (!this.classList.contains('editorial-slideshow--has-navigator')) {
       this.classList.remove('editorial-slideshow--navigator-collapsed');
-      const isCompact = this.compactNavigator.matches;
-      this.navigator.classList.toggle('is-collapsed', isCompact);
-      this.updateNavigatorToggleState(isCompact);
       return;
     }
 
-    this.clearNavigatorMorph();
-    this.navigator.classList.remove('is-transitioning');
-
-    if (this.compactNavigator.matches) {
-      if (!this.navigatorViewportInitialized || resetCompact) this.navigator.classList.add('is-collapsed');
-
-      const isCollapsed = this.navigator.classList.contains('is-collapsed');
-      this.classList.toggle('editorial-slideshow--navigator-collapsed', isCollapsed);
-      this.updateNavigatorToggleState(isCollapsed);
-      this.navigatorViewportInitialized = true;
-      return;
-    }
-
-    this.navigator.classList.remove('is-collapsed');
-    this.classList.remove('editorial-slideshow--navigator-collapsed');
-    this.updateNavigatorToggleState(false);
-    this.navigatorViewportInitialized = true;
+    this.classList.toggle('editorial-slideshow--navigator-collapsed', isCompact);
   }
 
   syncSlideRatios() {
@@ -356,7 +321,6 @@ class EditorialSlideshow extends HTMLElement {
     }
 
     this.clearNavigatorRevealTimer();
-    this.clearNavigatorMorph();
     this.navigator?.classList.remove('is-transitioning');
     this.classList.remove('editorial-slideshow--navigator-collapsed');
     return false;
@@ -364,7 +328,6 @@ class EditorialSlideshow extends HTMLElement {
 
   destroySwiper() {
     this.clearNavigatorRevealTimer();
-    this.clearNavigatorMorph();
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
     this.swiper?.destroy(true, true);
@@ -504,91 +467,11 @@ class EditorialSlideshow extends HTMLElement {
     this.swiper.slideTo(nextIndex);
   }
 
-  toggleNavigator() {
-    this.setNavigatorCollapsed(!this.navigator?.classList.contains('is-collapsed'));
-  }
-
-  clearNavigatorMorph() {
-    if (this.navigatorMorphTimer) window.clearTimeout(this.navigatorMorphTimer);
-    if (this.navigatorSizeTimer) window.clearTimeout(this.navigatorSizeTimer);
-    if (this.navigatorSettleFrame) window.cancelAnimationFrame(this.navigatorSettleFrame);
-    this.navigatorMorphTimer = null;
-    this.navigatorSizeTimer = null;
-    this.navigatorSettleFrame = null;
-    this.navigator?.classList.remove('is-collapsing', 'is-expanding', 'is-settling', 'is-toggle-revealing', 'is-vertical-sizing');
-    this.navigator?.style.removeProperty('height');
-  }
-
-  animateCollapsedNavigatorHeight() {
-    if (!this.navigator) return;
-
-    this.navigator.classList.add('is-vertical-sizing');
-    const targetHeight = this.navigator.offsetHeight;
-    this.navigator.style.height = '52px';
-    void this.navigator.offsetHeight;
-    this.navigator.style.height = `${targetHeight}px`;
-    this.navigatorSizeTimer = window.setTimeout(() => {
-      this.navigator?.classList.remove('is-vertical-sizing');
-      this.navigator?.style.removeProperty('height');
-      this.navigator?.classList.add('is-toggle-revealing');
-      this.navigatorSizeTimer = window.setTimeout(() => {
-        this.navigator?.classList.remove('is-toggle-revealing');
-        this.navigatorSizeTimer = null;
-      }, 240);
-    }, 430);
-  }
-
-  animateExpandedNavigatorHeight() {
-    if (!this.navigator) return;
-
-    const currentHeight = this.navigator.offsetHeight;
-    this.navigator.classList.add('is-vertical-sizing');
-    this.navigator.style.height = `${currentHeight}px`;
-    void this.navigator.offsetHeight;
-    this.navigator.style.height = '52px';
-  }
-
-  setNavigatorCollapsed(isCollapsed) {
-    if (!this.navigator || !this.compactNavigator.matches) return;
-
-    this.clearNavigatorMorph();
-    this.navigator.classList.remove('is-transitioning');
-    this.classList.toggle('editorial-slideshow--navigator-collapsed', isCollapsed);
-
-    this.updateNavigatorToggleState(isCollapsed);
-
-    if (this.reduceMotion.matches) {
-      this.navigator.classList.toggle('is-collapsed', isCollapsed);
-      return;
-    }
-
-    this.navigator.classList.add(isCollapsed ? 'is-collapsing' : 'is-expanding');
-    if (!isCollapsed) {
-      this.animateExpandedNavigatorHeight();
-      this.navigatorMorphTimer = window.setTimeout(() => {
-        this.navigator?.classList.remove('is-collapsed', 'is-vertical-sizing');
-        this.navigator?.style.removeProperty('height');
-        this.navigatorMorphTimer = window.setTimeout(() => {
-          this.navigator?.classList.remove('is-expanding');
-          this.navigatorMorphTimer = null;
-        }, 260);
-      }, 420);
-      return;
-    }
-
-    this.navigatorMorphTimer = window.setTimeout(() => {
-      this.navigator?.classList.toggle('is-collapsed', isCollapsed);
-      this.navigator?.classList.remove('is-collapsing');
-      this.animateCollapsedNavigatorHeight();
-      this.navigatorMorphTimer = null;
-    }, 420);
-  }
-
   handleCompactNavigatorChange(event) {
     const isCompact = Boolean(event.matches);
     const crossedBreakpoint = isCompact !== this.isCompactNavigator;
     this.isCompactNavigator = isCompact;
-    this.syncNavigatorViewportState({ resetCompact: isCompact && crossedBreakpoint });
+    this.syncNavigatorViewportState();
   }
 
   handleViewportResize() {
