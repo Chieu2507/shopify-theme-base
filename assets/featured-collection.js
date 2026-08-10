@@ -62,7 +62,8 @@ class FeaturedCollection extends HTMLElement {
     const mobileColumns = Number.parseInt(this.dataset.mobileColumns, 10) || 1;
     const tabletColumns = this.classList.contains('featured-collection--has-promotion') ? 1 : Math.min(desktopColumns, 2);
     const productCount = scroller.querySelectorAll('.swiper-slide').length;
-    const slidesWithPreview = (columns) => columns + (productCount > columns ? 0.15 : 0);
+    const exactSlides = this.dataset.exactSlides === 'true';
+    const slidesWithPreview = (columns) => columns + (!exactSlides && productCount > columns ? 0.15 : 0);
     const swiper = new Swiper(carousel, {
       modules: [A11y, Navigation],
       slidesPerView: slidesWithPreview(mobileColumns),
@@ -216,12 +217,23 @@ class FeaturedCollection extends HTMLElement {
     const progressTrack = progressBar?.closest('.featured-collection__progress');
     if (!progressBar || !swiper?.slides?.length) return;
 
-    const desktopColumns = Number(this.dataset.desktopColumns) || 1;
-    const hasOverflow = swiper.slides.length > desktopColumns;
-    if (progressTrack) progressTrack.hidden = !hasOverflow;
-    if (!hasOverflow) return;
-
     const visible = Math.min(Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1), swiper.slides.length);
+    const hasOverflow = swiper.slides.length > Math.ceil(visible);
+    if (progressTrack) progressTrack.hidden = !hasOverflow;
+
+    const showing = panel.querySelector('[data-featured-collection-showing]');
+    if (showing) {
+      const parsedTotal = Number.parseInt(showing.dataset.total, 10);
+      const total = Number.isNaN(parsedTotal) ? swiper.slides.length : parsedTotal;
+      const current = Math.min(total, swiper.activeIndex + Math.ceil(visible));
+      showing.textContent = `${showing.dataset.showingPrefix || 'Showing'} ${current} ${showing.dataset.showingSeparator || 'of'} ${total}`;
+    }
+
+    if (!hasOverflow) {
+      progressBar.style.setProperty('--featured-collection-progress', 1);
+      return;
+    }
+
     const thumbSize = Math.min(1, visible / swiper.slides.length);
     progressBar.style.setProperty('--featured-collection-progress', thumbSize + (swiper.progress * (1 - thumbSize)));
   }

@@ -367,8 +367,18 @@
         {% if product.has_only_default_variant and product.selling_plan_groups.size == 0 %}
           {% form 'product', product, class: 'product-card__quick-add-form' %}
             <input type="hidden" name="id" value="{{ card_variant.id }}">
-            <button class="product-card__quick-add" type="submit">{{ 'product_card.quick_add' | t }}</button>
+            <button class="product-card__quick-add" type="submit" data-product-card-quick-add>{{ 'product_card.quick_add' | t }}</button>
           {% endform %}
+        {% elsif enable_quick_view %}
+          <a
+            class="product-card__quick-add"
+            href="{{ product.url | escape }}"
+            aria-haspopup="dialog"
+            data-product-card-quick-view-open
+            data-product-card-quick-view-url="{{ product.url | escape }}"
+          >
+            {{ 'product_card.choose_options' | t }}
+          </a>
         {% else %}
           <a class="product-card__quick-add" href="{{ product.url | escape }}">{{ 'product_card.choose_options' | t }}</a>
         {% endif %}
