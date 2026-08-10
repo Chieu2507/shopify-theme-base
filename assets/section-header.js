@@ -1819,6 +1819,10 @@ if (!window.SpinelHeaderMenus) {
   const openHeaderLocalization = (details) => {
     clearLocalizationHoverTimer(details);
     const isDesktopMotion = usesDesktopMegaMenuCssMotion(details);
+    if (isDesktopMotion) {
+      closeOtherHeaderSubmenus(details);
+      closeDesktopMenusInOtherHeaders(details);
+    }
     if (details.open) {
       if (!isDesktopMotion || details.dataset.closing !== 'true') return;
       positionHeaderSubmenu(details);
@@ -2049,6 +2053,10 @@ if (!window.SpinelHeaderMenus) {
     const isDesktopAnimatedMenu = usesDesktopMegaMenuCssMotion(details);
     const isDesktopTopLevelMenu = !isMobileHeaderViewport() && details.matches('.header__submenu-disclosure');
     const header = details.closest('[data-header]');
+    if (isDesktopTopLevelMenu) {
+      document.querySelectorAll('[data-header] .header__actions .header__localization-selector[open]')
+        .forEach(closeHeaderLocalization);
+    }
     if (header) delete header.dataset.megaSurfaceImmediateClose;
     const activeHandoff = header && desktopMegaMenuHandoffs.get(header);
     if (activeHandoff && activeHandoff.to !== details) {
