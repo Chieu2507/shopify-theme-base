@@ -39,16 +39,17 @@
   {% if section.settings.show_slideshow_controls %}
     <nav
       id="EditorialSlideshowNavigator-{{ section.id }}"
-      class="editorial-slideshow__navigator is-collapsed"
+      class="editorial-slideshow__navigator is-collapsed{% if request.visual_preview_mode %} editorial-slideshow__navigator--preview{% endif %}"
       aria-label="{{ 'slideshow.pagination' | t | escape }}"
       data-editorial-navigator
-      hidden
+      {% unless request.visual_preview_mode %}hidden{% endunless %}
     >
       <button
         class="editorial-slideshow__navigator-arrow editorial-slideshow__navigator-arrow--previous"
         type="button"
         aria-label="{{ 'slideshow.previous' | t | escape }}"
         data-editorial-previous
+        {% if request.visual_preview_mode %}disabled{% endif %}
       >
         {% render 'icon', name: 'chevron-left' %}
         <span class="editorial-slideshow__navigator-arrow-label">{{ 'slideshow.previous_short' | t | escape }}</span>
@@ -61,6 +62,7 @@
         type="button"
         aria-label="{{ 'slideshow.next' | t | escape }}"
         data-editorial-next
+        {% if request.visual_preview_mode %}disabled{% endif %}
       >
         <span class="editorial-slideshow__navigator-arrow-label">{{ 'slideshow.next_short' | t | escape }}</span>
         {% render 'icon', name: 'chevron-right' %}
