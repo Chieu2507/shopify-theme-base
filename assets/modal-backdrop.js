@@ -1,4 +1,6 @@
 (() => {
+  const cursorOwners = new Map();
+
   document.addEventListener('click', (event) => {
     const handle = event.target instanceof Element ? event.target.closest('.quick-view__handle') : null;
     if (!handle) return;
@@ -37,6 +39,12 @@
         this.hide();
         return;
       }
+      let owners = cursorOwners.get(this.cursorClass);
+      if (!owners) {
+        owners = new Set();
+        cursorOwners.set(this.cursorClass, owners);
+      }
+      owners.add(this);
       document.documentElement.classList.add(this.cursorClass);
       if (!this.pointer) return;
       const rootRect = this.relativeToRoot ? this.root?.getBoundingClientRect() : null;
@@ -50,7 +58,12 @@
     }
 
     hide() {
-      document.documentElement.classList.remove(this.cursorClass);
+      const owners = cursorOwners.get(this.cursorClass);
+      owners?.delete(this);
+      if (!owners?.size) {
+        cursorOwners.delete(this.cursorClass);
+        document.documentElement.classList.remove(this.cursorClass);
+      }
       this.pointer?.classList.remove('is-visible');
     }
 
