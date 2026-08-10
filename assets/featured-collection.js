@@ -51,6 +51,7 @@ class FeaturedCollection extends HTMLElement {
     if (existing && !replace) {
       existing.update();
       this.updateProgress(panel, existing);
+      this.updatePanelGeometry(panel);
       return;
     }
     if (existing) existing.destroy(true, true);
@@ -80,9 +81,23 @@ class FeaturedCollection extends HTMLElement {
         990: { slidesPerView: slidesWithPreview(desktopColumns), spaceBetween: columnGap },
       },
     });
-    swiper.on('update resize slideChange transitionEnd', () => this.updateProgress(panel, swiper));
+    swiper.on('update resize breakpoint slideChange transitionEnd', () => {
+      this.updateProgress(panel, swiper);
+      this.updatePanelGeometry(panel);
+    });
     this.swipers.set(panel, swiper);
     this.updateProgress(panel, swiper);
+    this.updatePanelGeometry(panel);
+  }
+
+  updatePanelGeometry(panel) {
+    const media = panel.querySelector('.product-card__media');
+    if (!media) return;
+
+    const panelRect = panel.getBoundingClientRect();
+    const mediaRect = media.getBoundingClientRect();
+    const mediaCenter = mediaRect.top - panelRect.top + (mediaRect.height / 2);
+    panel.style.setProperty('--featured-collection-media-center', `${mediaCenter}px`);
   }
 
   refreshCarousels(event) {
