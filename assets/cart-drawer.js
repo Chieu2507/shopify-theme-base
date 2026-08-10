@@ -12,6 +12,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.footer = this.querySelector('[data-cart-drawer-footer]');
       this.orderOptionsPanel = this.querySelector('[data-cart-drawer-order-options]');
       this.orderOptionsBackdrop = this.querySelector('.cart-drawer__order-options-backdrop');
+      this.orderOptionsBackdropPointer = this.querySelector('.cart-drawer__order-options-backdrop-pointer');
       this.orderOptionsToggle = this.querySelector('[data-cart-drawer-order-options-toggle]');
       this.orderOptionsClose = this.querySelector('[data-cart-drawer-order-options-close]');
       this.status = this.querySelector('[data-cart-drawer-status]');
@@ -81,6 +82,7 @@ import { A11y, Swiper } from './swiper-loader.js';
     disconnectedCallback() {
       this.abortController?.abort();
       this.backdropInteraction?.destroy();
+      this.orderOptionsBackdropInteraction?.destroy();
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
       this.destroyRecommendationSwiper();
@@ -99,6 +101,14 @@ import { A11y, Swiper } from './swiper-loader.js';
         panel: this.panel,
         pointer: this.backdropPointer,
         isOpen: () => this.isOpen,
+      });
+      this.orderOptionsBackdropInteraction = new window.SpinelModalBackdropPointer({
+        root: this.panel,
+        panel: this.orderOptionsPanel,
+        pointer: this.orderOptionsBackdropPointer,
+        isOpen: () => this.isOpen && this.classList.contains('is-order-options-open'),
+        relativeToRoot: true,
+        isDisabled: () => !this.mobileDrawer.matches,
       });
       document.addEventListener('click', (event) => {
         const trigger = event.target.closest?.('[data-cart-drawer-open]');
@@ -348,6 +358,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.orderOptionsPanel.setAttribute('aria-hidden', String(isMobile && !isOpen));
       this.orderOptionsPanel.inert = isMobile && !isOpen;
       this.orderOptionsToggle?.setAttribute('aria-expanded', String(isOpen));
+      if (!isOpen) this.orderOptionsBackdropInteraction?.hide();
       if (restoreFocus && isMobile) {
         (open ? this.orderOptionsClose : this.orderOptionsToggle)?.focus({ preventScroll: true });
       }

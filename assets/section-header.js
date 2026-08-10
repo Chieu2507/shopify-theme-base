@@ -9,6 +9,7 @@ if (!window.SpinelHeaderMenus) {
   const mobileMegaMenuMotions = new WeakMap();
   const mobileDrawerMotions = new WeakMap();
   const localizationSheetMotions = new WeakMap();
+  const localizationBackdropInteractions = new WeakMap();
   const localizationSheetOpenRequests = new WeakMap();
   const localizationSheetFinalizing = new WeakSet();
   const megaMenuHoverTimers = new WeakMap();
@@ -265,6 +266,7 @@ if (!window.SpinelHeaderMenus) {
     state.finish = finish;
     localizationSheetMotions.set(details, state);
     details.dataset.motionState = 'closing';
+    localizationBackdropInteractions.get(details)?.hide();
     syncHeaderLocalizationAria(details);
 
     const duration = Math.max(getAnimationTotalMs(sheet), getAnimationTotalMs(backdrop));
@@ -1796,10 +1798,32 @@ if (!window.SpinelHeaderMenus) {
     });
   };
 
+  const initializeLocalizationBackdropInteractions = (scope = document) => {
+    if (!window.SpinelModalBackdropPointer) return;
+
+    scope.querySelectorAll?.('.header__localization-selector').forEach((details) => {
+      if (localizationBackdropInteractions.has(details)) return;
+      const popover = details.querySelector(':scope > [data-header-localization-popover]');
+      const sheet = popover?.querySelector('.header__localization-sheet');
+      const pointer = popover?.querySelector('.header__localization-backdrop-pointer');
+      if (!popover || !sheet || !pointer) return;
+
+      localizationBackdropInteractions.set(details, new window.SpinelModalBackdropPointer({
+        root: popover,
+        panel: sheet,
+        pointer,
+        isOpen: () => details.open && details.dataset.motionState !== 'closing',
+        relativeToRoot: true,
+        isDisabled: () => !isMobileHeaderViewport(),
+      }));
+    });
+  };
+
   const initializeHeaderDisclosures = (scope = document) => {
     scope.querySelectorAll?.('.header__submenu-disclosure, .header__submenu-nested-disclosure').forEach(syncHeaderDisclosureAria);
     scope.querySelectorAll?.('.header__localization-selector').forEach(syncHeaderLocalizationAria);
     initializeLocalizationOptions(scope);
+    initializeLocalizationBackdropInteractions(scope);
   };
 
   const clearMegaMenuHoverTimer = (details) => {
@@ -2416,6 +2440,8 @@ if (!window.SpinelHeaderMenus) {
       resetDesktopMegaMenuBackground(header);
     });
     event.target.querySelectorAll?.('.header__localization-selector').forEach((details) => {
+      localizationBackdropInteractions.get(details)?.destroy();
+      localizationBackdropInteractions.delete(details);
       cancelLocalizationSheetOpen(details);
       clearLocalizationHoverTimer(details);
       clearLocalizationSheetMotion(details);
