@@ -77,6 +77,9 @@ if (!customElements.get('highlight-text-with-image')) {
       const tokens = [];
       Array.from(this.heading.childNodes).forEach((node) => this.collectTokens(node, [], tokens));
 
+      while (tokens[0]?.classList.contains('text-highlight__token--space')) tokens.shift();
+      while (tokens.at(-1)?.classList.contains('text-highlight__token--space')) tokens.pop();
+
       const measurementFragment = document.createDocumentFragment();
       tokens.forEach((token) => measurementFragment.append(token));
       this.heading.replaceChildren(measurementFragment);
