@@ -13,6 +13,7 @@ if (!customElements.get('announcement-bar')) {
       this.status = this.querySelector('[data-announcement-status]');
       this.motionEnabled = this.dataset.motionEnabled !== 'false';
       this.interval = Number(this.dataset.interval) || 5000;
+      // Let the current message fade in place before Swiper starts translating.
       this.slideStartDelay = 100;
       this.slideDelayTimer = null;
       this.motionPreference = window.matchMedia('(prefers-reduced-motion: reduce)');
