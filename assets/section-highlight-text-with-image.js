@@ -10,6 +10,8 @@ if (!customElements.get('highlight-text-with-image')) {
       this.tokenMetrics = [];
       this.totalHighlightWidth = 0;
       this.lastHeadingWidth = 0;
+      this.lastHeadingHeight = 0;
+      this.lastTypographySignature = '';
       this.originalHeadingHTML ||= this.heading?.innerHTML;
       this.handleViewportChange = this.handleViewportChange.bind(this);
       this.handleMotionChange = this.handleMotionChange.bind(this);
@@ -21,10 +23,14 @@ if (!customElements.get('highlight-text-with-image')) {
       this.classList.add('is-scroll-highlight-ready');
       this.reducedMotion.addEventListener?.('change', this.handleMotionChange);
       window.addEventListener('resize', this.handleResize, { passive: true });
+      this.headingResizeObserver = new ResizeObserver(this.handleResize);
+      this.headingResizeObserver.observe(this.heading);
       this.handleMotionChange();
 
       document.fonts?.ready.then(() => {
-        if (this.isConnected) this.scheduleStructureUpdate();
+        if (!this.isConnected) return;
+
+        requestAnimationFrame(() => requestAnimationFrame(() => this.scheduleStructureUpdate()));
       });
     }
 
@@ -32,6 +38,7 @@ if (!customElements.get('highlight-text-with-image')) {
       window.removeEventListener('scroll', this.handleViewportChange);
       window.removeEventListener('resize', this.handleResize);
       this.reducedMotion?.removeEventListener?.('change', this.handleMotionChange);
+      this.headingResizeObserver?.disconnect();
       if (this.animationFrame) cancelAnimationFrame(this.animationFrame);
       if (this.structureFrame) cancelAnimationFrame(this.structureFrame);
     }
@@ -59,8 +66,16 @@ if (!customElements.get('highlight-text-with-image')) {
         this.structureFrame = null;
         if (!this.isConnected || !this.heading) return;
 
-        const currentWidth = Math.round(this.heading.getBoundingClientRect().width);
-        if (currentWidth === this.lastHeadingWidth) {
+        const currentBounds = this.heading.getBoundingClientRect();
+        const currentWidth = Math.round(currentBounds.width);
+        const currentHeight = Math.round(currentBounds.height);
+        const currentTypographySignature = this.getTypographySignature();
+
+        if (
+          currentWidth === this.lastHeadingWidth
+          && currentHeight === this.lastHeadingHeight
+          && currentTypographySignature === this.lastTypographySignature
+        ) {
           this.cacheTokenMetrics();
           this.updateFillStop();
           return;
@@ -114,9 +129,17 @@ if (!customElements.get('highlight-text-with-image')) {
 
       this.heading.replaceChildren(lineFragment);
       this.heading.classList.remove('is-measuring-highlight-lines');
-      this.lastHeadingWidth = Math.round(this.heading.getBoundingClientRect().width);
+      const headingBounds = this.heading.getBoundingClientRect();
+      this.lastHeadingWidth = Math.round(headingBounds.width);
+      this.lastHeadingHeight = Math.round(headingBounds.height);
+      this.lastTypographySignature = this.getTypographySignature();
       this.highlightTokens = Array.from(this.heading.querySelectorAll('.text-highlight__token'));
       this.cacheTokenMetrics();
+    }
+
+    getTypographySignature() {
+      const styles = getComputedStyle(this.heading);
+      return [styles.fontFamily, styles.fontSize, styles.fontWeight, styles.letterSpacing, styles.lineHeight].join('|');
     }
 
     collectTokens(node, inheritedClasses, tokens) {
