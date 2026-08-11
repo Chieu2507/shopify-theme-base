@@ -7,6 +7,7 @@
   @param {boolean} [inline_on_home] - Inline the stylesheet on the storefront homepage.
   @param {boolean} [inline_on_design_mode] - Inline the stylesheet while the Theme Editor is rendering the section.
   @param {boolean} [loaded_in_home_head] - Omit the section tag when the stylesheet is already loaded in the homepage head.
+  @param {string} [shared_key] - Mark a shared stylesheet so duplicate tags can be removed after render.
 {% enddoc %}
 
 {% liquid
@@ -32,8 +33,14 @@
 {% elsif should_inline %}
   <style>{{ asset | inline_asset_content }}</style>
 {% elsif should_defer %}
-  <link data-deferred-section-stylesheet data-href="{{ asset | asset_url | escape }}">
+  <link
+    data-deferred-section-stylesheet
+    {% if shared_key != blank %}data-spinel-shared-stylesheet="{{ shared_key | escape }}"{% endif %}
+    data-href="{{ asset | asset_url | escape }}"
+  >
   <noscript>{{ asset | asset_url | stylesheet_tag }}</noscript>
+{% elsif shared_key != blank %}
+  <link rel="stylesheet" href="{{ asset | asset_url | escape }}" data-spinel-shared-stylesheet="{{ shared_key | escape }}">
 {% else %}
   {{ asset | asset_url | stylesheet_tag }}
 {% endif %}

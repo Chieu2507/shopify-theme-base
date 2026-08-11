@@ -542,7 +542,6 @@ class EditorialSlideshow extends HTMLElement {
 
   handleCompactNavigatorChange(event) {
     const isCompact = Boolean(event.matches);
-    const crossedBreakpoint = isCompact !== this.isCompactNavigator;
     this.isCompactNavigator = isCompact;
     this.syncNavigatorViewportState();
   }

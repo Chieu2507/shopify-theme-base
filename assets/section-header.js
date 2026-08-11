@@ -593,7 +593,6 @@ if (!window.SpinelHeaderMenus) {
       ? Boolean(openMobileDrawer)
       : Boolean(document.querySelector('.header__submenu-disclosure--mega[open]:not([data-closing="true"])'));
     const root = document.documentElement;
-    const isLocked = root.classList.contains('header-menu-scroll-locked');
 
     if (isMobile && (openMobileDrawer || closingMobileDrawer)) {
       setHeaderBrowserChromeColor(getHeaderBrowserChromeColor(openMobileDrawer || closingMobileDrawer));
