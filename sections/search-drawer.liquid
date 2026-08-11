@@ -170,12 +170,24 @@
                 {% if has_popular_categories %}
                   {% for collection in section.settings.popular_categories %}
                     <li class="search-drawer__chip-item">
-                      <a class="search-drawer__chip" href="{{ collection.url }}">{{ collection.title | escape }}</a>
+                      <a class="search-drawer__chip" href="{{ collection.url }}">
+                        <span class="search-drawer__category-media">
+                          {% if collection.image != blank %}
+                            {{ collection.image | image_url: width: 112 | image_tag: widths: '56, 84, 112', sizes: '56px', loading: 'lazy', alt: collection.title }}
+                          {% endif %}
+                        </span>
+                        <span class="search-drawer__category-title">{{ collection.title | escape }}</span>
+                      </a>
                     </li>
                   {% endfor %}
                 {% elsif search_drawer_preview %}
                   <li class="search-drawer__chip-item">
-                    <span class="search-drawer__chip">{{ 'collection_list.collection' | t }}</span>
+                    <span class="search-drawer__chip">
+                      <span class="search-drawer__category-media" aria-hidden="true">
+                        {{ 'collection-1' | placeholder_svg_tag: 'search-drawer__category-placeholder-svg' }}
+                      </span>
+                      <span class="search-drawer__category-title">{{ 'collection_list.collection' | t }}</span>
+                    </span>
                   </li>
                 {% endif %}
               </ul>
