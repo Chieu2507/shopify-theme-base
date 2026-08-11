@@ -4,6 +4,36 @@
   assign cart_title_case = section.settings.product_title_case | default: 'none'
   assign cart_image_radius = section.settings.image_radius | default: 0
   assign empty_cart_link = section.settings.empty_link | default: routes.all_products_collection_url
+  assign cart_tools_block = section.blocks | where: 'type', 'cart_tools' | first
+  assign cart_tools_show_note = section.settings.show_note
+  assign cart_tools_note_label = section.settings.note_label
+  assign cart_tools_note_placeholder = section.settings.note_placeholder
+  assign cart_tools_note_save_label = section.settings.note_save_label
+  assign cart_tools_show_discount = section.settings.show_discount
+  assign cart_tools_discount_button_label = section.settings.discount_button_label
+  assign cart_tools_shipping_enabled = section.settings.shipping_estimator_enable
+  assign cart_tools_shipping_label = section.settings.shipping_estimator_label
+  assign cart_tools_shipping_country_label = section.settings.shipping_estimator_country_label
+  assign cart_tools_shipping_province_label = section.settings.shipping_estimator_province_label
+  assign cart_tools_shipping_postal_label = section.settings.shipping_estimator_postal_label
+  assign cart_tools_shipping_button_label = section.settings.shipping_estimator_button_label
+  assign cart_tools_text_color = blank
+
+  if cart_tools_block != blank
+    assign cart_tools_show_note = cart_tools_block.settings.show_note
+    assign cart_tools_note_label = cart_tools_block.settings.note_label
+    assign cart_tools_note_placeholder = cart_tools_block.settings.note_placeholder
+    assign cart_tools_note_save_label = cart_tools_block.settings.note_save_label
+    assign cart_tools_show_discount = cart_tools_block.settings.show_discount
+    assign cart_tools_discount_button_label = cart_tools_block.settings.discount_button_label
+    assign cart_tools_shipping_enabled = cart_tools_block.settings.shipping_estimator_enable
+    assign cart_tools_shipping_label = cart_tools_block.settings.shipping_estimator_label
+    assign cart_tools_shipping_country_label = cart_tools_block.settings.shipping_estimator_country_label
+    assign cart_tools_shipping_province_label = cart_tools_block.settings.shipping_estimator_province_label
+    assign cart_tools_shipping_postal_label = cart_tools_block.settings.shipping_estimator_postal_label
+    assign cart_tools_shipping_button_label = cart_tools_block.settings.shipping_estimator_button_label
+    assign cart_tools_text_color = cart_tools_block.settings.text_color
+  endif
 %}
 
 <style>
@@ -47,8 +77,8 @@
     data-recommendations-auto-rotate="{{ section.settings.complementary_products_auto_rotate }}"
     data-recommendations-interval="{{ section.settings.complementary_products_interval }}"
     data-recommendations-pause-on-hover="{{ section.settings.complementary_products_pause_on_hover }}"
-    data-discount-enabled="{{ section.settings.show_discount }}"
-    data-order-note-enabled="{{ section.settings.show_note }}"
+    data-discount-enabled="{{ cart_tools_show_discount }}"
+    data-order-note-enabled="{{ cart_tools_show_note }}"
     data-shipping-threshold="{{ section.settings.free_shipping_threshold | times: 100 }}"
     data-empty-label="{{ section.settings.empty_heading | escape }}"
     data-empty-heading-class="{% render 'typography-class', preset: section.settings.empty_heading_size, fallback: 'custom' %}"
@@ -132,21 +162,21 @@
       </div>
 
       <footer class="cart-drawer__footer" data-cart-drawer-footer hidden>
-        {% if section.settings.show_note or section.settings.show_discount or section.settings.shipping_estimator_enable %}
-          <div class="cart-drawer__order-options-actions" role="group" aria-label="Cart options">
-            {% if section.settings.show_note %}
-              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="note" data-cart-drawer-order-options-title="{{ section.settings.note_label | escape }}">
+        {% if cart_tools_show_note or cart_tools_show_discount or cart_tools_shipping_enabled %}
+          <div class="cart-drawer__order-options-actions" role="group" aria-label="Cart options"{% if cart_tools_text_color != blank %} style="--cart-drawer-tools-color: {{ cart_tools_text_color }};"{% endif %}{% if cart_tools_block != blank %} {{ cart_tools_block.shopify_attributes }}{% endif %}>
+            {% if cart_tools_show_note %}
+              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="note" data-cart-drawer-order-options-title="{{ cart_tools_note_label | escape }}">
                 <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'filter' %}</span>
-                <span>{{ section.settings.note_label | escape }}</span>
+                <span>{{ cart_tools_note_label | escape }}</span>
               </button>
             {% endif %}
-            {% if section.settings.shipping_estimator_enable %}
-              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="shipping" data-cart-drawer-order-options-title="{{ section.settings.shipping_estimator_label | escape }}">
+            {% if cart_tools_shipping_enabled %}
+              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="shipping" data-cart-drawer-order-options-title="{{ cart_tools_shipping_label | escape }}">
                 <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'truck' %}</span>
                 <span>Shipping</span>
               </button>
             {% endif %}
-            {% if section.settings.show_discount %}
+            {% if cart_tools_show_discount %}
               <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="discount" data-cart-drawer-order-options-title="Discount">
                 <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'filter-sliders' %}</span>
                 <span>Discount(<span data-cart-drawer-discount-count>0</span>)</span>
@@ -156,37 +186,37 @@
           <section id="CartDrawerOrderOptions-{{ section.id }}" class="cart-drawer__order-options-panel" data-cart-drawer-order-options aria-hidden="true" aria-labelledby="CartDrawerOrderOptionsTitle-{{ section.id }}">
             <div class="quick-view__handle cart-drawer__order-options-handle" data-cart-drawer-order-options-handle aria-hidden="true"></div>
             <header class="cart-drawer__order-options-header">
-              <h3 id="CartDrawerOrderOptionsTitle-{{ section.id }}" class="cart-drawer__order-options-title {% render 'typography-class', preset: section.settings.order_options_heading_size, fallback: 'custom' %}" data-cart-drawer-order-options-title{% if section.settings.order_options_heading_size == 'custom' %} style="--cart-drawer-custom-font-size: {{ section.settings.order_options_heading_font_size }}px; --cart-drawer-custom-font-size-mobile: {{ section.settings.order_options_heading_font_size_mobile }}px;"{% endif %}>{{ section.settings.order_options_label | default: 'Order options' | escape }}</h3>
+              <h3 id="CartDrawerOrderOptionsTitle-{{ section.id }}" class="cart-drawer__order-options-title heading-h7 heading-text" data-cart-drawer-order-options-title>Cart tools</h3>
               <button class="cart-drawer__order-options-close modal-close-button close-icon" type="button" aria-label="Close order options" data-cart-drawer-order-options-close></button>
             </header>
             <div class="cart-drawer__order-options-content">
-              {% if section.settings.show_note %}
+              {% if cart_tools_show_note %}
                 <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="note" hidden>
-                  <label class="cart-drawer__order-options-field-label" for="CartDrawerNote-{{ section.id }}">Order special instructions</label>
-                  <textarea id="CartDrawerNote-{{ section.id }}" class="cart-drawer__note" rows="5" data-cart-drawer-note placeholder="{{ section.settings.note_placeholder | escape }}"></textarea>
-                  <button type="button" class="cart-drawer__order-options-submit" data-cart-drawer-save-note>{{ section.settings.note_save_label | escape }}</button>
+                  <label class="cart-drawer__order-options-field-label label-text" for="CartDrawerNote-{{ section.id }}">Order special instructions</label>
+                  <textarea id="CartDrawerNote-{{ section.id }}" class="cart-drawer__note" rows="5" data-cart-drawer-note placeholder="{{ cart_tools_note_placeholder | escape }}"></textarea>
+                  <button type="button" class="cart-drawer__order-options-submit" data-cart-drawer-save-note>{{ cart_tools_note_save_label | escape }}</button>
                 </section>
               {% endif %}
 
-              {% if section.settings.shipping_estimator_enable %}
+              {% if cart_tools_shipping_enabled %}
                 <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="shipping" hidden>
-                  <form data-cart-drawer-shipping-estimator>
-                    <label><span>{{ section.settings.shipping_estimator_country_label | escape }}</span><select name="country" data-cart-drawer-shipping-country data-default-country="{{ localization.country.name | escape }}" required>{{ all_country_option_tags }}</select></label>
-                    <label data-cart-drawer-shipping-province-field hidden><span>{{ section.settings.shipping_estimator_province_label | escape }}</span><select name="province" data-cart-drawer-shipping-province disabled></select></label>
-                    <label><span>{{ section.settings.shipping_estimator_postal_label | escape }}</span><input type="text" name="zip" autocomplete="postal-code" required></label>
-                    <button type="submit" class="cart-drawer__order-options-submit">{{ section.settings.shipping_estimator_button_label | escape }}</button>
+                  <form class="cart-drawer__shipping-estimator" data-cart-drawer-shipping-estimator>
+                    <label><span class="label-text">{{ cart_tools_shipping_country_label | escape }}</span><select name="country" data-cart-drawer-shipping-country data-default-country="{{ localization.country.name | escape }}" required>{{ all_country_option_tags }}</select></label>
+                    <label data-cart-drawer-shipping-province-field hidden><span class="label-text">{{ cart_tools_shipping_province_label | escape }}</span><select name="province" data-cart-drawer-shipping-province disabled></select></label>
+                    <label><span class="label-text">{{ cart_tools_shipping_postal_label | escape }}</span><input type="text" name="zip" autocomplete="postal-code" required></label>
+                    <button type="submit" class="cart-drawer__order-options-submit">{{ cart_tools_shipping_button_label | escape }}</button>
                   </form>
                   <p class="cart-drawer__shipping-rates" data-cart-drawer-shipping-rates role="status" aria-live="polite"></p>
                   <p class="cart-drawer__tax-note" data-cart-drawer-tax-note>{% if cart.taxes_included %}{{ 'cart.taxes_included' | t }}{% else %}{{ 'cart_drawer.taxes_note' | t | default: 'Taxes and shipping calculated at checkout' | escape }}{% endif %}</p>
                 </section>
               {% endif %}
 
-              {% if section.settings.show_discount %}
+              {% if cart_tools_show_discount %}
                 <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="discount" hidden>
                   <form class="cart-drawer__discount" data-cart-drawer-discount>
                     <label class="visually-hidden" for="CartDrawerDiscount-{{ section.id }}">{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}</label>
                     <input id="CartDrawerDiscount-{{ section.id }}" type="text" name="discount" autocomplete="off" placeholder="Please enter discount code" aria-describedby="CartDrawerMessage-{{ section.id }}">
-                    <button type="submit" class="cart-drawer__order-options-submit">{{ section.settings.discount_button_label | escape }}</button>
+                    <button type="submit" class="cart-drawer__order-options-submit">{{ cart_tools_discount_button_label | escape }}</button>
                   </form>
                   <ul class="cart-drawer__discounts" data-cart-drawer-discounts role="list" hidden></ul>
                 </section>
@@ -201,7 +231,7 @@
         {% if section.settings.show_accelerated_checkout and additional_checkout_buttons %}<div class="cart-drawer__additional-checkout-buttons">{{ content_for_additional_checkout_buttons }}</div>{% endif %}
         {% if section.settings.show_view_cart %}<a class="cart-drawer__view-cart" href="{{ routes.cart_url | escape }}">{{ section.settings.view_cart_label | escape }}</a>{% endif %}
       </footer>
-      {% if section.settings.show_note or section.settings.show_discount or section.settings.shipping_estimator_enable %}
+      {% if cart_tools_show_note or cart_tools_show_discount or cart_tools_shipping_enabled %}
         <button class="cart-drawer__order-options-backdrop" type="button" tabindex="-1" aria-label="Close order options" data-cart-drawer-order-options-close data-modal-backdrop></button>
         <span class="cart-drawer__order-options-backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
       {% endif %}
@@ -242,41 +272,6 @@
     { "type": "range", "id": "free_shipping_threshold", "label": "Free shipping threshold", "min": 0, "max": 5000, "step": 50, "unit": "$", "default": 100, "visible_if": "{{ section.settings.free_shipping_enable }}" },
     { "type": "text", "id": "free_shipping_pending_message", "label": "Progress message", "default": "You're {amount} away from free shipping", "visible_if": "{{ section.settings.free_shipping_enable }}" },
     { "type": "text", "id": "free_shipping_success_message", "label": "Success message", "default": "You've unlocked free shipping", "visible_if": "{{ section.settings.free_shipping_enable }}" },
-    { "type": "header", "content": "Cart tools" },
-    { "type": "checkbox", "id": "show_note", "label": "Order note", "default": true },
-    { "type": "text", "id": "order_options_label", "label": "Order-options label", "default": "Order options", "visible_if": "{{ section.settings.show_note or section.settings.show_discount or section.settings.shipping_estimator_enable }}" },
-    {
-      "type": "select",
-      "id": "order_options_heading_size",
-      "label": "t:typography_blocks.heading_size",
-      "options": [
-        { "value": "h0", "label": "t:typography_options.display_extra_large" },
-        { "value": "h1", "label": "t:typography_options.display_large" },
-        { "value": "h2", "label": "t:typography_options.display_medium" },
-        { "value": "h3", "label": "t:typography_options.heading_extra_large" },
-        { "value": "h4", "label": "t:typography_options.heading_large" },
-        { "value": "h5", "label": "t:typography_options.heading_medium" },
-        { "value": "h6", "label": "t:typography_options.heading_small" },
-        { "value": "h7", "label": "t:typography_options.heading_extra_small" },
-        { "value": "custom", "label": "t:typography_options.custom" }
-      ],
-      "default": "custom",
-      "visible_if": "{{ section.settings.show_note or section.settings.show_discount or section.settings.shipping_estimator_enable }}"
-    },
-    { "type": "range", "id": "order_options_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.order_options_heading_size == 'custom' }}" },
-    { "type": "range", "id": "order_options_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.order_options_heading_size == 'custom' }}" },
-    { "type": "checkbox", "id": "note_expanded", "label": "Keep order note expanded", "default": false, "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "text", "id": "note_label", "label": "Note label", "default": "Order note", "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "text", "id": "note_placeholder", "label": "Note placeholder", "default": "Add a note to your order", "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "text", "id": "note_save_label", "label": "Save-note label", "default": "Save note", "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "checkbox", "id": "show_discount", "label": "Show discount code field", "default": true },
-    { "type": "text", "id": "discount_button_label", "label": "Discount button label", "default": "Apply", "visible_if": "{{ section.settings.show_discount }}" },
-    { "type": "checkbox", "id": "shipping_estimator_enable", "label": "Shipping estimator", "default": true },
-    { "type": "text", "id": "shipping_estimator_label", "label": "Estimator label", "default": "Estimate shipping", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "text", "id": "shipping_estimator_country_label", "label": "Country label", "default": "Country", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "text", "id": "shipping_estimator_province_label", "label": "State/province label", "default": "State / Province", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "text", "id": "shipping_estimator_postal_label", "label": "Postal-code label", "default": "Postal code", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "text", "id": "shipping_estimator_button_label", "label": "Estimator button label", "default": "Calculate", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
     { "type": "header", "content": "Promotion bar" },
     { "type": "checkbox", "id": "promotion_enable", "label": "Promotion bar", "default": false },
     { "type": "text", "id": "promotion_message", "label": "Message", "default": "Complimentary shipping on every order", "visible_if": "{{ section.settings.promotion_enable }}" },
@@ -352,6 +347,31 @@
     { "type": "select", "id": "product_title_case", "label": "Title case", "options": [{ "value": "none", "label": "Original" }, { "value": "uppercase", "label": "Uppercase" }], "default": "none" },
     { "type": "select", "id": "price_font", "label": "Price font", "options": [{ "value": "body", "label": "Body" }, { "value": "subheading", "label": "Utility" }, { "value": "heading", "label": "Display" }, { "value": "accent", "label": "Accent" }], "default": "subheading" },
     { "type": "range", "id": "image_radius", "label": "Image corners", "min": 0, "max": 24, "step": 2, "unit": "px", "default": 0 }
+  ],
+  "blocks": [
+    {
+      "type": "cart_tools",
+      "name": "Cart tools",
+      "limit": 1,
+      "settings": [
+        { "type": "color", "id": "text_color", "label": "Text color" },
+        { "type": "header", "content": "Order note" },
+        { "type": "checkbox", "id": "show_note", "label": "Enable order note", "default": true },
+        { "type": "text", "id": "note_label", "label": "Action label", "default": "Order note", "visible_if": "{{ block.settings.show_note }}" },
+        { "type": "text", "id": "note_placeholder", "label": "Note placeholder", "default": "Add a note to your order", "visible_if": "{{ block.settings.show_note }}" },
+        { "type": "text", "id": "note_save_label", "label": "Save-button label", "default": "Save note", "visible_if": "{{ block.settings.show_note }}" },
+        { "type": "header", "content": "Shipping" },
+        { "type": "checkbox", "id": "shipping_estimator_enable", "label": "Enable shipping estimator", "default": true },
+        { "type": "text", "id": "shipping_estimator_label", "label": "Panel heading", "default": "Estimate shipping", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "text", "id": "shipping_estimator_country_label", "label": "Country label", "default": "Country", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "text", "id": "shipping_estimator_province_label", "label": "State/province label", "default": "State / Province", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "text", "id": "shipping_estimator_postal_label", "label": "Postal-code label", "default": "Postal code", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "text", "id": "shipping_estimator_button_label", "label": "Calculate-button label", "default": "Calculate", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "header", "content": "Discount" },
+        { "type": "checkbox", "id": "show_discount", "label": "Enable discount code", "default": true },
+        { "type": "text", "id": "discount_button_label", "label": "Apply-button label", "default": "Apply", "visible_if": "{{ block.settings.show_discount }}" }
+      ]
+    }
   ]
 }
 {% endschema %}
