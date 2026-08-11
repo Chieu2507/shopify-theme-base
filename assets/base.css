@@ -537,7 +537,7 @@ body {
 
 @media (hover: hover) and (pointer: fine) {
   :is(.button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover {
-    border-color: var(--button-hover-surface);
+    border-color: var(--button-surface);
     color: var(--button-hover-label);
     opacity: 1;
   }
@@ -1000,6 +1000,11 @@ li:has(> .product-card:focus-within) {
 }
 
 .product-card__quick-add {
+  --quick-add-surface: var(--color-secondary-button);
+  --quick-add-label: var(--color-secondary-button-label);
+  --quick-add-hover-surface: var(--color-secondary-button-label);
+  --quick-add-hover-label: var(--color-secondary-button);
+
   display: flex;
   width: 100%;
   min-height: var(--control-height);
@@ -1008,8 +1013,11 @@ li:has(> .product-card:focus-within) {
   padding: 8px 12px;
   border: var(--button-secondary-border-width) solid var(--color-secondary-button-outline);
   border-radius: var(--radius-button);
-  background: var(--color-secondary-button);
-  color: var(--color-secondary-button-label);
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+  background: var(--quick-add-surface);
+  color: var(--quick-add-label);
   cursor: pointer;
   font-family: var(--button-secondary-font-family);
   font-size: var(--font-caption);
@@ -1019,13 +1027,37 @@ li:has(> .product-card:focus-within) {
   text-align: center;
   text-decoration: none;
   text-transform: var(--button-secondary-text-case);
-  transition: background-color var(--motion-duration) ease, color var(--motion-duration) ease;
+  transition: border-color 300ms ease-in-out, color 300ms ease-in-out;
 }
 
-.product-card__quick-add:hover,
+.product-card__quick-add::before {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 100%;
+  background: var(--quick-add-hover-surface);
+  content: '';
+  transition: width var(--button-hover-duration, 400ms) ease-in-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card__quick-add:not(:disabled, [aria-disabled='true']):hover {
+    border-color: var(--quick-add-surface);
+    color: var(--quick-add-hover-label);
+  }
+
+  .product-card__quick-add:not(:disabled, [aria-disabled='true']):hover::before {
+    right: auto;
+    left: 0;
+    width: 100%;
+  }
+}
+
 .product-card__quick-add:focus-visible {
-  background: var(--color-heading);
-  color: var(--color-background);
+  outline: 2px solid currentcolor;
+  outline-offset: 3px;
 }
 
 .product-card__quick-add--unavailable {
@@ -1277,6 +1309,10 @@ body.shopify-design-mode main [data-shopify-editor-section] [data-shopify-editor
   }
 
   .product-card__quick-add {
+    transition: none;
+  }
+
+  .product-card__quick-add::before {
     transition: none;
   }
 }
