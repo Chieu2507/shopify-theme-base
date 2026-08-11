@@ -34,7 +34,7 @@
     if (element.dataset.scrollLockOwner) return element.dataset.scrollLockOwner;
     if (element.matches('[data-cart-drawer]')) return 'cart-drawer';
     if (element.matches('[data-header-mobile-drawer]')) return 'mobile-menu';
-    if (element.matches('[data-header-search-modal], [data-search-filter-dialog]')) return 'search';
+    if (element.matches('[data-search-drawer-dialog], [data-search-filter-dialog]')) return 'search';
     return 'modal';
   };
 

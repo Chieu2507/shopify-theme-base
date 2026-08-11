@@ -2,7 +2,6 @@
 
 {% liquid
   assign header_cart_action = settings.cart_action
-  assign header_show_currency_code = settings.show_currency_code
   assign country_form_id = 'HeaderCountrySelector-' | append: section.id
   assign language_form_id = 'HeaderLanguageSelector-' | append: section.id
   assign legacy_logo_width_desktop = section.settings.logo_width_desktop | default: 170
@@ -371,7 +370,7 @@
       {% endif %}
 
       {% if section.settings.show_search %}
-        <a class="header__action header__search-trigger" href="{{ routes.search_url | escape }}" aria-label="{{ 'header.search' | t | escape }}" aria-haspopup="dialog" aria-controls="HeaderSearch-{{ section.id }}" data-header-search-open>
+        <a class="header__action header__search-trigger" href="{{ routes.search_url | escape }}" aria-label="{{ 'header.search' | t | escape }}" aria-haspopup="dialog" aria-controls="SearchDrawer" aria-expanded="false" data-search-drawer-open>
           {% render 'icon', name: 'search' %}
         </a>
       {% endif %}
@@ -396,37 +395,6 @@
     </div>
   </div>
 
-  {% if section.settings.show_search %}
-    <dialog scroll-lock data-scroll-lock-owner="search" class="header-search-modal color-scheme color-{{ section.settings.color_scheme.id }}" id="HeaderSearch-{{ section.id }}" aria-labelledby="HeaderSearchLabel-{{ section.id }}" data-header-search-modal data-predictive-search-url="{{ routes.predictive_search_url | escape }}" data-currency-code="{{ localization.country.currency.iso_code | default: shop.currency | escape }}" data-show-currency-code="{{ header_show_currency_code }}" data-no-products-text="{{ 'search.no_products' | t | escape }}" data-no-results-text="{{ 'search.no_results' | t: term: '__term__' | escape }}" data-results-found-text="{{ 'search.results_found' | t: count: '__count__' | escape }}" data-searching-text="{{ 'search.searching' | t | escape }}" data-search-error-text="{{ 'search.error' | t | escape }}" data-product-count-one="{{ 'search.product_count.one' | t: count: '__count__' | escape }}" data-product-count-other="{{ 'search.product_count.other' | t: count: '__count__' | escape }}">
-      <div class="header-search-modal__inner">
-        <button class="header-search-modal__close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_search' | t | escape }}" data-header-search-close></button>
-        <form class="header-search-modal__form search-field" action="{{ routes.search_url | escape }}" method="get" role="search" data-header-search-form>
-          <label class="visually-hidden" id="HeaderSearchLabel-{{ section.id }}" for="HeaderSearchInput-{{ section.id }}">{{ 'search.label' | t }}</label>
-          <input id="HeaderSearchInput-{{ section.id }}" class="header-search-modal__input search-field__input" type="search" name="q" placeholder="{{ 'search.placeholder' | t }}" autocomplete="off" data-header-search-input>
-          <button class="header-search-modal__clear search-field__clear" type="button" aria-label="{{ 'search.clear_search' | t | escape }}" data-header-search-clear hidden>
-            {% render 'icon', name: 'close' %}
-          </button>
-          <button class="header-search-modal__submit search-field__submit" type="submit" aria-label="{{ 'search.submit' | t | escape }}">
-            {% render 'icon', name: 'search' %}
-          </button>
-        </form>
-
-        <div class="header-search-modal__predictive" data-header-search-predictive aria-busy="false" hidden>
-          <p class="header-search-modal__status" data-header-search-status role="status" aria-live="polite" aria-atomic="true" hidden></p>
-          <div class="header-search-modal__tabs" role="tablist" aria-label="{{ 'search.result_tabs' | t | escape }}">
-            <button id="HeaderSearchTab-{{ section.id }}-products" type="button" role="tab" aria-selected="true" aria-controls="HeaderSearchPanel-{{ section.id }}-products" tabindex="0" data-header-search-tab="products">{{ 'search.products' | t }}</button>
-            <button id="HeaderSearchTab-{{ section.id }}-collections" type="button" role="tab" aria-selected="false" aria-controls="HeaderSearchPanel-{{ section.id }}-collections" tabindex="-1" data-header-search-tab="collections">{{ 'search.collections' | t }}</button>
-          </div>
-          <div class="header-search-modal__panels">
-            <div id="HeaderSearchPanel-{{ section.id }}-products" role="tabpanel" aria-labelledby="HeaderSearchTab-{{ section.id }}-products" data-header-search-panel="products"></div>
-            <div id="HeaderSearchPanel-{{ section.id }}-collections" role="tabpanel" aria-labelledby="HeaderSearchTab-{{ section.id }}-collections" hidden data-header-search-panel="collections"></div>
-            <p class="header-search-modal__empty" data-header-search-empty hidden></p>
-          </div>
-          <a class="button button--primary header-search-modal__view-all" href="{{ routes.search_url | escape }}" data-header-search-view-all>{{ 'search.view_all_results' | t }}</a>
-        </div>
-      </div>
-    </dialog>
-  {% endif %}
 </header>
 
 
@@ -567,7 +535,7 @@
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "Default / scrolled color scheme",
-      "info": "Used by the normal header, sticky surface, mobile drawer, and search dialog.",
+      "info": "Used by the normal header, sticky surface, and mobile drawer.",
       "default": "scheme-1"
     },
     {
