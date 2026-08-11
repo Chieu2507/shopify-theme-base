@@ -1,34 +1,35 @@
 {% doc %}
-  Resolves current and legacy typography preset values to a shared visual class.
+  Resolves typography preset values to shared role and scale classes.
 
-  @param {string} preset - Typography preset or legacy size value.
+  @param {string} preset - Typography preset value.
   @param {string} [fallback] - Value used when preset is blank.
 {% enddoc %}
 
 {%- liquid
   assign resolved_preset = preset | default: fallback | default: 'h2'
   assign typography_class = ''
-  if resolved_preset == 'default'
-    assign resolved_preset = fallback | default: 'h2'
-  endif
 
   case resolved_preset
-    when 'h1', 'xx-large', 'xxlarge', 'extra_large', 'extra-large', '2xl'
-      assign typography_class = 'typo-h1'
-    when 'h2', 'x-large', 'xlarge', 'large', 'xl'
-      assign typography_class = 'typo-h2'
-    when 'h3', 'medium', 'lg'
-      assign typography_class = 'typo-h3'
-    when 'h4', 'small', 'md'
-      assign typography_class = 'typo-h4'
-    when 'h5', 'extra_small', 'sm'
-      assign typography_class = 'typo-h5'
-    when 'h6', 'x-small', 'xsmall', 'xs'
-      assign typography_class = 'typo-h6'
+    when 'h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7'
+      assign typography_class = 'heading-' | append: resolved_preset | append: ' heading-text'
+    when 'custom'
+      assign typography_class = 'heading-custom heading-text'
     when 'paragraph', 'body', 'p'
-      assign typography_class = 'typo-p'
+      assign typography_class = 'body-p1 body-text'
+    when 'lg'
+      assign typography_class = 'body-p0 body-text'
+    when 'md'
+      assign typography_class = 'body-p1 body-text'
+    when 'sm'
+      assign typography_class = 'body-p2 body-text'
+    when 'xs'
+      assign typography_class = 'body-p3 body-text'
+    when 'p0', 'p1', 'p2', 'p3'
+      assign typography_class = 'body-' | append: resolved_preset | append: ' body-text'
+    when 'label'
+      assign typography_class = 'label-text'
     when 'subheading', 'sub'
-      assign typography_class = 'typo-sub'
+      assign typography_class = 'subheading-text'
   endcase
 -%}
 {{- typography_class -}}

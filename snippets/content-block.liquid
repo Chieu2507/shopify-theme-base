@@ -1,13 +1,12 @@
 {% doc %}
   Renders the shared Heading and Text theme-block UI with size-based typography,
-  responsive layout and spacing. Existing
-  saved blocks that used the removed custom preset remain renderable.
+  responsive layout and spacing.
 
   @param {object} block - The theme block object.
   @param {string} content - Rich text to render.
   @param {string} kind - Either "heading", "text", or "label".
-  @param {string} default_preset - Fallback typography size or legacy preset.
-  @param {string} default_font - Fallback font role for legacy saved settings.
+  @param {string} default_preset - Fallback typography preset.
+  @param {string} default_font - Font role used by custom typography.
   @param {string} [force_preset] - Optional typography preset that overrides saved block settings.
   @param {boolean} [include_shopify_attributes] - Whether to attach editor attributes to the rendered typography block.
 
@@ -26,68 +25,36 @@
   if force_preset != blank
     assign preset = force_preset
   endif
-  if preset == 'default'
-    if kind == 'heading' and block.settings.heading_size != blank
-      assign preset = block.settings.heading_size
-    elsif kind == 'text' and block.settings.text_size != blank
-      assign preset = 'legacy_' | append: block.settings.text_size
-    else
-      assign preset = default_preset
-    endif
-  endif
 
-  assign heading_level = 'h6'
-  case block.settings.heading_tag
-    when 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
-      assign heading_level = block.settings.heading_tag
-  endcase
-  if content contains '<h1'
-    assign heading_level = 'h1'
-  elsif content contains '<h2'
-    assign heading_level = 'h2'
-  elsif content contains '<h3'
-    assign heading_level = 'h3'
-  elsif content contains '<h4'
-    assign heading_level = 'h4'
-  elsif content contains '<h5'
-    assign heading_level = 'h5'
-  elsif content contains '<h6'
-    assign heading_level = 'h6'
-  endif
-
-  assign typo_class = ''
+  assign typography_class = ''
   assign use_inline_typography = false
-  assign heading_size_variable = ''
-  assign text_size_variable = ''
-  case preset
-    when 'paragraph'
-      assign typo_class = 'typo-p'
-    when 'subheading'
-      assign typo_class = 'typo-h6'
-      assign heading_size_variable = '--h6-size-2xs'
-    when 'h1', 'h2', 'h3', 'h4', 'h5', 'h6'
-      assign typo_class = 'typo-' | append: preset
-    when 'custom'
-      assign use_inline_typography = true
-  endcase
-  if preset contains 'legacy_'
-    assign use_inline_typography = true
-  endif
-
   if kind == 'heading'
     case preset
-      when '3xl', '2xl', 'xl', 'lg', 'md', 'sm', 'xs', '2xs'
-        assign typo_class = 'typo-' | append: heading_level
-        assign heading_size_variable = '--' | append: heading_level | append: '-size-' | append: preset
+      when 'h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7'
+        assign typography_class = 'heading-' | append: preset | append: ' heading-text'
+      when 'subheading'
+        assign typography_class = 'subheading-text'
+      when 'custom'
+        assign typography_class = 'heading-custom heading-text'
+        assign use_inline_typography = true
     endcase
   elsif kind == 'text' or kind == 'label'
     case preset
-      when 'lg', 'md', 'sm', 'xs'
-        assign typo_class = 'typo-p'
-        assign text_size_variable = '--body-size-' | append: preset
+      when 'lg'
+        assign typography_class = 'body-p0 body-text'
+      when 'md', 'paragraph'
+        assign typography_class = 'body-p1 body-text'
+      when 'sm'
+        assign typography_class = 'body-p2 body-text'
+      when 'xs'
+        assign typography_class = 'body-p3 body-text'
       when 'label'
-        assign typo_class = 'typo-p'
-        assign text_size_variable = '--label-size'
+        assign typography_class = 'label-text'
+      when 'subheading'
+        assign typography_class = 'subheading-text'
+      when 'custom'
+        assign typography_class = 'body-custom body-text'
+        assign use_inline_typography = true
     endcase
   endif
 
@@ -100,146 +67,30 @@
   assign line_height = 'var(--body-line-height)'
   assign letter_spacing = 'var(--body-letter-spacing)'
   assign text_case = 'none'
-  assign legacy_heading_tag = block.settings.heading_tag | default: 'h2'
+  assign heading_tag = block.settings.heading_tag | default: 'h2'
 
-  case preset
-    when 'label'
-      assign use_inline_typography = true
-      assign font_family = 'var(--font-label--family)'
-      assign font_style = 'var(--font-label--style)'
-      assign font_weight = 'var(--font-label--weight)'
-      assign font_size = 'var(--label-size)'
-      assign font_size_mobile = font_size
-      assign line_height = 'var(--label-line-height)'
-      assign letter_spacing = 'var(--label-letter-spacing)'
-    when 'subheading'
-      assign font_family = 'var(--font-subheading-preset--family)'
-      assign font_style = 'var(--font-subheading-preset--style)'
-      assign font_weight = 'var(--font-subheading-preset--weight)'
-      assign font_size = 'var(--font-subheading-size)'
-      assign font_size_mobile = 'var(--font-subheading-size)'
-      assign line_height = 'var(--font-subheading-line-height)'
-      assign letter_spacing = 'var(--font-subheading-letter-spacing)'
-      assign text_case = 'var(--font-subheading-text-case)'
-    when 'h1'
-      assign font_family = 'var(--font-h1--family)'
-      assign font_style = 'var(--font-h1--style)'
-      assign font_weight = 'var(--font-h1--weight)'
-      assign font_size = 'var(--font-h1-size)'
-      assign font_size_mobile = 'var(--font-h1-size)'
-      assign line_height = 'var(--font-h1-line-height)'
-      assign letter_spacing = 'var(--font-h1-letter-spacing)'
-      assign text_case = 'var(--font-h1-text-case)'
-    when 'h2'
-      assign font_family = 'var(--font-h2--family)'
-      assign font_style = 'var(--font-h2--style)'
-      assign font_weight = 'var(--font-h2--weight)'
-      assign font_size = 'var(--font-h2-size)'
-      assign font_size_mobile = 'var(--font-h2-size)'
-      assign line_height = 'var(--font-h2-line-height)'
-      assign letter_spacing = 'var(--font-h2-letter-spacing)'
-      assign text_case = 'var(--font-h2-text-case)'
-    when 'h3'
-      assign font_family = 'var(--font-h3--family)'
-      assign font_style = 'var(--font-h3--style)'
-      assign font_weight = 'var(--font-h3--weight)'
-      assign font_size = 'var(--font-h3-size)'
-      assign font_size_mobile = 'var(--font-h3-size)'
-      assign line_height = 'var(--font-h3-line-height)'
-      assign letter_spacing = 'var(--font-h3-letter-spacing)'
-      assign text_case = 'var(--font-h3-text-case)'
-    when 'h4'
-      assign font_family = 'var(--font-h4--family)'
-      assign font_style = 'var(--font-h4--style)'
-      assign font_weight = 'var(--font-h4--weight)'
-      assign font_size = 'var(--font-h4-size)'
-      assign font_size_mobile = 'var(--font-h4-size)'
-      assign line_height = 'var(--font-h4-line-height)'
-      assign letter_spacing = 'var(--font-h4-letter-spacing)'
-      assign text_case = 'var(--font-h4-text-case)'
-    when 'h5'
-      assign font_family = 'var(--font-h5--family)'
-      assign font_style = 'var(--font-h5--style)'
-      assign font_weight = 'var(--font-h5--weight)'
-      assign font_size = 'var(--font-h5-size)'
-      assign font_size_mobile = 'var(--font-h5-size)'
-      assign line_height = 'var(--font-h5-line-height)'
-      assign letter_spacing = 'var(--font-h5-letter-spacing)'
-      assign text_case = 'var(--font-h5-text-case)'
-    when 'h6'
-      assign font_family = 'var(--font-h6--family)'
-      assign font_style = 'var(--font-h6--style)'
-      assign font_weight = 'var(--font-h6--weight)'
-      assign font_size = 'var(--font-h6-size)'
-      assign font_size_mobile = 'var(--font-h6-size)'
-      assign line_height = 'var(--font-h6-line-height)'
-      assign letter_spacing = 'var(--font-h6-letter-spacing)'
-      assign text_case = 'var(--font-h6-text-case)'
-    when 'paragraph'
-      assign font_family = 'var(--font-paragraph--family)'
-      assign font_style = 'var(--font-paragraph--style)'
-      assign font_weight = 'var(--font-paragraph--weight)'
-      assign font_size = 'var(--font-body-base)'
-      assign font_size_mobile = 'var(--font-body-base)'
-      assign line_height = 'var(--body-line-height)'
-      assign letter_spacing = 'var(--body-letter-spacing)'
-    when 'legacy_x-large'
-      assign font_family = 'var(--font-paragraph--family)'
-      assign font_style = 'var(--font-paragraph--style)'
-      assign font_weight = 'var(--font-paragraph--weight)'
-      assign font_size = 'var(--font-body-large)'
-      assign font_size_mobile = 'var(--font-body-large)'
-      assign line_height = '1.5'
-    when 'legacy_large'
-      assign font_family = 'var(--font-paragraph--family)'
-      assign font_style = 'var(--font-paragraph--style)'
-      assign font_weight = 'var(--font-paragraph--weight)'
-      assign font_size = 'var(--font-body-base)'
-      assign font_size_mobile = 'var(--font-body-base)'
-      assign line_height = '1.5'
-    when 'legacy_medium'
-      assign font_family = 'var(--font-paragraph--family)'
-      assign font_style = 'var(--font-paragraph--style)'
-      assign font_weight = 'var(--font-paragraph--weight)'
-      assign font_size = 'var(--font-body-small)'
-      assign font_size_mobile = 'var(--font-body-small)'
-      assign line_height = '1.5'
-    when 'legacy_small'
-      assign font_family = 'var(--font-paragraph--family)'
-      assign font_style = 'var(--font-paragraph--style)'
-      assign font_weight = 'var(--font-paragraph--weight)'
-      assign font_size = 'var(--font-caption)'
-      assign font_size_mobile = 'var(--font-caption)'
-      assign line_height = '1.45'
-    when 'legacy_x-small'
-      assign font_family = 'var(--font-paragraph--family)'
-      assign font_style = 'var(--font-paragraph--style)'
-      assign font_weight = 'var(--font-paragraph--weight)'
-      assign font_size = '11px'
-      assign font_size_mobile = '11px'
-      assign line_height = '1.4'
-    when 'custom'
-      if font_role == 'heading'
-        assign font_family = 'var(--font-heading--family)'
-        assign font_style = 'var(--font-heading--style)'
-        assign font_weight = 'var(--font-heading--weight)'
-      else
-        assign font_family = 'var(--font-body--family)'
-        assign font_style = 'var(--font-body--style)'
-        assign font_weight = 'var(--font-body--weight)'
+  if preset == 'custom'
+    if font_role == 'heading'
+      assign font_family = 'var(--font-heading--family)'
+      assign font_style = 'var(--font-heading--style)'
+      assign font_weight = 'var(--font-heading--weight)'
+    else
+      assign font_family = 'var(--font-body--family)'
+      assign font_style = 'var(--font-body--style)'
+      assign font_weight = 'var(--font-body--weight)'
+    endif
+
+    if block.settings.font_weight != blank
+      if block.settings.font_weight != 'inherit'
+        assign font_weight = block.settings.font_weight
       endif
+    endif
 
-      if block.settings.font_weight != blank
-        if block.settings.font_weight != 'inherit'
-          assign font_weight = block.settings.font_weight
-        endif
-      endif
-
-      assign font_size = block.settings.font_size | default: 15 | append: 'px'
-      assign font_size_mobile = block.settings.font_size_mobile | default: 15 | append: 'px'
-      assign custom_line_height = block.settings.line_height | default: 'normal'
-      assign line_height = 'var(--leading-' | append: custom_line_height | append: ')'
-  endcase
+    assign font_size = block.settings.font_size | default: 15 | append: 'px'
+    assign font_size_mobile = block.settings.font_size_mobile | default: 15 | append: 'px'
+    assign custom_line_height = block.settings.line_height | default: 'normal'
+    assign line_height = 'var(--leading-' | append: custom_line_height | append: ')'
+  endif
 
   assign width = block.settings.width | default: 'fit-content'
   assign width_mobile = block.settings.width_mobile | default: width
@@ -293,7 +144,13 @@
   endif
 
   assign responsive_scope = block.id | default: kind
-  assign rendered_content = content
+  if kind == 'heading' and typography_class != blank
+    capture rendered_content
+      render 'typography-content', content: content, heading_class: typography_class
+    endcapture
+  else
+    assign rendered_content = content
+  endif
   if block.settings.disable_line_break_mobile
     assign line_break_markup = '<span class="content-block__line-break"><br></span>'
     assign rendered_content = rendered_content | replace: '<br>', line_break_markup
@@ -309,9 +166,9 @@
   elsif content contains '<ul' or content contains '<ol' or content contains '<blockquote'
     assign has_block_markup = true
   endif
-  assign is_legacy_heading = false
+  assign needs_heading_wrapper = false
   if kind == 'heading' and has_block_markup == false
-    assign is_legacy_heading = true
+    assign needs_heading_wrapper = true
   endif
 %}
 
@@ -331,21 +188,15 @@
     </style>
   {% endif %}
   <div
-    class="content-block spacing-style content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }} content-block--color-{{ color_class }}{% if kind == 'heading' %} content-heading content-heading--{{ alignment }}{% else %} text-block content-text content-text--{{ alignment }} rte{% endif %}{% if typo_class != blank %} {{ typo_class }}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
+    class="content-block spacing-style content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }} content-block--color-{{ color_class }}{% if kind == 'heading' %} content-heading content-heading--{{ alignment }}{% else %} text-block content-text content-text--{{ alignment }} rte{% endif %}{% if typography_class != blank %} {{ typography_class }}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
     {% if has_mobile_padding or has_mobile_font_size %}data-type-block-id="{{ responsive_scope | escape }}"{% endif %}
-    {% if has_spacing_settings or has_padding or use_inline_typography or heading_size_variable != blank or text_size_variable != blank %}
+    {% if has_spacing_settings or has_padding or use_inline_typography %}
       style="
         {% if has_spacing_settings %}
           {% render 'spacing-style', settings: block.settings %}
         {% endif %}
         {% if has_padding %}
           padding: {{ padding_top }}px {{ padding_right }}px {{ padding_bottom }}px {{ padding_left }}px;
-        {% endif %}
-        {% if heading_size_variable != blank %}
-          --heading-size: var({{ heading_size_variable }});
-        {% endif %}
-        {% if text_size_variable != blank %}
-          --text-size: var({{ text_size_variable }});
         {% endif %}
         {% if use_inline_typography %}
           font-family: {{ font_family }};
@@ -361,8 +212,8 @@
     {% if include_shopify_attributes != false %}{{ block.shopify_attributes }}{% endif %}
   >
     {% if kind == 'heading' %}
-      {% if is_legacy_heading %}
-        <{{ legacy_heading_tag }}>{{ rendered_content }}</{{ legacy_heading_tag }}>
+      {% if needs_heading_wrapper %}
+        <{{ heading_tag }} class="{{ typography_class }}">{{ rendered_content }}</{{ heading_tag }}>
       {% else %}
         {{ rendered_content }}
       {% endif %}
@@ -398,7 +249,7 @@
     color: inherit !important;
   }
 
-  .content-block:is(.typo-p, .typo-sub, .typo-h1, .typo-h2, .typo-h3, .typo-h4, .typo-h5, .typo-h6)
+  .content-block:is(.heading-text, .body-text, .label-text, .subheading-text)
     :is(p, h1, h2, h3, h4, h5, h6) {
     font-family: inherit !important;
     font-size: inherit !important;

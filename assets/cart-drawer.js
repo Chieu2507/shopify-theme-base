@@ -563,7 +563,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       return `<article class="cart-drawer__item" data-cart-line="${this.escape(item.key)}">
         <a class="cart-drawer__item-media" href="${this.escape(item.url)}">${image}</a>
         <div class="cart-drawer__item-info">
-          <h3 class="cart-drawer__item-title"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
+          <h3 class="cart-drawer__item-title heading-h3 heading-text"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
           ${variant}
           ${properties}
           ${sellingPlan}
@@ -939,7 +939,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
       return `<article class="cart-drawer__recommendation swiper-slide">
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="lazy">` : ''}</a>
-        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
+        <div><h4 class="heading-h4 heading-text"><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
       </article>`;
     }
 

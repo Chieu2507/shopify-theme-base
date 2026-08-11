@@ -1029,6 +1029,7 @@ changeLightboxSlide(delta) {
       image.loading = 'lazy';
       imageLink.append(image);
       const heading = document.createElement('h3');
+      heading.className = 'heading-h3 heading-text';
       const titleLink = document.createElement('a');
       titleLink.href = product.url;
       titleLink.textContent = product.title;

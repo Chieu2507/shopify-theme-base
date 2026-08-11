@@ -180,7 +180,7 @@ class FeaturedCollection extends HTMLElement {
     const details = document.createElement('div');
     details.className = 'product-card__details';
     const heading = document.createElement('h3');
-    heading.className = 'product-card__title';
+    heading.className = 'product-card__title heading-h3 heading-text';
     const title = document.createElement('a');
     title.href = product.url;
     title.textContent = product.title || '';

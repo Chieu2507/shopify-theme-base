@@ -728,7 +728,7 @@
       const details = document.createElement('div');
       details.className = 'search-drawer__recent-details';
       const title = document.createElement('h4');
-      title.className = 'search-drawer__recent-title';
+      title.className = 'search-drawer__recent-title heading-h4 heading-text';
       title.id = `SearchDrawerRecent-${this.dataset.sectionId}-${String(product.id || index).replace(/[^a-zA-Z0-9_-]/g, '')}`;
       const titleLink = this.createLink(productUrl);
       titleLink.textContent = product.title || '';
