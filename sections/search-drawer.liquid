@@ -13,6 +13,9 @@
 %}
 
 {{ 'search-drawer.css' | asset_url | stylesheet_tag }}
+{% if has_popular_categories or search_drawer_preview %}
+  {% render 'swiper-stylesheet' %}
+{% endif %}
 
 <style>
   #SearchDrawer .search-drawer__title.heading-custom,
@@ -166,31 +169,33 @@
                   {% if section.settings.popular_categories_heading_size == 'custom' %}style="--search-drawer-custom-font-size: {{ section.settings.popular_categories_heading_font_size }}px; --search-drawer-custom-font-size-mobile: {{ section.settings.popular_categories_heading_font_size_mobile }}px;"{% endif %}
                 >{{ section.settings.popular_categories_heading | escape }}</h3>
               {% endif %}
-              <ul class="search-drawer__chips" role="list">
-                {% if has_popular_categories %}
-                  {% for collection in section.settings.popular_categories %}
-                    <li class="search-drawer__chip-item">
-                      <a class="search-drawer__chip" href="{{ collection.url }}">
-                        <span class="search-drawer__category-media">
-                          {% if collection.image != blank %}
-                            {{ collection.image | image_url: width: 112 | image_tag: widths: '56, 84, 112', sizes: '56px', loading: 'lazy', alt: collection.title }}
-                          {% endif %}
+              <div class="search-drawer__category-carousel swiper" data-search-drawer-categories>
+                <ul class="search-drawer__chips swiper-wrapper" role="list">
+                  {% if has_popular_categories %}
+                    {% for collection in section.settings.popular_categories %}
+                      <li class="search-drawer__chip-item swiper-slide">
+                        <a class="search-drawer__chip" href="{{ collection.url }}">
+                          <span class="search-drawer__category-media">
+                            {% if collection.image != blank %}
+                              {{ collection.image | image_url: width: 112 | image_tag: widths: '56, 84, 112', sizes: '56px', loading: 'lazy', alt: collection.title }}
+                            {% endif %}
+                          </span>
+                          <span class="search-drawer__category-title">{{ collection.title | escape }}</span>
+                        </a>
+                      </li>
+                    {% endfor %}
+                  {% elsif search_drawer_preview %}
+                    <li class="search-drawer__chip-item swiper-slide">
+                      <span class="search-drawer__chip">
+                        <span class="search-drawer__category-media" aria-hidden="true">
+                          {{ 'collection-1' | placeholder_svg_tag: 'search-drawer__category-placeholder-svg' }}
                         </span>
-                        <span class="search-drawer__category-title">{{ collection.title | escape }}</span>
-                      </a>
-                    </li>
-                  {% endfor %}
-                {% elsif search_drawer_preview %}
-                  <li class="search-drawer__chip-item">
-                    <span class="search-drawer__chip">
-                      <span class="search-drawer__category-media" aria-hidden="true">
-                        {{ 'collection-1' | placeholder_svg_tag: 'search-drawer__category-placeholder-svg' }}
+                        <span class="search-drawer__category-title">{{ 'collection_list.collection' | t }}</span>
                       </span>
-                      <span class="search-drawer__category-title">{{ 'collection_list.collection' | t }}</span>
-                    </span>
-                  </li>
-                {% endif %}
-              </ul>
+                    </li>
+                  {% endif %}
+                </ul>
+              </div>
             </section>
           {% endif %}
 

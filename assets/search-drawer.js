@@ -1,3 +1,5 @@
+import { A11y, Swiper } from './swiper-loader.js';
+
 (() => {
   if (customElements.get('search-drawer')) return;
 
@@ -22,6 +24,9 @@
       this.navigation = this.querySelector('[data-search-drawer-navigation]');
       this.recentlyViewed = this.querySelector('[data-search-drawer-recently-viewed]');
       this.recentList = this.querySelector('[data-search-drawer-recent-list]');
+      this.categoriesCarousel = this.querySelector('[data-search-drawer-categories]');
+      this.categorySlides = Array.from(this.querySelectorAll('[data-search-drawer-categories] .swiper-slide'));
+      this.categoriesSwiper = null;
       this.announcer = this.querySelector('[data-search-drawer-announcer]');
       this.bagIconTemplate = this.querySelector('[data-search-drawer-bag-icon]');
       this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -60,6 +65,7 @@
       this.recentController = null;
       this.cartController = null;
       this.stopPlaceholderAnimation();
+      this.destroyCategoriesCarousel();
       window.clearTimeout(this.searchTimer);
       window.clearTimeout(this.closeTimer);
       this.backdropInteraction?.destroy();
@@ -135,6 +141,7 @@
 
       this.tabs?.addEventListener('keydown', (event) => this.onTabKeydown(event), { signal });
       this.reduceMotion.addEventListener('change', () => {
+        if (this.categoriesSwiper) this.categoriesSwiper.params.speed = this.reduceMotion.matches ? 0 : 360;
         if (this.hidden) return;
         this.stopPlaceholderAnimation();
         this.startPlaceholderAnimation();
@@ -155,6 +162,8 @@
       document.addEventListener('shopify:section:unload', (event) => {
         if (this.isOwnEditorEvent(event)) this.close({ restoreFocus: false, immediate: true });
       }, { signal });
+
+      this.categoriesCarousel?.addEventListener('focusin', (event) => this.focusCategorySlide(event), { signal });
     }
 
     shouldHandleTriggerClick(event) {
@@ -189,6 +198,7 @@
         if (trigger) this.returnFocus = trigger;
         this.syncTriggers(true);
         this.loadRecentlyViewedProducts();
+        this.initializeCategoriesCarousel();
         this.input.focus({ preventScroll: true });
         return;
       }
@@ -209,6 +219,7 @@
       this.classList.remove('is-open');
       this.panel.getBoundingClientRect();
       this.classList.add('is-open');
+      this.initializeCategoriesCarousel();
       this.syncTriggers(true);
       this.startPlaceholderAnimation();
       this.loadRecentlyViewedProducts();
@@ -219,6 +230,41 @@
         this.syncInputState();
         if (this.input.value.trim().length >= 2) this.schedulePredictiveSearch();
       });
+    }
+
+    initializeCategoriesCarousel() {
+      if (!this.categoriesCarousel || this.categorySlides.length < 2) return;
+
+      if (this.categoriesSwiper) {
+        this.categoriesSwiper.update();
+        return;
+      }
+
+      this.categoriesSwiper = new Swiper(this.categoriesCarousel, {
+        modules: [A11y],
+        slidesPerView: 'auto',
+        spaceBetween: 12,
+        speed: this.reduceMotion.matches ? 0 : 360,
+        watchOverflow: true,
+        grabCursor: true,
+        a11y: {
+          enabled: true,
+          slideRole: null,
+          slideLabelMessage: null,
+        },
+      });
+    }
+
+    destroyCategoriesCarousel() {
+      this.categoriesSwiper?.destroy(true, true);
+      this.categoriesSwiper = null;
+    }
+
+    focusCategorySlide(event) {
+      const slide = event.target.closest?.('.swiper-slide');
+      if (!slide || !this.categoriesCarousel?.contains(slide) || !this.categoriesSwiper) return;
+      const index = this.categorySlides.indexOf(slide);
+      if (index >= 0) this.categoriesSwiper.slideTo(index);
     }
 
     close({ restoreFocus = true, immediate = false } = {}) {
