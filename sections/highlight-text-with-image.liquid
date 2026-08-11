@@ -2,6 +2,11 @@
 <script src="{{ 'section-highlight-text-with-image.js' | asset_url }}" defer></script>
 
 {% liquid
+  assign highlight_section_background = section.settings.background_color
+  if highlight_section_background == blank
+    assign highlight_section_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+
   assign heading_tag = section.settings.heading_tag | default: 'h2'
   assign type_preset = section.settings.type_preset | default: 'md'
   assign rendered_heading = section.settings.heading | escape
@@ -67,11 +72,21 @@
   endunless
 %}
 
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ highlight_section_background }};
+  }
+
+  #shopify-section-{{ section.id }} .highlight-text-with-image {
+    background: transparent;
+  }
+{% endstyle %}
+
 <highlight-text-with-image
   class="highlight-text-with-image-controller"
   data-animation-speed="{{ section.settings.animation_speed }}"
 >
-  <section
+  <div
     class="highlight-text-with-image highlight-text-with-image--height-{{ section.settings.section_height }}{% if section.settings.equal_line_height %} highlight-text-with-image--equal-line-height{% endif %} color-scheme color-{{ section.settings.color_scheme.id }} full-width"
     {% if section.settings.heading != blank %}aria-labelledby="HighlightHeading-{{ section.id }}"{% endif %}
     style="
@@ -96,7 +111,7 @@
         >{{- rendered_heading -}}</{{ heading_tag }}>
       {% endif %}
     </div>
-  </section>
+  </div>
 </highlight-text-with-image>
 
 {% schema %}
@@ -411,6 +426,12 @@
       "id": "color_scheme",
       "label": "Color scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme."
     }
   ],
   "presets": [
