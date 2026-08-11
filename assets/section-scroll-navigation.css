@@ -128,11 +128,51 @@
   }
 
   .scroll-navigation__gift-icon {
+    position: relative;
     display: inline-flex;
-    width: 14px;
-    height: 14px;
+    width: 18px;
+    height: 18px;
+    isolation: isolate;
     transform-origin: 50% 100%;
     animation: scroll-navigation-gift-happy 3200ms cubic-bezier(.22, 1, .36, 1) infinite;
+  }
+
+  .scroll-navigation__gift-icon::before,
+  .scroll-navigation__gift-icon::after {
+    position: absolute;
+    z-index: -1;
+    content: "";
+    pointer-events: none;
+  }
+
+  .scroll-navigation__gift-icon::before {
+    inset: -5px;
+    border: 1px solid currentcolor;
+    border-radius: 50%;
+    opacity: 0;
+    transform: scale(.55);
+    animation: scroll-navigation-gift-aura 3200ms ease-out infinite;
+  }
+
+  .scroll-navigation__gift-icon::after {
+    top: 50%;
+    left: 50%;
+    width: 2px;
+    height: 2px;
+    border-radius: 50%;
+    background: currentcolor;
+    box-shadow:
+      0 -12px 0 currentcolor,
+      9px -8px 0 currentcolor,
+      12px 0 0 currentcolor,
+      9px 8px 0 currentcolor,
+      0 12px 0 currentcolor,
+      -9px 8px 0 currentcolor,
+      -12px 0 0 currentcolor,
+      -9px -8px 0 currentcolor;
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(.45) rotate(-8deg);
+    animation: scroll-navigation-gift-rays 3200ms ease-out infinite;
   }
 
   .scroll-navigation__gift-icon svg {
@@ -201,6 +241,18 @@
   14% { transform: translateY(0) scale(1); }
 }
 
+@keyframes scroll-navigation-gift-aura {
+  0%, 2%, 18%, 100% { opacity: 0; transform: scale(.55); }
+  6% { opacity: .42; transform: scale(.78); }
+  14% { opacity: 0; transform: scale(1.35); }
+}
+
+@keyframes scroll-navigation-gift-rays {
+  0%, 3%, 18%, 100% { opacity: 0; transform: translate(-50%, -50%) scale(.45) rotate(-8deg); }
+  7% { opacity: .72; transform: translate(-50%, -50%) scale(.72) rotate(0deg); }
+  14% { opacity: 0; transform: translate(-50%, -50%) scale(1.08) rotate(8deg); }
+}
+
 @media screen and (max-width: 989px) {
   .scroll-navigation-section {
     display: none;
@@ -214,6 +266,8 @@
   }
 
   .scroll-navigation__gift-icon,
+  .scroll-navigation__gift-icon::before,
+  .scroll-navigation__gift-icon::after,
   .scroll-navigation__gift-lid,
   .scroll-navigation__gift-bow {
     animation: none;
