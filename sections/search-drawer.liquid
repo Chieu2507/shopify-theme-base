@@ -1,18 +1,15 @@
 {% liquid
   assign search_drawer_scheme = section.settings.color_scheme.id | default: 'scheme-1'
-  assign has_popular_searches = false
+  assign has_popular_categories = false
   assign search_drawer_preview = false
 
   if request.design_mode or request.visual_preview_mode
     assign search_drawer_preview = true
   endif
 
-  for block in section.blocks
-    if block.settings.term != blank
-      assign has_popular_searches = true
-      break
-    endif
-  endfor
+  if section.settings.popular_categories != blank
+    assign has_popular_categories = true
+  endif
 %}
 
 {{ 'search-drawer.css' | asset_url | stylesheet_tag }}
@@ -160,29 +157,33 @@
         </div>
 
         <div class="search-drawer__navigation" data-search-drawer-navigation>
-          {% if has_popular_searches or search_drawer_preview and section.blocks.size > 0 %}
-            <section class="search-drawer__popular"{% if section.settings.popular_searches_heading != blank %} aria-labelledby="SearchDrawerPopularTitle-{{ section.id }}"{% endif %}>
-              {% if section.settings.popular_searches_heading != blank %}
+          {% if has_popular_categories or search_drawer_preview %}
+            <section class="search-drawer__popular"{% if section.settings.popular_categories_heading != blank %} aria-labelledby="SearchDrawerPopularCategoriesTitle-{{ section.id }}"{% endif %}>
+              {% if section.settings.popular_categories_heading != blank %}
                 <h3
-                  id="SearchDrawerPopularTitle-{{ section.id }}"
-                  class="search-drawer__section-title {% render 'typography-class', preset: section.settings.popular_searches_heading_size, fallback: 'h3' %}"
-                  {% if section.settings.popular_searches_heading_size == 'custom' %}style="--search-drawer-custom-font-size: {{ section.settings.popular_searches_heading_font_size }}px; --search-drawer-custom-font-size-mobile: {{ section.settings.popular_searches_heading_font_size_mobile }}px;"{% endif %}
-                >{{ section.settings.popular_searches_heading | escape }}</h3>
+                  id="SearchDrawerPopularCategoriesTitle-{{ section.id }}"
+                  class="search-drawer__section-title {% render 'typography-class', preset: section.settings.popular_categories_heading_size, fallback: 'h3' %}"
+                  {% if section.settings.popular_categories_heading_size == 'custom' %}style="--search-drawer-custom-font-size: {{ section.settings.popular_categories_heading_font_size }}px; --search-drawer-custom-font-size-mobile: {{ section.settings.popular_categories_heading_font_size_mobile }}px;"{% endif %}
+                >{{ section.settings.popular_categories_heading | escape }}</h3>
               {% endif %}
               <ul class="search-drawer__chips" role="list">
-                {% for block in section.blocks %}
-                  <li class="search-drawer__chip-item"{% if block.settings.term == blank %} hidden{% endif %} {{ block.shopify_attributes }}>
-                    {% if block.settings.term != blank %}
-                      <a class="search-drawer__chip" href="{{ routes.search_url | escape }}?q={{ block.settings.term | url_encode }}">{{ block.settings.term | escape }}</a>
-                    {% endif %}
+                {% if has_popular_categories %}
+                  {% for collection in section.settings.popular_categories %}
+                    <li class="search-drawer__chip-item">
+                      <a class="search-drawer__chip" href="{{ collection.url }}">{{ collection.title | escape }}</a>
+                    </li>
+                  {% endfor %}
+                {% elsif search_drawer_preview %}
+                  <li class="search-drawer__chip-item">
+                    <span class="search-drawer__chip">{{ 'collection_list.collection' | t }}</span>
                   </li>
-                {% endfor %}
+                {% endif %}
               </ul>
             </section>
           {% endif %}
 
           {% if section.settings.show_recently_viewed %}
-            <section class="search-drawer__recently-viewed{% if has_popular_searches %} search-drawer__recently-viewed--divided{% endif %}"{% if section.settings.recently_viewed_heading != blank %} aria-labelledby="SearchDrawerRecentTitle-{{ section.id }}"{% endif %} data-search-drawer-recently-viewed{% unless search_drawer_preview %} hidden{% endunless %}>
+            <section class="search-drawer__recently-viewed{% if has_popular_categories %} search-drawer__recently-viewed--divided{% endif %}"{% if section.settings.recently_viewed_heading != blank %} aria-labelledby="SearchDrawerRecentTitle-{{ section.id }}"{% endif %} data-search-drawer-recently-viewed{% unless search_drawer_preview %} hidden{% endunless %}>
               {% if section.settings.recently_viewed_heading != blank %}
                 <h3
                   id="SearchDrawerRecentTitle-{{ section.id }}"
@@ -284,11 +285,11 @@
     { "type": "text", "id": "placeholder", "label": "Search placeholder", "default": "Search" },
     { "type": "textarea", "id": "animated_placeholder_terms", "label": "Animated search text", "info": "Separate phrases with commas or new lines. Leave blank to disable." },
     { "type": "checkbox", "id": "enable_search_suggestions", "label": "Show search suggestions", "default": true },
-    { "type": "header", "content": "Popular searches" },
-    { "type": "text", "id": "popular_searches_heading", "label": "Heading", "default": "Popular searches" },
+    { "type": "header", "content": "Collections", "info": "Displayed when no keyword is entered or when no results match your search." },
+    { "type": "text", "id": "popular_categories_heading", "label": "Heading", "default": "Popular categories" },
     {
       "type": "select",
-      "id": "popular_searches_heading_size",
+      "id": "popular_categories_heading_size",
       "label": "t:typography_blocks.heading_size",
       "options": [
         {
@@ -330,8 +331,9 @@
       ],
       "default": "h3"
     },
-    { "type": "range", "id": "popular_searches_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 50, "visible_if": "{{ section.settings.popular_searches_heading_size == 'custom' }}" },
-    { "type": "range", "id": "popular_searches_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 30, "visible_if": "{{ section.settings.popular_searches_heading_size == 'custom' }}" },
+    { "type": "range", "id": "popular_categories_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 50, "visible_if": "{{ section.settings.popular_categories_heading_size == 'custom' }}" },
+    { "type": "range", "id": "popular_categories_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 30, "visible_if": "{{ section.settings.popular_categories_heading_size == 'custom' }}" },
+    { "type": "collection_list", "id": "popular_categories", "label": "Collections", "limit": 8 },
     { "type": "header", "content": "Recently viewed" },
     { "type": "checkbox", "id": "show_recently_viewed", "label": "Show recently viewed products", "default": true },
     { "type": "text", "id": "recently_viewed_heading", "label": "Heading", "default": "Recently viewed", "visible_if": "{{ section.settings.show_recently_viewed }}" },
@@ -390,25 +392,9 @@
     { "type": "checkbox", "id": "indent_desktop", "label": "Indent on desktop", "default": false },
     { "type": "checkbox", "id": "blur_backdrop", "label": "Blur backdrop", "default": false }
   ],
-  "max_blocks": 8,
-  "blocks": [
-    {
-      "type": "search_term",
-      "name": "Search term",
-      "limit": 8,
-      "settings": [
-        { "type": "text", "id": "term", "label": "Search term", "default": "Search term" }
-      ]
-    }
-  ],
   "presets": [
     {
-      "name": "Search drawer",
-      "blocks": [
-        { "type": "search_term", "settings": { "term": "Running shoes" } },
-        { "type": "search_term", "settings": { "term": "Trail running shoes" } },
-        { "type": "search_term", "settings": { "term": "Hiking shoes" } }
-      ]
+      "name": "Search drawer"
     }
   ],
   "enabled_on": { "groups": ["custom.overlay"] }
