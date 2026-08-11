@@ -3,6 +3,23 @@
 {% render 'swiper-stylesheet', defer_on_home: true %}
 
 {% liquid
+  assign editorial_collection_background = section.settings.background_color
+  if editorial_collection_background == blank
+    assign editorial_collection_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ editorial_collection_background }};
+  }
+
+  #shopify-section-{{ section.id }} .editorial-featured-collection {
+    background: transparent;
+  }
+{% endstyle %}
+
+{% liquid
   assign featured_collection = section.settings.collection
   assign products_to_show = section.settings.products_to_show
   assign product_count = featured_collection.products_count | default: 0
@@ -243,6 +260,12 @@
       "id": "color_scheme",
       "label": "Color scheme",
       "default": "scheme-2"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme."
     },
     {
       "type": "header",
