@@ -30,7 +30,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
       this.shippingProgressValue = this.querySelector('[data-cart-drawer-shipping-progress-value]');
       this.shippingCopy = this.querySelector('[data-cart-drawer-shipping-copy]');
-      this.addons = this.querySelector('[data-cart-drawer-addons]');
       this.shippingEstimator = this.querySelector('[data-cart-drawer-shipping-estimator]');
       this.shippingRates = this.querySelector('[data-cart-drawer-shipping-rates]');
       this.shippingCountry = this.querySelector('[data-cart-drawer-shipping-country]');
@@ -164,9 +163,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.recommendationList?.addEventListener('pointerleave', () => { this.recommendationPaused = false; }, { signal });
       this.recommendationList?.addEventListener('focusin', () => { this.recommendationPaused = true; }, { signal });
       this.recommendationList?.addEventListener('focusout', () => { this.recommendationPaused = false; }, { signal });
-      this.querySelectorAll('[data-cart-drawer-addon]').forEach((input) => {
-        input.addEventListener('change', () => this.toggleAddon(input), { signal });
-      });
       this.shippingEstimator?.addEventListener('submit', (event) => this.estimateShipping(event), { signal });
       this.shippingCountry?.addEventListener('change', () => this.updateShippingProvinces(), { signal });
       this.shippingEstimator?.addEventListener('input', () => this.clearShippingFieldErrors(), { signal });
@@ -492,7 +488,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (this.taxNote) this.taxNote.textContent = cart.taxes_included ? this.dataset.taxesIncludedLabel : this.dataset.taxesNoteLabel;
       this.renderDiscounts(cart);
       this.renderShippingProgress(cart);
-      this.syncAddons(cart);
       const note = this.querySelector('[data-cart-drawer-note]');
       if (note && document.activeElement !== note) note.value = cart.note || '';
     }
@@ -504,10 +499,10 @@ import { A11y, Swiper } from './swiper-loader.js';
       const emptyImage = this.dataset.emptyImage
         ? `<img class="cart-drawer__empty-image cart-drawer__empty-image--${this.escape(this.dataset.emptyImageRatio || 'adapt')}" src="${this.escape(this.dataset.emptyImage)}" alt="" loading="lazy">`
         : '';
-      this.items.innerHTML = `<div class="cart-drawer__empty">${emptyImage}<p>${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</p>${emptyLink}</div>`;
+      const emptyHeadingClass = this.escape(this.dataset.emptyHeadingClass || 'heading-custom heading-text');
+      this.items.innerHTML = `<div class="cart-drawer__empty">${emptyImage}<h3 class="cart-drawer__empty-title ${emptyHeadingClass}">${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</h3>${emptyLink}</div>`;
       this.footer.hidden = true;
       if (this.recommendations) this.recommendations.hidden = true;
-      this.addons && (this.addons.hidden = true);
       this.shippingProgress && (this.shippingProgress.hidden = true);
       window.clearInterval(this.recommendationTimer);
       if (this.discounts) {
@@ -706,51 +701,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (this.shippingProgressValue) this.shippingProgressValue.style.width = `${Math.min(100, Math.round((total / threshold) * 100))}%`;
       this.shippingProgress.hidden = false;
       this.shippingProgress.dataset.unlocked = String(unlocked);
-    }
-
-    syncAddons(cart) {
-      if (!this.addons) return;
-      const items = cart.items || [];
-      let hasAddon = false;
-      this.addons.querySelectorAll('[data-cart-drawer-addon]').forEach((input) => {
-        const variantId = Number(input.dataset.variantId || 0);
-        const item = items.find((candidate) => Number(candidate.variant_id) === variantId);
-        input.checked = Boolean(item);
-        input.closest('[data-cart-drawer-addon-wrapper]')?.classList.toggle('is-selected', Boolean(item));
-        hasAddon = hasAddon || Boolean(input.dataset.variantId);
-      });
-      this.addons.hidden = !hasAddon;
-    }
-
-    async toggleAddon(input) {
-      const variantId = input?.dataset.variantId;
-      if (!variantId || input.disabled) return;
-      input.disabled = true;
-      try {
-        const existingItem = (this.cart?.items || []).find((item) => String(item.variant_id) === String(variantId));
-        let response;
-        if (input.checked) {
-          response = await fetch(this.localeUrl('cart/add.js'), {
-            method: 'POST',
-            headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ items: [{ id: Number(variantId), quantity: 1 }] })
-          });
-        } else if (existingItem) {
-          response = await fetch(this.localeUrl('cart/change.js'), {
-            method: 'POST',
-            headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
-            body: JSON.stringify({ id: existingItem.key, quantity: 0 })
-          });
-        }
-        if (!response?.ok) throw new Error(this.dataset.cartUpdateErrorLabel);
-        await this.refresh();
-      } catch (error) {
-        console.error('[Spinel] Cart add-on update failed', error);
-        input.checked = !input.checked;
-        this.setMessage(error.message, true);
-      } finally {
-        input.disabled = false;
-      }
     }
 
     async estimateShipping(event) {
