@@ -12,7 +12,6 @@
 <footer-house
   class="footer-house color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
   data-deferred-module="{{ 'section-footer.js' | asset_url }}"
-  style="--footer-house-mark-image: url('{{ 'footer-house-mark.png' | asset_url }}');"
 >
   <footer
     class="footer"
@@ -37,16 +36,11 @@
 
       <div class="footer__utility">
         <div class="footer__utility-start">
-          {% if section.settings.location_label != blank or section.settings.show_country_selector or section.settings.show_language_selector %}
+          {% if section.settings.show_country_selector or section.settings.show_language_selector %}
             <footer-localization class="footer__localization">
               {% form 'localization', id: localization_form_id %}
                 <div class="footer__region">
-                  {% if section.settings.location_label != blank %}
-                    <span>{{ section.settings.location_label | escape }}</span>
-                  {% endif %}
-
                   {% if section.settings.show_country_selector %}
-                    {% if section.settings.location_label != blank %}<span class="footer__utility-divider" aria-hidden="true">/</span>{% endif %}
                     {% if localization.available_countries.size > 1 %}
                       <label class="visually-hidden" for="FooterCountry-{{ section.id }}">{{ 'footer.country_region' | t }}</label>
                       <span class="footer__localization-select">
@@ -65,7 +59,7 @@
                   {% endif %}
 
                   {% if section.settings.show_language_selector and localization.available_languages.size > 1 %}
-                    <span class="footer__utility-divider" aria-hidden="true">/</span>
+                    {% if section.settings.show_country_selector %}<span class="footer__utility-divider" aria-hidden="true">/</span>{% endif %}
                     <label class="visually-hidden" for="FooterLanguage-{{ section.id }}">{{ 'footer.language' | t }}</label>
                     <span class="footer__localization-select">
                       <select id="FooterLanguage-{{ section.id }}" name="locale_code" data-footer-localization-select>
@@ -207,12 +201,6 @@
       "content": "Store utilities"
     },
     {
-      "type": "text",
-      "id": "location_label",
-      "label": "Location label",
-      "default": "New York"
-    },
-    {
       "type": "checkbox",
       "id": "show_country_selector",
       "label": "Show country/currency selector",
@@ -306,6 +294,7 @@
                 "show_required_marker": false,
                 "button_label": "JOIN THE LIST",
                 "button_style": "primary",
+                "icon": "arrow-right",
                 "form_layout": "inline",
                 "success_message": "Thank you for subscribing."
               }
@@ -414,6 +403,10 @@
           "type": "_footer-signature",
           "id": "signature",
           "static": true,
+          "settings": {
+            "image_opacity": 100,
+            "show_image_mobile": true
+          },
           "blocks": [
             {
               "type": "heading",

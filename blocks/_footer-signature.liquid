@@ -5,7 +5,18 @@
   {% content_for 'block', type: '_footer-signature', id: 'signature' %}
 {% enddoc %}
 
-<section class="footer__signature" {{ block.shopify_attributes }}>
+{% liquid
+  assign mark_image_url = 'footer-house-mark.png' | asset_url
+  if block.settings.mark_image != blank
+    assign mark_image_url = block.settings.mark_image | image_url: width: 1200
+  endif
+%}
+
+<section
+  class="footer__signature{% unless block.settings.show_image_mobile %} footer__signature--hide-image-mobile{% endunless %}"
+  style="--footer-house-mark-image: url('{{ mark_image_url }}'); --footer-house-mark-opacity: {{ block.settings.image_opacity | divided_by: 100.0 }};"
+  {{ block.shopify_attributes }}
+>
   <div class="footer__eyebrow footer__signature-eyebrow">
     {% content_for 'block', type: 'heading', id: 'signature_eyebrow' %}
   </div>
@@ -32,6 +43,33 @@
   "blocks": [
     { "type": "heading" }
   ],
-  "settings": []
+  "settings": [
+    {
+      "type": "header",
+      "content": "Media"
+    },
+    {
+      "type": "image_picker",
+      "id": "mark_image",
+      "label": "Image",
+      "info": "Leave blank to use the default footer mark."
+    },
+    {
+      "type": "range",
+      "id": "image_opacity",
+      "label": "Image opacity",
+      "min": 0,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100
+    },
+    {
+      "type": "checkbox",
+      "id": "show_image_mobile",
+      "label": "Show image on mobile",
+      "default": true
+    }
+  ]
 }
 {% endschema %}
