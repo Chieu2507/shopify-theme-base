@@ -61,7 +61,7 @@ import { A11y, Swiper } from './swiper-loader.js';
           if (event.detail.cart) this.syncCart(event.detail.cart);
           return;
         }
-        const sourceButton = event.detail.button || null;
+        const sourceButton = event.detail.sourceButton || event.detail.button || null;
         const quickViewModal = sourceButton?.closest?.('[data-quick-view]')
           ? document.querySelector('[data-quick-view-modal]')
           : null;
@@ -383,7 +383,7 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     finishClose() {
       this.hidden = true;
-      this.classList.remove('is-closing');
+      this.classList.remove('is-closing', 'cart-drawer--above-search');
       this.unlockPageScroll();
     }
 
@@ -411,6 +411,7 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     async open(trigger = null) {
       this.lastFocusedElement = trigger || document.activeElement;
+      this.classList.toggle('cart-drawer--above-search', Boolean(trigger?.closest?.('search-drawer.is-open')));
       window.clearTimeout(this.closeTimer);
       this.resetHandleDrag();
       this.setOrderOptionsOpen(false);

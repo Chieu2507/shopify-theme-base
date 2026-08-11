@@ -879,7 +879,6 @@ import { A11y, Swiper } from './swiper-loader.js';
         }
 
         this.announce(this.dataset.addedLabel);
-        await this.close({ restoreFocus: true });
         if (cart) document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true, detail: { item, cart } }));
         document.dispatchEvent(new CustomEvent('cart:add:success', {
           bubbles: true,
