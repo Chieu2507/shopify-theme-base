@@ -60,7 +60,7 @@ class FeaturedCollection extends HTMLElement {
     const columnGap = Number.parseFloat(styles.getPropertyValue('--featured-collection-column-gap')) || 0;
     const mobileColumnGap = Number.parseFloat(styles.getPropertyValue('--featured-collection-mobile-column-gap')) || 0;
     const desktopColumns = Number.parseInt(this.dataset.desktopColumns, 10) || 4;
-    const mobileColumns = Number.parseInt(this.dataset.mobileColumns, 10) || 1;
+    const mobileColumns = Number.parseFloat(this.dataset.mobileColumns) || 1;
     const tabletColumns = this.classList.contains('featured-collection--has-promotion') ? 1 : Math.min(desktopColumns, 2);
     const productCount = scroller.querySelectorAll('.swiper-slide').length;
     const exactSlides = this.dataset.exactSlides === 'true';

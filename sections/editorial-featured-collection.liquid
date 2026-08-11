@@ -38,6 +38,7 @@
     assign tablet_columns = 2
   endif
   assign mobile_columns = section.settings.columns_mobile | plus: 0
+  assign mobile_slides_per_view = mobile_columns | plus: 0.2
   assign collection_label = section.settings.collection_label | default: featured_collection.title | default: 'Collection'
   assign view_all_label = section.settings.view_all_label | default: 'View all objects'
 %}
@@ -46,12 +47,12 @@
   class="editorial-featured-collection featured-collection color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
   data-deferred-module="{{ 'featured-collection.js' | asset_url }}"
   data-desktop-columns="{{ desktop_columns }}"
-  data-mobile-columns="{{ mobile_columns }}"
+  data-mobile-columns="{{ mobile_slides_per_view }}"
   data-products-to-show="{{ products_to_show }}"
   data-exact-slides="true"
   data-design-mode="{{ request.design_mode }}"
   aria-label="{{ featured_collection.title | default: 'Featured collection' | escape }}"
-  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --featured-collection-column-gap: {{ section.settings.column_gap }}px; --featured-collection-mobile-column-gap: {{ section.settings.mobile_column_gap }}px; --featured-collection-columns: {{ desktop_columns }}; --featured-collection-slide-width-mobile: calc((100% - {{ section.settings.mobile_column_gap }}px * ({{ mobile_columns }} - 1)) / {{ mobile_columns }}); --featured-collection-slide-width-tablet: calc((100% - {{ section.settings.column_gap }}px * ({{ tablet_columns }} - 1)) / {{ tablet_columns }}); --featured-collection-slide-width-desktop: calc((100% - {{ section.settings.column_gap }}px * ({{ desktop_columns }} - 1)) / {{ desktop_columns }});"
+  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --featured-collection-column-gap: {{ section.settings.column_gap }}px; --featured-collection-mobile-column-gap: {{ section.settings.mobile_column_gap }}px; --featured-collection-columns: {{ desktop_columns }}; --featured-collection-slide-width-mobile: calc((100% - {{ section.settings.mobile_column_gap }}px * ({{ mobile_slides_per_view }} - 1)) / {{ mobile_slides_per_view }}); --featured-collection-slide-width-tablet: calc((100% - {{ section.settings.column_gap }}px * ({{ tablet_columns }} - 1)) / {{ tablet_columns }}); --featured-collection-slide-width-desktop: calc((100% - {{ section.settings.column_gap }}px * ({{ desktop_columns }} - 1)) / {{ desktop_columns }});"
 >
   <div class="editorial-featured-collection__inner section-spacing{% if section.settings.section_width == 'page' %} page-width{% endif %}">
     <header class="editorial-featured-collection__header">
@@ -234,6 +235,7 @@
       "type": "select",
       "id": "columns_mobile",
       "label": "Mobile columns",
+      "info": "Shows an additional 0.2 card as a swipe preview.",
       "options": [
         { "value": "1", "label": "1 column" },
         { "value": "2", "label": "2 columns" }
