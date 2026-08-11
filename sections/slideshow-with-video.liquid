@@ -144,11 +144,12 @@
               {% endif %}
 
               {% if block.settings.heading != blank %}
-                <{{ block.settings.heading_tag }}
-                  class="slideshow__heading heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'h2' %}"
-                >
-                  {{ block.settings.heading }}
-                </{{ block.settings.heading_tag }}>
+                {% capture heading_class %}slideshow__heading heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'h2' %}{% endcapture %}
+                {% if block.settings.heading contains '<h1' or block.settings.heading contains '<h2' or block.settings.heading contains '<h3' or block.settings.heading contains '<h4' or block.settings.heading contains '<h5' or block.settings.heading contains '<h6' %}
+                  {% render 'typography-content', content: block.settings.heading, heading_class: heading_class %}
+                {% else %}
+                  <{{ block.settings.heading_tag }} class="{{ heading_class }}">{{ block.settings.heading | strip_html | escape }}</{{ block.settings.heading_tag }}>
+                {% endif %}
               {% endif %}
 
               {% if block.settings.description != blank %}
@@ -442,7 +443,7 @@
           "default": "bottom-left"
         },
         {
-          "type": "inline_richtext",
+          "type": "richtext",
           "id": "heading",
           "label": "Heading",
           "default": "Designed for every day"

@@ -1,7 +1,12 @@
 <section class="product-recommendations" data-recommendation-source data-section-id="{{ section.id }}">
   {% if recommendations.performed and recommendations.products_count > 0 %}
     {% if section.settings.heading != blank %}
-      <{{ section.settings.html_tag | default: 'h2' }} class="product-recommendations__heading {% render 'typography-class', preset: section.settings.heading_size, fallback: 'h3' %}">{{ section.settings.heading | strip_html | escape }}</{{ section.settings.html_tag | default: 'h2' }}>
+      {% capture heading_class %}product-recommendations__heading {% render 'typography-class', preset: section.settings.heading_size, fallback: 'h3' %}{% endcapture %}
+      {% if section.settings.heading contains '<h1' or section.settings.heading contains '<h2' or section.settings.heading contains '<h3' or section.settings.heading contains '<h4' or section.settings.heading contains '<h5' or section.settings.heading contains '<h6' %}
+        {% render 'typography-content', content: section.settings.heading, heading_class: heading_class %}
+      {% else %}
+        <{{ section.settings.html_tag | default: 'h2' }} class="{{ heading_class }}">{{ section.settings.heading | strip_html | escape }}</{{ section.settings.html_tag | default: 'h2' }}>
+      {% endif %}
     {% endif %}
     <ul role="list">
       {% for recommendation in recommendations.products limit: 5 %}
@@ -34,7 +39,7 @@
       "content": "Content"
     },
     {
-      "type": "inline_richtext",
+      "type": "richtext",
       "id": "heading",
       "label": "Heading",
       "default": "Complete the set"
