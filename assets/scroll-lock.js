@@ -26,7 +26,7 @@
 
   const ownerMode = (owner) => {
     if (owner === 'mega-menu' || owner === 'mobile-menu') return 'overflow';
-    if (owner === 'cart-drawer' && isMobileSafari) return 'overflow';
+    if ((owner === 'cart-drawer' || owner === 'search') && isMobileSafari) return 'overflow';
     return 'fixed';
   };
 

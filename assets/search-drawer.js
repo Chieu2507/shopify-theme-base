@@ -7,11 +7,10 @@
     connectedCallback() {
       if (this.abortController) return;
 
-      this.dialog = this.querySelector('[data-search-drawer-dialog]');
       this.panel = this.querySelector('[data-search-drawer-panel]');
       this.form = this.querySelector('[data-search-drawer-form]');
       this.input = this.querySelector('[data-search-drawer-input]');
-      if (!this.dialog || !this.panel || !this.form || !this.input) return;
+      if (!this.panel || !this.form || !this.input) return;
 
       this.clearButton = this.querySelector('[data-search-drawer-clear]');
       this.animatedPlaceholder = this.querySelector('[data-search-drawer-animated-placeholder]');
@@ -46,7 +45,7 @@
 
       if (this.dataset.visualPreviewMode === 'true') {
         window.requestAnimationFrame(() => {
-          if (this.isConnected && !this.dialog.open) this.open();
+          if (this.isConnected && this.hidden) this.open();
         });
       }
     }
@@ -68,7 +67,9 @@
       this.resolveClose(false);
       this.isOpen = false;
       this.syncTriggers(false);
-      if (this.dialog?.open) this.dialog.close();
+      this.hidden = true;
+      this.classList.remove('is-open', 'is-closing');
+      this.unlockPageScroll();
       window.themeScrollLock?.update?.();
     }
 
@@ -77,7 +78,7 @@
 
       if (typeof window.SpinelModalBackdropPointer === 'function') {
         this.backdropInteraction = new window.SpinelModalBackdropPointer({
-          root: this.dialog,
+          root: this,
           panel: this.panel,
           pointer: this.querySelector('.search-drawer__backdrop-pointer'),
           isOpen: () => this.isOpen,
@@ -91,8 +92,8 @@
         this.open(trigger);
       }, { signal });
 
-      this.dialog.addEventListener('click', (event) => {
-        if (event.target === this.dialog || event.target.closest?.('[data-search-drawer-close]')) {
+      this.addEventListener('click', (event) => {
+        if (event.target.closest?.('[data-search-drawer-close], [data-search-drawer-overlay]')) {
           event.preventDefault();
           this.close();
           return;
@@ -120,23 +121,21 @@
         }
       }, { signal });
 
-      this.dialog.addEventListener('cancel', (event) => {
-        event.preventDefault();
-        this.close();
-      }, { signal });
-      this.dialog.addEventListener('keydown', (event) => {
-        if (event.key !== 'Escape') return;
-        event.preventDefault();
-        this.close();
+      this.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          this.close();
+          return;
+        }
+        if (event.key === 'Tab' && this.isOpen) this.trapFocus(event);
       }, { signal });
 
-      this.dialog.addEventListener('close', () => this.onNativeClose(), { signal });
       this.input.addEventListener('input', () => this.onSearchInput(), { signal });
       this.clearButton?.addEventListener('click', () => this.clearSearch(), { signal });
 
       this.tabs?.addEventListener('keydown', (event) => this.onTabKeydown(event), { signal });
       this.reduceMotion.addEventListener('change', () => {
-        if (!this.dialog.open) return;
+        if (this.hidden) return;
         this.stopPlaceholderAnimation();
         this.startPlaceholderAnimation();
       }, { signal });
@@ -184,9 +183,9 @@
     }
 
     open(trigger = null) {
-      if (!this.dialog || !this.panel) return;
+      if (!this.panel) return;
 
-      if (this.dialog.open && this.isOpen && !this.classList.contains('is-closing')) {
+      if (!this.hidden && this.isOpen && !this.classList.contains('is-closing')) {
         if (trigger) this.returnFocus = trigger;
         this.syncTriggers(true);
         this.loadRecentlyViewedProducts();
@@ -194,14 +193,8 @@
         return;
       }
 
-      if (!this.dialog.open) {
+      if (this.hidden) {
         this.returnFocus = trigger || (document.activeElement instanceof HTMLElement ? document.activeElement : null);
-        try {
-          this.dialog.showModal();
-        } catch (error) {
-          console.error('[Spinel] Search drawer could not open.', error);
-          return;
-        }
       } else if (trigger) {
         this.returnFocus = trigger;
       }
@@ -209,20 +202,19 @@
       window.clearTimeout(this.closeTimer);
       this.resolveClose(false);
       this.restoreFocusAfterClose = true;
+      this.lockPageScroll();
+      this.hidden = false;
       this.isOpen = true;
       this.classList.remove('is-closing');
-      this.dialog.classList.remove('is-closing');
       this.classList.remove('is-open');
-      this.dialog.classList.remove('is-open');
       this.panel.getBoundingClientRect();
       this.classList.add('is-open');
-      this.dialog.classList.add('is-open');
       this.syncTriggers(true);
       this.startPlaceholderAnimation();
       this.loadRecentlyViewedProducts();
 
       window.requestAnimationFrame(() => {
-        if (!this.dialog.open || !this.isOpen) return;
+        if (this.hidden || !this.isOpen) return;
         this.input.focus({ preventScroll: true });
         this.syncInputState();
         if (this.input.value.trim().length >= 2) this.schedulePredictiveSearch();
@@ -230,7 +222,7 @@
     }
 
     close({ restoreFocus = true, immediate = false } = {}) {
-      if (!this.dialog?.open) return Promise.resolve(true);
+      if (this.hidden) return Promise.resolve(true);
       if (this.classList.contains('is-closing') && this.closePromise) return this.closePromise;
 
       this.isOpen = false;
@@ -244,9 +236,7 @@
       this.syncTriggers(false);
       this.backdropInteraction?.hide();
       this.classList.remove('is-open');
-      this.dialog.classList.remove('is-open');
       this.classList.add('is-closing');
-      this.dialog.classList.add('is-closing');
 
       this.closePromise = new Promise((resolve) => {
         this.closeResolve = resolve;
@@ -254,25 +244,19 @@
 
       const duration = immediate ? 0 : this.getMotionDuration();
       window.clearTimeout(this.closeTimer);
-      this.closeTimer = window.setTimeout(() => {
-        if (!this.dialog.open) {
-          this.onNativeClose();
-          return;
-        }
-        this.dialog.close();
-      }, duration);
+      this.closeTimer = window.setTimeout(() => this.finishClose(), duration);
 
       return this.closePromise;
     }
 
-    onNativeClose() {
-      if (!this.dialog) return;
+    finishClose() {
       const restoreFocus = this.restoreFocusAfterClose;
       const focusTarget = this.returnFocus;
       window.clearTimeout(this.closeTimer);
+      this.hidden = true;
       this.isOpen = false;
       this.classList.remove('is-open', 'is-closing');
-      this.dialog.classList.remove('is-open', 'is-closing');
+      this.unlockPageScroll();
       this.syncTriggers(false);
       this.backdropInteraction?.hide();
       this.stopPlaceholderAnimation();
@@ -285,6 +269,49 @@
 
       if (restoreFocus && focusTarget?.isConnected) {
         focusTarget.focus({ preventScroll: true });
+      }
+    }
+
+    lockPageScroll() {
+      if (this.pageScrollLocked) return;
+      const root = document.documentElement;
+      const gutterProperty = '--search-drawer-scrollbar-gutter';
+      this.previousScrollbarGutter = root.style.getPropertyValue(gutterProperty);
+      this.hadScrollbarGutter = this.previousScrollbarGutter !== '';
+      root.style.setProperty(gutterProperty, `${Math.max(0, window.innerWidth - root.clientWidth)}px`);
+      document.body.classList.add('search-drawer-open');
+      this.pageScrollLocked = true;
+    }
+
+    unlockPageScroll() {
+      if (!this.pageScrollLocked) return;
+      document.body.classList.remove('search-drawer-open');
+      const root = document.documentElement;
+      const gutterProperty = '--search-drawer-scrollbar-gutter';
+      if (this.hadScrollbarGutter) root.style.setProperty(gutterProperty, this.previousScrollbarGutter);
+      else root.style.removeProperty(gutterProperty);
+      this.previousScrollbarGutter = null;
+      this.hadScrollbarGutter = false;
+      this.pageScrollLocked = false;
+    }
+
+    trapFocus(event) {
+      if (!this.panel) return;
+      const focusable = [...this.panel.querySelectorAll('a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])')]
+        .filter((element) => element.getClientRects().length);
+      if (!focusable.length) {
+        event.preventDefault();
+        this.panel.focus({ preventScroll: true });
+        return;
+      }
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && (event.target === first || !this.panel.contains(event.target))) {
+        event.preventDefault();
+        last.focus({ preventScroll: true });
+      } else if (!event.shiftKey && (event.target === last || !this.panel.contains(event.target))) {
+        event.preventDefault();
+        first.focus({ preventScroll: true });
       }
     }
 
@@ -572,7 +599,7 @@
     }
 
     startPlaceholderAnimation() {
-      if (!this.animatedPlaceholder || !this.placeholderTerms.length || !this.dialog.open) return;
+      if (!this.animatedPlaceholder || !this.placeholderTerms.length || this.hidden) return;
       this.stopPlaceholderAnimation();
       this.placeholderIndex = 0;
       this.animatedPlaceholder.textContent = this.placeholderTerms[0];
@@ -581,7 +608,7 @@
       if (this.reduceMotion.matches || this.placeholderTerms.length < 2) return;
 
       this.placeholderTimer = window.setInterval(() => {
-        if (!this.dialog.open || this.input.value) return;
+        if (this.hidden || this.input.value) return;
         this.animatedPlaceholder.classList.add('is-changing');
         window.clearTimeout(this.placeholderSwapTimer);
         this.placeholderSwapTimer = window.setTimeout(() => {

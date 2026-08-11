@@ -18,7 +18,8 @@
 {{ 'search-drawer.css' | asset_url | stylesheet_tag }}
 
 <search-drawer
-  class="search-drawer{% if section.settings.indent_desktop %} search-drawer--indented{% endif %}{% if section.settings.blur_backdrop %} search-drawer--blurred{% endif %}"
+  id="SearchDrawer"
+  class="search-drawer color-scheme color-{{ search_drawer_scheme }}{% if section.settings.indent_desktop %} search-drawer--indented{% endif %}{% if section.settings.blur_backdrop %} search-drawer--blurred{% endif %}"
   data-section-id="{{ section.id }}"
   data-design-mode="{{ request.design_mode }}"
   data-visual-preview-mode="{{ request.visual_preview_mode }}"
@@ -42,34 +43,37 @@
   data-adding-label="{{ 'product.adding_to_cart' | t | escape }}"
   data-added-label="{{ 'product.added' | t | escape }}"
   data-add-error-label="{{ 'product.add_to_cart_error' | t | escape }}"
+  data-search-drawer-dialog
+  data-scroll-lock-owner="search"
+  scroll-lock
+  hidden
   style="--search-drawer-width: {{ section.settings.desktop_width }}px;"
   {{ section.shopify_attributes }}
 >
-  <dialog
-    id="SearchDrawer"
-    class="search-drawer__dialog color-scheme color-{{ search_drawer_scheme }}"
+  <span class="search-drawer__overlay" data-search-drawer-overlay aria-hidden="true"></span>
+  <span class="search-drawer__backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
+
+  <div
+    class="search-drawer__panel"
+    role="dialog"
     {% if section.settings.heading != blank %}aria-labelledby="SearchDrawerTitle-{{ section.id }}"{% else %}aria-label="{{ 'search.title' | t | escape }}"{% endif %}
     aria-modal="true"
-    scroll-lock
-    data-scroll-lock-owner="search"
-    data-search-drawer-dialog
+    tabindex="-1"
+    data-search-drawer-panel
   >
-    <span class="search-drawer__backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
+    <header class="search-drawer__header">
+      {% if section.settings.heading != blank %}
+        <h2 id="SearchDrawerTitle-{{ section.id }}" class="search-drawer__title">{{ section.settings.heading | escape }}</h2>
+      {% endif %}
+      <button
+        class="search-drawer__close modal-close-button close-icon"
+        type="button"
+        aria-label="{{ 'header.close_search' | t | escape }}"
+        data-search-drawer-close
+      ></button>
+    </header>
 
-    <div class="search-drawer__panel" data-search-drawer-panel>
-      <header class="search-drawer__header">
-        {% if section.settings.heading != blank %}
-          <h2 id="SearchDrawerTitle-{{ section.id }}" class="search-drawer__title">{{ section.settings.heading | escape }}</h2>
-        {% endif %}
-        <button
-          class="search-drawer__close modal-close-button close-icon"
-          type="button"
-          aria-label="{{ 'header.close_search' | t | escape }}"
-          data-search-drawer-close
-        ></button>
-      </header>
-
-      <div class="search-drawer__body">
+    <div class="search-drawer__body">
         <form class="search-drawer__form" action="{{ routes.search_url | escape }}" method="get" role="search" data-search-drawer-form>
           <label class="visually-hidden" for="SearchDrawerInput-{{ section.id }}">{{ 'search.label' | t }}</label>
           <input
@@ -183,13 +187,12 @@
         </div>
 
         <p class="visually-hidden" role="status" aria-live="polite" aria-atomic="true" data-search-drawer-announcer></p>
-      </div>
     </div>
 
     {% if section.settings.show_quick_add %}
       <template data-search-drawer-bag-icon>{% render 'icon', name: 'bag-simple' %}</template>
     {% endif %}
-  </dialog>
+  </div>
 </search-drawer>
 
 <script
