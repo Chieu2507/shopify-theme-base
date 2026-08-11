@@ -669,8 +669,8 @@ import { A11y, Swiper } from './swiper-loader.js';
           this.placeholderIndex = (this.placeholderIndex + 1) % this.placeholderTerms.length;
           this.animatedPlaceholder.textContent = this.placeholderTerms[this.placeholderIndex];
           this.animatedPlaceholder.classList.remove('is-changing');
-        }, 220);
-      }, 4500);
+        }, 320);
+      }, 3500);
     }
 
     stopPlaceholderAnimation() {
