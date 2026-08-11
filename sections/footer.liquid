@@ -1,4 +1,5 @@
 {% render 'section-stylesheet', asset: 'section-footer.css', defer_on_home: true %}
+{% render 'section-stylesheet', asset: 'section-footer-redesign.css', defer_on_home: true %}
 
 {% liquid
   assign localization_form_id = 'FooterLocalizationForm-' | append: section.id
@@ -11,6 +12,7 @@
 <footer-house
   class="footer-house color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
   data-deferred-module="{{ 'section-footer.js' | asset_url }}"
+  style="--footer-house-mark-image: url('{{ 'footer-house-mark.png' | asset_url }}');"
 >
   <footer
     class="footer"
@@ -22,7 +24,12 @@
     "
   >
     <div class="footer__inner">
-      <div class="footer__content">
+      <div class="footer__lead">
+        {% content_for 'block', type: '_footer-newsletter', id: 'newsletter' %}
+        {% content_for 'block', type: '_footer-appointment', id: 'appointment' %}
+      </div>
+
+      <div class="footer__menus">
         {% content_for 'blocks' %}
       </div>
 
@@ -79,7 +86,7 @@
         </div>
 
         <div class="footer__copyright">
-          &copy; {{ copyright_name | escape }} {{ 'now' | date: '%Y' }} <span aria-hidden="true">·</span> {{ powered_by_link }}
+          &copy; {{ copyright_name | escape }} {{ 'now' | date: '%Y' }}
         </div>
 
         <div class="footer__utility-end">
@@ -123,7 +130,7 @@
   "name": "Footer",
   "tag": "section",
   "class": "section-footer",
-  "max_blocks": 5,
+  "max_blocks": 4,
   "settings": [
     {
       "type": "header",
@@ -153,7 +160,7 @@
       "step": 4,
       "unit": "px",
       "label": "Top padding",
-      "default": 64
+      "default": 24
     },
     {
       "type": "range",
@@ -173,7 +180,7 @@
       "step": 4,
       "unit": "px",
       "label": "Mobile top padding",
-      "default": 48
+      "default": 36
     },
     {
       "type": "range",
@@ -245,9 +252,6 @@
   ],
   "blocks": [
     {
-      "type": "_footer-newsletter"
-    },
-    {
       "type": "footer-menu"
     }
   ],
@@ -258,6 +262,8 @@
       "blocks": [
         {
           "type": "_footer-newsletter",
+          "id": "newsletter",
+          "static": true,
           "blocks": [
             {
               "type": "heading",
@@ -284,7 +290,7 @@
               "id": "newsletter_text",
               "static": true,
               "settings": {
-                "text": "<p>Private notes on new stones, atelier work and appointments—sent only when there is something worth sharing.</p>",
+                "text": "<p>Notes on rare stones and atelier work.<br>Objects made to endure.</p>",
                 "type_preset": "md",
                 "color": "subtext"
               }
@@ -317,6 +323,57 @@
             }
               ]
             },
+        {
+          "type": "_footer-appointment",
+          "id": "appointment",
+          "static": true,
+          "settings": {
+            "color_scheme": "scheme-5"
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "id": "appointment_eyebrow",
+              "name": "t:names.subheading",
+              "static": true,
+              "settings": {
+                "heading": "<p>PRIVATE APPOINTMENTS</p>",
+                "type_preset": "2xs",
+                "color": "subtext"
+              }
+            },
+            {
+              "type": "heading",
+              "id": "appointment_heading",
+              "static": true,
+              "settings": {
+                "heading": "<h2>Discover Spinel,<br>one stone at a time.</h2>",
+                "type_preset": "xl"
+              }
+            },
+            {
+              "type": "text",
+              "id": "appointment_text",
+              "static": true,
+              "settings": {
+                "text": "<p>Private consultations shaped around your intention,<br>timing and next piece.</p>",
+                "type_preset": "sm",
+                "color": "subtext"
+              }
+            },
+            {
+              "type": "button",
+              "id": "appointment_button",
+              "static": true,
+              "settings": {
+                "label": "BOOK AN APPOINTMENT",
+                "link": "/pages/contact",
+                "style": "secondary",
+                "icon": "arrow-right"
+              }
+            }
+          ]
+        },
         {
           "type": "footer-menu",
           "settings": {
