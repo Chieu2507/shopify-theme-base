@@ -4,16 +4,61 @@
   assign cart_title_case = section.settings.product_title_case | default: 'none'
   assign cart_image_radius = section.settings.image_radius | default: 0
   assign empty_cart_link = section.settings.empty_link | default: routes.all_products_collection_url
-  assign has_cart_addons = false
+  assign cart_tools_block = section.blocks | where: 'type', 'cart_tools' | first
+  assign cart_tools_show_note = section.settings.show_note
+  assign cart_tools_note_label = section.settings.note_label
+  assign cart_tools_note_placeholder = section.settings.note_placeholder
+  assign cart_tools_note_save_label = section.settings.note_save_label
+  assign cart_tools_show_discount = section.settings.show_discount
+  assign cart_tools_discount_button_label = section.settings.discount_button_label
+  assign cart_tools_shipping_enabled = section.settings.shipping_estimator_enable
+  assign cart_tools_shipping_label = section.settings.shipping_estimator_label
+  assign cart_tools_shipping_country_label = section.settings.shipping_estimator_country_label
+  assign cart_tools_shipping_province_label = section.settings.shipping_estimator_province_label
+  assign cart_tools_shipping_postal_label = section.settings.shipping_estimator_postal_label
+  assign cart_tools_shipping_button_label = section.settings.shipping_estimator_button_label
+  assign cart_tools_text_color = blank
 
-  for block in section.blocks
-    assign addon_variant = block.settings.product.selected_or_first_available_variant
-    if addon_variant != blank
-      assign has_cart_addons = true
-      break
-    endif
-  endfor
+  if cart_tools_block != blank
+    assign cart_tools_show_note = cart_tools_block.settings.show_note
+    assign cart_tools_note_label = cart_tools_block.settings.note_label
+    assign cart_tools_note_placeholder = cart_tools_block.settings.note_placeholder
+    assign cart_tools_note_save_label = cart_tools_block.settings.note_save_label
+    assign cart_tools_show_discount = cart_tools_block.settings.show_discount
+    assign cart_tools_discount_button_label = cart_tools_block.settings.discount_button_label
+    assign cart_tools_shipping_enabled = cart_tools_block.settings.shipping_estimator_enable
+    assign cart_tools_shipping_label = cart_tools_block.settings.shipping_estimator_label
+    assign cart_tools_shipping_country_label = cart_tools_block.settings.shipping_estimator_country_label
+    assign cart_tools_shipping_province_label = cart_tools_block.settings.shipping_estimator_province_label
+    assign cart_tools_shipping_postal_label = cart_tools_block.settings.shipping_estimator_postal_label
+    assign cart_tools_shipping_button_label = cart_tools_block.settings.shipping_estimator_button_label
+    assign cart_tools_text_color = cart_tools_block.settings.text_color
+  endif
 %}
+
+<style>
+  #CartDrawer .cart-drawer__title.heading-custom,
+  #CartDrawer .cart-drawer__section-title.heading-custom,
+  #CartDrawer .cart-drawer__order-options-title.heading-custom {
+    font-size: var(--cart-drawer-custom-font-size);
+  }
+
+  #CartDrawer .cart-drawer__empty-title.heading-custom {
+    font-size: var(--cart-drawer-empty-heading-font-size);
+  }
+
+  @media screen and (max-width: 749px) {
+    #CartDrawer .cart-drawer__title.heading-custom,
+    #CartDrawer .cart-drawer__section-title.heading-custom,
+    #CartDrawer .cart-drawer__order-options-title.heading-custom {
+      font-size: var(--cart-drawer-custom-font-size-mobile);
+    }
+
+    #CartDrawer .cart-drawer__empty-title.heading-custom {
+      font-size: var(--cart-drawer-empty-heading-font-size-mobile);
+    }
+  }
+</style>
 
 {% if settings.cart_action == 'drawer' %}
   <cart-drawer
@@ -21,7 +66,7 @@
     class="cart-drawer color-scheme color-{{ cart_drawer_scheme }}{% if section.settings.indent_desktop %} cart-drawer--indented{% endif %}{% if section.settings.blur_backdrop %} cart-drawer--blurred{% endif %}"
     data-cart-drawer
     data-section-id="{{ section.id }}"
-    style="--cart-drawer-width: {{ section.settings.desktop_width }}px; --cart-product-title-case: {{ cart_title_case }}; --cart-price-font-family: var(--font-{{ cart_price_font }}--family); --cart-price-font-style: var(--font-{{ cart_price_font }}--style); --cart-price-font-weight: var(--font-{{ cart_price_font }}--weight); --cart-image-radius: {{ cart_image_radius }}px; --cart-promotion-speed: {{ section.settings.promotion_speed }}s;"
+    style="--cart-drawer-width: {{ section.settings.desktop_width }}px; --cart-product-title-case: {{ cart_title_case }}; --cart-price-font-family: var(--font-{{ cart_price_font }}--family); --cart-price-font-style: var(--font-{{ cart_price_font }}--style); --cart-price-font-weight: var(--font-{{ cart_price_font }}--weight); --cart-image-radius: {{ cart_image_radius }}px; --cart-promotion-speed: {{ section.settings.promotion_speed }}s; --cart-drawer-empty-heading-font-size: {{ section.settings.empty_heading_font_size }}px; --cart-drawer-empty-heading-font-size-mobile: {{ section.settings.empty_heading_font_size_mobile }}px;"
     data-currency="{{ cart.currency.iso_code | default: shop.currency }}"
     data-show-currency-code="{{ settings.show_currency_code }}"
     data-cart-update-url="{{ routes.cart_update_url | escape }}.js"
@@ -32,10 +77,11 @@
     data-recommendations-auto-rotate="{{ section.settings.complementary_products_auto_rotate }}"
     data-recommendations-interval="{{ section.settings.complementary_products_interval }}"
     data-recommendations-pause-on-hover="{{ section.settings.complementary_products_pause_on_hover }}"
-    data-discount-enabled="{{ section.settings.show_discount }}"
-    data-order-note-enabled="{{ section.settings.show_note }}"
+    data-discount-enabled="{{ cart_tools_show_discount }}"
+    data-order-note-enabled="{{ cart_tools_show_note }}"
     data-shipping-threshold="{{ section.settings.free_shipping_threshold | times: 100 }}"
     data-empty-label="{{ section.settings.empty_heading | escape }}"
+    data-empty-heading-class="{% render 'typography-class', preset: section.settings.empty_heading_size, fallback: 'custom' %}"
     data-empty-link="{{ empty_cart_link | escape }}"
     data-empty-link-label="{{ section.settings.empty_button_label | escape }}"
     data-empty-image="{% if section.settings.empty_image != blank %}{{ section.settings.empty_image | image_url: width: 1200 }}{% endif %}"
@@ -69,7 +115,7 @@
     <span class="cart-drawer__backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
     <aside class="cart-drawer__panel modal-drag-target" role="dialog" aria-modal="true" aria-labelledby="CartDrawerTitle" tabindex="-1">
       <header class="cart-drawer__header">
-        <h2 id="CartDrawerTitle" class="cart-drawer__title typo-h2">{{ section.settings.heading | escape }}</h2>
+        <h2 id="CartDrawerTitle" class="cart-drawer__title {% render 'typography-class', preset: section.settings.heading_size, fallback: 'custom' %}"{% if section.settings.heading_size == 'custom' %} style="--cart-drawer-custom-font-size: {{ section.settings.heading_font_size }}px; --cart-drawer-custom-font-size-mobile: {{ section.settings.heading_font_size_mobile }}px;"{% endif %}>{{ section.settings.heading | escape }}</h2>
         <button class="cart-drawer__close modal-close-button close-icon" type="button" aria-label="{{ 'cart_drawer.close' | t | default: 'Close cart' | escape }}" data-cart-drawer-close></button>
       </header>
 
@@ -92,26 +138,10 @@
         <div class="cart-drawer__loading" data-cart-drawer-loading hidden aria-hidden="true"><span class="cart-drawer__loading-spinner"></span></div>
         <div class="cart-drawer__items" data-cart-drawer-items></div>
 
-        {% if has_cart_addons %}
-          <section class="cart-drawer__addons" data-cart-drawer-addons hidden aria-label="{{ 'cart_drawer.add_ons' | t | escape }}">
-            {% for block in section.blocks %}
-              {% assign addon_variant = block.settings.product.selected_or_first_available_variant %}
-              {% if addon_variant != blank %}
-                <label class="cart-drawer__addon" data-cart-drawer-addon-wrapper {{ block.shopify_attributes }}>
-                  <input type="checkbox" data-cart-drawer-addon data-variant-id="{{ addon_variant.id }}">
-                  <span class="cart-drawer__addon-icon" aria-hidden="true">{% if block.type == 'gift_wrap' %}{% render 'icon', name: 'sparkles' %}{% else %}{% render 'icon', name: 'shield' %}{% endif %}</span>
-                  <span><strong>{{ block.settings.label | escape }}</strong>{% if block.settings.description != blank %}<small>{{ block.settings.description | escape }}</small>{% endif %}</span>
-                  <span class="cart-drawer__addon-price">{% render 'money', amount: addon_variant.price %}</span>
-                </label>
-              {% endif %}
-            {% endfor %}
-          </section>
-        {% endif %}
-
         {% if section.settings.complementary_products_enable %}
           <section class="cart-drawer__recommendations" data-cart-drawer-recommendations hidden aria-labelledby="CartDrawerRecommendationsTitle">
             <div class="cart-drawer__section-heading">
-              <h3 id="CartDrawerRecommendationsTitle" class="typo-h3">{{ section.settings.complementary_products_heading | escape }}</h3>
+              <h3 id="CartDrawerRecommendationsTitle" class="cart-drawer__section-title {% render 'typography-class', preset: section.settings.complementary_products_heading_size, fallback: 'custom' %}"{% if section.settings.complementary_products_heading_size == 'custom' %} style="--cart-drawer-custom-font-size: {{ section.settings.complementary_products_heading_font_size }}px; --cart-drawer-custom-font-size-mobile: {{ section.settings.complementary_products_heading_font_size_mobile }}px;"{% endif %}>{{ section.settings.complementary_products_heading | escape }}</h3>
               <div class="cart-drawer__recommendation-dots" data-cart-drawer-recommendation-dots role="group" aria-label="{{ section.settings.complementary_products_heading | escape }}"></div>
             </div>
             <div id="CartDrawerRecommendations-{{ section.id }}" class="cart-drawer__recommendation-list swiper" data-cart-drawer-recommendation-list>
@@ -131,48 +161,65 @@
         {% endif %}
       </div>
 
-      <footer class="cart-drawer__footer" data-cart-drawer-footer hidden>
-        {% if section.settings.show_note or section.settings.show_discount or section.settings.shipping_estimator_enable %}
-          <button class="cart-drawer__order-options-toggle" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-toggle>
-            <span class="cart-drawer__order-options-toggle-icon" aria-hidden="true">{% render 'icon', name: 'filter-sliders' %}</span>
-            <span>{{ section.settings.order_options_label | default: 'Order options' | escape }}</span>
-          </button>
+      <footer class="cart-drawer__footer" data-cart-drawer-footer hidden{% if cart_tools_text_color != blank %} style="--cart-drawer-tools-color: {{ cart_tools_text_color }};"{% endif %}>
+        {% if cart_tools_show_note or cart_tools_show_discount or cart_tools_shipping_enabled %}
+          <div class="cart-drawer__order-options-actions" role="group" aria-label="Cart options"{% if cart_tools_block != blank %} {{ cart_tools_block.shopify_attributes }}{% endif %}>
+            {% if cart_tools_show_note %}
+              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="note" data-cart-drawer-order-options-title="{{ cart_tools_note_label | escape }}">
+                <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'filter' %}</span>
+                <span>{{ cart_tools_note_label | escape }}</span>
+              </button>
+            {% endif %}
+            {% if cart_tools_shipping_enabled %}
+              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="shipping" data-cart-drawer-order-options-title="{{ cart_tools_shipping_label | escape }}">
+                <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'truck' %}</span>
+                <span>Shipping</span>
+              </button>
+            {% endif %}
+            {% if cart_tools_show_discount %}
+              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="discount" data-cart-drawer-order-options-title="Discount">
+                <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'filter-sliders' %}</span>
+                <span>Discount(<span data-cart-drawer-discount-count>0</span>)</span>
+              </button>
+            {% endif %}
+          </div>
           <section id="CartDrawerOrderOptions-{{ section.id }}" class="cart-drawer__order-options-panel" data-cart-drawer-order-options aria-hidden="true" aria-labelledby="CartDrawerOrderOptionsTitle-{{ section.id }}">
             <div class="quick-view__handle cart-drawer__order-options-handle" data-cart-drawer-order-options-handle aria-hidden="true"></div>
             <header class="cart-drawer__order-options-header">
-              <h3 id="CartDrawerOrderOptionsTitle-{{ section.id }}">{{ section.settings.order_options_label | default: 'Order options' | escape }}</h3>
+              <h3 id="CartDrawerOrderOptionsTitle-{{ section.id }}" class="cart-drawer__order-options-title heading-h7 heading-text" data-cart-drawer-order-options-title>Cart tools</h3>
               <button class="cart-drawer__order-options-close modal-close-button close-icon" type="button" aria-label="Close order options" data-cart-drawer-order-options-close></button>
             </header>
             <div class="cart-drawer__order-options-content">
-              {% if section.settings.show_note %}
-                <details class="cart-drawer__note"{% if section.settings.note_expanded %} open{% endif %}>
-                  <summary>{{ section.settings.note_label | escape }}</summary>
-                  <textarea rows="3" data-cart-drawer-note aria-label="{{ section.settings.note_label | escape }}" placeholder="{{ section.settings.note_placeholder | escape }}"></textarea>
-                  <button type="button" class="cart-drawer__text-button" data-cart-drawer-save-note>{{ section.settings.note_save_label | escape }}</button>
-                </details>
+              {% if cart_tools_show_note %}
+                <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="note" hidden>
+                  <label class="cart-drawer__order-options-field-label label-text" for="CartDrawerNote-{{ section.id }}">Order special instructions</label>
+                  <textarea id="CartDrawerNote-{{ section.id }}" class="cart-drawer__note" rows="5" data-cart-drawer-note placeholder="{{ cart_tools_note_placeholder | escape }}"></textarea>
+                  <button type="button" class="cart-drawer__order-options-submit" data-cart-drawer-save-note>{{ cart_tools_note_save_label | escape }}</button>
+                </section>
               {% endif %}
 
-              {% if section.settings.shipping_estimator_enable %}
-                <details class="cart-drawer__shipping-estimator">
-                  <summary>{{ section.settings.shipping_estimator_label | escape }}</summary>
-                  <form data-cart-drawer-shipping-estimator>
-                    <label><span>{{ section.settings.shipping_estimator_country_label | escape }}</span><select name="country" data-cart-drawer-shipping-country data-default-country="{{ localization.country.name | escape }}" required>{{ all_country_option_tags }}</select></label>
-                    <label data-cart-drawer-shipping-province-field hidden><span>{{ section.settings.shipping_estimator_province_label | escape }}</span><select name="province" data-cart-drawer-shipping-province disabled></select></label>
-                    <label><span>{{ section.settings.shipping_estimator_postal_label | escape }}</span><input type="text" name="zip" autocomplete="postal-code" required></label>
-                    <button type="submit" class="cart-drawer__text-button">{{ section.settings.shipping_estimator_button_label | escape }}</button>
+              {% if cart_tools_shipping_enabled %}
+                <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="shipping" hidden>
+                  <form class="cart-drawer__shipping-estimator" data-cart-drawer-shipping-estimator>
+                    <label><span class="label-text">{{ cart_tools_shipping_country_label | escape }}</span><select name="country" data-cart-drawer-shipping-country data-default-country="{{ localization.country.name | escape }}" required>{{ all_country_option_tags }}</select></label>
+                    <label data-cart-drawer-shipping-province-field hidden><span class="label-text">{{ cart_tools_shipping_province_label | escape }}</span><select name="province" data-cart-drawer-shipping-province disabled></select></label>
+                    <label><span class="label-text">{{ cart_tools_shipping_postal_label | escape }}</span><input type="text" name="zip" autocomplete="postal-code" required></label>
+                    <button type="submit" class="cart-drawer__order-options-submit">{{ cart_tools_shipping_button_label | escape }}</button>
                   </form>
                   <p class="cart-drawer__shipping-rates" data-cart-drawer-shipping-rates role="status" aria-live="polite"></p>
-                </details>
+                  <p class="cart-drawer__tax-note" data-cart-drawer-tax-note>{% if cart.taxes_included %}{{ 'cart.taxes_included' | t }}{% else %}{{ 'cart_drawer.taxes_note' | t | default: 'Taxes and shipping calculated at checkout' | escape }}{% endif %}</p>
+                </section>
               {% endif %}
 
-              <p class="cart-drawer__tax-note" data-cart-drawer-tax-note>{% if cart.taxes_included %}{{ 'cart.taxes_included' | t }}{% else %}{{ 'cart_drawer.taxes_note' | t | default: 'Taxes and shipping calculated at checkout' | escape }}{% endif %}</p>
-              <ul class="cart-drawer__discounts" data-cart-drawer-discounts role="list" hidden></ul>
-              {% if section.settings.show_discount %}
-                <form class="cart-drawer__discount" data-cart-drawer-discount>
-                  <label class="visually-hidden" for="CartDrawerDiscount-{{ section.id }}">{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}</label>
-                  <input id="CartDrawerDiscount-{{ section.id }}" type="text" name="discount" autocomplete="off" placeholder="{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}" aria-describedby="CartDrawerMessage-{{ section.id }}">
-                  <button type="submit" class="cart-drawer__text-button">{{ section.settings.discount_button_label | escape }}</button>
-                </form>
+              {% if cart_tools_show_discount %}
+                <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="discount" hidden>
+                  <form class="cart-drawer__discount" data-cart-drawer-discount>
+                    <label class="visually-hidden" for="CartDrawerDiscount-{{ section.id }}">{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}</label>
+                    <input id="CartDrawerDiscount-{{ section.id }}" type="text" name="discount" autocomplete="off" placeholder="Please enter discount code" aria-describedby="CartDrawerMessage-{{ section.id }}">
+                    <button type="submit" class="cart-drawer__order-options-submit">{{ cart_tools_discount_button_label | escape }}</button>
+                  </form>
+                  <ul class="cart-drawer__discounts" data-cart-drawer-discounts role="list" hidden></ul>
+                </section>
               {% endif %}
               <p id="CartDrawerMessage-{{ section.id }}" class="cart-drawer__message" data-cart-drawer-message role="status" aria-live="polite" hidden></p>
             </div>
@@ -184,7 +231,7 @@
         {% if section.settings.show_accelerated_checkout and additional_checkout_buttons %}<div class="cart-drawer__additional-checkout-buttons">{{ content_for_additional_checkout_buttons }}</div>{% endif %}
         {% if section.settings.show_view_cart %}<a class="cart-drawer__view-cart" href="{{ routes.cart_url | escape }}">{{ section.settings.view_cart_label | escape }}</a>{% endif %}
       </footer>
-      {% if section.settings.show_note or section.settings.show_discount or section.settings.shipping_estimator_enable %}
+      {% if cart_tools_show_note or cart_tools_show_discount or cart_tools_shipping_enabled %}
         <button class="cart-drawer__order-options-backdrop" type="button" tabindex="-1" aria-label="Close order options" data-cart-drawer-order-options-close data-modal-backdrop></button>
         <span class="cart-drawer__order-options-backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
       {% endif %}
@@ -200,27 +247,31 @@
   "settings": [
     { "type": "header", "content": "Cart drawer" },
     { "type": "text", "id": "heading", "label": "Heading", "default": "Cart" },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "t:typography_blocks.heading_size",
+      "options": [
+        { "value": "h0", "label": "t:typography_options.display_extra_large" },
+        { "value": "h1", "label": "t:typography_options.display_large" },
+        { "value": "h2", "label": "t:typography_options.display_medium" },
+        { "value": "h3", "label": "t:typography_options.heading_extra_large" },
+        { "value": "h4", "label": "t:typography_options.heading_large" },
+        { "value": "h5", "label": "t:typography_options.heading_medium" },
+        { "value": "h6", "label": "t:typography_options.heading_small" },
+        { "value": "h7", "label": "t:typography_options.heading_extra_small" },
+        { "value": "custom", "label": "t:typography_options.custom" }
+      ],
+      "default": "h3"
+    },
+    { "type": "range", "id": "heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 18, "visible_if": "{{ section.settings.heading_size == 'custom' }}" },
+    { "type": "range", "id": "heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 18, "visible_if": "{{ section.settings.heading_size == 'custom' }}" },
     { "type": "checkbox", "id": "auto_open", "label": "Open drawer after adding a product", "default": true },
     { "type": "header", "content": "Free shipping bar" },
     { "type": "checkbox", "id": "free_shipping_enable", "label": "Show free shipping bar", "default": false },
     { "type": "range", "id": "free_shipping_threshold", "label": "Free shipping threshold", "min": 0, "max": 5000, "step": 50, "unit": "$", "default": 100, "visible_if": "{{ section.settings.free_shipping_enable }}" },
     { "type": "text", "id": "free_shipping_pending_message", "label": "Progress message", "default": "You're {amount} away from free shipping", "visible_if": "{{ section.settings.free_shipping_enable }}" },
     { "type": "text", "id": "free_shipping_success_message", "label": "Success message", "default": "You've unlocked free shipping", "visible_if": "{{ section.settings.free_shipping_enable }}" },
-    { "type": "header", "content": "Cart tools" },
-    { "type": "checkbox", "id": "show_note", "label": "Order note", "default": true },
-    { "type": "text", "id": "order_options_label", "label": "Order-options label", "default": "Order options", "visible_if": "{{ section.settings.show_note or section.settings.show_discount or section.settings.shipping_estimator_enable }}" },
-    { "type": "checkbox", "id": "note_expanded", "label": "Keep order note expanded", "default": false, "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "text", "id": "note_label", "label": "Note label", "default": "Add order note", "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "text", "id": "note_placeholder", "label": "Note placeholder", "default": "Add a note to your order", "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "text", "id": "note_save_label", "label": "Save-note label", "default": "Save note", "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "checkbox", "id": "show_discount", "label": "Show discount code field", "default": true },
-    { "type": "text", "id": "discount_button_label", "label": "Discount button label", "default": "Apply", "visible_if": "{{ section.settings.show_discount }}" },
-    { "type": "checkbox", "id": "shipping_estimator_enable", "label": "Shipping estimator", "default": false },
-    { "type": "text", "id": "shipping_estimator_label", "label": "Estimator label", "default": "Estimate shipping", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "text", "id": "shipping_estimator_country_label", "label": "Country label", "default": "Country", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "text", "id": "shipping_estimator_province_label", "label": "State/province label", "default": "State / Province", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "text", "id": "shipping_estimator_postal_label", "label": "Postal-code label", "default": "Postal code", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
-    { "type": "text", "id": "shipping_estimator_button_label", "label": "Estimator button label", "default": "Calculate", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
     { "type": "header", "content": "Promotion bar" },
     { "type": "checkbox", "id": "promotion_enable", "label": "Promotion bar", "default": false },
     { "type": "text", "id": "promotion_message", "label": "Message", "default": "Complimentary shipping on every order", "visible_if": "{{ section.settings.promotion_enable }}" },
@@ -231,6 +282,26 @@
     { "type": "header", "content": "Complementary products" },
     { "type": "checkbox", "id": "complementary_products_enable", "label": "Complementary products", "default": true },
     { "type": "text", "id": "complementary_products_heading", "label": "Heading", "default": "Complete with", "visible_if": "{{ section.settings.complementary_products_enable }}" },
+    {
+      "type": "select",
+      "id": "complementary_products_heading_size",
+      "label": "t:typography_blocks.heading_size",
+      "options": [
+        { "value": "h0", "label": "t:typography_options.display_extra_large" },
+        { "value": "h1", "label": "t:typography_options.display_large" },
+        { "value": "h2", "label": "t:typography_options.display_medium" },
+        { "value": "h3", "label": "t:typography_options.heading_extra_large" },
+        { "value": "h4", "label": "t:typography_options.heading_large" },
+        { "value": "h5", "label": "t:typography_options.heading_medium" },
+        { "value": "h6", "label": "t:typography_options.heading_small" },
+        { "value": "h7", "label": "t:typography_options.heading_extra_small" },
+        { "value": "custom", "label": "t:typography_options.custom" }
+      ],
+      "default": "custom",
+      "visible_if": "{{ section.settings.complementary_products_enable }}"
+    },
+    { "type": "range", "id": "complementary_products_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 12, "visible_if": "{{ section.settings.complementary_products_enable and section.settings.complementary_products_heading_size == 'custom' }}" },
+    { "type": "range", "id": "complementary_products_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 12, "visible_if": "{{ section.settings.complementary_products_enable and section.settings.complementary_products_heading_size == 'custom' }}" },
     { "type": "select", "id": "complementary_products_source", "label": "Product source", "options": [{ "value": "related", "label": "Related products" }, { "value": "manual", "label": "Product list" }], "default": "related", "visible_if": "{{ section.settings.complementary_products_enable }}" },
     { "type": "product_list", "id": "complementary_products", "label": "Products", "limit": 8 },
     { "type": "range", "id": "complementary_products_limit", "label": "Maximum products", "min": 2, "max": 6, "step": 1, "default": 4, "visible_if": "{{ section.settings.complementary_products_enable }}" },
@@ -239,6 +310,25 @@
     { "type": "checkbox", "id": "complementary_products_pause_on_hover", "label": "Pause on hover", "default": true, "visible_if": "{{ section.settings.complementary_products_enable and section.settings.complementary_products_auto_rotate }}" },
     { "type": "header", "content": "Empty cart" },
     { "type": "text", "id": "empty_heading", "label": "Heading", "default": "Your cart is empty" },
+    {
+      "type": "select",
+      "id": "empty_heading_size",
+      "label": "t:typography_blocks.heading_size",
+      "options": [
+        { "value": "h0", "label": "t:typography_options.display_extra_large" },
+        { "value": "h1", "label": "t:typography_options.display_large" },
+        { "value": "h2", "label": "t:typography_options.display_medium" },
+        { "value": "h3", "label": "t:typography_options.heading_extra_large" },
+        { "value": "h4", "label": "t:typography_options.heading_large" },
+        { "value": "h5", "label": "t:typography_options.heading_medium" },
+        { "value": "h6", "label": "t:typography_options.heading_small" },
+        { "value": "h7", "label": "t:typography_options.heading_extra_small" },
+        { "value": "custom", "label": "t:typography_options.custom" }
+      ],
+      "default": "custom"
+    },
+    { "type": "range", "id": "empty_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.empty_heading_size == 'custom' }}" },
+    { "type": "range", "id": "empty_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.empty_heading_size == 'custom' }}" },
     { "type": "text", "id": "empty_button_label", "label": "Button label", "default": "Continue shopping" },
     { "type": "url", "id": "empty_link", "label": "Button link", "default": "/collections/all" },
     { "type": "image_picker", "id": "empty_image", "label": "Image" },
@@ -258,26 +348,28 @@
     { "type": "select", "id": "price_font", "label": "Price font", "options": [{ "value": "body", "label": "Body" }, { "value": "subheading", "label": "Utility" }, { "value": "heading", "label": "Display" }, { "value": "accent", "label": "Accent" }], "default": "subheading" },
     { "type": "range", "id": "image_radius", "label": "Image corners", "min": 0, "max": 24, "step": 2, "unit": "px", "default": 0 }
   ],
-  "max_blocks": 2,
   "blocks": [
     {
-      "type": "gift_wrap",
-      "name": "Gift wrap",
+      "type": "cart_tools",
+      "name": "Cart tools",
       "limit": 1,
       "settings": [
-        { "type": "product", "id": "product", "label": "Gift-wrap product" },
-        { "type": "text", "id": "label", "label": "Label", "default": "Add gift wrapping" },
-        { "type": "text", "id": "description", "label": "Description", "default": "Make this order ready to give." }
-      ]
-    },
-    {
-      "type": "shipping_protection",
-      "name": "Shipping protection",
-      "limit": 1,
-      "settings": [
-        { "type": "product", "id": "product", "label": "Shipping-protection product" },
-        { "type": "text", "id": "label", "label": "Label", "default": "Add shipping protection" },
-        { "type": "text", "id": "description", "label": "Description", "default": "Protect this delivery against loss or damage." }
+        { "type": "color", "id": "text_color", "label": "Text color" },
+        { "type": "header", "content": "Order note" },
+        { "type": "checkbox", "id": "show_note", "label": "Enable order note", "default": true },
+        { "type": "text", "id": "note_label", "label": "Action label", "default": "Order note", "visible_if": "{{ block.settings.show_note }}" },
+        { "type": "text", "id": "note_placeholder", "label": "Note placeholder", "default": "Add a note to your order", "visible_if": "{{ block.settings.show_note }}" },
+        { "type": "text", "id": "note_save_label", "label": "Save-button label", "default": "Save note", "visible_if": "{{ block.settings.show_note }}" },
+        { "type": "header", "content": "Shipping" },
+        { "type": "checkbox", "id": "shipping_estimator_enable", "label": "Enable shipping estimator", "default": true },
+        { "type": "text", "id": "shipping_estimator_label", "label": "Panel heading", "default": "Estimate shipping", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "text", "id": "shipping_estimator_country_label", "label": "Country label", "default": "Country", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "text", "id": "shipping_estimator_province_label", "label": "State/province label", "default": "State / Province", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "text", "id": "shipping_estimator_postal_label", "label": "Postal-code label", "default": "Postal code", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "text", "id": "shipping_estimator_button_label", "label": "Calculate-button label", "default": "Calculate", "visible_if": "{{ block.settings.shipping_estimator_enable }}" },
+        { "type": "header", "content": "Discount" },
+        { "type": "checkbox", "id": "show_discount", "label": "Enable discount code", "default": true },
+        { "type": "text", "id": "discount_button_label", "label": "Apply-button label", "default": "Apply", "visible_if": "{{ block.settings.show_discount }}" }
       ]
     }
   ]

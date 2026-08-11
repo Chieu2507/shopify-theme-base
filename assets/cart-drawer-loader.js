@@ -60,7 +60,7 @@
 
   function handleProductAdd(event) {
     if (!event.detail?.item || customElements.get('cart-drawer') || loaderScript?.dataset.cartDrawerAutoOpen === 'false') return;
-    const sourceButton = event.detail.button || null;
+    const sourceButton = event.detail.sourceButton || event.detail.button || null;
     const quickViewModal = sourceButton?.closest?.('[data-quick-view]')
       ? document.querySelector('[data-quick-view-modal]')
       : null;

@@ -8,7 +8,7 @@
   endif
 
   assign heading_tag = section.settings.heading_tag | default: 'h2'
-  assign type_preset = section.settings.type_preset | default: 'md'
+  assign type_preset = section.settings.type_preset | default: 'h6'
   assign rendered_heading = section.settings.heading | escape
   assign marker_open = '<span class="highlight-text-with-image__marker highlight-text-with-image__marker--' | append: section.settings.marker_style | append: '">'
   if rendered_heading contains '[[' and rendered_heading contains ']]'
@@ -61,11 +61,6 @@
     assign rendered_heading = rendered_heading | replace: unused_legacy_placeholder, ''
   endfor
 
-  assign heading_size = 'var(--' | append: heading_tag | append: '-size-' | append: type_preset | append: ')'
-  if type_preset == 'custom'
-    assign heading_size = section.settings.font_size | append: 'px'
-  endif
-
   assign line_height = 'var(--font-' | append: heading_tag | append: '-line-height)'
   unless section.settings.line_height == 'theme'
     assign line_height = 'var(--leading-' | append: section.settings.line_height | append: ')'
@@ -98,8 +93,10 @@
       --highlight-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;
       --highlight-content-width: {{ section.settings.content_width }}px;
       --text-align: {{ section.settings.alignment }};
-      --highlight-heading-size: {{ heading_size }};
-      --highlight-heading-size-mobile: {% if type_preset == 'custom' %}{{ section.settings.font_size_mobile }}px{% else %}var(--{{ heading_tag }}-size-{{ type_preset }}){% endif %};
+      {% if type_preset == 'custom' %}
+        --highlight-custom-font-size: {{ section.settings.font_size }}px;
+        --highlight-custom-font-size-mobile: {{ section.settings.font_size_mobile }}px;
+      {% endif %}
       --highlight-line-height: {{ line_height }};
     "
   >
@@ -107,7 +104,7 @@
       {% if section.settings.heading != blank %}
         <{{ heading_tag }}
           id="HighlightHeading-{{ section.id }}"
-          class="highlight-text-with-image__heading typo-{{ heading_tag }}"
+          class="highlight-text-with-image__heading {% render 'typography-class', preset: type_preset, fallback: 'h6' %}"
         >{{- rendered_heading -}}</{{ heading_tag }}>
       {% endif %}
     </div>
@@ -247,17 +244,44 @@
       "id": "type_preset",
       "label": "Heading size",
       "options": [
-        { "value": "3xl", "label": "Display extra large" },
-        { "value": "2xl", "label": "Display large" },
-        { "value": "xl", "label": "Display medium" },
-        { "value": "lg", "label": "Heading extra large" },
-        { "value": "md", "label": "Heading large" },
-        { "value": "sm", "label": "Heading medium" },
-        { "value": "xs", "label": "Heading small" },
-        { "value": "2xs", "label": "Heading extra small" },
-        { "value": "custom", "label": "Custom" }
+        {
+          "value": "h0",
+          "label": "t:typography_options.display_extra_large"
+        },
+        {
+          "value": "h1",
+          "label": "t:typography_options.display_large"
+        },
+        {
+          "value": "h2",
+          "label": "t:typography_options.display_medium"
+        },
+        {
+          "value": "h3",
+          "label": "t:typography_options.heading_extra_large"
+        },
+        {
+          "value": "h4",
+          "label": "t:typography_options.heading_large"
+        },
+        {
+          "value": "h5",
+          "label": "t:typography_options.heading_medium"
+        },
+        {
+          "value": "h6",
+          "label": "t:typography_options.heading_small"
+        },
+        {
+          "value": "h7",
+          "label": "t:typography_options.heading_extra_small"
+        },
+        {
+          "value": "custom",
+          "label": "t:typography_options.custom"
+        }
       ],
-      "default": "xs"
+      "default": "h6"
     },
     {
       "type": "range",

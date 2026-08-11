@@ -92,7 +92,7 @@ class ProductPage extends HTMLElement {
     this.initializeExpandableContent();
     if (this.productContext !== 'quick-view') {
       this.initializeRecommendations();
-      this.initializeRecentlyViewed();
+      if (this.productContext === 'product-page') this.initializeRecentlyViewed();
     }
     this.updateOptionLabels();
     this.reconcileSellingPlans();
@@ -995,15 +995,21 @@ changeLightboxSlide(delta) {
   async initializeRecentlyViewed() {
     const section = document.querySelector('[data-recently-viewed]');
     const handle = this.dataset.productHandle;
-    if (!section || !handle) return;
+    if (!handle) return;
     const storageKey = 'spinel:recently-viewed';
     let handles = [];
-    try { handles = JSON.parse(localStorage.getItem(storageKey) || '[]'); } catch { handles = []; }
+    try {
+      const storedHandles = JSON.parse(localStorage.getItem(storageKey) || '[]');
+      handles = Array.isArray(storedHandles) ? storedHandles : [];
+    } catch { handles = []; }
     handles = [handle, ...handles.filter((item) => item !== handle)].slice(0, 6);
     try { localStorage.setItem(storageKey, JSON.stringify(handles)); } catch { return; }
+    if (!section) return;
+    const routeRoot = window.Shopify?.routes?.root || '/';
+    const normalizedRoot = routeRoot.endsWith('/') ? routeRoot : `${routeRoot}/`;
     const products = await Promise.all(handles.slice(1, Number(section.dataset.limit || 4) + 1).map(async (item) => {
       try {
-        const response = await fetch(`/products/${encodeURIComponent(item)}.js`, { headers: { Accept: 'application/json' }, signal: this.signal });
+        const response = await fetch(`${normalizedRoot}products/${encodeURIComponent(item)}.js`, { headers: { Accept: 'application/json' }, signal: this.signal });
         return response.ok ? response.json() : null;
       } catch { return null; }
     }));
@@ -1023,6 +1029,7 @@ changeLightboxSlide(delta) {
       image.loading = 'lazy';
       imageLink.append(image);
       const heading = document.createElement('h3');
+      heading.className = 'heading-h3 heading-text';
       const titleLink = document.createElement('a');
       titleLink.href = product.url;
       titleLink.textContent = product.title;
