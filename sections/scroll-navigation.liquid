@@ -1,0 +1,108 @@
+{% if request.page_type == 'index' %}
+  {% render 'section-stylesheet', asset: 'section-scroll-navigation.css', defer_on_home: false %}
+  <script src="{{ 'section-scroll-navigation.js' | asset_url }}" defer></script>
+
+  <scroll-navigation
+    class="scroll-navigation color-scheme color-{{ section.settings.color_scheme.id }}"
+    data-section-id="{{ section.id }}"
+    data-scroll-behavior="{{ section.settings.scroll_behavior }}"
+    style="--scroll-navigation-accent: {{ section.settings.accent_color }};"
+  >
+    <a class="scroll-navigation__logo" href="#MainContent" aria-label="{{ 'accessibility.skip_to_content' | t | escape }}">
+      {{ section.settings.logo_text | escape }}
+    </a>
+
+    <nav class="scroll-navigation__nav" aria-label="{{ section.settings.navigation_label | escape }}">
+      <ol class="scroll-navigation__list" data-scroll-navigation-list></ol>
+    </nav>
+
+    <p class="scroll-navigation__counter" aria-live="polite" aria-atomic="true">
+      <span data-scroll-navigation-current>01</span>
+      <span aria-hidden="true"> / </span>
+      <span data-scroll-navigation-total>01</span>
+    </p>
+
+    <template data-scroll-navigation-gift-icon>
+      <svg viewBox="0 0 16 16" aria-hidden="true" fill="none">
+        <path d="M2 7.25h12v7H2v-7Z" stroke="currentColor" stroke-linejoin="round"/>
+        <path d="M1.5 4.75h13v2.5h-13v-2.5ZM8 4.75v9.5" stroke="currentColor" stroke-linejoin="round"/>
+        <path d="M8 4.75H5.25a1.5 1.5 0 1 1 1.5-1.5L8 4.75Zm0 0h2.75a1.5 1.5 0 1 0-1.5-1.5L8 4.75Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+    </template>
+  </scroll-navigation>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Scroll navigation",
+  "tag": "section",
+  "class": "scroll-navigation-section",
+  "limit": 1,
+  "enabled_on": {
+    "groups": ["header"]
+  },
+  "settings": [
+    {
+      "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "logo_text",
+      "label": "Logo text",
+      "default": "SPINEL"
+    },
+    {
+      "type": "text",
+      "id": "navigation_label",
+      "label": "Navigation label",
+      "default": "Page sections"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "accent_color",
+      "label": "Accent color",
+      "default": "#81233F"
+    },
+    {
+      "type": "header",
+      "content": "Behavior"
+    },
+    {
+      "type": "select",
+      "id": "scroll_behavior",
+      "label": "Scroll behavior",
+      "options": [
+        {
+          "value": "smooth",
+          "label": "Smooth"
+        },
+        {
+          "value": "auto",
+          "label": "Instant"
+        }
+      ],
+      "default": "smooth"
+    },
+    {
+      "type": "paragraph",
+      "content": "Shown on the home page at desktop sizes. Numbers follow the current home page section order. A Gift section is represented by the gift icon."
+    }
+  ],
+  "presets": [
+    {
+      "name": "Scroll navigation"
+    }
+  ]
+}
+{% endschema %}
