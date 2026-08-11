@@ -133,46 +133,63 @@
 
       <footer class="cart-drawer__footer" data-cart-drawer-footer hidden>
         {% if section.settings.show_note or section.settings.show_discount or section.settings.shipping_estimator_enable %}
-          <button class="cart-drawer__order-options-toggle" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-toggle>
-            <span class="cart-drawer__order-options-toggle-icon" aria-hidden="true">{% render 'icon', name: 'filter-sliders' %}</span>
-            <span>{{ section.settings.order_options_label | default: 'Order options' | escape }}</span>
-          </button>
+          <div class="cart-drawer__order-options-actions" role="group" aria-label="Cart options">
+            {% if section.settings.show_note %}
+              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="note" data-cart-drawer-order-options-title="{{ section.settings.note_label | escape }}">
+                <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'filter' %}</span>
+                <span>{{ section.settings.note_label | escape }}</span>
+              </button>
+            {% endif %}
+            {% if section.settings.shipping_estimator_enable %}
+              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="shipping" data-cart-drawer-order-options-title="{{ section.settings.shipping_estimator_label | escape }}">
+                <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'truck' %}</span>
+                <span>Shipping</span>
+              </button>
+            {% endif %}
+            {% if section.settings.show_discount %}
+              <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="discount" data-cart-drawer-order-options-title="Discount">
+                <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'filter-sliders' %}</span>
+                <span>Discount(<span data-cart-drawer-discount-count>0</span>)</span>
+              </button>
+            {% endif %}
+          </div>
           <section id="CartDrawerOrderOptions-{{ section.id }}" class="cart-drawer__order-options-panel" data-cart-drawer-order-options aria-hidden="true" aria-labelledby="CartDrawerOrderOptionsTitle-{{ section.id }}">
             <div class="quick-view__handle cart-drawer__order-options-handle" data-cart-drawer-order-options-handle aria-hidden="true"></div>
             <header class="cart-drawer__order-options-header">
-              <h3 id="CartDrawerOrderOptionsTitle-{{ section.id }}" class="cart-drawer__order-options-title {% render 'typography-class', preset: section.settings.order_options_heading_size, fallback: 'custom' %}"{% if section.settings.order_options_heading_size == 'custom' %} style="--cart-drawer-custom-font-size: {{ section.settings.order_options_heading_font_size }}px; --cart-drawer-custom-font-size-mobile: {{ section.settings.order_options_heading_font_size_mobile }}px;"{% endif %}>{{ section.settings.order_options_label | default: 'Order options' | escape }}</h3>
+              <h3 id="CartDrawerOrderOptionsTitle-{{ section.id }}" class="cart-drawer__order-options-title {% render 'typography-class', preset: section.settings.order_options_heading_size, fallback: 'custom' %}" data-cart-drawer-order-options-title{% if section.settings.order_options_heading_size == 'custom' %} style="--cart-drawer-custom-font-size: {{ section.settings.order_options_heading_font_size }}px; --cart-drawer-custom-font-size-mobile: {{ section.settings.order_options_heading_font_size_mobile }}px;"{% endif %}>{{ section.settings.order_options_label | default: 'Order options' | escape }}</h3>
               <button class="cart-drawer__order-options-close modal-close-button close-icon" type="button" aria-label="Close order options" data-cart-drawer-order-options-close></button>
             </header>
             <div class="cart-drawer__order-options-content">
               {% if section.settings.show_note %}
-                <details class="cart-drawer__note"{% if section.settings.note_expanded %} open{% endif %}>
-                  <summary>{{ section.settings.note_label | escape }}</summary>
-                  <textarea rows="3" data-cart-drawer-note aria-label="{{ section.settings.note_label | escape }}" placeholder="{{ section.settings.note_placeholder | escape }}"></textarea>
-                  <button type="button" class="cart-drawer__text-button" data-cart-drawer-save-note>{{ section.settings.note_save_label | escape }}</button>
-                </details>
+                <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="note" hidden>
+                  <label class="cart-drawer__order-options-field-label" for="CartDrawerNote-{{ section.id }}">Order special instructions</label>
+                  <textarea id="CartDrawerNote-{{ section.id }}" class="cart-drawer__note" rows="5" data-cart-drawer-note placeholder="{{ section.settings.note_placeholder | escape }}"></textarea>
+                  <button type="button" class="cart-drawer__order-options-submit" data-cart-drawer-save-note>{{ section.settings.note_save_label | escape }}</button>
+                </section>
               {% endif %}
 
               {% if section.settings.shipping_estimator_enable %}
-                <details class="cart-drawer__shipping-estimator">
-                  <summary>{{ section.settings.shipping_estimator_label | escape }}</summary>
+                <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="shipping" hidden>
                   <form data-cart-drawer-shipping-estimator>
                     <label><span>{{ section.settings.shipping_estimator_country_label | escape }}</span><select name="country" data-cart-drawer-shipping-country data-default-country="{{ localization.country.name | escape }}" required>{{ all_country_option_tags }}</select></label>
                     <label data-cart-drawer-shipping-province-field hidden><span>{{ section.settings.shipping_estimator_province_label | escape }}</span><select name="province" data-cart-drawer-shipping-province disabled></select></label>
                     <label><span>{{ section.settings.shipping_estimator_postal_label | escape }}</span><input type="text" name="zip" autocomplete="postal-code" required></label>
-                    <button type="submit" class="cart-drawer__text-button">{{ section.settings.shipping_estimator_button_label | escape }}</button>
+                    <button type="submit" class="cart-drawer__order-options-submit">{{ section.settings.shipping_estimator_button_label | escape }}</button>
                   </form>
                   <p class="cart-drawer__shipping-rates" data-cart-drawer-shipping-rates role="status" aria-live="polite"></p>
-                </details>
+                  <p class="cart-drawer__tax-note" data-cart-drawer-tax-note>{% if cart.taxes_included %}{{ 'cart.taxes_included' | t }}{% else %}{{ 'cart_drawer.taxes_note' | t | default: 'Taxes and shipping calculated at checkout' | escape }}{% endif %}</p>
+                </section>
               {% endif %}
 
-              <p class="cart-drawer__tax-note" data-cart-drawer-tax-note>{% if cart.taxes_included %}{{ 'cart.taxes_included' | t }}{% else %}{{ 'cart_drawer.taxes_note' | t | default: 'Taxes and shipping calculated at checkout' | escape }}{% endif %}</p>
-              <ul class="cart-drawer__discounts" data-cart-drawer-discounts role="list" hidden></ul>
               {% if section.settings.show_discount %}
-                <form class="cart-drawer__discount" data-cart-drawer-discount>
-                  <label class="visually-hidden" for="CartDrawerDiscount-{{ section.id }}">{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}</label>
-                  <input id="CartDrawerDiscount-{{ section.id }}" type="text" name="discount" autocomplete="off" placeholder="{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}" aria-describedby="CartDrawerMessage-{{ section.id }}">
-                  <button type="submit" class="cart-drawer__text-button">{{ section.settings.discount_button_label | escape }}</button>
-                </form>
+                <section class="cart-drawer__order-options-content-panel" data-cart-drawer-order-options-content="discount" hidden>
+                  <form class="cart-drawer__discount" data-cart-drawer-discount>
+                    <label class="visually-hidden" for="CartDrawerDiscount-{{ section.id }}">{{ 'cart_drawer.discount_code' | t | default: 'Discount code' | escape }}</label>
+                    <input id="CartDrawerDiscount-{{ section.id }}" type="text" name="discount" autocomplete="off" placeholder="Please enter discount code" aria-describedby="CartDrawerMessage-{{ section.id }}">
+                    <button type="submit" class="cart-drawer__order-options-submit">{{ section.settings.discount_button_label | escape }}</button>
+                  </form>
+                  <ul class="cart-drawer__discounts" data-cart-drawer-discounts role="list" hidden></ul>
+                </section>
               {% endif %}
               <p id="CartDrawerMessage-{{ section.id }}" class="cart-drawer__message" data-cart-drawer-message role="status" aria-live="polite" hidden></p>
             </div>
@@ -249,12 +266,12 @@
     { "type": "range", "id": "order_options_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.order_options_heading_size == 'custom' }}" },
     { "type": "range", "id": "order_options_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.order_options_heading_size == 'custom' }}" },
     { "type": "checkbox", "id": "note_expanded", "label": "Keep order note expanded", "default": false, "visible_if": "{{ section.settings.show_note }}" },
-    { "type": "text", "id": "note_label", "label": "Note label", "default": "Add order note", "visible_if": "{{ section.settings.show_note }}" },
+    { "type": "text", "id": "note_label", "label": "Note label", "default": "Order note", "visible_if": "{{ section.settings.show_note }}" },
     { "type": "text", "id": "note_placeholder", "label": "Note placeholder", "default": "Add a note to your order", "visible_if": "{{ section.settings.show_note }}" },
     { "type": "text", "id": "note_save_label", "label": "Save-note label", "default": "Save note", "visible_if": "{{ section.settings.show_note }}" },
     { "type": "checkbox", "id": "show_discount", "label": "Show discount code field", "default": true },
     { "type": "text", "id": "discount_button_label", "label": "Discount button label", "default": "Apply", "visible_if": "{{ section.settings.show_discount }}" },
-    { "type": "checkbox", "id": "shipping_estimator_enable", "label": "Shipping estimator", "default": false },
+    { "type": "checkbox", "id": "shipping_estimator_enable", "label": "Shipping estimator", "default": true },
     { "type": "text", "id": "shipping_estimator_label", "label": "Estimator label", "default": "Estimate shipping", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
     { "type": "text", "id": "shipping_estimator_country_label", "label": "Country label", "default": "Country", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },
     { "type": "text", "id": "shipping_estimator_province_label", "label": "State/province label", "default": "State / Province", "visible_if": "{{ section.settings.shipping_estimator_enable }}" },

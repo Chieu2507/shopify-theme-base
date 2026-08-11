@@ -13,12 +13,16 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.orderOptionsPanel = this.querySelector('[data-cart-drawer-order-options]');
       this.orderOptionsBackdrop = this.querySelector('.cart-drawer__order-options-backdrop');
       this.orderOptionsBackdropPointer = this.querySelector('.cart-drawer__order-options-backdrop-pointer');
-      this.orderOptionsToggle = this.querySelector('[data-cart-drawer-order-options-toggle]');
+      this.orderOptionsTriggers = [...this.querySelectorAll('[data-cart-drawer-order-options-open]')];
       this.orderOptionsClose = this.querySelector('[data-cart-drawer-order-options-close]');
+      this.orderOptionsTitle = this.querySelector('.cart-drawer__order-options-title[data-cart-drawer-order-options-title]');
+      this.orderOptionsContents = [...this.querySelectorAll('[data-cart-drawer-order-options-content]')];
+      this.orderOptionsTrigger = null;
       this.status = this.querySelector('[data-cart-drawer-status]');
       this.loading = this.querySelector('[data-cart-drawer-loading]');
       this.message = this.querySelector('[data-cart-drawer-message]');
       this.discounts = this.querySelector('[data-cart-drawer-discounts]');
+      this.discountCount = this.querySelector('[data-cart-drawer-discount-count]');
       this.total = this.querySelector('[data-cart-drawer-total]');
       this.checkoutTotal = this.querySelector('[data-cart-drawer-checkout-total]');
       this.taxNote = this.querySelector('[data-cart-drawer-tax-note]');
@@ -50,7 +54,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.lastFocusedElement = null;
       this.handleDrag = null;
       this.handleDragTimer = null;
-      this.mobileDrawer = window.matchMedia('(max-width: 989px)');
       this.bind();
       this.setOrderOptionsOpen(false);
       this.renderEmpty();
@@ -107,7 +110,6 @@ import { A11y, Swiper } from './swiper-loader.js';
         pointer: this.orderOptionsBackdropPointer,
         isOpen: () => this.isOpen && this.classList.contains('is-order-options-open'),
         relativeToRoot: true,
-        isDisabled: () => !this.mobileDrawer.matches,
       });
       document.addEventListener('click', (event) => {
         const trigger = event.target.closest?.('[data-cart-drawer-open]');
@@ -122,10 +124,10 @@ import { A11y, Swiper } from './swiper-loader.js';
         if (this.isSectionEvent(event)) this.open();
       }, { signal });
       this.addEventListener('click', (event) => {
-        const orderOptionsToggle = event.target.closest('[data-cart-drawer-order-options-toggle]');
-        if (orderOptionsToggle) {
+        const orderOptionsTrigger = event.target.closest('[data-cart-drawer-order-options-open]');
+        if (orderOptionsTrigger) {
           event.preventDefault();
-          this.toggleOrderOptions();
+          this.openOrderOptions(orderOptionsTrigger.dataset.cartDrawerOrderOptionsOpen, orderOptionsTrigger);
           return;
         }
         if (event.target.closest('[data-cart-drawer-order-options-close]')) {
@@ -166,7 +168,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.shippingEstimator?.addEventListener('submit', (event) => this.estimateShipping(event), { signal });
       this.shippingCountry?.addEventListener('change', () => this.updateShippingProvinces(), { signal });
       this.shippingEstimator?.addEventListener('input', () => this.clearShippingFieldErrors(), { signal });
-      this.mobileDrawer.addEventListener('change', () => this.setOrderOptionsOpen(false), { signal });
       this.updateShippingProvinces();
       if ('PointerEvent' in window) {
         this.handle?.addEventListener('pointerdown', (event) => this.startHandleDrag(event), { signal });
@@ -181,7 +182,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       }
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && this.isOpen) {
-          if (this.mobileDrawer.matches && this.orderOptionsPanel?.getAttribute('aria-hidden') === 'false') {
+          if (this.orderOptionsPanel?.getAttribute('aria-hidden') === 'false') {
             this.setOrderOptionsOpen(false, true);
           } else {
             this.close();
@@ -251,7 +252,7 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     startHandleDrag(event) {
-      if (!this.orderOptionsPanel || !this.handle || !this.isOpen || !this.mobileDrawer.matches || this.orderOptionsPanel.getAttribute('aria-hidden') !== 'false' || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
+      if (!this.orderOptionsPanel || !this.handle || !this.isOpen || this.orderOptionsPanel.getAttribute('aria-hidden') !== 'false' || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
 
       window.clearTimeout(this.handleDragTimer);
       this.handleDrag = {
@@ -347,22 +348,31 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     setOrderOptionsOpen(open, restoreFocus = false) {
       if (!this.orderOptionsPanel || !this.footer) return;
-      const isMobile = this.mobileDrawer.matches;
-      const isOpen = isMobile && open;
+      const isOpen = Boolean(open);
       this.classList.toggle('is-order-options-open', isOpen);
       this.footer.classList.toggle('is-order-options-open', isOpen);
-      this.orderOptionsPanel.setAttribute('aria-hidden', String(isMobile && !isOpen));
-      this.orderOptionsPanel.inert = isMobile && !isOpen;
-      this.orderOptionsToggle?.setAttribute('aria-expanded', String(isOpen));
+      this.orderOptionsPanel.setAttribute('aria-hidden', String(!isOpen));
+      this.orderOptionsPanel.inert = !isOpen;
+      this.orderOptionsTriggers.forEach((trigger) => {
+        const isActive = isOpen && trigger === this.orderOptionsTrigger;
+        trigger.setAttribute('aria-expanded', String(isActive));
+      });
       if (!isOpen) this.orderOptionsBackdropInteraction?.hide();
-      if (restoreFocus && isMobile) {
-        (open ? this.orderOptionsClose : this.orderOptionsToggle)?.focus({ preventScroll: true });
-      }
+      if (restoreFocus && !isOpen) this.orderOptionsTrigger?.focus({ preventScroll: true });
     }
 
-    toggleOrderOptions() {
-      if (!this.orderOptionsPanel) return;
-      this.setOrderOptionsOpen(this.orderOptionsPanel.getAttribute('aria-hidden') === 'true', true);
+    openOrderOptions(name, trigger) {
+      const content = this.orderOptionsContents.find((panel) => panel.dataset.cartDrawerOrderOptionsContent === name);
+      if (!content) return;
+      this.orderOptionsTrigger = trigger;
+      this.orderOptionsContents.forEach((panel) => { panel.hidden = panel !== content; });
+      if (this.orderOptionsTitle) this.orderOptionsTitle.textContent = trigger.dataset.cartDrawerOrderOptionsTitle || trigger.textContent.trim();
+      this.orderOptionsPanel.dataset.activePanel = name;
+      this.orderOptionsPanel.scrollTop = 0;
+      this.setOrderOptionsOpen(true);
+      requestAnimationFrame(() => {
+        (content.querySelector('textarea, input, select, button') || this.orderOptionsClose)?.focus({ preventScroll: true });
+      });
     }
 
     unlockPageScroll() {
@@ -982,6 +992,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const discounts = cart.cart_level_discount_applications || [];
       this.discounts.innerHTML = discounts.map((discount) => `<li><span>${this.escape(discount.title)}</span><span>−${this.formatMoney(discount.total_allocated_amount)}</span></li>`).join('');
       this.discounts.hidden = discounts.length === 0;
+      if (this.discountCount) this.discountCount.textContent = String(discounts.length);
     }
 
     isDiscountApplied(cart, code) {
