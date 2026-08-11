@@ -114,7 +114,7 @@ class ScrollNavigation extends HTMLElement {
   updateActive() {
     if (!this.sections.length) return;
 
-    const marker = Math.min(160, window.innerHeight * 0.22);
+    const marker = this.getStickyHeaderOffset() + 1;
     let nextIndex = 0;
 
     this.sections.forEach((section, index) => {
@@ -141,7 +141,14 @@ class ScrollNavigation extends HTMLElement {
 
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     const behavior = reduceMotion ? 'auto' : this.dataset.scrollBehavior;
-    section.scrollIntoView({ behavior, block: 'start' });
+    const top = section.getBoundingClientRect().top + window.scrollY - this.getStickyHeaderOffset();
+    window.scrollTo({ top: Math.max(0, top), behavior });
+  }
+
+  getStickyHeaderOffset() {
+    const header = document.querySelector('[data-header].header--sticky');
+    if (!header || window.getComputedStyle(header).display === 'none') return 0;
+    return header.getBoundingClientRect().height;
   }
 
   getSectionLabel(section, number) {
