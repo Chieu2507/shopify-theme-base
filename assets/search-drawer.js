@@ -26,6 +26,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.recentList = this.querySelector('[data-search-drawer-recent-list]');
       this.categoriesCarousel = this.querySelector('[data-search-drawer-categories]');
       this.categorySlides = Array.from(this.querySelectorAll('[data-search-drawer-categories] .swiper-slide'));
+      this.categorySlidesPerView = Number.parseFloat(this.dataset.categorySlidesPerView) || 2.5;
       this.categoriesSwiper = null;
       this.announcer = this.querySelector('[data-search-drawer-announcer]');
       this.bagIconTemplate = this.querySelector('[data-search-drawer-bag-icon]');
@@ -240,13 +241,20 @@ import { A11y, Swiper } from './swiper-loader.js';
         return;
       }
 
+      const mobileSlidesPerView = Math.min(this.categorySlidesPerView, 1.15);
+
       this.categoriesSwiper = new Swiper(this.categoriesCarousel, {
         modules: [A11y],
-        slidesPerView: 'auto',
+        slidesPerView: mobileSlidesPerView,
         spaceBetween: 12,
         speed: this.reduceMotion.matches ? 0 : 360,
         watchOverflow: true,
         grabCursor: true,
+        breakpoints: {
+          750: {
+            slidesPerView: this.categorySlidesPerView,
+          },
+        },
         a11y: {
           enabled: true,
           slideRole: null,
