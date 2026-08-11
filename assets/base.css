@@ -481,11 +481,16 @@ body {
 }
 
 .button--primary {
+  --button-surface: var(--color-primary-button);
+  --button-label: var(--color-primary-button-label);
+  --button-hover-surface: var(--color-primary-button-label);
+  --button-hover-label: var(--color-primary-button);
+
   border-width: var(--button-primary-border-width);
   border-color: var(--color-primary-button-outline);
   border-radius: var(--radius-button);
-  background: var(--color-primary-button);
-  color: var(--color-primary-button-label);
+  background: var(--button-surface);
+  color: var(--button-label);
   font-family: var(--button-primary-font-family);
   font-style: var(--button-primary-font-style);
   font-weight: var(--button-primary-font-weight);
@@ -493,15 +498,75 @@ body {
 }
 
 .button--secondary {
+  --button-surface: var(--color-secondary-button);
+  --button-label: var(--color-secondary-button-label);
+  --button-hover-surface: var(--color-secondary-button-label);
+  --button-hover-label: var(--color-secondary-button);
+
   border-width: var(--button-secondary-border-width);
   border-color: var(--color-secondary-button-outline);
   border-radius: var(--radius-button);
-  background: var(--color-secondary-button);
-  color: var(--color-secondary-button-label);
+  background: var(--button-surface);
+  color: var(--button-label);
   font-family: var(--button-secondary-font-family);
   font-style: var(--button-secondary-font-style);
   font-weight: var(--button-secondary-font-weight);
   text-transform: var(--button-secondary-text-case);
+}
+
+:is(.button--primary, .button--secondary) {
+  isolation: isolate;
+  position: relative;
+  overflow: hidden;
+  transition:
+    border-color 300ms ease-in-out,
+    color 300ms ease-in-out;
+}
+
+:is(.button--primary, .button--secondary)::after {
+  position: absolute;
+  z-index: -1;
+  top: 0;
+  right: 0;
+  width: 0;
+  height: 100%;
+  background: var(--button-hover-surface);
+  content: '';
+  transition: width var(--button-hover-duration, 400ms) ease-in-out;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  :is(.button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover {
+    border-color: var(--button-hover-surface);
+    color: var(--button-hover-label);
+    opacity: 1;
+  }
+
+  :is(.button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover::after {
+    right: auto;
+    left: 0;
+    width: 100%;
+  }
+
+  :is(.button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover > :is(span, svg) {
+    animation: button-content-scale-up 300ms ease-in-out;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.button--primary, .button--secondary),
+  :is(.button--primary, .button--secondary)::after {
+    transition: none;
+  }
+
+  :is(.button--primary, .button--secondary) > :is(span, svg) {
+    animation: none !important;
+  }
+}
+
+@keyframes button-content-scale-up {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(.95); }
 }
 
 .button--tertiary,
