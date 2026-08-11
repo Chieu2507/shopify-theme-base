@@ -829,11 +829,15 @@ import { A11y, Swiper } from './swiper-loader.js';
     async openRecentlyViewedOptions(button) {
       const quickViewUrl = button.dataset.productCardQuickViewUrl;
       if (!quickViewUrl) return;
-      const returnTarget = this.returnFocus?.isConnected ? this.returnFocus : button;
+      const quickViewModal = document.querySelector('[data-quick-view-modal]');
+      const reopenSearchDrawer = () => {
+        if (this.isConnected) this.open(button);
+      };
 
-      await this.close({ restoreFocus: true });
+      quickViewModal?.addEventListener('close', reopenSearchDrawer, { once: true });
+      await this.close({ restoreFocus: false });
       if (window.SpinelQuickView?.open) {
-        window.SpinelQuickView.open(quickViewUrl, returnTarget);
+        window.SpinelQuickView.open(quickViewUrl, button);
       } else {
         window.location.assign(quickViewUrl);
       }
