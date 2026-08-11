@@ -417,8 +417,7 @@ if (!window.SpinelHeaderMenus) {
     window.requestAnimationFrame(() => {
       if (!details?.open || !details.isConnected) return;
       const sheet = details.querySelector('.header__localization-sheet');
-      const target = sheet?.querySelector('[data-header-localization-search]')
-        || sheet?.querySelector('[role="option"][aria-selected="true"]')
+      const target = sheet?.querySelector('[role="option"][aria-selected="true"]')
         || sheet?.querySelector('[data-header-localization-close]');
       focusWithoutScroll(target, sheet);
     });
@@ -2252,17 +2251,6 @@ if (!window.SpinelHeaderMenus) {
         }
       }
 
-      if (!details.open && details.matches?.('.header__localization-selector')) {
-        const searchInput = details.querySelector('[data-header-localization-search]');
-        if (searchInput) {
-          searchInput.value = '';
-          details.querySelectorAll('[data-header-country-option]').forEach((option) => { option.hidden = false; });
-          initializeLocalizationOptions(details);
-          const empty = details.querySelector('[data-header-localization-empty]');
-          if (empty) empty.hidden = true;
-        }
-      }
-
       if (details.matches?.('.header__submenu-disclosure, .header__submenu-nested-disclosure')) {
         syncHeaderDisclosureAria(details);
       }
@@ -2557,23 +2545,6 @@ if (!window.SpinelHeaderMenus) {
 
     input.value = languageOption.dataset.languageCode;
     languageOption.closest('form')?.submit();
-  });
-
-  document.addEventListener('input', (event) => {
-    const searchInput = event.target.closest?.('[data-header-localization-search]');
-    if (!searchInput) return;
-
-    const searchTerm = searchInput.value.trim().toLocaleLowerCase();
-    const popover = searchInput.closest('[data-header-localization-popover]');
-    const options = Array.from(popover?.querySelectorAll('[data-header-country-option]') || []);
-    options.forEach((option) => {
-      option.hidden = searchTerm.length > 0 && !option.textContent.toLocaleLowerCase().includes(searchTerm);
-    });
-    const visibleOptions = options.filter((option) => !option.hidden);
-    const selected = visibleOptions.find((option) => option.getAttribute('aria-selected') === 'true') || visibleOptions[0];
-    options.forEach((option) => { option.tabIndex = option === selected ? 0 : -1; });
-    const empty = popover?.querySelector('[data-header-localization-empty]');
-    if (empty) empty.hidden = visibleOptions.length > 0;
   });
 
   document.addEventListener('shopify:block:select', (event) => {
