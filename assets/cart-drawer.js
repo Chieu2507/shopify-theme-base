@@ -498,7 +498,7 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     renderEmpty() {
       const emptyLink = this.dataset.emptyLink
-        ? `<a class="cart-drawer__empty-link button button--primary" href="${this.escape(this.dataset.emptyLink)}">${this.escape(this.dataset.emptyLinkLabel || 'Continue shopping')}</a>`
+        ? `<a class="cart-drawer__empty-link btn-primary" href="${this.escape(this.dataset.emptyLink)}">${this.escape(this.dataset.emptyLinkLabel || 'Continue shopping')}</a>`
         : '';
       const emptyImage = this.dataset.emptyImage
         ? `<img class="cart-drawer__empty-image cart-drawer__empty-image--${this.escape(this.dataset.emptyImageRatio || 'adapt')}" src="${this.escape(this.dataset.emptyImage)}" alt="" loading="lazy">`

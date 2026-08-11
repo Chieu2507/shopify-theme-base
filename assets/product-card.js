@@ -294,7 +294,7 @@ class QuickViewModal {
       this.content.innerHTML = `
         <div class="quick-view__error" role="alert">
           <p>${window.theme?.strings?.quickViewError || 'We could not load this product right now.'}</p>
-          <button type="button" class="button button--secondary" data-quick-view-retry>${window.theme?.strings?.quickViewRetry || 'Try again'}</button>
+          <button type="button" class="btn-secondary" data-quick-view-retry>${window.theme?.strings?.quickViewRetry || 'Try again'}</button>
         </div>`;
       this.content.querySelector('[data-quick-view-retry]')?.focus({ preventScroll: true });
     }

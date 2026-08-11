@@ -452,7 +452,7 @@ body {
   transform: translate(-50%, -50%) rotate(-45deg);
 }
 
-.button {
+:is(.button, .btn, .btn-primary, .btn-secondary, .btn-tertiary, .btn-text, .btn-link) {
   display: inline-flex;
   min-height: var(--control-height);
   align-items: center;
@@ -471,16 +471,16 @@ body {
   transition: opacity var(--motion-duration) ease;
 }
 
-.button:hover {
+:is(.button, .btn, .btn-primary, .btn-secondary, .btn-tertiary, .btn-text, .btn-link):hover {
   opacity: 0.82;
 }
 
-.button:focus-visible {
+:is(.button, .btn, .btn-primary, .btn-secondary, .btn-tertiary, .btn-text, .btn-link):focus-visible {
   outline: 2px solid currentcolor;
   outline-offset: 3px;
 }
 
-.button--primary {
+:is(.btn-primary, .button--primary) {
   --button-surface: var(--color-primary-button);
   --button-label: var(--color-primary-button-label);
   --button-hover-surface: var(--color-primary-button-label);
@@ -497,7 +497,7 @@ body {
   text-transform: var(--button-primary-text-case);
 }
 
-.button--secondary {
+:is(.btn-secondary, .button--secondary) {
   --button-surface: var(--color-secondary-button);
   --button-label: var(--color-secondary-button-label);
   --button-hover-surface: var(--color-secondary-button-label);
@@ -514,7 +514,7 @@ body {
   text-transform: var(--button-secondary-text-case);
 }
 
-:is(.button--primary, .button--secondary) {
+:is(.btn-primary, .btn-secondary, .button--primary, .button--secondary) {
   isolation: isolate;
   position: relative;
   overflow: hidden;
@@ -523,7 +523,7 @@ body {
     color 300ms ease-in-out;
 }
 
-:is(.button--primary, .button--secondary)::after {
+:is(.btn-primary, .btn-secondary, .button--primary, .button--secondary)::before {
   position: absolute;
   z-index: -1;
   top: 0;
@@ -536,30 +536,30 @@ body {
 }
 
 @media (hover: hover) and (pointer: fine) {
-  :is(.button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover {
+  :is(.btn-primary, .btn-secondary, .button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover {
     border-color: var(--button-surface);
     color: var(--button-hover-label);
     opacity: 1;
   }
 
-  :is(.button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover::after {
+  :is(.btn-primary, .btn-secondary, .button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover::before {
     right: auto;
     left: 0;
     width: 100%;
   }
 
-  :is(.button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover > :is(span, svg) {
+  :is(.btn-primary, .btn-secondary, .button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover > :is(span, svg) {
     animation: button-content-scale-up 300ms ease-in-out;
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  :is(.button--primary, .button--secondary),
-  :is(.button--primary, .button--secondary)::after {
+  :is(.btn-primary, .btn-secondary, .button--primary, .button--secondary),
+  :is(.btn-primary, .btn-secondary, .button--primary, .button--secondary)::before {
     transition: none;
   }
 
-  :is(.button--primary, .button--secondary) > :is(span, svg) {
+  :is(.btn-primary, .btn-secondary, .button--primary, .button--secondary) > :is(span, svg) {
     animation: none !important;
   }
 }
@@ -569,9 +569,9 @@ body {
   50% { transform: scale(.95); }
 }
 
-.button--tertiary,
-.button--text,
-.button--link {
+:is(.btn-tertiary, .button--tertiary),
+:is(.btn-text, .button--text),
+:is(.btn-link, .button--link) {
   min-height: auto;
   padding: 0 0 3px;
   border-bottom-color: var(--button-tertiary-border-color);
@@ -1000,69 +1000,18 @@ li:has(> .product-card:focus-within) {
 }
 
 .product-card__quick-add {
-  --quick-add-surface: var(--color-secondary-button);
-  --quick-add-label: var(--color-secondary-button-label);
-  --quick-add-hover-surface: var(--color-secondary-button-label);
-  --quick-add-hover-label: var(--color-secondary-button);
-
   display: flex;
   width: 100%;
-  min-height: var(--control-height);
   align-items: center;
   justify-content: center;
   padding: 8px 12px;
-  border: var(--button-secondary-border-width) solid var(--color-secondary-button-outline);
-  border-radius: var(--radius-button);
-  isolation: isolate;
-  position: relative;
-  overflow: hidden;
-  background: var(--quick-add-surface);
-  color: var(--quick-add-label);
   cursor: pointer;
-  font-family: var(--button-secondary-font-family);
-  font-size: var(--font-caption);
-  font-style: var(--button-secondary-font-style);
-  font-weight: var(--button-secondary-font-weight);
   line-height: 1.2;
   text-align: center;
-  text-decoration: none;
-  text-transform: var(--button-secondary-text-case);
-  transition: border-color 300ms ease-in-out, color 300ms ease-in-out;
-}
-
-.product-card__quick-add::before {
-  position: absolute;
-  z-index: -1;
-  top: 0;
-  right: 0;
-  width: 0;
-  height: 100%;
-  background: var(--quick-add-hover-surface);
-  content: '';
-  transition: width var(--button-hover-duration, 400ms) ease-in-out;
-}
-
-@media (hover: hover) and (pointer: fine) {
-  .product-card__quick-add:not(:disabled, [aria-disabled='true']):hover {
-    border-color: var(--quick-add-surface);
-    color: var(--quick-add-hover-label);
-  }
-
-  .product-card__quick-add:not(:disabled, [aria-disabled='true']):hover::before {
-    right: auto;
-    left: 0;
-    width: 100%;
-  }
-}
-
-.product-card__quick-add:focus-visible {
-  outline: 2px solid currentcolor;
-  outline-offset: 3px;
 }
 
 .product-card__quick-add--unavailable {
-  border-color: var(--color-variant-border);
-  color: var(--color-text);
+  opacity: 0.6;
 }
 
 .search-field { position: relative; display: flex; align-items: center; border: 0; border-bottom: 1px solid var(--color-heading); }
@@ -1312,9 +1261,6 @@ body.shopify-design-mode main [data-shopify-editor-section] [data-shopify-editor
     transition: none;
   }
 
-  .product-card__quick-add::before {
-    transition: none;
-  }
 }
 
 /** Shared section contracts */
