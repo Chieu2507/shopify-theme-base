@@ -144,21 +144,13 @@
   endif
 
   assign responsive_scope = block.id | default: kind
-  assign rendered_content = content
-  assign has_heading_markup = false
-  if kind == 'heading'
-    if content contains '<h1' or content contains '<h2' or content contains '<h3' or content contains '<h4' or content contains '<h5' or content contains '<h6'
-      assign has_heading_markup = true
-      capture rendered_content
-        render 'typography-content', content: content, heading_class: typography_class
-      endcapture
-    endif
+  if kind == 'heading' and typography_class != blank
+    capture rendered_content
+      render 'typography-content', content: content, heading_class: typography_class
+    endcapture
+  else
+    assign rendered_content = content
   endif
-
-  unless has_heading_markup
-    assign rendered_content = rendered_content | replace: '</p><p>', '<br>'
-    assign rendered_content = rendered_content | replace: '<p>', '' | replace: '</p>', ''
-  endunless
   if block.settings.disable_line_break_mobile
     assign line_break_markup = '<span class="content-block__line-break"><br></span>'
     assign rendered_content = rendered_content | replace: '<br>', line_break_markup
@@ -166,6 +158,18 @@
     assign rendered_content = rendered_content | replace: '<br />', line_break_markup
   endif
 
+  assign has_block_markup = false
+  if content contains '<p' or content contains '<h1' or content contains '<h2' or content contains '<h3'
+    assign has_block_markup = true
+  elsif content contains '<h4' or content contains '<h5' or content contains '<h6'
+    assign has_block_markup = true
+  elsif content contains '<ul' or content contains '<ol' or content contains '<blockquote'
+    assign has_block_markup = true
+  endif
+  assign needs_heading_wrapper = false
+  if kind == 'heading' and has_block_markup == false
+    assign needs_heading_wrapper = true
+  endif
 %}
 
 {% if content != blank %}
@@ -184,7 +188,7 @@
     </style>
   {% endif %}
   <div
-    class="content-block spacing-style content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }} content-block--color-{{ color_class }}{% if kind == 'heading' %} content-heading content-heading--{{ alignment }}{% else %} text-block content-text content-text--{{ alignment }} rte{% if typography_class != blank %} {{ typography_class }}{% endif %}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
+    class="content-block spacing-style content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }} content-block--color-{{ color_class }}{% if kind == 'heading' %} content-heading content-heading--{{ alignment }}{% else %} text-block content-text content-text--{{ alignment }} rte{% endif %}{% if typography_class != blank %} {{ typography_class }}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
     {% if has_mobile_padding or has_mobile_font_size %}data-type-block-id="{{ responsive_scope | escape }}"{% endif %}
     {% if has_spacing_settings or has_padding or use_inline_typography %}
       style="
@@ -208,10 +212,10 @@
     {% if include_shopify_attributes != false %}{{ block.shopify_attributes }}{% endif %}
   >
     {% if kind == 'heading' %}
-      {% if has_heading_markup %}
-        {{ rendered_content }}
-      {% else %}
+      {% if needs_heading_wrapper %}
         <{{ heading_tag }} class="{{ typography_class }}">{{ rendered_content }}</{{ heading_tag }}>
+      {% else %}
+        {{ rendered_content }}
       {% endif %}
     {% else %}
       {{ rendered_content }}
