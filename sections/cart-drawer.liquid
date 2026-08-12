@@ -4,6 +4,7 @@
   assign cart_total_label_size = section.settings.total_label_size | default: 'h6'
   assign cart_total_price_size = section.settings.total_price_size | default: 'md'
   assign cart_image_radius = section.settings.image_radius | default: 0
+  assign empty_cart_link = section.settings.empty_link | default: routes.all_products_collection_url
   assign cart_tools_block = section.blocks | where: 'type', 'cart_tools' | first
   assign cart_tools_show_note = section.settings.show_note
   assign cart_tools_note_label = section.settings.note_label
@@ -150,10 +151,10 @@
 
         <div class="cart-drawer__items" data-cart-drawer-items></div>
         <template data-cart-drawer-empty-template>
-          <div class="cart-drawer__empty">
-            <h3 class="cart-drawer__empty-title {% render 'typography-class', preset: section.settings.empty_heading_size, fallback: 'custom' %}">{{ section.settings.empty_heading | escape }}</h3>
-            {% if section.settings.empty_description != blank %}<p class="cart-drawer__empty-description body-p1 body-text">{{ section.settings.empty_description | escape | newline_to_br }}</p>{% endif %}
+          <div class="cart-drawer__empty{% if section.settings.empty_collections != blank %} cart-drawer__empty--collections{% endif %}">
             {% if section.settings.empty_collections != blank %}
+              <h3 class="cart-drawer__empty-title {% render 'typography-class', preset: section.settings.empty_heading_size, fallback: 'custom' %}">{{ section.settings.empty_heading | escape }}</h3>
+              {% if section.settings.empty_description != blank %}<p class="cart-drawer__empty-description body-p1 body-text">{{ section.settings.empty_description | escape | newline_to_br }}</p>{% endif %}
               <div class="cart-drawer__empty-collections" role="list">
                 {% for collection in section.settings.empty_collections limit: 3 %}
                   {% liquid
@@ -175,6 +176,10 @@
                   </a>
                 {% endfor %}
               </div>
+            {% else %}
+              <span class="cart-drawer__empty-icon" aria-hidden="true">{% render 'icon', name: 'bag' %}</span>
+              <h3 class="cart-drawer__empty-title {% render 'typography-class', preset: section.settings.empty_heading_size, fallback: 'custom' %}">{{ section.settings.empty_heading | escape }}</h3>
+              <a class="cart-drawer__empty-link btn-primary" href="{{ empty_cart_link | escape }}">{{ 'search.continue_shopping' | t }}</a>
             {% endif %}
           </div>
         </template>
@@ -376,6 +381,7 @@
     },
     { "type": "range", "id": "empty_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.empty_heading_size == 'custom' }}" },
     { "type": "range", "id": "empty_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.empty_heading_size == 'custom' }}" },
+    { "type": "url", "id": "empty_link", "label": "Empty button link", "default": "/collections/all" },
     { "type": "textarea", "id": "empty_description", "label": "Supporting text", "default": "Not sure where to start?\nTry these collections:" },
     { "type": "collection_list", "id": "empty_collections", "label": "Featured collections", "limit": 3 },
     { "type": "header", "content": "Total typography" },
