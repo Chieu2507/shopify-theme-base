@@ -4,10 +4,20 @@
 {% liquid
   assign localization_form_id = 'FooterLocalizationForm-' | append: section.id
   assign copyright_name = section.settings.copyright_name
+  assign footer_background = section.settings.background_color
+  if footer_background == blank
+    assign footer_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
   if copyright_name == blank
     assign copyright_name = shop.name
   endif
 %}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ footer_background }};
+  }
+{% endstyle %}
 
 <footer-house
   class="footer-house color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
@@ -179,6 +189,12 @@
       "default": "scheme-5"
     },
     {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme."
+    },
+    {
       "type": "header",
       "content": "Store utilities"
     },
@@ -236,13 +252,12 @@
           "static": true,
           "blocks": [
             {
-              "type": "heading",
+              "type": "label",
               "id": "newsletter_eyebrow",
               "name": "t:names.subheading",
               "static": true,
               "settings": {
-                "heading": "<p>PRIVATE NOTES / OCCASIONAL LETTERS</p>",
-                "type_preset": "h7"
+                "text": "<p>PRIVATE NOTES / OCCASIONAL LETTERS</p>"
               }
             },
             {
@@ -280,13 +295,12 @@
               }
             },
             {
-              "type": "heading",
+              "type": "label",
               "id": "newsletter_note",
               "name": "t:names.subheading",
               "static": true,
               "settings": {
-                "heading": "<p>OCCASIONAL LETTERS. UNSUBSCRIBE AT ANY TIME.</p>",
-                "type_preset": "h7"
+                "text": "<p>OCCASIONAL LETTERS. UNSUBSCRIBE AT ANY TIME.</p>"
               }
             }
               ]
@@ -300,13 +314,12 @@
           },
           "blocks": [
             {
-              "type": "heading",
+              "type": "label",
               "id": "appointment_eyebrow",
               "name": "t:names.subheading",
               "static": true,
               "settings": {
-                "heading": "<p>PRIVATE APPOINTMENTS</p>",
-                "type_preset": "2xs"
+                "text": "<p>PRIVATE APPOINTMENTS</p>"
               }
             },
             {
@@ -386,13 +399,12 @@
           },
           "blocks": [
             {
-              "type": "heading",
+              "type": "label",
               "id": "signature_eyebrow",
               "name": "t:names.subheading",
               "static": true,
               "settings": {
-                "heading": "<p>THE HOUSE OF SPINEL / NEW YORK</p>",
-                "type_preset": "h7"
+                "text": "<p>THE HOUSE OF SPINEL / NEW YORK</p>"
               }
             },
             {
@@ -407,23 +419,21 @@
               }
             },
             {
-              "type": "heading",
+              "type": "label",
               "id": "signature_principles",
               "name": "t:names.subheading",
               "static": true,
               "settings": {
-                "heading": "<p>NATURAL STONES<br>SCULPTURAL GOLD<br>MADE WITH INTENT</p>",
-                "type_preset": "h7"
+                "text": "<p>NATURAL STONES<br>SCULPTURAL GOLD<br>MADE WITH INTENT</p>"
               }
             },
             {
-              "type": "heading",
+              "type": "label",
               "id": "signature_tagline",
               "name": "t:names.subheading",
               "static": true,
               "settings": {
-                "heading": "<p>OBJECTS OF COLOUR, CHARACTER AND CONSEQUENCE.</p>",
-                "type_preset": "h7"
+                "text": "<p>OBJECTS OF COLOUR, CHARACTER AND CONSEQUENCE.</p>"
               }
             }
           ]

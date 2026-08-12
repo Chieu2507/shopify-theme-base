@@ -7,6 +7,10 @@
 
 {% liquid
   assign menu_label = block.settings.menu.title
+  assign menu_heading_font = 'var(--font-heading--family)'
+  if block.settings.font == 'body'
+    assign menu_heading_font = 'var(--font-body--family)'
+  endif
   if menu_label == blank
     assign menu_label = 'footer.menu' | t
   endif
@@ -17,7 +21,7 @@
   data-footer-menu
   data-footer-mobile-accordion="{{ block.settings.show_as_accordion_mobile }}"
   data-footer-default-open="{{ block.settings.open_accordions_by_default }}"
-  style="--footer-menu-max-width: {{ block.settings.maximum_width }}px;"
+  style="--footer-menu-max-width: {{ block.settings.maximum_width }}px; --footer-menu-heading-font-family: {{ menu_heading_font }};"
   open
   {{ block.shopify_attributes }}
 >
@@ -114,6 +118,16 @@
       "id": "heading",
       "label": "t:typography_blocks.text",
       "default": "t:typography_defaults.heading"
+    },
+    {
+      "type": "select",
+      "id": "font",
+      "label": "Font",
+      "options": [
+        { "value": "heading", "label": "Heading" },
+        { "value": "body", "label": "Body" }
+      ],
+      "default": "body"
     },
     {
       "type": "select",
