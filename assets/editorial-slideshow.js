@@ -27,7 +27,6 @@ class EditorialSlideshow extends HTMLElement {
     this.progressStartedAt = null;
     this.progressStartElapsed = 0;
     this.progressStartIndex = null;
-    this.firstSlideImage = null;
     this.navigatorRevealTimer = null;
     this.navigatorRevealFallbackTimer = null;
     this.pointerFocusTimer = null;
@@ -36,6 +35,9 @@ class EditorialSlideshow extends HTMLElement {
     this.slideSignature = '';
     this.slideRefreshFrame = null;
     this.slideObserver = null;
+    this.announcementBarResizeObserver = null;
+    this.viewportWidth = window.innerWidth;
+    this.stableVisualViewportHeight = this.getVisualViewportHeight();
     this.isInViewport = !('IntersectionObserver' in window);
 
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
@@ -45,7 +47,7 @@ class EditorialSlideshow extends HTMLElement {
     this.handlePointerDown = this.handlePointerDown.bind(this);
     this.handleCompactNavigatorChange = this.handleCompactNavigatorChange.bind(this);
     this.handleViewportResize = this.handleViewportResize.bind(this);
-    this.handleFirstSlideImageChange = this.handleFirstSlideImageChange.bind(this);
+    this.handleAnnouncementBarChange = this.handleAnnouncementBarChange.bind(this);
 
     this.buildNavigatorTabs();
     this.addEventListener('keydown', this.handleKeydown, { signal });
@@ -61,13 +63,13 @@ class EditorialSlideshow extends HTMLElement {
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
     this.compactNavigator.addEventListener?.('change', this.handleCompactNavigatorChange, { signal });
     window.addEventListener('resize', this.handleViewportResize, { signal });
+    window.visualViewport?.addEventListener('resize', this.handleViewportResize, { signal });
+    document.addEventListener('shopify:section:load', this.handleAnnouncementBarChange, { signal });
+    document.addEventListener('shopify:section:unload', this.handleAnnouncementBarChange, { signal });
+    document.addEventListener('shopify:section:reorder', this.handleAnnouncementBarChange, { signal });
 
-    if (this.dataset.heightMode === 'adapt') {
-      this.firstSlideImage = this.slider?.querySelector('.editorial-slideshow__slide:first-child img');
-      this.firstSlideImage?.addEventListener('load', this.handleFirstSlideImageChange, { signal });
-      window.addEventListener('resize', this.handleFirstSlideImageChange, { signal });
-      this.updateFirstSlideImageRatio();
-    }
+    this.observeAnnouncementBars();
+    this.updateVisibleViewportHeight();
 
     if (this.autoplayToggle && !this.autoplaySetting) {
       this.autoplayToggle.disabled = true;
@@ -92,6 +94,8 @@ class EditorialSlideshow extends HTMLElement {
   disconnectedCallback() {
     this.slideObserver?.disconnect();
     this.slideObserver = null;
+    this.announcementBarResizeObserver?.disconnect();
+    this.announcementBarResizeObserver = null;
     if (this.slideRefreshFrame) window.cancelAnimationFrame(this.slideRefreshFrame);
     this.slideRefreshFrame = null;
     this.abortController?.abort();
@@ -100,9 +104,6 @@ class EditorialSlideshow extends HTMLElement {
     this.visibilityObserver = null;
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
-    if (this.firstSlideImageRatioFrame) window.cancelAnimationFrame(this.firstSlideImageRatioFrame);
-    this.firstSlideImageRatioFrame = null;
-    this.firstSlideImage = null;
     this.clearNavigatorRevealTimer();
     if (this.pointerFocusTimer) window.clearTimeout(this.pointerFocusTimer);
     this.pointerFocusTimer = null;
@@ -120,6 +121,54 @@ class EditorialSlideshow extends HTMLElement {
     return this.slider
       ? [...this.slider.querySelectorAll('.editorial-slideshow__slide:not(.swiper-slide-duplicate)')]
       : [];
+  }
+
+  observeAnnouncementBars() {
+    this.announcementBarResizeObserver?.disconnect();
+    this.announcementBarResizeObserver = 'ResizeObserver' in window
+      ? new ResizeObserver(() => this.updateAnnouncementBarHeight())
+      : null;
+
+    document.querySelectorAll('announcement-bar').forEach((announcementBar) => {
+      this.announcementBarResizeObserver?.observe(announcementBar);
+    });
+    this.updateAnnouncementBarHeight();
+  }
+
+  handleAnnouncementBarChange() {
+    window.requestAnimationFrame(() => {
+      if (!this.isConnected) return;
+      this.observeAnnouncementBars();
+    });
+  }
+
+  updateAnnouncementBarHeight() {
+    const announcementBarHeight = [...document.querySelectorAll('announcement-bar')]
+      .filter((announcementBar) => !announcementBar.hidden && getComputedStyle(announcementBar).display !== 'none')
+      .reduce((height, announcementBar) => height + announcementBar.getBoundingClientRect().height, 0);
+
+    this.style.setProperty('--editorial-announcement-bar-height', `${announcementBarHeight}px`);
+  }
+
+  getVisualViewportHeight() {
+    return window.visualViewport?.height || window.innerHeight;
+  }
+
+  updateVisibleViewportHeight() {
+    const nextViewportWidth = window.innerWidth;
+    const isMobileViewport = window.matchMedia('(max-width: 767.98px)').matches;
+
+    // Mobile browser chrome changes visualViewport.height while scrolling.
+    // Keep the initially visible height stable until width/orientation changes.
+    if (!isMobileViewport || nextViewportWidth !== this.viewportWidth) {
+      this.stableVisualViewportHeight = this.getVisualViewportHeight();
+    }
+
+    this.viewportWidth = nextViewportWidth;
+    this.style.setProperty(
+      '--editorial-visible-viewport-height',
+      `${Math.max(0, Math.round(this.stableVisualViewportHeight * 100) / 100)}px`,
+    );
   }
 
   preloadSlideImage(slide) {
@@ -276,24 +325,6 @@ class EditorialSlideshow extends HTMLElement {
     if (this.mobileCurrent) this.mobileCurrent.textContent = '01';
     if (this.mobileLabel) this.mobileLabel.textContent = this.getSlides()[0]?.dataset.editorialNavLabel || 'Slide';
     this.syncSlideRatios();
-  }
-
-  handleFirstSlideImageChange() {
-    if (this.firstSlideImageRatioFrame) return;
-
-    this.firstSlideImageRatioFrame = window.requestAnimationFrame(() => {
-      this.firstSlideImageRatioFrame = null;
-      this.updateFirstSlideImageRatio();
-    });
-  }
-
-  updateFirstSlideImageRatio() {
-    if (this.dataset.heightMode !== 'adapt' || !this.firstSlideImage?.naturalWidth || !this.firstSlideImage?.naturalHeight) return;
-
-    this.style.setProperty(
-      '--editorial-slideshow-mobile-ratio',
-      this.firstSlideImage.naturalWidth / this.firstSlideImage.naturalHeight,
-    );
   }
 
   syncNavigatorAvailability(slideCount) {
@@ -460,6 +491,7 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   handleViewportResize() {
+    this.updateVisibleViewportHeight();
     const isCompact = this.compactNavigator.matches;
     if (isCompact !== this.isCompactNavigator) {
       this.handleCompactNavigatorChange({ matches: isCompact });

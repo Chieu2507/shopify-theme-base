@@ -2,11 +2,8 @@
 {% render 'swiper-stylesheet' %}
 
 {% liquid
-  assign height_mode = section.settings.height_mode | default: 'percent'
-  assign height_percent_desktop = section.settings.height_percent_desktop | default: 100
-  assign height_percent_mobile = section.settings.height_percent_mobile | default: 100
-  assign height_pixels_desktop = section.settings.height_pixels_desktop | default: 780
-  assign height_pixels_mobile = section.settings.height_pixels_mobile | default: 700
+  assign desktop_height = section.settings.desktop_height | default: 'full'
+  assign mobile_height = section.settings.mobile_height | default: 'full'
   assign slideshow_description = section.settings.slideshow_description | default: 'Slideshow about our brand'
   assign autoplay_delay_display = section.settings.autoplay_delay
   if section.settings.autoplay_delay < 10
@@ -15,18 +12,17 @@
 %}
 
 <editorial-slideshow
-  class="editorial-slideshow color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.enable_image_zoom %} editorial-slideshow--image-zoom{% endif %} editorial-slideshow--height-mode-{{ height_mode }}{% if request.visual_preview_mode %} editorial-slideshow--visual-preview{% endif %}"
+  class="editorial-slideshow editorial-slideshow--desktop-height-{{ desktop_height }} editorial-slideshow--mobile-height-{{ mobile_height }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.enable_image_zoom %} editorial-slideshow--image-zoom{% endif %}{% if request.visual_preview_mode %} editorial-slideshow--visual-preview{% endif %}"
   role="region"
   aria-label="{{ slideshow_description | escape }}"
   data-section-id="{{ section.id }}"
   data-motion-enabled="{{ settings.enable_motion }}"
   data-autoplay="{{ section.settings.autoplay }}"
   data-autoplay-delay="{{ section.settings.autoplay_delay | times: 1000 }}"
-  data-height-mode="{{ height_mode }}"
   {% unless request.visual_preview_mode %}
     data-deferred-module="{{ 'editorial-slideshow.js' | asset_url }}"
   {% endunless %}
-  style="--editorial-navigator-background-opacity: {{ section.settings.navigator_background_opacity | default: 80 }}%; --editorial-slideshow-desktop-ratio: 16 / 9; --editorial-slideshow-mobile-ratio: 3 / 4; --editorial-slideshow-height-desktop-percent: {{ height_percent_desktop }}svh; --editorial-slideshow-height-mobile-percent: {{ height_percent_mobile }}svh; --editorial-slideshow-height-desktop-pixels: {{ height_pixels_desktop }}px; --editorial-slideshow-height-mobile-pixels: {{ height_pixels_mobile }}px;"
+  style="--editorial-navigator-background-opacity: {{ section.settings.navigator_background_opacity | default: 80 }}%;"
 >
   <div class="editorial-slideshow__viewport swiper" data-editorial-slideshow-slider>
     <div class="editorial-slideshow__wrapper swiper-wrapper">
@@ -108,58 +104,29 @@
   "settings": [
     {
       "type": "select",
-      "id": "height_mode",
-      "label": "Height mode",
+      "id": "desktop_height",
+      "label": "Desktop height",
       "options": [
+        { "value": "650", "label": "650px" },
+        { "value": "750", "label": "750px" },
+        { "value": "850", "label": "850px" },
         { "value": "adapt", "label": "Adapt to first image" },
-        { "value": "percent", "label": "Percents" },
-        { "value": "pixels", "label": "Pixels" }
+        { "value": "full", "label": "Full screen" }
       ],
-      "default": "percent"
+      "default": "full"
     },
     {
-      "type": "range",
-      "id": "height_percent_desktop",
-      "label": "Desktop height",
-      "min": 40,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "default": 100,
-      "visible_if": "{{ section.settings.height_mode == 'percent' }}"
-    },
-    {
-      "type": "range",
-      "id": "height_percent_mobile",
+      "type": "select",
+      "id": "mobile_height",
       "label": "Mobile height",
-      "min": 40,
-      "max": 100,
-      "step": 5,
-      "unit": "%",
-      "default": 100,
-      "visible_if": "{{ section.settings.height_mode == 'percent' }}"
-    },
-    {
-      "type": "range",
-      "id": "height_pixels_desktop",
-      "label": "Desktop height",
-      "min": 480,
-      "max": 1000,
-      "step": 20,
-      "unit": "px",
-      "default": 780,
-      "visible_if": "{{ section.settings.height_mode == 'pixels' }}"
-    },
-    {
-      "type": "range",
-      "id": "height_pixels_mobile",
-      "label": "Mobile height",
-      "min": 440,
-      "max": 900,
-      "step": 20,
-      "unit": "px",
-      "default": 700,
-      "visible_if": "{{ section.settings.height_mode == 'pixels' }}"
+      "options": [
+        { "value": "450", "label": "450px" },
+        { "value": "550", "label": "550px" },
+        { "value": "650", "label": "650px" },
+        { "value": "adapt", "label": "Adapt to first image" },
+        { "value": "full", "label": "Full screen" }
+      ],
+      "default": "full"
     },
     {
       "type": "select",
@@ -245,11 +212,8 @@
       "name": "Editorial slideshow",
       "category": "Banners",
       "settings": {
-        "height_mode": "percent",
-        "height_percent_desktop": 100,
-        "height_percent_mobile": 100,
-        "height_pixels_desktop": 780,
-        "height_pixels_mobile": 700,
+        "desktop_height": "full",
+        "mobile_height": "full",
         "autoplay": true,
         "autoplay_delay": 6,
         "show_slideshow_controls": true,
