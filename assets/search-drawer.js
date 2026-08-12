@@ -220,6 +220,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.classList.remove('is-open');
       this.panel.getBoundingClientRect();
       this.classList.add('is-open');
+      this.playContentReveal();
       this.initializeCategoriesCarousel();
       this.syncTriggers(true);
       this.startPlaceholderAnimation();
@@ -287,6 +288,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.recentController = null;
       window.clearTimeout(this.searchTimer);
       this.stopPlaceholderAnimation();
+      this.stopContentReveal();
       this.syncTriggers(false);
       this.backdropInteraction?.hide();
       this.classList.remove('is-open');
@@ -309,6 +311,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       window.clearTimeout(this.closeTimer);
       this.hidden = true;
       this.isOpen = false;
+      this.stopContentReveal();
       this.classList.remove('is-open', 'is-closing');
       this.unlockPageScroll();
       this.syncTriggers(false);
@@ -324,6 +327,20 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (restoreFocus && focusTarget?.isConnected) {
         focusTarget.focus({ preventScroll: true });
       }
+    }
+
+    playContentReveal() {
+      if (this.dataset.motionEnabled === 'false') return;
+      window.clearTimeout(this.contentRevealTimer);
+      this.classList.add('is-content-revealing');
+      this.contentRevealTimer = window.setTimeout(() => {
+        this.classList.remove('is-content-revealing');
+      }, 900);
+    }
+
+    stopContentReveal() {
+      window.clearTimeout(this.contentRevealTimer);
+      this.classList.remove('is-content-revealing');
     }
 
     lockPageScroll() {

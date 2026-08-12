@@ -281,8 +281,23 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     finishClose() {
       this.hidden = true;
+      this.stopContentReveal();
       this.classList.remove('is-closing', 'cart-drawer--above-search');
       this.unlockPageScroll();
+    }
+
+    playContentReveal() {
+      if (this.dataset.motionEnabled === 'false') return;
+      window.clearTimeout(this.contentRevealTimer);
+      this.classList.add('is-content-revealing');
+      this.contentRevealTimer = window.setTimeout(() => {
+        this.classList.remove('is-content-revealing');
+      }, 900);
+    }
+
+    stopContentReveal() {
+      window.clearTimeout(this.contentRevealTimer);
+      this.classList.remove('is-content-revealing');
     }
 
     getMotionDuration() {
@@ -309,6 +324,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.panel?.getBoundingClientRect();
       }
       if (!this.classList.contains('is-open')) this.classList.add('is-open');
+      if (shouldAnimateOpen) this.playContentReveal();
       document.querySelectorAll('[data-cart-drawer-open]').forEach((button) => button.setAttribute('aria-expanded', 'true'));
       this.panel?.focus({ preventScroll: true });
       await this.refresh();
@@ -318,6 +334,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (!this.isOpen) return;
       this.setOrderOptionsOpen(false);
       this.isOpen = false;
+      this.stopContentReveal();
       this.classList.remove('is-open');
       this.classList.add('is-closing');
       this.backdropInteraction?.hide();
