@@ -24,6 +24,9 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.discounts = this.querySelector('[data-cart-drawer-discounts]');
       this.discountCount = this.querySelector('[data-cart-drawer-discount-count]');
       this.total = this.querySelector('[data-cart-drawer-total]');
+      this.totalDiscount = this.querySelector('[data-cart-drawer-total-discount]');
+      this.savingsAmount = this.querySelector('[data-cart-drawer-savings-amount]');
+      this.originalTotal = this.querySelector('[data-cart-drawer-original-total]');
       this.checkoutTotal = this.querySelector('[data-cart-drawer-checkout-total]');
       this.taxNote = this.querySelector('[data-cart-drawer-tax-note]');
       this.recommendations = this.querySelector('[data-cart-drawer-recommendations]');
@@ -166,7 +169,9 @@ import { A11y, Swiper } from './swiper-loader.js';
       }, { signal });
       const discountForm = this.querySelector('[data-cart-drawer-discount]');
       const discountInput = discountForm?.querySelector('input[name="discount"]');
-      discountForm?.addEventListener('submit', (event) => this.applyDiscount(event), { signal });
+      const discountButton = discountForm?.querySelector('[data-cart-drawer-discount-submit]');
+      discountForm?.addEventListener('submit', (event) => event.preventDefault(), { signal });
+      discountButton?.addEventListener('click', () => this.applyDiscount(discountForm), { signal });
       discountInput?.addEventListener('input', () => {
         discountInput.removeAttribute('aria-invalid');
         if (this.message?.dataset.error === 'true') this.setMessage('');
@@ -506,6 +511,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const total = this.formatMoney(cart.total_price);
       if (this.total) this.total.textContent = total;
       if (this.checkoutTotal) this.checkoutTotal.textContent = total;
+      this.renderTotalDiscount(cart);
       if (this.taxNote) this.taxNote.textContent = cart.taxes_included ? this.dataset.taxesIncludedLabel : this.dataset.taxesNoteLabel;
       this.renderDiscounts(cart);
       this.renderShippingProgress(cart);
@@ -946,10 +952,9 @@ import { A11y, Swiper } from './swiper-loader.js';
       }, interval);
     }
 
-    async applyDiscount(event) {
-      event.preventDefault();
-      const input = event.currentTarget.querySelector('input[name="discount"]');
-      const button = event.currentTarget.querySelector('button[type="submit"]');
+    async applyDiscount(form) {
+      const input = form?.querySelector('input[name="discount"]');
+      const button = form?.querySelector('[data-cart-drawer-discount-submit]');
       const code = input?.value.trim();
       if (button?.disabled) return;
       input?.removeAttribute('aria-invalid');
@@ -1026,6 +1031,16 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.discounts.innerHTML = discounts.map((discount) => `<li><span>${this.escape(discount.title)}</span><span>−${this.formatMoney(discount.total_allocated_amount)}</span></li>`).join('');
       this.discounts.hidden = discounts.length === 0;
       if (this.discountCount) this.discountCount.textContent = String(discounts.length);
+    }
+
+    renderTotalDiscount(cart) {
+      const originalTotal = Number(cart.original_total_price || 0);
+      const total = Number(cart.total_price || 0);
+      const savings = Math.max(originalTotal - total, 0);
+      if (this.totalDiscount) this.totalDiscount.hidden = savings === 0;
+      if (!savings) return;
+      if (this.savingsAmount) this.savingsAmount.textContent = this.formatMoney(savings);
+      if (this.originalTotal) this.originalTotal.textContent = this.formatMoney(originalTotal);
     }
 
     isDiscountApplied(cart, code) {
