@@ -25,7 +25,7 @@ if (!customElements.get('review-parallax')) {
         card.dataset.reviewEnd = laneMotion.end;
       });
       this.cardOffsets = new Map(this.cards.map((card) => [card, 0]));
-      this.mobileQuery = window.matchMedia('(max-width: 989px)');
+      this.mobileQuery = window.matchMedia('(max-width: 1149.98px)');
       this.reduceMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.handleScroll = this.handleScroll.bind(this);
       this.handleResize = this.measure.bind(this);

@@ -1,7 +1,7 @@
 {% render 'section-stylesheet', asset: 'section-countdown-timer.css', defer_on_home: true %}
 
 {% if section.blocks.size > 0 %}
-  <section
+  <div
     class="countdown-timer color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} countdown-timer--full full-width{% endif %} countdown-timer--mobile-{{ section.settings.mobile_alignment }}"
     style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --countdown-timer-column-gap: {{ section.settings.column_gap }}px; --countdown-timer-mobile-row-gap: {{ section.settings.mobile_row_gap }}px;"
     data-deferred-module="{{ 'section-countdown-timer.js' | asset_url }}"
@@ -77,13 +77,13 @@
           {% when 'button' %}
             {% if block.settings.label != blank and block.settings.link != blank %}
               <div class="countdown-timer__button-block" {{ block.shopify_attributes }}>
-                {% render 'cta', label: block.settings.label, url: block.settings.link, style: block.settings.style %}
+                {% render 'cta', label: block.settings.label, url: block.settings.link, style: block.settings.style, icon: block.settings.icon, open_in_new_tab: block.settings.open_in_new_tab %}
               </div>
             {% endif %}
         {% endcase %}
       {% endfor %}
     </div>
-  </section>
+  </div>
 {% endif %}
 
 
@@ -298,6 +298,93 @@
           "id": "disable_line_break_mobile",
           "label": "t:typography_blocks.disable_line_break_mobile",
           "default": false
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.layout"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "t:typography_blocks.width",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "select",
+          "id": "width_mobile",
+          "label": "t:typography_blocks.width_mobile",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "t:typography_blocks.alignment",
+          "default": "left",
+          "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.padding"
+        },
+        {
+          "type": "range",
+          "id": "padding-block-start",
+          "label": "t:typography_blocks.top",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding-block-end",
+          "label": "t:typography_blocks.bottom",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding-inline-start",
+          "label": "t:typography_blocks.left",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding-inline-end",
+          "label": "t:typography_blocks.right",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
         }
       ]
     },
@@ -321,11 +408,26 @@
           "id": "type_preset",
           "label": "t:typography_blocks.text_size",
           "options": [
-            { "value": "lg", "label": "t:typography_options.body_large" },
-            { "value": "md", "label": "t:typography_options.body_medium" },
-            { "value": "sm", "label": "t:typography_options.body_small" },
-            { "value": "xs", "label": "t:typography_options.body_extra_small" },
-            { "value": "custom", "label": "t:typography_options.custom" }
+            {
+              "value": "lg",
+              "label": "t:typography_options.body_large"
+            },
+            {
+              "value": "md",
+              "label": "t:typography_options.body_medium"
+            },
+            {
+              "value": "sm",
+              "label": "t:typography_options.body_small"
+            },
+            {
+              "value": "xs",
+              "label": "t:typography_options.body_extra_small"
+            },
+            {
+              "value": "custom",
+              "label": "t:typography_options.custom"
+            }
           ],
           "default": "md"
         },
@@ -372,6 +474,93 @@
           "id": "disable_line_break_mobile",
           "label": "t:typography_blocks.disable_line_break_mobile",
           "default": false
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.layout"
+        },
+        {
+          "type": "select",
+          "id": "width",
+          "label": "t:typography_blocks.width",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "select",
+          "id": "width_mobile",
+          "label": "t:typography_blocks.width_mobile",
+          "options": [
+            {
+              "value": "fit-content",
+              "label": "t:typography_options.fit"
+            },
+            {
+              "value": "100%",
+              "label": "t:typography_options.fill"
+            }
+          ],
+          "default": "fit-content"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "t:typography_blocks.alignment",
+          "default": "left",
+          "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
+        },
+        {
+          "type": "header",
+          "content": "t:typography_blocks.padding"
+        },
+        {
+          "type": "range",
+          "id": "padding-block-start",
+          "label": "t:typography_blocks.top",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding-block-end",
+          "label": "t:typography_blocks.bottom",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding-inline-start",
+          "label": "t:typography_blocks.left",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
+        },
+        {
+          "type": "range",
+          "id": "padding-inline-end",
+          "label": "t:typography_blocks.right",
+          "min": 0,
+          "max": 100,
+          "step": 1,
+          "unit": "px",
+          "default": 0
         }
       ]
     },
@@ -478,6 +667,28 @@
             }
           ],
           "default": "primary"
+        },
+        {
+          "type": "checkbox",
+          "id": "open_in_new_tab",
+          "label": "Open in a new tab",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            {
+              "value": "none",
+              "label": "None"
+            },
+            {
+              "value": "arrow-right",
+              "label": "Arrow right"
+            }
+          ],
+          "default": "none"
         }
       ]
     }

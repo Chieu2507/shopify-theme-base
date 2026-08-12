@@ -1,6 +1,6 @@
 (() => {
   const pending = new WeakSet();
-  const isMobileViewport = window.matchMedia('(max-width: 749px)').matches;
+  const isMobileViewport = window.matchMedia('(max-width: 767.98px)').matches;
   const deferredModuleRootMargin = isMobileViewport ? '800px 0px' : '480px 0px';
   const observer = 'IntersectionObserver' in window
     ? new IntersectionObserver((entries) => {

@@ -5,7 +5,7 @@
   assign contact_form_id = 'ContactForm-' | append: section.id
 %}
 
-<section
+<div
   class="contact-form{% if section.settings.section_width == 'full' %} contact-form--full full-width{% endif %}"
   style="--contact-form-height-desktop: {{ section.settings.height_desktop }}px; --contact-form-height-tablet: {{ section.settings.height_tablet }}px; --contact-form-height-mobile: {{ section.settings.height_mobile }}px; --contact-form-media-width: {{ section.settings.media_width }}%; --contact-form-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }}; --contact-form-padding-top: {{ section.settings.padding_top }}px; --contact-form-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
@@ -19,7 +19,7 @@
           image: section.settings.image,
           max_width: 1600,
           widths: '480, 720, 960, 1200, 1600',
-          sizes: '(min-width: 990px) 50vw, 100vw',
+          sizes: '(min-width: 1150px) 50vw, 100vw',
           class: 'contact-form__image',
           loading: 'lazy',
           alt: section.settings.image.alt,
@@ -67,10 +67,10 @@
 
         {% form 'contact', id: contact_form_id, class: 'contact-form__form' %}
           {% if form.posted_successfully? %}
-            <p class="contact-form__status contact-form__status--success" tabindex="-1">{{ section.settings.success_message | escape }}</p>
+            <p class="contact-form__status contact-form__status--success form-message" tabindex="-1">{{ section.settings.success_message | escape }}</p>
           {% endif %}
           {% if form.errors %}
-            <div class="contact-form__status contact-form__status--error" role="alert">
+            <div class="contact-form__status contact-form__status--error form-message form-message--error" role="alert">
               {{ form.errors | default_errors }}
             </div>
           {% endif %}
@@ -80,17 +80,18 @@
               {% liquid
                 assign field_id = contact_form_id | append: '-' | append: forloop.index
                 assign field_name = 'contact[' | append: block.settings.field_type | append: ']'
-                assign field_class = 'contact-form__field'
+                assign field_class = 'contact-form__field form-field'
                 if block.settings.field_type == 'name' or block.settings.field_type == 'email'
                   assign field_class = field_class | append: ' contact-form__field--half'
                 endif
               %}
               <div class="{{ field_class }}" {{ block.shopify_attributes }}>
-                <label for="{{ field_id }}">{{ block.settings.label | escape }}{% if block.settings.required %}<span aria-hidden="true">*</span>{% endif %}</label>
+                <label class="form-label" for="{{ field_id }}">{{ block.settings.label | escape }}{% if block.settings.required %}<span aria-hidden="true">*</span>{% endif %}</label>
                 {% if block.settings.field_type == 'message' %}
-                  <textarea id="{{ field_id }}" name="{{ field_name }}" rows="4" placeholder="{{ block.settings.placeholder | escape }}"{% if block.settings.required %} required{% endif %}>{{ form.body | escape }}</textarea>
+                  <textarea class="form-control form-textarea" id="{{ field_id }}" name="{{ field_name }}" rows="4" placeholder="{{ block.settings.placeholder | escape }}"{% if block.settings.required %} required{% endif %}>{{ form.body | escape }}</textarea>
                 {% else %}
                   <input
+                    class="form-control form-input"
                     id="{{ field_id }}"
                     type="{% if block.settings.field_type == 'email' %}email{% elsif block.settings.field_type == 'phone' %}tel{% else %}text{% endif %}"
                     name="{{ field_name }}"
@@ -110,7 +111,7 @@
       </div>
     </div>
   </div>
-</section>
+</div>
 
 {% stylesheet %}
   .contact-form {
@@ -315,14 +316,14 @@
   .contact-form__status--success { color: #246b3e; }
   .contact-form__status--error { color: #a22727; }
 
-  @media screen and (max-width: 989px) {
+  @media screen and (max-width: 1149.98px) {
     .contact-form__layout,
     .contact-form__media {
       min-height: var(--contact-form-height-tablet);
     }
   }
 
-  @media screen and (max-width: 749px) {
+  @media screen and (max-width: 767.98px) {
     .contact-form__layout {
       display: block;
       min-height: 0;
@@ -471,7 +472,7 @@
     },
     {
       "type": "header",
-      "content": "Section spacing"
+      "content": "Section padding"
     },
     {
       "type": "range",

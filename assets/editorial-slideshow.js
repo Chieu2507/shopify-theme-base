@@ -18,7 +18,7 @@ class EditorialSlideshow extends HTMLElement {
     this.tabs = [];
     this.progressBars = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.compactNavigator = window.matchMedia('(min-width: 750px) and (max-width: 1540px)');
+    this.compactNavigator = window.matchMedia('(min-width: 768px) and (max-width: 1540px)');
     this.isCompactNavigator = this.compactNavigator.matches;
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
@@ -221,7 +221,7 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   updateContentMinimumHeight() {
-    const safeSpace = window.matchMedia('(max-width: 989px)').matches ? 24 : 32;
+    const safeSpace = window.matchMedia('(max-width: 1149.98px)').matches ? 24 : 32;
     const requiredHeight = this.getSlides().reduce((largestHeight, slide) => {
       const positioner = slide.querySelector('.editorial-slideshow__content-positioner');
       const content = slide.querySelector('.editorial-slideshow__content');

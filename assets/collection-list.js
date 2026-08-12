@@ -7,8 +7,8 @@ class CollectionList extends HTMLElement {
     this.pagination = this.querySelector('[data-collection-list-pagination]');
     this.previousButton = this.querySelector('[data-collection-list-previous]');
     this.nextButton = this.querySelector('[data-collection-list-next]');
-    this.mobileMedia = window.matchMedia('(max-width: 749px)');
-    this.tabletMedia = window.matchMedia('(max-width: 989px)');
+    this.mobileMedia = window.matchMedia('(max-width: 767.98px)');
+    this.tabletMedia = window.matchMedia('(max-width: 1149.98px)');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.currentDevice = null;
     this.swiper = null;

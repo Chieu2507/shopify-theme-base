@@ -82,7 +82,7 @@ class QuickViewModal {
     this.requestController = null;
     this.handleDrag = null;
     this.handleDragTimer = null;
-    this.mobileQuickView = window.matchMedia('(max-width: 749px)');
+    this.mobileQuickView = window.matchMedia('(max-width: 767.98px)');
     if (!this.dialog || !this.content) return;
     this.hideBackdropCursor = () => {
       document.documentElement.classList.remove('quick-view-backdrop-cursor');
