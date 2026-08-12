@@ -1002,17 +1002,21 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     async saveNote() {
       const note = this.querySelector('[data-cart-drawer-note]')?.value || '';
+      const button = this.querySelector('[data-cart-drawer-save-note]');
+      const trigger = this.orderOptionsTrigger;
+      if (button?.disabled) return;
+      if (button) button.disabled = true;
+      this.setMessage('');
+      this.setOrderOptionsOpen(false, true);
       try {
-        this.setStatus(this.dataset.savingNoteLabel);
         const response = await fetch(this.dataset.cartUpdateUrl || this.localeUrl('cart/update.js'), { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ note }) });
         if (!response.ok) throw new Error(this.dataset.noteErrorLabel);
-        this.setMessage('');
-        this.setOrderOptionsOpen(false, true);
       } catch (error) {
         console.error('[Spinel] Order note failed', error);
+        if (trigger) this.openOrderOptions('note', trigger);
         this.setMessage(error.message, true);
       } finally {
-        this.setStatus('');
+        if (button) button.disabled = false;
       }
     }
 
