@@ -23,9 +23,9 @@
 
 {% assign page_header_image = section.settings.image | default: section.settings.mobile_image %}
 
-<section
+<header
   class="page-header full-width page-header--align-{{ section.settings.content_alignment }}{% if section.settings.section_width == 'full' %} page-header--content-full{% endif %}{% if page_header_image != blank %} page-header--has-image{% endif %}"
-  style="--page-header-padding-top: {{ section.settings.padding_top }}px; --page-header-padding-bottom: {{ section.settings.padding_bottom }}px; --page-header-padding-top-mobile: {{ section.settings.padding_top_mobile }}px; --page-header-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px; --page-header-overlay-opacity: {{ section.settings.image_overlay_opacity | divided_by: 100.0 }};"
+  style="--page-header-padding-top: {{ section.settings.padding_top }}px; --page-header-padding-bottom: {{ section.settings.padding_bottom }}px; --page-header-overlay-opacity: {{ section.settings.image_overlay_opacity | divided_by: 100.0 }};"
 >
   {% if page_header_image != blank %}
     <div class="page-header__media" aria-hidden="true">
@@ -47,7 +47,7 @@
       <h1 class="page-header__title {% render 'typography-class', preset: section.settings.title_size, fallback: 'h1' %}">{{ page.title | escape }}</h1>
     {% endif %}
   </div>
-</section>
+</header>
 
 {% stylesheet %}
   .page-header { position: relative; isolation: isolate; color: var(--color-text); }
@@ -67,7 +67,8 @@
   .page-header--align-center .page-header__breadcrumbs { justify-content: center; }
   .page-header--align-right .page-header__inner { text-align: right; }
   .page-header--align-right .page-header__breadcrumbs { justify-content: flex-end; }
-  @media screen and (max-width: 749px) { .page-header__inner { padding-top: var(--page-header-padding-top-mobile); padding-bottom: var(--page-header-padding-bottom-mobile); } .page-header__breadcrumbs { margin-bottom: 14px; } }
+  @media screen and (min-width: 768px) and (max-width: 1149.98px) { .page-header__inner { padding-top: calc(var(--page-header-padding-top) * .75); padding-bottom: calc(var(--page-header-padding-bottom) * .75); } }
+  @media screen and (max-width: 767.98px) { .page-header__inner { padding-top: calc(var(--page-header-padding-top) * .5); padding-bottom: calc(var(--page-header-padding-bottom) * .5); } .page-header__breadcrumbs { margin-bottom: 14px; } }
 {% endstylesheet %}
 
 {% schema %}
@@ -106,10 +107,9 @@
     },
     { "type": "select", "id": "content_alignment", "label": "Content alignment", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" }], "default": "left" },
     { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
+    { "type": "header", "content": "Section padding" },
     { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 40 },
     { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 40 },
-    { "type": "range", "id": "padding_top_mobile", "label": "Mobile top padding", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 24 },
-    { "type": "range", "id": "padding_bottom_mobile", "label": "Mobile bottom padding", "min": 0, "max": 120, "step": 4, "unit": "px", "default": 24 },
     { "type": "header", "content": "Appearance" },
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" }
   ],
