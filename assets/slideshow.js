@@ -17,7 +17,7 @@ class SpinelSlideshow extends HTMLElement {
     this.autoplayIcon = this.querySelector('[data-slideshow-autoplay-icon]');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.isDoubleSlide = this.dataset.desktopStyle === 'double';
-    this.isDesktop = window.matchMedia('(min-width: 750px)');
+    this.isDesktop = window.matchMedia('(min-width: 768px)');
     this.onViewportChange = () => this.updateControls();
     this.onMotionChange = this.handleMotionChange.bind(this);
     this.onBlockSelect = this.handleBlockSelect.bind(this);

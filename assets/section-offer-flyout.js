@@ -21,7 +21,7 @@ if (!customElements.get('offer-flyout')) {
       this.tabDismissed = false;
       this.tabUnlocked = false;
       this.rememberOnClose = false;
-      this.mobileModal = window.matchMedia('(max-width: 749px)');
+      this.mobileModal = window.matchMedia('(max-width: 767.98px)');
       this.storageKey = `offer-flyout:${this.dataset.sectionId}`;
 
       if (!this.dialog || !this.tab || !this.openButton) return;

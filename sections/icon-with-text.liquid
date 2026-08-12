@@ -3,12 +3,22 @@
 {% liquid
   assign item_count = section.blocks | where: 'type', 'item' | size
   assign header_count = section.blocks | where: 'type', 'header' | size
+  assign section_background = section.settings.background_color
+  if section_background == blank
+    assign section_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
 %}
 
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ section_background }};
+  }
+{% endstyle %}
+
 {% if item_count > 0 or header_count > 0 %}
-  <section
+  <div
     class="icon-with-text icon-with-text--icon-{{ section.settings.icon_size | default: 'small' }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
-    style="--section-padding-top: {{ section.settings.padding_top | default: 10 }}px; --section-padding-bottom: {{ section.settings.padding_bottom | default: 64 }}px; --icon-with-text-column-gap: {{ section.settings.column_gap | default: 28 }}px; --icon-with-text-row-gap: {{ section.settings.row_gap | default: 40 }}px; --icon-with-text-content-gap: {{ section.settings.content_gap | default: 24 }}px; --icon-with-text-columns-desktop: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-tablet: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-mobile: {{ section.settings.columns_mobile | default: 1 }};{% if section.settings.background_color != blank %} --icon-with-text-background: {{ section.settings.background_color }};{% endif %}"
+    style="--section-padding-top: {{ section.settings.padding_top | default: 10 }}px; --section-padding-bottom: {{ section.settings.padding_bottom | default: 64 }}px; --icon-with-text-column-gap: {{ section.settings.column_gap | default: 28 }}px; --icon-with-text-row-gap: {{ section.settings.row_gap | default: 40 }}px; --icon-with-text-content-gap: {{ section.settings.content_gap | default: 24 }}px; --icon-with-text-columns-desktop: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-tablet: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-mobile: {{ section.settings.columns_mobile | default: 1 }};"
   >
     <div class="icon-with-text__inner section-spacing">
       {% if section.settings.heading != blank %}
@@ -88,7 +98,7 @@
         </div>
       {% endif %}
     </div>
-  </section>
+  </div>
 {% endif %}
 
 
@@ -363,16 +373,16 @@
       "content": "Appearance"
     },
     {
-      "type": "color",
-      "id": "background_color",
-      "label": "Background color",
-      "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme."
-    },
-    {
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "Color scheme",
       "default": "scheme-2"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme."
     }
   ],
   "blocks": [

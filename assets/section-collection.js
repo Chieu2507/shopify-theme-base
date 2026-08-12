@@ -249,7 +249,7 @@ if (!customElements.get('collection-facets')) {
       this.dialog = this.querySelector('[data-collection-filter-dialog]');
       this.filterPanel = this.dialog?.querySelector('.main-collection__filter-form');
       this.backdropPointer = this.dialog?.querySelector('.main-collection__filter-backdrop-pointer');
-      this.mobileDialog = window.matchMedia('(max-width: 749px)');
+      this.mobileDialog = window.matchMedia('(max-width: 767.98px)');
       this.backdropInteraction = this.dialog && window.SpinelModalBackdropPointer
         ? new window.SpinelModalBackdropPointer({
           root: this.dialog,

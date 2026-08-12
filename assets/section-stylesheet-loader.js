@@ -2,7 +2,7 @@ const deferredStylesheets = document.querySelectorAll('[data-deferred-section-st
 const loadedStylesheetUrls = new Set(
   [...document.querySelectorAll('link[rel="stylesheet"][href]')].map((link) => link.href),
 );
-const isMobileViewport = window.matchMedia('(max-width: 749px)').matches;
+const isMobileViewport = window.matchMedia('(max-width: 767.98px)').matches;
 const deferredStylesheetRootMargin = isMobileViewport ? '800px 0px' : '400px 0px';
 const scrollRestoration = window.SpinelScrollRestoration;
 

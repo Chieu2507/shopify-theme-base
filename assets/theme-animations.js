@@ -9,6 +9,7 @@
   const pending = new Set();
   const variants = new Set(['fade', 'fade-up', 'fade-down', 'fade-left', 'fade-right', 'zoom']);
   const defaultVariant = 'fade-up';
+  const revealSelector = '[data-reveal], [data-reveal-group]';
   const maximumTiming = 3000;
 
   const parseTiming = (value, fallback) => {
@@ -45,11 +46,12 @@
     if (initialized.has(element)) return;
     initialized.add(element);
 
-    const variant = variants.has(element.dataset.reveal) ? element.dataset.reveal : defaultVariant;
+    if (element.hasAttribute('data-reveal')) {
+      element.dataset.reveal = variants.has(element.dataset.reveal) ? element.dataset.reveal : defaultVariant;
+    }
     const duration = parseTiming(element.dataset.revealDuration, 650);
     const delay = parseTiming(element.dataset.revealDelay, 0);
 
-    element.dataset.reveal = variant;
     element.style.setProperty('--reveal-duration', `${duration}ms`);
     element.style.setProperty('--reveal-delay', `${delay}ms`);
 
@@ -65,8 +67,8 @@
 
   const init = (scope = document) => {
     const elements = [];
-    if (scope instanceof Element && scope.matches('[data-reveal]')) elements.push(scope);
-    scope.querySelectorAll?.('[data-reveal]').forEach((element) => elements.push(element));
+    if (scope instanceof Element && scope.matches(revealSelector)) elements.push(scope);
+    scope.querySelectorAll?.(revealSelector).forEach((element) => elements.push(element));
     elements.forEach(prepare);
 
     if (observer && elements.length) root.classList.add('theme-animations-enabled');
@@ -74,15 +76,15 @@
   };
 
   const revealSelectedBlock = (event) => {
-    const selected = event.target.closest?.('[data-reveal]')
-      || event.target.querySelector?.('[data-reveal]');
+    const selected = event.target.closest?.(revealSelector)
+      || event.target.querySelector?.(revealSelector);
     if (selected) show(selected);
   };
 
   const unload = (scope) => {
     const elements = [];
-    if (scope instanceof Element && scope.matches('[data-reveal]')) elements.push(scope);
-    scope.querySelectorAll?.('[data-reveal]').forEach((element) => elements.push(element));
+    if (scope instanceof Element && scope.matches(revealSelector)) elements.push(scope);
+    scope.querySelectorAll?.(revealSelector).forEach((element) => elements.push(element));
     elements.forEach((element) => {
       observer?.unobserve(element);
       pending.delete(element);
