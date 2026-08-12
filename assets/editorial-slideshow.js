@@ -36,8 +36,6 @@ class EditorialSlideshow extends HTMLElement {
     this.slideRefreshFrame = null;
     this.slideObserver = null;
     this.announcementBarResizeObserver = null;
-    this.viewportWidth = window.innerWidth;
-    this.stableVisualViewportHeight = this.getVisualViewportHeight();
     this.isInViewport = !('IntersectionObserver' in window);
 
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
@@ -63,13 +61,11 @@ class EditorialSlideshow extends HTMLElement {
     this.reduceMotion.addEventListener?.('change', this.handleMotionPreferenceChange, { signal });
     this.compactNavigator.addEventListener?.('change', this.handleCompactNavigatorChange, { signal });
     window.addEventListener('resize', this.handleViewportResize, { signal });
-    window.visualViewport?.addEventListener('resize', this.handleViewportResize, { signal });
     document.addEventListener('shopify:section:load', this.handleAnnouncementBarChange, { signal });
     document.addEventListener('shopify:section:unload', this.handleAnnouncementBarChange, { signal });
     document.addEventListener('shopify:section:reorder', this.handleAnnouncementBarChange, { signal });
 
     this.observeAnnouncementBars();
-    this.updateVisibleViewportHeight();
 
     if (this.autoplayToggle && !this.autoplaySetting) {
       this.autoplayToggle.disabled = true;
@@ -148,27 +144,6 @@ class EditorialSlideshow extends HTMLElement {
       .reduce((height, announcementBar) => height + announcementBar.getBoundingClientRect().height, 0);
 
     this.style.setProperty('--editorial-announcement-bar-height', `${announcementBarHeight}px`);
-  }
-
-  getVisualViewportHeight() {
-    return window.visualViewport?.height || window.innerHeight;
-  }
-
-  updateVisibleViewportHeight() {
-    const nextViewportWidth = window.innerWidth;
-    const isMobileViewport = window.matchMedia('(max-width: 767.98px)').matches;
-
-    // Mobile browser chrome changes visualViewport.height while scrolling.
-    // Keep the initially visible height stable until width/orientation changes.
-    if (!isMobileViewport || nextViewportWidth !== this.viewportWidth) {
-      this.stableVisualViewportHeight = this.getVisualViewportHeight();
-    }
-
-    this.viewportWidth = nextViewportWidth;
-    this.style.setProperty(
-      '--editorial-visible-viewport-height',
-      `${Math.max(0, Math.round(this.stableVisualViewportHeight * 100) / 100)}px`,
-    );
   }
 
   preloadSlideImage(slide) {
@@ -491,7 +466,6 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   handleViewportResize() {
-    this.updateVisibleViewportHeight();
     const isCompact = this.compactNavigator.matches;
     if (isCompact !== this.isCompactNavigator) {
       this.handleCompactNavigatorChange({ matches: isCompact });
