@@ -7,7 +7,6 @@ import { A11y, Swiper } from './swiper-loader.js';
     connectedCallback() {
       this.backdropPointer = this.querySelector('.cart-drawer__backdrop-pointer');
       this.panel = this.querySelector('.cart-drawer__panel');
-      this.handle = this.querySelector('[data-cart-drawer-order-options-handle]');
       this.items = this.querySelector('[data-cart-drawer-items]');
       this.footer = this.querySelector('[data-cart-drawer-footer]');
       this.orderOptionsPanel = this.querySelector('[data-cart-drawer-order-options]');
@@ -55,8 +54,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.pendingLineMutations = new Map();
       this.lineDesiredQuantities = new Map();
       this.lastFocusedElement = null;
-      this.handleDrag = null;
-      this.handleDragTimer = null;
       this.bind();
       this.setOrderOptionsOpen(false);
       this.handleProductAdd = (event) => {
@@ -90,7 +87,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
       this.destroyRecommendationSwiper();
-      this.resetHandleDrag();
       this.unlockPageScroll();
       this.isOpen = false;
       this.pendingLineMutations?.clear();
@@ -184,17 +180,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.shippingCountry?.addEventListener('change', () => this.updateShippingProvinces(), { signal });
       this.shippingEstimator?.addEventListener('input', () => this.clearShippingFieldErrors(), { signal });
       this.updateShippingProvinces();
-      if ('PointerEvent' in window) {
-        this.handle?.addEventListener('pointerdown', (event) => this.startHandleDrag(event), { signal });
-        window.addEventListener('pointermove', (event) => this.moveHandleDrag(event), { signal });
-        window.addEventListener('pointerup', (event) => this.endHandleDrag(event), { signal });
-        window.addEventListener('pointercancel', (event) => this.endHandleDrag(event, true), { signal });
-      } else {
-        this.handle?.addEventListener('touchstart', (event) => this.startTouchHandleDrag(event), { passive: false, signal });
-        window.addEventListener('touchmove', (event) => this.moveTouchHandleDrag(event), { passive: false, signal });
-        window.addEventListener('touchend', (event) => this.endTouchHandleDrag(event), { signal });
-        window.addEventListener('touchcancel', (event) => this.endTouchHandleDrag(event, true), { signal });
-      }
       document.addEventListener('keydown', (event) => {
         if (event.key === 'Escape' && this.isOpen) {
           if (this.orderOptionsPanel?.getAttribute('aria-hidden') === 'false') {
@@ -232,137 +217,6 @@ import { A11y, Swiper } from './swiper-loader.js';
         event.preventDefault();
         first.focus({ preventScroll: true });
       }
-    }
-
-    startTouchHandleDrag(event) {
-      const touch = event.changedTouches[0];
-      if (!touch) return;
-      this.startHandleDrag({
-        isPrimary: true,
-        button: 0,
-        pointerId: touch.identifier,
-        clientY: touch.clientY,
-        preventDefault: () => event.preventDefault()
-      });
-    }
-
-    moveTouchHandleDrag(event) {
-      const drag = this.handleDrag;
-      if (!drag) return;
-      const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === drag.pointerId);
-      if (!touch) return;
-      this.moveHandleDrag({
-        pointerId: touch.identifier,
-        clientY: touch.clientY,
-        preventDefault: () => event.preventDefault()
-      });
-    }
-
-    endTouchHandleDrag(event, cancelled = false) {
-      const drag = this.handleDrag;
-      if (!drag) return;
-      const touch = Array.from(event.changedTouches).find((candidate) => candidate.identifier === drag.pointerId);
-      if (!touch) return;
-      this.endHandleDrag({ pointerId: touch.identifier }, cancelled);
-    }
-
-    startHandleDrag(event) {
-      if (!this.orderOptionsPanel || !this.handle || !this.isOpen || this.orderOptionsPanel.getAttribute('aria-hidden') !== 'false' || !event.isPrimary || event.button > 0 || this.classList.contains('is-closing')) return;
-
-      window.clearTimeout(this.handleDragTimer);
-      this.handleDrag = {
-        pointerId: event.pointerId,
-        startY: event.clientY,
-        lastY: event.clientY,
-        lastTime: performance.now(),
-        velocity: 0,
-        distance: 0,
-        panelHeight: this.orderOptionsPanel.offsetHeight,
-        frame: null
-      };
-      this.orderOptionsPanel.classList.remove('is-handle-settling', 'is-handle-closing');
-      this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
-      this.orderOptionsPanel.style.opacity = '1';
-      this.orderOptionsPanel.classList.add('is-handle-dragging');
-      this.classList.add('is-order-options-dragging');
-      if (this.orderOptionsBackdrop) {
-        this.orderOptionsBackdrop.style.transition = 'none';
-        this.orderOptionsBackdrop.style.opacity = '1';
-      }
-      try { this.handle.setPointerCapture(event.pointerId); } catch (_) {}
-      event.preventDefault();
-    }
-
-    moveHandleDrag(event) {
-      const drag = this.handleDrag;
-      if (!drag || event.pointerId !== drag.pointerId) return;
-
-      const now = performance.now();
-      const elapsed = Math.max(now - drag.lastTime, 1);
-      const movement = event.clientY - drag.lastY;
-      drag.velocity = movement / elapsed;
-      drag.lastY = event.clientY;
-      drag.lastTime = now;
-      drag.distance = Math.max(0, event.clientY - drag.startY);
-      if (drag.frame === null) drag.frame = requestAnimationFrame(() => this.renderHandleDrag(drag));
-      event.preventDefault();
-    }
-
-    renderHandleDrag(drag) {
-      if (this.handleDrag !== drag) return;
-      drag.frame = null;
-      this.orderOptionsPanel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
-      if (this.orderOptionsBackdrop) {
-        const fadeDistance = Math.max(drag.panelHeight * 0.7, 1);
-        this.orderOptionsBackdrop.style.opacity = String(Math.max(0, 1 - (drag.distance / fadeDistance)));
-      }
-    }
-
-    endHandleDrag(event, cancelled = false) {
-      const drag = this.handleDrag;
-      if (!drag || event.pointerId !== drag.pointerId) return;
-
-      try { this.handle?.releasePointerCapture(event.pointerId); } catch (_) {}
-      if (drag.frame !== null) {
-        cancelAnimationFrame(drag.frame);
-        drag.frame = null;
-        this.renderHandleDrag(drag);
-      }
-      const closeDistance = Math.min(140, drag.panelHeight * 0.2);
-      const shouldClose = !cancelled && (drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55));
-      this.handleDrag = null;
-      this.orderOptionsPanel.classList.remove('is-handle-dragging');
-      this.classList.remove('is-order-options-dragging');
-
-      if (shouldClose) {
-        this.closeFromHandle();
-        return;
-      }
-
-      this.orderOptionsPanel.classList.add('is-handle-settling');
-      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 480ms cubic-bezier(.22, 1, .36, 1)';
-      requestAnimationFrame(() => {
-        this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
-        this.orderOptionsPanel.style.opacity = '1';
-        if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.opacity = '1';
-      });
-      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), this.reduceMotion.matches ? 0 : 480);
-    }
-
-    closeFromHandle() {
-      if (!this.isOpen || !this.orderOptionsPanel || this.orderOptionsPanel.getAttribute('aria-hidden') === 'true') return;
-      this.orderOptionsPanel.classList.add('is-handle-closing');
-      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 440ms ease';
-      requestAnimationFrame(() => {
-        this.orderOptionsPanel.style.transform = 'translate3d(0, 100%, 0)';
-        this.orderOptionsPanel.style.opacity = '0';
-        if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.opacity = '0';
-      });
-      window.clearTimeout(this.handleDragTimer);
-      this.handleDragTimer = window.setTimeout(() => {
-        this.setOrderOptionsOpen(false, true);
-        this.resetHandleDrag();
-      }, this.reduceMotion.matches ? 0 : 480);
     }
 
     lockPageScroll() {
@@ -425,23 +279,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.unlockPageScroll();
     }
 
-    resetHandleDrag() {
-      window.clearTimeout(this.handleDragTimer);
-      this.handleDragTimer = null;
-      if (this.handleDrag) {
-        try { this.handle?.releasePointerCapture(this.handleDrag.pointerId); } catch (_) {}
-        if (this.handleDrag.frame !== null) cancelAnimationFrame(this.handleDrag.frame);
-      }
-      this.handleDrag = null;
-      this.classList.remove('is-order-options-dragging');
-      this.orderOptionsPanel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
-      this.orderOptionsPanel?.style.removeProperty('transform');
-      this.orderOptionsPanel?.style.removeProperty('opacity');
-      this.orderOptionsPanel?.style.removeProperty('transition');
-      this.orderOptionsBackdrop?.style.removeProperty('opacity');
-      this.orderOptionsBackdrop?.style.removeProperty('transition');
-    }
-
     getMotionDuration() {
       const value = getComputedStyle(this).getPropertyValue('--cart-drawer-motion-duration').trim();
       const match = value.match(/^([\d.]+)(ms|s)$/);
@@ -453,7 +290,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.lastFocusedElement = trigger || document.activeElement;
       this.classList.toggle('cart-drawer--above-search', Boolean(trigger?.closest?.('search-drawer.is-open')));
       window.clearTimeout(this.closeTimer);
-      this.resetHandleDrag();
       this.setOrderOptionsOpen(false);
       this.lockPageScroll();
       const shouldAnimateOpen = !(this.isOpen && this.classList.contains('is-open'));
@@ -474,7 +310,6 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     close() {
       if (!this.isOpen) return;
-      this.resetHandleDrag();
       this.setOrderOptionsOpen(false);
       this.isOpen = false;
       this.classList.remove('is-open');
