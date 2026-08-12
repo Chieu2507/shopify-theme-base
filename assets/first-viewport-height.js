@@ -92,8 +92,14 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
         ? element.querySelector('.editorial-slideshow__viewport.swiper')
         : null;
       const renderedViewportHeight = editorialViewport?.getBoundingClientRect().height || 0;
-      const targetHeight = isEditorialSlideshow
-        ? Math.max(remainingViewportHeight, renderedViewportHeight)
+      const previousFirstViewportHeight = Number.parseFloat(
+        element.style.getPropertyValue('--slideshow-first-viewport-height'),
+      ) || 0;
+      const viewportUsesFirstViewportHeight = isEditorialSlideshow
+        && previousFirstViewportHeight > 0
+        && Math.abs(renderedViewportHeight - previousFirstViewportHeight) < 1;
+      const targetHeight = isEditorialSlideshow && renderedViewportHeight > 0 && !viewportUsesFirstViewportHeight
+        ? renderedViewportHeight
         : remainingViewportHeight;
 
       element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round(targetHeight * 100) / 100)}px`);
