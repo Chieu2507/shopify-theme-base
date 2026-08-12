@@ -438,6 +438,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.promotionSequence.append(clone);
       }
       this.promotionSequenceClone.replaceChildren(...[...this.promotionSequence.children].map((child) => child.cloneNode(true)));
+      this.promotionTrack.style.setProperty('--cart-promotion-sequence-width', `${this.promotionSequence.getBoundingClientRect().width}px`);
     }
 
     updateHeaderCount(cart) {
