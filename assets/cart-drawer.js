@@ -379,8 +379,10 @@ import { A11y, Swiper } from './swiper-loader.js';
     openOrderOptions(name, trigger) {
       const content = this.orderOptionsContents.find((panel) => panel.dataset.cartDrawerOrderOptionsContent === name);
       if (!content) return;
+      const previousPanel = this.orderOptionsPanel?.dataset.activePanel;
       this.orderOptionsTrigger = trigger;
       this.orderOptionsContents.forEach((panel) => { panel.hidden = panel !== content; });
+      if (previousPanel && previousPanel !== name) this.setMessage('');
       if (this.orderOptionsTitle) this.orderOptionsTitle.textContent = trigger.dataset.cartDrawerOrderOptionsTitle || trigger.textContent.trim();
       this.orderOptionsPanel.dataset.activePanel = name;
       this.orderOptionsPanel.scrollTop = 0;
