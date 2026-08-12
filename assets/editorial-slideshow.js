@@ -379,7 +379,7 @@ class EditorialSlideshow extends HTMLElement {
     const { setupFirstViewportHeight } = await import(moduleUrl);
     if (this.abortController !== abortController || !this.isConnected) return;
 
-    this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 989 });
+    this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 767 });
   }
 
   syncNavigatorAvailability(slideCount) {

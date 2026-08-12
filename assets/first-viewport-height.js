@@ -88,7 +88,15 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
     }
 
     if (canFillFirstViewport) {
-      element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round(remainingViewportHeight * 100) / 100)}px`);
+      const editorialViewport = isEditorialSlideshow
+        ? element.querySelector('.editorial-slideshow__viewport.swiper')
+        : null;
+      const renderedViewportHeight = editorialViewport?.getBoundingClientRect().height || 0;
+      const targetHeight = isEditorialSlideshow
+        ? Math.max(remainingViewportHeight, renderedViewportHeight)
+        : remainingViewportHeight;
+
+      element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round(targetHeight * 100) / 100)}px`);
     } else {
       element.style.removeProperty('--slideshow-first-viewport-height');
     }
