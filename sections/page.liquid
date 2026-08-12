@@ -3,7 +3,7 @@
   assign mobile_image = section.settings.mobile_image
 %}
 
-<section
+<div
   class="about-page about-page--horizontal-{{ section.settings.content_horizontal }} about-page--vertical-{{ section.settings.content_vertical }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% else %} about-page--contained{% endif %}"
   style="--about-page-height-desktop: {{ section.settings.height_desktop }}px; --about-page-height-mobile: {{ section.settings.height_mobile }}px; --about-page-content-width: {{ section.settings.content_width }}px; --about-page-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }};"
 >
@@ -37,15 +37,22 @@
       {% endif %}
 
       {% for block in section.blocks %}
-        {% if block.type == 'button' and block.settings.label != blank and block.settings.url != blank %}
+        {% if block.type == 'button' and block.settings.label != blank %}
+          {% assign page_button_url = block.settings.link | default: block.settings.url %}
           <div class="about-page__action" {{ block.shopify_attributes }}>
-            <a class="btn-primary" href="{{ block.settings.url | escape }}">{{ block.settings.label | escape }}</a>
+            {% render 'cta',
+              label: block.settings.label,
+              url: page_button_url,
+              style: block.settings.style,
+              icon: block.settings.icon,
+              open_in_new_tab: block.settings.open_in_new_tab
+            %}
           </div>
         {% endif %}
       {% endfor %}
     </div>
   </div>
-</section>
+</div>
 
 {% stylesheet %}
   .about-page { position: relative; display: grid; min-height: var(--about-page-height-desktop); overflow: hidden; isolation: isolate; background: var(--gradient-background, var(--color-background)); }
@@ -70,7 +77,7 @@
   .about-page__text > * { margin: 0; }
   .about-page__text > * + * { margin-top: 14px; }
   .about-page__action { margin-top: 8px; }
-  @media screen and (max-width: 749px) { .about-page { min-height: var(--about-page-height-mobile); } .about-page__main { padding-top: 44px; padding-bottom: 44px; } .about-page__content--surface { padding: 28px 22px; } }
+  @media screen and (max-width: 767.98px) { .about-page { min-height: var(--about-page-height-mobile); } .about-page__main { padding-top: 44px; padding-bottom: 44px; } .about-page__content--surface { padding: 28px 22px; } }
 {% endstylesheet %}
 
 {% schema %}
@@ -299,21 +306,10 @@
           "visible_if": "{{ block.settings.type_preset == 'custom' }}"
         },
         {
-          "type": "select",
-          "id": "color",
-          "label": "t:typography_blocks.color",
-          "options": [
-            {
-              "value": "text",
-              "label": "t:typography_options.text"
-            },
-            {
-              "value": "subtext",
-              "label": "t:typography_options.subtext"
-            }
-          ],
-          "default": "text"
-        },
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color"
+    },
         {
           "type": "checkbox",
           "id": "disable_line_break_mobile",
@@ -437,7 +433,40 @@
         {
           "type": "url",
           "id": "url",
+          "label": "Legacy link",
+          "visible_if": "{{ false }}"
+        },
+        {
+          "type": "url",
+          "id": "link",
           "label": "Link"
+        },
+        {
+          "type": "select",
+          "id": "style",
+          "label": "Style",
+          "options": [
+            { "value": "primary", "label": "Primary" },
+            { "value": "secondary", "label": "Secondary" },
+            { "value": "tertiary", "label": "Text link" }
+          ],
+          "default": "primary"
+        },
+        {
+          "type": "checkbox",
+          "id": "open_in_new_tab",
+          "label": "Open in a new tab",
+          "default": false
+        },
+        {
+          "type": "select",
+          "id": "icon",
+          "label": "Icon",
+          "options": [
+            { "value": "none", "label": "None" },
+            { "value": "arrow-right", "label": "Arrow right" }
+          ],
+          "default": "none"
         }
       ]
     }
