@@ -90,7 +90,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.orderOptionsBackdropInteraction?.destroy();
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
-      window.cancelAnimationFrame(this.promotionMarqueeFrame);
       this.destroyRecommendationSwiper();
       this.promotionResizeObserver?.disconnect();
       this.unlockPageScroll();
@@ -423,8 +422,7 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     queuePromotionMarqueeUpdate() {
-      window.cancelAnimationFrame(this.promotionMarqueeFrame);
-      this.promotionMarqueeFrame = window.requestAnimationFrame(() => this.updatePromotionMarquee());
+      this.updatePromotionMarquee();
     }
 
     updatePromotionMarquee() {
