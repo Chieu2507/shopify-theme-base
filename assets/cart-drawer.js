@@ -18,19 +18,22 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.orderOptionsTitle = this.querySelector('.cart-drawer__order-options-title[data-cart-drawer-order-options-title]');
       this.orderOptionsContents = [...this.querySelectorAll('[data-cart-drawer-order-options-content]')];
       this.orderOptionsTrigger = null;
+      this.emptyTemplate = this.querySelector('[data-cart-drawer-empty-template]');
       this.status = this.querySelector('[data-cart-drawer-status]');
       this.loading = this.querySelector('[data-cart-drawer-loading]');
       this.message = this.querySelector('[data-cart-drawer-message]');
       this.discounts = this.querySelector('[data-cart-drawer-discounts]');
       this.discountCount = this.querySelector('[data-cart-drawer-discount-count]');
       this.total = this.querySelector('[data-cart-drawer-total]');
-      this.checkoutTotal = this.querySelector('[data-cart-drawer-checkout-total]');
-      this.taxNote = this.querySelector('[data-cart-drawer-tax-note]');
+      this.totalDiscount = this.querySelector('[data-cart-drawer-total-discount]');
+      this.savingsAmount = this.querySelector('[data-cart-drawer-savings-amount]');
+      this.originalTotal = this.querySelector('[data-cart-drawer-original-total]');
       this.recommendations = this.querySelector('[data-cart-drawer-recommendations]');
       this.recommendationList = this.querySelector('[data-cart-drawer-recommendation-list]');
       this.recommendationTrack = this.querySelector('[data-cart-drawer-recommendation-track]');
       this.recommendationDots = this.querySelector('[data-cart-drawer-recommendation-dots]');
       this.shippingProgress = this.querySelector('[data-cart-drawer-shipping-progress]');
+      this.promotion = this.querySelector('.cart-drawer__promotion');
       this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
       this.shippingProgressValue = this.querySelector('[data-cart-drawer-shipping-progress-value]');
       this.shippingCopy = this.querySelector('[data-cart-drawer-shipping-copy]');
@@ -56,7 +59,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.handleDragTimer = null;
       this.bind();
       this.setOrderOptionsOpen(false);
-      this.renderEmpty();
       this.handleProductAdd = (event) => {
         if (!event.detail?.item) return;
         if (this.dataset.autoOpen === 'false') {
@@ -153,9 +155,22 @@ import { A11y, Swiper } from './swiper-loader.js';
         const recommendationDot = event.target.closest('[data-cart-drawer-recommendation-dot]');
         if (recommendationDot) this.goToRecommendation(Number(recommendationDot.dataset.index));
       }, { signal });
+      this.addEventListener('change', (event) => {
+        const quantityInput = event.target.closest('[data-cart-drawer-quantity-input]');
+        if (quantityInput) this.changeLineQuantityFromInput(quantityInput);
+      }, { signal });
+      this.addEventListener('keydown', (event) => {
+        const quantityInput = event.target.closest('[data-cart-drawer-quantity-input]');
+        if (quantityInput && event.key === 'Enter') {
+          event.preventDefault();
+          quantityInput.blur();
+        }
+      }, { signal });
       const discountForm = this.querySelector('[data-cart-drawer-discount]');
       const discountInput = discountForm?.querySelector('input[name="discount"]');
-      discountForm?.addEventListener('submit', (event) => this.applyDiscount(event), { signal });
+      const discountButton = discountForm?.querySelector('[data-cart-drawer-discount-submit]');
+      discountForm?.addEventListener('submit', (event) => event.preventDefault(), { signal });
+      discountButton?.addEventListener('click', () => this.applyDiscount(discountForm), { signal });
       discountInput?.addEventListener('input', () => {
         discountInput.removeAttribute('aria-invalid');
         if (this.message?.dataset.error === 'true') this.setMessage('');
@@ -310,19 +325,19 @@ import { A11y, Swiper } from './swiper-loader.js';
       }
 
       this.orderOptionsPanel.classList.add('is-handle-settling');
-      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 240ms cubic-bezier(.22, 1, .36, 1)';
+      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 480ms cubic-bezier(.22, 1, .36, 1)';
       requestAnimationFrame(() => {
         this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
         this.orderOptionsPanel.style.opacity = '1';
         if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.opacity = '1';
       });
-      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), this.reduceMotion.matches ? 0 : 240);
+      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), this.reduceMotion.matches ? 0 : 480);
     }
 
     closeFromHandle() {
       if (!this.isOpen || !this.orderOptionsPanel || this.orderOptionsPanel.getAttribute('aria-hidden') === 'true') return;
       this.orderOptionsPanel.classList.add('is-handle-closing');
-      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 220ms ease';
+      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 440ms ease';
       requestAnimationFrame(() => {
         this.orderOptionsPanel.style.transform = 'translate3d(0, 100%, 0)';
         this.orderOptionsPanel.style.opacity = '0';
@@ -332,7 +347,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.handleDragTimer = window.setTimeout(() => {
         this.setOrderOptionsOpen(false, true);
         this.resetHandleDrag();
-      }, this.reduceMotion.matches ? 0 : 240);
+      }, this.reduceMotion.matches ? 0 : 480);
     }
 
     lockPageScroll() {
@@ -364,8 +379,10 @@ import { A11y, Swiper } from './swiper-loader.js';
     openOrderOptions(name, trigger) {
       const content = this.orderOptionsContents.find((panel) => panel.dataset.cartDrawerOrderOptionsContent === name);
       if (!content) return;
+      const previousPanel = this.orderOptionsPanel?.dataset.activePanel;
       this.orderOptionsTrigger = trigger;
       this.orderOptionsContents.forEach((panel) => { panel.hidden = panel !== content; });
+      if (previousPanel && previousPanel !== name) this.setMessage('');
       if (this.orderOptionsTitle) this.orderOptionsTitle.textContent = trigger.dataset.cartDrawerOrderOptionsTitle || trigger.textContent.trim();
       this.orderOptionsPanel.dataset.activePanel = name;
       this.orderOptionsPanel.scrollTop = 0;
@@ -491,11 +508,14 @@ import { A11y, Swiper } from './swiper-loader.js';
         return;
       }
       this.footer.hidden = false;
+      if (this.promotion) this.promotion.hidden = false;
       this.items.innerHTML = cart.items.map((item) => this.itemTemplate(item)).join('');
       const total = this.formatMoney(cart.total_price);
-      if (this.total) this.total.textContent = total;
-      if (this.checkoutTotal) this.checkoutTotal.textContent = total;
-      if (this.taxNote) this.taxNote.textContent = cart.taxes_included ? this.dataset.taxesIncludedLabel : this.dataset.taxesNoteLabel;
+      if (this.total) {
+        this.total.textContent = total;
+        this.total.classList.toggle('is-sale', Number(cart.original_total_price || 0) > Number(cart.total_price || 0));
+      }
+      this.renderTotalDiscount(cart);
       this.renderDiscounts(cart);
       this.renderShippingProgress(cart);
       const note = this.querySelector('[data-cart-drawer-note]');
@@ -503,17 +523,11 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     renderEmpty() {
-      const emptyLink = this.dataset.emptyLink
-        ? `<a class="cart-drawer__empty-link btn-primary" href="${this.escape(this.dataset.emptyLink)}">${this.escape(this.dataset.emptyLinkLabel || 'Continue shopping')}</a>`
-        : '';
-      const emptyImage = this.dataset.emptyImage
-        ? `<img class="cart-drawer__empty-image cart-drawer__empty-image--${this.escape(this.dataset.emptyImageRatio || 'adapt')}" src="${this.escape(this.dataset.emptyImage)}" alt="" loading="lazy">`
-        : '';
-      const emptyHeadingClass = this.escape(this.dataset.emptyHeadingClass || 'heading-custom heading-text');
-      this.items.innerHTML = `<div class="cart-drawer__empty">${emptyImage}<h3 class="cart-drawer__empty-title ${emptyHeadingClass}">${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</h3>${emptyLink}</div>`;
+      this.items.innerHTML = this.emptyTemplate ? this.emptyTemplate.innerHTML : '';
       this.footer.hidden = true;
       if (this.recommendations) this.recommendations.hidden = true;
       this.shippingProgress && (this.shippingProgress.hidden = true);
+      if (this.promotion) this.promotion.hidden = true;
       window.clearInterval(this.recommendationTimer);
       if (this.discounts) {
         this.discounts.hidden = true;
@@ -569,7 +583,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       return `<article class="cart-drawer__item" data-cart-line="${this.escape(item.key)}">
         <a class="cart-drawer__item-media" href="${this.escape(item.url)}">${image}</a>
         <div class="cart-drawer__item-info">
-          <h3 class="cart-drawer__item-title heading-h3 heading-text"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
+          <h3 class="cart-drawer__item-title"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
           ${variant}
           ${properties}
           ${sellingPlan}
@@ -577,7 +591,7 @@ import { A11y, Swiper } from './swiper-loader.js';
           ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
           <div class="cart-drawer__quantity">
             <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="-1">−</button>
-            <span aria-live="polite" data-cart-drawer-quantity-value>${item.quantity}</span>
+            <input type="number" min="0" step="1" inputmode="numeric" value="${item.quantity}" aria-label="${this.escape(this.dataset.quantityLabel || 'Quantity')}: ${this.escape(item.product_title)}" data-cart-drawer-quantity-input data-cart-drawer-quantity-value data-line="${this.escape(item.key)}">
             <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="1">+</button>
           </div>
           <button class="cart-drawer__remove" type="button" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${this.escape(this.dataset.removeLabel)}</button>
@@ -600,6 +614,23 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.pendingLineMutations.set(line, desiredQuantity);
       this.updateOptimisticLineQuantities();
       this.processLineMutations();
+    }
+
+    changeLineQuantityFromInput(input) {
+      const line = input?.dataset.line;
+      const rawQuantity = String(input?.value || '').trim();
+      const quantity = Number(rawQuantity);
+      const item = (this.cart?.items || []).find((candidate) => candidate.key === line);
+      const currentQuantity = this.lineDesiredQuantities.has(line)
+        ? this.lineDesiredQuantities.get(line)
+        : Number(item?.quantity || 0);
+
+      if (!rawQuantity || !Number.isInteger(quantity) || quantity < 0) {
+        input.value = currentQuantity;
+        return;
+      }
+
+      this.queueLineChange(line, quantity);
     }
 
     async processLineMutations() {
@@ -656,7 +687,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.querySelectorAll('[data-cart-line]').forEach((item) => {
           if (item.dataset.cartLine !== line) return;
           const value = item.querySelector('[data-cart-drawer-quantity-value]');
-          if (value) value.textContent = quantity;
+          if (value) value.value = quantity;
         });
       });
     }
@@ -699,18 +730,21 @@ import { A11y, Swiper } from './swiper-loader.js';
     renderShippingProgress(cart) {
       if (!this.shippingProgress) return;
       const threshold = Number(this.dataset.shippingThreshold || 0);
-      if (!threshold) {
+      if (!threshold || !cart.requires_shipping) {
         this.shippingProgress.hidden = true;
         return;
       }
       const total = Number(cart.items_subtotal_price ?? cart.total_price ?? 0);
       const remaining = Math.max(0, threshold - total);
       const unlocked = remaining === 0;
+      const progress = Math.min(100, Math.round((total / threshold) * 100));
+      const progressLevel = progress >= 67 ? 'high' : progress >= 34 ? 'medium' : 'low';
       const template = unlocked ? this.shippingCopy?.dataset.success : this.shippingCopy?.dataset.pending;
       if (this.shippingMessage) this.shippingMessage.textContent = String(template || '').replace(/\{\{ ?amount ?\}\}|\{amount\}/g, this.formatMoney(remaining));
-      if (this.shippingProgressValue) this.shippingProgressValue.style.width = `${Math.min(100, Math.round((total / threshold) * 100))}%`;
+      if (this.shippingProgressValue) this.shippingProgressValue.style.width = `${progress}%`;
       this.shippingProgress.hidden = false;
       this.shippingProgress.dataset.unlocked = String(unlocked);
+      this.shippingProgress.dataset.progressLevel = progressLevel;
     }
 
     async estimateShipping(event) {
@@ -724,6 +758,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.clearShippingFieldErrors();
       const query = new URLSearchParams({ 'shipping_address[country]': country, 'shipping_address[zip]': zip });
       if (province) query.set('shipping_address[province]', province);
+      this.shippingRates.classList.remove('is-error');
       this.shippingRates.textContent = this.dataset.shippingCalculatingLabel || 'Calculating shipping rates';
       try {
         const prepare = await fetch(this.localeUrl(`cart/prepare_shipping_rates.json?${query}`), {
@@ -733,10 +768,14 @@ import { A11y, Swiper } from './swiper-loader.js';
         });
         if (!prepare.ok && prepare.status !== 202) throw await this.shippingErrorFromResponse(prepare);
         const rates = await this.pollShippingRates(query);
-        this.shippingRates.innerHTML = rates.length
-          ? `<span>${rates.map((rate) => `${this.escape(rate.presentment_name || rate.name)}: ${this.escape(this.formatMoney(Math.round(Number(rate.price || 0) * 100)))}`).join('</span><span>')}</span>`
-          : this.escape(this.dataset.shippingErrorLabel);
+        if (!rates.length) {
+          this.shippingRates.classList.add('is-error');
+          this.shippingRates.textContent = this.dataset.shippingErrorLabel;
+          return;
+        }
+        this.shippingRates.innerHTML = `<div class="cart-drawer__shipping-rates-summary">There ${rates.length === 1 ? 'is' : 'are'} ${rates.length} shipping rate${rates.length === 1 ? '' : 's'} for your address</div><ul class="cart-drawer__shipping-rates-list">${rates.map((rate) => `<li>${this.escape(rate.presentment_name || rate.name)}: ${this.escape(this.formatMoney(Math.round(Number(rate.price || 0) * 100)))}</li>`).join('')}</ul>`;
       } catch (error) {
+        this.shippingRates.classList.add('is-error');
         this.shippingRates.textContent = error.message || this.dataset.shippingErrorLabel;
       }
     }
@@ -900,7 +939,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
       return `<article class="cart-drawer__recommendation swiper-slide">
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="lazy">` : ''}</a>
-        <div><h4 class="heading-h4 heading-text"><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
+        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
       </article>`;
     }
 
@@ -915,10 +954,9 @@ import { A11y, Swiper } from './swiper-loader.js';
       }, interval);
     }
 
-    async applyDiscount(event) {
-      event.preventDefault();
-      const input = event.currentTarget.querySelector('input[name="discount"]');
-      const button = event.currentTarget.querySelector('button[type="submit"]');
+    async applyDiscount(form) {
+      const input = form?.querySelector('input[name="discount"]');
+      const button = form?.querySelector('[data-cart-drawer-discount-submit]');
       const code = input?.value.trim();
       if (button?.disabled) return;
       input?.removeAttribute('aria-invalid');
@@ -948,7 +986,7 @@ import { A11y, Swiper } from './swiper-loader.js';
             }
           }
           this.syncCart(restoredCart);
-          throw new Error(this.dataset.discountErrorLabel);
+          throw new Error(this.dataset.discountUnavailableLabel);
         }
 
         this.syncCart(cart);
@@ -966,16 +1004,21 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     async saveNote() {
       const note = this.querySelector('[data-cart-drawer-note]')?.value || '';
+      const button = this.querySelector('[data-cart-drawer-save-note]');
+      const trigger = this.orderOptionsTrigger;
+      if (button?.disabled) return;
+      if (button) button.disabled = true;
+      this.setMessage('');
+      this.setOrderOptionsOpen(false, true);
       try {
-        this.setStatus(this.dataset.savingNoteLabel);
         const response = await fetch(this.dataset.cartUpdateUrl || this.localeUrl('cart/update.js'), { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ note }) });
         if (!response.ok) throw new Error(this.dataset.noteErrorLabel);
-        this.setMessage(this.dataset.noteSavedLabel);
       } catch (error) {
         console.error('[Spinel] Order note failed', error);
+        if (trigger) this.openOrderOptions('note', trigger);
         this.setMessage(error.message, true);
       } finally {
-        this.setStatus('');
+        if (button) button.disabled = false;
       }
     }
 
@@ -989,10 +1032,22 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     renderDiscounts(cart) {
       if (!this.discounts) return;
-      const discounts = cart.cart_level_discount_applications || [];
+      const discounts = (cart.cart_level_discount_applications || []).filter((discount) => (
+        Number(discount.total_allocated_amount) > 0
+      ));
       this.discounts.innerHTML = discounts.map((discount) => `<li><span>${this.escape(discount.title)}</span><span>−${this.formatMoney(discount.total_allocated_amount)}</span></li>`).join('');
       this.discounts.hidden = discounts.length === 0;
       if (this.discountCount) this.discountCount.textContent = String(discounts.length);
+    }
+
+    renderTotalDiscount(cart) {
+      const originalTotal = Number(cart.original_total_price || 0);
+      const total = Number(cart.total_price || 0);
+      const savings = Math.max(originalTotal - total, 0);
+      if (this.totalDiscount) this.totalDiscount.hidden = savings === 0;
+      if (!savings) return;
+      if (this.savingsAmount) this.savingsAmount.textContent = this.formatMoney(savings);
+      if (this.originalTotal) this.originalTotal.textContent = this.formatMoney(originalTotal);
     }
 
     isDiscountApplied(cart, code) {
@@ -1001,8 +1056,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       const discountCodes = cart.discount_codes || cart.discountCodes || [];
       const matchingCode = discountCodes.find((discount) => normalizeCode(discount.code) === normalizedCode);
 
-      if (matchingCode) return matchingCode.applicable !== false;
-
       const applications = [
         ...(cart.discount_applications || []),
         ...(cart.cart_level_discount_applications || []),
@@ -1010,6 +1063,9 @@ import { A11y, Swiper } from './swiper-loader.js';
           item.line_level_discount_allocations || []
         ).map((allocation) => allocation.discount_application || allocation))
       ];
+
+      if (matchingCode?.applicable === true) return true;
+      if (matchingCode?.applicable === false) return false;
 
       return applications.some((application) => {
         const type = String(application.type || '').toLowerCase();
