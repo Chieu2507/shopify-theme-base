@@ -1,5 +1,4 @@
 const sectionSelector = '.shopify-section';
-const compactEditorialViewportHeight = 720;
 
 function getViewportHeight() {
   return window.visualViewport?.height || window.innerHeight;
@@ -80,13 +79,6 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
 
     element.classList.toggle('slideshow--fills-first-viewport', canFillFirstViewport);
 
-    if (isEditorialSlideshow) {
-      element.classList.toggle(
-        'editorial-slideshow--compact-viewport',
-        canFillFirstViewport && remainingViewportHeight < compactEditorialViewportHeight,
-      );
-    }
-
     if (canFillFirstViewport) {
       const editorialViewport = isEditorialSlideshow
         ? element.querySelector('.editorial-slideshow__viewport.swiper')
@@ -132,7 +124,6 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
     resizeObserver?.disconnect();
     if (animationFrame) window.cancelAnimationFrame(animationFrame);
     element.classList.remove('slideshow--fills-first-viewport');
-    element.classList.remove('editorial-slideshow--compact-viewport');
     element.style.removeProperty('--slideshow-first-viewport-height');
   };
 }
