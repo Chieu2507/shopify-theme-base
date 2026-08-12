@@ -27,7 +27,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.totalDiscount = this.querySelector('[data-cart-drawer-total-discount]');
       this.savingsAmount = this.querySelector('[data-cart-drawer-savings-amount]');
       this.originalTotal = this.querySelector('[data-cart-drawer-original-total]');
-      this.checkoutTotal = this.querySelector('[data-cart-drawer-checkout-total]');
       this.taxNote = this.querySelector('[data-cart-drawer-tax-note]');
       this.recommendations = this.querySelector('[data-cart-drawer-recommendations]');
       this.recommendationList = this.querySelector('[data-cart-drawer-recommendation-list]');
@@ -513,7 +512,6 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.total.textContent = total;
         this.total.classList.toggle('is-sale', Number(cart.original_total_price || 0) > Number(cart.total_price || 0));
       }
-      if (this.checkoutTotal) this.checkoutTotal.textContent = total;
       this.renderTotalDiscount(cart);
       if (this.taxNote) this.taxNote.textContent = cart.taxes_included ? this.dataset.taxesIncludedLabel : this.dataset.taxesNoteLabel;
       this.renderDiscounts(cart);
