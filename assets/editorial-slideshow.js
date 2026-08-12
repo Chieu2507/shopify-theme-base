@@ -348,7 +348,6 @@ class EditorialSlideshow extends HTMLElement {
       this.swiper = new Swiper(this.slider, {
         modules: [A11y, EffectFade],
         slidesPerView: 1,
-        autoHeight: true,
         speed: this.reduceMotion.matches ? 0 : 1000,
         effect: 'fade',
         fadeEffect: {
