@@ -276,12 +276,15 @@ import { A11y, Swiper } from './swiper-loader.js';
         lastY: event.clientY,
         lastTime: performance.now(),
         velocity: 0,
-        distance: 0
+        distance: 0,
+        panelHeight: this.orderOptionsPanel.offsetHeight,
+        frame: null
       };
       this.orderOptionsPanel.classList.remove('is-handle-settling', 'is-handle-closing');
       this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
       this.orderOptionsPanel.style.opacity = '1';
       this.orderOptionsPanel.classList.add('is-handle-dragging');
+      this.classList.add('is-order-options-dragging');
       if (this.orderOptionsBackdrop) {
         this.orderOptionsBackdrop.style.transition = 'none';
         this.orderOptionsBackdrop.style.opacity = '1';
@@ -301,12 +304,18 @@ import { A11y, Swiper } from './swiper-loader.js';
       drag.lastY = event.clientY;
       drag.lastTime = now;
       drag.distance = Math.max(0, event.clientY - drag.startY);
+      if (drag.frame === null) drag.frame = requestAnimationFrame(() => this.renderHandleDrag(drag));
+      event.preventDefault();
+    }
+
+    renderHandleDrag(drag) {
+      if (this.handleDrag !== drag) return;
+      drag.frame = null;
       this.orderOptionsPanel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
       if (this.orderOptionsBackdrop) {
-        const fadeDistance = Math.max(this.orderOptionsPanel.getBoundingClientRect().height * 0.7, 1);
+        const fadeDistance = Math.max(drag.panelHeight * 0.7, 1);
         this.orderOptionsBackdrop.style.opacity = String(Math.max(0, 1 - (drag.distance / fadeDistance)));
       }
-      event.preventDefault();
     }
 
     endHandleDrag(event, cancelled = false) {
@@ -314,10 +323,16 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (!drag || event.pointerId !== drag.pointerId) return;
 
       try { this.handle?.releasePointerCapture(event.pointerId); } catch (_) {}
-      const closeDistance = Math.min(140, this.orderOptionsPanel.getBoundingClientRect().height * 0.2);
+      if (drag.frame !== null) {
+        cancelAnimationFrame(drag.frame);
+        drag.frame = null;
+        this.renderHandleDrag(drag);
+      }
+      const closeDistance = Math.min(140, drag.panelHeight * 0.2);
       const shouldClose = !cancelled && (drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55));
       this.handleDrag = null;
       this.orderOptionsPanel.classList.remove('is-handle-dragging');
+      this.classList.remove('is-order-options-dragging');
 
       if (shouldClose) {
         this.closeFromHandle();
@@ -415,8 +430,10 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.handleDragTimer = null;
       if (this.handleDrag) {
         try { this.handle?.releasePointerCapture(this.handleDrag.pointerId); } catch (_) {}
+        if (this.handleDrag.frame !== null) cancelAnimationFrame(this.handleDrag.frame);
       }
       this.handleDrag = null;
+      this.classList.remove('is-order-options-dragging');
       this.orderOptionsPanel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
       this.orderOptionsPanel?.style.removeProperty('transform');
       this.orderOptionsPanel?.style.removeProperty('opacity');
