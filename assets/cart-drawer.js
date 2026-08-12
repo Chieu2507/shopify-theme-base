@@ -56,6 +56,9 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.refreshPending = false;
       this.pendingLineMutations = new Map();
       this.lineDesiredQuantities = new Map();
+      this.orderOptionsDrag = null;
+      this.orderOptionsDragSettling = null;
+      this.orderOptionsDragTimer = null;
       this.lastFocusedElement = null;
       this.bind();
       this.setupPromotionMarquee();
@@ -88,6 +91,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.abortController?.abort();
       this.backdropInteraction?.destroy();
       this.orderOptionsBackdropInteraction?.destroy();
+      this.resetOrderOptionsDrag();
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
       this.destroyRecommendationSwiper();
@@ -114,6 +118,17 @@ import { A11y, Swiper } from './swiper-loader.js';
         isOpen: () => this.isOpen && this.classList.contains('is-order-options-open'),
         relativeToRoot: true,
       });
+      if ('PointerEvent' in window) {
+        this.addEventListener('pointerdown', (event) => this.startOrderOptionsDrag(event), { signal });
+        document.addEventListener('pointermove', (event) => this.moveOrderOptionsDrag(event), { signal, passive: false });
+        document.addEventListener('pointerup', (event) => this.endOrderOptionsDrag(event), { signal });
+        document.addEventListener('pointercancel', (event) => this.endOrderOptionsDrag(event, true), { signal });
+      } else {
+        this.addEventListener('touchstart', (event) => this.orderOptionsTouchEvent(event, (pointerEvent) => this.startOrderOptionsDrag(pointerEvent)), { signal, passive: false });
+        document.addEventListener('touchmove', (event) => this.orderOptionsTouchEvent(event, (pointerEvent) => this.moveOrderOptionsDrag(pointerEvent)), { signal, passive: false });
+        document.addEventListener('touchend', (event) => this.orderOptionsTouchEvent(event, (pointerEvent) => this.endOrderOptionsDrag(pointerEvent)), { signal });
+        document.addEventListener('touchcancel', (event) => this.orderOptionsTouchEvent(event, (pointerEvent) => this.endOrderOptionsDrag(pointerEvent, true)), { signal });
+      }
       document.addEventListener('click', (event) => {
         const trigger = event.target.closest?.('[data-cart-drawer-open]');
         if (trigger) {
@@ -238,6 +253,7 @@ import { A11y, Swiper } from './swiper-loader.js';
     setOrderOptionsOpen(open, restoreFocus = false) {
       if (!this.orderOptionsPanel || !this.footer) return;
       const isOpen = Boolean(open);
+      if (!isOpen) this.resetOrderOptionsDrag();
       this.classList.toggle('is-order-options-open', isOpen);
       this.footer.classList.toggle('is-order-options-open', isOpen);
       this.orderOptionsPanel.setAttribute('aria-hidden', String(!isOpen));
@@ -248,6 +264,153 @@ import { A11y, Swiper } from './swiper-loader.js';
       });
       if (!isOpen) this.orderOptionsBackdropInteraction?.hide();
       if (restoreFocus && !isOpen) this.orderOptionsTrigger?.focus({ preventScroll: true });
+    }
+
+    isOrderOptionsDragEnabled() {
+      return this.isOpen
+        && this.classList.contains('is-order-options-open')
+        && window.matchMedia('(max-width: 767.98px)').matches
+        && !this.reduceMotion.matches;
+    }
+
+    getOrderOptionsDragDuration() {
+      if (!this.orderOptionsPanel) return 0;
+      const style = getComputedStyle(this.orderOptionsPanel);
+      const properties = style.transitionProperty.split(',').map((value) => value.trim());
+      const durations = style.transitionDuration.split(',').map((value) => value.trim());
+      const delays = style.transitionDelay.split(',').map((value) => value.trim());
+      const parseTime = (value) => {
+        const numericValue = Number.parseFloat(value);
+        if (!Number.isFinite(numericValue)) return 0;
+        return value.endsWith('ms') ? numericValue : numericValue * 1000;
+      };
+      return properties.reduce((maximum, property, index) => {
+        if (property !== 'transform' && property !== 'all') return maximum;
+        return Math.max(maximum, parseTime(durations[index % durations.length] || '0s') + parseTime(delays[index % delays.length] || '0s'));
+      }, 0);
+    }
+
+    resetOrderOptionsDrag() {
+      window.clearTimeout(this.orderOptionsDragTimer);
+      const drag = this.orderOptionsDrag;
+      try { drag?.handle?.releasePointerCapture(drag.pointerId); } catch (_) {}
+      this.orderOptionsDrag = null;
+      this.orderOptionsDragSettling = null;
+      this.orderOptionsDragTimer = null;
+      this.orderOptionsPanel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
+      this.orderOptionsPanel?.style.removeProperty('transform');
+      this.orderOptionsPanel?.style.removeProperty('opacity');
+    }
+
+    startOrderOptionsDrag(event) {
+      const handle = event.target instanceof Element
+        ? event.target.closest('[data-cart-drawer-order-options-handle]')
+        : null;
+      if (!handle || !this.orderOptionsPanel || !this.isOrderOptionsDragEnabled() || !event.isPrimary || event.button > 0) return;
+
+      this.resetOrderOptionsDrag();
+      this.orderOptionsDrag = {
+        pointerId: event.pointerId,
+        handle,
+        startY: event.clientY,
+        lastY: event.clientY,
+        lastTime: performance.now(),
+        velocity: 0,
+        distance: 0,
+      };
+      this.orderOptionsPanel.classList.add('is-handle-dragging');
+      this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
+      this.orderOptionsPanel.style.opacity = '1';
+      try { handle.setPointerCapture(event.pointerId); } catch (_) {}
+      event.preventDefault();
+    }
+
+    moveOrderOptionsDrag(event) {
+      const drag = this.orderOptionsDrag;
+      if (!drag || event.pointerId !== drag.pointerId || !this.orderOptionsPanel) return;
+
+      const now = performance.now();
+      const elapsed = Math.max(now - drag.lastTime, 1);
+      drag.velocity = (event.clientY - drag.lastY) / elapsed;
+      drag.lastY = event.clientY;
+      drag.lastTime = now;
+      drag.distance = Math.max(0, event.clientY - drag.startY);
+      this.orderOptionsPanel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+      event.preventDefault();
+    }
+
+    endOrderOptionsDrag(event, cancelled = false) {
+      const drag = this.orderOptionsDrag;
+      if (!drag || event.pointerId !== drag.pointerId || !this.orderOptionsPanel) return;
+
+      try { drag.handle.releasePointerCapture(event.pointerId); } catch (_) {}
+      const closeDistance = Math.min(140, this.orderOptionsPanel.getBoundingClientRect().height * 0.2);
+      const shouldClose = !cancelled && (
+        drag.distance >= closeDistance
+        || (drag.distance >= 32 && drag.velocity > 0.55)
+      );
+      this.orderOptionsDrag = null;
+      this.orderOptionsPanel.classList.remove('is-handle-dragging');
+
+      if (shouldClose) {
+        this.closeOrderOptionsFromHandle();
+        return;
+      }
+
+      this.orderOptionsPanel.classList.add('is-handle-settling');
+      window.requestAnimationFrame(() => {
+        this.orderOptionsPanel?.style.setProperty('transform', 'translate3d(0, 0, 0)');
+        this.orderOptionsPanel?.style.setProperty('opacity', '1');
+      });
+      const settling = { panel: this.orderOptionsPanel };
+      this.orderOptionsDragSettling = settling;
+      const duration = this.getOrderOptionsDragDuration();
+      if (!duration) {
+        this.resetOrderOptionsDrag();
+        return;
+      }
+      this.orderOptionsDragTimer = window.setTimeout(() => {
+        if (this.orderOptionsDragSettling === settling) this.resetOrderOptionsDrag();
+      }, duration);
+    }
+
+    closeOrderOptionsFromHandle() {
+      if (!this.orderOptionsPanel) return;
+      this.orderOptionsPanel.classList.add('is-handle-closing');
+      this.orderOptionsPanel.style.opacity = '1';
+      window.requestAnimationFrame(() => {
+        this.orderOptionsPanel?.style.setProperty('transform', `translate3d(0, ${Math.max(window.innerHeight, this.orderOptionsPanel.offsetHeight + 60)}px, 0)`);
+        this.orderOptionsPanel?.style.setProperty('opacity', '0');
+      });
+      const settling = { panel: this.orderOptionsPanel };
+      this.orderOptionsDragSettling = settling;
+      const duration = this.getOrderOptionsDragDuration();
+      const finish = () => {
+        if (this.orderOptionsDragSettling !== settling) return;
+        this.orderOptionsDragSettling = null;
+        this.orderOptionsDragTimer = null;
+        this.setOrderOptionsOpen(false, true);
+      };
+      if (!duration) {
+        finish();
+        return;
+      }
+      this.orderOptionsDragTimer = window.setTimeout(finish, duration);
+    }
+
+    orderOptionsTouchEvent(event, callback) {
+      const activePointerId = this.orderOptionsDrag?.pointerId;
+      const touch = [...event.changedTouches].find((candidate) => candidate.identifier === activePointerId)
+        || event.changedTouches[0];
+      if (!touch) return;
+      callback({
+        target: event.target,
+        isPrimary: true,
+        button: 0,
+        pointerId: touch.identifier,
+        clientY: touch.clientY,
+        preventDefault: () => event.preventDefault(),
+      });
     }
 
     openOrderOptions(name, trigger) {

@@ -109,7 +109,7 @@ if (!window.SpinelHeaderMenus) {
       sheet.style.removeProperty('opacity');
       localizationSheetSettling = null;
       localizationSheetDragTimer = null;
-    }, 240);
+    }, getTransitionTotalMs(sheet, 'transform'));
   };
 
   const startLocalizationSheetDrag = (event) => {
@@ -179,6 +179,14 @@ if (!window.SpinelHeaderMenus) {
     });
     const settling = { sheet: drag.sheet };
     localizationSheetSettling = settling;
+    const duration = getTransitionTotalMs(drag.sheet, 'transform');
+    if (!duration) {
+      resetLocalizationSheetDrag();
+      return;
+    }
+    localizationSheetDragTimer = window.setTimeout(() => {
+      if (localizationSheetSettling === settling) resetLocalizationSheetDrag();
+    }, duration);
   };
 
   const localizationSheetTouchEvent = (event, callback, cancelled = false) => {
