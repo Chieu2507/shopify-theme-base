@@ -310,19 +310,19 @@ import { A11y, Swiper } from './swiper-loader.js';
       }
 
       this.orderOptionsPanel.classList.add('is-handle-settling');
-      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 240ms cubic-bezier(.22, 1, .36, 1)';
+      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 480ms cubic-bezier(.22, 1, .36, 1)';
       requestAnimationFrame(() => {
         this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
         this.orderOptionsPanel.style.opacity = '1';
         if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.opacity = '1';
       });
-      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), this.reduceMotion.matches ? 0 : 240);
+      this.handleDragTimer = window.setTimeout(() => this.resetHandleDrag(), this.reduceMotion.matches ? 0 : 480);
     }
 
     closeFromHandle() {
       if (!this.isOpen || !this.orderOptionsPanel || this.orderOptionsPanel.getAttribute('aria-hidden') === 'true') return;
       this.orderOptionsPanel.classList.add('is-handle-closing');
-      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 220ms ease';
+      if (this.orderOptionsBackdrop) this.orderOptionsBackdrop.style.transition = 'opacity 440ms ease';
       requestAnimationFrame(() => {
         this.orderOptionsPanel.style.transform = 'translate3d(0, 100%, 0)';
         this.orderOptionsPanel.style.opacity = '0';
@@ -332,7 +332,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.handleDragTimer = window.setTimeout(() => {
         this.setOrderOptionsOpen(false, true);
         this.resetHandleDrag();
-      }, this.reduceMotion.matches ? 0 : 240);
+      }, this.reduceMotion.matches ? 0 : 480);
     }
 
     lockPageScroll() {
