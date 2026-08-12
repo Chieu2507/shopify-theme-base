@@ -534,7 +534,17 @@ class EditorialSlideshow extends HTMLElement {
   handleBlockSelect(event) {
     if (!this.swiper || event.detail?.sectionId !== this.dataset.sectionId) return;
 
-    const selectedSlide = this.querySelector(`[data-block-id="${CSS.escape(event.detail.blockId)}"]`);
+    const eventTarget = event.target instanceof Element ? event.target : null;
+    const selectedBlock = [...this.querySelectorAll('[data-shopify-editor-block]')].find((element) => {
+      try {
+        return JSON.parse(element.dataset.shopifyEditorBlock).id === event.detail.blockId;
+      } catch {
+        return false;
+      }
+    });
+    const selectedSlide = eventTarget?.closest('.editorial-slideshow__slide')
+      || selectedBlock?.closest('.editorial-slideshow__slide')
+      || this.querySelector(`[data-block-id="${CSS.escape(event.detail.blockId)}"]`);
     if (!selectedSlide) return;
 
     const slides = [...this.querySelectorAll('.swiper-slide:not(.swiper-slide-duplicate)')];
