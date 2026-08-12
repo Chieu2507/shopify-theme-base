@@ -465,8 +465,11 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     itemTemplate(item) {
+      const imageWidth = Math.round(Number(item.featured_image?.width));
+      const imageHeight = Math.round(Number(item.featured_image?.height));
+      const imageDimensions = imageWidth > 0 && imageHeight > 0 ? ` width="${imageWidth}" height="${imageHeight}"` : '';
       const image = item.image
-        ? `<img src="${this.escape(item.image)}" alt="${this.escape(item.product_title)}" loading="lazy">`
+        ? `<img src="${this.escape(item.image)}" alt="${this.escape(item.product_title)}" loading="eager"${imageDimensions}>`
         : '<span class="cart-drawer__image-placeholder" aria-hidden="true"></span>';
       const options = item.product_has_only_default_variant ? '' : (item.options_with_values || []).map((option) => `<div><dt>${this.escape(option.name)}:</dt><dd>${this.escape(option.value)}</dd></div>`).join('');
       const variant = options ? `<dl class="cart-drawer__item-options">${options}</dl>` : '';
