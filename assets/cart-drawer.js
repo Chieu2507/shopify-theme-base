@@ -153,6 +153,17 @@ import { A11y, Swiper } from './swiper-loader.js';
         const recommendationDot = event.target.closest('[data-cart-drawer-recommendation-dot]');
         if (recommendationDot) this.goToRecommendation(Number(recommendationDot.dataset.index));
       }, { signal });
+      this.addEventListener('change', (event) => {
+        const quantityInput = event.target.closest('[data-cart-drawer-quantity-input]');
+        if (quantityInput) this.changeLineQuantityFromInput(quantityInput);
+      }, { signal });
+      this.addEventListener('keydown', (event) => {
+        const quantityInput = event.target.closest('[data-cart-drawer-quantity-input]');
+        if (quantityInput && event.key === 'Enter') {
+          event.preventDefault();
+          quantityInput.blur();
+        }
+      }, { signal });
       const discountForm = this.querySelector('[data-cart-drawer-discount]');
       const discountInput = discountForm?.querySelector('input[name="discount"]');
       discountForm?.addEventListener('submit', (event) => this.applyDiscount(event), { signal });
@@ -569,7 +580,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       return `<article class="cart-drawer__item" data-cart-line="${this.escape(item.key)}">
         <a class="cart-drawer__item-media" href="${this.escape(item.url)}">${image}</a>
         <div class="cart-drawer__item-info">
-          <h3 class="cart-drawer__item-title heading-h3 heading-text"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
+          <h3 class="cart-drawer__item-title"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
           ${variant}
           ${properties}
           ${sellingPlan}
@@ -577,7 +588,7 @@ import { A11y, Swiper } from './swiper-loader.js';
           ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
           <div class="cart-drawer__quantity">
             <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="-1">−</button>
-            <span aria-live="polite" data-cart-drawer-quantity-value>${item.quantity}</span>
+            <input type="number" min="0" step="1" inputmode="numeric" value="${item.quantity}" aria-label="${this.escape(this.dataset.quantityLabel || 'Quantity')}: ${this.escape(item.product_title)}" data-cart-drawer-quantity-input data-cart-drawer-quantity-value data-line="${this.escape(item.key)}">
             <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="1">+</button>
           </div>
           <button class="cart-drawer__remove" type="button" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${this.escape(this.dataset.removeLabel)}</button>
@@ -600,6 +611,23 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.pendingLineMutations.set(line, desiredQuantity);
       this.updateOptimisticLineQuantities();
       this.processLineMutations();
+    }
+
+    changeLineQuantityFromInput(input) {
+      const line = input?.dataset.line;
+      const rawQuantity = String(input?.value || '').trim();
+      const quantity = Number(rawQuantity);
+      const item = (this.cart?.items || []).find((candidate) => candidate.key === line);
+      const currentQuantity = this.lineDesiredQuantities.has(line)
+        ? this.lineDesiredQuantities.get(line)
+        : Number(item?.quantity || 0);
+
+      if (!rawQuantity || !Number.isInteger(quantity) || quantity < 0) {
+        input.value = currentQuantity;
+        return;
+      }
+
+      this.queueLineChange(line, quantity);
     }
 
     async processLineMutations() {
@@ -656,7 +684,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.querySelectorAll('[data-cart-line]').forEach((item) => {
           if (item.dataset.cartLine !== line) return;
           const value = item.querySelector('[data-cart-drawer-quantity-value]');
-          if (value) value.textContent = quantity;
+          if (value) value.value = quantity;
         });
       });
     }

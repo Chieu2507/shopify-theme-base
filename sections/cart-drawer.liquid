@@ -17,7 +17,6 @@
   assign cart_tools_shipping_province_label = section.settings.shipping_estimator_province_label
   assign cart_tools_shipping_postal_label = section.settings.shipping_estimator_postal_label
   assign cart_tools_shipping_button_label = section.settings.shipping_estimator_button_label
-  assign cart_tools_text_color = blank
 
   if cart_tools_block != blank
     assign cart_tools_show_note = cart_tools_block.settings.show_note
@@ -32,7 +31,6 @@
     assign cart_tools_shipping_province_label = cart_tools_block.settings.shipping_estimator_province_label
     assign cart_tools_shipping_postal_label = cart_tools_block.settings.shipping_estimator_postal_label
     assign cart_tools_shipping_button_label = cart_tools_block.settings.shipping_estimator_button_label
-    assign cart_tools_text_color = cart_tools_block.settings.text_color
   endif
 %}
 
@@ -88,6 +86,7 @@
     data-empty-image-ratio="{{ section.settings.empty_image_ratio }}"
     data-decrease-quantity-label="{{ 'quantity.decrease' | t | escape }}"
     data-increase-quantity-label="{{ 'quantity.increase' | t | escape }}"
+    data-quantity-label="{{ 'quantity.label' | t | escape }}"
     data-related-product-label="{{ 'cart_drawer.related_product' | t: index: '__index__' | escape }}"
     data-remove-label="{{ 'cart_drawer.remove' | t | escape }}"
     data-add-to-cart-label="{{ 'cart_drawer.add_to_cart' | t | escape }}"
@@ -161,7 +160,7 @@
         {% endif %}
       </div>
 
-      <footer class="cart-drawer__footer" data-cart-drawer-footer hidden{% if cart_tools_text_color != blank %} style="--cart-drawer-tools-color: {{ cart_tools_text_color }};"{% endif %}>
+      <footer class="cart-drawer__footer" data-cart-drawer-footer hidden>
         {% if cart_tools_show_note or cart_tools_show_discount or cart_tools_shipping_enabled %}
           <div class="cart-drawer__order-options-actions" role="group" aria-label="Cart options"{% if cart_tools_block != blank %} {{ cart_tools_block.shopify_attributes }}{% endif %}>
             {% if cart_tools_show_note %}
@@ -356,7 +355,6 @@
       "name": "Cart tools",
       "limit": 1,
       "settings": [
-        { "type": "color", "id": "text_color", "label": "Text color" },
         { "type": "header", "content": "Order note" },
         { "type": "checkbox", "id": "show_note", "label": "Enable order note", "default": true },
         { "type": "text", "id": "note_label", "label": "Action label", "default": "Order note", "visible_if": "{{ block.settings.show_note }}" },
