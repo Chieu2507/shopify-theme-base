@@ -10,86 +10,13 @@
     <div class="collapsible-content__items">
       {% for block in section.blocks %}
         {% if block.type == 'item' %}
-          <details class="collapsible-content__item" {% if block.settings.open_by_default %}open{% endif %} {{ block.shopify_attributes }}>
+          <details class="collapsible-content__item" data-animated-details {% if block.settings.open_by_default %}open{% endif %} {{ block.shopify_attributes }}>
             <summary><{{ block.settings.heading_tag | default: 'h3' }} class="collapsible-content__item-heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'h4' %}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}><span class="collapsible-content__icon" aria-hidden="true">{% render 'icon', name: 'chevron-up' %}</span></summary>
-            <div class="collapsible-content__body content-text spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }} rte">{{ block.settings.content }}</div>
+            <div class="collapsible-content__body content-text spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }} rte" data-accordion-content>{{ block.settings.content }}</div>
           </details>
         {% endif %}
       {% endfor %}
     </div>
-<script>
-  (() => {
-    const root = document.currentScript.closest('.collapsible-content');
-    if (!root || root.dataset.animationBound) return;
-    root.dataset.animationBound = 'true';
-
-    const duration = 300;
-    const easing = 'cubic-bezier(.4, 0, .2, 1)';
-    const states = new WeakMap();
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-    const finish = (details, open, state) => {
-      details.open = open;
-      details.style.removeProperty('height');
-      details.style.removeProperty('overflow');
-      details.classList.remove('is-closing');
-      state.contentAnimation?.cancel();
-      states.delete(details);
-    };
-
-    const animate = (details, open) => {
-      const summary = details.querySelector('summary');
-      const body = details.querySelector('.collapsible-content__body');
-      if (!summary || !body) return;
-
-      const previousState = states.get(details);
-      const startHeight = details.getBoundingClientRect().height;
-      const startOpacity = details.open
-        ? Number.parseFloat(getComputedStyle(body).opacity) || 1
-        : 0;
-
-      previousState?.heightAnimation?.cancel();
-      previousState?.contentAnimation?.cancel();
-
-      if (open && !details.open) details.open = true;
-      details.classList.toggle('is-closing', !open);
-      const endHeight = open ? summary.offsetHeight + body.scrollHeight : summary.offsetHeight;
-
-      if (reducedMotion.matches) {
-        finish(details, open, {});
-        return;
-      }
-
-      details.style.height = `${startHeight}px`;
-      details.style.overflow = 'hidden';
-      details.getBoundingClientRect();
-
-      const state = { targetOpen: open };
-      state.heightAnimation = details.animate(
-        { height: [`${startHeight}px`, `${endHeight}px`] },
-        { duration, easing, fill: 'forwards' }
-      );
-      state.contentAnimation = body.animate(
-        { opacity: [startOpacity, open ? 1 : 0] },
-        { duration: duration * 0.75, easing, fill: 'forwards' }
-      );
-      states.set(details, state);
-
-      state.heightAnimation.onfinish = () => {
-        if (states.get(details) === state) finish(details, open, state);
-      };
-    };
-
-    root.addEventListener('click', (event) => {
-      const summary = event.target.closest('.collapsible-content__item > summary');
-      if (!summary || !root.contains(summary)) return;
-      event.preventDefault();
-      const details = summary.parentElement;
-      const currentTarget = states.get(details)?.targetOpen ?? details.open;
-      animate(details, !currentTarget);
-    });
-  })();
-</script>
     {% if section.settings.button_label != blank and section.settings.button_link != blank %}
       <a class="collapsible-content__button" href="{{ section.settings.button_link | escape }}">
         {{ section.settings.button_label | escape }}

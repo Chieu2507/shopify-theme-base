@@ -27,18 +27,37 @@
   endfor
 %}
 
-<details
-  class="footer-menu{% if block.settings.show_as_accordion_mobile %} footer-menu--accordion-mobile{% endif %}"
-  data-footer-menu
-  data-footer-mobile-accordion="{{ block.settings.show_as_accordion_mobile }}"
-  data-footer-default-open="{{ block.settings.open_accordions_by_default }}"
-  data-reveal
-  data-reveal-delay="{{ reveal_delay }}"
-  style="--footer-menu-max-width: {{ block.settings.maximum_width }}px; --footer-menu-heading-font-family: {{ menu_heading_font }};"
-  open
-  {{ block.shopify_attributes }}
->
-  <summary class="footer-menu__summary"{% if block.settings.heading == blank %} aria-label="{{ menu_label | escape }}"{% endif %}>
+{% if block.settings.show_as_accordion_mobile %}
+  <details
+    class="footer-menu footer-menu--accordion-mobile"
+    data-footer-menu
+    data-footer-mobile-accordion="true"
+    data-footer-default-open="{{ block.settings.open_accordions_by_default }}"
+    data-animated-details
+    data-accordion-media="(max-width: 767.98px)"
+    data-reveal
+    data-reveal-delay="{{ reveal_delay }}"
+    style="--footer-menu-max-width: {{ block.settings.maximum_width }}px; --footer-menu-heading-font-family: {{ menu_heading_font }};"
+    open
+    {{ block.shopify_attributes }}
+  >
+{% else %}
+  <div
+    class="footer-menu"
+    data-footer-menu
+    data-footer-mobile-accordion="false"
+    data-footer-default-open="true"
+    data-reveal
+    data-reveal-delay="{{ reveal_delay }}"
+    style="--footer-menu-max-width: {{ block.settings.maximum_width }}px; --footer-menu-heading-font-family: {{ menu_heading_font }};"
+    {{ block.shopify_attributes }}
+  >
+{% endif %}
+  {% if block.settings.show_as_accordion_mobile %}
+    <summary class="footer-menu__summary"{% if block.settings.heading == blank %} aria-label="{{ menu_label | escape }}"{% endif %}>
+  {% else %}
+    <div class="footer-menu__summary">
+  {% endif %}
     <span class="footer-menu__heading">
       {% render 'content-block',
         block: block,
@@ -54,9 +73,9 @@
     <span class="footer-menu__toggle" aria-hidden="true">
       {% render 'icon', name: 'chevron-down' %}
     </span>
-  </summary>
+  {% if block.settings.show_as_accordion_mobile %}</summary>{% else %}</div>{% endif %}
 
-  <div class="footer-menu__content">
+  <div class="footer-menu__content"{% if block.settings.show_as_accordion_mobile %} data-accordion-content{% endif %}>
     {% if block.settings.menu != blank and block.settings.menu.links.size > 0 %}
       <ul class="footer-menu__links" role="list">
         {% for link in block.settings.menu.links %}
@@ -74,7 +93,7 @@
       <p class="footer-menu__empty">{{ 'footer.choose_menu' | t }}</p>
     {% endif %}
   </div>
-</details>
+{% if block.settings.show_as_accordion_mobile %}</details>{% else %}</div>{% endif %}
 
 {% schema %}
 {

@@ -17,19 +17,23 @@ if (!customElements.get('footer-localization')) {
 if (!customElements.get('footer-house')) {
   class FooterHouse extends HTMLElement {
     connectedCallback() {
-      this.mobileQuery = window.matchMedia('(max-width: 749px)');
+      this.mobileQuery = window.matchMedia('(max-width: 767.98px)');
       this.menus = [...this.querySelectorAll('[data-footer-menu]')];
       this.section = this.closest('.shopify-section');
       this.handleViewportChange = () => this.syncMenuState();
       this.handleFooterViewportChange = () => this.scheduleStickyState();
       this.handleBlockSelect = (event) => {
         const selectedMenu = event.target.closest?.('[data-footer-menu]');
-        if (selectedMenu && this.contains(selectedMenu)) selectedMenu.open = true;
+        if (selectedMenu instanceof HTMLDetailsElement && this.contains(selectedMenu)) {
+          window.ThemeDetailsAccordion?.setOpen(selectedMenu, true, { immediate: true });
+        }
       };
       this.handleMenuToggle = (event) => {
         if (!this.mobileQuery.matches || event.currentTarget.dataset.footerMobileAccordion !== 'true' || !event.currentTarget.open) return;
         this.menus.forEach((menu) => {
-          if (menu !== event.currentTarget && menu.dataset.footerMobileAccordion === 'true') menu.open = false;
+          if (menu !== event.currentTarget && menu.dataset.footerMobileAccordion === 'true' && menu.open) {
+            window.ThemeDetailsAccordion?.setOpen(menu, false);
+          }
         });
       };
 
@@ -69,7 +73,12 @@ if (!customElements.get('footer-house')) {
       this.menus.forEach((menu) => {
         const usesMobileAccordion = menu.dataset.footerMobileAccordion === 'true';
         const opensByDefault = menu.dataset.footerDefaultOpen === 'true';
-        menu.open = !this.mobileQuery.matches || !usesMobileAccordion || opensByDefault;
+        if (!(menu instanceof HTMLDetailsElement)) return;
+        window.ThemeDetailsAccordion?.setOpen(
+          menu,
+          !this.mobileQuery.matches || !usesMobileAccordion || opensByDefault,
+          { immediate: true },
+        );
       });
     }
 
@@ -84,7 +93,7 @@ if (!customElements.get('footer-house')) {
 
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
       const footerHeight = this.section.getBoundingClientRect().height;
-      const isDesktop = window.matchMedia('(min-width: 990px)').matches;
+      const isDesktop = window.matchMedia('(min-width: 1150px)').matches;
       const isTall = footerHeight > viewportHeight - 1;
 
       this.section.classList.toggle('section-footer--sticky-ready', isDesktop);
