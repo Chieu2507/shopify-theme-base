@@ -699,7 +699,7 @@ import { A11y, Swiper } from './swiper-loader.js';
     renderShippingProgress(cart) {
       if (!this.shippingProgress) return;
       const threshold = Number(this.dataset.shippingThreshold || 0);
-      if (!threshold) {
+      if (!threshold || !cart.requires_shipping) {
         this.shippingProgress.hidden = true;
         return;
       }
