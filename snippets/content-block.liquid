@@ -7,6 +7,7 @@
   @param {string} kind - Either "heading", "text", or "label".
   @param {string} default_preset - Fallback typography preset.
   @param {string} default_font - Font role used by custom typography.
+  @param {string} [force_font_role] - Optional font role override supplied by a custom block.
   @param {string} [force_preset] - Optional typography preset that overrides saved block settings.
   @param {boolean} [include_shopify_attributes] - Whether to attach editor attributes to the rendered typography block.
 
@@ -26,16 +27,22 @@
     assign preset = force_preset
   endif
 
+  assign font_role = force_font_role | default: block.settings.font | default: default_font
+  assign heading_role_class = 'heading-text'
+  if font_role == 'body'
+    assign heading_role_class = 'body-text'
+  endif
+
   assign typography_class = ''
   assign use_inline_typography = false
   if kind == 'heading'
     case preset
       when 'h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7'
-        assign typography_class = 'heading-' | append: preset | append: ' heading-text'
+        assign typography_class = 'heading-' | append: preset | append: ' ' | append: heading_role_class
       when 'subheading'
         assign typography_class = 'subheading-text'
       when 'custom'
-        assign typography_class = 'heading-custom heading-text'
+        assign typography_class = 'heading-custom ' | append: heading_role_class
         assign use_inline_typography = true
     endcase
   elsif kind == 'text' or kind == 'label'
@@ -58,7 +65,6 @@
     endcase
   endif
 
-  assign font_role = block.settings.font | default: default_font
   assign font_family = 'var(--font-body--family)'
   assign font_style = 'var(--font-body--style)'
   assign font_weight = 'var(--font-body--weight)'
@@ -209,7 +215,6 @@
       "
     {% endif %}
     {% if include_shopify_attributes != false %}{{ block.shopify_attributes }}{% endif %}
-    {% render 'reveal-attributes', settings: block.settings %}
   >
     {% if kind == 'heading' %}
       {% if needs_heading_wrapper %}
