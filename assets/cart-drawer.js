@@ -276,12 +276,15 @@ import { A11y, Swiper } from './swiper-loader.js';
         lastY: event.clientY,
         lastTime: performance.now(),
         velocity: 0,
-        distance: 0
+        distance: 0,
+        panelHeight: this.orderOptionsPanel.offsetHeight,
+        frame: null
       };
       this.orderOptionsPanel.classList.remove('is-handle-settling', 'is-handle-closing');
       this.orderOptionsPanel.style.transform = 'translate3d(0, 0, 0)';
       this.orderOptionsPanel.style.opacity = '1';
       this.orderOptionsPanel.classList.add('is-handle-dragging');
+      this.classList.add('is-order-options-dragging');
       if (this.orderOptionsBackdrop) {
         this.orderOptionsBackdrop.style.transition = 'none';
         this.orderOptionsBackdrop.style.opacity = '1';
@@ -301,12 +304,18 @@ import { A11y, Swiper } from './swiper-loader.js';
       drag.lastY = event.clientY;
       drag.lastTime = now;
       drag.distance = Math.max(0, event.clientY - drag.startY);
+      if (drag.frame === null) drag.frame = requestAnimationFrame(() => this.renderHandleDrag(drag));
+      event.preventDefault();
+    }
+
+    renderHandleDrag(drag) {
+      if (this.handleDrag !== drag) return;
+      drag.frame = null;
       this.orderOptionsPanel.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
       if (this.orderOptionsBackdrop) {
-        const fadeDistance = Math.max(this.orderOptionsPanel.getBoundingClientRect().height * 0.7, 1);
+        const fadeDistance = Math.max(drag.panelHeight * 0.7, 1);
         this.orderOptionsBackdrop.style.opacity = String(Math.max(0, 1 - (drag.distance / fadeDistance)));
       }
-      event.preventDefault();
     }
 
     endHandleDrag(event, cancelled = false) {
@@ -314,10 +323,16 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (!drag || event.pointerId !== drag.pointerId) return;
 
       try { this.handle?.releasePointerCapture(event.pointerId); } catch (_) {}
-      const closeDistance = Math.min(140, this.orderOptionsPanel.getBoundingClientRect().height * 0.2);
+      if (drag.frame !== null) {
+        cancelAnimationFrame(drag.frame);
+        drag.frame = null;
+        this.renderHandleDrag(drag);
+      }
+      const closeDistance = Math.min(140, drag.panelHeight * 0.2);
       const shouldClose = !cancelled && (drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55));
       this.handleDrag = null;
       this.orderOptionsPanel.classList.remove('is-handle-dragging');
+      this.classList.remove('is-order-options-dragging');
 
       if (shouldClose) {
         this.closeFromHandle();
@@ -415,8 +430,10 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.handleDragTimer = null;
       if (this.handleDrag) {
         try { this.handle?.releasePointerCapture(this.handleDrag.pointerId); } catch (_) {}
+        if (this.handleDrag.frame !== null) cancelAnimationFrame(this.handleDrag.frame);
       }
       this.handleDrag = null;
+      this.classList.remove('is-order-options-dragging');
       this.orderOptionsPanel?.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
       this.orderOptionsPanel?.style.removeProperty('transform');
       this.orderOptionsPanel?.style.removeProperty('opacity');
@@ -588,16 +605,20 @@ import { A11y, Swiper } from './swiper-loader.js';
           ${variant}
           ${properties}
           ${sellingPlan}
-          <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
-          ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
         </div>
         <div class="cart-drawer__item-actions">
           <button class="cart-drawer__remove" type="button" aria-label="${this.escape(this.dataset.removeLabel)}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${removeIcon}</button>
+        </div>
+        <div class="cart-drawer__item-purchase">
+          <div class="cart-drawer__item-price-row">
+            <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
           <div class="cart-drawer__quantity">
             <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="-1">−</button>
             <input type="number" min="0" step="1" inputmode="numeric" value="${item.quantity}" aria-label="${this.escape(this.dataset.quantityLabel || 'Quantity')}: ${this.escape(item.product_title)}" data-cart-drawer-quantity-input data-cart-drawer-quantity-value data-line="${this.escape(item.key)}">
             <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="1">+</button>
           </div>
+          </div>
+          ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
         </div>
       </article>`;
     }
@@ -700,6 +721,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (!variantId || button.disabled) return;
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
+      button.classList.add('is-loading');
       try {
         const formData = new FormData();
         formData.set('id', variantId);
@@ -715,6 +737,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.setMessage(error.message, true);
         button.disabled = false;
         button.removeAttribute('aria-busy');
+        button.classList.remove('is-loading');
       }
     }
 
@@ -958,7 +981,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         ? `<a class="cart-drawer__text-button" href="${this.escape(product.url)}">${this.escape(this.dataset.chooseOptionsLabel)}</a>`
         : '';
       const addAction = variant?.available && !requiresSellingPlanSelection
-        ? `<button type="button" class="cart-drawer__recommendation-add" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}" aria-label="${this.escape(this.dataset.addToCartLabel)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5"/></svg></button>`
+        ? `<button type="button" class="quick-add-button cart-drawer__recommendation-add" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}" aria-label="${this.escape(this.dataset.addToCartLabel)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5"/></svg></button>`
         : '';
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
       return `<article class="cart-drawer__recommendation swiper-slide">
