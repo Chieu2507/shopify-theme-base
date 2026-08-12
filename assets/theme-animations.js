@@ -20,8 +20,8 @@
   let observer;
 
   const show = (element) => {
-    if (!element?.isConnected) return;
     pending.delete(element);
+    if (!element?.isConnected) return;
     element.dataset.revealState = 'visible';
     observer?.unobserve(element);
   };
