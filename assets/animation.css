@@ -1,9 +1,8 @@
 /*
- * Shared entrance motion for Shopify theme blocks.
+ * Global opt-in scroll reveal.
  *
- * Shopify wraps theme blocks in .shopify-block unless their schema uses
- * "tag": null. The small explicit selector group below covers the visible
- * tag-null blocks; slideshow blocks keep their bespoke Swiper animation.
+ * JavaScript adds data-reveal-state before the root enhancement class is
+ * enabled, so content stays visible when JavaScript is unavailable or fails.
  */
 
 @keyframes spinel-block-fade-in {
@@ -23,21 +22,70 @@
   }
 }
 
+[data-reveal] {
+  --reveal-duration: 650ms;
+  --reveal-delay: 0ms;
+  --reveal-easing: cubic-bezier(.22, 1, .36, 1);
+  --reveal-translate-x: 0;
+  --reveal-translate-y: 28px;
+  --reveal-scale: 1;
+}
+
+[data-reveal="fade"] {
+  --reveal-translate-y: 0;
+}
+
+[data-reveal="fade-down"] {
+  --reveal-translate-y: -28px;
+}
+
+[data-reveal="fade-left"] {
+  --reveal-translate-x: 28px;
+  --reveal-translate-y: 0;
+}
+
+[data-reveal="fade-right"] {
+  --reveal-translate-x: -28px;
+  --reveal-translate-y: 0;
+}
+
+[data-reveal="zoom"] {
+  --reveal-translate-y: 0;
+  --reveal-scale: .96;
+}
+
 @media (prefers-reduced-motion: no-preference) {
-  .shopify-block {
+  /* Preserve the existing block entrance behavior outside the opt-in API. */
+  .shopify-block:not([data-reveal]) {
     --block-animation-delay: 0ms;
     animation: spinel-block-fade-in var(--block-animation-duration) ease-out var(--block-animation-delay) both;
   }
 
-  .shopify-block:nth-child(2) { --block-animation-delay: var(--block-animation-stagger); }
-  .shopify-block:nth-child(3) { --block-animation-delay: calc(var(--block-animation-stagger) + var(--block-animation-stagger)); }
-  .shopify-block:nth-child(4) { --block-animation-delay: calc(var(--block-animation-stagger) + var(--block-animation-stagger) + var(--block-animation-stagger)); }
-  .shopify-block:nth-child(5) { --block-animation-delay: calc(var(--block-animation-stagger) + var(--block-animation-stagger) + var(--block-animation-stagger) + var(--block-animation-stagger)); }
+  .shopify-block:not([data-reveal]):nth-child(2) { --block-animation-delay: var(--block-animation-stagger); }
+  .shopify-block:not([data-reveal]):nth-child(3) { --block-animation-delay: calc(var(--block-animation-stagger) * 2); }
+  .shopify-block:not([data-reveal]):nth-child(4) { --block-animation-delay: calc(var(--block-animation-stagger) * 3); }
+  .shopify-block:not([data-reveal]):nth-child(5) { --block-animation-delay: calc(var(--block-animation-stagger) * 4); }
 
-  :is(.footer__newsletter, .footer__signature, .footer-menu, .newsletter-form-block, .slideshow__button-group) {
+  :is(.footer__newsletter, .footer__signature, .footer-menu, .newsletter-form-block, .slideshow__button-group):not([data-reveal]) {
     animation: spinel-block-fade-up var(--block-animation-duration) cubic-bezier(.22, 1, .36, 1) both;
   }
 
+  .theme-animations-enabled [data-reveal][data-reveal-state] {
+    transition:
+      opacity var(--reveal-duration) var(--reveal-easing) var(--reveal-delay),
+      transform var(--reveal-duration) var(--reveal-easing) var(--reveal-delay);
+  }
+
+  .theme-animations-enabled [data-reveal][data-reveal-state="pending"] {
+    opacity: 0;
+    transform: translate3d(var(--reveal-translate-x), var(--reveal-translate-y), 0) scale(var(--reveal-scale));
+    will-change: opacity, transform;
+  }
+
+  .theme-animations-enabled [data-reveal][data-reveal-state="visible"] {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
 }
 
 @media (prefers-reduced-motion: reduce) {
@@ -46,9 +94,11 @@
   .footer__signature,
   .footer-menu,
   .newsletter-form-block,
-  .slideshow__button-group {
+  .slideshow__button-group,
+  [data-reveal] {
     animation: none !important;
     opacity: 1 !important;
     transform: none !important;
+    transition: none !important;
   }
 }
