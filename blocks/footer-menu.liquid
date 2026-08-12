@@ -14,6 +14,13 @@
   if menu_label == blank
     assign menu_label = 'footer.menu' | t
   endif
+  assign reveal_delay = 0
+  for footer_block in section.blocks
+    if footer_block.id == block.id
+      assign reveal_delay = forloop.index0 | times: 75
+      break
+    endif
+  endfor
 %}
 
 <details
@@ -21,6 +28,8 @@
   data-footer-menu
   data-footer-mobile-accordion="{{ block.settings.show_as_accordion_mobile }}"
   data-footer-default-open="{{ block.settings.open_accordions_by_default }}"
+  data-reveal
+  data-reveal-delay="{{ reveal_delay }}"
   style="--footer-menu-max-width: {{ block.settings.maximum_width }}px; --footer-menu-heading-font-family: {{ menu_heading_font }};"
   open
   {{ block.shopify_attributes }}

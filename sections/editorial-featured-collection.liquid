@@ -56,18 +56,18 @@
 >
   <div class="editorial-featured-collection__inner section-spacing{% if section.settings.section_width == 'page' %} page-width{% endif %}">
     <header class="editorial-featured-collection__header">
-      <div class="editorial-featured-collection__title-group">
+      <div class="editorial-featured-collection__title-group" data-reveal>
         {% content_for 'block', type: 'label', id: 'label' %}
         {% content_for 'block', type: 'heading', id: 'heading' %}
       </div>
-      <div class="editorial-featured-collection__description">
+      <div class="editorial-featured-collection__description" data-reveal>
         {% content_for 'block', type: 'text', id: 'description' %}
       </div>
     </header>
 
     <div class="editorial-featured-collection__panel featured-collection__panel" data-featured-collection-panel>
       <div class="editorial-featured-collection__carousel featured-collection__carousel swiper" data-featured-collection-carousel>
-        <ul class="editorial-featured-collection__products featured-collection__products swiper-wrapper" role="list" data-featured-collection-scroller>
+        <ul class="editorial-featured-collection__products featured-collection__products swiper-wrapper" role="list" data-featured-collection-scroller data-reveal-group>
           {% if featured_collection != blank and product_count > 0 %}
             {% for product in featured_collection.products limit: products_to_show %}
               {% liquid
@@ -80,7 +80,7 @@
                   assign card_preload = true
                 endif
               %}
-              <li class="editorial-featured-collection__product featured-collection__product swiper-slide">
+              <li class="editorial-featured-collection__product featured-collection__product swiper-slide" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                 {% render 'product-card',
                   product: product,
                   media_ratio: 'global',
@@ -98,7 +98,7 @@
             {% endfor %}
           {% else %}
             {% for placeholder_index in (1..4) %}
-              <li class="editorial-featured-collection__product featured-collection__product swiper-slide">
+              <li class="editorial-featured-collection__product featured-collection__product swiper-slide" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                 {% render 'product-card',
                   media_ratio: 'global',
                   show_badges: true,
@@ -131,7 +131,7 @@
         {% render 'icon', name: 'chevron-right' %}
       </button>
 
-      <footer class="editorial-featured-collection__footer">
+      <footer class="editorial-featured-collection__footer" data-reveal>
         <span
           class="editorial-featured-collection__count"
           data-featured-collection-showing
