@@ -758,11 +758,18 @@ import { A11y, Swiper } from './swiper-loader.js';
       const province = String(data.get('province') || '').trim();
       const zip = String(data.get('zip') || '').trim();
       if (!country || !zip) return;
+      const submitButton = form.querySelector('button[type="submit"]');
+      if (submitButton?.disabled) return;
       this.clearShippingFieldErrors();
       const query = new URLSearchParams({ 'shipping_address[country]': country, 'shipping_address[zip]': zip });
       if (province) query.set('shipping_address[province]', province);
       this.shippingRates.classList.remove('is-error');
-      this.shippingRates.textContent = this.dataset.shippingCalculatingLabel || 'Calculating shipping rates';
+      this.shippingRates.replaceChildren();
+      if (submitButton) {
+        submitButton.disabled = true;
+        submitButton.classList.add('is-loading');
+        submitButton.setAttribute('aria-busy', 'true');
+      }
       try {
         const prepare = await fetch(this.localeUrl(`cart/prepare_shipping_rates.json?${query}`), {
           method: 'POST',
@@ -772,15 +779,25 @@ import { A11y, Swiper } from './swiper-loader.js';
         if (!prepare.ok && prepare.status !== 202) throw await this.shippingErrorFromResponse(prepare);
         const rates = await this.pollShippingRates(query);
         if (!rates.length) {
-          this.shippingRates.classList.add('is-error');
-          this.shippingRates.textContent = this.dataset.shippingErrorLabel;
+          this.renderShippingError(this.dataset.shippingErrorLabel);
           return;
         }
         this.shippingRates.innerHTML = `<div class="cart-drawer__shipping-rates-summary">There ${rates.length === 1 ? 'is' : 'are'} ${rates.length} shipping rate${rates.length === 1 ? '' : 's'} for your address</div><ul class="cart-drawer__shipping-rates-list">${rates.map((rate) => `<li>${this.escape(rate.presentment_name || rate.name)}: ${this.escape(this.formatMoney(Math.round(Number(rate.price || 0) * 100)))}</li>`).join('')}</ul>`;
       } catch (error) {
-        this.shippingRates.classList.add('is-error');
-        this.shippingRates.textContent = error.message || this.dataset.shippingErrorLabel;
+        this.renderShippingError(error.message || this.dataset.shippingErrorLabel);
+      } finally {
+        if (submitButton) {
+          submitButton.disabled = false;
+          submitButton.classList.remove('is-loading');
+          submitButton.removeAttribute('aria-busy');
+        }
       }
+    }
+
+    renderShippingError(message) {
+      const errorMessage = this.escape(message || this.dataset.shippingErrorLabel);
+      this.shippingRates.classList.add('is-error');
+      this.shippingRates.innerHTML = `<div class="cart-drawer__shipping-rates-error-summary">One or more error occurred while retrieving shipping rates</div><ul class="cart-drawer__shipping-rates-error-list"><li>${errorMessage}</li></ul>`;
     }
 
     updateShippingProvinces() {
