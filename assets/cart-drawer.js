@@ -28,7 +28,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.totalDiscount = this.querySelector('[data-cart-drawer-total-discount]');
       this.savingsAmount = this.querySelector('[data-cart-drawer-savings-amount]');
       this.originalTotal = this.querySelector('[data-cart-drawer-original-total]');
-      this.taxNote = this.querySelector('[data-cart-drawer-tax-note]');
       this.recommendations = this.querySelector('[data-cart-drawer-recommendations]');
       this.recommendationList = this.querySelector('[data-cart-drawer-recommendation-list]');
       this.recommendationTrack = this.querySelector('[data-cart-drawer-recommendation-track]');
@@ -517,7 +516,6 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.total.classList.toggle('is-sale', Number(cart.original_total_price || 0) > Number(cart.total_price || 0));
       }
       this.renderTotalDiscount(cart);
-      if (this.taxNote) this.taxNote.textContent = cart.taxes_included ? this.dataset.taxesIncludedLabel : this.dataset.taxesNoteLabel;
       this.renderDiscounts(cart);
       this.renderShippingProgress(cart);
       const note = this.querySelector('[data-cart-drawer-note]');
@@ -760,6 +758,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.clearShippingFieldErrors();
       const query = new URLSearchParams({ 'shipping_address[country]': country, 'shipping_address[zip]': zip });
       if (province) query.set('shipping_address[province]', province);
+      this.shippingRates.classList.remove('is-error');
       this.shippingRates.textContent = this.dataset.shippingCalculatingLabel || 'Calculating shipping rates';
       try {
         const prepare = await fetch(this.localeUrl(`cart/prepare_shipping_rates.json?${query}`), {
@@ -769,10 +768,14 @@ import { A11y, Swiper } from './swiper-loader.js';
         });
         if (!prepare.ok && prepare.status !== 202) throw await this.shippingErrorFromResponse(prepare);
         const rates = await this.pollShippingRates(query);
-        this.shippingRates.innerHTML = rates.length
-          ? `<span>${rates.map((rate) => `${this.escape(rate.presentment_name || rate.name)}: ${this.escape(this.formatMoney(Math.round(Number(rate.price || 0) * 100)))}`).join('</span><span>')}</span>`
-          : this.escape(this.dataset.shippingErrorLabel);
+        if (!rates.length) {
+          this.shippingRates.classList.add('is-error');
+          this.shippingRates.textContent = this.dataset.shippingErrorLabel;
+          return;
+        }
+        this.shippingRates.innerHTML = `<div class="cart-drawer__shipping-rates-summary">There ${rates.length === 1 ? 'is' : 'are'} ${rates.length} shipping rate${rates.length === 1 ? '' : 's'} for your address</div><ul class="cart-drawer__shipping-rates-list">${rates.map((rate) => `<li>${this.escape(rate.presentment_name || rate.name)}: ${this.escape(this.formatMoney(Math.round(Number(rate.price || 0) * 100)))}</li>`).join('')}</ul>`;
       } catch (error) {
+        this.shippingRates.classList.add('is-error');
         this.shippingRates.textContent = error.message || this.dataset.shippingErrorLabel;
       }
     }
