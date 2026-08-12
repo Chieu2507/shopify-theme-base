@@ -32,7 +32,6 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
   const { signal } = abortController;
   const mobileQuery = window.matchMedia(`(max-width: ${mobileBreakpoint}px)`);
   const section = element.closest(sectionSelector);
-  const isEditorialSlideshow = element.matches('editorial-slideshow');
   const coarsePointerQuery = window.matchMedia('(hover: none) and (pointer: coarse)');
   let viewportWidth = window.innerWidth;
   let stableViewportHeight = getViewportHeight();
@@ -57,17 +56,7 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
     const fullScreenClass = mobileQuery.matches
       ? 'mobile-full'
       : 'desktop-full';
-    const editorialHeightMode = element.dataset.firstViewportHeightMode;
-    const editorialHeightPercent = Number(
-      mobileQuery.matches
-        ? element.dataset.firstViewportHeightMobilePercent
-        : element.dataset.firstViewportHeightDesktopPercent,
-    );
-    const isEditorialPercentFullScreen = isEditorialSlideshow
-      && editorialHeightMode === 'percent'
-      && editorialHeightPercent >= 100;
-    const isFullScreen = isEditorialPercentFullScreen
-      || element.classList.contains(`slideshow--height-${fullScreenClass}`)
+    const isFullScreen = element.classList.contains(`slideshow--height-${fullScreenClass}`)
       || element.classList.contains(`editorial-slideshow--height-${fullScreenClass}`);
     const viewportHeight = getStableViewportHeight();
     const top = element.getBoundingClientRect().top + window.scrollY;

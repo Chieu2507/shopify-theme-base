@@ -37,7 +37,6 @@ class EditorialSlideshow extends HTMLElement {
     this.slideRefreshFrame = null;
     this.slideObserver = null;
     this.isInViewport = !('IntersectionObserver' in window);
-    this.loadFirstViewportHeight();
 
     this.handleVisibilityChange = this.handleVisibilityChange.bind(this);
     this.handleBlockSelect = this.handleBlockSelect.bind(this);
@@ -91,8 +90,6 @@ class EditorialSlideshow extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this.destroyFirstViewportHeight?.();
-    this.destroyFirstViewportHeight = null;
     this.slideObserver?.disconnect();
     this.slideObserver = null;
     if (this.slideRefreshFrame) window.cancelAnimationFrame(this.slideRefreshFrame);
@@ -297,17 +294,6 @@ class EditorialSlideshow extends HTMLElement {
       '--editorial-slideshow-mobile-ratio',
       this.firstSlideImage.naturalWidth / this.firstSlideImage.naturalHeight,
     );
-  }
-
-  async loadFirstViewportHeight() {
-    const abortController = this.abortController;
-    const moduleUrl = this.dataset.firstViewportHeightModule;
-    if (!moduleUrl) return;
-
-    const { setupFirstViewportHeight } = await import(moduleUrl);
-    if (this.abortController !== abortController || !this.isConnected) return;
-
-    this.destroyFirstViewportHeight = setupFirstViewportHeight(this, { mobileBreakpoint: 767 });
   }
 
   syncNavigatorAvailability(slideCount) {
