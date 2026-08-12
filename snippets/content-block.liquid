@@ -103,7 +103,14 @@
     assign width_mobile_class = 'fill'
   endif
 
-  assign color_class = block.settings.color | default: 'text'
+  assign text_color = block.settings.text_color
+  if text_color == blank
+    if block.settings.color == 'subtext'
+      assign text_color = 'var(--color-text)'
+    elsif block.settings.color == 'text'
+      assign text_color = 'var(--color-heading)'
+    endif
+  endif
 
   assign alignment = block.settings.alignment | default: 'left'
   assign padding_block_start = block.settings['padding-block-start']
@@ -170,30 +177,25 @@
 %}
 
 {% if content != blank %}
-  {% if has_mobile_padding or has_mobile_font_size %}
-    <style>
-      @media screen and (max-width: 767.98px) {
-        [data-type-block-id="{{ responsive_scope | escape }}"] {
-          {% if has_mobile_padding %}
-            padding: {{ padding_top_mobile }}px {{ padding_right_mobile }}px {{ padding_bottom_mobile }}px {{ padding_left_mobile }}px !important;
-          {% endif %}
-          {% if has_mobile_font_size %}
-            font-size: {{ font_size_mobile }} !important;
-          {% endif %}
-        }
-      }
-    </style>
-  {% endif %}
   <div
-    class="content-block spacing-style content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }} content-block--color-{{ color_class }}{% if kind == 'heading' %} content-heading content-heading--{{ alignment }}{% else %} text-block content-text content-text--{{ alignment }} rte{% endif %}{% if typography_class != blank %} {{ typography_class }}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
+    class="content-block spacing-style content-block--{{ kind }} content-block--preset-{{ preset }} content-block--width-{{ width_class }} content-block--width-mobile-{{ width_mobile_class }}{% if kind == 'heading' %} content-heading content-heading--{{ alignment }}{% else %} text-block content-text content-text--{{ alignment }} rte{% endif %}{% if typography_class != blank %} {{ typography_class }}{% endif %}{% if use_inline_typography %} content-block--inline-typography{% endif %}{% if has_mobile_padding %} content-block--has-mobile-padding{% endif %}{% if has_mobile_font_size %} content-block--has-mobile-font-size{% endif %}{% if block.settings.disable_line_break_mobile %} content-block--disable-mobile-breaks{% endif %}"
     {% if has_mobile_padding or has_mobile_font_size %}data-type-block-id="{{ responsive_scope | escape }}"{% endif %}
-    {% if has_spacing_settings or has_padding or use_inline_typography %}
+    {% if has_spacing_settings or has_padding or use_inline_typography or text_color != blank or has_mobile_padding or has_mobile_font_size %}
       style="
+        {% if text_color != blank %}
+          --content-block-color: {{ text_color }};
+        {% endif %}
         {% if has_spacing_settings %}
           {% render 'spacing-style', settings: block.settings %}
         {% endif %}
         {% if has_padding %}
           padding: {{ padding_top }}px {{ padding_right }}px {{ padding_bottom }}px {{ padding_left }}px;
+        {% endif %}
+        {% if has_mobile_padding %}
+          --content-block-mobile-padding: {{ padding_top_mobile }}px {{ padding_right_mobile }}px {{ padding_bottom_mobile }}px {{ padding_left_mobile }}px;
+        {% endif %}
+        {% if has_mobile_font_size %}
+          --content-block-mobile-font-size: {{ font_size_mobile }};
         {% endif %}
         {% if use_inline_typography %}
           font-family: {{ font_family }};
@@ -219,74 +221,3 @@
     {% endif %}
   </div>
 {% endif %}
-
-{% stylesheet %}
-  .content-block {
-    display: block;
-    width: fit-content;
-    max-width: 100%;
-    margin: 0;
-    color: var(--color-heading);
-    text-wrap: pretty;
-  }
-
-  .content-block.content-block--width-fit {
-    width: fit-content;
-  }
-
-  .content-block.content-block--width-fill {
-    width: 100%;
-  }
-
-  .content-block.content-block--color-text,
-  .content-block.content-block--color-text :where(.heading-text, .body-text, .label-text, .subheading-text) {
-    color: var(--color-heading);
-  }
-
-  .content-block.content-block--color-subtext,
-  .content-block.content-block--color-subtext :where(.heading-text, .body-text, .label-text, .subheading-text) {
-    color: var(--color-text);
-  }
-
-  .content-block--inline-typography {
-    font-synthesis: weight;
-  }
-
-  .content-block--inline-typography
-    :is(p, h1, h2, h3, h4, h5, h6) {
-    font-family: inherit !important;
-    font-size: inherit !important;
-    font-style: inherit !important;
-    font-weight: inherit !important;
-    letter-spacing: inherit !important;
-    line-height: inherit !important;
-    text-transform: inherit !important;
-  }
-
-  .content-block > :first-child {
-    margin-block-start: 0;
-  }
-
-  .content-block > :last-child {
-    margin-block-end: 0;
-  }
-
-  @media screen and (max-width: 767.98px) {
-    .content-block.content-block--width-mobile-fit {
-      width: fit-content;
-    }
-
-    .content-block.content-block--width-mobile-fill {
-      width: 100%;
-    }
-
-    .content-block--disable-mobile-breaks .content-block__line-break br {
-      display: none;
-    }
-
-    .content-block--disable-mobile-breaks .content-block__line-break::after {
-      content: ' ';
-    }
-  }
-
-{% endstylesheet %}
