@@ -227,9 +227,11 @@
         {% endif %}
 
         <div class="cart-drawer__total"><span>{{ 'cart_drawer.total' | t | default: 'Total' | escape }}</span><strong data-cart-drawer-total>{% render 'money', amount: cart.total_price %}</strong></div>
-        <a class="cart-drawer__checkout" href="{{ routes.checkout_url | default: '/checkout' | escape }}" data-cart-drawer-checkout><span>{{ section.settings.checkout_label | escape }}</span>{% if section.settings.checkout_icon != 'none' %}<span class="cart-drawer__checkout-icon button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>{% endif %}<span class="cart-drawer__checkout-total" data-cart-drawer-checkout-total>{% render 'money', amount: cart.total_price %}</span></a>
+        <div class="cart-drawer__actions{% unless section.settings.show_view_cart %} cart-drawer__actions--checkout-only{% endunless %}">
+          {% if section.settings.show_view_cart %}<a class="cart-drawer__view-cart btn-secondary" href="{{ routes.cart_url | escape }}"><span>{{ section.settings.view_cart_label | escape }}</span></a>{% endif %}
+          <a class="cart-drawer__checkout" href="{{ routes.checkout_url | default: '/checkout' | escape }}" data-cart-drawer-checkout><span>{{ section.settings.checkout_label | escape }}</span>{% if section.settings.checkout_icon != 'none' %}<span class="cart-drawer__checkout-icon button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>{% endif %}<span class="cart-drawer__checkout-total" data-cart-drawer-checkout-total>{% render 'money', amount: cart.total_price %}</span></a>
+        </div>
         {% if section.settings.show_accelerated_checkout and additional_checkout_buttons %}<div class="cart-drawer__additional-checkout-buttons">{{ content_for_additional_checkout_buttons }}</div>{% endif %}
-        {% if section.settings.show_view_cart %}<a class="cart-drawer__view-cart" href="{{ routes.cart_url | escape }}">{{ section.settings.view_cart_label | escape }}</a>{% endif %}
       </footer>
       {% if cart_tools_show_note or cart_tools_show_discount or cart_tools_shipping_enabled %}
         <button class="cart-drawer__order-options-backdrop" type="button" tabindex="-1" aria-label="Close order options" data-cart-drawer-order-options-close data-modal-backdrop></button>
