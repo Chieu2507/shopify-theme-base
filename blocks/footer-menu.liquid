@@ -14,6 +14,10 @@
   if menu_label == blank
     assign menu_label = 'footer.menu' | t
   endif
+  assign menu_type_preset = block.settings.type_preset
+  if block.settings.font == 'body'
+    assign menu_type_preset = block.settings.body_type_preset | default: 'md'
+  endif
   assign reveal_delay = 0
   for footer_block in section.blocks
     if footer_block.id == block.id
@@ -41,6 +45,7 @@
         content: block.settings.heading,
         kind: 'heading',
         default_preset: 'h2',
+        force_preset: menu_type_preset,
         default_font: 'heading',
         force_font_role: block.settings.font,
         include_shopify_attributes: false
@@ -181,7 +186,22 @@
           "label": "t:typography_options.custom"
         }
       ],
-      "default": "h2"
+      "default": "h2",
+      "visible_if": "{{ block.settings.font == 'heading' }}"
+    },
+    {
+      "type": "select",
+      "id": "body_type_preset",
+      "label": "t:typography_blocks.text_size",
+      "options": [
+        { "value": "lg", "label": "t:typography_options.body_large" },
+        { "value": "md", "label": "t:typography_options.body_medium" },
+        { "value": "sm", "label": "t:typography_options.body_small" },
+        { "value": "xs", "label": "t:typography_options.body_extra_small" },
+        { "value": "custom", "label": "t:typography_options.custom" }
+      ],
+      "default": "md",
+      "visible_if": "{{ block.settings.font == 'body' }}"
     },
     {
       "type": "range",
@@ -192,7 +212,7 @@
       "step": 2,
       "unit": "px",
       "default": 50,
-      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+      "visible_if": "{{ block.settings.type_preset == 'custom' or block.settings.body_type_preset == 'custom' }}"
     },
     {
       "type": "range",
@@ -203,7 +223,7 @@
       "step": 2,
       "unit": "px",
       "default": 30,
-      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+      "visible_if": "{{ block.settings.type_preset == 'custom' or block.settings.body_type_preset == 'custom' }}"
     },
     {
       "type": "color",
@@ -255,6 +275,7 @@
       "settings": {
         "heading": "<h3>Menu</h3>",
         "type_preset": "h7",
+        "body_type_preset": "md",
         "font": "body"
       }
     }

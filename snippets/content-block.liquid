@@ -36,15 +36,31 @@
   assign typography_class = ''
   assign use_inline_typography = false
   if kind == 'heading'
-    case preset
-      when 'h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7'
-        assign typography_class = 'heading-' | append: preset | append: ' ' | append: heading_role_class
-      when 'subheading'
-        assign typography_class = 'subheading-text'
-      when 'custom'
-        assign typography_class = 'heading-custom ' | append: heading_role_class
-        assign use_inline_typography = true
-    endcase
+    if font_role == 'body'
+      case preset
+        when 'lg'
+          assign typography_class = 'body-p0 body-text'
+        when 'md', 'paragraph'
+          assign typography_class = 'body-p1 body-text'
+        when 'sm'
+          assign typography_class = 'body-p2 body-text'
+        when 'xs'
+          assign typography_class = 'body-p3 body-text'
+        when 'custom'
+          assign typography_class = 'body-custom body-text'
+          assign use_inline_typography = true
+      endcase
+    else
+      case preset
+        when 'h0', 'h1', 'h2', 'h3', 'h4', 'h5', 'h6', 'h7'
+          assign typography_class = 'heading-' | append: preset | append: ' ' | append: heading_role_class
+        when 'subheading'
+          assign typography_class = 'subheading-text'
+        when 'custom'
+          assign typography_class = 'heading-custom ' | append: heading_role_class
+          assign use_inline_typography = true
+      endcase
+    endif
   elsif kind == 'text' or kind == 'label'
     case preset
       when 'lg'
