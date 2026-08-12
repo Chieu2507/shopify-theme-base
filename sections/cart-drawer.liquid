@@ -4,7 +4,6 @@
   assign cart_total_label_size = section.settings.total_label_size | default: 'h6'
   assign cart_total_price_size = section.settings.total_price_size | default: 'md'
   assign cart_image_radius = section.settings.image_radius | default: 0
-  assign empty_cart_link = section.settings.empty_link | default: routes.all_products_collection_url
   assign cart_tools_block = section.blocks | where: 'type', 'cart_tools' | first
   assign cart_tools_show_note = section.settings.show_note
   assign cart_tools_note_label = section.settings.note_label
@@ -96,12 +95,6 @@
     data-discount-enabled="{{ cart_tools_show_discount }}"
     data-order-note-enabled="{{ cart_tools_show_note }}"
     data-shipping-threshold="{{ section.settings.free_shipping_threshold | times: 100 }}"
-    data-empty-label="{{ section.settings.empty_heading | escape }}"
-    data-empty-heading-class="{% render 'typography-class', preset: section.settings.empty_heading_size, fallback: 'custom' %}"
-    data-empty-link="{{ empty_cart_link | escape }}"
-    data-empty-link-label="{{ section.settings.empty_button_label | escape }}"
-    data-empty-image="{% if section.settings.empty_image != blank %}{{ section.settings.empty_image | image_url: width: 1200 }}{% endif %}"
-    data-empty-image-ratio="{{ section.settings.empty_image_ratio }}"
     data-decrease-quantity-label="{{ 'quantity.decrease' | t | escape }}"
     data-increase-quantity-label="{{ 'quantity.increase' | t | escape }}"
     data-quantity-label="{{ 'quantity.label' | t | escape }}"
@@ -142,7 +135,7 @@
         <div class="cart-drawer__loading" data-cart-drawer-loading hidden aria-hidden="true"><span class="cart-drawer__loading-spinner"></span></div>
 
         {% if section.settings.promotion_enable and section.settings.promotion_message != blank %}
-          <div class="cart-drawer__promotion cart-drawer__promotion--{{ section.settings.promotion_direction }}{% if section.settings.promotion_uppercase %} cart-drawer__promotion--uppercase{% endif %}{% if section.settings.free_shipping_enable %} cart-drawer__promotion--with-shipping{% endif %}"{% if section.settings.promotion_pause_on_hover %} data-cart-drawer-promotion-pause{% endif %}>
+          <div class="cart-drawer__promotion cart-drawer__promotion--{{ section.settings.promotion_direction }}{% if section.settings.promotion_uppercase %} cart-drawer__promotion--uppercase{% endif %}{% if section.settings.free_shipping_enable %} cart-drawer__promotion--with-shipping{% endif %}"{% if cart.item_count == 0 %} hidden{% endif %}{% if section.settings.promotion_pause_on_hover %} data-cart-drawer-promotion-pause{% endif %}>
             <div class="cart-drawer__promotion-track"><span>{% render 'icon', name: 'discount', class: 'cart-drawer__promotion-icon' %}{{ section.settings.promotion_message | escape }}</span><span aria-hidden="true">{% render 'icon', name: 'discount', class: 'cart-drawer__promotion-icon' %}{{ section.settings.promotion_message | escape }}</span></div>
           </div>
         {% endif %}
@@ -157,10 +150,10 @@
 
         <div class="cart-drawer__items" data-cart-drawer-items></div>
         <template data-cart-drawer-empty-template>
-          <div class="cart-drawer__empty{% if section.settings.empty_collections != blank %} cart-drawer__empty--collections{% endif %}">
+          <div class="cart-drawer__empty">
             <h3 class="cart-drawer__empty-title {% render 'typography-class', preset: section.settings.empty_heading_size, fallback: 'custom' %}">{{ section.settings.empty_heading | escape }}</h3>
+            {% if section.settings.empty_description != blank %}<p class="cart-drawer__empty-description body-p1 body-text">{{ section.settings.empty_description | escape | newline_to_br }}</p>{% endif %}
             {% if section.settings.empty_collections != blank %}
-              {% if section.settings.empty_description != blank %}<p class="cart-drawer__empty-description body-p1 body-text">{{ section.settings.empty_description | escape | newline_to_br }}</p>{% endif %}
               <div class="cart-drawer__empty-collections" role="list">
                 {% for collection in section.settings.empty_collections limit: 3 %}
                   {% liquid
@@ -182,12 +175,6 @@
                   </a>
                 {% endfor %}
               </div>
-            {% else %}
-              {% if section.settings.empty_image != blank %}
-                {% assign empty_fallback_image_class = 'cart-drawer__empty-image cart-drawer__empty-image--' | append: section.settings.empty_image_ratio %}
-                {{ section.settings.empty_image | image_url: width: 1200 | image_tag: class: empty_fallback_image_class, loading: 'lazy', alt: '' }}
-              {% endif %}
-              {% if empty_cart_link != blank %}<a class="cart-drawer__empty-link btn-primary" href="{{ empty_cart_link | escape }}">{{ section.settings.empty_button_label | escape }}</a>{% endif %}
             {% endif %}
           </div>
         </template>
@@ -391,12 +378,6 @@
     { "type": "range", "id": "empty_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.empty_heading_size == 'custom' }}" },
     { "type": "textarea", "id": "empty_description", "label": "Supporting text", "default": "Not sure where to start?\nTry these collections:" },
     { "type": "collection_list", "id": "empty_collections", "label": "Featured collections", "limit": 3 },
-    { "type": "header", "content": "Fallback empty state" },
-    { "type": "paragraph", "content": "Shown when no featured collections are selected." },
-    { "type": "text", "id": "empty_button_label", "label": "Fallback button label", "default": "Continue shopping" },
-    { "type": "url", "id": "empty_link", "label": "Fallback button link", "default": "/collections/all" },
-    { "type": "image_picker", "id": "empty_image", "label": "Fallback image" },
-    { "type": "select", "id": "empty_image_ratio", "label": "Fallback image ratio", "options": [{ "value": "adapt", "label": "Adapt to image" }, { "value": "square", "label": "Square" }, { "value": "portrait", "label": "Portrait" }, { "value": "landscape", "label": "Landscape" }], "default": "adapt", "visible_if": "{{ section.settings.empty_image != blank }}" },
     { "type": "header", "content": "Total typography" },
     { "type": "select", "id": "total_label_size", "label": "Total label size", "options": [{ "value": "h0", "label": "t:typography_options.display_extra_large" }, { "value": "h1", "label": "t:typography_options.display_large" }, { "value": "h2", "label": "t:typography_options.display_medium" }, { "value": "h3", "label": "t:typography_options.heading_extra_large" }, { "value": "h4", "label": "t:typography_options.heading_large" }, { "value": "h5", "label": "t:typography_options.heading_medium" }, { "value": "h6", "label": "t:typography_options.heading_small" }, { "value": "h7", "label": "t:typography_options.heading_extra_small" }, { "value": "custom", "label": "t:typography_options.custom" }], "default": "h6" },
     { "type": "range", "id": "total_label_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 18, "visible_if": "{{ section.settings.total_label_size == 'custom' }}" },

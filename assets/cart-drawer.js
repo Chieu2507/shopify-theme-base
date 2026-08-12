@@ -526,18 +526,7 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     renderEmpty() {
-      if (this.emptyTemplate) {
-        this.items.innerHTML = this.emptyTemplate.innerHTML;
-      } else {
-        const emptyLink = this.dataset.emptyLink
-          ? `<a class="cart-drawer__empty-link btn-primary" href="${this.escape(this.dataset.emptyLink)}">${this.escape(this.dataset.emptyLinkLabel || 'Continue shopping')}</a>`
-          : '';
-        const emptyImage = this.dataset.emptyImage
-          ? `<img class="cart-drawer__empty-image cart-drawer__empty-image--${this.escape(this.dataset.emptyImageRatio || 'adapt')}" src="${this.escape(this.dataset.emptyImage)}" alt="" loading="lazy">`
-          : '';
-        const emptyHeadingClass = this.escape(this.dataset.emptyHeadingClass || 'heading-custom heading-text');
-        this.items.innerHTML = `<div class="cart-drawer__empty">${emptyImage}<h3 class="cart-drawer__empty-title ${emptyHeadingClass}">${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</h3>${emptyLink}</div>`;
-      }
+      this.items.innerHTML = this.emptyTemplate ? this.emptyTemplate.innerHTML : '';
       this.footer.hidden = true;
       if (this.recommendations) this.recommendations.hidden = true;
       this.shippingProgress && (this.shippingProgress.hidden = true);
