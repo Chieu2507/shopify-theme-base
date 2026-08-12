@@ -764,7 +764,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const query = new URLSearchParams({ 'shipping_address[country]': country, 'shipping_address[zip]': zip });
       if (province) query.set('shipping_address[province]', province);
       this.shippingRates.classList.remove('is-error');
-      this.shippingRates.replaceChildren();
+      this.shippingRates.setAttribute('aria-busy', 'true');
       if (submitButton) {
         submitButton.disabled = true;
         submitButton.classList.add('is-loading');
@@ -786,6 +786,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       } catch (error) {
         this.renderShippingError(error.message || this.dataset.shippingErrorLabel);
       } finally {
+        this.shippingRates.removeAttribute('aria-busy');
         if (submitButton) {
           submitButton.disabled = false;
           submitButton.classList.remove('is-loading');
