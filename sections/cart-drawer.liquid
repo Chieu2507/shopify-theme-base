@@ -156,6 +156,41 @@
         {% endif %}
 
         <div class="cart-drawer__items" data-cart-drawer-items></div>
+        <template data-cart-drawer-empty-template>
+          <div class="cart-drawer__empty{% if section.settings.empty_collections != blank %} cart-drawer__empty--collections{% endif %}">
+            <h3 class="cart-drawer__empty-title {% render 'typography-class', preset: section.settings.empty_heading_size, fallback: 'custom' %}">{{ section.settings.empty_heading | escape }}</h3>
+            {% if section.settings.empty_collections != blank %}
+              {% if section.settings.empty_description != blank %}<p class="cart-drawer__empty-description body-p1 body-text">{{ section.settings.empty_description | escape | newline_to_br }}</p>{% endif %}
+              <div class="cart-drawer__empty-collections" role="list">
+                {% for collection in section.settings.empty_collections limit: 3 %}
+                  {% liquid
+                    assign empty_collection_image = collection.image
+                    if empty_collection_image == blank
+                      assign empty_collection_image = collection.products.first.featured_image
+                    endif
+                    assign empty_collection_alt = empty_collection_image.alt | default: collection.title
+                  %}
+                  <a class="cart-drawer__empty-collection" href="{{ collection.url | escape }}" role="listitem">
+                    <span class="cart-drawer__empty-collection-media">
+                      {% if empty_collection_image != blank %}
+                        {{ empty_collection_image | image_url: width: 600 | image_tag: widths: '160, 240, 360, 480, 600', sizes: '(max-width: 767px) 29vw, 150px', loading: 'lazy', alt: empty_collection_alt }}
+                      {% else %}
+                        <span class="cart-drawer__empty-collection-placeholder" aria-hidden="true"></span>
+                      {% endif %}
+                    </span>
+                    <span class="cart-drawer__empty-collection-title body-p2 body-text">{{ collection.title | escape }}</span>
+                  </a>
+                {% endfor %}
+              </div>
+            {% else %}
+              {% if section.settings.empty_image != blank %}
+                {% assign empty_fallback_image_class = 'cart-drawer__empty-image cart-drawer__empty-image--' | append: section.settings.empty_image_ratio %}
+                {{ section.settings.empty_image | image_url: width: 1200 | image_tag: class: empty_fallback_image_class, loading: 'lazy', alt: '' }}
+              {% endif %}
+              {% if empty_cart_link != blank %}<a class="cart-drawer__empty-link btn-primary" href="{{ empty_cart_link | escape }}">{{ section.settings.empty_button_label | escape }}</a>{% endif %}
+            {% endif %}
+          </div>
+        </template>
 
         {% if section.settings.complementary_products_enable %}
           <section class="cart-drawer__recommendations" data-cart-drawer-recommendations hidden aria-labelledby="CartDrawerRecommendationsTitle">
@@ -354,10 +389,14 @@
     },
     { "type": "range", "id": "empty_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.empty_heading_size == 'custom' }}" },
     { "type": "range", "id": "empty_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 14, "visible_if": "{{ section.settings.empty_heading_size == 'custom' }}" },
-    { "type": "text", "id": "empty_button_label", "label": "Button label", "default": "Continue shopping" },
-    { "type": "url", "id": "empty_link", "label": "Button link", "default": "/collections/all" },
-    { "type": "image_picker", "id": "empty_image", "label": "Image" },
-    { "type": "select", "id": "empty_image_ratio", "label": "Image ratio", "options": [{ "value": "adapt", "label": "Adapt to image" }, { "value": "square", "label": "Square" }, { "value": "portrait", "label": "Portrait" }, { "value": "landscape", "label": "Landscape" }], "default": "adapt", "visible_if": "{{ section.settings.empty_image != blank }}" },
+    { "type": "textarea", "id": "empty_description", "label": "Supporting text", "default": "Not sure where to start?\nTry these collections:" },
+    { "type": "collection_list", "id": "empty_collections", "label": "Featured collections", "limit": 3 },
+    { "type": "header", "content": "Fallback empty state" },
+    { "type": "paragraph", "content": "Shown when no featured collections are selected." },
+    { "type": "text", "id": "empty_button_label", "label": "Fallback button label", "default": "Continue shopping" },
+    { "type": "url", "id": "empty_link", "label": "Fallback button link", "default": "/collections/all" },
+    { "type": "image_picker", "id": "empty_image", "label": "Fallback image" },
+    { "type": "select", "id": "empty_image_ratio", "label": "Fallback image ratio", "options": [{ "value": "adapt", "label": "Adapt to image" }, { "value": "square", "label": "Square" }, { "value": "portrait", "label": "Portrait" }, { "value": "landscape", "label": "Landscape" }], "default": "adapt", "visible_if": "{{ section.settings.empty_image != blank }}" },
     { "type": "header", "content": "Total typography" },
     { "type": "select", "id": "total_label_size", "label": "Total label size", "options": [{ "value": "h0", "label": "t:typography_options.display_extra_large" }, { "value": "h1", "label": "t:typography_options.display_large" }, { "value": "h2", "label": "t:typography_options.display_medium" }, { "value": "h3", "label": "t:typography_options.heading_extra_large" }, { "value": "h4", "label": "t:typography_options.heading_large" }, { "value": "h5", "label": "t:typography_options.heading_medium" }, { "value": "h6", "label": "t:typography_options.heading_small" }, { "value": "h7", "label": "t:typography_options.heading_extra_small" }, { "value": "custom", "label": "t:typography_options.custom" }], "default": "h6" },
     { "type": "range", "id": "total_label_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 18, "visible_if": "{{ section.settings.total_label_size == 'custom' }}" },

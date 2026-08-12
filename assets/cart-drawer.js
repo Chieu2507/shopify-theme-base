@@ -18,6 +18,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.orderOptionsTitle = this.querySelector('.cart-drawer__order-options-title[data-cart-drawer-order-options-title]');
       this.orderOptionsContents = [...this.querySelectorAll('[data-cart-drawer-order-options-content]')];
       this.orderOptionsTrigger = null;
+      this.emptyTemplate = this.querySelector('[data-cart-drawer-empty-template]');
       this.status = this.querySelector('[data-cart-drawer-status]');
       this.loading = this.querySelector('[data-cart-drawer-loading]');
       this.message = this.querySelector('[data-cart-drawer-message]');
@@ -33,6 +34,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.recommendationTrack = this.querySelector('[data-cart-drawer-recommendation-track]');
       this.recommendationDots = this.querySelector('[data-cart-drawer-recommendation-dots]');
       this.shippingProgress = this.querySelector('[data-cart-drawer-shipping-progress]');
+      this.promotion = this.querySelector('.cart-drawer__promotion');
       this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
       this.shippingProgressValue = this.querySelector('[data-cart-drawer-shipping-progress-value]');
       this.shippingCopy = this.querySelector('[data-cart-drawer-shipping-copy]');
@@ -508,6 +510,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         return;
       }
       this.footer.hidden = false;
+      if (this.promotion) this.promotion.hidden = false;
       this.items.innerHTML = cart.items.map((item) => this.itemTemplate(item)).join('');
       const total = this.formatMoney(cart.total_price);
       if (this.total) {
@@ -523,17 +526,22 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     renderEmpty() {
-      const emptyLink = this.dataset.emptyLink
-        ? `<a class="cart-drawer__empty-link btn-primary" href="${this.escape(this.dataset.emptyLink)}">${this.escape(this.dataset.emptyLinkLabel || 'Continue shopping')}</a>`
-        : '';
-      const emptyImage = this.dataset.emptyImage
-        ? `<img class="cart-drawer__empty-image cart-drawer__empty-image--${this.escape(this.dataset.emptyImageRatio || 'adapt')}" src="${this.escape(this.dataset.emptyImage)}" alt="" loading="lazy">`
-        : '';
-      const emptyHeadingClass = this.escape(this.dataset.emptyHeadingClass || 'heading-custom heading-text');
-      this.items.innerHTML = `<div class="cart-drawer__empty">${emptyImage}<h3 class="cart-drawer__empty-title ${emptyHeadingClass}">${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</h3>${emptyLink}</div>`;
+      if (this.emptyTemplate) {
+        this.items.innerHTML = this.emptyTemplate.innerHTML;
+      } else {
+        const emptyLink = this.dataset.emptyLink
+          ? `<a class="cart-drawer__empty-link btn-primary" href="${this.escape(this.dataset.emptyLink)}">${this.escape(this.dataset.emptyLinkLabel || 'Continue shopping')}</a>`
+          : '';
+        const emptyImage = this.dataset.emptyImage
+          ? `<img class="cart-drawer__empty-image cart-drawer__empty-image--${this.escape(this.dataset.emptyImageRatio || 'adapt')}" src="${this.escape(this.dataset.emptyImage)}" alt="" loading="lazy">`
+          : '';
+        const emptyHeadingClass = this.escape(this.dataset.emptyHeadingClass || 'heading-custom heading-text');
+        this.items.innerHTML = `<div class="cart-drawer__empty">${emptyImage}<h3 class="cart-drawer__empty-title ${emptyHeadingClass}">${this.escape(this.dataset.emptyLabel || 'Your cart is empty')}</h3>${emptyLink}</div>`;
+      }
       this.footer.hidden = true;
       if (this.recommendations) this.recommendations.hidden = true;
       this.shippingProgress && (this.shippingProgress.hidden = true);
+      if (this.promotion) this.promotion.hidden = true;
       window.clearInterval(this.recommendationTimer);
       if (this.discounts) {
         this.discounts.hidden = true;
