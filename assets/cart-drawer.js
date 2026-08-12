@@ -60,7 +60,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.handleDragTimer = null;
       this.bind();
       this.setOrderOptionsOpen(false);
-      this.renderEmpty();
       this.handleProductAdd = (event) => {
         if (!event.detail?.item) return;
         if (this.dataset.autoOpen === 'false') {
