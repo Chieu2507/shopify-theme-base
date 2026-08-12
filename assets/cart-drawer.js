@@ -979,7 +979,7 @@ import { A11y, Swiper } from './swiper-loader.js';
             }
           }
           this.syncCart(restoredCart);
-          throw new Error(this.dataset.discountErrorLabel);
+          throw new Error(this.dataset.discountUnavailableLabel);
         }
 
         this.syncCart(cart);
@@ -1020,7 +1020,9 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     renderDiscounts(cart) {
       if (!this.discounts) return;
-      const discounts = cart.cart_level_discount_applications || [];
+      const discounts = (cart.cart_level_discount_applications || []).filter((discount) => (
+        Number(discount.total_allocated_amount) > 0
+      ));
       this.discounts.innerHTML = discounts.map((discount) => `<li><span>${this.escape(discount.title)}</span><span>−${this.formatMoney(discount.total_allocated_amount)}</span></li>`).join('');
       this.discounts.hidden = discounts.length === 0;
       if (this.discountCount) this.discountCount.textContent = String(discounts.length);
@@ -1032,8 +1034,6 @@ import { A11y, Swiper } from './swiper-loader.js';
       const discountCodes = cart.discount_codes || cart.discountCodes || [];
       const matchingCode = discountCodes.find((discount) => normalizeCode(discount.code) === normalizedCode);
 
-      if (matchingCode) return matchingCode.applicable !== false;
-
       const applications = [
         ...(cart.discount_applications || []),
         ...(cart.cart_level_discount_applications || []),
@@ -1041,6 +1041,9 @@ import { A11y, Swiper } from './swiper-loader.js';
           item.line_level_discount_allocations || []
         ).map((allocation) => allocation.discount_application || allocation))
       ];
+
+      if (matchingCode?.applicable === true) return true;
+      if (matchingCode?.applicable === false) return false;
 
       return applications.some((application) => {
         const type = String(application.type || '').toLowerCase();
