@@ -80,15 +80,7 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
     element.classList.toggle('slideshow--fills-first-viewport', canFillFirstViewport);
 
     if (canFillFirstViewport) {
-      const editorialViewport = isEditorialSlideshow
-        ? element.querySelector('.editorial-slideshow__viewport.swiper')
-        : null;
-      const renderedViewportHeight = editorialViewport?.getBoundingClientRect().height || 0;
-      const targetHeight = isEditorialSlideshow
-        ? Math.max(remainingViewportHeight, renderedViewportHeight)
-        : remainingViewportHeight;
-
-      element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round(targetHeight * 100) / 100)}px`);
+      element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round(remainingViewportHeight * 100) / 100)}px`);
     } else {
       element.style.removeProperty('--slideshow-first-viewport-height');
     }
@@ -105,11 +97,6 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
       resizeObserver?.observe(candidate);
     }
   });
-  if (isEditorialSlideshow) {
-    const editorialViewport = element.querySelector('.editorial-slideshow__viewport.swiper');
-    if (editorialViewport) resizeObserver?.observe(editorialViewport);
-  }
-
   window.addEventListener('resize', scheduleUpdate, { signal });
   window.visualViewport?.addEventListener('resize', scheduleUpdate, { signal });
   mobileQuery.addEventListener?.('change', scheduleUpdate, { signal });
