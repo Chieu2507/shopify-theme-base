@@ -33,6 +33,9 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.recommendationDots = this.querySelector('[data-cart-drawer-recommendation-dots]');
       this.shippingProgress = this.querySelector('[data-cart-drawer-shipping-progress]');
       this.promotion = this.querySelector('.cart-drawer__promotion');
+      this.promotionTrack = this.querySelector('[data-cart-drawer-promotion-track]');
+      this.promotionSequence = this.querySelector('[data-cart-drawer-promotion-sequence]');
+      this.promotionSequenceClone = this.querySelector('[data-cart-drawer-promotion-sequence-clone]');
       this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
       this.shippingProgressValue = this.querySelector('[data-cart-drawer-shipping-progress-value]');
       this.shippingCopy = this.querySelector('[data-cart-drawer-shipping-copy]');
@@ -55,6 +58,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.lineDesiredQuantities = new Map();
       this.lastFocusedElement = null;
       this.bind();
+      this.setupPromotionMarquee();
       this.setOrderOptionsOpen(false);
       this.handleProductAdd = (event) => {
         if (!event.detail?.item) return;
@@ -86,7 +90,9 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.orderOptionsBackdropInteraction?.destroy();
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
+      window.cancelAnimationFrame(this.promotionMarqueeFrame);
       this.destroyRecommendationSwiper();
+      this.promotionResizeObserver?.disconnect();
       this.unlockPageScroll();
       this.isOpen = false;
       this.pendingLineMutations?.clear();
@@ -361,6 +367,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       }
       this.footer.hidden = false;
       if (this.promotion) this.promotion.hidden = false;
+      this.queuePromotionMarqueeUpdate();
       this.items.innerHTML = cart.items.map((item) => this.itemTemplate(item)).join('');
       const total = this.formatMoney(cart.total_price);
       if (this.total) {
@@ -385,6 +392,37 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.discounts.hidden = true;
         this.discounts.replaceChildren();
       }
+    }
+
+    setupPromotionMarquee() {
+      if (!this.promotion || !this.promotionTrack || !this.promotionSequence || !this.promotionSequenceClone) return;
+      if (!('ResizeObserver' in window)) {
+        this.queuePromotionMarqueeUpdate();
+        return;
+      }
+      this.promotionResizeObserver = new ResizeObserver(() => this.queuePromotionMarqueeUpdate());
+      this.promotionResizeObserver.observe(this.promotion);
+      this.queuePromotionMarqueeUpdate();
+    }
+
+    queuePromotionMarqueeUpdate() {
+      window.cancelAnimationFrame(this.promotionMarqueeFrame);
+      this.promotionMarqueeFrame = window.requestAnimationFrame(() => this.updatePromotionMarquee());
+    }
+
+    updatePromotionMarquee() {
+      if (this.promotion?.hidden || !this.promotionSequence || !this.promotionSequenceClone) return;
+      const item = this.promotionSequence.querySelector('[data-cart-drawer-promotion-item]');
+      if (!item) return;
+      this.promotionSequence.querySelectorAll('[data-cart-drawer-promotion-item-clone]').forEach((clone) => clone.remove());
+      while (this.promotionSequence.scrollWidth < this.promotion.clientWidth) {
+        const clone = item.cloneNode(true);
+        clone.removeAttribute('data-cart-drawer-promotion-item');
+        clone.setAttribute('data-cart-drawer-promotion-item-clone', '');
+        clone.setAttribute('aria-hidden', 'true');
+        this.promotionSequence.append(clone);
+      }
+      this.promotionSequenceClone.replaceChildren(...[...this.promotionSequence.children].map((child) => child.cloneNode(true)));
     }
 
     updateHeaderCount(cart) {
