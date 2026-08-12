@@ -509,7 +509,10 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.footer.hidden = false;
       this.items.innerHTML = cart.items.map((item) => this.itemTemplate(item)).join('');
       const total = this.formatMoney(cart.total_price);
-      if (this.total) this.total.textContent = total;
+      if (this.total) {
+        this.total.textContent = total;
+        this.total.classList.toggle('is-sale', Number(cart.original_total_price || 0) > Number(cart.total_price || 0));
+      }
       if (this.checkoutTotal) this.checkoutTotal.textContent = total;
       this.renderTotalDiscount(cart);
       if (this.taxNote) this.taxNote.textContent = cart.taxes_included ? this.dataset.taxesIncludedLabel : this.dataset.taxesNoteLabel;

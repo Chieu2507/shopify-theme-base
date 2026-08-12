@@ -2,6 +2,8 @@
   assign cart_drawer_scheme = section.settings.color_scheme.id | default: 'scheme-1'
   assign cart_price_font = section.settings.price_font | default: 'subheading'
   assign cart_title_case = section.settings.product_title_case | default: 'none'
+  assign cart_total_label_size = section.settings.total_label_size | default: 'h6'
+  assign cart_total_price_size = section.settings.total_price_size | default: 'md'
   assign cart_image_radius = section.settings.image_radius | default: 0
   assign empty_cart_link = section.settings.empty_link | default: routes.all_products_collection_url
   assign cart_tools_block = section.blocks | where: 'type', 'cart_tools' | first
@@ -46,6 +48,14 @@
     font-size: var(--cart-drawer-empty-heading-font-size);
   }
 
+  #CartDrawer .cart-drawer__total-label.heading-custom {
+    font-size: var(--cart-drawer-total-label-font-size);
+  }
+
+  #CartDrawer .cart-drawer__total-price.body-custom {
+    font-size: var(--cart-drawer-total-price-font-size);
+  }
+
   @media screen and (max-width: 749px) {
     #CartDrawer .cart-drawer__title.heading-custom,
     #CartDrawer .cart-drawer__section-title.heading-custom,
@@ -56,6 +66,14 @@
     #CartDrawer .cart-drawer__empty-title.heading-custom {
       font-size: var(--cart-drawer-empty-heading-font-size-mobile);
     }
+
+    #CartDrawer .cart-drawer__total-label.heading-custom {
+      font-size: var(--cart-drawer-total-label-font-size-mobile);
+    }
+
+    #CartDrawer .cart-drawer__total-price.body-custom {
+      font-size: var(--cart-drawer-total-price-font-size-mobile);
+    }
   }
 </style>
 
@@ -65,7 +83,7 @@
     class="cart-drawer color-scheme color-{{ cart_drawer_scheme }}{% if section.settings.indent_desktop %} cart-drawer--indented{% endif %}{% if section.settings.blur_backdrop %} cart-drawer--blurred{% endif %}"
     data-cart-drawer
     data-section-id="{{ section.id }}"
-    style="--cart-drawer-width: {{ section.settings.desktop_width }}px; --cart-product-title-case: {{ cart_title_case }}; --cart-price-font-family: var(--font-{{ cart_price_font }}--family); --cart-price-font-style: var(--font-{{ cart_price_font }}--style); --cart-price-font-weight: var(--font-{{ cart_price_font }}--weight); --cart-image-radius: {{ cart_image_radius }}px; --cart-promotion-speed: {{ section.settings.promotion_speed }}s; --cart-drawer-empty-heading-font-size: {{ section.settings.empty_heading_font_size }}px; --cart-drawer-empty-heading-font-size-mobile: {{ section.settings.empty_heading_font_size_mobile }}px;"
+    style="--cart-drawer-width: {{ section.settings.desktop_width }}px; --cart-product-title-case: {{ cart_title_case }}; --cart-price-font-family: var(--font-{{ cart_price_font }}--family); --cart-price-font-style: var(--font-{{ cart_price_font }}--style); --cart-price-font-weight: var(--font-{{ cart_price_font }}--weight); --cart-image-radius: {{ cart_image_radius }}px; --cart-promotion-speed: {{ section.settings.promotion_speed }}s; --cart-drawer-empty-heading-font-size: {{ section.settings.empty_heading_font_size }}px; --cart-drawer-empty-heading-font-size-mobile: {{ section.settings.empty_heading_font_size_mobile }}px; --cart-drawer-total-label-font-size: {{ section.settings.total_label_font_size }}px; --cart-drawer-total-label-font-size-mobile: {{ section.settings.total_label_font_size_mobile }}px; --cart-drawer-total-price-font-size: {{ section.settings.total_price_font_size }}px; --cart-drawer-total-price-font-size-mobile: {{ section.settings.total_price_font_size_mobile }}px;"
     data-currency="{{ cart.currency.iso_code | default: shop.currency }}"
     data-show-currency-code="{{ settings.show_currency_code }}"
     data-cart-update-url="{{ routes.cart_update_url | escape }}.js"
@@ -227,7 +245,7 @@
           </section>
         {% endif %}
 
-        <div class="cart-drawer__total"><span class="cart-drawer__total-label heading-h6 heading-text">{{ 'cart_drawer.total' | t | default: 'Total' | escape }}</span><strong class="cart-drawer__total-price body-p1 body-text" data-cart-drawer-total>{% render 'money', amount: cart.total_price %}</strong></div>
+        <div class="cart-drawer__total"><span class="cart-drawer__total-label {% render 'typography-class', preset: cart_total_label_size, fallback: 'h6' %}">{{ 'cart_drawer.total' | t | default: 'Total' | escape }}</span><strong class="cart-drawer__total-price {% case cart_total_price_size %}{% when 'lg' %}body-p0 body-text{% when 'md' %}body-p1 body-text{% when 'sm' %}body-p2 body-text{% when 'xs' %}body-p3 body-text{% when 'label' %}label-text{% when 'custom' %}body-custom body-text{% else %}body-p1 body-text{% endcase %}{% if cart_savings > 0 %} is-sale{% endif %}" data-cart-drawer-total>{% render 'money', amount: cart.total_price %}</strong></div>
         <div class="cart-drawer__total-discount" data-cart-drawer-total-discount{% if cart_savings <= 0 %} hidden{% endif %}>
           <span>{{ 'cart_drawer.savings' | t | default: 'You have saved' | escape }} <span data-cart-drawer-savings-amount>{% render 'money', amount: cart_savings %}</span>!</span>
           <s data-cart-drawer-original-total>{% render 'money', amount: cart.original_total_price %}</s>
@@ -340,6 +358,13 @@
     { "type": "url", "id": "empty_link", "label": "Button link", "default": "/collections/all" },
     { "type": "image_picker", "id": "empty_image", "label": "Image" },
     { "type": "select", "id": "empty_image_ratio", "label": "Image ratio", "options": [{ "value": "adapt", "label": "Adapt to image" }, { "value": "square", "label": "Square" }, { "value": "portrait", "label": "Portrait" }, { "value": "landscape", "label": "Landscape" }], "default": "adapt", "visible_if": "{{ section.settings.empty_image != blank }}" },
+    { "type": "header", "content": "Total typography" },
+    { "type": "select", "id": "total_label_size", "label": "Total label size", "options": [{ "value": "h0", "label": "t:typography_options.display_extra_large" }, { "value": "h1", "label": "t:typography_options.display_large" }, { "value": "h2", "label": "t:typography_options.display_medium" }, { "value": "h3", "label": "t:typography_options.heading_extra_large" }, { "value": "h4", "label": "t:typography_options.heading_large" }, { "value": "h5", "label": "t:typography_options.heading_medium" }, { "value": "h6", "label": "t:typography_options.heading_small" }, { "value": "h7", "label": "t:typography_options.heading_extra_small" }, { "value": "custom", "label": "t:typography_options.custom" }], "default": "h6" },
+    { "type": "range", "id": "total_label_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 18, "visible_if": "{{ section.settings.total_label_size == 'custom' }}" },
+    { "type": "range", "id": "total_label_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 18, "visible_if": "{{ section.settings.total_label_size == 'custom' }}" },
+    { "type": "select", "id": "total_price_size", "label": "Total price size", "options": [{ "value": "lg", "label": "t:typography_options.body_large" }, { "value": "md", "label": "t:typography_options.body_medium" }, { "value": "sm", "label": "t:typography_options.body_small" }, { "value": "xs", "label": "t:typography_options.body_extra_small" }, { "value": "label", "label": "t:typography_options.label" }, { "value": "custom", "label": "t:typography_options.custom" }], "default": "md" },
+    { "type": "range", "id": "total_price_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 16, "visible_if": "{{ section.settings.total_price_size == 'custom' }}" },
+    { "type": "range", "id": "total_price_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 200, "step": 2, "unit": "px", "default": 16, "visible_if": "{{ section.settings.total_price_size == 'custom' }}" },
     { "type": "header", "content": "Actions" },
     { "type": "text", "id": "checkout_label", "label": "Checkout label", "default": "Checkout" },
     { "type": "select", "id": "checkout_icon", "label": "Checkout icon", "options": [{ "value": "none", "label": "None" }, { "value": "arrow-right", "label": "Arrow" }], "default": "none" },
