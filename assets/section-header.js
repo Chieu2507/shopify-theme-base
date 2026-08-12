@@ -25,9 +25,8 @@ if (!window.SpinelHeaderMenus) {
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
   const accountDialogTopProperty = '--shopify-account-dialog-position-top';
   const accountDialogHeaderGap = 8;
-  const headerMobileBreakpoint = 989;
-  const headerMobileMediaQuery = `(max-width: ${headerMobileBreakpoint}px)`;
-  const headerDesktopMediaQuery = `(min-width: ${headerMobileBreakpoint + 1}px)`;
+  const headerMobileMediaQuery = '(max-width: 1149.98px)';
+  const headerDesktopMediaQuery = '(min-width: 1150px)';
   // Let non-sticky transparent headers clear the announcement bar before changing palette.
   const desktopTransparentHeaderSurfaceThreshold = 20;
   const mobileStickyHeaderHideThreshold = 40;
@@ -216,6 +215,14 @@ if (!window.SpinelHeaderMenus) {
     const numericValue = Number.parseFloat(value);
     if (!Number.isFinite(numericValue)) return 0;
     return value.trim().endsWith('ms') ? numericValue : numericValue * 1000;
+  };
+
+  const getMobileNavigationMotion = (header) => {
+    const drawer = header?.querySelector('[data-header-mobile-drawer]');
+    const style = drawer ? getComputedStyle(drawer) : null;
+    const duration = getCssTimeMs(style?.getPropertyValue('--header-mobile-motion-duration') || '360ms');
+    const easing = style?.getPropertyValue('--header-mobile-motion-easing').trim() || 'ease-in-out';
+    return { duration, easing };
   };
 
   const getTransitionTotalMs = (element, propertyName) => {
@@ -1068,6 +1075,7 @@ if (!window.SpinelHeaderMenus) {
     const isLocalizationSelector = details.matches('.header__localization-selector');
     const isDesktopLocalization = !isMobileHeaderViewport() && isLocalizationSelector;
     const isMobileDrawerMenu = isMobileHeaderViewport() && (isTopLevelMenu || isNestedMenu);
+    const mobileMotion = isMobileDrawerMenu ? getMobileNavigationMotion(header) : null;
     const panel = isMegaMenu
       ? details.querySelector('.header__mega-panel')
       : isNestedMenu
@@ -1087,13 +1095,13 @@ if (!window.SpinelHeaderMenus) {
     const configuredDuration = Number.parseInt(header?.dataset.megaMenuAnimationDuration || '300', 10);
     const isDesktopCascadingMenu = !isMobileDrawerMenu && (isTopLevelMenu || isNestedMenu || isDesktopLocalization);
     const duration = isMobileDrawerMenu
-      ? 300
+      ? mobileMotion.duration
       : isDesktopCascadingMenu
         ? 650
         : configuredDuration;
     const delay = 0;
     const easing = isMobileDrawerMenu
-      ? 'ease-in-out'
+      ? mobileMotion.easing
       : isDesktopCascadingMenu
         ? headerMenuEasing
         : 'cubic-bezier(0.22, 1, 0.36, 1)';
