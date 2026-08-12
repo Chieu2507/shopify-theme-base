@@ -92,14 +92,8 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
         ? element.querySelector('.editorial-slideshow__viewport.swiper')
         : null;
       const renderedViewportHeight = editorialViewport?.getBoundingClientRect().height || 0;
-      const previousFirstViewportHeight = Number.parseFloat(
-        element.style.getPropertyValue('--slideshow-first-viewport-height'),
-      ) || 0;
-      const viewportUsesFirstViewportHeight = isEditorialSlideshow
-        && previousFirstViewportHeight > 0
-        && Math.abs(renderedViewportHeight - previousFirstViewportHeight) < 1;
-      const targetHeight = isEditorialSlideshow && renderedViewportHeight > 0 && !viewportUsesFirstViewportHeight
-        ? renderedViewportHeight
+      const targetHeight = isEditorialSlideshow
+        ? Math.max(remainingViewportHeight, renderedViewportHeight)
         : remainingViewportHeight;
 
       element.style.setProperty('--slideshow-first-viewport-height', `${Math.max(0, Math.round(targetHeight * 100) / 100)}px`);
@@ -119,6 +113,10 @@ export function setupFirstViewportHeight(element, { mobileBreakpoint = 749 } = {
       resizeObserver?.observe(candidate);
     }
   });
+  if (isEditorialSlideshow) {
+    const editorialViewport = element.querySelector('.editorial-slideshow__viewport.swiper');
+    if (editorialViewport) resizeObserver?.observe(editorialViewport);
+  }
 
   window.addEventListener('resize', scheduleUpdate, { signal });
   window.visualViewport?.addEventListener('resize', scheduleUpdate, { signal });
