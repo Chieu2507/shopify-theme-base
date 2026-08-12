@@ -1009,7 +1009,8 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.setStatus(this.dataset.savingNoteLabel);
         const response = await fetch(this.dataset.cartUpdateUrl || this.localeUrl('cart/update.js'), { method: 'POST', headers: { Accept: 'application/json', 'Content-Type': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }, body: JSON.stringify({ note }) });
         if (!response.ok) throw new Error(this.dataset.noteErrorLabel);
-        this.setMessage(this.dataset.noteSavedLabel);
+        this.setMessage('');
+        this.setOrderOptionsOpen(false, true);
       } catch (error) {
         console.error('[Spinel] Order note failed', error);
         this.setMessage(error.message, true);
