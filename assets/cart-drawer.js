@@ -588,16 +588,20 @@ import { A11y, Swiper } from './swiper-loader.js';
           ${variant}
           ${properties}
           ${sellingPlan}
-          <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
-          ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
         </div>
         <div class="cart-drawer__item-actions">
           <button class="cart-drawer__remove" type="button" aria-label="${this.escape(this.dataset.removeLabel)}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${removeIcon}</button>
+        </div>
+        <div class="cart-drawer__item-purchase">
+          <div class="cart-drawer__item-price-row">
+            <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
           <div class="cart-drawer__quantity">
             <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="-1">−</button>
             <input type="number" min="0" step="1" inputmode="numeric" value="${item.quantity}" aria-label="${this.escape(this.dataset.quantityLabel || 'Quantity')}: ${this.escape(item.product_title)}" data-cart-drawer-quantity-input data-cart-drawer-quantity-value data-line="${this.escape(item.key)}">
             <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="1">+</button>
           </div>
+          </div>
+          ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
         </div>
       </article>`;
     }
@@ -700,6 +704,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       if (!variantId || button.disabled) return;
       button.disabled = true;
       button.setAttribute('aria-busy', 'true');
+      button.classList.add('is-loading');
       try {
         const formData = new FormData();
         formData.set('id', variantId);
@@ -715,6 +720,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         this.setMessage(error.message, true);
         button.disabled = false;
         button.removeAttribute('aria-busy');
+        button.classList.remove('is-loading');
       }
     }
 
@@ -958,7 +964,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         ? `<a class="cart-drawer__text-button" href="${this.escape(product.url)}">${this.escape(this.dataset.chooseOptionsLabel)}</a>`
         : '';
       const addAction = variant?.available && !requiresSellingPlanSelection
-        ? `<button type="button" class="cart-drawer__recommendation-add" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}" aria-label="${this.escape(this.dataset.addToCartLabel)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5"/></svg></button>`
+        ? `<button type="button" class="quick-add-button cart-drawer__recommendation-add" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}" aria-label="${this.escape(this.dataset.addToCartLabel)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5"/></svg></button>`
         : '';
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
       return `<article class="cart-drawer__recommendation swiper-slide">

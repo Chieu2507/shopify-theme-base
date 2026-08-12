@@ -798,7 +798,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const requiresSellingPlan = Boolean(product.requires_selling_plan || variant?.requires_selling_plan);
       if (this.dataset.showQuickAdd === 'true' && variant?.id && variant.available !== false) {
         const button = document.createElement('button');
-        button.className = 'search-drawer__quick-add';
+        button.className = 'quick-add-button search-drawer__quick-add';
         button.type = 'button';
         if (variants.length === 1 && !requiresSellingPlan) {
           button.dataset.searchDrawerQuickAdd = '';
