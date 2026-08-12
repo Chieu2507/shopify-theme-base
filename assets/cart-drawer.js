@@ -580,6 +580,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         ? `<small class="cart-drawer__item-unit-price">${this.formatMoney(item.unit_price)} / ${this.escape(item.unit_price_measurement.reference_value)}${this.escape(item.unit_price_measurement.reference_unit)}</small>`
         : '';
       const discounts = (item.line_level_discount_allocations || []).map((discount) => `<li><span>${this.escape(discount.discount_application?.title || discount.title || '')}</span><span>−${this.formatMoney(discount.amount)}</span></li>`).join('');
+      const removeIcon = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 7h16M9 7V4.5h6V7M6 7l.8 13h10.4L18 7M10 11v5M14 11v5"/></svg>';
       return `<article class="cart-drawer__item" data-cart-line="${this.escape(item.key)}">
         <a class="cart-drawer__item-media" href="${this.escape(item.url)}">${image}</a>
         <div class="cart-drawer__item-info">
@@ -589,12 +590,14 @@ import { A11y, Swiper } from './swiper-loader.js';
           ${sellingPlan}
           <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
           ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
+        </div>
+        <div class="cart-drawer__item-actions">
+          <button class="cart-drawer__remove" type="button" aria-label="${this.escape(this.dataset.removeLabel)}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${removeIcon}</button>
           <div class="cart-drawer__quantity">
             <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="-1">−</button>
             <input type="number" min="0" step="1" inputmode="numeric" value="${item.quantity}" aria-label="${this.escape(this.dataset.quantityLabel || 'Quantity')}: ${this.escape(item.product_title)}" data-cart-drawer-quantity-input data-cart-drawer-quantity-value data-line="${this.escape(item.key)}">
             <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="1">+</button>
           </div>
-          <button class="cart-drawer__remove" type="button" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${this.escape(this.dataset.removeLabel)}</button>
         </div>
       </article>`;
     }
@@ -696,7 +699,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const variantId = button?.dataset.variantId;
       if (!variantId || button.disabled) return;
       button.disabled = true;
-      button.textContent = this.dataset.addingLabel;
+      button.setAttribute('aria-busy', 'true');
       try {
         const formData = new FormData();
         formData.set('id', variantId);
@@ -711,7 +714,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         console.error('[Spinel] Related product add failed', error);
         this.setMessage(error.message, true);
         button.disabled = false;
-        button.textContent = this.dataset.addToCartLabel;
+        button.removeAttribute('aria-busy');
       }
     }
 
@@ -933,13 +936,17 @@ import { A11y, Swiper } from './swiper-loader.js';
         || variant?.requires_selling_plan
         || variant?.selling_plan_allocations?.length
       );
-      const action = !variant?.available || requiresSellingPlanSelection
+      const chooseOptionsAction = !variant?.available || requiresSellingPlanSelection
         ? `<a class="cart-drawer__text-button" href="${this.escape(product.url)}">${this.escape(this.dataset.chooseOptionsLabel)}</a>`
-        : `<button type="button" class="cart-drawer__text-button" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}">${this.escape(this.dataset.addToCartLabel)}</button>`;
+        : '';
+      const addAction = variant?.available && !requiresSellingPlanSelection
+        ? `<button type="button" class="cart-drawer__recommendation-add" data-cart-drawer-related-add data-variant-id="${this.escape(variant?.id || '')}" aria-label="${this.escape(this.dataset.addToCartLabel)}"><svg viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5"/></svg></button>`
+        : '';
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
       return `<article class="cart-drawer__recommendation swiper-slide">
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="lazy">` : ''}</a>
-        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${action}</div>
+        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${chooseOptionsAction}</div>
+        ${addAction}
       </article>`;
     }
 
