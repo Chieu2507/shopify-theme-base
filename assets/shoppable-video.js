@@ -335,7 +335,9 @@ class ShoppableVideoSection extends HTMLElement {
     this.resetHandleDrag(dialog);
     dialog.classList.remove('is-closing');
     dialog.showModal();
-    dialog.querySelector('[data-shoppable-video-close]')?.focus({ preventScroll: true });
+    const closeButton = dialog.querySelector('[data-shoppable-video-close]');
+    const focusTarget = closeButton && getComputedStyle(closeButton).display !== 'none' ? closeButton : dialog;
+    focusTarget.focus({ preventScroll: true });
   }
 
   closeDialog(dialog) {

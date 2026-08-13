@@ -16,6 +16,7 @@
   @param {boolean} [show_quick_add] - Whether an available one-variant product can be added directly.
   @param {boolean} [show_media_actions] - Whether card hover actions are visible over the media.
   @param {boolean} [enable_quick_view] - Whether the quick view dialog is available from the card.
+  @param {string} [quick_add_style] - Quick add presentation: button (default) or icon.
 
   @example
   {% render 'product-card', product: product, media_ratio: 'portrait', show_badges: true %}
@@ -48,6 +49,7 @@
   assign show_quick_add = show_quick_add | default: false
   assign show_media_actions = show_media_actions | default: false
   assign enable_quick_view = enable_quick_view | default: false
+  assign quick_add_style = quick_add_style | default: 'button'
   assign is_best_seller = false
   assign color_option = blank
   assign secondary_image = blank
@@ -367,23 +369,24 @@
         {% if product.has_only_default_variant and product.selling_plan_groups.size == 0 %}
           {% form 'product', product, class: 'product-card__quick-add-form' %}
             <input type="hidden" name="id" value="{{ card_variant.id }}">
-            <button class="btn-primary product-card__quick-add" type="submit" data-product-card-quick-add><span>{{ 'product_card.quick_add' | t }}</span><span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span></button>
+            <button class="{% if quick_add_style == 'icon' %}quick-add-button product-card__quick-add product-card__quick-add--icon{% else %}btn-primary product-card__quick-add{% endif %}" type="submit" data-product-card-quick-add{% if quick_add_style == 'icon' %} aria-label="{{ 'product_card.quick_add' | t | escape }}"{% endif %}><span{% if quick_add_style == 'icon' %} class="visually-hidden"{% endif %}>{{ 'product_card.quick_add' | t }}</span><span class="button__icon" aria-hidden="true">{% if quick_add_style == 'icon' %}{% render 'icon', name: 'bag-simple' %}{% else %}{% render 'icon', name: 'button-arrow' %}{% endif %}</span></button>
           {% endform %}
         {% elsif enable_quick_view %}
           <a
-            class="btn-primary product-card__quick-add"
+            class="{% if quick_add_style == 'icon' %}quick-add-button product-card__quick-add product-card__quick-add--icon{% else %}btn-primary product-card__quick-add{% endif %}"
             href="{{ product.url | escape }}"
             aria-haspopup="dialog"
+            {% if quick_add_style == 'icon' %}aria-label="{{ 'product_card.choose_options' | t | escape }}"{% endif %}
             data-product-card-quick-view-open
             data-product-card-quick-view-url="{{ product.url | escape }}"
           >
-            <span>{{ 'product_card.choose_options' | t }}</span><span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+            <span{% if quick_add_style == 'icon' %} class="visually-hidden"{% endif %}>{{ 'product_card.choose_options' | t }}</span><span class="button__icon" aria-hidden="true">{% if quick_add_style == 'icon' %}{% render 'icon', name: 'bag-simple' %}{% else %}{% render 'icon', name: 'button-arrow' %}{% endif %}</span>
           </a>
         {% else %}
-          <a class="btn-primary product-card__quick-add" href="{{ product.url | escape }}"><span>{{ 'product_card.choose_options' | t }}</span><span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span></a>
+          <a class="{% if quick_add_style == 'icon' %}quick-add-button product-card__quick-add product-card__quick-add--icon{% else %}btn-primary product-card__quick-add{% endif %}" href="{{ product.url | escape }}"{% if quick_add_style == 'icon' %} aria-label="{{ 'product_card.choose_options' | t | escape }}"{% endif %}><span{% if quick_add_style == 'icon' %} class="visually-hidden"{% endif %}>{{ 'product_card.choose_options' | t }}</span><span class="button__icon" aria-hidden="true">{% if quick_add_style == 'icon' %}{% render 'icon', name: 'bag-simple' %}{% else %}{% render 'icon', name: 'button-arrow' %}{% endif %}</span></a>
         {% endif %}
       {% else %}
-        <a class="btn-primary product-card__quick-add product-card__quick-add--unavailable" href="{{ product.url | escape }}"><span>{{ 'product_card.view_product' | t }}</span><span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span></a>
+        <a class="{% if quick_add_style == 'icon' %}quick-add-button product-card__quick-add product-card__quick-add--icon{% else %}btn-primary product-card__quick-add{% endif %} product-card__quick-add--unavailable" href="{{ product.url | escape }}"{% if quick_add_style == 'icon' %} aria-label="{{ 'product_card.view_product' | t | escape }}"{% endif %}><span{% if quick_add_style == 'icon' %} class="visually-hidden"{% endif %}>{{ 'product_card.view_product' | t }}</span><span class="button__icon" aria-hidden="true">{% if quick_add_style == 'icon' %}{% render 'icon', name: 'bag-simple' %}{% else %}{% render 'icon', name: 'button-arrow' %}{% endif %}</span></a>
       {% endif %}
     </div>
   {% endif %}
