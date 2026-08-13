@@ -270,6 +270,7 @@ class GiftSpinel extends HTMLElement {
     this.questions.hidden = true;
     this.result.replaceChildren(content);
     this.result.hidden = false;
+    window.ThemeAnimations?.init(this.result);
     if (this.status) this.status.textContent = this.result.querySelector('[data-gift-spinel-result-heading]')?.textContent?.trim() || '';
     this.result.dispatchEvent(
       new CustomEvent('gift-spinel:products-loaded', {

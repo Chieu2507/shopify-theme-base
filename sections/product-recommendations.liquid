@@ -3,10 +3,10 @@
     {% if section.settings.heading != blank %}
       <{{ section.settings.html_tag | default: 'h2' }} class="product-recommendations__heading {% render 'typography-class', preset: section.settings.heading_size, fallback: 'h3' %}">{{ section.settings.heading | strip_html | escape }}</{{ section.settings.html_tag | default: 'h2' }}>
     {% endif %}
-    <ul role="list">
+    <ul role="list" data-reveal-group>
       {% for recommendation in recommendations.products limit: 5 %}
         {% assign recommendation_variant = recommendation.selected_or_first_available_variant %}
-        <li class="product-recommendations__item">
+        <li class="product-recommendations__item" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
           <a class="product-recommendations__image" href="{{ recommendation.url | escape }}" aria-label="{{ recommendation.title | escape }}">
             {% if recommendation.featured_image %}
               {{ recommendation.featured_image | image_url: width: 240 | image_tag: loading: 'lazy', widths: '120, 180, 240', sizes: '96px', alt: recommendation.featured_image.alt | default: recommendation.title | escape }}
