@@ -1,16 +1,25 @@
 {% doc %}
-  Renders a lightweight decorative Shopify placeholder SVG.
+  Renders a semantic Shopify outline illustration for missing media.
 
   @param {string} class_name - CSS class applied to the placeholder.
-  @param {string} [placeholder_name] - Accepted for backwards compatibility; all placeholders use the shared outline illustration.
-  @param {string} [asset_name] - Accepted legacy asset filename; all placeholders use the shared outline illustration.
+  @param {string} [placeholder_name] - Shopify placeholder type: image, product, collection, video, or lifestyle.
+  @param {string} [asset_name] - Legacy filename mapped to a semantic Shopify placeholder type.
   @example
   {% render 'media-placeholder', class_name: 'product-card__placeholder' %}
 {% enddoc %}
 
 {% liquid
-  assign media_placeholder_name = 'image'
-  if placeholder_name != blank or asset_name != blank
+  assign media_placeholder_name = placeholder_name | default: 'image'
+
+  if asset_name contains 'product'
+    assign media_placeholder_name = 'product-1'
+  elsif asset_name contains 'collection'
+    assign media_placeholder_name = 'collection-1'
+  elsif asset_name contains 'video'
+    assign media_placeholder_name = 'lifestyle-1'
+  elsif asset_name contains 'default-4' or asset_name contains 'default-5'
+    assign media_placeholder_name = 'lifestyle-2'
+  elsif asset_name contains 'default'
     assign media_placeholder_name = 'image'
   endif
 %}
