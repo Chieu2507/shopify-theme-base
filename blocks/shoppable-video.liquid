@@ -11,6 +11,13 @@
   assign products = block.settings.products
   assign featured_product = products | first
   assign product_count = products.count | default: 0
+  assign product_placeholder_index = 1
+  for sibling_block in section.blocks
+    if sibling_block.id == block.id
+      assign product_placeholder_index = forloop.index | minus: 1 | modulo: 3 | plus: 1
+      break
+    endif
+  endfor
   assign modal_image = block.settings.look_image | default: poster | default: featured_product.featured_image
   assign video_alt = block.settings.video_alt | default: poster.alt
   assign poster_url = blank
@@ -29,6 +36,7 @@
   data-block-id="{{ block.id }}"
   {{ block.shopify_attributes }}
 >
+  <div class="shoppable-video-card__reveal" data-reveal-item>
   <div class="shoppable-video-card__media" role="group" aria-label="{{ video_alt | escape }}">
     {% if video != blank %}
       {{
@@ -55,7 +63,7 @@
         alt: video_alt
       %}
     {% else %}
-      {% render 'media-placeholder', class_name: 'shoppable-video-card__placeholder', asset_name: 'placeholder-image-video.svg' %}
+      {% render 'media-placeholder', class_name: 'shoppable-video-card__placeholder', placeholder_name: 'image' %}
     {% endif %}
 
     {% if video != blank %}
@@ -86,36 +94,42 @@
           alt: featured_product.featured_image.alt
         %}
       {% else %}
-        {% render 'media-placeholder', class_name: 'shoppable-video-card__product-placeholder', asset_name: 'placeholder-image-product-1.svg' %}
+        {% assign product_placeholder_asset = 'placeholder-image-product-' | append: product_placeholder_index | append: '.svg' %}
+        {% render 'media-placeholder', class_name: 'shoppable-video-card__product-placeholder', asset_name: product_placeholder_asset %}
       {% endif %}
     </div>
 
     <div class="shoppable-video-card__product-copy">
-      <h3 class="shoppable-video-card__product-title">
-        {{ featured_product.title | default: block.settings.fallback_title | default: 'Nocturne object' | escape }}
-      </h3>
-      {% if block.settings.product_detail != blank %}
+      {% if featured_product != blank %}
+        <h3 class="shoppable-video-card__product-title heading-text product-title-text">{{ featured_product.title | escape }}</h3>
+      {% else %}
+        <h3 class="shoppable-video-card__product-title heading-text product-title-text">{{ 'onboarding.product_title' | t }}</h3>
+      {% endif %}
+      {% if featured_product != blank and block.settings.product_detail != blank %}
         <p class="shoppable-video-card__product-detail">{{ block.settings.product_detail | escape }}</p>
       {% endif %}
     </div>
 
-    <div class="shoppable-video-card__product-action">
+    <div class="shoppable-video-card__product-action{% if featured_product == blank %} shoppable-video-card__product-action--placeholder{% endif %}">
       {% if featured_product != blank %}
         <span class="shoppable-video-card__price">
           {% if featured_product.price_varies %}From {% endif %}{% render 'money', amount: featured_product.price %}
         </span>
+        <button
+          class="btn-tertiary shoppable-video-card__shop"
+          type="button"
+          aria-haspopup="dialog"
+          aria-controls="ShoppableVideoDialog-{{ section.id }}-{{ block.id }}"
+          data-shoppable-video-open
+        >
+          <span>{{ block.settings.button_label | default: 'Shop the look' | escape }}</span>
+          <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+        </button>
+      {% else %}
+        <span class="shoppable-video-card__price">{% render 'money', amount: 0 %}</span>
       {% endif %}
-      <button
-        class="shoppable-video-card__shop"
-        type="button"
-        aria-haspopup="dialog"
-        aria-controls="ShoppableVideoDialog-{{ section.id }}-{{ block.id }}"
-        data-shoppable-video-open
-      >
-        <span>{{ block.settings.button_label | default: 'Shop the look' | escape }}</span>
-        <span aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
-      </button>
     </div>
+  </div>
   </div>
 
   <dialog
@@ -148,7 +162,7 @@
             alt: modal_image.alt
           %}
         {% else %}
-          {% render 'media-placeholder', class_name: 'shoppable-video-dialog__look-placeholder', asset_name: 'placeholder-image-default-1.svg' %}
+          {% render 'media-placeholder', class_name: 'shoppable-video-dialog__look-placeholder', placeholder_name: 'image' %}
         {% endif %}
       </div>
 
@@ -245,13 +259,6 @@
       "id": "products",
       "label": "Products",
       "limit": 6
-    },
-    {
-      "type": "text",
-      "id": "fallback_title",
-      "label": "Fallback title",
-      "default": "Nocturne object",
-      "info": "Shown when no product is selected."
     },
     {
       "type": "text",

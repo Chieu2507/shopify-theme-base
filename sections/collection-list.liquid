@@ -65,30 +65,32 @@
     <div class="collection-list__inner section-spacing{% if section.settings.section_width == 'page' %} collection-list__inner--page{% endif %}">
       {% assign has_prioritized_collection_image = false %}
       {% if section.settings.layout == 'split-promotions' %}
-        <header class="collection-list__editorial-header">
-          <div class="collection-list__editorial-title" data-reveal>
-            {% if section.settings.split_label != blank %}
-              <p class="collection-list__editorial-label label-text">{{ section.settings.split_label | escape }}</p>
-            {% endif %}
-            {% if section.settings.split_heading != blank %}
-              <h2 class="collection-list__editorial-heading {% render 'typography-class', preset: section.settings.split_heading_size, fallback: 'h2' %}">
-                {{ section.settings.split_heading | escape | newline_to_br }}
-              </h2>
-            {% endif %}
-          </div>
-          <div class="collection-list__editorial-aside" data-reveal>
-            {% if section.settings.split_text != blank %}
-              <div class="collection-list__editorial-text rte">{{ section.settings.split_text }}</div>
-            {% endif %}
-            {% render 'cta',
-              label: section.settings.split_button_label,
-              url: section.settings.split_button_link,
-              style: 'tertiary',
-              icon: 'arrow-right',
-              class: 'collection-list__editorial-button'
-            %}
-          </div>
-        </header>
+        {% if section.settings.split_label != blank or section.settings.split_heading != blank or section.settings.split_text != blank or section.settings.split_button_label != blank %}
+          <header class="collection-list__editorial-header">
+            <div class="collection-list__editorial-title" data-reveal>
+              {% if section.settings.split_label != blank %}
+                <p class="collection-list__editorial-label label-text">{{ section.settings.split_label | escape }}</p>
+              {% endif %}
+              {% if section.settings.split_heading != blank %}
+                <h2 class="collection-list__editorial-heading {% render 'typography-class', preset: section.settings.split_heading_size, fallback: 'h2' %}">
+                  {{ section.settings.split_heading | escape | newline_to_br }}
+                </h2>
+              {% endif %}
+            </div>
+            <div class="collection-list__editorial-aside" data-reveal>
+              {% if section.settings.split_text != blank %}
+                <div class="collection-list__editorial-text rte">{{ section.settings.split_text }}</div>
+              {% endif %}
+              {% render 'cta',
+                label: section.settings.split_button_label,
+                url: section.settings.split_button_link,
+                style: 'tertiary',
+                icon: 'arrow-right',
+                class: 'collection-list__editorial-button'
+              %}
+            </div>
+          </header>
+        {% endif %}
       {% else %}
         {% for block in section.blocks %}
           {% if block.type == 'heading' and block.settings.heading != blank %}
@@ -101,12 +103,14 @@
 
       <div class="collection-list__carousel">
         <div class="collection-list__slider{% if section.settings.layout == 'grid' %} swiper{% endif %}"{% if section.settings.layout == 'grid' %} data-collection-list-slider{% endif %}>
-          <ul class="collection-list__grid collection-list__grid--{{ section.settings.layout }}{% if section.settings.layout == 'grid' %} swiper-wrapper{% endif %}" role="list">
+          <ul class="collection-list__grid collection-list__grid--{{ section.settings.layout }}{% if section.settings.layout == 'grid' %} swiper-wrapper{% endif %}" role="list"{% if section.settings.layout == 'split-promotions' %} data-reveal-group{% endif %}>
         {% assign split_card_index = 0 %}
         {% for block in section.blocks %}
           {% if block.type == 'collection_card' %}
             {% assign split_card_index = split_card_index | plus: 1 %}
             {% liquid
+              assign card_placeholder_index = split_card_index | minus: 1 | modulo: 3 | plus: 1
+              assign card_placeholder_asset = 'placeholder-image-collection-' | append: card_placeholder_index | append: '.svg'
               assign card_collection = block.settings.collection
               assign card_image = block.settings.image
               assign card_title = block.settings.title
@@ -128,9 +132,6 @@
 
               if card_title == blank
                 assign card_title = card_collection.title
-              endif
-              if card_title == blank
-                assign card_title = 'collection_list.collection' | t
               endif
 
               assign card_color_scheme = section.settings.color_scheme
@@ -170,8 +171,8 @@
               endif
             %}
 
-            <li class="collection-list__item{% if section.settings.layout == 'grid' %} swiper-slide{% else %} collection-list__item--split-{{ split_card_index }}{% endif %}" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
-              {% if card_link != blank and section.settings.layout != 'split-promotions' %}
+            <li class="collection-list__item{% if section.settings.layout == 'grid' %} swiper-slide{% else %} collection-list__item--split-{{ split_card_index }}{% endif %}" data-block-id="{{ block.id }}"{% if section.settings.layout == 'split-promotions' %} data-reveal-item style="--reveal-order: {{ split_card_index | minus: 1 }};"{% endif %} {{ block.shopify_attributes }}>
+              {% if card_link != blank %}
                 <a
                   class="collection-list__card collection-list__card--{{ section.settings.layout }} color-scheme color-{{ card_color_scheme.id }}"
                   href="{{ card_link | escape }}"
@@ -196,6 +197,7 @@
                     preload: card_preload,
                     decoding: card_decoding,
                     alt: card_alt,
+                    placeholder_asset: card_placeholder_asset,
                     placeholder_class: 'collection-list__placeholder'
                   %}
                 </div>
@@ -206,28 +208,29 @@
                     {% if block.settings.subheading != blank %}
                       <span class="collection-list__subheading subheading-text">{{ block.settings.subheading | escape }}</span>
                     {% endif %}
-                    <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__promotion-heading collection-list__promotion-heading--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">
-                      {{ card_title | escape }}
-                    </{{ section.settings.card_heading_tag | default: 'h3' }}>
+                    {% if card_title != blank %}
+                      <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__promotion-heading collection-list__promotion-heading--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">
+                        {{ card_title | escape }}
+                      </{{ section.settings.card_heading_tag | default: 'h3' }}>
+                    {% endif %}
                     {% if block.settings.description != blank %}
                       <p class="collection-list__promotion-description">{{ block.settings.description | escape }}</p>
                     {% endif %}
-                    {% if block.settings.button_label != blank and card_link != blank %}
-                      {% render 'cta',
-                        label: block.settings.button_label,
-                        url: card_link,
-                        style: 'tertiary',
-                        icon: 'arrow-right',
-                        class: 'collection-list__button'
-                      %}
+                    {% if card_link != blank %}
+                      <span class="btn-tertiary collection-list__button" aria-hidden="true">
+                        <span>{{ block.settings.button_label | default: 'View collection' | escape }}</span>
+                        <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+                      </span>
                     {% endif %}
                   </div>
                 {% else %}
                   <span class="collection-list__overlay" aria-hidden="true"></span>
                   <span class="collection-list__content collection-list__content--{{ section.settings.card_alignment }} collection-list__content--position-bottom">
-                    <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__title collection-list__title--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">
-                      {{ card_title | escape }}
-                    </{{ section.settings.card_heading_tag | default: 'h3' }}>
+                    {% if card_title != blank %}
+                      <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__title collection-list__title--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">
+                        {{ card_title | escape }}
+                      </{{ section.settings.card_heading_tag | default: 'h3' }}>
+                    {% endif %}
                     {% if block.settings.show_product_count != false and card_collection != blank %}
                       <span class="collection-list__count">
                         {{ 'collection.product_count' | t: count: card_product_count }}
@@ -236,7 +239,7 @@
                   </span>
                 {% endif %}
 
-              {% if card_link != blank and section.settings.layout != 'split-promotions' %}
+              {% if card_link != blank %}
                 </a>
               {% else %}
                 </div>
@@ -350,14 +353,14 @@
       "type": "text",
       "id": "split_label",
       "label": "Label",
-      "default": "COLLECTIONS / 05 HOUSE CODES",
+      "default": "",
       "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
       "type": "textarea",
       "id": "split_heading",
       "label": "Heading",
-      "default": "Shop the\nhouse collections.",
+      "default": "",
       "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
@@ -377,14 +380,14 @@
       "type": "richtext",
       "id": "split_text",
       "label": "Text",
-      "default": "<p>Five signatures shaped by stone and light.<br>Choose the one that feels like yours.</p>",
+      "default": "",
       "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
       "type": "text",
       "id": "split_button_label",
       "label": "Button label",
-      "default": "Explore all 05 house codes",
+      "default": "",
       "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
@@ -700,7 +703,7 @@
           "type": "richtext",
           "id": "heading",
           "label": "t:typography_blocks.text",
-          "default": "<h2>Shop By Category</h2>"
+          "default": ""
         },
         {
           "type": "select",
@@ -922,6 +925,7 @@
     {
       "type": "collection_card",
       "name": "Collection card",
+      "limit": 7,
       "settings": [
         {
           "type": "header",
@@ -961,6 +965,7 @@
           "type": "text",
           "id": "button_label",
           "label": "Button label",
+          "default": "View collection",
           "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
         },
         {
@@ -1107,62 +1112,15 @@
         "card_alignment": "left",
         "card_gap": 8,
         "color_scheme": "scheme-2",
-        "split_button_link": "shopify://collections",
         "padding_top": 80,
         "padding_bottom": 80
       },
       "blocks": [
-        {
-          "type": "collection_card",
-          "settings": {
-            "subheading": "01 / HOUSE CODE",
-            "title": "The Nocturne",
-            "description": "Ruby held against the quiet of night.",
-            "button_label": "View collection",
-            "content_position": "bottom",
-            "overlay_opacity": 35
-          }
-        },
-        {
-          "type": "collection_card",
-          "settings": {
-            "subheading": "02 / HOUSE CODE",
-            "title": "The Dome",
-            "button_label": "View",
-            "content_position": "bottom",
-            "overlay_opacity": 35
-          }
-        },
-        {
-          "type": "collection_card",
-          "settings": {
-            "subheading": "03 / HOUSE CODE",
-            "title": "The Personal",
-            "button_label": "View",
-            "content_position": "bottom",
-            "overlay_opacity": 35
-          }
-        },
-        {
-          "type": "collection_card",
-          "settings": {
-            "subheading": "04 / HOUSE CODE",
-            "title": "The Puzzle",
-            "button_label": "View",
-            "content_position": "bottom",
-            "overlay_opacity": 35
-          }
-        },
-        {
-          "type": "collection_card",
-          "settings": {
-            "subheading": "05 / HOUSE CODE",
-            "title": "The Veil",
-            "button_label": "View",
-            "content_position": "bottom",
-            "overlay_opacity": 35
-          }
-        }
+        { "type": "collection_card" },
+        { "type": "collection_card" },
+        { "type": "collection_card" },
+        { "type": "collection_card" },
+        { "type": "collection_card" }
       ]
     }
   ]

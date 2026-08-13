@@ -50,7 +50,7 @@ class FeaturedCollection extends HTMLElement {
     const existing = this.swipers.get(panel);
     if (existing && !replace) {
       existing.update();
-      this.updateProgress(panel, existing);
+      this.updateNavigation(panel, existing);
       this.updatePanelGeometry(panel);
       return;
     }
@@ -82,11 +82,11 @@ class FeaturedCollection extends HTMLElement {
       },
     });
     swiper.on('update resize breakpoint slideChange transitionEnd', () => {
-      this.updateProgress(panel, swiper);
+      this.updateNavigation(panel, swiper);
       this.updatePanelGeometry(panel);
     });
     this.swipers.set(panel, swiper);
-    this.updateProgress(panel, swiper);
+    this.updateNavigation(panel, swiper);
     this.updatePanelGeometry(panel);
   }
 
@@ -251,6 +251,19 @@ class FeaturedCollection extends HTMLElement {
 
     const thumbSize = Math.min(1, visible / swiper.slides.length);
     progressBar.style.setProperty('--featured-collection-progress', thumbSize + (swiper.progress * (1 - thumbSize)));
+  }
+
+  updateNavigation(panel, swiper) {
+    if (!panel || !swiper?.slides?.length) return;
+    const visible = Math.min(Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1), swiper.slides.length);
+    const hasOverflow = swiper.slides.length > Math.ceil(visible);
+    panel.classList.toggle('is-carousel-scrollable', hasOverflow);
+    panel.classList.add('is-carousel-navigation-ready');
+    panel.querySelectorAll('[data-featured-collection-previous], [data-featured-collection-next]').forEach((button) => {
+      button.disabled = !hasOverflow;
+    });
+    if (hasOverflow) swiper.navigation.update();
+    this.updateProgress(panel, swiper);
   }
 
   handleClick(event) {

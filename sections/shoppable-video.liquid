@@ -7,7 +7,13 @@
     assign shoppable_video_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
   endif
   assign video_count = section.blocks.size
-  assign initial_showing = section.settings.columns_desktop
+  assign desktop_columns = section.settings.columns_desktop | plus: 0
+  assign tablet_columns = desktop_columns
+  if tablet_columns > 2
+    assign tablet_columns = 2
+  endif
+  assign mobile_columns = section.settings.columns_mobile | plus: 0
+  assign initial_showing = desktop_columns
   if initial_showing > video_count
     assign initial_showing = video_count
   endif
@@ -24,7 +30,7 @@
 {% endstyle %}
 
 <shoppable-video-section
-  class="shoppable-video-section color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+  class="shoppable-video-section color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if video_count <= desktop_columns %} shoppable-video-section--desktop-static{% endif %}{% if video_count <= tablet_columns %} shoppable-video-section--tablet-static{% endif %}{% if video_count <= mobile_columns %} shoppable-video-section--mobile-static{% endif %}"
   data-desktop-columns="{{ section.settings.columns_desktop }}"
   data-mobile-columns="{{ section.settings.columns_mobile }}"
   data-section-id="{{ section.id }}"
@@ -43,7 +49,7 @@
 
     <div class="shoppable-video-section__panel">
       <div class="shoppable-video-section__carousel swiper" data-shoppable-video-carousel>
-        <div class="shoppable-video-section__slides swiper-wrapper" role="list">
+        <div class="shoppable-video-section__slides swiper-wrapper" role="list" data-reveal-group>
           {% content_for 'blocks' %}
         </div>
       </div>

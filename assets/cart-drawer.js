@@ -24,6 +24,8 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.discounts = this.querySelector('[data-cart-drawer-discounts]');
       this.discountCount = this.querySelector('[data-cart-drawer-discount-count]');
       this.total = this.querySelector('[data-cart-drawer-total]');
+      this.subtotal = this.querySelector('[data-cart-drawer-subtotal]');
+      this.itemCount = this.querySelector('[data-cart-drawer-item-count]');
       this.totalDiscount = this.querySelector('[data-cart-drawer-total-discount]');
       this.savingsAmount = this.querySelector('[data-cart-drawer-savings-amount]');
       this.originalTotal = this.querySelector('[data-cart-drawer-original-total]');
@@ -36,8 +38,10 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.promotionTrack = this.querySelector('[data-cart-drawer-promotion-track]');
       this.promotionSequence = this.querySelector('[data-cart-drawer-promotion-sequence]');
       this.promotionSequenceClone = this.querySelector('[data-cart-drawer-promotion-sequence-clone]');
+      this.promotionTooltip = this.querySelector('[data-cart-drawer-promotion-tooltip]');
       this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
       this.shippingProgressValue = this.querySelector('[data-cart-drawer-shipping-progress-value]');
+      this.shippingGoal = this.querySelector('[data-cart-drawer-shipping-goal]');
       this.shippingCopy = this.querySelector('[data-cart-drawer-shipping-copy]');
       this.shippingEstimator = this.querySelector('[data-cart-drawer-shipping-estimator]');
       this.shippingRates = this.querySelector('[data-cart-drawer-shipping-rates]');
@@ -94,6 +98,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.resetOrderOptionsDrag();
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
+      window.clearTimeout(this.promotionTooltipTimer);
       this.destroyRecommendationSwiper();
       this.promotionResizeObserver?.disconnect();
       this.unlockPageScroll();
@@ -146,6 +151,12 @@ import { A11y, Swiper } from './swiper-loader.js';
         if (orderOptionsTrigger) {
           event.preventDefault();
           this.openOrderOptions(orderOptionsTrigger.dataset.cartDrawerOrderOptionsOpen, orderOptionsTrigger);
+          return;
+        }
+        const promotionApply = event.target.closest('[data-cart-drawer-promotion-apply]');
+        if (promotionApply?.dataset.cartDrawerPromotionApply) {
+          event.preventDefault();
+          this.applyPromotionCode(promotionApply.dataset.cartDrawerPromotionApply, promotionApply);
           return;
         }
         if (event.target.closest('[data-cart-drawer-order-options-close]')) {
@@ -549,6 +560,8 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.queuePromotionMarqueeUpdate();
       this.items.innerHTML = cart.items.map((item) => this.itemTemplate(item)).join('');
       const total = this.formatMoney(cart.total_price);
+      if (this.itemCount) this.itemCount.textContent = `(${cart.item_count})`;
+      if (this.subtotal) this.subtotal.textContent = this.formatMoney(cart.items_subtotal_price ?? cart.total_price ?? 0);
       if (this.total) {
         this.total.textContent = total;
         this.total.classList.toggle('is-sale', Number(cart.original_total_price || 0) > Number(cart.total_price || 0));
@@ -562,6 +575,8 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     renderEmpty() {
       this.items.innerHTML = this.emptyTemplate ? this.emptyTemplate.innerHTML : '';
+      if (this.itemCount) this.itemCount.textContent = '(0)';
+      if (this.subtotal) this.subtotal.textContent = this.formatMoney(0);
       this.footer.hidden = true;
       if (this.recommendations) this.recommendations.hidden = true;
       this.shippingProgress && (this.shippingProgress.hidden = true);
@@ -590,6 +605,11 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     updatePromotionMarquee() {
       if (this.promotion?.hidden || !this.promotionSequence || !this.promotionSequenceClone) return;
+      if (getComputedStyle(this.promotionTrack).animationName === 'none') {
+        this.promotionSequence.querySelectorAll('[data-cart-drawer-promotion-item-clone]').forEach((clone) => clone.remove());
+        this.promotionSequenceClone.replaceChildren();
+        return;
+      }
       const item = this.promotionSequence.querySelector('[data-cart-drawer-promotion-item]');
       if (!item) return;
       this.promotionSequence.querySelectorAll('[data-cart-drawer-promotion-item-clone]').forEach((clone) => clone.remove());
@@ -598,9 +618,15 @@ import { A11y, Swiper } from './swiper-loader.js';
         clone.removeAttribute('data-cart-drawer-promotion-item');
         clone.setAttribute('data-cart-drawer-promotion-item-clone', '');
         clone.setAttribute('aria-hidden', 'true');
+        clone.querySelectorAll('button').forEach((button) => { button.tabIndex = -1; });
         this.promotionSequence.append(clone);
       }
-      this.promotionSequenceClone.replaceChildren(...[...this.promotionSequence.children].map((child) => child.cloneNode(true)));
+      const cloneItems = [...this.promotionSequence.children].map((child) => {
+        const clone = child.cloneNode(true);
+        clone.querySelectorAll('button').forEach((button) => { button.tabIndex = -1; });
+        return clone;
+      });
+      this.promotionSequenceClone.replaceChildren(...cloneItems);
       this.promotionTrack.style.setProperty('--cart-promotion-sequence-width', `${this.promotionSequence.getBoundingClientRect().width}px`);
     }
 
@@ -656,7 +682,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       return `<article class="cart-drawer__item" data-cart-line="${this.escape(item.key)}">
         <a class="cart-drawer__item-media" href="${this.escape(item.url)}">${image}</a>
         <div class="cart-drawer__item-info">
-          <h3 class="cart-drawer__item-title"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
+          <h3 class="cart-drawer__item-title product-title-text"><a href="${this.escape(item.url)}">${this.escape(item.product_title)}</a></h3>
           ${variant}
           ${properties}
           ${sellingPlan}
@@ -822,6 +848,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const progressLevel = progress >= 67 ? 'high' : progress >= 34 ? 'medium' : 'low';
       const template = unlocked ? this.shippingCopy?.dataset.success : this.shippingCopy?.dataset.pending;
       if (this.shippingMessage) this.shippingMessage.textContent = String(template || '').replace(/\{\{ ?amount ?\}\}|\{amount\}/g, this.formatMoney(remaining));
+      if (this.shippingGoal) this.shippingGoal.textContent = this.formatMoney(threshold);
       if (this.shippingProgressValue) this.shippingProgressValue.style.width = `${progress}%`;
       this.shippingProgress.hidden = false;
       this.shippingProgress.dataset.unlocked = String(unlocked);
@@ -997,7 +1024,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.recommendationSwiper = new Swiper(this.recommendationList, {
         modules: [A11y],
         slidesPerView: 1,
-        spaceBetween: 0,
+        spaceBetween: 16,
         speed: this.reduceMotion.matches ? 0 : 360,
         loop: count > 1,
         watchOverflow: true,
@@ -1041,7 +1068,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const displayPrice = requiredAllocation?.price ?? variant?.price ?? product.price;
       return `<article class="cart-drawer__recommendation swiper-slide">
         <a class="cart-drawer__recommendation-media" href="${this.escape(product.url)}">${image ? `<img src="${this.escape(image)}" alt="${this.escape(product.title)}" loading="eager">` : ''}</a>
-        <div><h4><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${chooseOptionsAction}</div>
+        <div><h4 class="product-title-text"><a href="${this.escape(product.url)}">${this.escape(product.title)}</a></h4><p>${this.formatMoney(displayPrice)}</p>${chooseOptionsAction}</div>
         ${addAction}
       </article>`;
     }
@@ -1103,6 +1130,58 @@ import { A11y, Swiper } from './swiper-loader.js';
         if (button) button.disabled = false;
         this.setStatus('');
       }
+    }
+
+    async applyPromotionCode(code, button) {
+      if (!code || button?.disabled) return;
+      if (button) button.disabled = true;
+      this.setMessage('');
+
+      try {
+        this.setStatus(this.dataset.applyingDiscountLabel);
+        const previousCodes = this.storedDiscountCodes(this.cart);
+        const requestedCodes = this.mergeDiscountCodes(previousCodes, [code]);
+        const cart = await this.updateDiscountCodes(requestedCodes);
+
+        if (!this.isDiscountApplied(cart, code)) {
+          let restoredCart = cart;
+          try {
+            restoredCart = await this.updateDiscountCodes(previousCodes);
+          } catch (rollbackError) {
+            console.error('[Jovie] Discount rollback failed', rollbackError);
+            try {
+              restoredCart = await this.fetchCart();
+            } catch (reconcileError) {
+              console.error('[Jovie] Cart reconciliation failed', reconcileError);
+            }
+          }
+          this.syncCart(restoredCart);
+          throw new Error(this.dataset.discountUnavailableLabel);
+        }
+
+        this.syncCart(cart);
+        this.showPromotionTooltip(this.dataset.discountAppliedLabel || 'Discount code applied.');
+      } catch (error) {
+        console.error('[Jovie] Promotion discount code failed', error);
+        this.setMessage(error.message, true);
+      } finally {
+        if (button) button.disabled = false;
+        this.setStatus('');
+      }
+    }
+
+    showPromotionTooltip(message) {
+      if (!this.promotionTooltip || !message) return;
+      window.clearTimeout(this.promotionTooltipTimer);
+      this.promotionTooltip.textContent = message;
+      this.promotionTooltip.hidden = false;
+      this.promotionTooltip.classList.add('is-visible');
+      this.promotionTooltipTimer = window.setTimeout(() => {
+        this.promotionTooltip?.classList.remove('is-visible');
+        window.setTimeout(() => {
+          if (this.promotionTooltip && !this.promotionTooltip.classList.contains('is-visible')) this.promotionTooltip.hidden = true;
+        }, 180);
+      }, 2400);
     }
 
     async saveNote() {

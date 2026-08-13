@@ -213,7 +213,10 @@
   cursor: pointer;
   place-items: center;
   transform: translateY(-50%);
-  transition: background-color 220ms ease, color 220ms ease, opacity 220ms ease;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-50%) scale(.94);
+  transition: background-color 220ms ease, color 220ms ease, opacity 220ms ease, transform 220ms cubic-bezier(.22, 1, .36, 1);
 }
 
 .editorial-collection-tabs__arrow--previous {
@@ -231,8 +234,15 @@
 }
 
 .editorial-collection-tabs__arrow:disabled {
-  opacity: .28;
+  visibility: hidden;
   cursor: default;
+}
+
+.editorial-collection-tabs__panel.is-carousel-scrollable:hover .editorial-collection-tabs__arrow:not(:disabled),
+.editorial-collection-tabs__panel.is-carousel-scrollable:focus-within .editorial-collection-tabs__arrow:not(:disabled) {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(-50%) scale(1);
 }
 
 .editorial-collection-tabs__footer {
@@ -270,22 +280,14 @@
 }
 
 .editorial-collection-tabs__view-all {
-  display: inline-flex;
-  align-items: center;
   justify-content: flex-end;
-  gap: 24px;
   color: inherit;
-  text-decoration: none;
 }
 
-.editorial-collection-tabs__view-all svg {
-  width: 11px;
-  height: 9px;
-  transition: transform 220ms cubic-bezier(.22, 1, .36, 1);
-}
-
-a.editorial-collection-tabs__view-all:hover svg {
-  transform: translateX(4px);
+/* Preserve a usable collection link without JavaScript, then remove the
+ * redundant action when the initialized carousel fits every product. */
+.editorial-collection-tabs__panel.is-carousel-navigation-ready:not(.is-carousel-scrollable) .editorial-collection-tabs__view-all {
+  display: none;
 }
 
 .editorial-collection-tabs__panel--entering {
@@ -402,8 +404,7 @@ a.editorial-collection-tabs__view-all:hover svg {
   .editorial-collection-tabs__tab,
   .editorial-collection-tabs__tab::after,
   .editorial-collection-tabs__arrow,
-  .editorial-collection-tabs__progress > span,
-  .editorial-collection-tabs__view-all svg {
+  .editorial-collection-tabs__progress > span {
     transition: none;
   }
 

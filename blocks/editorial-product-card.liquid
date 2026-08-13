@@ -8,19 +8,35 @@
   if variant != blank
     assign price = variant.price
   endif
+  assign is_placeholder = false
+  if product == blank and title == blank and block.settings.meta == blank and price == blank and block.settings.cta_label == blank
+    assign is_placeholder = true
+  endif
 %}
 
-{% if title != blank or product != blank %}
-  <aside class="editorial-slideshow__product-card color-scheme color-{{ block.settings.color_scheme.id }}" aria-label="{{ title | escape }}" {{ block.shopify_attributes }}>
+  <aside class="editorial-slideshow__product-card{% if is_placeholder %} editorial-slideshow__product-card--placeholder{% endif %} color-scheme color-{{ block.settings.color_scheme.id }}"{% if title != blank %} aria-label="{{ title | escape }}"{% endif %} {{ block.shopify_attributes }}>
     <div class="editorial-slideshow__product-copy">
-      {% if product_url != blank %}<a class="editorial-slideshow__product-title" href="{{ product_url | escape }}">{{ title | escape }}</a>{% else %}<span class="editorial-slideshow__product-title">{{ title | escape }}</span>{% endif %}
-      {% if block.settings.meta != blank %}<span class="editorial-slideshow__product-meta">{{ block.settings.meta | escape }}</span>{% endif %}
+      {% if title != blank %}
+        {% if product_url != blank %}<a class="editorial-slideshow__product-title product-title-text" href="{{ product_url | escape }}">{{ title | escape }}</a>{% else %}<span class="editorial-slideshow__product-title product-title-text">{{ title | escape }}</span>{% endif %}
+      {% else %}
+        <span class="editorial-slideshow__product-title product-title-text">{{ 'onboarding.product_title' | t }}</span>
+      {% endif %}
+      {% if block.settings.meta != blank %}
+        <span class="editorial-slideshow__product-meta">{{ block.settings.meta | escape }}</span>
+      {% elsif is_placeholder %}
+        <span class="editorial-slideshow__product-meta">{{ 'onboarding.product_title' | t }}</span>
+      {% endif %}
     </div>
     <div class="editorial-slideshow__product-actions">
       {% if price != blank %}
         <div class="editorial-slideshow__product-price">
           <span class="editorial-slideshow__product-price-label">{{ block.settings.price_label | escape }}</span>
           <span class="editorial-slideshow__product-price-value">{% if variant != blank %}{% render 'money', amount: price %}{% else %}{{ price | escape }}{% endif %}</span>
+        </div>
+      {% elsif is_placeholder %}
+        <div class="editorial-slideshow__product-price">
+          <span class="editorial-slideshow__product-price-label">{{ 'onboarding.product_title' | t }}</span>
+          <span class="editorial-slideshow__product-price-value">{% render 'money', amount: 0 %}</span>
         </div>
       {% endif %}
       {% if block.settings.cta_label != blank %}
@@ -31,7 +47,6 @@
       {% endif %}
     </div>
   </aside>
-{% endif %}
 
 {% schema %}
 {
