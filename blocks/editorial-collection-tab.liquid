@@ -18,6 +18,11 @@
     assign rendered_product_count = 4
   endif
 
+  assign is_placeholder_collection = false
+  if collection == blank or collection.products_count == 0
+    assign is_placeholder_collection = true
+  endif
+
   assign desktop_columns = section.settings.columns_desktop | default: 4 | plus: 0
   assign tablet_columns = desktop_columns
   if tablet_columns > 2
@@ -77,6 +82,7 @@
   data-block-id="{{ block.id }}"
   data-collection-label="{{ collection_label | escape }}"
   data-product-total="{{ visible_product_count }}"
+  {% if is_placeholder_collection %}data-placeholder-collection{% endif %}
   style="--editorial-tabs-slide-mobile: calc((100% - {{ section.settings.mobile_column_gap }}px * ({{ mobile_slides }} - 1)) / {{ mobile_slides }}); --editorial-tabs-slide-tablet: calc((100% - {{ section.settings.column_gap }}px * ({{ tablet_slides }} - 1)) / {{ tablet_slides }}); --editorial-tabs-slide-desktop: calc((100% - {{ section.settings.column_gap }}px * ({{ desktop_slides }} - 1)) / {{ desktop_slides }});"
   {{ block.shopify_attributes }}
 >
@@ -123,7 +129,7 @@
     {% render 'icon', name: 'chevron-right' %}
   </button>
 
-  <footer class="editorial-collection-tabs__footer">
+  <footer class="editorial-collection-tabs__footer" data-editorial-collection-footer>
     <span class="editorial-collection-tabs__showing" data-editorial-collection-showing data-total="{{ visible_product_count }}">
       Showing {{ initial_showing_count }} of {{ visible_product_count }}
     </span>
