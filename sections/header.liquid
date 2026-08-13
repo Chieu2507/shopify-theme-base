@@ -67,6 +67,7 @@
   assign has_menu = false
   assign has_mobile_utilities = false
   assign can_change_country = false
+  assign can_change_language = false
   assign show_language = true
   assign header_social_count = 0
 
@@ -163,6 +164,10 @@
 
   if localization.available_countries.size > 1
     assign can_change_country = true
+  endif
+
+  if show_language and localization.available_languages.size > 1
+    assign can_change_language = true
   endif
 
   if menu_links == blank and navigation_menu != blank
@@ -295,43 +300,77 @@
     {% endif %}
 
     <div class="header__actions">
-      {% if section.settings.show_localization %}
-        <div class="header__localization">
-          {% if can_change_country %}
+      {% if section.settings.show_localization or can_change_language %}
+        <div class="header__localization header__localization--combined{% if can_change_language %} header__localization--with-language{% endif %}">
+          {% if can_change_country or can_change_language %}
             <details class="header__localization-selector{% if section.settings.dropdown_trigger == 'hover' %} header__localization-selector--hover{% endif %}">
-              <summary aria-label="{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}">
-                {% if section.settings.show_country_flag %}
-                  {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: localization.country.name, loading: 'lazy' }}
+              <summary aria-label="{% if section.settings.show_localization %}{{ 'header.country_region' | t | escape }}: {{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}{% endif %}{% if section.settings.show_localization and can_change_language %}, {% endif %}{% if can_change_language %}{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}{% endif %}">
+                {% if section.settings.show_localization %}
+                  {% if section.settings.show_country_flag %}
+                    {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: localization.country.name, loading: 'lazy' }}
+                  {% endif %}
+                  <span class="header__localization-label">{{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}</span>
                 {% endif %}
-                <span class="header__localization-label">{{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}</span>
+                {% if section.settings.show_localization and can_change_language %}
+                  <span class="header__localization-separator" aria-hidden="true">/</span>
+                {% endif %}
+                {% if can_change_language %}
+                  <span class="header__localization-language-code" aria-hidden="true">{{ localization.language.iso_code | upcase }}</span>
+                {% endif %}
                 <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
               </summary>
               <div class="header__localization-popover">
-                {% form 'localization', id: country_form_id %}
-                  <div class="header__localization-select" data-header-country-picker>
-                    <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-header-country-input>
-                    <div id="{{ country_form_id }}-Options" class="header__localization-options theme-scrollbar" role="listbox" aria-label="{{ 'header.country_region' | t | escape }}">
-                      {% for country in localization.available_countries %}
-                        <button class="header__localization-option{% if country.iso_code == localization.country.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if country.iso_code == localization.country.iso_code %}true{% else %}false{% endif %}" data-header-country-option data-country-code="{{ country.iso_code }}">
-                          {{ country | image_url: width: 32 | image_tag: class: 'header__localization-option-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
-                          <span class="header__localization-option-name">{{ country.name | escape }}</span>
-                          <span class="header__localization-option-currency">{{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }}</span>
-                        </button>
-                      {% endfor %}
+                {% if can_change_country %}
+                  {% form 'localization', id: country_form_id %}
+                    <div class="header__localization-panel-section header__localization-select" data-header-country-picker>
+                      <input type="hidden" name="country_code" value="{{ localization.country.iso_code }}" data-header-country-input>
+                      <div id="{{ country_form_id }}-Options" class="header__localization-options theme-scrollbar" role="listbox" aria-label="{{ 'header.country_region' | t | escape }}">
+                        {% for country in localization.available_countries %}
+                          <button class="header__localization-option{% if country.iso_code == localization.country.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if country.iso_code == localization.country.iso_code %}true{% else %}false{% endif %}" data-header-country-option data-country-code="{{ country.iso_code }}">
+                            {{ country | image_url: width: 32 | image_tag: class: 'header__localization-option-flag', widths: '16, 32', alt: '', loading: 'lazy' }}
+                            <span class="header__localization-option-name">{{ country.name | escape }}</span>
+                            <span class="header__localization-option-currency">{{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }}</span>
+                          </button>
+                        {% endfor %}
+                      </div>
                     </div>
-                  </div>
-                  <noscript>
-                    <select name="country_code">
-                      {% for country in localization.available_countries %}
-                        <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.name | escape }} ({{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }})</option>
-                      {% endfor %}
-                    </select>
-                    <button type="submit">{{ 'header.apply' | t }}</button>
-                  </noscript>
-                {% endform %}
+                    <noscript>
+                      <select name="country_code">
+                        {% for country in localization.available_countries %}
+                          <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.name | escape }} ({{ country.currency.iso_code | escape }} {{ country.currency.symbol | escape }})</option>
+                        {% endfor %}
+                      </select>
+                      <button type="submit">{{ 'header.apply' | t }}</button>
+                    </noscript>
+                  {% endform %}
+                {% endif %}
+
+                {% if can_change_language %}
+                  {% form 'localization', id: language_form_id %}
+                    <div class="header__localization-panel-section header__localization-panel-section--language header__localization-select{% if can_change_country %} header__localization-panel-section--separated{% endif %}" data-header-language-picker>
+                      {% if can_change_country %}<p class="header__localization-panel-heading">{{ 'header.language' | t }}</p>{% endif %}
+                      <input type="hidden" name="language_code" value="{{ localization.language.iso_code }}" data-header-language-input>
+                      <div id="{{ language_form_id }}-Options" class="header__localization-options theme-scrollbar" role="listbox" aria-label="{{ 'header.language' | t | escape }}">
+                        {% for language in localization.available_languages %}
+                          <button class="header__localization-option{% if language.iso_code == localization.language.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if language.iso_code == localization.language.iso_code %}true{% else %}false{% endif %}" data-header-language-option data-language-code="{{ language.iso_code }}">
+                            <span>{{ language.endonym_name | default: language.name | capitalize | escape }}</span>
+                          </button>
+                        {% endfor %}
+                      </div>
+                    </div>
+                    <noscript>
+                      <select name="language_code">
+                        {% for language in localization.available_languages %}
+                          <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | default: language.name | capitalize | escape }}</option>
+                        {% endfor %}
+                      </select>
+                      <button type="submit">{{ 'header.apply' | t }}</button>
+                    </noscript>
+                  {% endform %}
+                {% endif %}
               </div>
             </details>
-          {% else %}
+          {% elsif section.settings.show_localization %}
             <span class="header__localization-current" aria-label="{{ 'header.country_region' | t | escape }}">
               {% if section.settings.show_country_flag %}
                 {{ localization.country | image_url: width: 32 | image_tag: class: 'header__localization-flag', widths: '16, 32', alt: localization.country.name, loading: 'lazy' }}
@@ -339,39 +378,6 @@
               <span class="header__localization-label">{{ localization.country.currency.iso_code | escape }} {{ localization.country.currency.symbol | escape }}</span>
             </span>
           {% endif %}
-        </div>
-      {% endif %}
-
-      {% if show_language and localization.available_languages.size > 1 %}
-        <div class="header__localization header__language-localization">
-          <details class="header__localization-selector header__language-selector{% if section.settings.dropdown_trigger == 'hover' %} header__localization-selector--hover{% endif %}">
-            <summary aria-label="{{ 'header.language' | t | escape }}: {{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}">
-              <span class="header__localization-label">{{ localization.language.endonym_name | default: localization.language.name | capitalize | escape }}</span>
-              <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-            </summary>
-            <div class="header__localization-popover">
-              {% form 'localization', id: language_form_id %}
-                <div class="header__localization-select" data-header-language-picker>
-                  <input type="hidden" name="language_code" value="{{ localization.language.iso_code }}" data-header-language-input>
-                  <div id="{{ language_form_id }}-Options" class="header__localization-options theme-scrollbar" role="listbox" aria-label="{{ 'header.language' | t | escape }}">
-                    {% for language in localization.available_languages %}
-                      <button class="header__localization-option{% if language.iso_code == localization.language.iso_code %} header__localization-option--selected{% endif %}" type="button" role="option" aria-selected="{% if language.iso_code == localization.language.iso_code %}true{% else %}false{% endif %}" data-header-language-option data-language-code="{{ language.iso_code }}">
-                        <span>{{ language.endonym_name | default: language.name | capitalize | escape }}</span>
-                      </button>
-                    {% endfor %}
-                  </div>
-                </div>
-                <noscript>
-                  <select name="language_code">
-                    {% for language in localization.available_languages %}
-                      <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | default: language.name | capitalize | escape }}</option>
-                    {% endfor %}
-                  </select>
-                  <button type="submit">{{ 'header.apply' | t }}</button>
-                </noscript>
-              {% endform %}
-            </div>
-          </details>
         </div>
       {% endif %}
 
