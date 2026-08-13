@@ -1,0 +1,84 @@
+{% liquid
+  assign card_collection = block.settings.collection
+  assign card_image = block.settings.image
+  assign card_title = block.settings.title | default: card_collection.title | default: 'collection_list.collection' | t
+  assign card_link = card_collection.url
+  assign card_product_count = card_collection.all_products_count
+  assign card_overlay_opacity = block.settings.overlay_opacity | divided_by: 100.0
+  if section.settings.layout != 'split-promotions' and card_overlay_opacity < 0.45
+    assign card_overlay_opacity = 0.45
+  endif
+  assign card_overlay_color = '#000000' | color_modify: 'alpha', card_overlay_opacity
+
+  if card_image == blank and card_collection != blank
+    assign card_image = card_collection.image
+    if card_image == blank
+      assign card_image = card_collection.products.first.featured_image
+    endif
+  endif
+
+  assign card_color_scheme = block.settings.color_scheme | default: section.settings.color_scheme
+  assign card_alt = card_image.alt | default: card_title
+  assign columns_desktop = section.settings.columns_desktop | default: 1
+  assign columns_tablet = section.settings.columns_desktop | default: 1
+  assign columns_mobile = section.settings.columns_mobile | default: 1
+  assign desktop_card_width = 100 | divided_by: columns_desktop
+  assign tablet_card_width = 100 | divided_by: columns_tablet
+  assign mobile_card_width = 100 | divided_by: columns_mobile
+  assign card_sizes = '(min-width: 1150px) ' | append: desktop_card_width | append: 'vw, (min-width: 768px) ' | append: tablet_card_width | append: 'vw, ' | append: mobile_card_width | append: 'vw'
+  if section.settings.layout == 'split-promotions'
+    assign card_sizes = '(min-width: 1150px) 50vw, (min-width: 768px) 50vw, 100vw'
+  endif
+%}
+
+<li class="collection-list__item{% if section.settings.layout == 'grid' %} swiper-slide{% else %} collection-list__item--split{% endif %}" data-block-id="{{ block.id }}"{% if section.settings.layout == 'split-promotions' %} data-reveal-item{% endif %} {{ block.shopify_attributes }}>
+  {% if card_link != blank %}
+    <a class="collection-list__card collection-list__card--{{ section.settings.layout }} color-scheme color-{{ card_color_scheme.id }}" href="{{ card_link | escape }}" style="--collection-list-image-position: {{ block.settings.focal_point }}; --collection-list-overlay-color: {{ card_overlay_color }};">
+  {% else %}
+    <div class="collection-list__card collection-list__card--{{ section.settings.layout }} color-scheme color-{{ card_color_scheme.id }}" style="--collection-list-image-position: {{ block.settings.focal_point }}; --collection-list-overlay-color: {{ card_overlay_color }};">
+  {% endif %}
+    <div class="collection-list__media collection-list__media--{{ section.settings.image_ratio }}">
+      {% render 'responsive-media', image: card_image, max_width: 1400, widths: '320, 480, 640, 800, 1000, 1200, 1400', sizes: card_sizes, class: 'collection-list__image', loading: 'lazy', fetchpriority: 'auto', decoding: 'async', alt: card_alt, placeholder_class: 'collection-list__placeholder' %}
+    </div>
+
+    {% if section.settings.layout == 'split-promotions' %}
+      <span class="collection-list__overlay" aria-hidden="true"></span>
+      <div class="collection-list__content collection-list__content--{{ section.settings.card_alignment }} collection-list__content--position-{{ block.settings.content_position }}">
+        {% if block.settings.subheading != blank %}<span class="collection-list__subheading subheading-text">{{ block.settings.subheading | escape }}</span>{% endif %}
+        <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__promotion-heading collection-list__promotion-heading--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">{{ card_title | escape }}</{{ section.settings.card_heading_tag | default: 'h3' }}>
+        {% if block.settings.description != blank %}<p class="collection-list__promotion-description">{{ block.settings.description | escape }}</p>{% endif %}
+        {% if card_link != blank %}<span class="btn-tertiary collection-list__button" aria-hidden="true"><span>{{ block.settings.button_label | default: 'View collection' | escape }}</span><span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span></span>{% endif %}
+      </div>
+    {% else %}
+      <span class="collection-list__overlay" aria-hidden="true"></span>
+      <span class="collection-list__content collection-list__content--{{ section.settings.card_alignment }} collection-list__content--position-bottom">
+        <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__title collection-list__title--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">{{ card_title | escape }}</{{ section.settings.card_heading_tag | default: 'h3' }}>
+        {% if block.settings.show_product_count != false and card_collection != blank %}<span class="collection-list__count">{{ 'collection.product_count' | t: count: card_product_count }}</span>{% endif %}
+      </span>
+    {% endif %}
+  {% if card_link != blank %}</a>{% else %}</div>{% endif %}
+</li>
+
+{% schema %}
+{
+  "name": "Collection card",
+  "tag": null,
+  "settings": [
+    { "type": "header", "content": "Content" },
+    { "type": "collection", "id": "collection", "label": "Collection" },
+    { "type": "text", "id": "title", "label": "Custom title" },
+    { "type": "checkbox", "id": "show_product_count", "label": "Product count", "info": "Uses the selected collection's total product count.", "default": true, "visible_if": "{{ section.settings.layout == 'grid' }}" },
+    { "type": "text", "id": "subheading", "label": "Eyebrow", "visible_if": "{{ section.settings.layout == 'split-promotions' }}" },
+    { "type": "textarea", "id": "description", "label": "Description", "visible_if": "{{ section.settings.layout == 'split-promotions' }}" },
+    { "type": "text", "id": "button_label", "label": "Button label", "default": "View collection", "visible_if": "{{ section.settings.layout == 'split-promotions' }}" },
+    { "type": "select", "id": "content_position", "label": "Vertical position", "options": [{ "value": "top", "label": "Top" }, { "value": "center", "label": "Center" }, { "value": "bottom", "label": "Bottom" }], "default": "bottom", "visible_if": "{{ section.settings.layout == 'split-promotions' }}" },
+    { "type": "header", "content": "Media" },
+    { "type": "image_picker", "id": "image", "label": "Custom image" },
+    { "type": "select", "id": "focal_point", "label": "Focal point", "options": [{ "value": "left top", "label": "Top left" }, { "value": "center top", "label": "Top center" }, { "value": "right top", "label": "Top right" }, { "value": "left center", "label": "Center left" }, { "value": "center center", "label": "Center" }, { "value": "right center", "label": "Center right" }, { "value": "left bottom", "label": "Bottom left" }, { "value": "center bottom", "label": "Bottom center" }, { "value": "right bottom", "label": "Bottom right" }], "default": "center center" },
+    { "type": "header", "content": "Appearance" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "info": "Leave blank to use the Collection list color scheme." },
+    { "type": "header", "content": "Overlay text on image" },
+    { "type": "range", "id": "overlay_opacity", "min": 0, "max": 80, "step": 5, "unit": "%", "label": "Overlay opacity", "default": 20 }
+  ]
+}
+{% endschema %}
