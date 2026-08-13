@@ -6,7 +6,9 @@ class ShoppableVideoSection extends HTMLElement {
     if (this.initialized) return;
     this.initialized = true;
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.mobileModal = window.matchMedia('(max-width: 767.98px)');
     this.slides = Array.from(this.querySelectorAll('[data-shoppable-video-slide]'));
+    this.dialogStates = new Map();
     this.returnFocus = null;
     this.onClick = this.handleClick.bind(this);
     this.onDialogClose = this.handleDialogClose.bind(this);
@@ -16,6 +18,7 @@ class ShoppableVideoSection extends HTMLElement {
     this.querySelectorAll('[data-shoppable-video-dialog]').forEach((dialog) => {
       dialog.addEventListener('close', this.onDialogClose);
       dialog.addEventListener('cancel', this.onDialogCancel);
+      this.initializeDialogInteraction(dialog);
     });
     document.addEventListener('shopify:block:select', this.onBlockSelect);
     this.cancelDeferredInitialization = initializeWhenVisible(this, () => this.initializeCarousel());
@@ -26,6 +29,7 @@ class ShoppableVideoSection extends HTMLElement {
     this.querySelectorAll('[data-shoppable-video-dialog]').forEach((dialog) => {
       dialog.removeEventListener('close', this.onDialogClose);
       dialog.removeEventListener('cancel', this.onDialogCancel);
+      this.destroyDialogInteraction(dialog);
     });
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     this.cancelDeferredInitialization?.();
@@ -35,6 +39,174 @@ class ShoppableVideoSection extends HTMLElement {
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.initialized = false;
+  }
+
+  initializeDialogInteraction(dialog) {
+    const state = {
+      handle: dialog.querySelector('[data-shoppable-video-handle]'),
+      drag: null,
+      settleTimer: null,
+    };
+    const panel = dialog.querySelector('.shoppable-video-dialog__panel');
+    const pointer = dialog.querySelector('.quick-view-modal__backdrop-pointer');
+    if (window.SpinelModalBackdropPointer && panel) {
+      state.backdropInteraction = new window.SpinelModalBackdropPointer({
+        root: dialog,
+        panel,
+        pointer,
+        isOpen: () => dialog.open,
+        cursorClass: 'quick-view-backdrop-cursor',
+        pointerX: '--quick-view-pointer-x',
+        pointerY: '--quick-view-pointer-y',
+        relativeToRoot: true,
+        isDisabled: () => this.mobileModal.matches,
+      });
+    }
+
+    state.onPointerDown = (event) => this.startHandleDrag(dialog, event);
+    state.onPointerMove = (event) => this.moveHandleDrag(dialog, event);
+    state.onPointerUp = (event) => this.endHandleDrag(dialog, event);
+    state.onPointerCancel = (event) => this.endHandleDrag(dialog, event, true);
+    state.onTouchStart = (event) => this.startTouchHandleDrag(dialog, event);
+    state.onTouchMove = (event) => this.moveTouchHandleDrag(dialog, event);
+    state.onTouchEnd = (event) => this.endTouchHandleDrag(dialog, event);
+    state.onTouchCancel = (event) => this.endTouchHandleDrag(dialog, event, true);
+
+    if ('PointerEvent' in window) {
+      state.handle?.addEventListener('pointerdown', state.onPointerDown);
+      dialog.addEventListener('pointermove', state.onPointerMove);
+      dialog.addEventListener('pointerup', state.onPointerUp);
+      dialog.addEventListener('pointercancel', state.onPointerCancel);
+    } else {
+      state.handle?.addEventListener('touchstart', state.onTouchStart, { passive: false });
+      dialog.addEventListener('touchmove', state.onTouchMove, { passive: false });
+      dialog.addEventListener('touchend', state.onTouchEnd);
+      dialog.addEventListener('touchcancel', state.onTouchCancel);
+    }
+    this.dialogStates.set(dialog, state);
+  }
+
+  destroyDialogInteraction(dialog) {
+    const state = this.dialogStates.get(dialog);
+    if (!state) return;
+    state.backdropInteraction?.destroy();
+    state.handle?.removeEventListener('pointerdown', state.onPointerDown);
+    dialog.removeEventListener('pointermove', state.onPointerMove);
+    dialog.removeEventListener('pointerup', state.onPointerUp);
+    dialog.removeEventListener('pointercancel', state.onPointerCancel);
+    state.handle?.removeEventListener('touchstart', state.onTouchStart);
+    dialog.removeEventListener('touchmove', state.onTouchMove);
+    dialog.removeEventListener('touchend', state.onTouchEnd);
+    dialog.removeEventListener('touchcancel', state.onTouchCancel);
+    this.resetHandleDrag(dialog);
+    this.dialogStates.delete(dialog);
+  }
+
+  startTouchHandleDrag(dialog, event) {
+    const touch = event.changedTouches[0];
+    if (!touch) return;
+    this.startHandleDrag(dialog, {
+      isPrimary: true,
+      button: 0,
+      pointerId: touch.identifier,
+      clientY: touch.clientY,
+      preventDefault: () => event.preventDefault(),
+    });
+  }
+
+  moveTouchHandleDrag(dialog, event) {
+    const state = this.dialogStates.get(dialog);
+    if (!state?.drag) return;
+    const touch = Array.from(event.changedTouches).find((item) => item.identifier === state.drag.pointerId);
+    if (!touch) return;
+    this.moveHandleDrag(dialog, {
+      pointerId: touch.identifier,
+      clientY: touch.clientY,
+      preventDefault: () => event.preventDefault(),
+    });
+  }
+
+  endTouchHandleDrag(dialog, event, cancelled = false) {
+    const state = this.dialogStates.get(dialog);
+    if (!state?.drag) return;
+    const touch = Array.from(event.changedTouches).find((item) => item.identifier === state.drag.pointerId);
+    if (!touch) return;
+    this.endHandleDrag(dialog, { pointerId: touch.identifier }, cancelled);
+  }
+
+  startHandleDrag(dialog, event) {
+    const state = this.dialogStates.get(dialog);
+    const isMobileLayout = this.mobileModal.matches || getComputedStyle(state?.handle).display !== 'none';
+    if (!state?.handle || !isMobileLayout || !event.isPrimary || event.button > 0 || dialog.classList.contains('is-closing')) return;
+    window.clearTimeout(state.settleTimer);
+    state.drag = {
+      pointerId: event.pointerId,
+      startY: event.clientY,
+      lastY: event.clientY,
+      lastTime: performance.now(),
+      velocity: 0,
+      distance: 0,
+    };
+    dialog.classList.remove('is-handle-settling', 'is-handle-closing');
+    dialog.classList.add('is-handle-dragging');
+    dialog.style.transform = 'translate3d(0, 0, 0)';
+    dialog.style.opacity = '1';
+    try { state.handle.setPointerCapture(event.pointerId); } catch (_) {}
+    event.preventDefault();
+  }
+
+  moveHandleDrag(dialog, event) {
+    const state = this.dialogStates.get(dialog);
+    const drag = state?.drag;
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    const now = performance.now();
+    const elapsed = Math.max(now - drag.lastTime, 1);
+    drag.velocity = (event.clientY - drag.lastY) / elapsed;
+    drag.lastY = event.clientY;
+    drag.lastTime = now;
+    drag.distance = Math.max(0, event.clientY - drag.startY);
+    dialog.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
+    event.preventDefault();
+  }
+
+  endHandleDrag(dialog, event, cancelled = false) {
+    const state = this.dialogStates.get(dialog);
+    const drag = state?.drag;
+    if (!drag || event.pointerId !== drag.pointerId) return;
+    try { state.handle.releasePointerCapture(event.pointerId); } catch (_) {}
+    const closeDistance = Math.min(140, dialog.getBoundingClientRect().height * 0.2);
+    const shouldClose = !cancelled && (drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55));
+    state.drag = null;
+    dialog.classList.remove('is-handle-dragging');
+
+    if (shouldClose) {
+      dialog.classList.add('is-closing', 'is-handle-closing');
+      window.requestAnimationFrame(() => {
+        dialog.style.transform = `translate3d(0, ${Math.max(window.innerHeight, dialog.offsetHeight + 60)}px, 0)`;
+        dialog.style.opacity = '0';
+      });
+      state.settleTimer = window.setTimeout(() => dialog.open && dialog.close(), 240);
+      return;
+    }
+
+    dialog.classList.add('is-handle-settling');
+    window.requestAnimationFrame(() => {
+      dialog.style.transform = 'translate3d(0, 0, 0)';
+      dialog.style.opacity = '1';
+    });
+    state.settleTimer = window.setTimeout(() => this.resetHandleDrag(dialog), 240);
+  }
+
+  resetHandleDrag(dialog) {
+    const state = this.dialogStates.get(dialog);
+    if (!state) return;
+    window.clearTimeout(state.settleTimer);
+    try { state.handle?.releasePointerCapture(state.drag?.pointerId); } catch (_) {}
+    state.drag = null;
+    state.settleTimer = null;
+    dialog.classList.remove('is-handle-dragging', 'is-handle-settling', 'is-handle-closing');
+    dialog.style.removeProperty('transform');
+    dialog.style.removeProperty('opacity');
   }
 
   initializeCarousel() {
@@ -160,6 +332,7 @@ class ShoppableVideoSection extends HTMLElement {
     if (dialog.open) return;
     this.pauseOtherVideos();
     this.returnFocus = trigger;
+    this.resetHandleDrag(dialog);
     dialog.classList.remove('is-closing');
     dialog.showModal();
     dialog.querySelector('[data-shoppable-video-close]')?.focus({ preventScroll: true });
@@ -167,6 +340,7 @@ class ShoppableVideoSection extends HTMLElement {
 
   closeDialog(dialog) {
     if (!dialog?.open || dialog.classList.contains('is-closing')) return;
+    this.resetHandleDrag(dialog);
     dialog.classList.add('is-closing');
     if (this.reduceMotion) {
       dialog.close();
@@ -182,7 +356,9 @@ class ShoppableVideoSection extends HTMLElement {
   }
 
   handleDialogClose(event) {
+    this.resetHandleDrag(event.currentTarget);
     event.currentTarget.classList.remove('is-closing');
+    this.dialogStates.get(event.currentTarget)?.backdropInteraction?.hide();
     this.returnFocus?.focus({ preventScroll: true });
     this.returnFocus = null;
   }
