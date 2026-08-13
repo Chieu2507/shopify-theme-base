@@ -41,9 +41,14 @@
   assign mobile_slides_per_view = mobile_columns | plus: 0.2
   assign collection_label = section.settings.collection_label | default: featured_collection.title | default: 'Collection'
   assign view_all_label = section.settings.view_all_label | default: 'View all objects'
-  assign is_placeholder_collection = false
+  assign rendered_product_count = visible_product_count
   if featured_collection == blank or product_count == 0
-    assign is_placeholder_collection = true
+    assign rendered_product_count = 6
+  endif
+
+  assign initial_showing_count = desktop_columns
+  if initial_showing_count > rendered_product_count
+    assign initial_showing_count = rendered_product_count
   endif
 %}
 
@@ -101,7 +106,7 @@
               </li>
             {% endfor %}
           {% else %}
-            {% for placeholder_index in (1..4) %}
+            {% for placeholder_index in (1..6) %}
               <li class="editorial-featured-collection__product featured-collection__product swiper-slide" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                 {% render 'product-card',
                   media_ratio: 'global',
@@ -135,27 +140,33 @@
         {% render 'icon', name: 'chevron-right' %}
       </button>
 
-      {% unless is_placeholder_collection %}
-        <footer class="editorial-featured-collection__footer" data-reveal>
-          <span
-            class="editorial-featured-collection__count"
-            data-featured-collection-showing
-            data-showing-prefix="Showing"
-            data-showing-separator="of"
-            data-total="{{ visible_product_count }}"
-          >
-            Showing {{ initial_showing_count }} of {{ visible_product_count }}
-          </span>
-          <div class="editorial-featured-collection__progress featured-collection__progress" aria-hidden="true">
-            <span data-featured-collection-progress></span>
-          </div>
+      <footer class="editorial-featured-collection__footer" data-reveal>
+        <span
+          class="editorial-featured-collection__count"
+          data-featured-collection-showing
+          data-showing-prefix="Showing"
+          data-showing-separator="of"
+          data-total="{{ rendered_product_count }}"
+        >
+          Showing {{ initial_showing_count }} of {{ rendered_product_count }}
+        </span>
+        <div class="editorial-featured-collection__progress featured-collection__progress" aria-hidden="true">
+          <span data-featured-collection-progress></span>
+        </div>
+        {% if featured_collection != blank %}
           <a class="editorial-featured-collection__collection-link" href="{{ featured_collection.url | escape }}">{{ collection_label | escape }}</a>
           <a class="btn-tertiary editorial-featured-collection__view-all" href="{{ featured_collection.url | escape }}">
             <span>{{ view_all_label | escape }}</span>
             <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
           </a>
-        </footer>
-      {% endunless %}
+        {% else %}
+          <span class="editorial-featured-collection__collection-link">{{ collection_label | escape }}</span>
+          <span class="btn-tertiary editorial-featured-collection__view-all">
+            <span>{{ view_all_label | escape }}</span>
+            <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+          </span>
+        {% endif %}
+      </footer>
     </div>
   </div>
 </featured-collection>
