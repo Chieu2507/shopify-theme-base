@@ -45,6 +45,7 @@ class ProductFeaturedCollection extends HTMLElement {
       delete this.dataset.productFeaturedCollectionSourceUrl;
       this.panel = this.querySelector('[data-product-featured-collection-panel]');
       this.createCarousel();
+      window.ThemeAnimations?.init(this);
       document.dispatchEvent(new CustomEvent('product-featured-collection:products-loaded', {
         bubbles: true,
         detail: { section: this, panel: this.panel },
