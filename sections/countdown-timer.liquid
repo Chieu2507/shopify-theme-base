@@ -6,19 +6,19 @@
     style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --countdown-timer-column-gap: {{ section.settings.column_gap }}px; --countdown-timer-mobile-row-gap: {{ section.settings.mobile_row_gap }}px;"
     data-deferred-module="{{ 'section-countdown-timer.js' | asset_url }}"
   >
-    <div class="countdown-timer__inner section-spacing">
+    <div class="countdown-timer__inner section-spacing" data-reveal-group>
       {% for block in section.blocks %}
         {% case block.type %}
           {% when 'heading' %}
             {% if block.settings.heading != blank %}
-              <div class="countdown-timer__heading-block countdown-timer__heading">
+              <div class="countdown-timer__heading-block countdown-timer__heading" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                 {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
               </div>
             {% endif %}
 
           {% when 'text' %}
             {% if block.settings.text != blank %}
-              <div class="countdown-timer__text">
+              <div class="countdown-timer__text" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                 {% render 'content-block', block: block, content: block.settings.text, kind: 'text', default_preset: 'md', default_font: 'body' %}
               </div>
             {% endif %}
@@ -37,6 +37,8 @@
             {% if countdown_is_configured or countdown_is_preview %}
               <countdown-timer
                 class="countdown-timer__timer"
+                data-reveal-item
+                style="--reveal-order: {{ forloop.index0 }};"
                 {% if countdown_is_configured %}
                   data-end-at="{{ block.settings.end_at | escape }}"
                   data-show-completion-message="{{ block.settings.show_completion_message }}"
@@ -76,7 +78,7 @@
 
           {% when 'button' %}
             {% if block.settings.label != blank and block.settings.link != blank %}
-              <div class="countdown-timer__button-block" {{ block.shopify_attributes }}>
+              <div class="countdown-timer__button-block" data-reveal-item style="--reveal-order: {{ forloop.index0 }};" {{ block.shopify_attributes }}>
                 {% render 'cta', label: block.settings.label, url: block.settings.link, style: block.settings.style, icon: block.settings.icon, open_in_new_tab: block.settings.open_in_new_tab %}
               </div>
             {% endif %}
