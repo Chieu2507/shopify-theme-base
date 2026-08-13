@@ -153,10 +153,10 @@ import { A11y, Swiper } from './swiper-loader.js';
           this.openOrderOptions(orderOptionsTrigger.dataset.cartDrawerOrderOptionsOpen, orderOptionsTrigger);
           return;
         }
-        const promotionCode = event.target.closest('[data-cart-drawer-promotion-code]');
-        if (promotionCode?.dataset.cartDrawerPromotionCode) {
+        const promotionApply = event.target.closest('[data-cart-drawer-promotion-apply]');
+        if (promotionApply?.dataset.cartDrawerPromotionApply) {
           event.preventDefault();
-          this.applyPromotionCode(promotionCode.dataset.cartDrawerPromotionCode);
+          this.applyPromotionCode(promotionApply.dataset.cartDrawerPromotionApply, promotionApply);
           return;
         }
         if (event.target.closest('[data-cart-drawer-order-options-close]')) {
@@ -1132,13 +1132,42 @@ import { A11y, Swiper } from './swiper-loader.js';
       }
     }
 
-    async applyPromotionCode(code) {
-      const discountForm = this.querySelector('[data-cart-drawer-discount]');
-      const input = discountForm?.querySelector('input[name="discount"]');
-      if (!input || !discountForm) return;
-      input.value = code;
-      await this.applyDiscount(discountForm);
-      if (this.message?.dataset.error === 'false' && !this.message.hidden) this.showPromotionTooltip(this.message.textContent);
+    async applyPromotionCode(code, button) {
+      if (!code || button?.disabled) return;
+      if (button) button.disabled = true;
+      this.setMessage('');
+
+      try {
+        this.setStatus(this.dataset.applyingDiscountLabel);
+        const previousCodes = this.storedDiscountCodes(this.cart);
+        const requestedCodes = this.mergeDiscountCodes(previousCodes, [code]);
+        const cart = await this.updateDiscountCodes(requestedCodes);
+
+        if (!this.isDiscountApplied(cart, code)) {
+          let restoredCart = cart;
+          try {
+            restoredCart = await this.updateDiscountCodes(previousCodes);
+          } catch (rollbackError) {
+            console.error('[Jovie] Discount rollback failed', rollbackError);
+            try {
+              restoredCart = await this.fetchCart();
+            } catch (reconcileError) {
+              console.error('[Jovie] Cart reconciliation failed', reconcileError);
+            }
+          }
+          this.syncCart(restoredCart);
+          throw new Error(this.dataset.discountUnavailableLabel);
+        }
+
+        this.syncCart(cart);
+        this.showPromotionTooltip(this.dataset.discountAppliedLabel || 'Discount code applied.');
+      } catch (error) {
+        console.error('[Jovie] Promotion discount code failed', error);
+        this.setMessage(error.message, true);
+      } finally {
+        if (button) button.disabled = false;
+        this.setStatus('');
+      }
     }
 
     showPromotionTooltip(message) {
