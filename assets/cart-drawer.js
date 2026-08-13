@@ -597,6 +597,11 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     updatePromotionMarquee() {
       if (this.promotion?.hidden || !this.promotionSequence || !this.promotionSequenceClone) return;
+      if (getComputedStyle(this.promotionTrack).animationName === 'none') {
+        this.promotionSequence.querySelectorAll('[data-cart-drawer-promotion-item-clone]').forEach((clone) => clone.remove());
+        this.promotionSequenceClone.replaceChildren();
+        return;
+      }
       const item = this.promotionSequence.querySelector('[data-cart-drawer-promotion-item]');
       if (!item) return;
       this.promotionSequence.querySelectorAll('[data-cart-drawer-promotion-item-clone]').forEach((clone) => clone.remove());
