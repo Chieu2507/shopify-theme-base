@@ -10,6 +10,10 @@
   assign desktop_video_url = section.settings.desktop_video_url
   assign mobile_video = section.settings.mobile_video
   assign mobile_video_url = section.settings.mobile_video_url
+  assign desktop_thumbnail = section.settings.desktop_thumbnail | default: desktop_video.preview_image
+  assign mobile_thumbnail = section.settings.mobile_thumbnail | default: mobile_video.preview_image | default: desktop_thumbnail
+  assign desktop_thumbnail_alt = desktop_thumbnail.alt | default: section.settings.accessibility_label
+  assign mobile_thumbnail_alt = mobile_thumbnail.alt | default: section.settings.accessibility_label
   assign has_mobile_source = false
   if section.settings.mobile_video != blank or section.settings.mobile_video_url != blank
     assign has_mobile_source = true
@@ -74,13 +78,27 @@
                 muted: true,
                 controls: section.settings.show_sound_control
             }}
-          {% else %}
+          {% endif %}
+
+          {% if desktop_thumbnail != blank %}
             {% render 'responsive-media',
-              image: desktop_video.preview_image,
+              image: desktop_thumbnail,
               max_width: 2400,
               widths: '480, 750, 1100, 1500, 1920, 2400',
               sizes: '100vw',
-              class: 'video-banner__poster media-cover',
+              class: 'video-banner__poster video-banner__thumbnail media-cover',
+              loading: poster_loading,
+              fetchpriority: poster_fetchpriority,
+              alt: desktop_thumbnail_alt,
+              placeholder_asset: 'placeholder-image-video.svg'
+            %}
+          {% elsif desktop_video == blank and desktop_video_url == blank %}
+            {% render 'responsive-media',
+              image: blank,
+              max_width: 2400,
+              widths: '480, 750, 1100, 1500, 1920, 2400',
+              sizes: '100vw',
+              class: 'video-banner__poster video-banner__thumbnail media-cover',
               loading: poster_loading,
               fetchpriority: poster_fetchpriority,
               alt: section.settings.accessibility_label,
@@ -118,32 +136,57 @@
                   controls: section.settings.show_sound_control
               }}
             {% endif %}
+
+            {% if mobile_thumbnail != blank %}
+              {% render 'responsive-media',
+                image: mobile_thumbnail,
+                max_width: 1600,
+                widths: '360, 480, 750, 1100, 1400, 1600',
+                sizes: '100vw',
+                class: 'video-banner__poster video-banner__thumbnail media-cover',
+                loading: poster_loading,
+                fetchpriority: poster_fetchpriority,
+                alt: mobile_thumbnail_alt,
+                placeholder_asset: 'placeholder-image-video.svg'
+              %}
+            {% endif %}
           </div>
         {% endif %}
       </div>
 
       <span class="video-banner__overlay" aria-hidden="true"></span>
 
-      <div class="video-banner__content" data-reveal>
-        <div class="video-banner__content-blocks">
-          {% content_for 'blocks' %}
+      <div class="video-banner__foreground">
+        <div class="video-banner__content" data-reveal>
+          <div class="video-banner__content-blocks">
+            {% content_for 'blocks' %}
+          </div>
         </div>
+
+        {% if desktop_video != blank or desktop_video_url != blank or mobile_video != blank or mobile_video_url != blank %}
+          <button
+            class="video-banner__play"
+            type="button"
+            aria-label="{{ section.settings.play_label | escape }}"
+            aria-pressed="false"
+            data-video-banner-play
+          >
+            <span class="video-banner__play-icon" aria-hidden="true">
+              {% render 'icon', name: 'play', class: 'video-banner__play-icon--play' %}
+              {% render 'icon', name: 'pause', class: 'video-banner__play-icon--pause' %}
+            </span>
+            <span class="video-banner__play-label">{{ section.settings.play_label | escape }}</span>
+          </button>
+        {% endif %}
       </div>
 
       {% if desktop_video != blank or desktop_video_url != blank or mobile_video != blank or mobile_video_url != blank %}
         <button
-          class="video-banner__play"
+          class="video-banner__close modal-close-button close-icon"
           type="button"
-          aria-label="{{ section.settings.play_label | escape }}"
-          aria-pressed="false"
-          data-video-banner-play
-        >
-          <span class="video-banner__play-icon" aria-hidden="true">
-            {% render 'icon', name: 'play', class: 'video-banner__play-icon--play' %}
-            {% render 'icon', name: 'pause', class: 'video-banner__play-icon--pause' %}
-          </span>
-          <span class="video-banner__play-label">{{ section.settings.play_label | escape }}</span>
-        </button>
+          aria-label="{{ section.settings.close_label | escape }}"
+          data-video-banner-close
+        ></button>
 
         {% if section.settings.show_sound_control and desktop_video != blank or section.settings.show_sound_control and section.settings.mobile_video != blank %}
           <button
@@ -180,6 +223,7 @@
   "settings": [
     { "type": "header", "content": "Desktop video" },
     { "type": "video", "id": "desktop_video", "label": "Video" },
+    { "type": "image_picker", "id": "desktop_thumbnail", "label": "Thumbnail", "info": "Overrides the video's preview image before playback." },
     { "type": "checkbox", "id": "show_sound_control", "label": "Show sound control", "default": true },
     {
       "type": "video_url",
@@ -190,6 +234,7 @@
     },
     { "type": "header", "content": "Mobile video" },
     { "type": "video", "id": "mobile_video", "label": "Mobile video" },
+    { "type": "image_picker", "id": "mobile_thumbnail", "label": "Mobile thumbnail", "info": "Leave blank to use the desktop thumbnail." },
     {
       "type": "video_url",
       "id": "mobile_video_url",
@@ -201,6 +246,7 @@
     { "type": "checkbox", "id": "autoplay", "label": "Autoplay", "default": false },
     { "type": "checkbox", "id": "loop", "label": "Loop video", "default": true },
     { "type": "text", "id": "play_label", "label": "Play label", "default": "Play film" },
+    { "type": "text", "id": "close_label", "label": "Close video label", "default": "Close video" },
     { "type": "text", "id": "unmute_label", "label": "Unmute label", "default": "Turn sound on", "visible_if": "{{ section.settings.show_sound_control }}" },
     { "type": "text", "id": "mute_label", "label": "Mute label", "default": "Turn sound off", "visible_if": "{{ section.settings.show_sound_control }}" },
     { "type": "text", "id": "accessibility_label", "label": "Section label", "default": "Campaign video" },

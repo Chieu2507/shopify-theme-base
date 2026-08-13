@@ -5,20 +5,10 @@
 
   .collection-list__inner {
     width: 100%;
+  }
+
+  .collection-list.full-width .collection-list__inner {
     padding-inline: var(--page-margin);
-  }
-
-  .collection-list__inner--page {
-    max-width: var(--page-width);
-    margin-inline: auto;
-  }
-
-  .collection-list--split-promotions .collection-list__inner {
-    padding-inline: var(--page-margin);
-  }
-
-  .collection-list--split-promotions .collection-list__inner--page {
-    max-width: var(--page-width);
   }
 
   .collection-list__editorial-header {
@@ -117,11 +107,21 @@
 
   .collection-list__pagination {
     position: static;
+    width: 100%;
+    height: 1px;
+    overflow: hidden;
     margin-top: 24px;
-    line-height: 0;
-    --swiper-pagination-color: var(--color-heading);
-    --swiper-pagination-bullet-inactive-color: var(--color-heading);
-    --swiper-pagination-bullet-inactive-opacity: 0.25;
+    background: var(--color-variant-bar-background);
+  }
+
+  .collection-list__pagination > span {
+    display: block;
+    width: 100%;
+    height: 100%;
+    background: var(--color-heading);
+    transform: scaleX(var(--collection-list-progress, 1));
+    transform-origin: left center;
+    transition: transform 180ms linear;
   }
 
   .collection-list[data-current-layout='grid'] .collection-list__pagination {
@@ -133,23 +133,25 @@
     z-index: 3;
     top: 50%;
     display: none;
-    width: 38px;
-    height: 38px;
+    width: 32px;
+    height: 54px;
     padding: 0;
-    border: 0;
-    border-radius: 50%;
+    border: 1px solid var(--color-variant-border);
+    border-radius: 0;
     background: var(--color-background);
-    box-shadow: 0 2px 12px rgb(0 0 0 / 12%);
+    box-shadow: none;
     color: var(--color-heading);
     cursor: pointer;
     place-items: center;
     transform: translateY(-50%);
-    transition: box-shadow 180ms ease, transform 180ms ease;
+    transition: border-color 180ms ease, background-color 180ms ease, color 180ms ease, transform 180ms ease;
   }
 
   .collection-list__navigation-button:hover:not(:disabled) {
-    box-shadow: 0 5px 18px rgb(0 0 0 / 18%);
-    transform: translateY(-50%) scale(1.06);
+    border-color: var(--color-heading);
+    background: var(--color-heading);
+    box-shadow: none;
+    color: var(--color-background);
   }
 
   .collection-list__navigation-button:active:not(:disabled) {
@@ -171,11 +173,11 @@
   }
 
   .collection-list__navigation-button--previous {
-    left: 8px;
+    left: 0;
   }
 
   .collection-list__navigation-button--next {
-    right: 8px;
+    right: 0;
   }
 
   .collection-list__grid--split-promotions {
@@ -248,6 +250,9 @@
   }
 
   .collection-list__card--split-promotions {
+    --collection-list-button-height: 20px;
+    --collection-list-button-gap: 8px;
+
     position: relative;
     display: block;
     height: 100%;
@@ -409,7 +414,10 @@
 
   .collection-list__button.btn-tertiary {
     width: auto;
+    height: var(--collection-list-button-height);
     min-height: 0;
+    align-self: flex-start;
+    margin-top: var(--collection-list-button-gap);
     padding: 0;
     border: 0;
     background: transparent;
@@ -429,25 +437,49 @@
     transform: translateX(4px);
   }
 
+  @media (hover: hover) and (pointer: fine) {
+    .collection-list__card--split-promotions:has(.collection-list__button) .collection-list__content {
+      transform: translateY(calc(var(--collection-list-button-height) + var(--collection-list-button-gap)));
+      transition: transform 320ms cubic-bezier(.22, 1, .36, 1);
+    }
+
+    .collection-list__card--split-promotions .collection-list__button {
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 180ms ease;
+    }
+
+    .collection-list__card--split-promotions:has(.collection-list__button):hover .collection-list__content,
+    .collection-list__card--split-promotions:has(.collection-list__button):focus-within .collection-list__content {
+      transform: translateY(0);
+    }
+
+    .collection-list__card--split-promotions:hover .collection-list__button,
+    .collection-list__card--split-promotions:focus-within .collection-list__button {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .collection-list__card--split-promotions:hover .collection-list__image,
+    .collection-list__card--split-promotions:focus-within .collection-list__image {
+      transform: scale(1.04);
+    }
+  }
+
   .collection-list__grid--split-promotions .collection-list__item:not(.collection-list__item--split-1) .collection-list__content {
-    display: grid;
-    align-items: end;
-    gap: 4px 12px;
+    display: flex;
+    align-items: flex-start;
+    justify-content: flex-end;
+    gap: 4px;
     padding: 18px 16px;
-    grid-template-columns: minmax(0, 1fr) max-content;
-    grid-template-rows: 1fr auto auto;
   }
 
   .collection-list__grid--split-promotions .collection-list__item:not(.collection-list__item--split-1) .collection-list__subheading {
-    align-self: end;
-    grid-column: 1 / -1;
-    grid-row: 2;
+    align-self: flex-start;
   }
 
   .collection-list__grid--split-promotions .collection-list__item:not(.collection-list__item--split-1) .collection-list__promotion-heading {
-    align-self: center;
-    grid-column: 1;
-    grid-row: 3;
+    align-self: flex-start;
   }
 
   .collection-list__grid--split-promotions .collection-list__item:not(.collection-list__item--split-1) .collection-list__promotion-description {
@@ -455,10 +487,7 @@
   }
 
   .collection-list__grid--split-promotions .collection-list__item:not(.collection-list__item--split-1) .collection-list__button {
-    align-self: center;
-    justify-self: end;
-    grid-column: 2;
-    grid-row: 3;
+    align-self: flex-start;
   }
 
   .collection-list__promotion-heading--h3,
@@ -636,19 +665,22 @@
       height: auto;
       overflow: visible;
       margin-top: min(var(--collection-list-header-gap), 32px);
-      gap: 0;
-      grid-template-columns: 1fr;
-      grid-template-rows: none;
+      gap: min(var(--collection-list-column-gap), 8px);
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-rows: auto;
     }
 
     .collection-list__grid--split-promotions .collection-list__item {
-      height: var(--collection-list-height-mobile);
-      grid-column: auto;
+      height: auto;
+      aspect-ratio: 5 / 7;
+      grid-column: span 1;
       grid-row: auto;
     }
 
     .collection-list__grid--split-promotions .collection-list__item--split-1 {
-      height: calc(var(--collection-list-height-mobile) * 1.25);
+      height: auto;
+      aspect-ratio: 5 / 7;
+      grid-column: 1 / -1;
     }
 
     .collection-list__card {
@@ -663,8 +695,37 @@
       padding: 24px 16px;
     }
 
+    .collection-list__grid--split-promotions .collection-list__content,
     .collection-list__grid--split-promotions .collection-list__item:not(.collection-list__item--split-1) .collection-list__content {
-      padding: 20px 16px;
+      display: flex;
+      align-items: flex-start;
+      justify-content: flex-end;
+      gap: 3px;
+      padding: 12px 10px;
+    }
+
+    .collection-list__grid--split-promotions .collection-list__subheading {
+      align-self: flex-start;
+      font-size: 7px;
+    }
+
+    .collection-list__grid--split-promotions .collection-list__promotion-heading {
+      min-width: 0;
+      align-self: flex-start;
+      font-size: 16px;
+      line-height: 1.1;
+    }
+
+    .collection-list__grid--split-promotions .collection-list__item--split-1 .collection-list__promotion-heading {
+      font-size: 22px;
+    }
+
+    .collection-list__grid--split-promotions .collection-list__promotion-description {
+      display: none;
+    }
+
+    .collection-list__grid--split-promotions .collection-list__button {
+      align-self: flex-start;
     }
 
     .collection-list__navigation-button {
@@ -673,11 +734,13 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .collection-list__image {
+    .collection-list__image,
+    .collection-list__card--split-promotions .collection-list__content,
+    .collection-list__card--split-promotions .collection-list__button {
       transition: none;
     }
 
-    .collection-list__pagination .swiper-pagination-bullet,
+    .collection-list__pagination > span,
     .collection-list__navigation-button {
       transition: none;
     }

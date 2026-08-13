@@ -134,7 +134,7 @@
               endif
 
               assign card_color_scheme = section.settings.color_scheme
-              if block.settings.override_color_scheme and block.settings.color_scheme != blank
+              if block.settings.color_scheme != blank
                 assign card_color_scheme = block.settings.color_scheme
               endif
 
@@ -150,7 +150,7 @@
                 if split_card_index == 1
                   assign card_sizes = '(min-width: 1150px) 46vw, (min-width: 768px) 42vw, 100vw'
                 else
-                  assign card_sizes = '(min-width: 1150px) 24vw, (min-width: 768px) 29vw, 100vw'
+                  assign card_sizes = '(min-width: 1150px) 24vw, (min-width: 768px) 29vw, 50vw'
                 endif
               endif
 
@@ -216,7 +216,7 @@
                       {% render 'cta',
                         label: block.settings.button_label,
                         url: card_link,
-                        style: block.settings.button_style,
+                        style: 'tertiary',
                         icon: 'arrow-right',
                         class: 'collection-list__button'
                       %}
@@ -268,7 +268,9 @@
       </div>
 
       {% if section.settings.layout == 'grid' and section.settings.show_pagination %}
-        <div class="collection-list__pagination swiper-pagination" data-collection-list-pagination></div>
+        <div class="collection-list__pagination" data-collection-list-pagination aria-hidden="true">
+          <span data-collection-list-progress></span>
+        </div>
       {% endif %}
     </div>
   </collection-list>
@@ -433,7 +435,7 @@
     {
       "type": "checkbox",
       "id": "show_pagination",
-      "label": "Slideshow pagination",
+      "label": "Slideshow progress",
       "default": true,
       "visible_if": "{{ section.settings.layout == 'grid' }}"
     },
@@ -963,27 +965,6 @@
         },
         {
           "type": "select",
-          "id": "button_style",
-          "label": "Button style",
-          "options": [
-            {
-              "value": "primary",
-              "label": "Primary"
-            },
-            {
-              "value": "secondary",
-              "label": "Secondary"
-            },
-            {
-              "value": "tertiary",
-              "label": "Tertiary"
-            }
-          ],
-          "default": "tertiary",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
-        },
-        {
-          "type": "select",
           "id": "content_position",
           "label": "Vertical position",
           "options": [
@@ -1061,18 +1042,10 @@
           "content": "Appearance"
         },
         {
-          "type": "checkbox",
-          "id": "override_color_scheme",
-          "label": "Use custom color scheme",
-          "info": "Overrides the Collection list color scheme for this card.",
-          "default": false
-        },
-        {
           "type": "color_scheme",
           "id": "color_scheme",
           "label": "Color scheme",
-          "default": "scheme-1",
-          "visible_if": "{{ block.settings.override_color_scheme }}"
+          "info": "Leave blank to use the Collection list color scheme."
         },
         {
           "type": "header",

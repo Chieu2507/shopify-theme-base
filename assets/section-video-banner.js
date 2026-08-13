@@ -6,15 +6,18 @@ if (!customElements.get('video-banner')) {
       this.mobileQuery = window.matchMedia('(max-width: 767.98px)');
       this.motionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
       this.playButton = this.querySelector('[data-video-banner-play]');
+      this.closeButton = this.querySelector('[data-video-banner-close]');
       this.soundButton = this.querySelector('[data-video-banner-sound]');
       this.sources = Array.from(this.querySelectorAll('[data-video-banner-source]'));
       this.onPlayClick = this.togglePlayback.bind(this);
+      this.onCloseClick = this.resetToBanner.bind(this);
       this.onSoundClick = this.toggleSound.bind(this);
       this.onMediaChange = this.handleMediaChange.bind(this);
       this.onNativePlay = this.syncPlaybackState.bind(this);
       this.onNativePause = this.syncPlaybackState.bind(this);
 
       this.playButton?.addEventListener('click', this.onPlayClick);
+      this.closeButton?.addEventListener('click', this.onCloseClick);
       this.soundButton?.addEventListener('click', this.onSoundClick);
       this.mobileQuery.addEventListener('change', this.onMediaChange);
       this.motionQuery.addEventListener('change', this.onMediaChange);
@@ -28,6 +31,7 @@ if (!customElements.get('video-banner')) {
 
     disconnectedCallback() {
       this.playButton?.removeEventListener('click', this.onPlayClick);
+      this.closeButton?.removeEventListener('click', this.onCloseClick);
       this.soundButton?.removeEventListener('click', this.onSoundClick);
       this.mobileQuery?.removeEventListener('change', this.onMediaChange);
       this.motionQuery?.removeEventListener('change', this.onMediaChange);
@@ -85,6 +89,28 @@ if (!customElements.get('video-banner')) {
         return;
       }
       this.playExternalMedia(media);
+    }
+
+    resetToBanner() {
+      const media = this.activeMedia;
+      if (media instanceof HTMLVideoElement) {
+        media.pause();
+        try {
+          media.currentTime = 0;
+        } catch (_) {
+          // Some streams are not seekable until their metadata is available.
+        }
+      } else if (media instanceof HTMLIFrameElement) {
+        this.pauseExternalMedia(media);
+        if (media.src.includes('youtube.com') || media.src.includes('youtu.be')) {
+          media.contentWindow?.postMessage(JSON.stringify({ event: 'command', func: 'seekTo', args: [0, true] }), '*');
+        } else if (media.src.includes('vimeo.com')) {
+          media.contentWindow?.postMessage({ method: 'setCurrentTime', value: 0 }, '*');
+        }
+      }
+      this.externalPlaying = false;
+      this.syncPlaybackState();
+      this.playButton?.focus({ preventScroll: true });
     }
 
     playExternalMedia(iframe) {

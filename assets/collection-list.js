@@ -1,10 +1,11 @@
-import { A11y, Navigation, Pagination, Swiper } from './swiper-loader.js';
+import { A11y, Navigation, Swiper } from './swiper-loader.js';
 import { initializeWhenVisible } from './initialize-when-visible.js';
 
 class CollectionList extends HTMLElement {
   connectedCallback() {
     this.slider = this.querySelector('[data-collection-list-slider]');
     this.pagination = this.querySelector('[data-collection-list-pagination]');
+    this.progress = this.querySelector('[data-collection-list-progress]');
     this.previousButton = this.querySelector('[data-collection-list-previous]');
     this.nextButton = this.querySelector('[data-collection-list-next]');
     this.mobileMedia = window.matchMedia('(max-width: 767.98px)');
@@ -59,13 +60,12 @@ class CollectionList extends HTMLElement {
     const slidesPerView = device === 'mobile' && columns === 1 ? 1.2 : columns;
     const configuredGap = Number.parseFloat(getComputedStyle(this).getPropertyValue('--collection-list-column-gap')) || 0;
     const gap = device === 'mobile' ? 8 : configuredGap;
-    const showPagination = device !== 'mobile' && this.dataset.showPagination === 'true' && Boolean(this.pagination);
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
     const previousMessage = this.previousButton?.getAttribute('aria-label') || '';
     const nextMessage = this.nextButton?.getAttribute('aria-label') || '';
 
     this.swiper = new Swiper(this.slider, {
-      modules: [A11y, Navigation, Pagination],
+      modules: [A11y, Navigation],
       slidesPerView,
       spaceBetween: gap,
       speed: this.reduceMotion.matches ? 0 : 360,
@@ -75,12 +75,6 @@ class CollectionList extends HTMLElement {
         prevEl: this.previousButton,
         nextEl: this.nextButton,
       },
-      pagination: showPagination
-        ? {
-            el: this.pagination,
-            clickable: true,
-          }
-        : false,
       a11y: {
         enabled: true,
         prevSlideMessage: previousMessage,
@@ -88,6 +82,28 @@ class CollectionList extends HTMLElement {
         slideRole: null,
       },
     });
+    this.swiper.on('update resize breakpoint slideChange transitionEnd', () => this.updateProgress());
+    this.updateProgress();
+  }
+
+  updateProgress() {
+    if (!this.pagination || !this.progress || !this.swiper?.slides?.length) return;
+    const enabled = this.dataset.showPagination === 'true';
+    const visible = Math.min(
+      Math.max(this.swiper.slidesPerViewDynamic(), Number(this.swiper.params.slidesPerView) || 1),
+      this.swiper.slides.length,
+    );
+    const hasOverflow = this.swiper.slides.length > Math.ceil(visible);
+    this.pagination.hidden = !enabled || !hasOverflow;
+    if (!enabled || !hasOverflow) {
+      this.progress.style.setProperty('--collection-list-progress', 1);
+      return;
+    }
+    const thumbSize = Math.min(1, visible / this.swiper.slides.length);
+    this.progress.style.setProperty(
+      '--collection-list-progress',
+      thumbSize + (this.swiper.progress * (1 - thumbSize)),
+    );
   }
 
   destroySlider() {

@@ -23,8 +23,7 @@
 
 .video-banner__media,
 .video-banner__overlay,
-.video-banner__content,
-.video-banner__play {
+.video-banner__foreground {
   grid-area: 1 / 1;
 }
 
@@ -45,6 +44,10 @@
   height: 100%;
 }
 
+.video-banner__source {
+  position: relative;
+}
+
 .video-banner__source--desktop:not(.video-banner__source--shared) {
   display: none;
 }
@@ -62,6 +65,19 @@
   object-fit: cover;
 }
 
+.video-banner__thumbnail {
+  position: absolute;
+  z-index: 1;
+  inset: 0;
+  opacity: 1;
+  pointer-events: none;
+  transition: opacity 260ms ease;
+}
+
+.video-banner.is-playing .video-banner__thumbnail {
+  opacity: 0;
+}
+
 .video-banner__external-video {
   pointer-events: none;
 }
@@ -76,12 +92,21 @@
   pointer-events: none;
 }
 
+.video-banner__foreground {
+  position: relative;
+  z-index: 2;
+  display: grid;
+  min-width: 0;
+  min-height: 0;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  grid-template-rows: minmax(0, 1fr) auto minmax(0, 1fr);
+}
+
 .video-banner__content {
   --reveal-translate-x: 0;
   --reveal-translate-y: 24px;
 
   position: relative;
-  z-index: 2;
   display: flex;
   width: min(100%, var(--video-banner-content-width));
   min-width: 0;
@@ -100,21 +125,15 @@
 
 .video-banner--mobile-top-left .video-banner__content,
 .video-banner--mobile-top-center .video-banner__content,
-.video-banner--mobile-top-right .video-banner__content { align-self: start; }
-.video-banner--mobile-middle-left .video-banner__content,
-.video-banner--mobile-middle-center .video-banner__content,
-.video-banner--mobile-middle-right .video-banner__content { align-self: center; }
+.video-banner--mobile-top-right .video-banner__content { grid-area: 1 / 1 / 2 / -1; align-self: start; }
 .video-banner--mobile-bottom-left .video-banner__content,
 .video-banner--mobile-bottom-center .video-banner__content,
-.video-banner--mobile-bottom-right .video-banner__content { align-self: end; }
+.video-banner--mobile-bottom-right .video-banner__content { grid-area: 3 / 1 / 4 / -1; align-self: end; }
 .video-banner--mobile-top-left .video-banner__content,
-.video-banner--mobile-middle-left .video-banner__content,
 .video-banner--mobile-bottom-left .video-banner__content { justify-self: start; }
 .video-banner--mobile-top-center .video-banner__content,
-.video-banner--mobile-middle-center .video-banner__content,
 .video-banner--mobile-bottom-center .video-banner__content { justify-self: center; }
 .video-banner--mobile-top-right .video-banner__content,
-.video-banner--mobile-middle-right .video-banner__content,
 .video-banner--mobile-bottom-right .video-banner__content { justify-self: end; }
 .video-banner--mobile-align-left .video-banner__content { align-items: flex-start; text-align: left; }
 .video-banner--mobile-align-center .video-banner__content { align-items: center; text-align: center; }
@@ -126,9 +145,7 @@
   display: inline-flex;
   width: max-content;
   height: max-content;
-  align-self: center;
   align-items: center;
-  justify-self: center;
   flex-direction: column;
   gap: 9px;
   padding: 0;
@@ -136,6 +153,8 @@
   background: transparent;
   color: #fff;
   cursor: pointer;
+  grid-area: 2 / 2;
+  place-self: center;
 }
 
 .video-banner__play-icon {
@@ -176,6 +195,35 @@
 .video-banner.is-playing .video-banner__play-icon--play { display: none; }
 .video-banner.is-playing .video-banner__play-icon--pause { display: block; }
 
+.video-banner__close {
+  position: absolute;
+  z-index: 5;
+  top: 18px;
+  right: 18px;
+  display: grid;
+  opacity: 0;
+  pointer-events: none;
+  transform: scale(.92);
+  transition: opacity 180ms ease, transform 220ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.video-banner.is-playing .video-banner__close {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
+}
+
+.video-banner.is-playing .video-banner__content,
+.video-banner.is-playing .video-banner__overlay {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.video-banner__content,
+.video-banner__overlay {
+  transition: opacity 260ms ease;
+}
+
 .video-banner__sound {
   position: absolute;
   z-index: 4;
@@ -190,8 +238,17 @@
   background: rgb(8 8 8 / 24%);
   color: #fff;
   cursor: pointer;
+  opacity: 0;
+  pointer-events: none;
   place-items: center;
-  transition: background 220ms ease, transform 220ms ease;
+  transform: scale(.92);
+  transition: background 220ms ease, opacity 180ms ease, transform 220ms ease;
+}
+
+.video-banner.is-playing .video-banner__sound {
+  opacity: 1;
+  pointer-events: auto;
+  transform: scale(1);
 }
 
 .video-banner__sound:hover { background: rgb(8 8 8 / 50%); transform: scale(1.06); }
@@ -212,31 +269,64 @@
   .video-banner__source--desktop { display: block; }
   .video-banner--desktop-top-left .video-banner__content,
   .video-banner--desktop-top-center .video-banner__content,
-  .video-banner--desktop-top-right .video-banner__content { align-self: start; }
-  .video-banner--desktop-middle-left .video-banner__content,
-  .video-banner--desktop-middle-center .video-banner__content,
-  .video-banner--desktop-middle-right .video-banner__content { align-self: center; }
+  .video-banner--desktop-top-right .video-banner__content { grid-area: 1 / 1 / 2 / -1; align-self: start; }
   .video-banner--desktop-bottom-left .video-banner__content,
   .video-banner--desktop-bottom-center .video-banner__content,
-  .video-banner--desktop-bottom-right .video-banner__content { align-self: end; }
+  .video-banner--desktop-bottom-right .video-banner__content { grid-area: 3 / 1 / 4 / -1; align-self: end; }
+  .video-banner--desktop-middle-left .video-banner__content { grid-area: 2 / 1; place-self: center start; }
+  .video-banner--desktop-middle-right .video-banner__content { grid-area: 2 / 3; place-self: center end; }
   .video-banner--desktop-top-left .video-banner__content,
-  .video-banner--desktop-middle-left .video-banner__content,
   .video-banner--desktop-bottom-left .video-banner__content { justify-self: start; }
   .video-banner--desktop-top-center .video-banner__content,
-  .video-banner--desktop-middle-center .video-banner__content,
   .video-banner--desktop-bottom-center .video-banner__content { justify-self: center; }
   .video-banner--desktop-top-right .video-banner__content,
-  .video-banner--desktop-middle-right .video-banner__content,
   .video-banner--desktop-bottom-right .video-banner__content { justify-self: end; }
   .video-banner--desktop-align-left .video-banner__content { align-items: flex-start; text-align: left; }
   .video-banner--desktop-align-center .video-banner__content { align-items: center; text-align: center; }
   .video-banner--desktop-align-right .video-banner__content { align-items: flex-end; text-align: right; }
+
+  .video-banner--desktop-middle-center .video-banner__foreground {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+    gap: clamp(24px, 3vw, 48px);
+  }
+
+  .video-banner--desktop-middle-center .video-banner__content {
+    flex: 0 1 auto;
+    place-self: auto;
+  }
 }
 
 @media (max-width: 767.98px) {
   .video-banner__content { padding-inline: var(--page-margin); }
   .video-banner__content-blocks { gap: 14px; }
   .video-banner__play-icon { width: 48px; height: 48px; }
+
+  .video-banner--mobile-middle-left .video-banner__foreground,
+  .video-banner--mobile-middle-center .video-banner__foreground,
+  .video-banner--mobile-middle-right .video-banner__foreground {
+    display: flex;
+    min-height: 0;
+    align-items: stretch;
+    justify-content: center;
+    flex-direction: column;
+    gap: 24px;
+  }
+
+  .video-banner--mobile-middle-left .video-banner__content,
+  .video-banner--mobile-middle-center .video-banner__content,
+  .video-banner--mobile-middle-right .video-banner__content {
+    flex: 0 1 auto;
+  }
+
+  .video-banner--mobile-middle-left .video-banner__content { align-self: flex-start; }
+  .video-banner--mobile-middle-center .video-banner__content { align-self: center; }
+  .video-banner--mobile-middle-right .video-banner__content { align-self: flex-end; }
+  .video-banner--mobile-middle-left .video-banner__play,
+  .video-banner--mobile-middle-center .video-banner__play,
+  .video-banner--mobile-middle-right .video-banner__play { align-self: center; }
 }
 
 @media (min-width: 768px) and (max-width: 1149.98px) {
@@ -249,5 +339,9 @@
 
 @media (prefers-reduced-motion: reduce) {
   .video-banner__play-icon,
-  .video-banner__sound { transition: none; }
+  .video-banner__sound,
+  .video-banner__close,
+  .video-banner__thumbnail,
+  .video-banner__content,
+  .video-banner__overlay { transition: none; }
 }

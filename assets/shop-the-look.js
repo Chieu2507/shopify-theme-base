@@ -9,6 +9,7 @@ class ShopTheLook extends HTMLElement {
     this.products = Array.from(this.querySelectorAll('[data-shop-the-look-product]'));
     this.paginationCount = this.querySelector('[data-shop-the-look-pagination-count]');
     this.paginationProgress = this.querySelector('[data-shop-the-look-pagination-progress]');
+    this.spotlight = this.querySelector('.shop-the-look__spotlight');
     this.onClick = this.handleClick.bind(this);
     this.onKeydown = this.handleKeydown.bind(this);
     this.onBlockSelect = this.handleBlockSelect.bind(this);
@@ -16,6 +17,8 @@ class ShopTheLook extends HTMLElement {
     this.addEventListener('keydown', this.onKeydown);
     document.addEventListener('shopify:block:select', this.onBlockSelect);
     this.sliderReady = false;
+    this.resizeObserver = new ResizeObserver(() => this.updateNavigatorPosition());
+    if (this.spotlight) this.resizeObserver.observe(this.spotlight);
     this.cancelDeferredInitialization = initializeWhenVisible(this, () => this.activateSlider());
   }
 
@@ -24,6 +27,7 @@ class ShopTheLook extends HTMLElement {
     this.removeEventListener('keydown', this.onKeydown);
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     this.cancelDeferredInitialization?.();
+    this.resizeObserver?.disconnect();
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.initialized = false;
@@ -52,6 +56,8 @@ class ShopTheLook extends HTMLElement {
       on: {
         init: (swiper) => this.syncActiveState(swiper.activeIndex),
         slideChange: (swiper) => this.syncActiveState(swiper.activeIndex),
+        imagesReady: () => this.updateNavigatorPosition(),
+        resize: () => this.updateNavigatorPosition(),
       },
     });
   }
@@ -86,6 +92,20 @@ class ShopTheLook extends HTMLElement {
     });
 
     this.updatePagination(index);
+    this.updateNavigatorPosition(index);
+  }
+
+  updateNavigatorPosition(index = this.swiper?.activeIndex || 0) {
+    if (!this.spotlight) return;
+    requestAnimationFrame(() => {
+      const activeProduct = this.products[index] || this.products[0];
+      const media = activeProduct?.querySelector('.product-card__media');
+      if (!media) return;
+      const spotlightRect = this.spotlight.getBoundingClientRect();
+      const mediaRect = media.getBoundingClientRect();
+      const center = mediaRect.top - spotlightRect.top + (mediaRect.height / 2);
+      this.spotlight.style.setProperty('--shop-the-look-media-center', `${center}px`);
+    });
   }
 
   updatePagination(index) {
