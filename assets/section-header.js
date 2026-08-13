@@ -25,8 +25,8 @@ if (!window.SpinelHeaderMenus) {
   const headerBrowserChromeProperty = '--header-browser-chrome-color';
   const accountDialogTopProperty = '--shopify-account-dialog-position-top';
   const accountDialogHeaderGap = 8;
-  const headerMobileMediaQuery = '(max-width: 1149.98px)';
-  const headerDesktopMediaQuery = '(min-width: 1150px)';
+  const headerMobileMediaQuery = '(max-width: 1099.98px)';
+  const headerDesktopMediaQuery = '(min-width: 1100px)';
   // Let non-sticky transparent headers clear the announcement bar before changing palette.
   const desktopTransparentHeaderSurfaceThreshold = 20;
   const mobileStickyHeaderHideThreshold = 40;
