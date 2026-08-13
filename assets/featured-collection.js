@@ -153,12 +153,17 @@ class FeaturedCollection extends HTMLElement {
     const selectedTab = this.tabs.find((tab) => tab.getAttribute('aria-selected') === 'true') || this.tabs[0];
     this.selectTab(selectedTab);
     this.hidden = false;
+    window.ThemeAnimations?.init(this);
     this.dispatchEvent(new CustomEvent('featured-collection:products-loaded', { bubbles: true }));
   }
 
   createRecentlyViewedCard(product) {
     const item = document.createElement('li');
     item.className = 'featured-collection__product swiper-slide';
+    const reveal = document.createElement('div');
+    reveal.className = 'featured-collection__product-reveal';
+    reveal.dataset.revealItem = '';
+    reveal.style.setProperty('--reveal-order', String(this.querySelectorAll('.featured-collection__product').length));
     const card = document.createElement('article');
     card.className = 'product-card product-card--recently-viewed';
 
@@ -191,7 +196,8 @@ class FeaturedCollection extends HTMLElement {
     details.append(heading, price);
     content.append(details);
     card.append(media, content);
-    item.append(card);
+    reveal.append(card);
+    item.append(reveal);
     return item;
   }
 
