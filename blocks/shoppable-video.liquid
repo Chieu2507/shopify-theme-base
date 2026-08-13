@@ -92,10 +92,12 @@
     </div>
 
     <div class="shoppable-video-card__product-copy">
-      <h3 class="shoppable-video-card__product-title">
-        {{ featured_product.title | default: block.settings.fallback_title | default: 'Nocturne object' | escape }}
-      </h3>
-      {% if block.settings.product_detail != blank %}
+      {% if featured_product != blank %}
+        <h3 class="shoppable-video-card__product-title">{{ featured_product.title | escape }}</h3>
+      {% else %}
+        <span class="shoppable-video-card__product-skeleton" aria-hidden="true"><span></span><span></span></span>
+      {% endif %}
+      {% if featured_product != blank and block.settings.product_detail != blank %}
         <p class="shoppable-video-card__product-detail">{{ block.settings.product_detail | escape }}</p>
       {% endif %}
     </div>
@@ -247,13 +249,6 @@
       "id": "products",
       "label": "Products",
       "limit": 6
-    },
-    {
-      "type": "text",
-      "id": "fallback_title",
-      "label": "Fallback title",
-      "default": "Nocturne object",
-      "info": "Shown when no product is selected."
     },
     {
       "type": "text",
