@@ -26,8 +26,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.recentList = this.querySelector('[data-search-drawer-recent-list]');
       this.categoriesCarousel = this.querySelector('[data-search-drawer-categories]');
       this.categorySlides = Array.from(this.querySelectorAll('[data-search-drawer-categories] .swiper-slide'));
-      this.categorySlidesPerView = Number.parseFloat(this.dataset.categorySlidesPerView) || 3.5;
-      this.categorySlidesPerViewMobile = Number.parseFloat(this.dataset.categorySlidesPerViewMobile) || 3;
+      this.categorySlidesPerView = Number.parseFloat(this.dataset.categorySlidesPerView) || 3;
       this.categoriesSwiper = null;
       this.announcer = this.querySelector('[data-search-drawer-announcer]');
       this.bagIconTemplate = this.querySelector('[data-search-drawer-bag-icon]');
@@ -245,7 +244,7 @@ import { A11y, Swiper } from './swiper-loader.js';
 
       this.categoriesSwiper = new Swiper(this.categoriesCarousel, {
         modules: [A11y],
-        slidesPerView: this.categorySlidesPerViewMobile,
+        slidesPerView: this.categorySlidesPerView,
         spaceBetween: 12,
         speed: this.reduceMotion.matches ? 0 : 360,
         watchOverflow: true,
@@ -537,7 +536,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         }
 
         const title = document.createElement('span');
-        title.className = 'search-drawer__product-title';
+        title.className = 'search-drawer__product-title product-title-text';
         title.textContent = product.title || '';
         card.append(title);
 
@@ -798,7 +797,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const details = document.createElement('div');
       details.className = 'search-drawer__recent-details';
       const title = document.createElement('h4');
-      title.className = 'search-drawer__recent-title heading-h4 heading-text';
+      title.className = 'search-drawer__recent-title product-title-text heading-h4 heading-text';
       title.id = `SearchDrawerRecent-${this.dataset.sectionId}-${String(product.id || index).replace(/[^a-zA-Z0-9_-]/g, '')}`;
       const titleLink = this.createLink(productUrl);
       titleLink.textContent = product.title || '';
