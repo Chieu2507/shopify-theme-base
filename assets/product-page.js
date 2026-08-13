@@ -439,6 +439,17 @@ class ProductPage extends HTMLElement {
     this.galleryMode = null;
   }
 
+  updateQuickViewGalleryPagination() {
+    if (!this.classList.contains('quick-view-product') || !this.mainGallery) return;
+    const current = this.querySelector('[data-quick-view-gallery-current]');
+    const total = this.querySelector('[data-quick-view-gallery-total]');
+    if (!current || !total) return;
+
+    const slideCount = this.mainGallery.slides.length;
+    current.textContent = String(this.mainGallery.realIndex + 1).padStart(2, '0');
+    total.textContent = String(slideCount).padStart(2, '0');
+  }
+
   initializeShopifyMedia() {
     const modelViewers = this.querySelectorAll('model-viewer');
     const modelData = this.querySelector('[data-shopify-models]');
@@ -529,7 +540,9 @@ class ProductPage extends HTMLElement {
       const slide = this.mainGallery.slides[this.mainGallery.activeIndex];
       const mediaId = slide?.dataset.mediaId;
       this.dispatch('product:media-change', { mediaId });
+      this.updateQuickViewGalleryPagination();
     });
+    this.updateQuickViewGalleryPagination();
     if (preferredMediaId) this.showMedia(preferredMediaId, true);
   }
 
