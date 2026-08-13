@@ -88,7 +88,7 @@ if (!customElements.get('announcement-bar')) {
         loop: true,
         speed: transitionSpeed,
         watchOverflow: true,
-        grabCursor: !this.reduceMotion,
+        grabCursor: false,
         allowTouchMove: true,
       });
 
@@ -288,7 +288,7 @@ if (!customElements.get('announcement-bar')) {
       if (this.swiper) {
         const transitionSpeed = this.reduceMotion ? 0 : 420;
         this.swiper.params.speed = transitionSpeed;
-        this.swiper.params.grabCursor = !this.reduceMotion;
+        this.swiper.params.grabCursor = false;
         this.slider?.style.setProperty('--announcement-bar-transition-duration', `${transitionSpeed}ms`);
         this.swiper.allowTouchMove = this.items.length > 1;
       }
