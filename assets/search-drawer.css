@@ -279,25 +279,18 @@ body.search-drawer-open {
 }
 
 .search-drawer__chip {
-  display: flex;
+  display: grid;
   width: 100%;
-  min-height: 64px;
-  align-items: center;
   gap: 12px;
-  border: 1px solid var(--color-variant-border);
-  border-radius: 0;
-  padding: 8px;
-  background: transparent;
-  color: var(--color-text);
+  color: var(--color-heading);
   font-family: var(--font-body--family);
   font-size: var(--font-body-small, 14px);
-  line-height: 1.25;
+  line-height: 1.35;
   text-decoration: none;
-  transition: background-color var(--motion-duration) ease, color var(--motion-duration) ease;
+  transition: color var(--motion-duration) ease;
 }
 
 .search-drawer__chip:hover {
-  background: var(--color-variant-component-background);
   color: var(--color-heading);
 }
 
@@ -308,19 +301,39 @@ body.search-drawer-open {
 
 .search-drawer__category-media {
   display: block;
-  width: 48px;
-  height: 48px;
-  flex: 0 0 48px;
+  width: 100%;
+  aspect-ratio: 1;
   overflow: hidden;
   border-radius: 0;
+  background: var(--color-variant-component-background);
 }
 
 .search-drawer__category-media img,
+.search-drawer__category-placeholder,
 .search-drawer__category-placeholder-svg {
   display: block;
   width: 100%;
   height: 100%;
   object-fit: cover;
+}
+
+.search-drawer__category-media img {
+  transform: scale(1);
+  transform-origin: center;
+  transition: transform 480ms cubic-bezier(.22, 1, .36, 1);
+  will-change: transform;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .search-drawer__chip:hover .search-drawer__category-media img {
+    transform: scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .search-drawer__category-media img {
+    transition: none;
+  }
 }
 
 .search-drawer__category-title {
@@ -658,13 +671,13 @@ body.search-drawer-open {
   }
 
   .search-drawer__chip {
-    min-height: 72px;
+    min-height: 0;
   }
 
   .search-drawer__category-media {
-    width: 56px;
-    height: 56px;
-    flex-basis: 56px;
+    width: 100%;
+    height: auto;
+    flex-basis: auto;
   }
 
   .search-drawer__recently-viewed--divided {

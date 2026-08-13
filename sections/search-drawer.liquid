@@ -175,11 +175,20 @@
                 <ul class="search-drawer__chips swiper-wrapper" role="list">
                   {% if has_popular_categories %}
                     {% for collection in section.settings.popular_categories %}
+                      {% liquid
+                        assign search_drawer_collection_image = collection.image
+                        if search_drawer_collection_image == blank
+                          assign search_drawer_collection_image = collection.products.first.featured_image
+                        endif
+                        assign search_drawer_collection_alt = search_drawer_collection_image.alt | default: collection.title
+                      %}
                       <li class="search-drawer__chip-item swiper-slide">
-                        <a class="search-drawer__chip" href="{{ collection.url }}">
+                        <a class="search-drawer__chip" href="{{ collection.url | escape }}">
                           <span class="search-drawer__category-media">
-                            {% if collection.image != blank %}
-                              {{ collection.image | image_url: width: 112 | image_tag: widths: '56, 84, 112', sizes: '56px', loading: 'lazy', alt: collection.title }}
+                            {% if search_drawer_collection_image != blank %}
+                              {{ search_drawer_collection_image | image_url: width: 600 | image_tag: widths: '160, 240, 360, 480, 600', sizes: '(max-width: 749px) 80vw, 200px', loading: 'lazy', alt: search_drawer_collection_alt }}
+                            {% else %}
+                              <span class="search-drawer__category-placeholder" aria-hidden="true"></span>
                             {% endif %}
                           </span>
                           <span class="search-drawer__category-title">{{ collection.title | escape }}</span>
