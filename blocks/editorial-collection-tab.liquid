@@ -73,35 +73,39 @@
   {{ block.shopify_attributes }}
 >
   <div class="editorial-collection-tabs__carousel swiper" data-editorial-collection-carousel>
-    <ul class="editorial-collection-tabs__products swiper-wrapper" role="list">
+    <ul class="editorial-collection-tabs__products swiper-wrapper" role="list" data-reveal-group>
       {% if collection != blank and collection.products_count > 0 %}
         {% for product in collection.products limit: products_to_show %}
           <li class="editorial-collection-tabs__product swiper-slide">
-            {% render 'product-card',
-              product: product,
-              media_ratio: 'global',
-              show_badges: true,
-              show_variant_dots: false,
-              show_media_actions: false,
-              show_quick_add: true,
-              enable_quick_view: true,
-              loading: 'lazy',
-              sizes: '(min-width: 1150px) 25vw, (min-width: 768px) 50vw, 84vw'
-            %}
+            <div class="editorial-collection-tabs__product-reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+              {% render 'product-card',
+                product: product,
+                media_ratio: 'global',
+                show_badges: true,
+                show_variant_dots: false,
+                show_media_actions: false,
+                show_quick_add: true,
+                enable_quick_view: true,
+                loading: 'lazy',
+                sizes: '(min-width: 1150px) 25vw, (min-width: 768px) 50vw, 84vw'
+              %}
+            </div>
           </li>
         {% endfor %}
       {% else %}
         {% for placeholder_index in (1..skeleton_product_count) %}
           <li class="editorial-collection-tabs__product swiper-slide">
-            {% render 'product-card',
-              media_ratio: 'global',
-              show_badges: true,
-              show_variant_dots: false,
-              show_media_actions: false,
-              show_quick_add: false,
-              enable_quick_view: false,
-              placeholder_index: placeholder_index
-            %}
+            <div class="editorial-collection-tabs__product-reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+              {% render 'product-card',
+                media_ratio: 'global',
+                show_badges: true,
+                show_variant_dots: false,
+                show_media_actions: false,
+                show_quick_add: false,
+                enable_quick_view: false,
+                placeholder_index: placeholder_index
+              %}
+            </div>
           </li>
         {% endfor %}
       {% endif %}
