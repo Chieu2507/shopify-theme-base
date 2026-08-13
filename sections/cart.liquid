@@ -9,6 +9,13 @@
   assign cart_price_font = settings.cart_price_font | default: 'subheading'
   assign cart_title_case = settings.cart_product_title_case | default: 'none'
   assign cart_image_radius = settings.cart_image_radius | default: 0
+  assign cart_price_font_setting = settings.label_font
+
+  if cart_price_font == 'body'
+    assign cart_price_font_setting = settings.body_font
+  elsif cart_price_font == 'heading'
+    assign cart_price_font_setting = settings.heading_font
+  endif
 
   if continue_url == blank
     assign continue_url = routes.all_products_collection_url
@@ -27,7 +34,7 @@
   endfor
 %}
 
-<div class="cart-page color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}" style="--cart-content-width: {{ section.settings.content_width }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --cart-product-title-case: {{ cart_title_case }}; --cart-price-font-family: var(--font-{{ cart_price_font }}--family); --cart-price-font-style: var(--font-{{ cart_price_font }}--style); --cart-price-font-weight: var(--font-{{ cart_price_font }}--weight); --cart-image-radius: {{ cart_image_radius }}px;">
+<div class="cart-page color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}" style="--cart-content-width: {{ section.settings.content_width }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --cart-product-title-text-transform: {{ cart_title_case }}; --cart-price-font-family: {{ cart_price_font_setting.family }}, {{ cart_price_font_setting.fallback_families }}; --cart-price-font-style: {{ cart_price_font_setting.style }}; --cart-price-font-weight: {{ cart_price_font_setting.weight }}; --cart-image-radius: {{ cart_image_radius }}px;">
   <div class="cart-page__inner section-spacing">
     <header class="cart-page__header">
       <{{ section.settings.heading_tag | default: 'h1' }} class="cart-page__title {% render 'typography-class', preset: section.settings.heading_size, fallback: 'h1' %}">{{ section.settings.heading | escape }} <span aria-hidden="true">({{ cart.item_count }})</span></{{ section.settings.heading_tag | default: 'h1' }}>
@@ -214,7 +221,7 @@
   .cart-page__item-media { display: block; aspect-ratio: 1; overflow: hidden; border-radius: var(--cart-image-radius, 0); background: var(--color-variant-component-background); }
   .cart-page__item-image { width: 100%; height: 100%; object-fit: cover; }
   .cart-page__item-info { min-width: 0; }
-  .cart-page__item-title { margin: 0; font-size: 20px; line-height: 1.15; text-transform: var(--cart-product-title-case, none); }
+  .cart-page__item-title { margin: 0; font-size: 20px; line-height: 1.15; text-transform: var(--cart-product-title-text-transform, none); }
   .cart-page__item-title a { color: inherit; text-decoration: none; }
   .cart-page__item-options, .cart-page__item-properties { margin-top: 8px; color: var(--color-text); font-size: var(--label-size); }
   .cart-page__item-options div, .cart-page__item-properties div { display: flex; gap: 5px; }
@@ -223,7 +230,7 @@
   .cart-page__remove { display: inline-block; margin-top: 22px; color: inherit; font-size: var(--label-size); text-underline-offset: 3px; }
   .cart-page__quantity-label { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
   .cart-page__quantity { display: block; width: 58px; min-height: var(--control-height); margin-top: 14px; padding: 6px 8px; border: 1px solid var(--color-variant-border); border-radius: var(--style-border-radius-inputs); background: transparent; color: inherit; text-align: center; }
-  .cart-page__item-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-family: var(--cart-price-font-family, var(--font-body--family)); font-size: 15px; font-style: var(--cart-price-font-style, normal); font-weight: var(--cart-price-font-weight, 400); white-space: nowrap; }
+  .cart-page__item-price { display: flex; flex-direction: column; align-items: flex-end; gap: 4px; font-family: var(--cart-price-font-family, var(--body-font-family)); font-size: 15px; font-style: var(--cart-price-font-style, normal); font-weight: var(--cart-price-font-weight, 400); white-space: nowrap; }
   .cart-page__item-price s { color: var(--color-text); font-size: 12px; }
   .cart-page__item-discounts { display: grid; gap: 4px; margin: 4px 0 0; padding: 0; color: var(--color-text); font-size: 12px; list-style: none; }
   .cart-page__item-discounts li { display: flex; justify-content: flex-end; gap: 10px; }
@@ -235,7 +242,7 @@
   .cart-page__summary-count { color: var(--color-text); font-size: var(--label-size); white-space: nowrap; }
   .cart-page__summary-totals { padding: 20px 0 0; }
   .cart-page__summary-row { display: flex; align-items: center; justify-content: space-between; gap: 18px; font-size: 15px; line-height: 1.4; }
-  .cart-page__summary-row > :last-child, .cart-page__discounts li > :last-child { font-family: var(--cart-price-font-family, var(--font-body--family)); font-style: var(--cart-price-font-style, normal); font-weight: var(--cart-price-font-weight, 400); }
+  .cart-page__summary-row > :last-child, .cart-page__discounts li > :last-child { font-family: var(--cart-price-font-family, var(--body-font-family)); font-style: var(--cart-price-font-style, normal); font-weight: var(--cart-price-font-weight, 400); }
   .cart-page__summary-row--total { margin-top: 18px; padding-top: 18px; border-top: 1px solid var(--color-variant-border); font-size: 18px; }
   .cart-page__block { margin-top: 22px; }
   .cart-page__summary label { display: block; margin-bottom: 8px; font-size: var(--label-size); }
@@ -244,7 +251,7 @@
   .cart-page__inline-control input { min-width: 0; min-height: var(--control-height); flex: 1; padding: 10px 16px; border: 1px solid color-mix(in srgb, var(--color-text) 24%, var(--color-variant-border)); border-radius: var(--style-border-radius-inputs); background: var(--color-background); box-shadow: none; color: inherit; transition: border-color 160ms ease, box-shadow 160ms ease; }
   .cart-page__summary textarea:hover, .cart-page__inline-control input:hover { border-color: color-mix(in srgb, var(--color-text) 44%, var(--color-variant-border)); }
   .cart-page__summary textarea:focus-visible, .cart-page__inline-control input:focus-visible { border-color: var(--color-heading); outline: 2px solid color-mix(in srgb, var(--color-heading) 30%, transparent); outline-offset: 2px; }
-  .cart-page__inline-control button { min-height: var(--control-height); flex: 0 0 auto; padding: 0 var(--button-inline-padding); border: var(--button-secondary-border-width) solid var(--color-secondary-button-outline); border-radius: var(--radius-button); background: var(--color-secondary-button); color: var(--color-secondary-button-label); cursor: pointer; font-family: var(--button-secondary-font-family); font-size: var(--label-size); font-style: var(--button-secondary-font-style); font-weight: var(--button-secondary-font-weight); text-transform: var(--button-secondary-text-case); }
+  .cart-page__inline-control button { min-height: var(--control-height); flex: 0 0 auto; padding: 0 var(--button-inline-padding); border: var(--button-secondary-border-width) solid var(--color-secondary-button-outline); border-radius: var(--radius-button); background: var(--color-secondary-button); color: var(--color-secondary-button-label); cursor: pointer; font-family: var(--button-secondary-font-family); font-size: var(--label-size); font-style: var(--button-secondary-font-style); font-weight: var(--button-secondary-font-weight); text-transform: var(--button-secondary-text-transform); }
   .cart-page__block--note textarea { margin-bottom: 0; }
   .cart-page__discount-message { margin: 8px 0 0; color: var(--color-sale-price, #a33); font-size: var(--label-size); line-height: 1.4; }
   .cart-page__discounts { display: grid; gap: 8px; margin: 14px 0 0; padding: 0; color: var(--color-text); font-size: var(--label-size); list-style: none; }
