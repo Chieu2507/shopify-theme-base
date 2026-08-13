@@ -41,6 +41,10 @@
   assign mobile_slides_per_view = mobile_columns | plus: 0.2
   assign collection_label = section.settings.collection_label | default: featured_collection.title | default: 'Collection'
   assign view_all_label = section.settings.view_all_label | default: 'View all objects'
+  assign is_placeholder_collection = false
+  if featured_collection == blank or product_count == 0
+    assign is_placeholder_collection = true
+  endif
 %}
 
 <featured-collection
@@ -131,33 +135,27 @@
         {% render 'icon', name: 'chevron-right' %}
       </button>
 
-      <footer class="editorial-featured-collection__footer" data-reveal>
-        <span
-          class="editorial-featured-collection__count"
-          data-featured-collection-showing
-          data-showing-prefix="Showing"
-          data-showing-separator="of"
-          data-total="{{ visible_product_count | default: 0 }}"
-        >
-          Showing {{ initial_showing_count | default: 0 }} of {{ visible_product_count | default: 0 }}
-        </span>
-        <div class="editorial-featured-collection__progress featured-collection__progress" aria-hidden="true">
-          <span data-featured-collection-progress></span>
-        </div>
-        {% if featured_collection != blank %}
+      {% unless is_placeholder_collection %}
+        <footer class="editorial-featured-collection__footer" data-reveal>
+          <span
+            class="editorial-featured-collection__count"
+            data-featured-collection-showing
+            data-showing-prefix="Showing"
+            data-showing-separator="of"
+            data-total="{{ visible_product_count }}"
+          >
+            Showing {{ initial_showing_count }} of {{ visible_product_count }}
+          </span>
+          <div class="editorial-featured-collection__progress featured-collection__progress" aria-hidden="true">
+            <span data-featured-collection-progress></span>
+          </div>
           <a class="editorial-featured-collection__collection-link" href="{{ featured_collection.url | escape }}">{{ collection_label | escape }}</a>
           <a class="btn-tertiary editorial-featured-collection__view-all" href="{{ featured_collection.url | escape }}">
             <span>{{ view_all_label | escape }}</span>
             <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
           </a>
-        {% else %}
-          <span class="editorial-featured-collection__collection-link">{{ collection_label | escape }}</span>
-          <span class="btn-tertiary editorial-featured-collection__view-all">
-            <span>{{ view_all_label | escape }}</span>
-            <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
-          </span>
-        {% endif %}
-      </footer>
+        </footer>
+      {% endunless %}
     </div>
   </div>
 </featured-collection>
