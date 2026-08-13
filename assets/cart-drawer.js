@@ -1024,7 +1024,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.recommendationSwiper = new Swiper(this.recommendationList, {
         modules: [A11y],
         slidesPerView: 1,
-        spaceBetween: 0,
+        spaceBetween: 16,
         speed: this.reduceMotion.matches ? 0 : 360,
         loop: count > 1,
         watchOverflow: true,
