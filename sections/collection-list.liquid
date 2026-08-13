@@ -6,6 +6,11 @@
 {% render 'swiper-stylesheet', defer_on_home: true %}
 
 {% liquid
+  assign collection_list_background = section.settings.background_color
+  if collection_list_background == blank
+    assign collection_list_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+
   assign collection_card_count = 0
   for block in section.blocks
     if block.type == 'collection_card'
@@ -33,6 +38,16 @@
   endcase
 %}
 
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ collection_list_background }};
+  }
+
+  #shopify-section-{{ section.id }} .collection-list {
+    background: transparent;
+  }
+{% endstyle %}
+
 {% if collection_card_count > 0 %}
   <collection-list
     {% if section.settings.layout == 'grid' %}data-deferred-module="{{ 'collection-list.js' | asset_url }}"{% endif %}
@@ -49,19 +64,48 @@
   >
     <div class="collection-list__inner section-spacing{% if section.settings.section_width == 'page' %} collection-list__inner--page{% endif %}">
       {% assign has_prioritized_collection_image = false %}
-      {% for block in section.blocks %}
-        {% if block.type == 'heading' and block.settings.heading != blank %}
-          <div class="collection-list__header collection-list__heading">
-            {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+      {% if section.settings.layout == 'split-promotions' %}
+        <header class="collection-list__editorial-header">
+          <div class="collection-list__editorial-title" data-reveal>
+            {% if section.settings.split_label != blank %}
+              <p class="collection-list__editorial-label label-text">{{ section.settings.split_label | escape }}</p>
+            {% endif %}
+            {% if section.settings.split_heading != blank %}
+              <h2 class="collection-list__editorial-heading {% render 'typography-class', preset: section.settings.split_heading_size, fallback: 'h2' %}">
+                {{ section.settings.split_heading | escape | newline_to_br }}
+              </h2>
+            {% endif %}
           </div>
-        {% endif %}
-      {% endfor %}
+          <div class="collection-list__editorial-aside" data-reveal>
+            {% if section.settings.split_text != blank %}
+              <div class="collection-list__editorial-text rte">{{ section.settings.split_text }}</div>
+            {% endif %}
+            {% render 'cta',
+              label: section.settings.split_button_label,
+              url: section.settings.split_button_link,
+              style: 'tertiary',
+              icon: 'arrow-right',
+              class: 'collection-list__editorial-button'
+            %}
+          </div>
+        </header>
+      {% else %}
+        {% for block in section.blocks %}
+          {% if block.type == 'heading' and block.settings.heading != blank %}
+            <div class="collection-list__header collection-list__heading">
+              {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+            </div>
+          {% endif %}
+        {% endfor %}
+      {% endif %}
 
       <div class="collection-list__carousel">
         <div class="collection-list__slider{% if section.settings.layout == 'grid' %} swiper{% endif %}"{% if section.settings.layout == 'grid' %} data-collection-list-slider{% endif %}>
           <ul class="collection-list__grid collection-list__grid--{{ section.settings.layout }}{% if section.settings.layout == 'grid' %} swiper-wrapper{% endif %}" role="list">
+        {% assign split_card_index = 0 %}
         {% for block in section.blocks %}
           {% if block.type == 'collection_card' %}
+            {% assign split_card_index = split_card_index | plus: 1 %}
             {% liquid
               assign card_collection = block.settings.collection
               assign card_image = block.settings.image
@@ -103,7 +147,11 @@
               assign mobile_card_width = 100 | divided_by: columns_mobile
               assign card_sizes = '(min-width: 1150px) ' | append: desktop_card_width | append: 'vw, (min-width: 768px) ' | append: tablet_card_width | append: 'vw, ' | append: mobile_card_width | append: 'vw'
               if section.settings.layout == 'split-promotions'
-                assign card_sizes = '(min-width: 768px) 50vw, 100vw'
+                if split_card_index == 1
+                  assign card_sizes = '(min-width: 1150px) 46vw, (min-width: 768px) 42vw, 100vw'
+                else
+                  assign card_sizes = '(min-width: 1150px) 24vw, (min-width: 768px) 29vw, 100vw'
+                endif
               endif
 
               assign card_loading = 'lazy'
@@ -122,7 +170,7 @@
               endif
             %}
 
-            <li class="collection-list__item{% if section.settings.layout == 'grid' %} swiper-slide{% endif %}" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
+            <li class="collection-list__item{% if section.settings.layout == 'grid' %} swiper-slide{% else %} collection-list__item--split-{{ split_card_index }}{% endif %}" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
               {% if card_link != blank and section.settings.layout != 'split-promotions' %}
                 <a
                   class="collection-list__card collection-list__card--{{ section.settings.layout }} color-scheme color-{{ card_color_scheme.id }}"
@@ -161,10 +209,17 @@
                     <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__promotion-heading collection-list__promotion-heading--{{ section.settings.card_heading_size | default: 'h3' }} {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">
                       {{ card_title | escape }}
                     </{{ section.settings.card_heading_tag | default: 'h3' }}>
+                    {% if block.settings.description != blank %}
+                      <p class="collection-list__promotion-description">{{ block.settings.description | escape }}</p>
+                    {% endif %}
                     {% if block.settings.button_label != blank and card_link != blank %}
-                      <a class="collection-list__button btn-{{ block.settings.button_style | default: 'tertiary' }}" href="{{ card_link | escape }}">
-                        {{ block.settings.button_label | escape }}
-                      </a>
+                      {% render 'cta',
+                        label: block.settings.button_label,
+                        url: card_link,
+                        style: block.settings.button_style,
+                        icon: 'arrow-right',
+                        class: 'collection-list__button'
+                      %}
                     {% endif %}
                   </div>
                 {% else %}
@@ -283,6 +338,58 @@
       "unit": "px",
       "label": "Header gap",
       "default": 48
+    },
+    {
+      "type": "header",
+      "content": "Split promotions header",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+    },
+    {
+      "type": "text",
+      "id": "split_label",
+      "label": "Label",
+      "default": "COLLECTIONS / 05 HOUSE CODES",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+    },
+    {
+      "type": "textarea",
+      "id": "split_heading",
+      "label": "Heading",
+      "default": "Shop the\nhouse collections.",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+    },
+    {
+      "type": "select",
+      "id": "split_heading_size",
+      "label": "Heading size",
+      "options": [
+        { "value": "h1", "label": "t:typography_options.display_large" },
+        { "value": "h2", "label": "t:typography_options.display_medium" },
+        { "value": "h3", "label": "t:typography_options.heading_extra_large" },
+        { "value": "h4", "label": "t:typography_options.heading_large" }
+      ],
+      "default": "h2",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+    },
+    {
+      "type": "richtext",
+      "id": "split_text",
+      "label": "Text",
+      "default": "<p>Five signatures shaped by stone and light.<br>Choose the one that feels like yours.</p>",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+    },
+    {
+      "type": "text",
+      "id": "split_button_label",
+      "label": "Button label",
+      "default": "Explore all 05 house codes",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+    },
+    {
+      "type": "url",
+      "id": "split_button_link",
+      "label": "Button link",
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
       "type": "header",
@@ -409,8 +516,9 @@
       "max": 40,
       "step": 4,
       "unit": "px",
-      "label": "Image to text gap",
-      "default": 20
+      "label": "Card content gap",
+      "default": 20,
+      "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
     },
     {
       "type": "select",
@@ -537,6 +645,22 @@
     },
     {
       "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme."
+    },
+    {
+      "type": "header",
       "content": "Section padding"
     },
     {
@@ -544,10 +668,10 @@
       "id": "padding_top",
       "min": 0,
       "max": 160,
-      "step": 2,
+      "step": 4,
       "unit": "px",
       "label": "Top padding",
-      "default": 10
+      "default": 80
     },
     {
       "type": "range",
@@ -558,16 +682,6 @@
       "unit": "px",
       "label": "Bottom padding",
       "default": 80
-    },
-    {
-      "type": "header",
-      "content": "Appearance"
-    },
-    {
-      "type": "color_scheme",
-      "id": "color_scheme",
-      "label": "Color scheme",
-      "default": "scheme-1"
     }
   ],
   "blocks": [
@@ -657,6 +771,16 @@
       "id": "text_color",
       "label": "Text color"
     },
+        {
+          "type": "select",
+          "id": "color",
+          "label": "Legacy color token",
+          "options": [
+            { "value": "text", "label": "Text" },
+            { "value": "subtext", "label": "Subtext" }
+          ],
+          "visible_if": "{{ false }}"
+        },
         {
           "type": "checkbox",
           "id": "disable_line_break_mobile",
@@ -749,6 +873,47 @@
           "step": 1,
           "unit": "px",
           "default": 0
+        },
+        {
+          "type": "header",
+          "content": "Animation"
+        },
+        {
+          "type": "select",
+          "id": "reveal_type",
+          "label": "Type",
+          "options": [
+            { "value": "none", "label": "None" },
+            { "value": "fade", "label": "Fade" },
+            { "value": "fade-up", "label": "Fade up" },
+            { "value": "fade-down", "label": "Fade down" },
+            { "value": "fade-left", "label": "Fade left" },
+            { "value": "fade-right", "label": "Fade right" },
+            { "value": "zoom", "label": "Zoom" }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "range",
+          "id": "reveal_duration",
+          "label": "Duration",
+          "min": 300,
+          "max": 1500,
+          "step": 50,
+          "unit": "ms",
+          "default": 650,
+          "visible_if": "{{ block.settings.reveal_type != 'none' }}"
+        },
+        {
+          "type": "range",
+          "id": "reveal_delay",
+          "label": "Delay",
+          "min": 0,
+          "max": 1000,
+          "step": 50,
+          "unit": "ms",
+          "default": 0,
+          "visible_if": "{{ block.settings.reveal_type != 'none' }}"
         }
       ]
     },
@@ -781,7 +946,13 @@
         {
           "type": "text",
           "id": "subheading",
-          "label": "Subheading",
+          "label": "Eyebrow",
+          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+        },
+        {
+          "type": "textarea",
+          "id": "description",
+          "label": "Description",
           "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
         },
         {
@@ -953,27 +1124,70 @@
       "category": "Collections",
       "settings": {
         "layout": "split-promotions",
+        "section_width": "page",
+        "column_gap": 16,
+        "header_gap": 48,
         "height_desktop": "medium",
         "height_mobile": "medium",
         "card_heading_size": "h3",
-        "card_heading_tag": "h3"
+        "card_heading_tag": "h3",
+        "card_alignment": "left",
+        "card_gap": 8,
+        "color_scheme": "scheme-2",
+        "split_button_link": "shopify://collections",
+        "padding_top": 80,
+        "padding_bottom": 80
       },
       "blocks": [
         {
           "type": "collection_card",
           "settings": {
-            "subheading": "Featured collection",
-            "title": "The signature edit",
-            "button_label": "Shop all",
-            "overlay_opacity": 0
+            "subheading": "01 / HOUSE CODE",
+            "title": "The Nocturne",
+            "description": "Ruby held against the quiet of night.",
+            "button_label": "View collection",
+            "content_position": "bottom",
+            "overlay_opacity": 35
           }
         },
         {
           "type": "collection_card",
           "settings": {
-            "title": "The new collection",
-            "button_label": "Discover more",
-            "overlay_opacity": 25
+            "subheading": "02 / HOUSE CODE",
+            "title": "The Dome",
+            "button_label": "View",
+            "content_position": "bottom",
+            "overlay_opacity": 35
+          }
+        },
+        {
+          "type": "collection_card",
+          "settings": {
+            "subheading": "03 / HOUSE CODE",
+            "title": "The Personal",
+            "button_label": "View",
+            "content_position": "bottom",
+            "overlay_opacity": 35
+          }
+        },
+        {
+          "type": "collection_card",
+          "settings": {
+            "subheading": "04 / HOUSE CODE",
+            "title": "The Puzzle",
+            "button_label": "View",
+            "content_position": "bottom",
+            "overlay_opacity": 35
+          }
+        },
+        {
+          "type": "collection_card",
+          "settings": {
+            "subheading": "05 / HOUSE CODE",
+            "title": "The Veil",
+            "button_label": "View",
+            "content_position": "bottom",
+            "overlay_opacity": 35
           }
         }
       ]

@@ -7,8 +7,8 @@ class ShopTheLook extends HTMLElement {
     this.initialized = true;
     this.hotspots = Array.from(this.querySelectorAll('[data-shop-the-look-hotspot]'));
     this.products = Array.from(this.querySelectorAll('[data-shop-the-look-product]'));
-    this.mobilePreviews = Array.from(this.querySelectorAll('[data-shop-the-look-preview]'));
-    this.indicators = Array.from(this.querySelectorAll('[data-shop-the-look-indicator]'));
+    this.paginationCount = this.querySelector('[data-shop-the-look-pagination-count]');
+    this.paginationProgress = this.querySelector('[data-shop-the-look-pagination-progress]');
     this.onClick = this.handleClick.bind(this);
     this.onKeydown = this.handleKeydown.bind(this);
     this.onBlockSelect = this.handleBlockSelect.bind(this);
@@ -85,13 +85,20 @@ class ShopTheLook extends HTMLElement {
       product.toggleAttribute('inert', !isActive);
     });
 
-    this.mobilePreviews.forEach((preview, previewIndex) => {
-      preview.hidden = previewIndex !== index;
-    });
+    this.updatePagination(index);
+  }
 
-    this.indicators.forEach((indicator, indicatorIndex) => {
-      indicator.classList.toggle('shop-the-look__indicator--active', indicatorIndex === index);
-    });
+  updatePagination(index) {
+    const total = this.products.length;
+    if (!total) return;
+    if (this.paginationCount) {
+      const currentLabel = String(index + 1).padStart(2, '0');
+      const totalLabel = String(total).padStart(2, '0');
+      this.paginationCount.textContent = `${currentLabel} / ${totalLabel}`;
+    }
+    if (this.paginationProgress) {
+      this.paginationProgress.style.setProperty('--featured-collection-progress', (index + 1) / total);
+    }
   }
 
   handleClick(event) {

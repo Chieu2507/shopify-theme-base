@@ -1,4 +1,5 @@
 {% render 'section-stylesheet', asset: 'section-shop-the-look.css', defer_on_home: true %}
+{% render 'swiper-stylesheet', defer_on_home: true %}
 
 {% liquid
   assign product_block_count = 0
@@ -90,55 +91,6 @@
           </div>
         </div>
 
-        <div class="shop-the-look__mobile-preview" aria-live="polite" aria-atomic="true">
-          {% assign preview_index = 0 %}
-          {% for block in section.blocks %}
-            {% if block.type == 'product_hotspot' %}
-              {% liquid
-                assign preview_product = block.settings.product
-                assign preview_variant = preview_product.selected_or_first_available_variant
-                assign preview_placeholder_index = preview_index | modulo: 6 | plus: 1
-                assign preview_placeholder_asset_index = preview_placeholder_index | minus: 1 | modulo: 4 | plus: 1
-                assign preview_placeholder_asset = 'placeholder-image-product-' | append: preview_placeholder_asset_index | append: '.svg'
-              %}
-              <a
-                class="shop-the-look__mobile-preview-card"
-                href="{{ preview_product.url | default: '#' | escape }}"
-                data-shop-the-look-preview
-                data-block-id="{{ block.id }}"
-                {% unless preview_index == 0 %}hidden{% endunless %}
-              >
-                <span class="shop-the-look__mobile-preview-media">
-                  {% render 'responsive-media',
-                    image: preview_product.featured_image,
-                    max_width: 160,
-                    widths: '80, 120, 160',
-                    sizes: '64px',
-                    class: 'shop-the-look__mobile-preview-image',
-                    loading: 'lazy',
-                    alt: preview_product.featured_image.alt,
-                    placeholder_asset: preview_placeholder_asset,
-                    placeholder_class: 'shop-the-look__mobile-preview-placeholder'
-                  %}
-                </span>
-                <span class="shop-the-look__mobile-preview-details">
-                  <span class="shop-the-look__mobile-preview-title">
-                    {% if preview_product != blank %}
-                      {{ preview_product.title | escape }}
-                    {% else %}
-                      {{ 'onboarding.product_title' | t }}
-                    {% endif %}
-                  </span>
-                  <span class="shop-the-look__mobile-preview-price{% if preview_variant.compare_at_price > preview_variant.price %} shop-the-look__mobile-preview-price--sale{% endif %}">
-                    {% render 'money', amount: preview_variant.price %}
-                  </span>
-                </span>
-                {% render 'icon', name: 'chevron-right', class: 'shop-the-look__mobile-preview-arrow' %}
-              </a>
-              {% assign preview_index = preview_index | plus: 1 %}
-            {% endif %}
-          {% endfor %}
-        </div>
       </div>
 
       <div class="shop-the-look__content-column">
@@ -195,11 +147,13 @@
                     {% render 'product-card',
                       product: block.settings.product,
                       placeholder_index: product_placeholder_index,
-                      sizes: '(max-width: 767.98px) 48vw, (min-width: 1150px) 360px, 44vw',
+                      media_ratio: 'global',
+                      sizes: '(max-width: 767.98px) min(72vw, 320px), (min-width: 1150px) 360px, 44vw',
                       show_badges: true,
                       show_compare_at_price: true,
-                      show_variant_dots: true,
-                      show_media_actions: true,
+                      show_variant_dots: false,
+                      show_media_actions: false,
+                      show_quick_add: true,
                       enable_quick_view: true
                     %}
                   </div>
@@ -217,14 +171,11 @@
         </div>
 
         {% if product_block_count > 1 %}
-          <div class="shop-the-look__indicators" aria-hidden="true">
-            {% assign indicator_index = 0 %}
-            {% for block in section.blocks %}
-              {% if block.type == 'product_hotspot' %}
-                <span class="shop-the-look__indicator{% if indicator_index == 0 %} shop-the-look__indicator--active{% endif %}" data-shop-the-look-indicator></span>
-                {% assign indicator_index = indicator_index | plus: 1 %}
-              {% endif %}
-            {% endfor %}
+          <div class="shop-the-look__pagination">
+            <span class="shop-the-look__pagination-count" data-shop-the-look-pagination-count aria-live="polite">01 / {{ product_block_count | prepend: '0' | slice: -2, 2 }}</span>
+            <div class="shop-the-look__pagination-progress featured-collection__progress" aria-hidden="true">
+              <span data-shop-the-look-pagination-progress style="--featured-collection-progress: {{ 1.0 | divided_by: product_block_count }};"></span>
+            </div>
           </div>
         {% endif %}
       </div>

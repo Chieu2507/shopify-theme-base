@@ -1,0 +1,170 @@
+import { A11y, Navigation, Swiper } from './swiper-loader.js';
+import { initializeWhenVisible } from './initialize-when-visible.js';
+
+class EditorialCollectionTabs extends HTMLElement {
+  connectedCallback() {
+    if (this.initialized) return;
+    this.initialized = true;
+    this.tabs = Array.from(this.querySelectorAll('[data-editorial-collection-tab]'));
+    this.panels = Array.from(this.querySelectorAll('[data-editorial-collection-panel]'));
+    this.swipers = new Map();
+    this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    this.onClick = this.handleClick.bind(this);
+    this.onKeydown = this.handleKeydown.bind(this);
+    this.onBlockSelect = this.handleBlockSelect.bind(this);
+    this.addEventListener('click', this.onClick);
+    this.addEventListener('keydown', this.onKeydown);
+    document.addEventListener('shopify:block:select', this.onBlockSelect);
+    this.cancelDeferredInitialization = initializeWhenVisible(this, () => this.activateCarousels());
+  }
+
+  disconnectedCallback() {
+    this.removeEventListener('click', this.onClick);
+    this.removeEventListener('keydown', this.onKeydown);
+    document.removeEventListener('shopify:block:select', this.onBlockSelect);
+    this.cancelDeferredInitialization?.();
+    window.clearTimeout(this.panelAnimationTimer);
+    this.swipers.forEach((swiper) => swiper.destroy(true, true));
+    this.swipers.clear();
+    this.initialized = false;
+  }
+
+  activateCarousels() {
+    if (this.carouselsReady) return;
+    this.carouselsReady = true;
+    this.panels.filter((panel) => !panel.hidden).forEach((panel) => this.createCarousel(panel));
+  }
+
+  createCarousel(panel) {
+    if (!panel || panel.hidden) return;
+    const existing = this.swipers.get(panel);
+    if (existing) {
+      existing.update();
+      this.updateProgress(panel, existing);
+      return;
+    }
+
+    const carousel = panel.querySelector('[data-editorial-collection-carousel]');
+    if (!carousel?.querySelector('.swiper-slide')) return;
+    const desktopColumns = Number.parseInt(this.dataset.desktopColumns, 10) || 4;
+    const mobileColumns = Number.parseFloat(this.dataset.mobileColumns) || 1;
+    const tabletColumns = Math.min(desktopColumns, 2);
+    const productCount = carousel.querySelectorAll('.swiper-slide').length;
+    const slidesWithPreview = (columns, preview) => columns + (preview && productCount > columns ? 0.15 : 0);
+
+    const swiper = new Swiper(carousel, {
+      modules: [A11y, Navigation],
+      slidesPerView: slidesWithPreview(mobileColumns, true),
+      spaceBetween: this.cssNumber('--editorial-tabs-mobile-gap'),
+      speed: this.reduceMotion ? 0 : 360,
+      watchOverflow: true,
+      navigation: {
+        prevEl: panel.querySelector('[data-editorial-collection-previous]'),
+        nextEl: panel.querySelector('[data-editorial-collection-next]'),
+      },
+      a11y: { enabled: true, slideRole: 'listitem' },
+      breakpoints: {
+        768: {
+          slidesPerView: slidesWithPreview(tabletColumns, true),
+          spaceBetween: this.cssNumber('--editorial-tabs-gap'),
+        },
+        1150: {
+          slidesPerView: desktopColumns,
+          spaceBetween: this.cssNumber('--editorial-tabs-gap'),
+        },
+      },
+    });
+    swiper.on('update resize breakpoint slideChange transitionEnd', () => this.updateProgress(panel, swiper));
+    this.swipers.set(panel, swiper);
+    this.updateProgress(panel, swiper);
+  }
+
+  cssNumber(name) {
+    return Number.parseFloat(getComputedStyle(this).getPropertyValue(name)) || 0;
+  }
+
+  selectTab(tab, moveFocus = false) {
+    if (!tab) return;
+    const panelId = tab.getAttribute('aria-controls');
+    const selectedPanel = this.panels.find((panel) => panel.id === panelId);
+    this.tabs.forEach((candidate) => {
+      const selected = candidate === tab;
+      candidate.setAttribute('aria-selected', String(selected));
+      candidate.tabIndex = selected ? 0 : -1;
+    });
+    this.panels.forEach((panel) => {
+      panel.hidden = panel !== selectedPanel;
+    });
+    if (selectedPanel) {
+      this.animatePanel(selectedPanel);
+      this.createCarousel(selectedPanel);
+    }
+    if (moveFocus) tab.focus();
+  }
+
+  animatePanel(panel) {
+    if (this.reduceMotion) return;
+    window.clearTimeout(this.panelAnimationTimer);
+    this.panels.forEach((candidate) => candidate.classList.remove('editorial-collection-tabs__panel--entering'));
+    void panel.offsetWidth;
+    panel.classList.add('editorial-collection-tabs__panel--entering');
+    this.panelAnimationTimer = window.setTimeout(() => {
+      panel.classList.remove('editorial-collection-tabs__panel--entering');
+    }, 520);
+  }
+
+  updateProgress(panel, swiper) {
+    const progress = panel.querySelector('[data-editorial-collection-progress]');
+    if (!progress || !swiper?.slides?.length) return;
+    const total = Number.parseInt(panel.dataset.productTotal, 10) || swiper.slides.length;
+    const visible = Math.min(
+      Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1),
+      swiper.slides.length,
+    );
+    const showingCount = Math.min(total, swiper.activeIndex + Math.ceil(visible));
+    const showing = panel.querySelector('[data-editorial-collection-showing]');
+    if (showing) showing.textContent = `Showing ${showingCount} of ${total}`;
+
+    const thumbSize = Math.min(1, visible / swiper.slides.length);
+    const progressValue = swiper.slides.length <= Math.ceil(visible)
+      ? 1
+      : thumbSize + (swiper.progress * (1 - thumbSize));
+    progress.style.setProperty('--editorial-tabs-progress', progressValue);
+
+    const pageLabel = panel.querySelector('[data-editorial-collection-page-label]');
+    if (pageLabel) {
+      const page = String(swiper.activeIndex + 1).padStart(2, '0');
+      pageLabel.textContent = `${panel.dataset.collectionLabel || 'Collection'} / Page ${page}`;
+    }
+  }
+
+  handleClick(event) {
+    const tab = event.target.closest('[data-editorial-collection-tab]');
+    if (tab && this.contains(tab)) this.selectTab(tab);
+  }
+
+  handleKeydown(event) {
+    const tab = event.target.closest('[data-editorial-collection-tab]');
+    if (!tab) return;
+    const currentIndex = this.tabs.indexOf(tab);
+    let nextIndex = currentIndex;
+    if (event.key === 'ArrowRight') nextIndex = (currentIndex + 1) % this.tabs.length;
+    if (event.key === 'ArrowLeft') nextIndex = (currentIndex - 1 + this.tabs.length) % this.tabs.length;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = this.tabs.length - 1;
+    if (nextIndex === currentIndex) return;
+    event.preventDefault();
+    this.selectTab(this.tabs[nextIndex], true);
+  }
+
+  handleBlockSelect(event) {
+    const tab = this.tabs.find((candidate) => candidate.dataset.blockId === event.detail?.blockId);
+    if (!tab) return;
+    this.activateCarousels();
+    this.selectTab(tab);
+  }
+}
+
+if (!customElements.get('editorial-collection-tabs')) {
+  customElements.define('editorial-collection-tabs', EditorialCollectionTabs);
+}
