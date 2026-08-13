@@ -13,23 +13,18 @@
     assign visible_product_count = products_to_show
   endif
 
-  assign skeleton_product_count = desktop_columns | plus: 2
-  assign rendered_product_count = visible_product_count
-  if rendered_product_count == 0
-    assign rendered_product_count = skeleton_product_count
-  endif
-
-  assign is_placeholder_collection = false
-  if collection == blank or collection.products_count == 0
-    assign is_placeholder_collection = true
-  endif
-
   assign desktop_columns = section.settings.columns_desktop | default: 4 | plus: 0
   assign tablet_columns = desktop_columns
   if tablet_columns > 2
     assign tablet_columns = 2
   endif
   assign mobile_columns = section.settings.columns_mobile | default: 1 | plus: 0
+
+  assign skeleton_product_count = desktop_columns | plus: 2
+  assign rendered_product_count = visible_product_count
+  if rendered_product_count == 0
+    assign rendered_product_count = skeleton_product_count
+  endif
 
   assign desktop_slides = desktop_columns
   assign tablet_slides = tablet_columns
@@ -45,8 +40,8 @@
   endif
 
   assign initial_showing_count = desktop_columns
-  if initial_showing_count > visible_product_count
-    assign initial_showing_count = visible_product_count
+  if initial_showing_count > rendered_product_count
+    assign initial_showing_count = rendered_product_count
   endif
   assign tab_label = block.settings.label | default: collection.title | default: 'Collection'
   assign collection_label = block.settings.footer_label | default: tab_label
