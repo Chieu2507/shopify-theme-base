@@ -98,6 +98,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.resetOrderOptionsDrag();
       window.clearTimeout(this.closeTimer);
       window.clearInterval(this.recommendationTimer);
+      window.clearTimeout(this.promotionTooltipTimer);
       this.destroyRecommendationSwiper();
       this.promotionResizeObserver?.disconnect();
       this.unlockPageScroll();
