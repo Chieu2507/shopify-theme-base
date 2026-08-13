@@ -93,7 +93,12 @@ class CollectionList extends HTMLElement {
       Math.max(this.swiper.slidesPerViewDynamic(), Number(this.swiper.params.slidesPerView) || 1),
       this.swiper.slides.length,
     );
-    carousel.classList.toggle('is-carousel-scrollable', this.swiper.slides.length > Math.ceil(visible));
+    const hasOverflow = this.swiper.slides.length > Math.ceil(visible);
+    carousel.classList.toggle('is-carousel-scrollable', hasOverflow);
+    [this.previousButton, this.nextButton].forEach((button) => {
+      if (button) button.disabled = !hasOverflow;
+    });
+    if (hasOverflow) this.swiper.navigation.update();
     this.updateProgress();
   }
 

@@ -281,7 +281,12 @@ class ShoppableVideoSection extends HTMLElement {
   updateNavigation(swiper) {
     if (!swiper?.slides?.length) return;
     const visible = Math.min(Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1), swiper.slides.length);
-    this.querySelector('.shoppable-video-section__panel')?.classList.toggle('is-carousel-scrollable', swiper.slides.length > Math.ceil(visible));
+    const hasOverflow = swiper.slides.length > Math.ceil(visible);
+    this.querySelector('.shoppable-video-section__panel')?.classList.toggle('is-carousel-scrollable', hasOverflow);
+    this.querySelectorAll('[data-shoppable-video-previous], [data-shoppable-video-next]').forEach((button) => {
+      button.disabled = !hasOverflow;
+    });
+    if (hasOverflow) swiper.navigation.update();
     this.updateProgress(swiper);
   }
 
