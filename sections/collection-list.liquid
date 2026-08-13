@@ -171,7 +171,7 @@
             %}
 
             <li class="collection-list__item{% if section.settings.layout == 'grid' %} swiper-slide{% else %} collection-list__item--split-{{ split_card_index }}{% endif %}" data-block-id="{{ block.id }}"{% if section.settings.layout == 'split-promotions' %} data-reveal-item style="--reveal-order: {{ split_card_index | minus: 1 }};"{% endif %} {{ block.shopify_attributes }}>
-              {% if card_link != blank and section.settings.layout != 'split-promotions' %}
+              {% if card_link != blank %}
                 <a
                   class="collection-list__card collection-list__card--{{ section.settings.layout }} color-scheme color-{{ card_color_scheme.id }}"
                   href="{{ card_link | escape }}"
@@ -212,14 +212,11 @@
                     {% if block.settings.description != blank %}
                       <p class="collection-list__promotion-description">{{ block.settings.description | escape }}</p>
                     {% endif %}
-                    {% if block.settings.button_label != blank and card_link != blank %}
-                      {% render 'cta',
-                        label: block.settings.button_label,
-                        url: card_link,
-                        style: 'tertiary',
-                        icon: 'arrow-right',
-                        class: 'collection-list__button'
-                      %}
+                    {% if card_link != blank %}
+                      <span class="btn-tertiary collection-list__button" aria-hidden="true">
+                        <span>{{ block.settings.button_label | default: 'View collection' | escape }}</span>
+                        <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+                      </span>
                     {% endif %}
                   </div>
                 {% else %}
@@ -236,7 +233,7 @@
                   </span>
                 {% endif %}
 
-              {% if card_link != blank and section.settings.layout != 'split-promotions' %}
+              {% if card_link != blank %}
                 </a>
               {% else %}
                 </div>
@@ -961,6 +958,7 @@
           "type": "text",
           "id": "button_label",
           "label": "Button label",
+          "default": "View collection",
           "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
         },
         {
