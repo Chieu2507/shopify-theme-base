@@ -242,13 +242,13 @@ class ShoppableVideoSection extends HTMLElement {
         },
       },
       on: {
-        init: (swiper) => this.updateProgress(swiper),
+        init: (swiper) => this.updateNavigation(swiper),
         slideChange: (swiper) => {
           this.pauseOtherVideos();
-          this.updateProgress(swiper);
+          this.updateNavigation(swiper);
         },
-        resize: (swiper) => this.updateProgress(swiper),
-        breakpoint: (swiper) => this.updateProgress(swiper),
+        resize: (swiper) => this.updateNavigation(swiper),
+        breakpoint: (swiper) => this.updateNavigation(swiper),
       },
     });
   }
@@ -276,6 +276,13 @@ class ShoppableVideoSection extends HTMLElement {
       const page = String(swiper.activeIndex + 1).padStart(2, '0');
       pageLabel.textContent = `${prefix} / Page ${page}`;
     }
+  }
+
+  updateNavigation(swiper) {
+    if (!swiper?.slides?.length) return;
+    const visible = Math.min(Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1), swiper.slides.length);
+    this.querySelector('.shoppable-video-section__panel')?.classList.toggle('is-carousel-scrollable', swiper.slides.length > Math.ceil(visible));
+    this.updateProgress(swiper);
   }
 
   handleClick(event) {

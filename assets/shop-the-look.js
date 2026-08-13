@@ -56,8 +56,8 @@ class ShopTheLook extends HTMLElement {
       on: {
         init: (swiper) => this.syncActiveState(swiper.activeIndex),
         slideChange: (swiper) => this.syncActiveState(swiper.activeIndex),
-        imagesReady: () => this.updateNavigatorPosition(),
-        resize: () => this.updateNavigatorPosition(),
+        imagesReady: () => this.updateNavigation(),
+        resize: () => this.updateNavigation(),
       },
     });
   }
@@ -106,6 +106,13 @@ class ShopTheLook extends HTMLElement {
       const center = mediaRect.top - spotlightRect.top + (mediaRect.height / 2);
       this.spotlight.style.setProperty('--shop-the-look-media-center', `${center}px`);
     });
+  }
+
+  updateNavigation() {
+    if (!this.spotlight || !this.swiper?.slides?.length) return;
+    const visible = Math.min(Math.max(this.swiper.slidesPerViewDynamic(), Number(this.swiper.params.slidesPerView) || 1), this.swiper.slides.length);
+    this.spotlight.classList.toggle('is-carousel-scrollable', this.swiper.slides.length > Math.ceil(visible));
+    this.updateNavigatorPosition();
   }
 
   updatePagination(index) {
