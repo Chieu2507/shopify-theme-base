@@ -126,7 +126,7 @@
     <span class="cart-drawer__backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
     <aside class="cart-drawer__panel modal-drag-target" role="dialog" aria-modal="true" aria-labelledby="CartDrawerTitle" tabindex="-1">
       <header class="cart-drawer__header">
-        <h2 id="CartDrawerTitle" class="cart-drawer__title {% render 'typography-class', preset: section.settings.heading_size, fallback: 'custom' %}"{% if section.settings.heading_size == 'custom' %} style="--cart-drawer-custom-font-size: {{ section.settings.heading_font_size }}px; --cart-drawer-custom-font-size-mobile: {{ section.settings.heading_font_size_mobile }}px;"{% endif %}>{{ section.settings.heading | escape }}</h2>
+        <h2 id="CartDrawerTitle" class="cart-drawer__title {% render 'typography-class', preset: section.settings.heading_size, fallback: 'custom' %}"{% if section.settings.heading_size == 'custom' %} style="--cart-drawer-custom-font-size: {{ section.settings.heading_font_size }}px; --cart-drawer-custom-font-size-mobile: {{ section.settings.heading_font_size_mobile }}px;"{% endif %}>{{ section.settings.heading | escape }} <span class="cart-drawer__item-count" data-cart-drawer-item-count>({{ cart.item_count }})</span></h2>
         <button class="cart-drawer__close modal-close-button close-icon" type="button" aria-label="{{ 'cart_drawer.close' | t | default: 'Close cart' | escape }}" data-cart-drawer-close></button>
       </header>
 
@@ -134,21 +134,25 @@
         <p class="cart-drawer__status visually-hidden" data-cart-drawer-status role="status" aria-live="polite" hidden></p>
         <div class="cart-drawer__loading" data-cart-drawer-loading hidden aria-hidden="true"><span class="cart-drawer__loading-spinner"></span></div>
 
+        {% if section.settings.free_shipping_enable %}
+          <div class="cart-drawer__shipping-progress" data-cart-drawer-shipping-progress hidden>
+            <div class="cart-drawer__shipping-progress-copy">
+              <p><span class="cart-drawer__shipping-progress-icon" aria-hidden="true">{% render 'icon', name: 'truck' %}</span><span data-cart-drawer-shipping-message></span></p>
+              <span class="cart-drawer__shipping-progress-track" aria-hidden="true"><span data-cart-drawer-shipping-progress-value></span></span>
+            </div>
+            <p class="cart-drawer__shipping-progress-goal"><span>Free shipping</span><span data-cart-drawer-shipping-goal>{{ section.settings.free_shipping_threshold | times: 100 | money_with_currency }}</span></p>
+          </div>
+          <template data-cart-drawer-shipping-copy data-pending="{{ section.settings.free_shipping_pending_message | escape }}" data-success="{{ section.settings.free_shipping_success_message | escape }}"></template>
+        {% endif %}
+
         {% if section.settings.promotion_enable and section.settings.promotion_message != blank %}
           <div class="cart-drawer__promotion cart-drawer__promotion--{{ section.settings.promotion_direction }}{% if section.settings.promotion_uppercase %} cart-drawer__promotion--uppercase{% endif %}{% if section.settings.free_shipping_enable %} cart-drawer__promotion--with-shipping{% endif %}"{% if cart.item_count == 0 %} hidden{% endif %}{% if section.settings.promotion_pause_on_hover %} data-cart-drawer-promotion-pause{% endif %}>
             <div class="cart-drawer__promotion-track" data-cart-drawer-promotion-track>
               <div class="cart-drawer__promotion-sequence" data-cart-drawer-promotion-sequence><span data-cart-drawer-promotion-item>{% render 'icon', name: 'discount', class: 'cart-drawer__promotion-icon' %}{{ section.settings.promotion_message | escape }}</span></div>
               <div class="cart-drawer__promotion-sequence" aria-hidden="true" data-cart-drawer-promotion-sequence-clone><span>{% render 'icon', name: 'discount', class: 'cart-drawer__promotion-icon' %}{{ section.settings.promotion_message | escape }}</span></div>
             </div>
+            {% if cart_tools_show_discount %}<button class="cart-drawer__promotion-apply" type="button" data-cart-drawer-order-options-open="discount" data-cart-drawer-order-options-title="Discount">{{ cart_tools_discount_button_label | escape }}</button>{% endif %}
           </div>
-        {% endif %}
-
-        {% if section.settings.free_shipping_enable %}
-          <div class="cart-drawer__shipping-progress" data-cart-drawer-shipping-progress hidden>
-            <p><span class="cart-drawer__shipping-progress-icon" aria-hidden="true">{% render 'icon', name: 'truck' %}</span><span data-cart-drawer-shipping-message></span></p>
-            <span class="cart-drawer__shipping-progress-track" aria-hidden="true"><span data-cart-drawer-shipping-progress-value></span></span>
-          </div>
-          <template data-cart-drawer-shipping-copy data-pending="{{ section.settings.free_shipping_pending_message | escape }}" data-success="{{ section.settings.free_shipping_success_message | escape }}"></template>
         {% endif %}
 
         <div class="cart-drawer__items" data-cart-drawer-items></div>
@@ -215,19 +219,19 @@
             {% if cart_tools_show_note %}
               <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="note" data-cart-drawer-order-options-title="{{ cart_tools_note_label | escape }}">
                 <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'note' %}</span>
-                <span>{{ cart_tools_note_label | escape }}</span>
+                <span class="cart-drawer__order-options-action-copy"><span>{{ cart_tools_note_label | escape }}</span><small>Add a note</small></span>
               </button>
             {% endif %}
             {% if cart_tools_shipping_enabled %}
               <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="shipping" data-cart-drawer-order-options-title="{{ cart_tools_shipping_label | escape }}">
                 <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'shipping' %}</span>
-                <span>Shipping</span>
+                <span class="cart-drawer__order-options-action-copy"><span>Shipping</span><small>Calculated at checkout</small></span>
               </button>
             {% endif %}
             {% if cart_tools_show_discount %}
               <button class="cart-drawer__order-options-action" type="button" aria-expanded="false" aria-controls="CartDrawerOrderOptions-{{ section.id }}" data-cart-drawer-order-options-open="discount" data-cart-drawer-order-options-title="Discount">
                 <span class="cart-drawer__order-options-action-icon" aria-hidden="true">{% render 'icon', name: 'tag' %}</span>
-                <span>Discount<span class="cart-drawer__order-options-discount-count">(<span data-cart-drawer-discount-count>0</span>)</span></span>
+                <span class="cart-drawer__order-options-action-copy"><span>Discount <span class="cart-drawer__order-options-discount-count">(<span data-cart-drawer-discount-count>0</span>)</span></span><small>Add code</small></span>
               </button>
             {% endif %}
           </div>
@@ -273,6 +277,10 @@
           </div>
         {% endif %}
 
+        <div class="cart-drawer__summary" aria-label="Cart summary">
+          <div><span>Subtotal</span><span data-cart-drawer-subtotal>{% render 'money', amount: cart.items_subtotal_price %}</span></div>
+          <div><span>Shipping</span><span>Calculated at checkout</span></div>
+        </div>
         <div class="cart-drawer__total"><span class="cart-drawer__total-label {% render 'typography-class', preset: cart_total_label_size, fallback: 'h6' %}">{{ 'cart_drawer.total' | t | default: 'Total' | escape }}</span><strong class="cart-drawer__total-price {% case cart_total_price_size %}{% when 'lg' %}body-p0 body-text{% when 'md' %}body-p1 body-text{% when 'sm' %}body-p2 body-text{% when 'xs' %}body-p3 body-text{% when 'label' %}label-text{% when 'custom' %}body-custom body-text{% else %}body-p1 body-text{% endcase %}{% if cart_savings > 0 %} is-sale{% endif %}" data-cart-drawer-total>{% render 'money', amount: cart.total_price %}</strong></div>
         <div class="cart-drawer__total-discount" data-cart-drawer-total-discount{% if cart_savings <= 0 %} hidden{% endif %}>
           <span>{{ 'cart_drawer.savings' | t | default: 'You have saved' | escape }} <span data-cart-drawer-savings-amount>{% render 'money', amount: cart_savings %}</span>!</span>
