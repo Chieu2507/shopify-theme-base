@@ -49,8 +49,8 @@
     if (element.hasAttribute('data-reveal')) {
       element.dataset.reveal = variants.has(element.dataset.reveal) ? element.dataset.reveal : defaultVariant;
     }
-    const duration = parseTiming(element.dataset.revealDuration, 650);
-    const delay = parseTiming(element.dataset.revealDelay, 0);
+    const duration = parseTiming(element.dataset.revealDuration, 800);
+    const delay = parseTiming(element.dataset.revealDelay, 120);
 
     element.style.setProperty('--reveal-duration', `${duration}ms`);
     element.style.setProperty('--reveal-delay', `${delay}ms`);
