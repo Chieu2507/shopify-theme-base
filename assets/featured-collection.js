@@ -258,6 +258,7 @@ class FeaturedCollection extends HTMLElement {
     const visible = Math.min(Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1), swiper.slides.length);
     const hasOverflow = swiper.slides.length > Math.ceil(visible);
     panel.classList.toggle('is-carousel-scrollable', hasOverflow);
+    panel.classList.add('is-carousel-navigation-ready');
     panel.querySelectorAll('[data-featured-collection-previous], [data-featured-collection-next]').forEach((button) => {
       button.disabled = !hasOverflow;
     });
