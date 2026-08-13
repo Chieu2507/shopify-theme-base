@@ -242,7 +242,7 @@ import { A11y, Swiper } from './swiper-loader.js';
         return;
       }
 
-      const mobileSlidesPerView = Math.min(this.categorySlidesPerView, 1.15);
+      const mobileSlidesPerView = Math.min(this.categorySlidesPerView, 2.5);
 
       this.categoriesSwiper = new Swiper(this.categoriesCarousel, {
         modules: [A11y],
