@@ -229,16 +229,18 @@
                     {{ block.shopify_attributes }}
                   >
                     <div class="featured-collection__carousel swiper" data-featured-collection-carousel>
-                      <ul class="featured-collection__products swiper-wrapper" role="list" data-featured-collection-scroller>
+                      <ul class="featured-collection__products swiper-wrapper" role="list" data-featured-collection-scroller data-reveal-group>
                       {% if block.settings.source == 'recently_viewed' %}
                         {% if request.design_mode %}
                           {% for placeholder_index in (1..panel_skeleton_count) %}
                             <li class="featured-collection__product swiper-slide">
-                              {% render 'product-card',
+                              <div class="featured-collection__product-reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+                                {% render 'product-card',
                                 show_media_actions: true,
                                 enable_quick_view: true,
                                 placeholder_index: placeholder_index
-                              %}
+                                %}
+                              </div>
                             </li>
                           {% endfor %}
                         {% endif %}
@@ -255,24 +257,28 @@
                             endif
                           %}
                           <li class="featured-collection__product swiper-slide">
-                            {% render 'product-card',
+                            <div class="featured-collection__product-reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+                              {% render 'product-card',
                               product: product,
                               show_media_actions: true,
                               enable_quick_view: true,
                               loading: card_loading,
                               fetchpriority: card_fetchpriority,
                               preload: card_preload
-                            %}
+                              %}
+                            </div>
                           </li>
                         {% endfor %}
                       {% else %}
                         {% for placeholder_index in (1..panel_skeleton_count) %}
                           <li class="featured-collection__product swiper-slide">
-                            {% render 'product-card',
+                            <div class="featured-collection__product-reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+                              {% render 'product-card',
                               show_media_actions: true,
                               enable_quick_view: true,
                               placeholder_index: placeholder_index
-                            %}
+                              %}
+                            </div>
                           </li>
                         {% endfor %}
                       {% endif %}
