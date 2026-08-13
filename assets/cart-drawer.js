@@ -617,9 +617,15 @@ import { A11y, Swiper } from './swiper-loader.js';
         clone.removeAttribute('data-cart-drawer-promotion-item');
         clone.setAttribute('data-cart-drawer-promotion-item-clone', '');
         clone.setAttribute('aria-hidden', 'true');
+        clone.querySelectorAll('button').forEach((button) => { button.tabIndex = -1; });
         this.promotionSequence.append(clone);
       }
-      this.promotionSequenceClone.replaceChildren(...[...this.promotionSequence.children].map((child) => child.cloneNode(true)));
+      const cloneItems = [...this.promotionSequence.children].map((child) => {
+        const clone = child.cloneNode(true);
+        clone.querySelectorAll('button').forEach((button) => { button.tabIndex = -1; });
+        return clone;
+      });
+      this.promotionSequenceClone.replaceChildren(...cloneItems);
       this.promotionTrack.style.setProperty('--cart-promotion-sequence-width', `${this.promotionSequence.getBoundingClientRect().width}px`);
     }
 
