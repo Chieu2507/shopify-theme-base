@@ -986,7 +986,7 @@ changeLightboxSlide(delta) {
           target.querySelector('[data-recommendation-list]')?.replaceWith(list);
           target.hidden = false;
           target.removeAttribute('aria-busy');
-          window.ThemeAnimations?.init(target);
+          window.ThemeAnimations?.refresh(target);
         }
         else if (isDesignMode) {
           target.hidden = false;
@@ -1059,7 +1059,7 @@ changeLightboxSlide(delta) {
       return item;
     }));
     section.hidden = false;
-    window.ThemeAnimations?.init(section);
+    window.ThemeAnimations?.refresh(section);
   }
 
   onOptionChange() {
