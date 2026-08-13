@@ -61,9 +61,11 @@ class EditorialCollectionTabs extends HTMLElement {
     const desktopColumns = Number.parseInt(this.dataset.desktopColumns, 10) || 4;
     const mobileColumns = Number.parseFloat(this.dataset.mobileColumns) || 1;
     const tabletColumns = Math.min(desktopColumns, 2);
+    const productCount = carousel.querySelectorAll('.swiper-slide').length;
+    const mobileSlides = mobileColumns === 1 && productCount > 1 ? 1.2 : mobileColumns;
     const swiper = new Swiper(carousel, {
       modules: [A11y, Navigation],
-      slidesPerView: mobileColumns,
+      slidesPerView: mobileSlides,
       spaceBetween: this.cssNumber('--editorial-tabs-mobile-gap'),
       speed: this.reduceMotion ? 0 : 360,
       watchOverflow: true,
