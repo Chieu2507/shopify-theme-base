@@ -7,13 +7,15 @@
         </div>
       {% endif %}
     {% endfor %}
-    <div class="collapsible-content__items">
+    <div class="collapsible-content__items" data-reveal-group>
+      {% assign collapsible_reveal_index = 0 %}
       {% for block in section.blocks %}
         {% if block.type == 'item' %}
-          <details class="collapsible-content__item" data-animated-details {% if block.settings.open_by_default %}open{% endif %} {{ block.shopify_attributes }}>
+          <details class="collapsible-content__item" data-animated-details data-reveal-item style="--reveal-order: {{ collapsible_reveal_index }};" {% if block.settings.open_by_default %}open{% endif %} {{ block.shopify_attributes }}>
             <summary><{{ block.settings.heading_tag | default: 'h3' }} class="collapsible-content__item-heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'h4' %}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}><span class="collapsible-content__icon" aria-hidden="true">{% render 'icon', name: 'chevron-up' %}</span></summary>
             <div class="collapsible-content__body content-text spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }} rte" data-accordion-content>{{ block.settings.content }}</div>
           </details>
+          {% assign collapsible_reveal_index = collapsible_reveal_index | plus: 1 %}
         {% endif %}
       {% endfor %}
     </div>

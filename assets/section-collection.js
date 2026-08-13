@@ -534,6 +534,7 @@ if (!customElements.get('collection-facets')) {
 
           currentToolbar.replaceWith(nextToolbar);
           currentProducts.replaceWith(nextProducts);
+          window.ThemeAnimations?.init(nextProducts);
           const currentHeader = this.dialog.querySelector('.main-collection__filter-header');
           const nextHeader = nextDialog.querySelector('.main-collection__filter-header');
           const currentActiveFilters = this.dialog.querySelector('.main-collection__active-filters');
@@ -573,6 +574,7 @@ if (!customElements.get('collection-facets')) {
         } else {
           const nextProducts = nextFacets.querySelector('.main-collection__products');
           this.replaceWith(nextFacets);
+          window.ThemeAnimations?.init(nextProducts);
           nextProducts?.dispatchEvent(new CustomEvent('collection:products-loaded', { bubbles: true }));
         }
       } catch (error) {

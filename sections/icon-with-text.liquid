@@ -51,7 +51,8 @@
       {% endif %}
 
       {% if item_count > 0 %}
-        <div class="icon-with-text__list" role="list">
+        <div class="icon-with-text__list" role="list" data-reveal-group>
+            {% assign icon_with_text_reveal_index = 0 %}
             {% for block in section.blocks %}
               {% if block.type == 'item' %}
                 {% assign item_heading = block.settings.title | default: block.settings.heading %}
@@ -59,7 +60,7 @@
                 {% if item_anchor != blank %}
                   <a class="icon-with-text__item-link" href="#{{ item_anchor }}">
                 {% endif %}
-                <div class="icon-with-text__item icon-with-text__item--{{ section.settings.item_style | default: 'default' }}" role="listitem" {{ block.shopify_attributes }}>
+                <div class="icon-with-text__item icon-with-text__item--{{ section.settings.item_style | default: 'default' }}" role="listitem" data-reveal-item style="--reveal-order: {{ icon_with_text_reveal_index }};" {{ block.shopify_attributes }}>
                   <div class="icon-with-text__icon" aria-hidden="true">
                     {% if block.settings.icon != blank %}
                       {% render 'responsive-image',
@@ -93,6 +94,7 @@
                 {% if item_anchor != blank %}
                   </a>
                 {% endif %}
+                {% assign icon_with_text_reveal_index = icon_with_text_reveal_index | plus: 1 %}
               {% endif %}
             {% endfor %}
         </div>

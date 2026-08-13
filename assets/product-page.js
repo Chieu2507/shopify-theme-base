@@ -986,6 +986,7 @@ changeLightboxSlide(delta) {
           target.querySelector('[data-recommendation-list]')?.replaceWith(list);
           target.hidden = false;
           target.removeAttribute('aria-busy');
+          window.ThemeAnimations?.refresh(target);
         }
         else if (isDesignMode) {
           target.hidden = false;
@@ -1033,6 +1034,10 @@ changeLightboxSlide(delta) {
     list.replaceChildren(...visible.map((product) => {
       const item = document.createElement('article');
       item.className = 'recently-viewed-products__item';
+      const reveal = document.createElement('div');
+      reveal.className = 'recently-viewed-products__item-reveal';
+      reveal.dataset.revealItem = '';
+      reveal.style.setProperty('--reveal-order', String(visible.indexOf(product)));
       const imageLink = document.createElement('a');
       imageLink.className = 'recently-viewed-products__image';
       imageLink.href = product.url;
@@ -1049,10 +1054,12 @@ changeLightboxSlide(delta) {
       const price = document.createElement('span');
       price.textContent = this.formatPrice(product.price);
       heading.append(titleLink, price);
-      item.append(imageLink, heading);
+      reveal.append(imageLink, heading);
+      item.append(reveal);
       return item;
     }));
     section.hidden = false;
+    window.ThemeAnimations?.refresh(section);
   }
 
   onOptionChange() {

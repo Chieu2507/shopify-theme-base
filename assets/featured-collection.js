@@ -140,7 +140,7 @@ class FeaturedCollection extends HTMLElement {
         tab?.remove();
         return;
       }
-      list.replaceChildren(...visibleProducts.map((product) => this.createRecentlyViewedCard(product)));
+      list.replaceChildren(...visibleProducts.map((product, index) => this.createRecentlyViewedCard(product, index)));
     });
 
     this.tabs = Array.from(this.querySelectorAll('[data-featured-collection-tab]'));
@@ -153,12 +153,17 @@ class FeaturedCollection extends HTMLElement {
     const selectedTab = this.tabs.find((tab) => tab.getAttribute('aria-selected') === 'true') || this.tabs[0];
     this.selectTab(selectedTab);
     this.hidden = false;
+    window.ThemeAnimations?.refresh(this);
     this.dispatchEvent(new CustomEvent('featured-collection:products-loaded', { bubbles: true }));
   }
 
-  createRecentlyViewedCard(product) {
+  createRecentlyViewedCard(product, index) {
     const item = document.createElement('li');
     item.className = 'featured-collection__product swiper-slide';
+    const reveal = document.createElement('div');
+    reveal.className = 'featured-collection__product-reveal';
+    reveal.dataset.revealItem = '';
+    reveal.style.setProperty('--reveal-order', String(index));
     const card = document.createElement('article');
     card.className = 'product-card product-card--recently-viewed';
 
@@ -191,7 +196,8 @@ class FeaturedCollection extends HTMLElement {
     details.append(heading, price);
     content.append(details);
     card.append(media, content);
-    item.append(card);
+    reveal.append(card);
+    item.append(reveal);
     return item;
   }
 

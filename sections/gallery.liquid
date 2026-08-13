@@ -46,7 +46,8 @@
       {% endif %}
 
       {% if image_count > 0 %}
-        <div class="gallery__grid">
+        <div class="gallery__grid" data-reveal-group>
+          {% assign gallery_reveal_index = 0 %}
           {% for block in section.blocks %}
             {% if block.type == 'image' %}
               {% liquid
@@ -59,7 +60,7 @@
                 endif
               %}
 
-              <div class="gallery__item" {{ block.shopify_attributes }}>
+              <div class="gallery__item" data-reveal-item style="--reveal-order: {{ gallery_reveal_index }};" {{ block.shopify_attributes }}>
                   {% if block.settings.link != blank %}<a class="gallery__link" href="{{ block.settings.link | escape }}">{% endif %}
                   <div class="gallery__media">
                     {% render 'responsive-media',
@@ -79,6 +80,7 @@
                   </div>
                 {% if block.settings.link != blank %}</a>{% endif %}
               </div>
+              {% assign gallery_reveal_index = gallery_reveal_index | plus: 1 %}
             {% endif %}
           {% endfor %}
         </div>

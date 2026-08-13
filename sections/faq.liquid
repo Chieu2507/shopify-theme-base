@@ -8,8 +8,9 @@
       <div class="faq__intro content-text spinel-text--{{ section.settings.text_size | default: 'medium' }} content-text--{{ section.settings.text_size | default: 'medium' }} rte">{{ section.settings.text }}</div>
     {% endif %}
 
-    <div class="faq__content">
+    <div class="faq__content" data-reveal-group>
       {% assign has_questions = false %}
+      {% assign faq_reveal_index = 0 %}
       {% for block in section.blocks %}
         {% if block.type == 'group_heading' %}
           {% assign faq_anchor = block.settings.anchor_id | handleize %}
@@ -33,7 +34,7 @@
               {% assign faq_anchor_id = faq_anchor | append: '-' | append: faq_anchor_occurrence %}
             {% endif %}
           {% endif %}
-          <div class="faq__group" id="{{ faq_anchor_id | escape }}" {{ block.shopify_attributes }}>
+          <div class="faq__group" id="{{ faq_anchor_id | escape }}" data-reveal-item style="--reveal-order: {{ faq_reveal_index }};" {{ block.shopify_attributes }}>
             {% if block.settings.heading != blank %}
               <{{ block.settings.heading_tag | default: 'h3' }} class="faq__group-title {% render 'typography-class', preset: block.settings.heading_size, fallback: 'h3' %}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}>
             {% endif %}
@@ -41,9 +42,10 @@
               <div class="faq__group-text content-text spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }} rte">{{ block.settings.text }}</div>
             {% endif %}
           </div>
+          {% assign faq_reveal_index = faq_reveal_index | plus: 1 %}
         {% elsif block.type == 'question' %}
           {% assign has_questions = true %}
-          <details class="faq__item"{% if block.settings.default_open %} open{% endif %} {{ block.shopify_attributes }}>
+          <details class="faq__item" data-reveal-item style="--reveal-order: {{ faq_reveal_index }};"{% if block.settings.default_open %} open{% endif %} {{ block.shopify_attributes }}>
             <summary class="faq__summary">
               <span class="faq__question">{{ block.settings.question | escape }}</span>
               <span class="faq__chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
@@ -52,6 +54,7 @@
               <div class="faq__answer content-text spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }} rte">{{ block.settings.answer }}</div>
             {% endif %}
           </details>
+          {% assign faq_reveal_index = faq_reveal_index | plus: 1 %}
         {% endif %}
       {% endfor %}
 

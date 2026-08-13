@@ -75,6 +75,18 @@
     return elements.length;
   };
 
+  const refresh = (scope = document) => {
+    const elements = [];
+    if (scope instanceof Element && scope.matches(revealSelector)) elements.push(scope);
+    scope.querySelectorAll?.(revealSelector).forEach((element) => elements.push(element));
+    elements.forEach((element) => {
+      observer?.unobserve(element);
+      pending.delete(element);
+      initialized.delete(element);
+    });
+    return init(scope);
+  };
+
   const revealSelectedBlock = (event) => {
     const selected = event.target.closest?.(revealSelector)
       || event.target.querySelector?.(revealSelector);
@@ -92,7 +104,7 @@
     });
   };
 
-  window.ThemeAnimations = Object.freeze({ init });
+  window.ThemeAnimations = Object.freeze({ init, refresh });
 
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => init(), { once: true });

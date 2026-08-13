@@ -113,19 +113,23 @@
         <div class="product-featured-collection__panels">
           <div class="product-featured-collection__panel" data-product-featured-collection-panel {{ collection_block.shopify_attributes }}>
             <div class="product-featured-collection__carousel swiper" data-product-featured-collection-carousel>
-              <ul class="product-featured-collection__products swiper-wrapper" role="list" data-product-featured-collection-scroller>
+              <ul class="product-featured-collection__products swiper-wrapper" role="list" data-product-featured-collection-scroller data-reveal-group>
                 {% if product_source == 'collection' or use_collection_fallback %}
                   {% for card_product in featured_collection.products limit: section.settings.products_to_show %}
                     {% unless card_product.id == product.id %}
                       <li class="product-featured-collection__product swiper-slide">
-                        {% render 'product-card', product: card_product, show_media_actions: true, enable_quick_view: true %}
+                        <div class="product-featured-collection__product-reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+                          {% render 'product-card', product: card_product, show_media_actions: true, enable_quick_view: true %}
+                        </div>
                       </li>
                     {% endunless %}
                   {% endfor %}
                 {% elsif recommendations.performed %}
                   {% for card_product in recommendations.products limit: section.settings.products_to_show %}
                     <li class="product-featured-collection__product swiper-slide">
-                      {% render 'product-card', product: card_product, show_media_actions: true, enable_quick_view: true %}
+                      <div class="product-featured-collection__product-reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+                        {% render 'product-card', product: card_product, show_media_actions: true, enable_quick_view: true %}
+                      </div>
                     </li>
                   {% endfor %}
                 {% endif %}
@@ -138,12 +142,14 @@
                       endif
                     %}
                     <li class="product-featured-collection__product swiper-slide" aria-hidden="true">
-                      {% render 'product-card',
+                      <div class="product-featured-collection__product-reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+                        {% render 'product-card',
                         product: false,
                         show_media_actions: true,
                         enable_quick_view: true,
                         placeholder_index: product_placeholder_index
-                      %}
+                        %}
+                      </div>
                     </li>
                   {% endfor %}
                 {% endif %}
@@ -417,6 +423,10 @@
 
   .product-featured-collection__product {
     min-width: 0;
+  }
+
+  .product-featured-collection__product-reveal {
+    width: 100%;
   }
 
   .product-featured-collection__carousel-button {
