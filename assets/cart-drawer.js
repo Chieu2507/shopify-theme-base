@@ -567,6 +567,8 @@ import { A11y, Swiper } from './swiper-loader.js';
 
     renderEmpty() {
       this.items.innerHTML = this.emptyTemplate ? this.emptyTemplate.innerHTML : '';
+      if (this.itemCount) this.itemCount.textContent = '(0)';
+      if (this.subtotal) this.subtotal.textContent = this.formatMoney(0);
       this.footer.hidden = true;
       if (this.recommendations) this.recommendations.hidden = true;
       this.shippingProgress && (this.shippingProgress.hidden = true);
