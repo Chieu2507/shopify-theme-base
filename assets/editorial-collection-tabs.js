@@ -6,6 +6,7 @@ class EditorialCollectionTabs extends HTMLElement {
     if (this.initialized) return;
     this.initialized = true;
     this.organizeBlocks();
+    window.ThemeAnimations?.refresh(this);
     this.tabs = Array.from(this.querySelectorAll('[data-editorial-collection-tab]'));
     this.panels = Array.from(this.querySelectorAll('[data-editorial-collection-panel]'));
     this.swipers = new Map();
