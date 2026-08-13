@@ -160,6 +160,7 @@ class EditorialCollectionTabs extends HTMLElement {
     const hasOverflow = swiper.slides.length > Math.ceil(visible);
     panel.classList.toggle('is-carousel-scrollable', hasOverflow);
     panel.classList.add('is-carousel-navigation-ready');
+    panel.classList.toggle('is-carousel-static', !hasOverflow);
     panel.querySelectorAll('[data-editorial-collection-previous], [data-editorial-collection-next]').forEach((button) => {
       button.disabled = !hasOverflow;
     });
