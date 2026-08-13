@@ -11,6 +11,13 @@
   assign products = block.settings.products
   assign featured_product = products | first
   assign product_count = products.count | default: 0
+  assign product_placeholder_index = 1
+  for sibling_block in section.blocks
+    if sibling_block.id == block.id
+      assign product_placeholder_index = forloop.index | minus: 1 | modulo: 3 | plus: 1
+      break
+    endif
+  endfor
   assign modal_image = block.settings.look_image | default: poster | default: featured_product.featured_image
   assign video_alt = block.settings.video_alt | default: poster.alt
   assign poster_url = blank
@@ -87,7 +94,8 @@
           alt: featured_product.featured_image.alt
         %}
       {% else %}
-          {% render 'media-placeholder', class_name: 'shoppable-video-card__product-placeholder', asset_name: 'placeholder-image-product-' | append: forloop.index | append: '.svg' %}
+        {% assign product_placeholder_asset = 'placeholder-image-product-' | append: product_placeholder_index | append: '.svg' %}
+        {% render 'media-placeholder', class_name: 'shoppable-video-card__product-placeholder', asset_name: product_placeholder_asset %}
       {% endif %}
     </div>
 
