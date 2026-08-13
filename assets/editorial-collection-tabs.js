@@ -61,12 +61,9 @@ class EditorialCollectionTabs extends HTMLElement {
     const desktopColumns = Number.parseInt(this.dataset.desktopColumns, 10) || 4;
     const mobileColumns = Number.parseFloat(this.dataset.mobileColumns) || 1;
     const tabletColumns = Math.min(desktopColumns, 2);
-    const productCount = carousel.querySelectorAll('.swiper-slide').length;
-    const slidesWithPreview = (columns, preview) => columns + (preview && productCount > columns ? 0.15 : 0);
-
     const swiper = new Swiper(carousel, {
       modules: [A11y, Navigation],
-      slidesPerView: slidesWithPreview(mobileColumns, true),
+      slidesPerView: mobileColumns,
       spaceBetween: this.cssNumber('--editorial-tabs-mobile-gap'),
       speed: this.reduceMotion ? 0 : 360,
       watchOverflow: true,
@@ -77,7 +74,7 @@ class EditorialCollectionTabs extends HTMLElement {
       a11y: { enabled: true, slideRole: 'listitem' },
       breakpoints: {
         768: {
-          slidesPerView: slidesWithPreview(tabletColumns, true),
+          slidesPerView: tabletColumns,
           spaceBetween: this.cssNumber('--editorial-tabs-gap'),
         },
         1150: {
