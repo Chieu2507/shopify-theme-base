@@ -5,6 +5,7 @@ class EditorialCollectionTabs extends HTMLElement {
   connectedCallback() {
     if (this.initialized) return;
     this.initialized = true;
+    this.organizeBlocks();
     this.tabs = Array.from(this.querySelectorAll('[data-editorial-collection-tab]'));
     this.panels = Array.from(this.querySelectorAll('[data-editorial-collection-panel]'));
     this.swipers = new Map();
@@ -15,7 +16,18 @@ class EditorialCollectionTabs extends HTMLElement {
     this.addEventListener('click', this.onClick);
     this.addEventListener('keydown', this.onKeydown);
     document.addEventListener('shopify:block:select', this.onBlockSelect);
+    if (this.tabs.length) this.selectTab(this.tabs[0]);
     this.cancelDeferredInitialization = initializeWhenVisible(this, () => this.activateCarousels());
+  }
+
+  organizeBlocks() {
+    const source = this.querySelector('[data-editorial-collection-source]');
+    const tablist = this.querySelector('[data-editorial-collection-tablist]');
+    const panels = this.querySelector('[data-editorial-collection-panels]');
+    if (!source || !tablist || !panels) return;
+    source.querySelectorAll('[data-editorial-collection-tab]').forEach((tab) => tablist.append(tab));
+    source.querySelectorAll('[data-editorial-collection-panel]').forEach((panel) => panels.append(panel));
+    source.remove();
   }
 
   disconnectedCallback() {
@@ -116,7 +128,8 @@ class EditorialCollectionTabs extends HTMLElement {
   updateProgress(panel, swiper) {
     const progress = panel.querySelector('[data-editorial-collection-progress]');
     if (!progress || !swiper?.slides?.length) return;
-    const total = Number.parseInt(panel.dataset.productTotal, 10) || swiper.slides.length;
+    const parsedTotal = Number.parseInt(panel.dataset.productTotal, 10);
+    const total = Number.isNaN(parsedTotal) ? swiper.slides.length : parsedTotal;
     const visible = Math.min(
       Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1),
       swiper.slides.length,
