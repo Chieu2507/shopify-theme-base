@@ -21,10 +21,14 @@
     assign image_alt = block.settings.alt | default: block.settings.image.alt
     assign image_ratio = block.settings.image_ratio | default: 'adapt'
     assign link_label = block.settings.link_label | default: image_alt | default: 'View linked image'
+    assign media_placeholder_modifier = ''
+    if block.settings.image == blank
+      assign media_placeholder_modifier = ' highlight-text-with-image__media--placeholder'
+    endif
 
     capture inline_media
       if block.settings.link != blank
-        echo '<a class="highlight-text-with-image__media highlight-text-with-image__media--' | append: block.settings.corner_style | append: ' highlight-text-with-image__media--ratio-' | append: image_ratio | append: '" href="' | append: block.settings.link | escape | append: '"'
+        echo '<a class="highlight-text-with-image__media highlight-text-with-image__media--' | append: block.settings.corner_style | append: ' highlight-text-with-image__media--ratio-' | append: image_ratio | append: media_placeholder_modifier | append: '" href="' | append: block.settings.link | escape | append: '"'
         if block.settings.open_in_new_tab
           echo ' target="_blank" rel="noopener noreferrer"'
         endif
@@ -34,14 +38,14 @@
         endif
         echo '" ' | append: block.shopify_attributes | append: '>'
       else
-        echo '<span class="highlight-text-with-image__media highlight-text-with-image__media--' | append: block.settings.corner_style | append: ' highlight-text-with-image__media--ratio-' | append: image_ratio | append: '" style="--highlight-media-width: ' | append: block.settings.width | append: 'px; --highlight-media-width-mobile: ' | append: block.settings.width_mobile | append: 'px;'
+        echo '<span class="highlight-text-with-image__media highlight-text-with-image__media--' | append: block.settings.corner_style | append: ' highlight-text-with-image__media--ratio-' | append: image_ratio | append: media_placeholder_modifier | append: '" style="--highlight-media-width: ' | append: block.settings.width | append: 'px; --highlight-media-width-mobile: ' | append: block.settings.width_mobile | append: 'px;'
         if image_ratio != 'adapt'
           echo ' --highlight-media-ratio: ' | append: image_ratio | append: ';'
         endif
         echo '" ' | append: block.shopify_attributes | append: '>'
       endif
 
-      render 'responsive-media', image: block.settings.image, max_width: 480, widths: '32, 48, 64, 80, 120, 160, 240, 320, 480', sizes: '(min-width: 768px) 160px, 96px', class: 'highlight-text-with-image__image', alt: image_alt, decorative: false, loading: 'lazy', placeholder_asset: 'placeholder-image-default-1.svg', placeholder_class: 'highlight-text-with-image__image'
+      render 'responsive-media', image: block.settings.image, max_width: 480, widths: '32, 48, 64, 80, 120, 160, 240, 320, 480', sizes: '(min-width: 768px) 160px, 96px', class: 'highlight-text-with-image__image', alt: image_alt, decorative: false, loading: 'lazy', placeholder_asset: 'placeholder-image-default-1.svg', placeholder_class: 'highlight-text-with-image__image highlight-text-with-image__placeholder'
 
       if block.settings.link != blank
         echo '</a>'
