@@ -7,8 +7,14 @@
   case section.settings.category_image_ratio
     when 'portrait'
       assign search_drawer_category_image_ratio = '4 / 5'
+    when 'tall'
+      assign search_drawer_category_image_ratio = '3 / 4'
+    when 'classic'
+      assign search_drawer_category_image_ratio = '4 / 3'
     when 'landscape'
       assign search_drawer_category_image_ratio = '3 / 2'
+    when 'wide'
+      assign search_drawer_category_image_ratio = '16 / 9'
   endcase
 
   if request.design_mode or request.visual_preview_mode
@@ -50,6 +56,7 @@
   data-predictive-search-url="{{ routes.predictive_search_url | append: '.json' | escape }}"
   data-placeholder-terms="{{ section.settings.animated_placeholder_terms | escape }}"
   data-category-slides-per-view="{{ section.settings.category_slides_per_view }}"
+  data-category-slides-per-view-mobile="{{ section.settings.category_slides_per_view_mobile }}"
   data-recently-viewed-enabled="{{ section.settings.show_recently_viewed }}"
   data-recently-viewed-limit="{{ section.settings.recently_viewed_limit }}"
   data-show-quick-add="{{ section.settings.show_quick_add }}"
@@ -370,8 +377,9 @@
     { "type": "range", "id": "popular_categories_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 100, "step": 2, "unit": "px", "default": 50, "visible_if": "{{ section.settings.popular_categories_heading_size == 'custom' }}" },
     { "type": "range", "id": "popular_categories_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 100, "step": 2, "unit": "px", "default": 30, "visible_if": "{{ section.settings.popular_categories_heading_size == 'custom' }}" },
     { "type": "collection_list", "id": "popular_categories", "label": "Collections", "limit": 8 },
-    { "type": "select", "id": "category_image_ratio", "label": "Image aspect ratio", "options": [{ "value": "square", "label": "Square (1:1)" }, { "value": "portrait", "label": "Portrait (4:5)" }, { "value": "landscape", "label": "Landscape (3:2)" }], "default": "square" },
-    { "type": "range", "id": "category_slides_per_view", "label": "Cards per view", "info": "Increase this value to make cards narrower.", "min": 1, "max": 4, "step": 0.5, "default": 3 },
+    { "type": "select", "id": "category_image_ratio", "label": "Image aspect ratio", "options": [{ "value": "square", "label": "Square (1:1)" }, { "value": "portrait", "label": "Portrait (4:5)" }, { "value": "tall", "label": "Tall portrait (3:4)" }, { "value": "classic", "label": "Classic (4:3)" }, { "value": "landscape", "label": "Landscape (3:2)" }, { "value": "wide", "label": "Wide (16:9)" }], "default": "square" },
+    { "type": "range", "id": "category_slides_per_view", "label": "Cards per view", "info": "3.5 is compact and balanced. Increase this value to make cards smaller.", "min": 2, "max": 5, "step": 0.5, "default": 3.5 },
+    { "type": "range", "id": "category_slides_per_view_mobile", "label": "Mobile cards per view", "info": "Use a lower value than desktop to keep collection names readable.", "min": 1.5, "max": 4, "step": 0.5, "default": 3 },
     { "type": "header", "content": "Recently viewed" },
     { "type": "checkbox", "id": "show_recently_viewed", "label": "Show recently viewed products", "default": true },
     { "type": "text", "id": "recently_viewed_heading", "label": "Heading", "default": "Recently viewed", "visible_if": "{{ section.settings.show_recently_viewed }}" },
