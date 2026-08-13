@@ -38,6 +38,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.promotionTrack = this.querySelector('[data-cart-drawer-promotion-track]');
       this.promotionSequence = this.querySelector('[data-cart-drawer-promotion-sequence]');
       this.promotionSequenceClone = this.querySelector('[data-cart-drawer-promotion-sequence-clone]');
+      this.promotionTooltip = this.querySelector('[data-cart-drawer-promotion-tooltip]');
       this.shippingMessage = this.querySelector('[data-cart-drawer-shipping-message]');
       this.shippingProgressValue = this.querySelector('[data-cart-drawer-shipping-progress-value]');
       this.shippingGoal = this.querySelector('[data-cart-drawer-shipping-goal]');
@@ -149,6 +150,12 @@ import { A11y, Swiper } from './swiper-loader.js';
         if (orderOptionsTrigger) {
           event.preventDefault();
           this.openOrderOptions(orderOptionsTrigger.dataset.cartDrawerOrderOptionsOpen, orderOptionsTrigger);
+          return;
+        }
+        const promotionCode = event.target.closest('[data-cart-drawer-promotion-code]');
+        if (promotionCode?.dataset.cartDrawerPromotionCode) {
+          event.preventDefault();
+          this.applyPromotionCode(promotionCode.dataset.cartDrawerPromotionCode);
           return;
         }
         if (event.target.closest('[data-cart-drawer-order-options-close]')) {
@@ -1116,6 +1123,29 @@ import { A11y, Swiper } from './swiper-loader.js';
         if (button) button.disabled = false;
         this.setStatus('');
       }
+    }
+
+    async applyPromotionCode(code) {
+      const discountForm = this.querySelector('[data-cart-drawer-discount]');
+      const input = discountForm?.querySelector('input[name="discount"]');
+      if (!input || !discountForm) return;
+      input.value = code;
+      await this.applyDiscount(discountForm);
+      if (this.message?.dataset.error === 'false' && !this.message.hidden) this.showPromotionTooltip(this.message.textContent);
+    }
+
+    showPromotionTooltip(message) {
+      if (!this.promotionTooltip || !message) return;
+      window.clearTimeout(this.promotionTooltipTimer);
+      this.promotionTooltip.textContent = message;
+      this.promotionTooltip.hidden = false;
+      this.promotionTooltip.classList.add('is-visible');
+      this.promotionTooltipTimer = window.setTimeout(() => {
+        this.promotionTooltip?.classList.remove('is-visible');
+        window.setTimeout(() => {
+          if (this.promotionTooltip && !this.promotionTooltip.classList.contains('is-visible')) this.promotionTooltip.hidden = true;
+        }, 180);
+      }, 2400);
     }
 
     async saveNote() {
