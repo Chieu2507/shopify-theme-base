@@ -50,14 +50,9 @@
     <ul class="header__menu" role="list">
       {% for link in menu_links %}
         {% liquid
-          assign badge_block = nil
           assign mega_menu_block = nil
           assign menu_link_title = link.title | strip | downcase
           for block in section.blocks
-            assign block_menu_item = block.settings.menu_item | strip | downcase
-            if block.type == 'menu_badge' and block_menu_item != blank and block_menu_item == menu_link_title
-              assign badge_block = block
-            endif
             if block.type == 'mega_menu' and block.settings.menu_item != blank
               assign mega_menu_items = block.settings.menu_item | split: ';'
               for mega_menu_item in mega_menu_items
@@ -93,12 +88,11 @@
         <li class="header__menu-item{% if has_submenu %} header__menu-item--has-children{% endif %}{% if mega_menu_block != nil and has_submenu %} header__menu-item--mega{% endif %}">
           {% if has_submenu %}
             {% if is_mobile_navigation and link_has_destination %}
-              <a class="header__mobile-menu-direct-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" href="{{ link.url | escape }}"{% if link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ link.title | escape }}</span>{% if badge_block != nil and badge_block.settings.text != blank %}<span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>{% endif %}</a>
+              <a class="header__mobile-menu-direct-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" href="{{ link.url | escape }}"{% if link.current %} aria-current="page"{% endif %}><span class="{{ navigation_label_class }}">{{ link.title | escape }}</span></a>
             {% endif %}
             <details class="header__submenu-disclosure{% unless link_has_destination %} header__submenu-disclosure--no-direct-link{% endunless %}{% if mega_menu_block != nil %} header__submenu-disclosure--mega{% endif %}{% if section.settings.dropdown_trigger == 'hover' %} header__submenu-disclosure--hover{% endif %}{% if section.settings.underline_active_link %} header__submenu-disclosure--underline-active{% endif %}">
               <summary class="header__menu-link{% if link.current or link.child_active %} header__menu-link--active{% endif %}" data-open-label="{{ 'header.open_submenu' | t: item: link.title | escape }}" data-close-label="{{ 'header.close_submenu' | t: item: link.title | escape }}" aria-controls="{{ submenu_id }}">
                 <span class="header__menu-link-title" title="{{ link.title | escape }}">{{ link.title | escape }}</span>
-                {% if badge_block != nil and badge_block.settings.text != blank %}<span class="header__menu-badge header__menu-badge--summary"{% unless is_mobile_navigation and link_has_destination %} {{ badge_block.shopify_attributes }}{% endunless %}>{{ badge_block.settings.text | escape }}</span>{% endif %}
                 <span class="header__dropdown-icon header__dropdown-icon--chevron" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
               </summary>
               {% if mega_menu_block != nil %}
@@ -291,12 +285,10 @@
                 {% if link.current %}aria-current="page"{% endif %}
               >
                 <span class="{{ navigation_label_class }}" title="{{ link.title | escape }}">{{ link.title | escape }}</span>
-                {% if badge_block != nil and badge_block.settings.text != blank %}<span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>{% endif %}
               </a>
             {% else %}
               <span class="header__menu-link header__menu-link--disabled" aria-disabled="true">
                 <span class="{{ navigation_label_class }}" title="{{ link.title | escape }}">{{ link.title | escape }}</span>
-                {% if badge_block != nil and badge_block.settings.text != blank %}<span class="header__menu-badge" {{ badge_block.shopify_attributes }}>{{ badge_block.settings.text | escape }}</span>{% endif %}
               </span>
             {% endif %}
           {% endif %}
@@ -316,14 +308,9 @@
                 <div class="header__mega-inner header__mega-inner--links-only header__overflow-mega-inner theme-scrollbar">
                   {% for overflow_link in menu_links offset: desktop_visible_items %}
                     {% liquid
-                      assign overflow_badge_block = nil
                       assign overflow_mega_menu_block = nil
                       assign overflow_link_title = overflow_link.title | strip | downcase
                       for block in section.blocks
-                        assign overflow_block_menu_item = block.settings.menu_item | strip | downcase
-                        if block.type == 'menu_badge' and overflow_block_menu_item != blank and overflow_block_menu_item == overflow_link_title
-                          assign overflow_badge_block = block
-                        endif
                         if block.type == 'mega_menu' and block.settings.menu_item != blank
                           assign overflow_mega_menu_items = block.settings.menu_item | split: ';'
                           for overflow_mega_menu_item in overflow_mega_menu_items
@@ -376,7 +363,6 @@
                             {% else %}
                               <span class="header__mega-category-title">{{ overflow_link.title | escape }}</span>
                             {% endif %}
-                            {% if overflow_badge_block != nil and overflow_badge_block.settings.text != blank %}<span class="header__menu-badge" {{ overflow_badge_block.shopify_attributes }}>{{ overflow_badge_block.settings.text | escape }}</span>{% endif %}
                           </div>
                           {% if overflow_mega_menu_block.settings.column_heading != blank %}<p class="header__overflow-column-heading">{{ overflow_mega_menu_block.settings.column_heading | escape }}</p>{% endif %}
                           {% if overflow_link.links != blank %}
@@ -491,10 +477,10 @@
                   <button class="header__localization-backdrop" type="button" tabindex="-1" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close data-modal-backdrop></button>
                   <span class="header__localization-backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
                   <div class="header__localization-sheet" aria-labelledby="{{ mobile_country_sheet_title_id }}">
-                    <div class="header__localization-sheet-header">
-                      <span class="header__localization-sheet-handle" aria-hidden="true"></span>
-                      <h2 id="{{ mobile_country_sheet_title_id }}" class="heading-h2 heading-text">{{ 'header.country_region' | t }}</h2>
-                      <button class="header__localization-sheet-close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
+                    <div class="header__localization-sheet-header drawer-sheet__header">
+                      <span class="header__localization-sheet-handle drawer-sheet__handle" aria-hidden="true"></span>
+                      <h2 id="{{ mobile_country_sheet_title_id }}" class="drawer-sheet__title">{{ 'header.country_region' | t }}</h2>
+                      <button class="header__localization-sheet-close drawer-sheet__close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
                     </div>
                     {% form 'localization', id: mobile_country_form_id %}
                       <div class="header__localization-select" data-header-country-picker>
@@ -557,10 +543,10 @@
                 <button class="header__localization-backdrop" type="button" tabindex="-1" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close data-modal-backdrop></button>
                 <span class="header__localization-backdrop-pointer modal-backdrop-pointer modal-close-button close-icon" aria-hidden="true"></span>
                 <div class="header__localization-sheet" aria-labelledby="{{ mobile_language_sheet_title_id }}">
-                  <div class="header__localization-sheet-header">
-                    <span class="header__localization-sheet-handle" aria-hidden="true"></span>
-                    <h2 id="{{ mobile_language_sheet_title_id }}" class="heading-h2 heading-text">{{ 'header.language' | t }}</h2>
-                    <button class="header__localization-sheet-close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
+                  <div class="header__localization-sheet-header drawer-sheet__header">
+                    <span class="header__localization-sheet-handle drawer-sheet__handle" aria-hidden="true"></span>
+                    <h2 id="{{ mobile_language_sheet_title_id }}" class="drawer-sheet__title">{{ 'header.language' | t }}</h2>
+                    <button class="header__localization-sheet-close drawer-sheet__close modal-close-button close-icon" type="button" aria-label="{{ 'header.close_menu' | t | escape }}" data-header-localization-close></button>
                   </div>
                   {% form 'localization', id: mobile_language_form_id %}
                     <div class="header__localization-select" data-header-language-picker>

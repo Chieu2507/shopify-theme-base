@@ -63,6 +63,7 @@
   assign header_color_scheme = section.settings.color_scheme
   assign floating_header_enabled = false
   assign transparent_header_enabled = false
+  assign header_sticky_behavior = section.settings.sticky_behavior
   assign has_menu = false
   assign has_mobile_utilities = false
   assign can_change_country = false
@@ -142,6 +143,10 @@
     endif
   endif
 
+  if section.settings.header_style == 'floating'
+    assign header_sticky_behavior = 'none'
+  endif
+
   if transparent_header_enabled
     assign header_color_scheme = section.settings.transparent_color_scheme
   endif
@@ -195,9 +200,9 @@
 
 <header
   id="Header-{{ section.id }}"
-  class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.underline_active_link %} header--underline-active{% endif %}{% if section.settings.sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}"
+  class="header header--logo-{{ section.settings.header_layout }} header--burger-two_stripes_wide header--drawer-mega color-scheme color-{{ header_color_scheme.id }} full-width{% if section.settings.underline_active_link %} header--underline-active{% endif %}{% if header_sticky_behavior != 'none' %} header--sticky{% endif %}{% if template.name != 'index' %} header--bordered{% endif %}{% if transparent_header_enabled %} header--transparent{% endif %}{% if floating_header_enabled %} header--floating{% endif %}"
   style="--header-height: {{ section.settings.height_desktop }}px; --header-height-mobile: {{ section.settings.height_mobile }}px; --header-surface-background: {{ section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background }}; --header-transparent-scrim-opacity: {{ section.settings.transparent_scrim_opacity | divided_by: 100.0 }};"
-  data-sticky-behavior="{{ section.settings.sticky_behavior }}"
+  data-sticky-behavior="{{ header_sticky_behavior }}"
   data-mega-menu-animation="slide_down"
   data-mega-menu-animation-duration="300"
   data-floating-header="{{ floating_header_enabled }}"
@@ -501,6 +506,7 @@
       "id": "sticky_behavior",
       "label": "Sticky header",
       "info": "On mobile, a sticky header hides while scrolling down and reveals when scrolling up.",
+      "visible_if": "{{ section.settings.header_style != 'floating' }}",
       "options": [
         {
           "value": "none",
@@ -521,8 +527,8 @@
     { "type": "header", "content": "Actions" },
     { "type": "checkbox", "id": "show_search", "label": "Show search", "default": true },
     { "type": "checkbox", "id": "show_localization", "label": "Show country and currency", "default": true },
-    { "type": "checkbox", "id": "show_language", "label": "Show language", "default": true },
     { "type": "checkbox", "id": "show_country_flag", "label": "Country flag", "default": true, "visible_if": "{{ section.settings.show_localization }}" },
+    { "type": "checkbox", "id": "show_language", "label": "Show language", "default": true },
     { "type": "checkbox", "id": "show_account", "label": "Show account", "default": true, "visible_if": "{{ false }}" },
     { "type": "checkbox", "id": "show_cart", "label": "Show cart", "default": true },
     {
@@ -637,28 +643,6 @@
             { "value": "right", "label": "Right" }
           ],
           "default": "center"
-        }
-      ]
-    },
-    {
-      "type": "menu_badge",
-      "name": "Menu badge",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Menu badge"
-        },
-        {
-          "type": "text",
-          "id": "menu_item",
-          "label": "Menu item title",
-          "info": "Match a top-level menu item title. Matching ignores letter case; use one badge block per item."
-        },
-        {
-          "type": "text",
-          "id": "text",
-          "label": "Badge text",
-          "default": "New"
         }
       ]
     },
