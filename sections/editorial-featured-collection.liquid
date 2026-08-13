@@ -29,10 +29,6 @@
   endif
 
   assign desktop_columns = section.settings.columns_desktop | plus: 0
-  assign initial_showing_count = desktop_columns
-  if initial_showing_count > visible_product_count
-    assign initial_showing_count = visible_product_count
-  endif
   assign tablet_columns = desktop_columns
   if tablet_columns > 2
     assign tablet_columns = 2
@@ -41,6 +37,16 @@
   assign mobile_slides_per_view = mobile_columns | plus: 0.2
   assign collection_label = section.settings.collection_label | default: featured_collection.title | default: 'Collection'
   assign view_all_label = section.settings.view_all_label | default: 'View all objects'
+  assign skeleton_product_count = desktop_columns | plus: 2
+  assign rendered_product_count = visible_product_count
+  if featured_collection == blank or product_count == 0
+    assign rendered_product_count = skeleton_product_count
+  endif
+
+  assign initial_showing_count = desktop_columns
+  if initial_showing_count > rendered_product_count
+    assign initial_showing_count = rendered_product_count
+  endif
 %}
 
 <featured-collection
@@ -97,7 +103,7 @@
               </li>
             {% endfor %}
           {% else %}
-            {% for placeholder_index in (1..4) %}
+            {% for placeholder_index in (1..skeleton_product_count) %}
               <li class="editorial-featured-collection__product featured-collection__product swiper-slide" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                 {% render 'product-card',
                   media_ratio: 'global',
@@ -137,9 +143,9 @@
           data-featured-collection-showing
           data-showing-prefix="Showing"
           data-showing-separator="of"
-          data-total="{{ visible_product_count | default: 0 }}"
+          data-total="{{ rendered_product_count }}"
         >
-          Showing {{ initial_showing_count | default: 0 }} of {{ visible_product_count | default: 0 }}
+          Showing {{ initial_showing_count }} of {{ rendered_product_count }}
         </span>
         <div class="editorial-featured-collection__progress featured-collection__progress" aria-hidden="true">
           <span data-featured-collection-progress></span>

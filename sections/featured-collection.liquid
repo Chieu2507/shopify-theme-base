@@ -191,6 +191,10 @@
                         assign panel_product_count = section.settings.products_to_show
                       endif
                     endif
+                    assign panel_skeleton_count = section.settings.columns_desktop | plus: 2
+                    if panel_product_count < panel_skeleton_count and block.settings.collection == blank
+                      assign panel_product_count = panel_skeleton_count
+                    endif
 
                     assign panel_mobile_columns = section.settings.columns_mobile | plus: 0
                     assign panel_tablet_columns = section.settings.columns_desktop
@@ -228,7 +232,7 @@
                       <ul class="featured-collection__products swiper-wrapper" role="list" data-featured-collection-scroller>
                       {% if block.settings.source == 'recently_viewed' %}
                         {% if request.design_mode %}
-                          {% for placeholder_index in (1..section.settings.products_to_show) %}
+                          {% for placeholder_index in (1..panel_skeleton_count) %}
                             <li class="featured-collection__product swiper-slide">
                               {% render 'product-card',
                                 show_media_actions: true,
@@ -262,7 +266,7 @@
                           </li>
                         {% endfor %}
                       {% else %}
-                        {% for placeholder_index in (1..section.settings.products_to_show) %}
+                        {% for placeholder_index in (1..panel_skeleton_count) %}
                           <li class="featured-collection__product swiper-slide">
                             {% render 'product-card',
                               show_media_actions: true,

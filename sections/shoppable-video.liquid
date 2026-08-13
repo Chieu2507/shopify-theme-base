@@ -6,16 +6,26 @@
   if shoppable_video_background == blank
     assign shoppable_video_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
   endif
-  assign video_count = section.blocks.size
+  assign video_count = 0
+  for block in section.blocks
+    if block.type == 'shoppable-video'
+      assign video_count = video_count | plus: 1
+    endif
+  endfor
   assign desktop_columns = section.settings.columns_desktop | plus: 0
+  assign skeleton_video_count = desktop_columns | plus: 2
+  assign rendered_video_count = video_count
+  if rendered_video_count == 0
+    assign rendered_video_count = skeleton_video_count
+  endif
   assign tablet_columns = desktop_columns
   if tablet_columns > 2
     assign tablet_columns = 2
   endif
   assign mobile_columns = section.settings.columns_mobile | plus: 0
   assign initial_showing = desktop_columns
-  if initial_showing > video_count
-    assign initial_showing = video_count
+  if initial_showing > rendered_video_count
+    assign initial_showing = rendered_video_count
   endif
 %}
 
@@ -30,7 +40,7 @@
 {% endstyle %}
 
 <shoppable-video-section
-  class="shoppable-video-section color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if video_count <= desktop_columns %} shoppable-video-section--desktop-static{% endif %}{% if video_count <= tablet_columns %} shoppable-video-section--tablet-static{% endif %}{% if video_count <= mobile_columns %} shoppable-video-section--mobile-static{% endif %}"
+  class="shoppable-video-section color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if rendered_video_count <= desktop_columns %} shoppable-video-section--desktop-static{% endif %}{% if rendered_video_count <= tablet_columns %} shoppable-video-section--tablet-static{% endif %}{% if rendered_video_count <= mobile_columns %} shoppable-video-section--mobile-static{% endif %}"
   data-desktop-columns="{{ section.settings.columns_desktop }}"
   data-mobile-columns="{{ section.settings.columns_mobile }}"
   data-section-id="{{ section.id }}"
@@ -50,11 +60,34 @@
     <div class="shoppable-video-section__panel">
       <div class="shoppable-video-section__carousel swiper" data-shoppable-video-carousel>
         <div class="shoppable-video-section__slides swiper-wrapper" role="list" data-reveal-group>
-          {% content_for 'blocks' %}
+          {% if video_count > 0 %}
+            {% content_for 'blocks' %}
+          {% else %}
+            {% for placeholder_index in (1..skeleton_video_count) %}
+              <article class="shoppable-video-card swiper-slide" role="listitem" aria-hidden="true" data-shoppable-video-slide>
+                <div class="shoppable-video-card__reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+                  <div class="shoppable-video-card__media">
+                    {% render 'media-placeholder', class_name: 'shoppable-video-card__placeholder', placeholder_name: 'image' %}
+                  </div>
+                  <div class="shoppable-video-card__product-strip">
+                    <div class="shoppable-video-card__product-media">
+                      {% assign product_placeholder_index = placeholder_index | minus: 1 | modulo: 4 | plus: 1 %}
+                      {% assign placeholder_asset = 'placeholder-image-product-' | append: product_placeholder_index | append: '.svg' %}
+                      {% render 'media-placeholder', class_name: 'shoppable-video-card__product-placeholder', asset_name: placeholder_asset %}
+                    </div>
+                    <div class="shoppable-video-card__product-copy">
+                      <h3 class="shoppable-video-card__product-title heading-text product-title-text">{{ 'onboarding.product_title' | t }}</h3>
+                    </div>
+                    <div class="shoppable-video-card__product-action"><span class="shoppable-video-card__price">{% render 'money', amount: 0 %}</span></div>
+                  </div>
+                </div>
+              </article>
+            {% endfor %}
+          {% endif %}
         </div>
       </div>
 
-      {% if video_count > 1 %}
+      {% if rendered_video_count > 1 %}
         <button class="shoppable-video-section__arrow shoppable-video-section__arrow--previous" type="button" aria-label="Previous videos" data-shoppable-video-previous>
           {% render 'icon', name: 'chevron-left' %}
         </button>
@@ -67,8 +100,8 @@
         <span
           class="shoppable-video-section__count"
           data-shoppable-video-showing
-          data-total="{{ video_count }}"
-        >Showing {{ initial_showing }} of {{ video_count }}</span>
+          data-total="{{ rendered_video_count }}"
+        >Showing {{ initial_showing }} of {{ rendered_video_count }}</span>
         <div class="shoppable-video-section__progress" aria-hidden="true">
           <span data-shoppable-video-progress></span>
         </div>

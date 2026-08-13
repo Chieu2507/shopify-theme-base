@@ -13,16 +13,6 @@
     assign visible_product_count = products_to_show
   endif
 
-  assign rendered_product_count = visible_product_count
-  if rendered_product_count == 0
-    assign rendered_product_count = 4
-  endif
-
-  assign is_placeholder_collection = false
-  if collection == blank or collection.products_count == 0
-    assign is_placeholder_collection = true
-  endif
-
   assign desktop_columns = section.settings.columns_desktop | default: 4 | plus: 0
   assign tablet_columns = desktop_columns
   if tablet_columns > 2
@@ -30,22 +20,19 @@
   endif
   assign mobile_columns = section.settings.columns_mobile | default: 1 | plus: 0
 
-  assign desktop_slides = desktop_columns
-  assign tablet_slides = tablet_columns
+  assign skeleton_product_count = desktop_columns | plus: 2
+  assign rendered_product_count = visible_product_count
+  if rendered_product_count == 0
+    assign rendered_product_count = skeleton_product_count
+  endif
   assign mobile_slides = mobile_columns
-  if rendered_product_count > desktop_slides
-    assign desktop_slides = desktop_slides | plus: 0.15
-  endif
-  if rendered_product_count > tablet_slides
-    assign tablet_slides = tablet_slides | plus: 0.15
-  endif
-  if rendered_product_count > mobile_slides
-    assign mobile_slides = mobile_slides | plus: 0.2
+  if mobile_columns == 1 and rendered_product_count > 1
+    assign mobile_slides = 1.2
   endif
 
   assign initial_showing_count = desktop_columns
-  if initial_showing_count > visible_product_count
-    assign initial_showing_count = visible_product_count
+  if initial_showing_count > rendered_product_count
+    assign initial_showing_count = rendered_product_count
   endif
   assign tab_label = block.settings.label | default: collection.title | default: 'Collection'
   assign collection_label = block.settings.footer_label | default: tab_label
@@ -81,9 +68,8 @@
   data-editorial-collection-panel
   data-block-id="{{ block.id }}"
   data-collection-label="{{ collection_label | escape }}"
-  data-product-total="{{ visible_product_count }}"
-  {% if is_placeholder_collection %}data-placeholder-collection{% endif %}
-  style="--editorial-tabs-slide-mobile: calc((100% - {{ section.settings.mobile_column_gap }}px * ({{ mobile_slides }} - 1)) / {{ mobile_slides }}); --editorial-tabs-slide-tablet: calc((100% - {{ section.settings.column_gap }}px * ({{ tablet_slides }} - 1)) / {{ tablet_slides }}); --editorial-tabs-slide-desktop: calc((100% - {{ section.settings.column_gap }}px * ({{ desktop_slides }} - 1)) / {{ desktop_slides }});"
+  data-product-total="{{ rendered_product_count }}"
+  style="--editorial-tabs-slide-mobile: calc((100% - {{ section.settings.mobile_column_gap }}px * ({{ mobile_slides }} - 1)) / {{ mobile_slides }}); --editorial-tabs-slide-tablet: calc((100% - {{ section.settings.column_gap }}px * ({{ tablet_columns }} - 1)) / {{ tablet_columns }}); --editorial-tabs-slide-desktop: calc((100% - {{ section.settings.column_gap }}px * ({{ desktop_columns }} - 1)) / {{ desktop_columns }});"
   {{ block.shopify_attributes }}
 >
   <div class="editorial-collection-tabs__carousel swiper" data-editorial-collection-carousel>
@@ -105,7 +91,7 @@
           </li>
         {% endfor %}
       {% else %}
-        {% for placeholder_index in (1..4) %}
+        {% for placeholder_index in (1..skeleton_product_count) %}
           <li class="editorial-collection-tabs__product swiper-slide">
             {% render 'product-card',
               media_ratio: 'global',
@@ -130,8 +116,8 @@
   </button>
 
   <footer class="editorial-collection-tabs__footer" data-editorial-collection-footer>
-    <span class="editorial-collection-tabs__showing" data-editorial-collection-showing data-total="{{ visible_product_count }}">
-      Showing {{ initial_showing_count }} of {{ visible_product_count }}
+    <span class="editorial-collection-tabs__showing" data-editorial-collection-showing data-total="{{ rendered_product_count }}">
+      Showing {{ initial_showing_count }} of {{ rendered_product_count }}
     </span>
     <div class="editorial-collection-tabs__progress" aria-hidden="true"><span data-editorial-collection-progress></span></div>
     <span class="editorial-collection-tabs__page-label" data-editorial-collection-page-label>{{ collection_label | escape }} / Page 01</span>
