@@ -82,7 +82,23 @@ class CollectionList extends HTMLElement {
         slideRole: null,
       },
     });
-    this.swiper.on('update resize breakpoint slideChange transitionEnd', () => this.updateProgress());
+    this.swiper.on('update resize breakpoint slideChange transitionEnd', () => this.updateNavigation());
+    this.updateNavigation();
+  }
+
+  updateNavigation() {
+    const carousel = this.querySelector('.collection-list__carousel');
+    if (!carousel || !this.swiper?.slides?.length) return;
+    const visible = Math.min(
+      Math.max(this.swiper.slidesPerViewDynamic(), Number(this.swiper.params.slidesPerView) || 1),
+      this.swiper.slides.length,
+    );
+    const hasOverflow = this.swiper.slides.length > Math.ceil(visible);
+    carousel.classList.toggle('is-carousel-scrollable', hasOverflow);
+    [this.previousButton, this.nextButton].forEach((button) => {
+      if (button) button.disabled = !hasOverflow;
+    });
+    if (hasOverflow) this.swiper.navigation.update();
     this.updateProgress();
   }
 

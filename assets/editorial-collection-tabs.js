@@ -52,7 +52,7 @@ class EditorialCollectionTabs extends HTMLElement {
     const existing = this.swipers.get(panel);
     if (existing) {
       existing.update();
-      this.updateProgress(panel, existing);
+      this.updateNavigation(panel, existing);
       return;
     }
 
@@ -86,9 +86,9 @@ class EditorialCollectionTabs extends HTMLElement {
         },
       },
     });
-    swiper.on('update resize breakpoint slideChange transitionEnd', () => this.updateProgress(panel, swiper));
+    swiper.on('update resize breakpoint slideChange transitionEnd', () => this.updateNavigation(panel, swiper));
     this.swipers.set(panel, swiper);
-    this.updateProgress(panel, swiper);
+    this.updateNavigation(panel, swiper);
   }
 
   cssNumber(name) {
@@ -149,6 +149,22 @@ class EditorialCollectionTabs extends HTMLElement {
       const page = String(swiper.activeIndex + 1).padStart(2, '0');
       pageLabel.textContent = `${panel.dataset.collectionLabel || 'Collection'} / Page ${page}`;
     }
+  }
+
+  updateNavigation(panel, swiper) {
+    if (!panel || !swiper?.slides?.length) return;
+    const visible = Math.min(
+      Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1),
+      swiper.slides.length,
+    );
+    const hasOverflow = swiper.slides.length > Math.ceil(visible);
+    panel.classList.toggle('is-carousel-scrollable', hasOverflow);
+    panel.classList.add('is-carousel-navigation-ready');
+    panel.querySelectorAll('[data-editorial-collection-previous], [data-editorial-collection-next]').forEach((button) => {
+      button.disabled = !hasOverflow;
+    });
+    if (hasOverflow) swiper.navigation.update();
+    this.updateProgress(panel, swiper);
   }
 
   handleClick(event) {
