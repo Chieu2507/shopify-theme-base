@@ -11,6 +11,14 @@
   assign products = block.settings.products
   assign featured_product = products | first
   assign product_count = products.count | default: 0
+  assign has_media = false
+  assign has_product = false
+  if video != blank or poster != blank
+    assign has_media = true
+  endif
+  if featured_product != blank
+    assign has_product = true
+  endif
   assign product_placeholder_index = 1
   for sibling_block in section.blocks
     if sibling_block.id == block.id
@@ -30,7 +38,7 @@
 %}
 
 <article
-  class="shoppable-video-card swiper-slide"
+  class="shoppable-video-card swiper-slide{% unless has_media or has_product %} shoppable-video-card--placeholder{% endunless %}"
   role="listitem"
   data-shoppable-video-slide
   data-block-id="{{ block.id }}"
@@ -100,18 +108,16 @@
     </div>
 
     <div class="shoppable-video-card__product-copy">
-      {% if featured_product != blank %}
+      {% if has_product %}
         <h3 class="shoppable-video-card__product-title heading-text product-title-text">{{ featured_product.title | escape }}</h3>
-      {% else %}
-        <h3 class="shoppable-video-card__product-title heading-text product-title-text">{{ 'onboarding.product_title' | t }}</h3>
       {% endif %}
-      {% if featured_product != blank and block.settings.product_detail != blank %}
+      {% if has_product and block.settings.product_detail != blank %}
         <p class="shoppable-video-card__product-detail">{{ block.settings.product_detail | escape }}</p>
       {% endif %}
     </div>
 
-    <div class="shoppable-video-card__product-action{% if featured_product == blank %} shoppable-video-card__product-action--placeholder{% endif %}">
-      {% if featured_product != blank %}
+    <div class="shoppable-video-card__product-action{% unless has_product %} shoppable-video-card__product-action--placeholder{% endunless %}">
+      {% if has_product %}
         <span class="shoppable-video-card__price">
           {% if featured_product.price_varies %}From {% endif %}{% render 'money', amount: featured_product.price %}
         </span>
@@ -125,13 +131,12 @@
           <span>{{ block.settings.button_label | default: 'Shop the look' | escape }}</span>
           <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
         </button>
-      {% else %}
-        <span class="shoppable-video-card__price">{% render 'money', amount: 0 %}</span>
       {% endif %}
     </div>
   </div>
   </div>
 
+  {% if has_product %}
   <dialog
     class="quick-view-modal modal-drag-target shoppable-video-dialog color-scheme color-{{ section.settings.modal_color_scheme.id }}"
     id="ShoppableVideoDialog-{{ section.id }}-{{ block.id }}"
@@ -211,6 +216,7 @@
       </div>
     </div>
   </dialog>
+  {% endif %}
 </article>
 
 {% schema %}
