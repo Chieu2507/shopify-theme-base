@@ -137,6 +137,14 @@ if (!customElements.get('highlight-text-with-image')) {
       this.lastTypographySignature = this.getTypographySignature();
       this.highlightTokens = Array.from(this.heading.querySelectorAll('.text-highlight__token'));
       this.cacheTokenMetrics();
+      this.initializeTokenReveals();
+    }
+
+    initializeTokenReveals() {
+      requestAnimationFrame(() => {
+        if (!this.isConnected || !this.heading) return;
+        window.ThemeAnimations?.init(this.heading);
+      });
     }
 
     getTypographySignature() {
@@ -152,6 +160,10 @@ if (!customElements.get('highlight-text-with-image')) {
           token.className = ['text-highlight__token', isSpace ? 'text-highlight__token--space' : '', ...inheritedClasses]
             .filter(Boolean)
             .join(' ');
+          if (!isSpace) {
+            token.dataset.reveal = 'fade';
+            token.dataset.revealDelay = String(Math.min(tokens.length * 75, 1000));
+          }
           token.textContent = content;
           tokens.push(token);
         });
@@ -162,6 +174,8 @@ if (!customElements.get('highlight-text-with-image')) {
 
       if (node.classList.contains('highlight-text-with-image__media')) {
         node.classList.add('text-highlight__token', 'text-highlight__token--media');
+        node.dataset.reveal = 'fade';
+        node.dataset.revealDelay = String(Math.min(tokens.length * 75, 1000));
         tokens.push(node);
         return;
       }
