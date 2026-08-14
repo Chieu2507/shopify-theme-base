@@ -7,6 +7,8 @@ class TestimonialsSlider extends HTMLElement {
     this.pagination = this.querySelector('[data-testimonials-pagination]');
     this.previousButton = this.querySelector('[data-testimonials-previous]');
     this.nextButton = this.querySelector('[data-testimonials-next]');
+    this.currentCount = this.querySelector('[data-testimonials-current]');
+    this.totalCount = this.querySelector('[data-testimonials-total]');
     this.mobileMedia = window.matchMedia('(max-width: 767.98px)');
     this.tabletMedia = window.matchMedia('(max-width: 1149.98px)');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
@@ -53,6 +55,7 @@ class TestimonialsSlider extends HTMLElement {
     const gapProperty = device === 'mobile' ? '--testimonials-mobile-column-gap' : '--testimonials-column-gap';
     const gap = Number.parseFloat(styles.getPropertyValue(gapProperty)) || 0;
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
+    const isEditorial = this.classList.contains('testimonials--editorial');
 
     this.swiper = new Swiper(this.slider, {
       modules: [A11y, Navigation, Pagination],
@@ -61,6 +64,7 @@ class TestimonialsSlider extends HTMLElement {
       speed: this.reduceMotion.matches ? 0 : 360,
       watchOverflow: true,
       grabCursor: slideCount > slidesPerView,
+      loop: isEditorial && slideCount > 1,
       navigation: {
         prevEl: this.previousButton,
         nextEl: this.nextButton,
@@ -74,7 +78,18 @@ class TestimonialsSlider extends HTMLElement {
         nextSlideMessage: this.nextButton?.getAttribute('aria-label') || '',
         slideRole: null,
       },
+      on: {
+        init: () => this.updateCounter(slideCount),
+        slideChange: () => this.updateCounter(slideCount),
+      },
     });
+  }
+
+  updateCounter(slideCount) {
+    if (!this.currentCount || !this.totalCount) return;
+    const currentIndex = (this.swiper?.realIndex ?? 0) + 1;
+    this.currentCount.textContent = String(currentIndex).padStart(2, '0');
+    this.totalCount.textContent = String(slideCount).padStart(2, '0');
   }
 
   destroySlider() {
