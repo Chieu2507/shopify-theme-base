@@ -8,6 +8,7 @@ class StickyScroll extends HTMLElement {
     this.steps = this.querySelector('[data-sticky-scroll-steps]');
     this.designMode = this.dataset.designMode === 'true';
     this.desktopQuery = window.matchMedia('(min-width: 768px)');
+    this.mobileLayout = this.dataset.mobileLayout || 'stacked';
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.activeIndex = 0;
     this.scrollFrame = null;
@@ -48,6 +49,10 @@ class StickyScroll extends HTMLElement {
     return [...this.querySelectorAll('[data-sticky-scroll-panel]')];
   }
 
+  shouldEnhance() {
+    return this.desktopQuery.matches || this.mobileLayout === 'sticky';
+  }
+
   scheduleRefresh() {
     if (this.refreshFrame) return;
     this.refreshFrame = window.requestAnimationFrame(() => {
@@ -61,8 +66,9 @@ class StickyScroll extends HTMLElement {
     this.style.setProperty('--sticky-scroll-panel-count', Math.max(panels.length, 1));
     this.buildSteps();
 
-    if (!this.desktopQuery.matches || panels.length === 0) {
+    if (!this.shouldEnhance() || panels.length === 0) {
       this.classList.remove('is-enhanced');
+      this.style.removeProperty('--sticky-scroll-scroll-height');
       panels.forEach((panel) => {
         panel.classList.remove('is-active');
         panel.removeAttribute('aria-hidden');
@@ -72,6 +78,8 @@ class StickyScroll extends HTMLElement {
     }
 
     this.classList.add('is-enhanced');
+    const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
+    this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * 1.2}px`);
     this.updateFromScroll();
   }
 
@@ -105,11 +113,16 @@ class StickyScroll extends HTMLElement {
 
   updateFromScroll() {
     const panels = this.panels;
-    if (!this.desktopQuery.matches || panels.length === 0) return;
+    if (!this.shouldEnhance() || panels.length === 0) return;
 
     const rootTop = this.getBoundingClientRect().top + window.scrollY;
-    const availableScroll = Math.max(1, this.offsetHeight - window.innerHeight);
-    const progress = Math.min(1, Math.max(0, (window.scrollY - rootTop) / availableScroll));
+    const rootStyles = window.getComputedStyle(this);
+    const paddingTop = Number.parseFloat(rootStyles.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(rootStyles.paddingBottom) || 0;
+    const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
+    const scrollStart = rootTop + paddingTop;
+    const availableScroll = Math.max(1, this.offsetHeight - paddingTop - paddingBottom - stageHeight);
+    const progress = Math.min(1, Math.max(0, (window.scrollY - scrollStart) / availableScroll));
     const activeIndex = Math.min(panels.length - 1, Math.floor(progress * panels.length));
 
     panels.forEach((panel, index) => {
@@ -133,14 +146,18 @@ class StickyScroll extends HTMLElement {
     const panel = panels[index];
     if (!panel) return;
 
-    if (!this.desktopQuery.matches || panels.length < 2) {
+    if (!this.shouldEnhance() || panels.length < 2) {
       panel.scrollIntoView({ behavior: this.reducedMotionQuery.matches ? 'auto' : 'smooth', block: 'start' });
       return;
     }
 
     const rootTop = this.getBoundingClientRect().top + window.scrollY;
-    const availableScroll = Math.max(0, this.offsetHeight - window.innerHeight);
-    const target = rootTop + availableScroll * (index / (panels.length - 1));
+    const rootStyles = window.getComputedStyle(this);
+    const paddingTop = Number.parseFloat(rootStyles.paddingTop) || 0;
+    const paddingBottom = Number.parseFloat(rootStyles.paddingBottom) || 0;
+    const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
+    const availableScroll = Math.max(0, this.offsetHeight - paddingTop - paddingBottom - stageHeight);
+    const target = rootTop + paddingTop + availableScroll * (index / (panels.length - 1));
     window.scrollTo({ top: target, behavior: this.reducedMotionQuery.matches ? 'auto' : 'smooth' });
   }
 
