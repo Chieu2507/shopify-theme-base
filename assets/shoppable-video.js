@@ -265,7 +265,9 @@ class ShoppableVideoSection extends HTMLElement {
     const count = this.querySelector('[data-shoppable-video-showing]');
     const progress = this.querySelector('[data-shoppable-video-progress]');
     const pageLabel = this.querySelector('[data-shoppable-video-page-label]');
+    const footer = this.querySelector('.shoppable-video-section__footer');
     if (count) count.textContent = `Showing ${endIndex} of ${total}`;
+    footer?.removeAttribute('hidden');
     if (progress) {
       const thumbSize = Math.min(1, visible / total);
       const value = total <= Math.ceil(visible) ? 1 : thumbSize + (swiper.progress * (1 - thumbSize));
@@ -282,6 +284,7 @@ class ShoppableVideoSection extends HTMLElement {
     if (!swiper?.slides?.length) return;
     const visible = Math.min(Math.max(swiper.slidesPerViewDynamic(), Number(swiper.params.slidesPerView) || 1), swiper.slides.length);
     const hasOverflow = swiper.slides.length > Math.ceil(visible);
+    this.classList.toggle('shoppable-video-section--static', !hasOverflow);
     this.querySelector('.shoppable-video-section__panel')?.classList.toggle('is-carousel-scrollable', hasOverflow);
     this.querySelectorAll('[data-shoppable-video-previous], [data-shoppable-video-next]').forEach((button) => {
       button.disabled = !hasOverflow;

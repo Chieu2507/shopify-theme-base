@@ -6,17 +6,14 @@
   if shoppable_video_background == blank
     assign shoppable_video_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
   endif
-  assign video_count = 0
-  for block in section.blocks
-    if block.type == 'shoppable-video'
-      assign video_count = video_count | plus: 1
-    endif
-  endfor
   assign desktop_columns = section.settings.columns_desktop | plus: 0
   assign skeleton_video_count = desktop_columns | plus: 2
-  assign rendered_video_count = video_count
-  if rendered_video_count == 0
-    assign rendered_video_count = skeleton_video_count
+  capture shoppable_video_cards
+    content_for 'blocks'
+  endcapture
+  assign rendered_video_count = skeleton_video_count
+  if shoppable_video_cards != blank
+    assign rendered_video_count = 0
   endif
   assign tablet_columns = desktop_columns
   if tablet_columns > 2
@@ -24,7 +21,7 @@
   endif
   assign mobile_columns = section.settings.columns_mobile | plus: 0
   assign initial_showing = desktop_columns
-  if initial_showing > rendered_video_count
+  if shoppable_video_cards == blank and initial_showing > rendered_video_count
     assign initial_showing = rendered_video_count
   endif
 %}
@@ -40,7 +37,7 @@
 {% endstyle %}
 
 <shoppable-video-section
-  class="shoppable-video-section color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if rendered_video_count <= desktop_columns %} shoppable-video-section--desktop-static{% endif %}{% if rendered_video_count <= tablet_columns %} shoppable-video-section--tablet-static{% endif %}{% if rendered_video_count <= mobile_columns %} shoppable-video-section--mobile-static{% endif %}"
+  class="shoppable-video-section color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
   data-desktop-columns="{{ section.settings.columns_desktop }}"
   data-mobile-columns="{{ section.settings.columns_mobile }}"
   data-section-id="{{ section.id }}"
@@ -60,8 +57,8 @@
     <div class="shoppable-video-section__panel">
       <div class="shoppable-video-section__carousel swiper" data-shoppable-video-carousel>
         <div class="shoppable-video-section__slides swiper-wrapper" role="list" data-reveal-group>
-          {% if video_count > 0 %}
-            {% content_for 'blocks' %}
+          {% if shoppable_video_cards != blank %}
+            {{ shoppable_video_cards }}
           {% else %}
             {% for placeholder_index in (1..skeleton_video_count) %}
               <article class="shoppable-video-card shoppable-video-card--placeholder swiper-slide" role="listitem" aria-hidden="true" data-shoppable-video-slide>
@@ -85,16 +82,14 @@
         </div>
       </div>
 
-      {% if rendered_video_count > 1 %}
-        <button class="shoppable-video-section__arrow shoppable-video-section__arrow--previous" type="button" aria-label="Previous videos" data-shoppable-video-previous>
-          {% render 'icon', name: 'chevron-left' %}
-        </button>
-        <button class="shoppable-video-section__arrow shoppable-video-section__arrow--next" type="button" aria-label="Next videos" data-shoppable-video-next>
-          {% render 'icon', name: 'chevron-right' %}
-        </button>
-      {% endif %}
+      <button class="shoppable-video-section__arrow shoppable-video-section__arrow--previous" type="button" aria-label="Previous videos" data-shoppable-video-previous>
+        {% render 'icon', name: 'chevron-left' %}
+      </button>
+      <button class="shoppable-video-section__arrow shoppable-video-section__arrow--next" type="button" aria-label="Next videos" data-shoppable-video-next>
+        {% render 'icon', name: 'chevron-right' %}
+      </button>
 
-      <footer class="shoppable-video-section__footer" data-reveal>
+      <footer class="shoppable-video-section__footer" data-reveal{% if shoppable_video_cards != blank %} hidden{% endif %}>
         <span
           class="shoppable-video-section__count"
           data-shoppable-video-showing
