@@ -1,21 +1,45 @@
 {% doc %}
-  Renders a group of blocks with configurable layout direction, gap and
-  alignment.
-
-  All settings apply to only one dimension to reduce configuration complexity.
-
-  This component is a wrapper concerned only with rendering its children in
-  the specified layout direction with appropriate padding and alignment.
+  Renders a reusable group of Theme Blocks with layout, sizing, padding and
+  optional appearance controls.
 
   @example
   {% content_for 'block', type: 'group', id: 'group' %}
 {% enddoc %}
 
+{% liquid
+  assign group_padding_top = block.settings.padding_top
+  assign group_padding_right = block.settings.padding_right
+  assign group_padding_bottom = block.settings.padding_bottom
+  assign group_padding_left = block.settings.padding_left
+  if group_padding_top == blank or group_padding_top == 0
+    assign group_padding_top = block.settings.padding | default: 0
+  endif
+  if group_padding_right == blank or group_padding_right == 0
+    assign group_padding_right = block.settings.padding | default: 0
+  endif
+  if group_padding_bottom == blank or group_padding_bottom == 0
+    assign group_padding_bottom = block.settings.padding | default: 0
+  endif
+  if group_padding_left == blank or group_padding_left == 0
+    assign group_padding_left = block.settings.padding | default: 0
+  endif
+
+  assign group_background = block.settings.background_color
+  if group_background == blank and block.settings.enable_appearance
+    assign group_background = block.settings.color_scheme.settings.background_gradient | default: block.settings.color_scheme.settings.background
+  endif
+%}
+
 <div
-  class="group {{ block.settings.layout_direction }}"
+  class="group {{ block.settings.layout_direction }} group--width-{{ block.settings.width | default: 'fill' }}{% if block.settings.enable_appearance %} group--appearance color-scheme color-{{ block.settings.color_scheme.id }}{% endif %}"
   style="
-    --padding: {{ block.settings.padding }}px;
+    --group-gap: {{ block.settings.gap | default: 0 }}px;
+    --group-padding-top: {{ group_padding_top }}px;
+    --group-padding-right: {{ group_padding_right }}px;
+    --group-padding-bottom: {{ group_padding_bottom }}px;
+    --group-padding-left: {{ group_padding_left }}px;
     --alignment: {{ block.settings.alignment }};
+    {% if block.settings.enable_appearance %}background: {{ group_background }};{% endif %}
   "
   {{ block.shopify_attributes }}
 >
@@ -27,19 +51,23 @@
     display: flex;
     flex-wrap: nowrap;
     width: 100%;
+    gap: var(--group-gap);
+    padding: var(--group-padding-top) var(--group-padding-right) var(--group-padding-bottom) var(--group-padding-left);
+  }
+
+  .group--width-fit {
+    width: fit-content;
   }
 
   .group--horizontal {
     flex-direction: row;
     justify-content: space-between;
     align-items: center;
-    padding: 0 var(--padding);
   }
 
   .group--vertical {
     flex-direction: column;
     align-items: var(--alignment);
-    padding: var(--padding) 0;
   }
 {% endstylesheet %}
 
@@ -54,7 +82,7 @@
   "settings": [
     {
       "type": "header",
-      "content": "t:general.group"
+      "content": "Layout"
     },
     {
       "type": "select",
@@ -95,13 +123,105 @@
     },
     {
       "type": "range",
+      "id": "gap",
+      "label": "Gap",
+      "default": 0,
+      "min": 0,
+      "max": 100,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Size"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "Width",
+      "default": "fill",
+      "options": [
+        { "value": "fill", "label": "Fill" },
+        { "value": "fit", "label": "Fit content" }
+      ]
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
       "id": "padding",
-      "label": "t:labels.padding",
+      "label": "All sides",
       "default": 0,
       "min": 0,
       "max": 200,
       "step": 2,
       "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "default": 0,
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_right",
+      "label": "Right padding",
+      "default": 0,
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "default": 0,
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "range",
+      "id": "padding_left",
+      "label": "Left padding",
+      "default": 0,
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_appearance",
+      "label": "Enable appearance",
+      "default": false
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1",
+      "visible_if": "{{ block.settings.enable_appearance }}"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color",
+      "info": "Optional. Overrides the selected color scheme background.",
+      "visible_if": "{{ block.settings.enable_appearance }}"
     }
   ],
   "presets": [
