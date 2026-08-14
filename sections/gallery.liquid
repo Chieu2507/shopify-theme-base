@@ -1,454 +1,88 @@
 {% render 'section-stylesheet', asset: 'section-gallery.css', defer_on_home: true %}
 
 {% liquid
-  assign image_count = section.blocks | where: 'type', 'image' | size
-  assign header_count = section.blocks | where: 'type', 'header' | size
+  assign section_background = section.settings.background_color
+  if section_background == blank
+    assign section_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
 %}
 
-{% if image_count > 0 or header_count > 0 %}
-  <div
-    class="gallery color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
-    style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --gallery-content-gap: {{ section.settings.content_gap }}px; --gallery-grid-gap: {{ section.settings.grid_gap }}px; --gallery-columns-desktop: {{ section.settings.columns_desktop }}; --gallery-columns-tablet: {{ section.settings.columns_desktop }}; --gallery-columns-mobile: {{ section.settings.columns_mobile }};"
-  >
-    <div class="gallery__inner section-spacing">
-      {% if header_count > 0 %}
-        <header class="gallery__header">
-          {% for block in section.blocks %}
-            {% if block.type == 'header' %}
-              {% assign heading_class = 'gallery__heading' %}
-              {% assign subheading_class = 'gallery__subheading content-text content-text--' | append: block.settings.subheading_size | append: ' gallery__subheading--' | append: block.settings.subheading_size %}
-              {% assign text_class = 'gallery__intro content-text content-text--' | append: block.settings.text_size %}
-              {% render 'section-header',
-                heading: block.settings.heading,
-                heading_tag: block.settings.heading_tag,
-                heading_size: block.settings.heading_size,
-                heading_class: heading_class,
-                subheading: block.settings.subheading,
-                subheading_class: subheading_class,
-                copy_class: 'gallery__header-copy',
-                title_group_class: 'gallery__header-title-group',
-                text: block.settings.text,
-                text_class: text_class,
-                action_label: block.settings.link_label,
-                action_url: block.settings.link,
-                action_style: block.settings.button_style,
-                action_class: 'gallery__view-all',
-                action_group_class: 'gallery__button-group',
-                action_open_in_new_tab: block.settings.button_open_in_new_tab,
-                alignment: block.settings.content_alignment,
-                class: 'gallery__header-content',
-                tag: 'div',
-                attributes: block.shopify_attributes
-              %}
-            {% endif %}
-          {% endfor %}
-        </header>
-      {% endif %}
+{% style %}
+  #shopify-section-{{ section.id }} { background: {{ section_background }}; }
+  #shopify-section-{{ section.id }} .gallery { background: transparent; }
+{% endstyle %}
 
-      {% if image_count > 0 %}
-        <div class="gallery__grid" data-reveal-group>
-          {% assign gallery_reveal_index = 0 %}
-          {% for block in section.blocks %}
-            {% if block.type == 'image' %}
-              {% liquid
-                assign gallery_image = block.settings.image
-                assign image_alt = block.settings.image_alt | default: gallery_image.alt
-                assign placeholder_asset = 'placeholder-image-default-1.svg'
-                assign placeholder_index = forloop.index0 | modulo: 2
-                if placeholder_index == 1
-                  assign placeholder_asset = 'placeholder-image-default-2.svg'
-                endif
-              %}
+<div
+  class="gallery color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} gallery--full-width{% endif %}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --gallery-header-gap: {{ section.settings.header_gap }}px; --gallery-grid-gap: {{ section.settings.grid_gap }}px;"
+>
+  <div class="gallery__inner section-spacing{% if section.settings.section_width == 'page' %} page-width{% endif %}">
+    <header class="gallery__header" data-reveal-group>
+      <div class="gallery__header-title">
+        {% content_for 'block', type: 'label', id: 'gallery_label' %}
+        {% content_for 'block', type: 'heading', id: 'gallery_heading' %}
+      </div>
+      <div class="gallery__header-aside">
+        {% content_for 'block', type: 'text', id: 'gallery_text' %}
+        {% content_for 'block', type: 'button', id: 'gallery_button' %}
+      </div>
+    </header>
 
-              <div class="gallery__item" data-reveal-item style="--reveal-order: {{ gallery_reveal_index }};" {{ block.shopify_attributes }}>
-                  {% if block.settings.link != blank %}<a class="gallery__link" href="{{ block.settings.link | escape }}">{% endif %}
-                  <div class="gallery__media">
-                    {% render 'responsive-media',
-                      image: gallery_image,
-                      max_width: 1200,
-                      widths: '240, 360, 450, 600, 750, 900, 1200',
-                      sizes: '(min-width: 1150px) calc((100vw - 120px) / 4), (min-width: 768px) calc((100vw - 68px) / 2), calc((100vw - 40px) / 2)',
-                      class: 'gallery__image media-cover',
-                      loading: 'lazy',
-                      alt: image_alt,
-                      placeholder_asset: placeholder_asset,
-                      placeholder_class: 'gallery__placeholder media-cover'
-                    %}
-                    <span class="gallery__social-icon" aria-hidden="true">
-                      {% render 'social-icon', name: 'instagram' %}
-                    </span>
-                  </div>
-                {% if block.settings.link != blank %}</a>{% endif %}
-              </div>
-              {% assign gallery_reveal_index = gallery_reveal_index | plus: 1 %}
-            {% endif %}
-          {% endfor %}
-        </div>
-      {% endif %}
+    <div class="gallery__grid" data-reveal-group>
+      {% content_for 'blocks' %}
     </div>
   </div>
-{% endif %}
-
-
+</div>
 
 {% schema %}
 {
-  "name": "Gallery",
+  "name": "Instagram gallery",
   "tag": "section",
   "class": "section-gallery",
   "max_blocks": 13,
-  "disabled_on": {
-    "groups": [
-      "header",
-      "footer"
-    ]
-  },
+  "disabled_on": { "groups": ["header", "footer"] },
   "settings": [
-    {
-      "type": "header",
-      "content": "Layout"
-    },
-    {
-      "type": "range",
-      "id": "columns_desktop",
-      "min": 2,
-      "max": 6,
-      "step": 1,
-      "label": "Desktop columns",
-      "default": 4
-    },
-    {
-      "type": "select",
-      "id": "columns_mobile",
-      "label": "Mobile columns",
-      "options": [
-        {
-          "value": "1",
-          "label": "1"
-        },
-        {
-          "value": "2",
-          "label": "2"
-        }
-      ],
-      "default": "2"
-    },
-    {
-      "type": "select",
-      "id": "section_width",
-      "label": "Section width",
-      "options": [
-        {
-          "value": "page",
-          "label": "Page width"
-        },
-        {
-          "value": "full",
-          "label": "Full width"
-        }
-      ],
-      "default": "full"
-    },
-    {
-      "type": "range",
-      "id": "content_gap",
-      "min": 16,
-      "max": 80,
-      "step": 4,
-      "unit": "px",
-      "label": "Header to gallery gap",
-      "default": 40
-    },
-    {
-      "type": "range",
-      "id": "grid_gap",
-      "min": 0,
-      "max": 32,
-      "step": 2,
-      "unit": "px",
-      "label": "Image gap",
-      "default": 8
-    },
-    {
-      "type": "header",
-      "content": "Section padding"
-    },
-    {
-      "type": "range",
-      "id": "padding_top",
-      "min": 0,
-      "max": 160,
-      "step": 4,
-      "unit": "px",
-      "label": "Top padding",
-      "default": 20
-    },
-    {
-      "type": "range",
-      "id": "padding_bottom",
-      "min": 0,
-      "max": 160,
-      "step": 4,
-      "unit": "px",
-      "label": "Bottom padding",
-      "default": 80
-    },
-    {
-      "type": "header",
-      "content": "Appearance"
-    },
-    {
-      "type": "color_scheme",
-      "id": "color_scheme",
-      "label": "Color scheme",
-      "default": "scheme-1"
-    }
+    { "type": "header", "content": "Layout" },
+    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "full" },
+    { "type": "range", "id": "header_gap", "min": 20, "max": 120, "step": 4, "unit": "px", "label": "Header to gallery gap", "default": 56 },
+    { "type": "range", "id": "grid_gap", "min": 4, "max": 40, "step": 2, "unit": "px", "label": "Grid gap", "default": 24 },
+    { "type": "header", "content": "Appearance" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme." },
+    { "type": "header", "content": "Section padding" },
+    { "type": "range", "id": "padding_top", "min": 0, "max": 160, "step": 4, "unit": "px", "label": "Top padding", "default": 80 },
+    { "type": "range", "id": "padding_bottom", "min": 0, "max": 160, "step": 4, "unit": "px", "label": "Bottom padding", "default": 80 }
   ],
   "blocks": [
-    {
-      "type": "header",
-      "name": "Header",
-      "limit": 1,
-      "settings": [
-        {
-          "type": "text",
-          "id": "heading",
-          "label": "Heading",
-          "default": "Shop The Latest From Instagram"
-        },
-        {
-          "type": "select",
-          "id": "heading_size",
-          "label": "Heading size",
-          "options": [
-            {
-              "value": "h0",
-              "label": "t:typography_options.display_extra_large"
-            },
-            {
-              "value": "h1",
-              "label": "t:typography_options.display_large"
-            },
-            {
-              "value": "h2",
-              "label": "t:typography_options.display_medium"
-            },
-            {
-              "value": "h3",
-              "label": "t:typography_options.heading_extra_large"
-            },
-            {
-              "value": "h4",
-              "label": "t:typography_options.heading_large"
-            },
-            {
-              "value": "h5",
-              "label": "t:typography_options.heading_medium"
-            },
-            {
-              "value": "h6",
-              "label": "t:typography_options.heading_small"
-            },
-            {
-              "value": "h7",
-              "label": "t:typography_options.heading_extra_small"
-            },
-            {
-              "value": "custom",
-              "label": "t:typography_options.custom"
-            }
-          ],
-          "default": "h2"
-        },
-        {
-          "type": "select",
-          "id": "content_alignment",
-          "label": "Heading alignment",
-          "options": [
-            { "value": "left", "label": "Left" },
-            { "value": "center", "label": "Center" },
-            { "value": "right", "label": "Right" }
-          ],
-          "default": "center"
-        },
-        {
-          "type": "select",
-          "id": "heading_tag",
-          "label": "Heading tag",
-          "options": [
-            {
-              "value": "h1",
-              "label": "H1"
-            },
-            {
-              "value": "h2",
-              "label": "H2"
-            },
-            {
-              "value": "h3",
-              "label": "H3"
-            },
-            {
-              "value": "h4",
-              "label": "H4"
-            },
-            {
-              "value": "h5",
-              "label": "H5"
-            },
-            {
-              "value": "h6",
-              "label": "H6"
-            }
-          ],
-          "default": "h2"
-        },
-        {
-          "type": "text",
-          "id": "subheading",
-          "label": "Subheading"
-        },
-        {
-          "type": "select",
-          "id": "subheading_size",
-          "label": "Subheading size",
-          "options": [
-            { "value": "x-large", "label": "X-large" },
-            { "value": "large", "label": "Large" },
-            { "value": "medium", "label": "Medium" },
-            { "value": "small", "label": "Small" },
-            { "value": "x-small", "label": "X-small" }
-          ],
-          "default": "medium",
-          "visible_if": "{{ block.settings.subheading != blank }}"
-        },
-        {
-          "type": "richtext",
-          "id": "text",
-          "label": "Description",
-          "default": "<p>Follow us on Instagram for the latest updates and inspirations.</p>"
-        },
-        {
-          "type": "select",
-          "id": "text_size",
-          "label": "Description size",
-          "options": [
-            {
-              "value": "x-large",
-              "label": "X-large"
-            },
-            {
-              "value": "large",
-              "label": "Large"
-            },
-            {
-              "value": "medium",
-              "label": "Medium"
-            },
-            {
-              "value": "small",
-              "label": "Small"
-            },
-            {
-              "value": "x-small",
-              "label": "X-small"
-            }
-          ],
-          "default": "medium",
-          "visible_if": "{{ block.settings.text != blank }}"
-        },
-        {
-          "type": "text",
-          "id": "link_label",
-          "label": "Button label",
-          "default": "View on Instagram",
-          "info": "Leave the label blank to hide the button."
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "Button link",
-          "visible_if": "{{ block.settings.link_label != blank }}"
-        },
-        {
-          "type": "select",
-          "id": "button_style",
-          "label": "Button style",
-          "options": [
-            { "value": "primary", "label": "Primary" },
-            { "value": "secondary", "label": "Secondary" },
-            { "value": "tertiary", "label": "Tertiary" }
-          ],
-          "default": "tertiary",
-          "visible_if": "{{ block.settings.link_label != blank }}"
-        },
-        {
-          "type": "checkbox",
-          "id": "button_open_in_new_tab",
-          "label": "Open link in new tab",
-          "default": false,
-          "visible_if": "{{ block.settings.link_label != blank }}"
-        }
-      ]
-    },
-    {
-      "type": "image",
-      "name": "Image",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Image"
-        },
-        {
-          "type": "image_picker",
-          "id": "image",
-          "label": "Image"
-        },
-        {
-          "type": "text",
-          "id": "image_alt",
-          "label": "Alt text"
-        },
-        {
-          "type": "url",
-          "id": "link",
-          "label": "Link"
-        }
-      ]
-    }
+    { "type": "@theme" }
   ],
   "presets": [
     {
-      "name": "Gallery",
+      "name": "Instagram gallery",
       "category": "Editorial content",
+      "settings": { "section_width": "full", "color_scheme": "scheme-1" },
       "blocks": [
+        { "type": "label", "id": "gallery_label", "static": true, "settings": { "text": "<p>COMMUNITY&nbsp;&nbsp;/&nbsp;&nbsp;CURATED BY SPINEL</p>", "reveal_type": "fade-up", "reveal_delay": 0 } },
+        { "type": "heading", "id": "gallery_heading", "static": true, "settings": { "heading": "<h2>From @spinel,<br>worn by you.</h2>", "type_preset": "h2", "reveal_type": "fade-up", "reveal_delay": 150 } },
+        { "type": "text", "id": "gallery_text", "static": true, "settings": { "text": "<p>A merchant-curated edit of studio light<br>and client-submitted styling.</p>", "type_preset": "sm", "alignment": "right", "reveal_type": "fade-up", "reveal_delay": 300 } },
+        { "type": "button", "id": "gallery_button", "static": true, "settings": { "label": "Visit @spinel", "style": "tertiary", "icon": "arrow-right", "reveal_type": "fade-up", "reveal_delay": 450 } },
+        { "type": "instagram-gallery-image" },
+        { "type": "instagram-gallery-image" },
         {
-          "type": "header"
+          "type": "instagram-gallery-content",
+          "blocks": [
+            { "type": "label", "id": "circle_label", "static": true, "settings": { "text": "<p>THE SPINEL CIRCLE</p>" } },
+            { "type": "heading", "id": "circle_heading", "static": true, "settings": { "heading": "<h3>Worn close.<br>Shared softly.</h3>", "type_preset": "h3" } },
+            { "type": "text", "id": "circle_text", "static": true, "settings": { "text": "<p>Jewels in motion.<br>Shared by our circle.</p>", "type_preset": "sm" } },
+            { "type": "button", "id": "circle_button", "static": true, "settings": { "label": "Follow @spinel", "style": "tertiary", "icon": "arrow-right" } }
+          ]
         },
-        {
-          "type": "image"
-        },
-        {
-          "type": "image"
-        },
-        {
-          "type": "image"
-        },
-        {
-          "type": "image"
-        },
-        {
-          "type": "image"
-        },
-        {
-          "type": "image"
-        },
-        {
-          "type": "image"
-        },
-        {
-          "type": "image"
-        }
+        { "type": "instagram-gallery-image" },
+        { "type": "instagram-gallery-image" },
+        { "type": "instagram-gallery-image" },
+        { "type": "instagram-gallery-image" },
+        { "type": "instagram-gallery-image" },
+        { "type": "instagram-gallery-image" }
       ]
     }
   ]
