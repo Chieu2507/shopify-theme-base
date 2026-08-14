@@ -7,6 +7,13 @@
   endif
 %}
 
+{% capture image_with_text_hero_block %}
+  {% content_for 'block', type: 'media', id: 'hero_image' %}
+{% endcapture %}
+{% capture image_with_text_portrait_block %}
+  {% content_for 'block', type: 'media', id: 'portrait_image' %}
+{% endcapture %}
+
 {% style %}
   #shopify-section-{{ section.id }} { background: {{ image_with_text_background }}; }
   #shopify-section-{{ section.id }} .image-with-text { background: transparent; }
@@ -20,13 +27,13 @@
     {% if section.settings.layout == 'story-collage' %}
       <div class="image-with-text__story-collage" data-reveal-group>
         <div class="image-with-text__story-media image-with-text__story-media--main" data-reveal-item style="--reveal-order: 0;">
-          {% content_for 'block', type: 'media', id: 'hero_image' %}
+          {{ image_with_text_hero_block }}
         </div>
         <div class="image-with-text__story-media image-with-text__story-media--detail" data-reveal-item style="--reveal-order: 1;">
           {% content_for 'block', type: 'media', id: 'detail_image' %}
         </div>
         <div class="image-with-text__story-media image-with-text__story-media--portrait" data-reveal-item style="--reveal-order: 2;">
-          {% content_for 'block', type: 'media', id: 'portrait_image' %}
+          {{ image_with_text_portrait_block }}
         </div>
         <div class="image-with-text__story-location" data-reveal-item style="--reveal-order: 3;">
           {% content_for 'block', type: 'label', id: 'location_label' %}
@@ -35,21 +42,25 @@
     {% else %}
       <div class="image-with-text__media-collage">
         <div class="image-with-text__media image-with-text__media--base">
-          {% content_for 'block', type: 'media', id: 'hero_image' %}
+          {{ image_with_text_hero_block }}
         </div>
       </div>
     {% endif %}
 
     <div class="image-with-text__content image-with-text__content--{{ section.settings.content_alignment }}">
-      <div class="image-with-text__heading-block image-with-text__heading">
-        {% content_for 'block', type: 'label', id: 'eyebrow' %}
-      </div>
+      {% unless section.settings.layout == 'story-collage' %}
+        <div class="image-with-text__heading-block image-with-text__heading">
+          {% content_for 'block', type: 'label', id: 'eyebrow' %}
+        </div>
+      {% endunless %}
       <div class="image-with-text__heading-block image-with-text__heading">
         {% content_for 'block', type: 'heading', id: 'heading' %}
       </div>
-      <div class="image-with-text__heading-block image-with-text__heading">
-        {% content_for 'block', type: 'heading', id: 'highlight_heading' %}
-      </div>
+      {% unless section.settings.layout == 'story-collage' %}
+        <div class="image-with-text__heading-block image-with-text__heading">
+          {% content_for 'block', type: 'heading', id: 'highlight_heading' %}
+        </div>
+      {% endunless %}
       <div class="image-with-text__text">
         {% content_for 'block', type: 'text', id: 'text' %}
       </div>
@@ -60,7 +71,7 @@
 
     {% if section.settings.layout == 'editorial-collage' %}
       <div class="image-with-text__portrait">
-        {% content_for 'block', type: 'media', id: 'portrait_image' %}
+        {{ image_with_text_portrait_block }}
       </div>
       <div class="image-with-text__study">
         {% content_for 'block', type: 'house-craft-study-group', id: 'study_group' %}
@@ -94,8 +105,18 @@
   ],
   "presets": [
     {
-      "name": "Image with text",
+      "name": "Image with text — House craft",
       "category": "Editorial content",
+      "settings": {
+        "layout": "editorial-collage",
+        "media_position": "left",
+        "content_alignment": "left",
+        "section_width": "page",
+        "column_gap": 64,
+        "padding_top": 96,
+        "padding_bottom": 112,
+        "color_scheme": "scheme-4"
+      },
       "blocks": [
         { "type": "media", "id": "hero_image", "static": true, "settings": { "ratio": "square" } },
         { "type": "label", "id": "eyebrow", "static": true, "settings": { "text": "<p>ABOUT THE HOUSE</p>" } },
