@@ -550,15 +550,16 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     renderCart(cart) {
-      this.cart = cart;
-      if (!cart.item_count) {
+      const items = (cart.items || []).filter((item) => Number(item.quantity) > 0);
+      this.cart = { ...cart, items };
+      if (!items.length) {
         this.renderEmpty();
         return;
       }
       this.footer.hidden = false;
       if (this.promotion) this.promotion.hidden = false;
       this.queuePromotionMarqueeUpdate();
-      this.items.innerHTML = cart.items.map((item) => this.itemTemplate(item)).join('');
+      this.items.innerHTML = items.map((item) => this.itemTemplate(item)).join('');
       const total = this.formatMoney(cart.total_price);
       if (this.itemCount) this.itemCount.textContent = `(${cart.item_count})`;
       if (this.subtotal) this.subtotal.textContent = this.formatMoney(cart.items_subtotal_price ?? cart.total_price ?? 0);
