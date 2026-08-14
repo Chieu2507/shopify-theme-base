@@ -106,7 +106,12 @@ class TestimonialsSlider extends HTMLElement {
     if (!this.swiper || event.detail?.sectionId !== this.dataset.sectionId) return;
     const slide = this.querySelector(`[data-block-id="${CSS.escape(event.detail.blockId)}"]`);
     const index = slide ? Array.from(this.querySelectorAll('.swiper-slide')).indexOf(slide) : -1;
-    if (index >= 0) this.swiper.slideTo(index);
+    if (index < 0) return;
+    if (this.swiper.params.loop && typeof this.swiper.slideToLoop === 'function') {
+      this.swiper.slideToLoop(index);
+      return;
+    }
+    this.swiper.slideTo(index);
   }
 }
 
