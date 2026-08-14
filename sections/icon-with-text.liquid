@@ -7,6 +7,14 @@
   if section_background == blank
     assign section_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
   endif
+
+  assign item_alignment = section.settings.content_alignment | default: 'center'
+  assign item_flex_alignment = 'center'
+  if item_alignment == 'left'
+    assign item_flex_alignment = 'flex-start'
+  elsif item_alignment == 'right'
+    assign item_flex_alignment = 'flex-end'
+  endif
 %}
 
 {% style %}
@@ -18,7 +26,7 @@
 {% if item_count > 0 or header_count > 0 %}
   <div
     class="icon-with-text icon-with-text--icon-{{ section.settings.icon_size | default: 'small' }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
-    style="--section-padding-top: {{ section.settings.padding_top | default: 10 }}px; --section-padding-bottom: {{ section.settings.padding_bottom | default: 64 }}px; --icon-with-text-column-gap: {{ section.settings.column_gap | default: 28 }}px; --icon-with-text-row-gap: {{ section.settings.row_gap | default: 40 }}px; --icon-with-text-content-gap: {{ section.settings.content_gap | default: 24 }}px; --icon-with-text-columns-desktop: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-tablet: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-mobile: {{ section.settings.columns_mobile | default: 1 }};"
+    style="--section-padding-top: {{ section.settings.padding_top | default: 10 }}px; --section-padding-bottom: {{ section.settings.padding_bottom | default: 64 }}px; --icon-with-text-column-gap: {{ section.settings.column_gap | default: 28 }}px; --icon-with-text-row-gap: {{ section.settings.row_gap | default: 40 }}px; --icon-with-text-content-gap: {{ section.settings.content_gap | default: 24 }}px; --icon-with-text-item-alignment: {{ item_flex_alignment }}; --icon-with-text-item-text-alignment: {{ item_alignment }}; --icon-with-text-columns-desktop: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-tablet: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-mobile: {{ section.settings.columns_mobile | default: 1 }};"
   >
     <div class="icon-with-text__inner section-spacing">
       {% if header_count > 0 %}
@@ -199,6 +207,12 @@
         }
       ],
       "default": "default"
+    },
+    {
+      "type": "text_alignment",
+      "id": "content_alignment",
+      "label": "Content alignment",
+      "default": "center"
     },
     {
       "type": "select",
