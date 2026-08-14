@@ -40,6 +40,14 @@
     when 'large'
       assign split_height_mobile = 480
   endcase
+
+  assign collection_image_ratio = '5 / 6'
+  case section.settings.image_ratio
+    when 'square'
+      assign collection_image_ratio = '1 / 1'
+    when 'landscape'
+      assign collection_image_ratio = '4 / 3'
+  endcase
 %}
 
 {% style %}
@@ -64,7 +72,7 @@
     data-columns-tablet="{{ section.settings.columns_desktop }}"
     data-columns-mobile="{{ section.settings.columns_mobile }}"
     data-show-pagination="{{ section.settings.show_pagination }}"
-    style="--collection-list-columns-desktop: {{ section.settings.columns_desktop }}; --collection-list-columns-tablet: {{ section.settings.columns_desktop }}; --collection-list-columns-mobile: {{ section.settings.columns_mobile }}; --collection-list-column-gap: {{ section.settings.column_gap }}px; --collection-list-header-gap: {{ section.settings.header_gap }}px; --collection-list-card-gap: {{ section.settings.card_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --collection-list-height-desktop: {{ split_height_desktop }}px; --collection-list-height-tablet: {{ split_height_tablet }}px; --collection-list-height-mobile: {{ split_height_mobile }}px;"
+    style="--collection-list-columns-desktop: {{ section.settings.columns_desktop }}; --collection-list-columns-tablet: {{ section.settings.columns_desktop }}; --collection-list-columns-mobile: {{ section.settings.columns_mobile }}; --collection-list-column-gap: {{ section.settings.column_gap }}px; --collection-list-header-gap: {{ section.settings.header_gap }}px; --collection-list-card-gap: {{ section.settings.card_gap }}px; --collection-list-image-ratio: {{ collection_image_ratio }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --collection-list-height-desktop: {{ split_height_desktop }}px; --collection-list-height-tablet: {{ split_height_tablet }}px; --collection-list-height-mobile: {{ split_height_mobile }}px;"
   >
     <div class="collection-list__inner section-spacing{% if section.settings.section_width == 'page' %} collection-list__inner--page{% endif %}">
       {% assign has_prioritized_collection_image = false %}
@@ -498,7 +506,7 @@
         }
       ],
       "default": "portrait",
-      "visible_if": "{{ section.settings.layout == 'grid' }}"
+      "info": "For Split promotions, desktop and tablet height still follows the layout height settings. This ratio controls the responsive card proportions on mobile."
     },
     {
       "type": "select",
