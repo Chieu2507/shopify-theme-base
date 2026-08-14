@@ -207,7 +207,7 @@ if (!customElements.get('highlight-text-with-image')) {
 
       const bounds = this.getBoundingClientRect();
       const viewportHeight = Math.max(window.innerHeight, 1);
-      const start = viewportHeight * 0.9;
+      const start = viewportHeight * 0.8;
       const finishRatio = {
         slow: 0.12,
         medium: 0.26,
