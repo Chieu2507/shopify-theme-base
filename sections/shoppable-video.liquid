@@ -14,6 +14,9 @@
   endfor
   assign desktop_columns = section.settings.columns_desktop | plus: 0
   assign skeleton_video_count = desktop_columns | plus: 2
+  # Keep the carousel state based on the cards that are actually rendered.
+  # Empty video blocks render their own skeleton card, so the Theme Editor can
+  # still select and configure each item instead of replacing the whole list.
   assign rendered_video_count = video_count
   if rendered_video_count == 0
     assign rendered_video_count = skeleton_video_count
@@ -64,7 +67,7 @@
             {% content_for 'blocks' %}
           {% else %}
             {% for placeholder_index in (1..skeleton_video_count) %}
-              <article class="shoppable-video-card swiper-slide" role="listitem" aria-hidden="true" data-shoppable-video-slide>
+              <article class="shoppable-video-card shoppable-video-card--placeholder swiper-slide" role="listitem" aria-hidden="true" data-shoppable-video-slide>
                 <div class="shoppable-video-card__reveal" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                   <div class="shoppable-video-card__media">
                     {% render 'media-placeholder', class_name: 'shoppable-video-card__placeholder', placeholder_name: 'image' %}
@@ -75,10 +78,8 @@
                       {% assign placeholder_asset = 'placeholder-image-product-' | append: product_placeholder_index | append: '.svg' %}
                       {% render 'media-placeholder', class_name: 'shoppable-video-card__product-placeholder', asset_name: placeholder_asset %}
                     </div>
-                    <div class="shoppable-video-card__product-copy">
-                      <h3 class="shoppable-video-card__product-title heading-text product-title-text">{{ 'onboarding.product_title' | t }}</h3>
-                    </div>
-                    <div class="shoppable-video-card__product-action"><span class="shoppable-video-card__price">{% render 'money', amount: 0 %}</span></div>
+                    <div class="shoppable-video-card__product-copy" aria-hidden="true"></div>
+                    <div class="shoppable-video-card__product-action" aria-hidden="true"></div>
                   </div>
                 </div>
               </article>

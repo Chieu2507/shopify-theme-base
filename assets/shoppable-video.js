@@ -378,9 +378,11 @@ class ShoppableVideoSection extends HTMLElement {
   }
 
   handleBlockSelect(event) {
+    if (event.detail?.sectionId && event.detail.sectionId !== this.dataset.sectionId) return;
     const index = this.slides.findIndex((slide) => slide.dataset.blockId === event.detail?.blockId);
     if (index < 0) return;
     this.initializeCarousel();
+    this.swiper?.update();
     this.swiper?.slideTo(index, this.reduceMotion ? 0 : 320);
   }
 }
