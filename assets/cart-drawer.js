@@ -846,7 +846,8 @@ import { A11y, Swiper } from './swiper-loader.js';
       const remaining = Math.max(0, threshold - total);
       const unlocked = remaining === 0;
       const progress = Math.min(100, Math.round((total / threshold) * 100));
-      const progressLevel = progress >= 67 ? 'high' : progress >= 34 ? 'medium' : 'low';
+      const progressLevel = unlocked ? 'complete' : progress > 60 ? 'near' : 'start';
+      const wasUnlocked = this.shippingProgress.dataset.unlocked === 'true';
       const template = unlocked ? this.shippingCopy?.dataset.success : this.shippingCopy?.dataset.pending;
       if (this.shippingMessage) this.shippingMessage.textContent = String(template || '').replace(/\{\{ ?amount ?\}\}|\{amount\}/g, this.formatMoney(remaining));
       if (this.shippingGoal) this.shippingGoal.textContent = this.formatMoney(threshold);
@@ -854,6 +855,13 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.shippingProgress.hidden = false;
       this.shippingProgress.dataset.unlocked = String(unlocked);
       this.shippingProgress.dataset.progressLevel = progressLevel;
+      if (unlocked && !wasUnlocked) {
+        this.shippingProgress.dataset.shippingBurst = 'true';
+        window.clearTimeout(this.shippingBurstTimer);
+        this.shippingBurstTimer = window.setTimeout(() => {
+          delete this.shippingProgress.dataset.shippingBurst;
+        }, 1050);
+      }
     }
 
     async estimateShipping(event) {
