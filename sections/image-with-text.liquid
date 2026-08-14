@@ -1,0 +1,103 @@
+{% render 'section-stylesheet', asset: 'section-image-with-text.css', defer_on_home: true %}
+
+{% liquid
+  assign image_with_text_background = section.settings.background_color
+  if image_with_text_background == blank
+    assign image_with_text_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+%}
+
+{% style %}
+  #shopify-section-{{ section.id }} { background: {{ image_with_text_background }}; }
+  #shopify-section-{{ section.id }} .image-with-text { background: transparent; }
+{% endstyle %}
+
+<div
+  class="image-with-text image-with-text--layout-{{ section.settings.layout | default: 'standard' }} image-with-text--media-{{ section.settings.media_position }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} image-with-text--full full-width{% endif %}"
+  style="--image-with-text-column-gap: {{ section.settings.column_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="image-with-text__inner section-spacing">
+    <div class="image-with-text__media-collage">
+      <div class="image-with-text__media image-with-text__media--base">
+        {% content_for 'block', type: 'media', id: 'hero_image' %}
+      </div>
+    </div>
+
+    <div class="image-with-text__content image-with-text__content--{{ section.settings.content_alignment }}">
+      <div class="image-with-text__heading-block image-with-text__heading">
+        {% content_for 'block', type: 'label', id: 'eyebrow' %}
+      </div>
+      <div class="image-with-text__heading-block image-with-text__heading">
+        {% content_for 'block', type: 'heading', id: 'heading' %}
+      </div>
+      <div class="image-with-text__heading-block image-with-text__heading">
+        {% content_for 'block', type: 'heading', id: 'highlight_heading' %}
+      </div>
+      <div class="image-with-text__text">
+        {% content_for 'block', type: 'text', id: 'text' %}
+      </div>
+      <div class="image-with-text__button-block">
+        {% content_for 'block', type: 'button', id: 'button' %}
+      </div>
+    </div>
+
+    {% if section.settings.layout == 'editorial-collage' %}
+      <div class="image-with-text__portrait">
+        {% content_for 'block', type: 'media', id: 'portrait_image' %}
+      </div>
+      <div class="image-with-text__study color-scheme color-1">
+        {% content_for 'block', type: 'group', id: 'study_group' %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Image with text",
+  "tag": "section",
+  "class": "image-with-text-section",
+  "settings": [
+    { "type": "header", "content": "Layout" },
+    { "type": "select", "id": "layout", "label": "Layout", "options": [{ "value": "standard", "label": "Image and text" }, { "value": "editorial-collage", "label": "Editorial collage" }], "default": "standard" },
+    { "type": "select", "id": "media_position", "label": "Media position", "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }], "default": "left" },
+    { "type": "text_alignment", "id": "content_alignment", "label": "Content alignment", "default": "left" },
+    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
+    { "type": "range", "id": "column_gap", "min": 0, "max": 120, "step": 4, "unit": "px", "label": "Column gap", "default": 40 },
+    { "type": "header", "content": "Appearance" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme." },
+    { "type": "header", "content": "Section padding" },
+    { "type": "range", "id": "padding_top", "min": 0, "max": 160, "step": 8, "unit": "px", "label": "Top padding", "default": 96 },
+    { "type": "range", "id": "padding_bottom", "min": 0, "max": 160, "step": 8, "unit": "px", "label": "Bottom padding", "default": 96 }
+  ],
+  "blocks": [
+    { "type": "@theme" }
+  ],
+  "presets": [
+    {
+      "name": "Image with text",
+      "category": "Editorial content",
+      "blocks": [
+        { "type": "media", "id": "hero_image", "static": true, "settings": { "ratio": "portrait" } },
+        { "type": "label", "id": "eyebrow", "static": true, "settings": { "text": "<p>ABOUT THE HOUSE</p>" } },
+        { "type": "heading", "id": "heading", "static": true, "settings": { "heading": "<h2>Made slowly.<br>Kept for longer.</h2>", "type_preset": "h3" } },
+        { "type": "heading", "id": "highlight_heading", "static": true, "settings": { "heading": "<h3>Every jewel begins as a conversation between hand and stone.</h3>", "type_preset": "h5" } },
+        { "type": "text", "id": "text", "static": true, "settings": { "text": "<p>Each material is chosen for the way it carries light, then finished for a life, not a season.</p>", "type_preset": "sm" } },
+        { "type": "button", "id": "button", "static": true, "settings": { "label": "Enter the house", "style": "primary", "icon": "arrow-right" } },
+        {
+          "type": "group", "id": "study_group", "static": true,
+          "settings": { "layout_direction": "group--vertical", "alignment": "flex-start", "padding": 0 },
+          "blocks": [
+            { "type": "media", "id": "study_image", "static": true, "settings": { "ratio": "portrait" } },
+            { "type": "label", "id": "study_label", "static": true, "settings": { "text": "<p>BENCH STUDY</p>" } },
+            { "type": "heading", "id": "study_heading", "static": true, "settings": { "heading": "<h3>Stone, setting,<br>proportion.</h3>", "type_preset": "h6" } },
+            { "type": "text", "id": "study_text", "static": true, "settings": { "text": "<p>GOLD / SPINEL<br>FORM STUDY</p>", "type_preset": "xs" } }
+          ]
+        },
+        { "type": "media", "id": "portrait_image", "static": true, "settings": { "ratio": "portrait" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
