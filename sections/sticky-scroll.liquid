@@ -1,0 +1,231 @@
+{% render 'section-stylesheet', asset: 'section-sticky-scroll.css' %}
+
+{% liquid
+  assign section_background = section.settings.background_color
+  assign section_description = section.settings.accessibility_label | default: 'Editorial story'
+%}
+
+{% if section_background != blank %}
+  <style>
+    #shopify-section-{{ section.id }} {
+      background: {{ section_background }};
+    }
+  </style>
+{% endif %}
+
+<sticky-scroll
+  class="sticky-scroll color-scheme color-{{ section.settings.color_scheme.id }}"
+  role="region"
+  aria-label="{{ section_description | escape }}"
+  data-section-id="{{ section.id }}"
+  data-design-mode="{{ request.design_mode }}"
+  style="--sticky-scroll-panel-count: {{ section.blocks.size }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="sticky-scroll__stage" data-sticky-scroll-stage>
+    {% content_for 'blocks' %}
+  </div>
+
+  {% if section.blocks.size > 1 %}
+    <nav class="sticky-scroll__steps" aria-label="Story steps" data-sticky-scroll-steps></nav>
+  {% endif %}
+</sticky-scroll>
+
+<script type="module" src="{{ 'sticky-scroll.js' | asset_url }}"></script>
+
+{% schema %}
+{
+  "name": "Sticky scroll",
+  "tag": "section",
+  "class": "section-sticky-scroll",
+  "max_blocks": 8,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-4"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color"
+    },
+    {
+      "type": "text",
+      "id": "accessibility_label",
+      "label": "Accessibility label",
+      "default": "Editorial story"
+    },
+    {
+      "type": "header",
+      "content": "Section padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "blocks": [
+    {
+      "type": "sticky-scroll-panel"
+    }
+  ],
+  "presets": [
+    {
+      "name": "Sticky scroll",
+      "category": "Editorial content",
+      "blocks": [
+        {
+          "type": "sticky-scroll-panel",
+          "settings": {
+            "image_position": "center center",
+            "content_width": 520,
+            "content_gap": 20
+          },
+          "blocks": [
+            {
+              "type": "label",
+              "settings": {
+                "text": "<p>THE COLLECTION</p>",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h2>Beauty in Every<br>Detail.</h2>",
+                "type_preset": "h2",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Every piece begins as a study in proportion, material and light—made to be held close for years to come.</p>",
+                "type_preset": "sm",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "label": "Shop the collection",
+                "link": "/collections/all",
+                "style": "tertiary",
+                "icon": "arrow-right",
+                "reveal_type": "none"
+              }
+            }
+          ]
+        },
+        {
+          "type": "sticky-scroll-panel",
+          "settings": {
+            "image_position": "center center",
+            "content_width": 520,
+            "content_gap": 20
+          },
+          "blocks": [
+            {
+              "type": "label",
+              "settings": {
+                "text": "<p>THE CRAFT</p>",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h2>Form follows<br>feeling.</h2>",
+                "type_preset": "h2",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Small decisions become lasting details: a curve softened by hand, a stone set to catch the light.</p>",
+                "type_preset": "sm",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "label": "Discover the house",
+                "link": "/pages/about",
+                "style": "tertiary",
+                "icon": "arrow-right",
+                "reveal_type": "none"
+              }
+            }
+          ]
+        },
+        {
+          "type": "sticky-scroll-panel",
+          "settings": {
+            "image_position": "center center",
+            "content_width": 520,
+            "content_gap": 20
+          },
+          "blocks": [
+            {
+              "type": "label",
+              "settings": {
+                "text": "<p>THE HOUSE</p>",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "heading": "<h2>Objects with<br>an inner life.</h2>",
+                "type_preset": "h2",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Designed for the days that matter, and the quieter days that make a life feel entirely your own.</p>",
+                "type_preset": "sm",
+                "reveal_type": "none"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "label": "Meet Spinel",
+                "link": "/pages/about",
+                "style": "tertiary",
+                "icon": "arrow-right",
+                "reveal_type": "none"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
