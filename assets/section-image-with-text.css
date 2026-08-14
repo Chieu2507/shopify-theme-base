@@ -337,15 +337,29 @@
     }
   }
 
-  /* Editorial collage keeps the first media as the story anchor and composes
-   * subsequent media as supporting moments. The regular image/text layout is
-   * intentionally unaffected for existing uses of this section. */
+  /* House craft: Image blocks stay independent from the editorial study group.
+   * This lets every item retain its native Theme Editor contract. */
   .image-with-text--layout-editorial-collage .image-with-text__media-collage {
     overflow: visible;
   }
 
-  .image-with-text--layout-editorial-collage .image-with-text__media--study {
-    background: var(--color-variant-component-background);
+  .image-with-text--layout-editorial-collage .image-with-text__study {
+    z-index: 3;
+  }
+
+  .image-with-text--layout-editorial-collage .image-with-text__study > .group {
+    gap: 8px;
+    background: var(--color-background);
+    color: var(--color-text);
+  }
+
+  .image-with-text--layout-editorial-collage .image-with-text__study .content-media {
+    aspect-ratio: 3 / 4;
+  }
+
+  .image-with-text--layout-editorial-collage .image-with-text__study .content-block--preset-h7,
+  .image-with-text--layout-editorial-collage .image-with-text__study .content-text {
+    color: var(--color-text);
   }
 
   @media screen and (min-width: 1150px) {
@@ -355,6 +369,7 @@
       align-items: start;
       gap: clamp(40px, 4vw, 76px);
       grid-template-columns: minmax(0, 1.22fr) minmax(320px, .78fr);
+      grid-template-rows: auto minmax(0, 1fr);
     }
 
     .image-with-text--layout-editorial-collage .image-with-text__media-collage {
@@ -368,6 +383,10 @@
       inset: 0;
       width: 100%;
       height: 100%;
+    }
+
+    .image-with-text--layout-editorial-collage .image-with-text__media--foreground {
+      display: none;
     }
 
     .image-with-text--layout-editorial-collage .image-with-text__content {
@@ -388,72 +407,8 @@
     }
 
     .image-with-text--layout-editorial-collage .image-with-text__heading-block:nth-child(3) .content-block {
-      color: var(--color-text);
-      font-family: var(--heading-font-family);
       font-size: clamp(20px, 2vw, 30px);
-      font-style: var(--heading-font-style);
       line-height: 1.05;
-    }
-
-    .image-with-text--layout-editorial-collage .image-with-text__media--foreground {
-      z-index: 1;
-      top: auto;
-      bottom: 0;
-      left: calc(100% + clamp(40px, 4vw, 76px));
-      right: auto;
-      width: min(53%, 340px);
-      aspect-ratio: 4 / 5;
-    }
-
-    .image-with-text--layout-editorial-collage .image-with-text__media--study {
-      z-index: 3;
-      top: auto;
-      bottom: 0;
-      /* Deliberately crosses the column gutter so the study overlaps the
-       * portrait and the hero image, as in the House craft composition. */
-      left: calc(100% + clamp(40px, 4vw, 76px) - clamp(92px, 9vw, 150px));
-      right: auto;
-      display: grid;
-      width: min(47%, 300px);
-      grid-template-columns: 42% minmax(0, 1fr);
-      aspect-ratio: auto;
-      border: clamp(8px, 1vw, 14px) solid var(--color-background);
-      background: var(--color-background);
-    }
-
-    .image-with-text--layout-editorial-collage .image-with-text__media--study .image-with-text__image,
-    .image-with-text--layout-editorial-collage .image-with-text__media--study .image-with-text__placeholder {
-      width: 100%;
-      height: 100%;
-      min-height: 100%;
-      object-fit: cover;
-    }
-
-    .image-with-text--layout-editorial-collage .image-with-text__study-copy {
-      display: flex;
-      min-width: 0;
-      flex-direction: column;
-      justify-content: center;
-      gap: 8px;
-      padding: clamp(12px, 1.4vw, 22px);
-      background: var(--color-background);
-      color: var(--color-text);
-    }
-
-    .image-with-text--layout-editorial-collage .image-with-text__study-label,
-    .image-with-text--layout-editorial-collage .image-with-text__study-text {
-      color: var(--color-text);
-      font-size: 9px;
-      letter-spacing: .1em;
-      line-height: 1.35;
-      text-transform: uppercase;
-    }
-
-    .image-with-text--layout-editorial-collage .image-with-text__study-heading {
-      margin: 0;
-      color: var(--color-heading);
-      font-size: clamp(15px, 1.5vw, 21px);
-      line-height: 1.08;
     }
 
     .image-with-text--layout-editorial-collage .image-with-text__text {
@@ -464,6 +419,36 @@
       margin: 0;
       font-size: 12px;
       line-height: 1.45;
+    }
+
+    .image-with-text--layout-editorial-collage .image-with-text__study {
+      display: grid;
+      grid-column: 2;
+      grid-row: 2;
+      align-self: end;
+      width: min(100%, 320px);
+      margin-bottom: 0;
+      margin-left: clamp(-150px, -9vw, -92px);
+      padding: clamp(8px, 1vw, 14px);
+      background: var(--color-background);
+    }
+
+    .image-with-text--layout-editorial-collage .image-with-text__study > .group {
+      display: grid;
+      grid-template-columns: 42% minmax(0, 1fr);
+      gap: 0 16px;
+      padding: 0;
+    }
+
+    .image-with-text--layout-editorial-collage .image-with-text__study .content-media {
+      grid-row: 1 / span 3;
+    }
+
+    .image-with-text--layout-editorial-collage .image-with-text__study .content-block--label,
+    .image-with-text--layout-editorial-collage .image-with-text__study .content-heading,
+    .image-with-text--layout-editorial-collage .image-with-text__study .content-text {
+      grid-column: 2;
+      align-self: center;
     }
   }
 
@@ -476,49 +461,44 @@
     }
 
     .image-with-text--layout-editorial-collage .image-with-text__media-collage {
-      display: grid;
-      grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
-      gap: 12px;
-      aspect-ratio: auto;
-    }
-
-    .image-with-text--layout-editorial-collage .image-with-text__media {
-      position: relative;
-      inset: auto;
-      width: 100%;
-      transform: none;
+      display: block;
+      aspect-ratio: 4 / 5;
     }
 
     .image-with-text--layout-editorial-collage .image-with-text__media--base {
-      grid-column: 1 / -1;
-      aspect-ratio: 4 / 5;
+      inset: 0;
     }
 
-    .image-with-text--layout-editorial-collage .image-with-text__media--foreground,
-    .image-with-text--layout-editorial-collage .image-with-text__media--study {
-      aspect-ratio: 4 / 5;
+    .image-with-text--layout-editorial-collage .image-with-text__media--foreground {
+      display: none;
     }
 
     .image-with-text--layout-editorial-collage .image-with-text__content {
       width: min(100%, 620px);
       padding: 0;
     }
-  }
 
-  @media screen and (max-width: 767.98px) {
-    .image-with-text--layout-editorial-collage .image-with-text__inner {
-      gap: 28px;
+    .image-with-text--layout-editorial-collage .image-with-text__study {
+      width: min(100%, 420px);
+      margin-inline: auto;
+      padding: 8px;
+      background: var(--color-background);
     }
 
-    .image-with-text--layout-editorial-collage .image-with-text__media-collage {
-      gap: 8px;
+    .image-with-text--layout-editorial-collage .image-with-text__study > .group {
+      display: grid;
+      grid-template-columns: 42% minmax(0, 1fr);
+      gap: 0 16px;
+      padding: 0;
     }
 
-    .image-with-text--layout-editorial-collage .image-with-text__media--base {
-      aspect-ratio: 4 / 5;
+    .image-with-text--layout-editorial-collage .image-with-text__study .content-media {
+      grid-row: 1 / span 3;
     }
 
-    .image-with-text--layout-editorial-collage .image-with-text__button-block {
-      margin-top: 20px;
+    .image-with-text--layout-editorial-collage .image-with-text__study .content-block--label,
+    .image-with-text--layout-editorial-collage .image-with-text__study .content-heading,
+    .image-with-text--layout-editorial-collage .image-with-text__study .content-text {
+      grid-column: 2;
     }
   }
