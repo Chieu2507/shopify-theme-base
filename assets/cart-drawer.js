@@ -550,15 +550,16 @@ import { A11y, Swiper } from './swiper-loader.js';
     }
 
     renderCart(cart) {
-      this.cart = cart;
-      if (!cart.item_count) {
+      const items = (cart.items || []).filter((item) => Number(item.quantity) > 0);
+      this.cart = { ...cart, items };
+      if (!items.length) {
         this.renderEmpty();
         return;
       }
       this.footer.hidden = false;
       if (this.promotion) this.promotion.hidden = false;
       this.queuePromotionMarqueeUpdate();
-      this.items.innerHTML = cart.items.map((item) => this.itemTemplate(item)).join('');
+      this.items.innerHTML = items.map((item) => this.itemTemplate(item)).join('');
       const total = this.formatMoney(cart.total_price);
       if (this.itemCount) this.itemCount.textContent = `(${cart.item_count})`;
       if (this.subtotal) this.subtotal.textContent = this.formatMoney(cart.items_subtotal_price ?? cart.total_price ?? 0);
@@ -668,12 +669,12 @@ import { A11y, Swiper } from './swiper-loader.js';
         .join('');
       const properties = publicProperties ? `<dl class="cart-drawer__item-properties">${publicProperties}</dl>` : '';
       const sellingPlan = item.selling_plan_allocation?.selling_plan?.name ? `<p class="cart-drawer__item-selling-plan">${this.escape(item.selling_plan_allocation.selling_plan.name)}</p>` : '';
-      const originalLinePrice = Number(item.original_line_price ?? item.line_price ?? 0);
-      const finalLinePrice = Number(item.final_line_price ?? item.line_price ?? 0);
-      const isSale = originalLinePrice > finalLinePrice;
+      const originalUnitPrice = Number(item.original_price ?? item.final_price ?? item.price ?? 0);
+      const finalUnitPrice = Number(item.final_price ?? item.price ?? 0);
+      const isSale = originalUnitPrice > finalUnitPrice;
       const price = isSale
-        ? `<s class="cart-drawer__item-price-compare">${this.formatMoney(originalLinePrice)}</s><span class="cart-drawer__item-price-current">${this.formatMoney(finalLinePrice)}</span>`
-        : `<span class="cart-drawer__item-price-current">${this.formatMoney(finalLinePrice)}</span>`;
+        ? `<s class="cart-drawer__item-price-compare">${this.formatMoney(originalUnitPrice)}</s><span class="cart-drawer__item-price-current">${this.formatMoney(finalUnitPrice)}</span>`
+        : `<span class="cart-drawer__item-price-current">${this.formatMoney(finalUnitPrice)}</span>`;
       const unitPrice = item.unit_price_measurement && item.unit_price != null
         ? `<small class="cart-drawer__item-unit-price">${this.formatMoney(item.unit_price)} / ${this.escape(item.unit_price_measurement.reference_value)}${this.escape(item.unit_price_measurement.reference_unit)}</small>`
         : '';
@@ -686,20 +687,16 @@ import { A11y, Swiper } from './swiper-loader.js';
           ${variant}
           ${properties}
           ${sellingPlan}
+          <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
+          ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
         </div>
         <div class="cart-drawer__item-actions">
           <button class="cart-drawer__remove" type="button" aria-label="${this.escape(this.dataset.removeLabel)}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity="0">${removeIcon}</button>
-        </div>
-        <div class="cart-drawer__item-purchase">
-          <div class="cart-drawer__item-price-row">
-            <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">${price}${unitPrice}</p>
           <div class="cart-drawer__quantity">
             <button type="button" aria-label="${this.escape(this.dataset.decreaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="-1">−</button>
             <input type="number" min="0" step="1" inputmode="numeric" value="${item.quantity}" aria-label="${this.escape(this.dataset.quantityLabel || 'Quantity')}: ${this.escape(item.product_title)}" data-cart-drawer-quantity-input data-cart-drawer-quantity-value data-line="${this.escape(item.key)}">
             <button type="button" aria-label="${this.escape(this.dataset.increaseQuantityLabel || '')}" data-cart-drawer-change data-line="${this.escape(item.key)}" data-quantity-delta="1">+</button>
           </div>
-          </div>
-          ${discounts ? `<ul class="cart-drawer__item-discounts" role="list">${discounts}</ul>` : ''}
         </div>
       </article>`;
     }
@@ -845,7 +842,8 @@ import { A11y, Swiper } from './swiper-loader.js';
       const remaining = Math.max(0, threshold - total);
       const unlocked = remaining === 0;
       const progress = Math.min(100, Math.round((total / threshold) * 100));
-      const progressLevel = progress >= 67 ? 'high' : progress >= 34 ? 'medium' : 'low';
+      const progressLevel = unlocked ? 'complete' : progress > 60 ? 'near' : 'start';
+      const wasUnlocked = this.shippingProgress.dataset.unlocked === 'true';
       const template = unlocked ? this.shippingCopy?.dataset.success : this.shippingCopy?.dataset.pending;
       if (this.shippingMessage) this.shippingMessage.textContent = String(template || '').replace(/\{\{ ?amount ?\}\}|\{amount\}/g, this.formatMoney(remaining));
       if (this.shippingGoal) this.shippingGoal.textContent = this.formatMoney(threshold);
@@ -853,6 +851,13 @@ import { A11y, Swiper } from './swiper-loader.js';
       this.shippingProgress.hidden = false;
       this.shippingProgress.dataset.unlocked = String(unlocked);
       this.shippingProgress.dataset.progressLevel = progressLevel;
+      if (unlocked && !wasUnlocked) {
+        this.shippingProgress.dataset.shippingBurst = 'true';
+        window.clearTimeout(this.shippingBurstTimer);
+        this.shippingBurstTimer = window.setTimeout(() => {
+          delete this.shippingProgress.dataset.shippingBurst;
+        }, 1050);
+      }
     }
 
     async estimateShipping(event) {
