@@ -58,8 +58,9 @@ class CollectionList extends HTMLElement {
 
     const columns = Number.parseInt(this.dataset[`columns${this.capitalize(device)}`], 10) || 1;
     const slidesPerView = device === 'mobile' && columns === 1 ? 1.2 : columns;
-    const configuredGap = Number.parseFloat(getComputedStyle(this).getPropertyValue('--collection-list-column-gap')) || 0;
-    const gap = device === 'mobile' ? 8 : configuredGap;
+    const styles = getComputedStyle(this);
+    const gapProperty = device === 'mobile' ? '--collection-list-mobile-column-gap' : '--collection-list-column-gap';
+    const gap = Number.parseFloat(styles.getPropertyValue(gapProperty)) || 0;
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
     const previousMessage = this.previousButton?.getAttribute('aria-label') || '';
     const nextMessage = this.nextButton?.getAttribute('aria-label') || '';

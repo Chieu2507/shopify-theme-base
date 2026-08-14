@@ -49,7 +49,9 @@ class TestimonialsSlider extends HTMLElement {
 
     const configuredColumns = Number.parseInt(this.dataset[`columns${device.charAt(0).toUpperCase()}${device.slice(1)}`], 10) || 1;
     const slidesPerView = configuredColumns;
-    const gap = Number.parseFloat(getComputedStyle(this).getPropertyValue('--testimonials-column-gap')) || 0;
+    const styles = getComputedStyle(this);
+    const gapProperty = device === 'mobile' ? '--testimonials-mobile-column-gap' : '--testimonials-column-gap';
+    const gap = Number.parseFloat(styles.getPropertyValue(gapProperty)) || 0;
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
 
     this.swiper = new Swiper(this.slider, {
