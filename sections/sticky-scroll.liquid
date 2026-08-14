@@ -14,7 +14,7 @@
 {% endif %}
 
 <sticky-scroll
-  class="sticky-scroll sticky-scroll--width-{{ section.settings.section_width }} sticky-scroll--mobile-{{ section.settings.mobile_layout }} sticky-scroll--desktop-height-{{ section.settings.desktop_height }} sticky-scroll--mobile-height-{{ section.settings.mobile_height }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+  class="sticky-scroll sticky-scroll--width-{{ section.settings.section_width }} sticky-scroll--mobile-{{ section.settings.mobile_layout }} sticky-scroll--mobile-ratio-{{ section.settings.mobile_image_ratio }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
   role="region"
   aria-label="{{ section_description | escape }}"
   data-section-id="{{ section.id }}"
@@ -66,27 +66,15 @@
     },
     {
       "type": "select",
-      "id": "desktop_height",
-      "label": "Desktop height",
+      "id": "mobile_image_ratio",
+      "label": "Mobile image ratio",
       "options": [
-        { "value": "650", "label": "650px" },
-        { "value": "750", "label": "750px" },
-        { "value": "850", "label": "850px" },
-        { "value": "full", "label": "Full screen" }
+        { "value": "portrait", "label": "Portrait" },
+        { "value": "square", "label": "Square" },
+        { "value": "landscape", "label": "Landscape" }
       ],
-      "default": "full"
-    },
-    {
-      "type": "select",
-      "id": "mobile_height",
-      "label": "Mobile height",
-      "options": [
-        { "value": "450", "label": "450px" },
-        { "value": "550", "label": "550px" },
-        { "value": "650", "label": "650px" },
-        { "value": "full", "label": "Full screen" }
-      ],
-      "default": "550"
+      "default": "portrait",
+      "visible_if": "{{ section.settings.mobile_layout == 'stacked' }}"
     },
     {
       "type": "header",
@@ -151,8 +139,7 @@
       "settings": {
         "section_width": "full",
         "mobile_layout": "stacked",
-        "desktop_height": "full",
-        "mobile_height": "550"
+        "mobile_image_ratio": "portrait"
       },
       "blocks": [
         {
