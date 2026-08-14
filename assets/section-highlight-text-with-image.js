@@ -161,7 +161,7 @@ if (!customElements.get('highlight-text-with-image')) {
             .filter(Boolean)
             .join(' ');
           if (!isSpace) {
-            token.dataset.reveal = 'fade';
+            token.dataset.reveal = 'fade-up';
             token.dataset.revealDelay = String(Math.min(tokens.length * 75, 1000));
           }
           token.textContent = content;
@@ -174,7 +174,7 @@ if (!customElements.get('highlight-text-with-image')) {
 
       if (node.classList.contains('highlight-text-with-image__media')) {
         node.classList.add('text-highlight__token', 'text-highlight__token--media');
-        node.dataset.reveal = 'fade';
+        node.dataset.reveal = 'fade-up';
         node.dataset.revealDelay = String(Math.min(tokens.length * 75, 1000));
         tokens.push(node);
         return;
