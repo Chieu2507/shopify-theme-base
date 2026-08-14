@@ -846,7 +846,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       const wasUnlocked = this.shippingProgress.dataset.unlocked === 'true';
       const template = unlocked ? this.shippingCopy?.dataset.success : this.shippingCopy?.dataset.pending;
       if (this.shippingMessage) this.shippingMessage.textContent = String(template || '').replace(/\{\{ ?amount ?\}\}|\{amount\}/g, this.formatMoney(remaining));
-      if (this.shippingGoal) this.shippingGoal.textContent = this.formatMoney(threshold);
+      if (this.shippingGoal) this.shippingGoal.textContent = unlocked ? "You've got it!" : this.formatMoney(threshold);
       if (this.shippingProgressValue) this.shippingProgressValue.style.width = `${progress}%`;
       this.shippingProgress.hidden = false;
       this.shippingProgress.dataset.unlocked = String(unlocked);
