@@ -70,7 +70,7 @@ class StickyScroll extends HTMLElement {
       this.classList.remove('is-enhanced');
       this.style.removeProperty('--sticky-scroll-scroll-height');
       panels.forEach((panel) => {
-        panel.classList.remove('is-active');
+        panel.classList.remove('is-active', 'is-before', 'is-after');
         panel.removeAttribute('aria-hidden');
         panel.inert = false;
       });
@@ -128,6 +128,8 @@ class StickyScroll extends HTMLElement {
     panels.forEach((panel, index) => {
       const isActive = index === activeIndex;
       panel.classList.toggle('is-active', isActive);
+      panel.classList.toggle('is-before', index < activeIndex);
+      panel.classList.toggle('is-after', index > activeIndex);
       panel.setAttribute('aria-hidden', isActive ? 'false' : 'true');
       if (!this.designMode) panel.inert = !isActive;
     });
