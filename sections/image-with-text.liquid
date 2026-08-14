@@ -4,11 +4,25 @@
   assign media_count = section.blocks | where: 'type', 'media' | size
   assign content_count = section.blocks.size | minus: media_count
   assign primary_media = section.blocks | where: 'type', 'media' | first
+  assign image_with_text_background = section.settings.background_color
+  if image_with_text_background == blank
+    assign image_with_text_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
 %}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ image_with_text_background }};
+  }
+
+  #shopify-section-{{ section.id }} .image-with-text {
+    background: transparent;
+  }
+{% endstyle %}
 
 {% if media_count > 0 or content_count > 0 %}
   <div
-    class="image-with-text image-with-text--media-{{ section.settings.media_position }} image-with-text--media-count-{{ media_count }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} image-with-text--full full-width{% endif %}"
+    class="image-with-text image-with-text--layout-{{ section.settings.layout | default: 'standard' }} image-with-text--media-{{ section.settings.media_position }} image-with-text--media-count-{{ media_count }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} image-with-text--full full-width{% endif %}"
     style="--image-with-text-column-gap: {{ section.settings.column_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
   >
     <div class="image-with-text__inner section-spacing">
@@ -23,8 +37,10 @@
               {% liquid
                 assign media_index = media_index | plus: 1
                 assign media_role = 'base'
-                if media_index > 1
+                if media_index == 2
                   assign media_role = 'foreground'
+                elsif media_index > 2
+                  assign media_role = 'study'
                 endif
                 assign media_alt = block.settings.alt | default: block.settings.image.alt
                 assign media_aria_label = media_alt
@@ -34,6 +50,8 @@
                 assign placeholder_asset = 'placeholder-image-default-1.svg'
                 if media_role == 'foreground'
                   assign placeholder_asset = 'placeholder-image-default-2.svg'
+                elsif media_role == 'study'
+                  assign placeholder_asset = 'placeholder-image-default-3.svg'
                 endif
               %}
               {% if block.settings.link != blank %}
