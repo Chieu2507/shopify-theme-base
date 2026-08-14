@@ -67,7 +67,9 @@ class ProductFeaturedCollection extends HTMLElement {
     const scroller = this.panel?.querySelector('[data-product-featured-collection-scroller]');
     if (!carousel || !scroller?.querySelector('.swiper-slide')) return;
 
-    const productGap = Number.parseFloat(getComputedStyle(this).getPropertyValue('--product-featured-collection-product-gap')) || 0;
+    const styles = getComputedStyle(this);
+    const productGap = Number.parseFloat(styles.getPropertyValue('--product-featured-collection-product-gap')) || 0;
+    const mobileProductGap = Number.parseFloat(styles.getPropertyValue('--product-featured-collection-mobile-product-gap')) || 0;
     const desktopColumns = Number.parseInt(this.dataset.desktopColumns, 10) || 4;
     const mobileColumns = Number.parseInt(this.dataset.mobileColumns, 10) || 1;
     const tabletColumns = Math.min(desktopColumns, 2);
@@ -78,7 +80,7 @@ class ProductFeaturedCollection extends HTMLElement {
     this.swiper = new Swiper(carousel, {
       modules: [A11y, Navigation],
       slidesPerView: slidesWithPreview(mobileColumns),
-      spaceBetween: productGap,
+      spaceBetween: mobileProductGap,
       speed: this.reduceMotion ? 0 : 360,
       watchOverflow: true,
       navigation: {
@@ -87,7 +89,7 @@ class ProductFeaturedCollection extends HTMLElement {
       },
       a11y: { enabled: true, slideRole: 'listitem' },
       breakpoints: {
-        750: { slidesPerView: slidesWithPreview(tabletColumns) },
+        750: { slidesPerView: slidesWithPreview(tabletColumns), spaceBetween: productGap },
         990: { slidesPerView: slidesWithPreview(desktopColumns) },
       },
     });

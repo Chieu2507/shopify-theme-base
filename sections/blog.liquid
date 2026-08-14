@@ -4,6 +4,7 @@
   assign featured_article = blank
   assign featured_height = 480
   assign card_gap = 20
+  assign mobile_card_gap = 12
 
   if featured_block != blank
     assign featured_article = featured_block.settings.article
@@ -15,10 +16,11 @@
 
   if grid_block != blank
     assign card_gap = grid_block.settings.card_gap
+    assign mobile_card_gap = grid_block.settings.mobile_card_gap | default: 12
   endif
 %}
 
-<div class="blog-index color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}" style="--blog-index-hero-height: {{ featured_height }}px; --blog-index-card-gap: {{ card_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;">
+<div class="blog-index color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}" style="--blog-index-hero-height: {{ featured_height }}px; --blog-index-card-gap: {{ card_gap }}px; --blog-index-mobile-card-gap: {{ mobile_card_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;">
   <div class="blog-index__inner section-spacing">
     {% for block in section.blocks %}
       {% case block.type %}
@@ -102,7 +104,7 @@
   .blog-index__pagination { display: flex; justify-content: center; padding-top: 48px; }
   .blog-index__pagination a, .blog-index__pagination span { padding: 8px 12px; color: inherit; text-decoration: none; }
   @media screen and (max-width: 1149.98px) { .blog-index__grid { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
-  @media screen and (max-width: 767.98px) { .blog-index__inner { padding-inline: var(--page-margin); } .blog-index.full-width .blog-index__inner { padding-inline: var(--page-margin); } .blog-index__header { padding-block: 24px 30px; } .blog-index__featured { min-height: 420px; } .blog-index__featured-copy { min-height: 420px; padding: 28px; } .blog-index__grid { grid-template-columns: 1fr; gap: 34px; padding-top: 32px; } }
+  @media screen and (max-width: 767.98px) { .blog-index__inner { padding-inline: var(--page-margin); } .blog-index.full-width .blog-index__inner { padding-inline: var(--page-margin); } .blog-index__header { padding-block: 24px 30px; } .blog-index__featured { min-height: 420px; } .blog-index__featured-copy { min-height: 420px; padding: 28px; } .blog-index__grid { grid-template-columns: 1fr; gap: var(--blog-index-mobile-card-gap); padding-top: 32px; } }
 {% endstylesheet %}
 
 {% schema %}
@@ -262,7 +264,8 @@
           "content": "Article grid"
         },
         { "type": "range", "id": "articles_per_page", "min": 3, "max": 12, "step": 1, "label": "Articles per page", "default": 10 },
-        { "type": "range", "id": "card_gap", "min": 12, "max": 48, "step": 4, "unit": "px", "label": "Card gap", "default": 20 },
+        { "type": "range", "id": "card_gap", "min": 12, "max": 48, "step": 4, "unit": "px", "label": "Desktop column gap", "default": 20 },
+        { "type": "range", "id": "mobile_card_gap", "min": 0, "max": 48, "step": 4, "unit": "px", "label": "Mobile column gap", "default": 12 },
         { "type": "checkbox", "id": "show_featured_in_grid", "label": "Show featured article in grid", "default": false },
         { "type": "header", "content": "Card content" },
         { "type": "checkbox", "id": "show_tags", "label": "Show tags", "default": true },
