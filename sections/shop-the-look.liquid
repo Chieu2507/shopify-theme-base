@@ -34,7 +34,7 @@
     <div class="shop-the-look__inner section-spacing">
       <div class="shop-the-look__layout">
       <div class="shop-the-look__media-column">
-        <div class="shop-the-look__visual">
+        <div class="shop-the-look__visual" data-reveal="fade-up" data-reveal-duration="650" data-reveal-delay="0">
           {% liquid
             assign editorial_image = section.settings.image | default: section.settings.mobile_image
             assign editorial_image_alt = editorial_image.alt
@@ -149,7 +149,7 @@
           </div>
         </header>
 
-        <div class="shop-the-look__spotlight">
+        <div class="shop-the-look__spotlight" data-reveal="fade-up" data-reveal-duration="650" data-reveal-delay="300">
           {% if product_block_count > 1 %}
             <button class="shop-the-look__arrow shop-the-look__arrow--previous featured-collection__carousel-button featured-collection__carousel-button--previous" type="button" aria-label="{{ 'shop_the_look.previous_product' | t | escape }}" data-shop-the-look-previous>
               {% render 'icon', name: 'chevron-left' %}
@@ -210,7 +210,7 @@
         </div>
 
         {% if product_block_count > 1 %}
-          <div class="shop-the-look__pagination">
+          <div class="shop-the-look__pagination" data-reveal="fade-up" data-reveal-duration="650" data-reveal-delay="450">
             <span class="shop-the-look__pagination-count" data-shop-the-look-pagination-count aria-live="polite">01 / {{ product_block_count | prepend: '0' | slice: -2, 2 }}</span>
             <div class="shop-the-look__pagination-progress featured-collection__progress" aria-hidden="true">
               <span data-shop-the-look-pagination-progress style="--featured-collection-progress: {{ 1.0 | divided_by: product_block_count }};"></span>
@@ -929,6 +929,47 @@
           "step": 1,
           "unit": "px",
           "default": 0
+        },
+        {
+          "type": "header",
+          "content": "Animation"
+        },
+        {
+          "type": "select",
+          "id": "reveal_type",
+          "label": "Type",
+          "options": [
+            { "value": "none", "label": "None" },
+            { "value": "fade", "label": "Fade" },
+            { "value": "fade-up", "label": "Fade up" },
+            { "value": "fade-down", "label": "Fade down" },
+            { "value": "fade-left", "label": "Fade left" },
+            { "value": "fade-right", "label": "Fade right" },
+            { "value": "zoom", "label": "Zoom" }
+          ],
+          "default": "none"
+        },
+        {
+          "type": "range",
+          "id": "reveal_duration",
+          "label": "Duration",
+          "min": 300,
+          "max": 1500,
+          "step": 50,
+          "unit": "ms",
+          "default": 650,
+          "visible_if": "{{ block.settings.reveal_type != 'none' }}"
+        },
+        {
+          "type": "range",
+          "id": "reveal_delay",
+          "label": "Delay",
+          "min": 0,
+          "max": 1000,
+          "step": 50,
+          "unit": "ms",
+          "default": 0,
+          "visible_if": "{{ block.settings.reveal_type != 'none' }}"
         }
       ]
     },
@@ -1008,16 +1049,29 @@
       },
       "blocks": [
         {
-          "type": "label"
+          "type": "label",
+          "settings": {
+            "reveal_type": "fade-up",
+            "reveal_duration": 650,
+            "reveal_delay": 0
+          }
         },
         {
           "type": "text",
           "settings": {
-            "type_preset": "sm"
+            "type_preset": "sm",
+            "reveal_type": "fade-up",
+            "reveal_duration": 650,
+            "reveal_delay": 150
           }
         },
         {
-          "type": "heading"
+          "type": "heading",
+          "settings": {
+            "reveal_type": "fade-up",
+            "reveal_duration": 650,
+            "reveal_delay": 150
+          }
         },
         {
           "type": "product_hotspot",
