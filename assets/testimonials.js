@@ -9,16 +9,10 @@ class TestimonialsSlider extends HTMLElement {
     this.nextButton = this.querySelector('[data-testimonials-next]');
     this.currentCount = this.querySelector('[data-testimonials-current]');
     this.totalCount = this.querySelector('[data-testimonials-total]');
-    this.mobileMedia = window.matchMedia('(max-width: 767.98px)');
-    this.tabletMedia = window.matchMedia('(max-width: 1149.98px)');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.currentDevice = null;
     this.swiper = null;
-    this.onBreakpointChange = this.refresh.bind(this);
     this.onBlockSelect = this.handleBlockSelect.bind(this);
 
-    this.mobileMedia.addEventListener('change', this.onBreakpointChange);
-    this.tabletMedia.addEventListener('change', this.onBreakpointChange);
     document.addEventListener('shopify:block:select', this.onBlockSelect);
     this.isReady = false;
     this.cancelDeferredInitialization = initializeWhenVisible(this, () => {
@@ -28,8 +22,6 @@ class TestimonialsSlider extends HTMLElement {
   }
 
   disconnectedCallback() {
-    this.mobileMedia?.removeEventListener('change', this.onBreakpointChange);
-    this.tabletMedia?.removeEventListener('change', this.onBreakpointChange);
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     this.cancelDeferredInitialization?.();
     this.destroySlider();
@@ -37,32 +29,22 @@ class TestimonialsSlider extends HTMLElement {
 
   refresh() {
     if (!this.isReady) return;
-    const device = this.mobileMedia.matches ? 'mobile' : this.tabletMedia.matches ? 'tablet' : 'desktop';
-    if (device === this.currentDevice) return;
-    this.currentDevice = device;
-    const layout = this.dataset[`layout${device.charAt(0).toUpperCase()}${device.slice(1)}`] || 'slider';
-    this.dataset.currentLayout = layout;
-    this.updateControls(layout);
+    this.updateControls();
     this.destroySlider();
-    if (layout === 'slider') this.createSlider(device);
+    this.createSlider();
   }
 
-  createSlider(device) {
+  createSlider() {
     if (!this.slider?.querySelector('.swiper-slide')) return;
 
-    const configuredColumns = Number.parseInt(this.dataset[`columns${device.charAt(0).toUpperCase()}${device.slice(1)}`], 10) || 1;
-    const slidesPerView = configuredColumns;
-    const styles = getComputedStyle(this);
-    const gapProperty = device === 'mobile' ? '--testimonials-mobile-column-gap' : '--testimonials-column-gap';
-    const gap = Number.parseFloat(styles.getPropertyValue(gapProperty)) || 0;
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
     this.swiper = new Swiper(this.slider, {
       modules: [A11y, Navigation],
-      slidesPerView,
-      spaceBetween: gap,
+      slidesPerView: 1,
+      spaceBetween: 0,
       speed: this.reduceMotion.matches ? 0 : 360,
       watchOverflow: true,
-      grabCursor: slideCount > slidesPerView,
+      grabCursor: slideCount > 1,
       loop: slideCount > 1,
       navigation: {
         prevEl: this.previousButton,
@@ -88,10 +70,10 @@ class TestimonialsSlider extends HTMLElement {
     this.totalCount.textContent = String(slideCount).padStart(2, '0');
   }
 
-  updateControls(layout) {
+  updateControls() {
     if (!this.controls) return;
     const slideCount = this.slider?.querySelectorAll('.swiper-slide').length || 0;
-    this.controls.hidden = layout !== 'slider' || slideCount <= 1;
+    this.controls.hidden = slideCount <= 1;
   }
 
   destroySlider() {
