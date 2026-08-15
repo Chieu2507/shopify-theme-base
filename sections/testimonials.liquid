@@ -1,11 +1,6 @@
 {% render 'section-stylesheet', asset: 'section-testimonials.css', defer_on_home: true %}
 
 {% liquid
-  assign is_editorial = false
-  if section.settings.style == 'editorial'
-    assign is_editorial = true
-  endif
-
   assign testimonials_background = section.settings.background_color
   if testimonials_background == blank
     assign testimonials_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
@@ -25,7 +20,7 @@
 {% if section.blocks.size > 0 %}
   <testimonials-slider
     data-deferred-module="{{ 'testimonials.js' | asset_url }}"
-    class="testimonials testimonials--{{ section.settings.style | default: 'standard' }} color-scheme color-{{ section.settings.color_scheme.id }} full-width{% if section.settings.section_width == 'full' %} testimonials--content-full{% endif %}"
+    class="testimonials testimonials--editorial color-scheme color-{{ section.settings.color_scheme.id }} full-width{% if section.settings.section_width == 'full' %} testimonials--content-full{% endif %}"
     data-section-id="{{ section.id }}"
     data-layout-desktop="{{ section.settings.layout_desktop | default: 'slider' }}"
     data-layout-tablet="{{ section.settings.layout_desktop | default: 'slider' }}"
@@ -44,7 +39,7 @@
               {% if block.type == 'testimonial' %}
                 {% if block.settings.quote != blank or block.settings.author != blank or block.settings.role != blank %}
                   <figure class="testimonials__item testimonials__item--icon-{{ block.settings.icon_size | default: 'small' }} swiper-slide" role="listitem" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
-                  {% if is_editorial and block.settings.label != blank %}
+                  {% if block.settings.label != blank %}
                     <p class="testimonials__label">{{ block.settings.label | escape }}</p>
                   {% endif %}
 
@@ -77,29 +72,24 @@
                   {% if block.settings.author != blank or block.settings.role != blank %}
                     <figcaption class="testimonials__attribution spinel-text--{{ block.settings.attribution_size | default: 'medium' }} content-text--{{ block.settings.attribution_size | default: 'medium' }}">
                       {% if block.settings.author != blank %}<span class="testimonials__author">{{ block.settings.author | escape }}</span>{% endif %}
-                      {% unless is_editorial %}
-                        {% if block.settings.author != blank and block.settings.role != blank %}<span aria-hidden="true"> - </span>{% endif %}
-                        {% if block.settings.role != blank %}<span>{{ block.settings.role | escape }}</span>{% endif %}
-                      {% endunless %}
+                      {% if block.settings.role != blank %}<span>{{ block.settings.role | escape }}</span>{% endif %}
                     </figcaption>
                   {% endif %}
 
-                  {% if is_editorial %}
-                    {% if block.settings.location != blank or block.settings.piece != blank %}
-                      <p class="testimonials__details">
-                        {% if block.settings.location != blank %}<span>{{ block.settings.location | escape }}</span>{% endif %}
-                        {% if block.settings.location != blank and block.settings.piece != blank %}<span aria-hidden="true"> · </span>{% endif %}
-                        {% if block.settings.piece != blank %}<span>{{ block.settings.piece | escape }}</span>{% endif %}
-                      </p>
-                    {% endif %}
-                    {% render 'cta',
-                      label: block.settings.button_label,
-                      url: block.settings.button_link,
-                      style: 'tertiary',
-                      icon: 'arrow-right',
-                      class: 'testimonials__piece-link'
-                    %}
+                  {% if block.settings.location != blank or block.settings.piece != blank %}
+                    <p class="testimonials__details">
+                      {% if block.settings.location != blank %}<span>{{ block.settings.location | escape }}</span>{% endif %}
+                      {% if block.settings.location != blank and block.settings.piece != blank %}<span aria-hidden="true"> · </span>{% endif %}
+                      {% if block.settings.piece != blank %}<span>{{ block.settings.piece | escape }}</span>{% endif %}
+                    </p>
                   {% endif %}
+                  {% render 'cta',
+                    label: block.settings.button_label,
+                    url: block.settings.button_link,
+                    style: 'tertiary',
+                    icon: 'arrow-right',
+                    class: 'testimonials__piece-link'
+                  %}
                   </figure>
                 {% endif %}
               {% endif %}
@@ -107,36 +97,24 @@
           </div>
         </div>
 
-        {% unless is_editorial %}
-          <button class="testimonials__navigation-button testimonials__navigation-button--previous" type="button" aria-label="{{ 'testimonials.previous' | t | escape }}" data-testimonials-previous>
-            {% render 'icon', name: 'chevron-left' %}
-          </button>
-          <button class="testimonials__navigation-button testimonials__navigation-button--next" type="button" aria-label="{{ 'testimonials.next' | t | escape }}" data-testimonials-next>
-            {% render 'icon', name: 'chevron-right' %}
-          </button>
-        {% endunless %}
       </div>
 
-      {% if is_editorial %}
-        {% assign testimonial_total = section.blocks.size | prepend: '0' | slice: -2, 2 %}
-        <div class="testimonials__editorial-footer"{% if section.blocks.size <= 1 %} hidden{% endif %} role="group" aria-label="Testimonial controls">
-          <div class="testimonials__editorial-controls">
-            <button class="testimonials__editorial-button" type="button" aria-label="{{ 'testimonials.previous' | t | escape }}" data-testimonials-previous>
-              {% render 'icon', name: 'chevron-left' %}
-            </button>
-            <p class="testimonials__counter" aria-live="polite">
-              <span data-testimonials-current>01</span>
-              <span aria-hidden="true">/</span>
-              <span data-testimonials-total>{{ testimonial_total }}</span>
-            </p>
-            <button class="testimonials__editorial-button" type="button" aria-label="{{ 'testimonials.next' | t | escape }}" data-testimonials-next>
-              {% render 'icon', name: 'chevron-right' %}
-            </button>
-          </div>
+      {% assign testimonial_total = section.blocks.size | prepend: '0' | slice: -2, 2 %}
+      <div class="testimonials__editorial-footer" data-testimonials-controls{% if section.blocks.size <= 1 %} hidden{% endif %} role="group" aria-label="Testimonial controls">
+        <div class="testimonials__editorial-controls">
+          <button class="testimonials__editorial-button" type="button" aria-label="{{ 'testimonials.previous' | t | escape }}" data-testimonials-previous>
+            {% render 'icon', name: 'chevron-left' %}
+          </button>
+          <p class="testimonials__counter" aria-live="polite">
+            <span data-testimonials-current>01</span>
+            <span aria-hidden="true">/</span>
+            <span data-testimonials-total>{{ testimonial_total }}</span>
+          </p>
+          <button class="testimonials__editorial-button" type="button" aria-label="{{ 'testimonials.next' | t | escape }}" data-testimonials-next>
+            {% render 'icon', name: 'chevron-right' %}
+          </button>
         </div>
-      {% elsif section.settings.show_pagination %}
-        <div class="testimonials__pagination swiper-pagination" data-testimonials-pagination></div>
-      {% endif %}
+      </div>
     </div>
   </testimonials-slider>
 {% endif %}
