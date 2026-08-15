@@ -5,15 +5,20 @@
   if section.settings.style == 'editorial'
     assign is_editorial = true
   endif
+
+  assign testimonials_background = section.settings.background_color
+  if testimonials_background == blank
+    assign testimonials_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
 %}
 
 {% style %}
   #shopify-section-{{ section.id }} {
-    background: {% if section.settings.background_color != blank %}{{ section.settings.background_color }}{% else %}var(--gradient-background, var(--color-background)){% endif %};
+    background: {{ testimonials_background }};
   }
 
   #shopify-section-{{ section.id }} .testimonials {
-    background: {% if section.settings.background_color != blank %}{{ section.settings.background_color }}{% else %}var(--gradient-background, var(--color-background)){% endif %};
+    background: transparent;
   }
 {% endstyle %}
 
