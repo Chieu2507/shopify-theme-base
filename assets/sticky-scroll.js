@@ -17,18 +17,28 @@ class StickyScroll extends HTMLElement {
     this.handleScroll = this.handleScroll.bind(this);
     this.handleViewportChange = this.handleViewportChange.bind(this);
     this.handleBlockSelect = this.handleBlockSelect.bind(this);
+    this.handleSectionRefresh = this.handleSectionRefresh.bind(this);
     this.refresh = this.refresh.bind(this);
 
     window.addEventListener('scroll', this.handleScroll, { passive: true, signal });
     window.addEventListener('resize', this.handleViewportChange, { signal });
     this.desktopQuery.addEventListener?.('change', this.handleViewportChange, { signal });
     document.addEventListener('shopify:block:select', this.handleBlockSelect, { signal });
-    document.addEventListener('shopify:section:load', this.refresh, { signal });
-    document.addEventListener('shopify:section:reorder', this.refresh, { signal });
+    document.addEventListener('shopify:section:load', this.handleSectionRefresh, { signal });
+    document.addEventListener('shopify:section:reorder', this.handleSectionRefresh, { signal });
 
     if (this.designMode && 'MutationObserver' in window) {
-      this.mutationObserver = new MutationObserver(() => this.scheduleRefresh());
-      this.mutationObserver.observe(this.stage, { childList: true, subtree: true });
+      this.mutationObserver = new MutationObserver((mutations) => {
+        const hasPanelChange = mutations.some((mutation) =>
+          [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+            node.nodeType === Node.ELEMENT_NODE
+            && node.matches?.('[data-sticky-scroll-panel]')
+          )
+        );
+
+        if (hasPanelChange) this.scheduleRefresh();
+      });
+      this.mutationObserver.observe(this.stage, { childList: true });
     }
 
     this.refresh();
@@ -86,6 +96,10 @@ class StickyScroll extends HTMLElement {
   buildSteps() {
     if (!this.steps) return;
     const panels = this.panels;
+    const existingSteps = this.steps.querySelectorAll('[data-sticky-scroll-step]');
+
+    if (existingSteps.length === panels.length) return;
+
     this.steps.replaceChildren();
 
     panels.forEach((panel, index) => {
@@ -109,6 +123,10 @@ class StickyScroll extends HTMLElement {
 
   handleViewportChange() {
     this.refresh();
+  }
+
+  handleSectionRefresh(event) {
+    if (event.target?.contains(this)) this.scheduleRefresh();
   }
 
   updateFromScroll() {
