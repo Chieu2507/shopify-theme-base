@@ -56,8 +56,6 @@ class TestimonialsSlider extends HTMLElement {
     const gapProperty = device === 'mobile' ? '--testimonials-mobile-column-gap' : '--testimonials-column-gap';
     const gap = Number.parseFloat(styles.getPropertyValue(gapProperty)) || 0;
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
-    const isEditorial = this.classList.contains('testimonials--editorial');
-
     this.swiper = new Swiper(this.slider, {
       modules: [A11y, Navigation],
       slidesPerView,
@@ -65,7 +63,7 @@ class TestimonialsSlider extends HTMLElement {
       speed: this.reduceMotion.matches ? 0 : 360,
       watchOverflow: true,
       grabCursor: slideCount > slidesPerView,
-      loop: isEditorial && slideCount > 1,
+      loop: slideCount > 1,
       navigation: {
         prevEl: this.previousButton,
         nextEl: this.nextButton,
