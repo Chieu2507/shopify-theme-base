@@ -1,10 +1,10 @@
-import { A11y, Navigation, Pagination, Swiper } from './swiper-loader.js';
+import { A11y, Navigation, Swiper } from './swiper-loader.js';
 import { initializeWhenVisible } from './initialize-when-visible.js';
 
 class TestimonialsSlider extends HTMLElement {
   connectedCallback() {
     this.slider = this.querySelector('[data-testimonials-slider]');
-    this.pagination = this.querySelector('[data-testimonials-pagination]');
+    this.controls = this.querySelector('[data-testimonials-controls]');
     this.previousButton = this.querySelector('[data-testimonials-previous]');
     this.nextButton = this.querySelector('[data-testimonials-next]');
     this.currentCount = this.querySelector('[data-testimonials-current]');
@@ -42,6 +42,7 @@ class TestimonialsSlider extends HTMLElement {
     this.currentDevice = device;
     const layout = this.dataset[`layout${device.charAt(0).toUpperCase()}${device.slice(1)}`] || 'slider';
     this.dataset.currentLayout = layout;
+    this.updateControls(layout);
     this.destroySlider();
     if (layout === 'slider') this.createSlider(device);
   }
@@ -58,7 +59,7 @@ class TestimonialsSlider extends HTMLElement {
     const isEditorial = this.classList.contains('testimonials--editorial');
 
     this.swiper = new Swiper(this.slider, {
-      modules: [A11y, Navigation, Pagination],
+      modules: [A11y, Navigation],
       slidesPerView,
       spaceBetween: gap,
       speed: this.reduceMotion.matches ? 0 : 360,
@@ -69,9 +70,6 @@ class TestimonialsSlider extends HTMLElement {
         prevEl: this.previousButton,
         nextEl: this.nextButton,
       },
-      pagination: this.dataset.showPagination === 'true' && this.pagination
-        ? { el: this.pagination, clickable: true }
-        : false,
       a11y: {
         enabled: true,
         prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
@@ -90,6 +88,12 @@ class TestimonialsSlider extends HTMLElement {
     const currentIndex = (this.swiper?.realIndex ?? 0) + 1;
     this.currentCount.textContent = String(currentIndex).padStart(2, '0');
     this.totalCount.textContent = String(slideCount).padStart(2, '0');
+  }
+
+  updateControls(layout) {
+    if (!this.controls) return;
+    const slideCount = this.slider?.querySelectorAll('.swiper-slide').length || 0;
+    this.controls.hidden = layout !== 'slider' || slideCount <= 1;
   }
 
   destroySlider() {
