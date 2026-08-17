@@ -29,6 +29,7 @@ class EditorialSlideshow extends HTMLElement {
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
     this.autoplayManuallyPaused = false;
     this.manualPauseProgress = null;
+    this.animatePausedProgress = false;
     this.progressStartedAt = null;
     this.progressStartElapsed = 0;
     this.progressStartIndex = null;
@@ -514,6 +515,7 @@ class EditorialSlideshow extends HTMLElement {
 
     if (restartProgress) {
       this.manualPauseProgress = null;
+      this.animatePausedProgress = this.autoplayManuallyPaused;
       this.progressStartedAt = null;
       this.progressStartElapsed = 0;
       this.progressStartIndex = activeIndex;
@@ -641,6 +643,9 @@ class EditorialSlideshow extends HTMLElement {
         elapsed: this.getCurrentProgressElapsed(),
         index: this.activeIndex || 0,
       };
+      this.animatePausedProgress = true;
+    } else {
+      this.animatePausedProgress = false;
     }
 
     this.autoplayManuallyPaused = !this.autoplayManuallyPaused;
@@ -662,13 +667,30 @@ class EditorialSlideshow extends HTMLElement {
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
     const activeIndex = this.activeIndex || 0;
+    const pausedProgressRatio = this.manualPauseProgress?.index === activeIndex
+      ? this.manualPauseProgress.elapsed / this.autoplayDelay
+      : 0;
+    const shouldAnimatePausedProgress = this.autoplayManuallyPaused && this.animatePausedProgress;
+    this.animatePausedProgress = false;
     this.progressStartedAt = null;
     this.progressBars.forEach((bar, index) => {
       bar.style.transition = 'none';
-      bar.style.transform = this.autoplayManuallyPaused && index === activeIndex ? 'scaleX(1)' : 'scaleX(0)';
+      bar.style.transform = this.autoplayManuallyPaused && index === activeIndex
+        ? `scaleX(${shouldAnimatePausedProgress ? pausedProgressRatio : 1})`
+        : 'scaleX(0)';
     });
 
-    if (!this.isPlaying) return;
+    if (!this.isPlaying) {
+      const progressBar = this.progressBars[activeIndex];
+      if (shouldAnimatePausedProgress && progressBar) {
+        window.requestAnimationFrame(() => {
+          if (!this.autoplayManuallyPaused || this.activeIndex !== activeIndex) return;
+          progressBar.style.transition = 'transform 420ms cubic-bezier(.22, 1, .36, 1)';
+          progressBar.style.transform = 'scaleX(1)';
+        });
+      }
+      return;
+    }
 
     const resumeElapsed = this.manualPauseProgress?.index === activeIndex
       ? this.manualPauseProgress.elapsed
