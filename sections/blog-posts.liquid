@@ -1,59 +1,83 @@
 {% render 'section-stylesheet', asset: 'section-blog-posts.css', defer_on_home: true %}
 
 {% liquid
+  assign blog_posts_background = section.settings.background_color
+  if blog_posts_background == blank
+    assign blog_posts_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ blog_posts_background }};
+  }
+{% endstyle %}
+
+{% liquid
   assign article_count = 0
-  assign header_count = section.blocks | where: 'type', 'header' | size
+  assign header_block_count = 0
 
   for block in section.blocks
     if block.type == 'article'
       assign article_count = article_count | plus: 1
     endif
+    if block.type == 'label' or block.type == 'heading' or block.type == 'text' or block.type == 'button' or block.type == 'header'
+      assign header_block_count = header_block_count | plus: 1
+    endif
   endfor
+  assign rendered_article_count = article_count
+  if rendered_article_count == 0
+    assign rendered_article_count = 3
+  endif
 %}
 
-{% if article_count > 0 or header_count > 0 %}
+{% if rendered_article_count > 0 %}
   <div
     class="blog-posts color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
     style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --blog-posts-column-gap: {{ section.settings.column_gap | default: 20 }}px; --blog-posts-mobile-column-gap: {{ section.settings.mobile_column_gap | default: 12 }}px;"
   >
     <div class="blog-posts__inner section-spacing">
-      {% if header_count > 0 %}
+      {% if header_block_count > 0 %}
         <header class="blog-posts__header">
-          {% for block in section.blocks %}
-            {% if block.type == 'header' %}
-              {% assign heading_class = 'blog-posts__heading' %}
-              {% assign subheading_class = 'blog-posts__subheading content-text content-text--' | append: block.settings.subheading_size %}
-              {% assign text_class = 'blog-posts__intro content-text content-text--' | append: block.settings.text_size %}
-              {% render 'section-header',
-                heading: block.settings.heading,
-                heading_tag: block.settings.heading_tag,
-                heading_size: block.settings.heading_size,
-                heading_class: heading_class,
-                subheading: block.settings.subheading,
-                subheading_class: subheading_class,
-                copy_class: 'blog-posts__header-copy',
-                title_group_class: 'blog-posts__header-title-group',
-                text: block.settings.text,
-                text_class: text_class,
-                action_label: block.settings.link_label,
-                action_url: block.settings.link,
-                action_style: block.settings.button_style,
-                action_class: 'blog-posts__view-all',
-                action_group_class: 'blog-posts__button-group',
-                action_open_in_new_tab: block.settings.button_open_in_new_tab,
-                alignment: block.settings.content_alignment,
-                class: 'blog-posts__header-content',
-                tag: 'div',
-                attributes: block.shopify_attributes
-              %}
-            {% endif %}
-          {% endfor %}
+          <div class="blog-posts__header-content">
+            {% for block in section.blocks %}
+              {% case block.type %}
+                {% when 'label' %}
+                  {% render 'content-block', block: block, content: block.settings.text, kind: 'label', default_preset: 'label', default_font: 'label', force_preset: 'label' %}
+                {% when 'heading' %}
+                  {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h4', default_font: 'heading' %}
+                {% when 'text' %}
+                  {% render 'content-block', block: block, content: block.settings.text, kind: 'text', default_preset: 'sm', default_font: 'body' %}
+                {% when 'button' %}
+                  {% if block.settings.label != blank %}
+                    <div class="content-button" {{ block.shopify_attributes }} {% render 'reveal-attributes', settings: block.settings %}>
+                      {% render 'cta', label: block.settings.label, url: block.settings.link, style: block.settings.style, icon: block.settings.icon, open_in_new_tab: block.settings.open_in_new_tab %}
+                    </div>
+                  {% endif %}
+                {% when 'header' %}
+                  {% render 'section-header',
+                    heading: block.settings.heading,
+                    heading_tag: block.settings.heading_tag,
+                    heading_size: block.settings.heading_size,
+                    subheading: block.settings.subheading,
+                    text: block.settings.text,
+                    action_label: block.settings.link_label,
+                    action_url: block.settings.link,
+                    action_style: block.settings.button_style,
+                    action_open_in_new_tab: block.settings.button_open_in_new_tab,
+                    alignment: block.settings.content_alignment,
+                    tag: 'div',
+                    attributes: block.shopify_attributes
+                  %}
+              {% endcase %}
+            {% endfor %}
+          </div>
         </header>
       {% endif %}
 
-      {% if article_count > 0 %}
-        <div class="blog-posts__articles" data-reveal-group>
-          {% assign article_reveal_index = 0 %}
+      <div class="blog-posts__articles" data-reveal-group>
+        {% assign article_reveal_index = 0 %}
+        {% if article_count > 0 %}
           {% for block in section.blocks %}
             {% if block.type == 'article' %}
               {% liquid
@@ -76,7 +100,7 @@
                   assign card_article_author = card_article.author
                 endif
 
-                assign card_title = block.settings.title | default: card_article_title | default: 'Example article'
+                assign card_title = block.settings.title | default: card_article_title
                 assign card_excerpt = blank
                 if block.settings.excerpt != blank
                   assign card_excerpt = block.settings.excerpt
@@ -109,13 +133,39 @@
               %}
 
               <article
-                class="blog-posts__card blog-posts__card--media-{{ section.settings.media_position }} blog-posts__card--mobile-media-{{ section.settings.mobile_media_position }} blog-posts__card--align-{{ section.settings.content_alignment }} blog-posts__card--vertical-{{ section.settings.vertical_alignment }}{% unless section.settings.show_image %} blog-posts__card--no-media{% endunless %}"
+                class="blog-posts__card{% if card_article == blank %} blog-posts__card--placeholder{% endif %}"
                 style="--blog-posts-card-image-position: center center; --reveal-order: {{ article_reveal_index }};"
                 data-reveal-item
                 {{ block.shopify_attributes }}
               >
+                  {% if section.settings.show_image %}
+                    <div class="blog-posts__media blog-posts__media--{{ card_media_ratio }}">
+                      {% if card_url != blank %}
+                        <a class="blog-posts__media-link" href="{{ card_url | escape }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %}>
+                      {% else %}
+                        <div class="blog-posts__media-link">
+                      {% endif %}
+                        {% if card_image != blank %}
+                          {% render 'responsive-media',
+                            image: card_image,
+                            max_width: 1200,
+                            widths: '360, 480, 640, 800, 1000, 1200',
+                            sizes: '(min-width: 1150px) 33vw, (min-width: 768px) 50vw, calc(100vw - 32px)',
+                            class: 'blog-posts__image media-cover',
+                            loading: 'lazy',
+                            alt: card_alt,
+                            style: 'object-position: var(--blog-posts-card-image-position);'
+                          %}
+                        {% else %}
+                          {{ 'image' | placeholder_svg_tag: 'blog-posts__placeholder media-cover' }}
+                        {% endif %}
+                      {% if card_url != blank %}</a>{% else %}</div>{% endif %}
+                    </div>
+                  {% endif %}
+
                   <div class="blog-posts__card-content">
-                    <div class="blog-posts__card-copy">
+                    {% if card_article != blank or block.settings.title != blank %}
+                      <div class="blog-posts__card-copy">
                       {% if card_article != blank and show_card_tag and card_tag != blank %}
                         <p class="blog-posts__tag">{{ card_tag | escape }}</p>
                       {% endif %}
@@ -149,39 +199,40 @@
                       {% endif %}
                     </div>
 
-                    {% render 'cta',
+                      {% render 'cta',
                       label: card_link_label,
                       url: card_cta_url,
                       style: section.settings.link_style,
                       class: 'blog-posts__read-more',
                       open_in_new_tab: section.settings.open_in_new_tab
-                    %}
+                      %}
+                    {% else %}
+                      <div class="blog-posts__skeleton-copy" aria-hidden="true">
+                        <span></span><span></span><span></span>
+                      </div>
+                    {% endif %}
                   </div>
-
-                  {% if section.settings.show_image %}
-                    <div class="blog-posts__media blog-posts__media--{{ card_media_ratio }}">
-                        <div class="blog-posts__media-link" aria-hidden="true">
-                        {% render 'responsive-media',
-                          image: card_image,
-                          max_width: 1200,
-                          widths: '360, 480, 640, 800, 1000, 1200',
-                          sizes: '(min-width: 1150px) 34vw, (min-width: 768px) 42vw, calc(100vw - 32px)',
-                          class: 'blog-posts__image media-cover',
-                          loading: 'lazy',
-                          alt: card_alt,
-                          style: 'object-position: var(--blog-posts-card-image-position);',
-                          placeholder_asset: 'placeholder-image-default-1.svg',
-                          placeholder_class: 'blog-posts__image media-cover'
-                        %}
-                        </div>
-                    </div>
-                  {% endif %}
               </article>
               {% assign article_reveal_index = article_reveal_index | plus: 1 %}
             {% endif %}
           {% endfor %}
-        </div>
-      {% endif %}
+        {% else %}
+          {% for placeholder_index in (1..rendered_article_count) %}
+            <article class="blog-posts__card blog-posts__card--placeholder" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+              {% if section.settings.show_image %}
+                <div class="blog-posts__media blog-posts__media--{{ section.settings.media_ratio }}">
+                  <div class="blog-posts__media-link">
+                    {{ 'image' | placeholder_svg_tag: 'blog-posts__placeholder media-cover' }}
+                  </div>
+                </div>
+              {% endif %}
+              <div class="blog-posts__card-content">
+                <div class="blog-posts__skeleton-copy" aria-hidden="true"><span></span><span></span><span></span></div>
+              </div>
+            </article>
+          {% endfor %}
+        {% endif %}
+      </div>
     </div>
   </div>
 {% endif %}
@@ -213,7 +264,7 @@
           "label": "Full width"
         }
       ],
-      "default": "full"
+      "default": "page"
     },
     {
       "type": "range",
@@ -500,6 +551,21 @@
     },
     {
       "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color"
+    },
+    {
+      "type": "header",
       "content": "Section padding"
     },
     {
@@ -521,16 +587,6 @@
       "unit": "px",
       "label": "Bottom padding",
       "default": 80
-    },
-    {
-      "type": "header",
-      "content": "Appearance"
-    },
-    {
-      "type": "color_scheme",
-      "id": "color_scheme",
-      "label": "Color scheme",
-      "default": "scheme-1"
     }
   ],
   "blocks": [
@@ -722,6 +778,62 @@
       ]
     },
     {
+      "type": "label",
+      "name": "Label",
+      "limit": 1,
+      "settings": [
+        { "type": "richtext", "id": "text", "label": "Text" },
+        { "type": "color", "id": "text_color", "label": "Text color" },
+        { "type": "select", "id": "width", "label": "Width", "options": [{ "value": "fit-content", "label": "Fit" }, { "value": "100%", "label": "Fill" }], "default": "fit-content" },
+        { "type": "select", "id": "width_mobile", "label": "Mobile width", "options": [{ "value": "fit-content", "label": "Fit" }, { "value": "100%", "label": "Fill" }], "default": "fit-content" },
+        { "type": "select", "id": "reveal_type", "label": "Type", "options": [{ "value": "none", "label": "None" }, { "value": "fade-up", "label": "Fade up" }], "default": "fade-up" },
+        { "type": "range", "id": "reveal_delay", "label": "Animation delay", "min": 0, "max": 1050, "step": 75, "unit": "ms", "default": 0 }
+      ]
+    },
+    {
+      "type": "heading",
+      "name": "Heading",
+      "limit": 1,
+      "settings": [
+        { "type": "richtext", "id": "heading", "label": "Text", "default": "<h2>Discover our story</h2>" },
+        { "type": "select", "id": "type_preset", "label": "Heading size", "options": [{ "value": "h2", "label": "Display medium" }, { "value": "h3", "label": "Heading extra large" }, { "value": "h4", "label": "Heading large" }, { "value": "h5", "label": "Heading medium" }], "default": "h4" },
+        { "type": "select", "id": "heading_tag", "label": "HTML Tag", "options": [{ "value": "h1", "label": "H1" }, { "value": "h2", "label": "H2" }, { "value": "h3", "label": "H3" }, { "value": "h4", "label": "H4" }, { "value": "h5", "label": "H5" }, { "value": "h6", "label": "H6" }], "default": "h2" },
+        { "type": "color", "id": "text_color", "label": "Text color" },
+        { "type": "select", "id": "width", "label": "Width", "options": [{ "value": "fit-content", "label": "Fit" }, { "value": "100%", "label": "Fill" }], "default": "fit-content" },
+        { "type": "select", "id": "width_mobile", "label": "Mobile width", "options": [{ "value": "fit-content", "label": "Fit" }, { "value": "100%", "label": "Fill" }], "default": "fit-content" },
+        { "type": "select", "id": "reveal_type", "label": "Type", "options": [{ "value": "none", "label": "None" }, { "value": "fade-up", "label": "Fade up" }], "default": "fade-up" },
+        { "type": "range", "id": "reveal_delay", "label": "Animation delay", "min": 0, "max": 1050, "step": 75, "unit": "ms", "default": 150 }
+      ]
+    },
+    {
+      "type": "text",
+      "name": "Text",
+      "limit": 1,
+      "settings": [
+        { "type": "richtext", "id": "text", "label": "Text" },
+        { "type": "select", "id": "type_preset", "label": "Text size", "options": [{ "value": "md", "label": "Body medium" }, { "value": "sm", "label": "Body small" }, { "value": "xs", "label": "Body extra small" }], "default": "sm" },
+        { "type": "color", "id": "text_color", "label": "Text color" },
+        { "type": "select", "id": "width", "label": "Width", "options": [{ "value": "fit-content", "label": "Fit" }, { "value": "100%", "label": "Fill" }], "default": "fit-content" },
+        { "type": "select", "id": "width_mobile", "label": "Mobile width", "options": [{ "value": "fit-content", "label": "Fit" }, { "value": "100%", "label": "Fill" }], "default": "fit-content" },
+        { "type": "select", "id": "reveal_type", "label": "Type", "options": [{ "value": "none", "label": "None" }, { "value": "fade-up", "label": "Fade up" }], "default": "fade-up" },
+        { "type": "range", "id": "reveal_delay", "label": "Animation delay", "min": 0, "max": 1050, "step": 75, "unit": "ms", "default": 300 }
+      ]
+    },
+    {
+      "type": "button",
+      "name": "Button",
+      "limit": 1,
+      "settings": [
+        { "type": "text", "id": "label", "label": "Button label" },
+        { "type": "url", "id": "link", "label": "Button link" },
+        { "type": "select", "id": "style", "label": "Button style", "options": [{ "value": "primary", "label": "Primary" }, { "value": "secondary", "label": "Secondary" }, { "value": "tertiary", "label": "Tertiary" }], "default": "tertiary" },
+        { "type": "select", "id": "icon", "label": "Icon", "options": [{ "value": "none", "label": "None" }, { "value": "arrow-right", "label": "Arrow right" }], "default": "none" },
+        { "type": "checkbox", "id": "open_in_new_tab", "label": "Open link in new tab", "default": false },
+        { "type": "select", "id": "reveal_type", "label": "Type", "options": [{ "value": "none", "label": "None" }, { "value": "fade-up", "label": "Fade up" }], "default": "fade-up" },
+        { "type": "range", "id": "reveal_delay", "label": "Animation delay", "min": 0, "max": 1050, "step": 75, "unit": "ms", "default": 450 }
+      ]
+    },
+    {
       "type": "article",
       "name": "Article",
       "settings": [
@@ -755,9 +867,7 @@
       "name": "Blog posts",
       "category": "Blog and pages",
       "blocks": [
-        {
-          "type": "header"
-        },
+        { "type": "heading" },
         {
           "type": "article"
         },
