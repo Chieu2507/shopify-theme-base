@@ -30,6 +30,7 @@ class EditorialSlideshow extends HTMLElement {
     this.autoplayManuallyPaused = false;
     this.manualPauseProgress = null;
     this.animatePausedProgress = false;
+    this.delayProgressStartForExit = false;
     this.progressExitTimers = new Map();
     this.progressStartedAt = null;
     this.progressStartElapsed = 0;
@@ -500,6 +501,9 @@ class EditorialSlideshow extends HTMLElement {
     const activeIndex = Math.max(0, Math.min(index, this.tabs.length - 1));
     const previousIndex = this.activeIndex;
     this.activeIndex = activeIndex;
+    this.delayProgressStartForExit = restartProgress
+      && Number.isInteger(previousIndex)
+      && previousIndex !== activeIndex;
     this.clearProgressExit(activeIndex);
     this.preloadAdjacentSlides(activeIndex);
     this.tabs.forEach((tab, tabIndex) => {
@@ -701,6 +705,10 @@ class EditorialSlideshow extends HTMLElement {
       ? this.manualPauseProgress.elapsed
       : 0;
     const remainingDelay = Math.max(0, this.autoplayDelay - resumeElapsed);
+    const progressStartDelay = this.delayProgressStartForExit
+      ? Math.min(700, remainingDelay)
+      : 0;
+    this.delayProgressStartForExit = false;
     this.manualPauseProgress = null;
 
     const progressBar = this.progressBars[activeIndex];
@@ -713,7 +721,7 @@ class EditorialSlideshow extends HTMLElement {
 
     this.setProgress(progressBar, resumeElapsed / this.autoplayDelay);
     this.progressFrame = window.requestAnimationFrame(() => {
-      this.setProgress(progressBar, 1, remainingDelay, 'linear');
+      this.setProgress(progressBar, 1, Math.max(0, remainingDelay - progressStartDelay), 'linear', progressStartDelay);
       this.progressStartedAt = performance.now();
       this.progressStartElapsed = resumeElapsed;
       this.progressStartIndex = activeIndex;
@@ -733,11 +741,12 @@ class EditorialSlideshow extends HTMLElement {
     );
   }
 
-  setProgress(progressBar, progress, duration = 0, easing = 'linear') {
+  setProgress(progressBar, progress, duration = 0, easing = 'linear', delay = 0) {
     if (!progressBar) return;
 
     progressBar.style.setProperty('--editorial-tab-progress-duration', `${Math.max(0, duration)}ms`);
     progressBar.style.setProperty('--editorial-tab-progress-easing', easing);
+    progressBar.style.setProperty('--editorial-tab-progress-delay', `${Math.max(0, delay)}ms`);
     progressBar.style.setProperty('--editorial-tab-progress', `${Math.max(0, Math.min(1, progress)) * 100}%`);
   }
 
