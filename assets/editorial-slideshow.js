@@ -165,12 +165,22 @@ class EditorialSlideshow extends HTMLElement {
       return;
     }
 
-    const activeSlide = this.getSlides()[this.activeIndex || 0];
-    if (!activeSlide) return;
-
     const setHeight = () => {
       if (!this.isConnected || !this.mobileStackedLayout.matches) return;
-      this.slider.style.setProperty('height', `${activeSlide.scrollHeight}px`, 'important');
+
+      // A desktop-to-mobile breakpoint change can leave the last desktop
+      // height inline on the Swiper viewport. Clear it before measuring so
+      // the normal-flow mobile slide determines its own height immediately.
+      this.slider.style.setProperty('height', 'auto', 'important');
+
+      window.requestAnimationFrame(() => {
+        if (!this.isConnected || !this.mobileStackedLayout.matches) return;
+
+        const activeSlide = this.getSlides()[this.activeIndex || 0];
+        if (!activeSlide) return;
+
+        this.slider.style.setProperty('height', `${activeSlide.scrollHeight}px`, 'important');
+      });
     };
 
     window.requestAnimationFrame(() => window.requestAnimationFrame(setHeight));
