@@ -5,6 +5,13 @@
   if testimonials_background == blank
     assign testimonials_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
   endif
+
+  assign testimonial_count = 0
+  for section_block in section.blocks
+    if section_block.type == 'testimonial'
+      assign testimonial_count = testimonial_count | plus: 1
+    endif
+  endfor
 %}
 
 {% style %}
@@ -22,7 +29,7 @@
     data-deferred-module="{{ 'testimonials.js' | asset_url }}"
     class="testimonials testimonials--editorial color-scheme color-{{ section.settings.color_scheme.id }} full-width{% if section.settings.section_width == 'full' %} testimonials--content-full{% endif %}"
     data-section-id="{{ section.id }}"
-    style="--testimonials-content-width: {% case section.settings.content_width %}{% when 'small' %}560px{% when 'large' %}960px{% when 'custom' %}{{ section.settings.content_width_custom }}px{% else %}760px{% endcase %}; --testimonials-item-gap: {{ section.settings.item_gap }}px; --testimonials-label-size: {{ section.settings.label_size }}px; --testimonials-heading-size: {{ section.settings.heading_size }}px; --testimonials-content-padding: {{ section.settings.content_padding }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+    style="--testimonials-content-width: {% case section.settings.content_width %}{% when 'small' %}560px{% when 'large' %}960px{% when 'custom' %}{{ section.settings.content_width_custom }}px{% else %}760px{% endcase %}; --testimonials-item-gap: {{ section.settings.item_gap }}px; --testimonials-heading-size: {{ section.settings.heading_size }}px; --testimonials-content-padding: {{ section.settings.content_padding }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
   >
     {% if section.settings.background_image != blank %}
       <div class="testimonials__background" aria-hidden="true">
@@ -38,57 +45,20 @@
       </div>
     {% endif %}
     <div class="testimonials__inner section-spacing">
-      {% if section.settings.section_label != blank %}
-        <p class="testimonials__section-label">{{ section.settings.section_label | escape }}</p>
-      {% endif %}
+      <header class="testimonials__header">
+        {% content_for 'block', type: 'label', id: 'label' %}
+      </header>
       <div class="testimonials__carousel">
         <div class="testimonials__slider swiper" data-testimonials-slider>
           <div class="testimonials__items swiper-wrapper" role="list">
-            {% for block in section.blocks %}
-              {% if block.type == 'testimonial' %}
-                {% if block.settings.quote != blank or block.settings.author != blank or block.settings.role != blank %}
-                  <figure class="testimonials__item swiper-slide" role="listitem" data-block-id="{{ block.id }}" style="--testimonial-author-size: {{ block.settings.author_size }}px; --testimonial-location-size: {{ block.settings.location_size }}px; --testimonial-button-size: {{ block.settings.button_size }}px;" {{ block.shopify_attributes }}>
-
-                  {% if block.settings.quote != blank %}
-                    <blockquote class="testimonials__quote" data-testimonials-reveal>
-                      <p>{{ block.settings.quote | escape }}</p>
-                    </blockquote>
-                  {% endif %}
-
-                  {% if block.settings.author != blank or block.settings.role != blank %}
-                    <figcaption class="testimonials__attribution" data-testimonials-reveal>
-                      {% if block.settings.author != blank %}<span class="testimonials__author">{{ block.settings.author | escape }}</span>{% endif %}
-                      {% if block.settings.role != blank %}<span>{{ block.settings.role | escape }}</span>{% endif %}
-                    </figcaption>
-                  {% endif %}
-
-                  {% if block.settings.location != blank or block.settings.piece != blank %}
-                    <p class="testimonials__details" data-testimonials-reveal>
-                      {% if block.settings.location != blank %}<span>{{ block.settings.location | escape }}</span>{% endif %}
-                      {% if block.settings.location != blank and block.settings.piece != blank %}<span aria-hidden="true"> · </span>{% endif %}
-                      {% if block.settings.piece != blank %}<span>{{ block.settings.piece | escape }}</span>{% endif %}
-                    </p>
-                  {% endif %}
-                  <div class="testimonials__piece-link-wrap" data-testimonials-reveal>
-                    {% render 'cta',
-                      label: block.settings.button_label,
-                      url: block.settings.button_link,
-                      style: 'tertiary',
-                      icon: 'arrow-right',
-                      class: 'testimonials__piece-link'
-                    %}
-                  </div>
-                  </figure>
-                {% endif %}
-              {% endif %}
-            {% endfor %}
+            {% content_for 'blocks' %}
           </div>
         </div>
 
       </div>
 
-      {% assign testimonial_total = section.blocks.size | prepend: '0' | slice: -2, 2 %}
-      <div class="testimonials__editorial-footer" data-testimonials-controls{% if section.blocks.size <= 1 %} hidden{% endif %} role="group" aria-label="Testimonial controls">
+      {% assign testimonial_total = testimonial_count | prepend: '0' | slice: -2, 2 %}
+      <div class="testimonials__editorial-footer" data-testimonials-controls{% if testimonial_count <= 1 %} hidden{% endif %} role="group" aria-label="Testimonial controls">
         <div class="testimonials__editorial-controls">
           <button class="testimonials__editorial-button" type="button" aria-label="{{ 'testimonials.previous' | t | escape }}" data-testimonials-previous>
             {% render 'icon', name: 'chevron-left' %}
@@ -144,12 +114,6 @@
       "default": "medium"
     },
     {
-      "type": "text",
-      "id": "section_label",
-      "label": "Section label",
-      "default": "CUSTOMER STORIES / PRIVATE NOTES"
-    },
-    {
       "type": "range",
       "id": "content_width_custom",
       "min": 320,
@@ -173,16 +137,6 @@
       "unit": "px",
       "label": "Item gap",
       "default": 16
-    },
-    {
-      "type": "range",
-      "id": "label_size",
-      "min": 8,
-      "max": 20,
-      "step": 1,
-      "unit": "px",
-      "label": "Label size",
-      "default": 10
     },
     {
       "type": "range",
@@ -250,99 +204,24 @@
     }
   ],
   "blocks": [
-    {
-      "type": "testimonial",
-      "name": "Testimonial",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Item"
-        },
-        {
-          "type": "textarea",
-          "id": "quote",
-          "label": "Quote",
-          "default": "When designing this collection, we wanted to strike a balance between bold silhouettes and timeless proportions. The result is a series of rings that feel effortless, yet striking"
-        },
-        {
-          "type": "text",
-          "id": "author",
-          "label": "Author",
-          "default": "Clara"
-        },
-        {
-          "type": "text",
-          "id": "role",
-          "label": "Role",
-          "default": "Founder of MALANDRA"
-        },
-        {
-          "type": "header",
-          "content": "Typography"
-        },
-        {
-          "type": "range",
-          "id": "author_size",
-          "min": 8,
-          "max": 24,
-          "step": 1,
-          "unit": "px",
-          "label": "Author size",
-          "default": 10
-        },
-        {
-          "type": "range",
-          "id": "location_size",
-          "min": 8,
-          "max": 24,
-          "step": 1,
-          "unit": "px",
-          "label": "Location size",
-          "default": 9
-        },
-        {
-          "type": "range",
-          "id": "button_size",
-          "min": 8,
-          "max": 24,
-          "step": 1,
-          "unit": "px",
-          "label": "Button size",
-          "default": 10
-        },
-        {
-          "type": "header",
-          "content": "Additional details"
-        },
-        {
-          "type": "text",
-          "id": "location",
-          "label": "Location"
-        },
-        {
-          "type": "text",
-          "id": "piece",
-          "label": "Piece"
-        },
-        {
-          "type": "text",
-          "id": "button_label",
-          "label": "Button label",
-          "default": "View the piece"
-        },
-        {
-          "type": "url",
-          "id": "button_link",
-          "label": "Button link"
-        }
-      ]
-    }
+    { "type": "@theme" }
   ],
   "presets": [
     {
       "name": "Testimonials",
       "category": "Brand trust",
       "blocks": [
+        {
+          "type": "label",
+          "id": "label",
+          "static": true,
+          "settings": {
+            "text": "<p>CUSTOMER STORIES / PRIVATE NOTES</p>",
+            "reveal_type": "fade-up",
+            "reveal_duration": 650,
+            "reveal_delay": 0
+          }
+        },
         {"type": "testimonial"},
         {"type": "testimonial"},
         {"type": "testimonial"}
