@@ -20,6 +20,7 @@ class EditorialSlideshow extends HTMLElement {
     this.progressBars = [];
     this.productCards = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this.mobileStackedLayout = window.matchMedia('(max-width: 767.98px)');
     // The split layout keeps the navigator in its own lower row. It must remain
     // horizontal at every desktop width rather than collapsing over the slide.
     this.compactNavigator = window.matchMedia('(max-width: 0px)');
@@ -154,6 +155,25 @@ class EditorialSlideshow extends HTMLElement {
       productCard.classList.toggle('is-active', isActive);
       productCard.toggleAttribute('aria-hidden', !isActive);
     });
+  }
+
+  syncMobileViewportHeight() {
+    if (!this.slider) return;
+
+    if (!this.mobileStackedLayout.matches) {
+      this.slider.style.removeProperty('height');
+      return;
+    }
+
+    const activeSlide = this.getSlides()[this.activeIndex || 0];
+    if (!activeSlide) return;
+
+    const setHeight = () => {
+      if (!this.isConnected || !this.mobileStackedLayout.matches) return;
+      this.slider.style.height = `${activeSlide.scrollHeight}px`;
+    };
+
+    window.requestAnimationFrame(() => window.requestAnimationFrame(setHeight));
   }
 
   observeAnnouncementBars() {
@@ -412,6 +432,7 @@ class EditorialSlideshow extends HTMLElement {
     this.swiper.on('slideChangeTransitionEnd', revealNavigator);
     this.swiper.on('transitionEnd', revealNavigator);
     this.syncActiveState(this.swiper.realIndex || 0, false);
+    this.syncMobileViewportHeight();
     this.syncPlayback();
   }
 
@@ -479,6 +500,7 @@ class EditorialSlideshow extends HTMLElement {
       this.mobileLabel.textContent = this.getSlides()[activeIndex]?.dataset.editorialNavLabel || 'Slide';
     }
     this.syncActiveProductCard(activeIndex);
+    this.syncMobileViewportHeight();
 
     if (restartProgress) {
       this.manualPauseProgress = null;
@@ -513,6 +535,7 @@ class EditorialSlideshow extends HTMLElement {
     }
 
     this.syncNavigatorViewportState();
+    this.syncMobileViewportHeight();
   }
 
   handleKeydown(event) {
