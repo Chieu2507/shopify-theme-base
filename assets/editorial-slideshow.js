@@ -30,6 +30,7 @@ class EditorialSlideshow extends HTMLElement {
     this.autoplayManuallyPaused = false;
     this.manualPauseProgress = null;
     this.animatePausedProgress = false;
+    this.progressExitTimers = new Map();
     this.progressStartedAt = null;
     this.progressStartElapsed = 0;
     this.progressStartIndex = null;
@@ -106,6 +107,8 @@ class EditorialSlideshow extends HTMLElement {
     this.visibilityObserver = null;
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
+    this.progressExitTimers?.forEach((timer) => window.clearTimeout(timer));
+    this.progressExitTimers?.clear();
     this.clearNavigatorRevealTimer();
     if (this.pointerFocusTimer) window.clearTimeout(this.pointerFocusTimer);
     this.pointerFocusTimer = null;
@@ -498,7 +501,9 @@ class EditorialSlideshow extends HTMLElement {
     if (!this.tabs.length) return;
 
     const activeIndex = Math.max(0, Math.min(index, this.tabs.length - 1));
+    const previousIndex = this.activeIndex;
     this.activeIndex = activeIndex;
+    this.clearProgressExit(activeIndex);
     this.preloadAdjacentSlides(activeIndex);
     this.tabs.forEach((tab, tabIndex) => {
       const isActive = tabIndex === activeIndex;
@@ -519,7 +524,8 @@ class EditorialSlideshow extends HTMLElement {
       this.progressStartedAt = null;
       this.progressStartElapsed = 0;
       this.progressStartIndex = activeIndex;
-      this.resetProgress();
+      this.animateProgressExit(previousIndex, activeIndex);
+      this.resetProgress(previousIndex);
       this.syncPlayback();
     }
   }
@@ -674,6 +680,7 @@ class EditorialSlideshow extends HTMLElement {
     this.animatePausedProgress = false;
     this.progressStartedAt = null;
     this.progressBars.forEach((bar, index) => {
+      if (this.tabs[index]?.classList.contains('is-progress-exiting')) return;
       bar.style.transition = 'none';
       bar.style.transform = this.autoplayManuallyPaused && index === activeIndex
         ? `scaleX(${shouldAnimatePausedProgress ? pausedProgressRatio : 1})`
@@ -729,11 +736,48 @@ class EditorialSlideshow extends HTMLElement {
     );
   }
 
-  resetProgress() {
-    this.progressBars.forEach((bar) => {
+  resetProgress(exitingIndex) {
+    this.progressBars.forEach((bar, index) => {
+      if (index === exitingIndex && this.tabs[index]?.classList.contains('is-progress-exiting')) return;
       bar.style.transition = 'none';
       bar.style.transform = 'scaleX(0)';
     });
+  }
+
+  clearProgressExit(index) {
+    if (!Number.isInteger(index)) return;
+
+    const timer = this.progressExitTimers.get(index);
+    if (timer) window.clearTimeout(timer);
+    this.progressExitTimers.delete(index);
+    this.tabs[index]?.classList.remove('is-progress-exiting');
+  }
+
+  animateProgressExit(previousIndex, activeIndex) {
+    if (!Number.isInteger(previousIndex) || previousIndex === activeIndex) return;
+
+    const previousTab = this.tabs[previousIndex];
+    const progressBar = this.progressBars[previousIndex];
+    if (!previousTab || !progressBar) return;
+
+    this.clearProgressExit(previousIndex);
+    previousTab.classList.add('is-progress-exiting');
+    progressBar.style.transition = 'none';
+    progressBar.style.transform = 'scaleX(1)';
+
+    window.requestAnimationFrame(() => {
+      if (!previousTab.classList.contains('is-progress-exiting')) return;
+      progressBar.style.transition = 'transform 420ms cubic-bezier(.22, 1, .36, 1)';
+      progressBar.style.transform = 'scaleX(0)';
+    });
+
+    const timer = window.setTimeout(() => {
+      previousTab.classList.remove('is-progress-exiting');
+      this.progressExitTimers.delete(previousIndex);
+      progressBar.style.transition = 'none';
+      progressBar.style.transform = 'scaleX(0)';
+    }, 440);
+    this.progressExitTimers.set(previousIndex, timer);
   }
 
   clearAutoplayTimer() {
