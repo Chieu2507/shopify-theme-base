@@ -22,8 +22,21 @@
     data-deferred-module="{{ 'testimonials.js' | asset_url }}"
     class="testimonials testimonials--editorial color-scheme color-{{ section.settings.color_scheme.id }} full-width{% if section.settings.section_width == 'full' %} testimonials--content-full{% endif %}"
     data-section-id="{{ section.id }}"
-    style="--testimonials-container-width: {% if section.settings.section_width == 'custom' %}{{ section.settings.container_width | default: 1280 }}px{% else %}var(--page-width){% endif %}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+    style="--testimonials-content-width: {% case section.settings.content_width %}{% when 'small' %}560px{% when 'large' %}960px{% when 'custom' %}{{ section.settings.content_width_custom }}px{% else %}760px{% endcase %}; --testimonials-item-gap: {{ section.settings.item_gap }}px; --testimonials-label-size: {{ section.settings.label_size }}px; --testimonials-heading-size: {{ section.settings.heading_size }}px; --testimonials-content-padding: {{ section.settings.content_padding }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
   >
+    {% if section.settings.background_image != blank %}
+      <div class="testimonials__background" aria-hidden="true">
+        {% render 'responsive-image',
+          image: section.settings.background_image,
+          max_width: 2400,
+          widths: '480, 750, 1100, 1500, 1920, 2400',
+          sizes: '100vw',
+          class: 'testimonials__background-image',
+          loading: 'lazy',
+          decorative: true
+        %}
+      </div>
+    {% endif %}
     <div class="testimonials__inner section-spacing">
       <div class="testimonials__carousel">
         <div class="testimonials__slider swiper" data-testimonials-slider>
@@ -31,46 +44,26 @@
             {% for block in section.blocks %}
               {% if block.type == 'testimonial' %}
                 {% if block.settings.quote != blank or block.settings.author != blank or block.settings.role != blank %}
-                  <figure class="testimonials__item testimonials__item--icon-{{ block.settings.icon_size | default: 'small' }} swiper-slide" role="listitem" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
+                  <figure class="testimonials__item swiper-slide" role="listitem" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
                   {% if block.settings.label != blank %}
-                    <p class="testimonials__label">{{ block.settings.label | escape }}</p>
+                    <p class="testimonials__label" data-testimonials-reveal>{{ block.settings.label | escape }}</p>
                   {% endif %}
 
-                  <div class="testimonials__icon" aria-hidden="true">
-                    {% if block.settings.icon != blank %}
-                      {% if block.settings.icon == 'asset:testimonials-selected-icon.png' %}
-                        {% render 'media-placeholder', class_name: 'testimonials__icon-image', asset_name: 'placeholder-image-default-5.svg' %}
-                      {% else %}
-                        {% render 'responsive-image',
-                          image: block.settings.icon,
-                          max_width: 384,
-                          widths: '48, 56, 64, 72, 80, 96, 144, 192, 288, 384',
-                          sizes: '(max-width: 767.98px) 160px, 192px',
-                          class: 'testimonials__icon-image',
-                          loading: 'lazy',
-                          decorative: true
-                        %}
-                      {% endif %}
-                    {% else %}
-                      {% render 'spark-icon', class: 'testimonials__icon-image' %}
-                    {% endif %}
-                  </div>
-
                   {% if block.settings.quote != blank %}
-                    <blockquote class="testimonials__quote testimonials__quote--{{ block.settings.quote_size | default: 'h3' }} {% render 'typography-class', preset: block.settings.quote_size, fallback: 'h3' %}">
+                    <blockquote class="testimonials__quote" data-testimonials-reveal>
                       <p>{{ block.settings.quote | escape }}</p>
                     </blockquote>
                   {% endif %}
 
                   {% if block.settings.author != blank or block.settings.role != blank %}
-                    <figcaption class="testimonials__attribution spinel-text--{{ block.settings.attribution_size | default: 'medium' }} content-text--{{ block.settings.attribution_size | default: 'medium' }}">
+                    <figcaption class="testimonials__attribution" data-testimonials-reveal>
                       {% if block.settings.author != blank %}<span class="testimonials__author">{{ block.settings.author | escape }}</span>{% endif %}
                       {% if block.settings.role != blank %}<span>{{ block.settings.role | escape }}</span>{% endif %}
                     </figcaption>
                   {% endif %}
 
                   {% if block.settings.location != blank or block.settings.piece != blank %}
-                    <p class="testimonials__details">
+                    <p class="testimonials__details" data-testimonials-reveal>
                       {% if block.settings.location != blank %}<span>{{ block.settings.location | escape }}</span>{% endif %}
                       {% if block.settings.location != blank and block.settings.piece != blank %}<span aria-hidden="true"> · </span>{% endif %}
                       {% if block.settings.piece != blank %}<span>{{ block.settings.piece | escape }}</span>{% endif %}
@@ -81,7 +74,8 @@
                     url: block.settings.button_link,
                     style: 'tertiary',
                     icon: 'arrow-right',
-                    class: 'testimonials__piece-link'
+                    class: 'testimonials__piece-link',
+                    attributes: 'data-testimonials-reveal'
                   %}
                   </figure>
                 {% endif %}
@@ -132,21 +126,76 @@
       "label": "Section width",
       "options": [
         {"value": "page", "label": "Page width"},
-        {"value": "full", "label": "Full width"},
-        {"value": "custom", "label": "Custom width"}
+        {"value": "full", "label": "Full width"}
       ],
-      "default": "custom"
+      "default": "page"
+    },
+    {
+      "type": "select",
+      "id": "content_width",
+      "label": "Content width",
+      "options": [
+        {"value": "small", "label": "Small"},
+        {"value": "medium", "label": "Medium"},
+        {"value": "large", "label": "Large"},
+        {"value": "custom", "label": "Custom"}
+      ],
+      "default": "medium"
     },
     {
       "type": "range",
-      "id": "container_width",
-      "min": 640,
-      "max": 1920,
+      "id": "content_width_custom",
+      "min": 320,
+      "max": 1280,
       "step": 20,
       "unit": "px",
-      "label": "Container width",
-      "default": 1280,
-      "visible_if": "{{ section.settings.section_width == 'custom' }}"
+      "label": "Content width",
+      "default": 760,
+      "visible_if": "{{ section.settings.content_width == 'custom' }}"
+    },
+    {
+      "type": "header",
+      "content": "Item"
+    },
+    {
+      "type": "range",
+      "id": "item_gap",
+      "min": 0,
+      "max": 48,
+      "step": 2,
+      "unit": "px",
+      "label": "Item gap",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "label_size",
+      "min": 8,
+      "max": 20,
+      "step": 1,
+      "unit": "px",
+      "label": "Label size",
+      "default": 10
+    },
+    {
+      "type": "range",
+      "id": "heading_size",
+      "min": 24,
+      "max": 96,
+      "step": 2,
+      "unit": "px",
+      "label": "Heading size",
+      "default": 52
+    },
+    {
+      "type": "range",
+      "id": "content_padding",
+      "min": 24,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "label": "Content padding",
+      "default": 88
     },
     {
       "type": "header",
@@ -162,6 +211,11 @@
       "type": "color",
       "id": "background_color",
       "label": "Background color"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "Background image"
     },
     {
       "type": "header",
@@ -198,40 +252,10 @@
           "content": "Item"
         },
         {
-          "type": "image_picker",
-          "id": "icon",
-          "label": "Icon"
-        },
-        {
-          "type": "select",
-          "id": "icon_size",
-          "label": "Icon size",
-          "default": "small",
-          "options": [
-            {"value": "small", "label": "Small"},
-            {"value": "medium", "label": "Medium"},
-            {"value": "large", "label": "Large"}
-          ]
-        },
-        {
           "type": "textarea",
           "id": "quote",
           "label": "Quote",
           "default": "When designing this collection, we wanted to strike a balance between bold silhouettes and timeless proportions. The result is a series of rings that feel effortless, yet striking"
-        },
-        {
-          "type": "select",
-          "id": "quote_size",
-          "label": "Quote size",
-          "options": [
-            {"value": "h1", "label": "XX-large"},
-            {"value": "h2", "label": "X-large"},
-            {"value": "h3", "label": "Large"},
-            {"value": "h4", "label": "Medium"},
-            {"value": "h5", "label": "Small"},
-            {"value": "h6", "label": "X-small"}
-          ],
-          "default": "h3"
         },
         {
           "type": "text",
@@ -244,19 +268,6 @@
           "id": "role",
           "label": "Role",
           "default": "Founder of MALANDRA"
-        },
-        {
-          "type": "select",
-          "id": "attribution_size",
-          "label": "Attribution size",
-          "options": [
-            {"value": "x-large", "label": "X-large"},
-            {"value": "large", "label": "Large"},
-            {"value": "medium", "label": "Medium"},
-            {"value": "small", "label": "Small"},
-            {"value": "x-small", "label": "X-small"}
-          ],
-          "default": "medium"
         },
         {
           "type": "header",
