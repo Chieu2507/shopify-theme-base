@@ -8,6 +8,7 @@ class EditorialSlideshow extends HTMLElement {
     const { signal } = this.abortController;
     this.slider = this.querySelector('[data-editorial-slideshow-slider]');
     this.navigator = this.querySelector('[data-editorial-navigator]');
+    this.productStage = this.querySelector('[data-editorial-product-stage]');
     this.tabsContainer = this.querySelector('[data-editorial-slide-tabs]');
     this.mobileCurrent = this.querySelector('[data-editorial-mobile-current]');
     this.mobileTotal = this.querySelector('[data-editorial-mobile-total]');
@@ -17,6 +18,7 @@ class EditorialSlideshow extends HTMLElement {
     this.autoplayToggle = this.querySelector('[data-editorial-autoplay-toggle]');
     this.tabs = [];
     this.progressBars = [];
+    this.productCards = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     // The split layout keeps the navigator in its own lower row. It must remain
     // horizontal at every desktop width rather than collapsing over the slide.
@@ -119,6 +121,39 @@ class EditorialSlideshow extends HTMLElement {
     return this.slider
       ? [...this.slider.querySelectorAll('.editorial-slideshow__slide:not(.swiper-slide-duplicate)')]
       : [];
+  }
+
+  collectProductCards() {
+    if (!this.productStage) return;
+
+    const cards = [];
+    this.getSlides().forEach((slide) => {
+      const productCard = slide.querySelector('.editorial-slideshow__product-card');
+      if (!productCard) return;
+
+      productCard.dataset.editorialSlideId = slide.dataset.blockId || '';
+      cards.push(productCard);
+    });
+
+    this.productCards = [
+      ...this.productStage.querySelectorAll('.editorial-slideshow__product-card'),
+      ...cards,
+    ].filter((card, index, collection) => collection.indexOf(card) === index);
+
+    this.productCards.forEach((productCard) => this.productStage.append(productCard));
+  }
+
+  syncActiveProductCard(index) {
+    if (!this.productCards.length) return;
+
+    const activeSlide = this.getSlides()[index];
+    const activeBlockId = activeSlide?.dataset.blockId || '';
+
+    this.productCards.forEach((productCard) => {
+      const isActive = productCard.dataset.editorialSlideId === activeBlockId;
+      productCard.classList.toggle('is-active', isActive);
+      productCard.toggleAttribute('aria-hidden', !isActive);
+    });
   }
 
   observeAnnouncementBars() {
@@ -226,6 +261,7 @@ class EditorialSlideshow extends HTMLElement {
       || this.tabs[this.activeIndex || 0]?.dataset.editorialBlockId;
     this.classList.remove('editorial-slideshow--ready');
     this.destroySwiper();
+    this.collectProductCards();
     this.buildNavigatorTabs();
     this.bindNavigatorTabs();
 
@@ -336,6 +372,7 @@ class EditorialSlideshow extends HTMLElement {
     this.classList.toggle('editorial-slideshow--ready', slideCount > 0);
     if (!slideCount) return;
 
+    this.collectProductCards();
     this.preloadAdjacentSlides(initialSlide);
 
     try {
@@ -441,6 +478,7 @@ class EditorialSlideshow extends HTMLElement {
     if (this.mobileLabel) {
       this.mobileLabel.textContent = this.getSlides()[activeIndex]?.dataset.editorialNavLabel || 'Slide';
     }
+    this.syncActiveProductCard(activeIndex);
 
     if (restartProgress) {
       this.manualPauseProgress = null;
@@ -544,8 +582,11 @@ class EditorialSlideshow extends HTMLElement {
         return false;
       }
     });
+    const selectedProductCard = eventTarget?.closest('.editorial-slideshow__product-card')
+      || selectedBlock?.closest('.editorial-slideshow__product-card');
     const selectedSlide = eventTarget?.closest('.editorial-slideshow__slide')
       || selectedBlock?.closest('.editorial-slideshow__slide')
+      || this.getSlides().find((slide) => slide.dataset.blockId === selectedProductCard?.dataset.editorialSlideId)
       || this.querySelector(`[data-block-id="${CSS.escape(event.detail.blockId)}"]`);
     if (!selectedSlide) return;
 
