@@ -1491,3 +1491,252 @@
     transform: none;
   }
 }
+
+/*
+ * Split editorial layout
+ *
+ * Keep the slide's content, product card, and navigator in document flow.
+ * The media is the only visual layer; nothing below can overlap the content
+ * or image area as the viewport changes size.
+ */
+.editorial-slideshow {
+  display: flex;
+  flex-direction: column;
+}
+
+.editorial-slideshow__viewport {
+  flex: 1 1 auto;
+  min-height: 0;
+}
+
+.editorial-slideshow .editorial-slideshow__slide {
+  display: grid;
+  min-height: 0;
+  grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  grid-template-rows: minmax(0, 1fr) auto;
+  overflow: hidden;
+}
+
+.editorial-slideshow__media {
+  position: relative;
+  inset: auto;
+  z-index: 0;
+  min-height: 0;
+  grid-column: 2;
+  grid-row: 1;
+}
+
+.editorial-slideshow__overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 1;
+}
+
+.editorial-slideshow__media picture,
+.editorial-slideshow__image,
+.editorial-slideshow__placeholder {
+  height: 100%;
+}
+
+.editorial-slideshow__content-positioner {
+  z-index: 1;
+  min-height: 0;
+  padding: clamp(48px, 7vw, 112px) clamp(28px, 5vw, 72px);
+  background: var(--gradient-background, var(--color-background));
+  grid-column: 1;
+  grid-row: 1;
+}
+
+.editorial-slideshow__content {
+  justify-content: center;
+}
+
+.editorial-slideshow__content-main {
+  flex: 0 1 auto;
+}
+
+.editorial-slideshow__product-card {
+  z-index: 3;
+  width: min(100%, 640px);
+  min-width: 0;
+  min-height: 0;
+  align-self: stretch;
+  margin: 0;
+  grid-column: 1 / -1;
+  grid-row: 2;
+}
+
+.editorial-slideshow__navigator {
+  position: relative;
+  z-index: 4;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  width: min(60%, 830px);
+  min-height: 98px;
+  flex: 0 0 auto;
+  align-self: flex-end;
+  margin: 0;
+  transform: none;
+}
+
+.editorial-slideshow__navigator.is-transitioning,
+.editorial-slideshow__navigator:not(.is-collapsed).is-transitioning {
+  transform: none;
+}
+
+@media screen and (min-width: 768px) {
+  .editorial-slideshow--desktop-height-650,
+  .editorial-slideshow--desktop-height-750,
+  .editorial-slideshow--desktop-height-850,
+  .editorial-slideshow--desktop-height-adapt,
+  .editorial-slideshow--desktop-height-full {
+    min-height: 0;
+  }
+
+  .editorial-slideshow--desktop-height-full {
+    height: max(0px, calc(100svh - var(--editorial-announcement-bar-height)));
+  }
+
+  .editorial-slideshow--desktop-height-adapt {
+    height: auto;
+    min-height: min(100svh, 780px);
+  }
+
+  .editorial-slideshow--desktop-height-650 .editorial-slideshow__viewport,
+  .editorial-slideshow--desktop-height-750 .editorial-slideshow__viewport,
+  .editorial-slideshow--desktop-height-850 .editorial-slideshow__viewport,
+  .editorial-slideshow--desktop-height-full .editorial-slideshow__viewport {
+    height: auto;
+  }
+
+  .editorial-slideshow--desktop-height-650 .editorial-slideshow__wrapper,
+  .editorial-slideshow--desktop-height-750 .editorial-slideshow__wrapper,
+  .editorial-slideshow--desktop-height-850 .editorial-slideshow__wrapper,
+  .editorial-slideshow--desktop-height-full .editorial-slideshow__wrapper,
+  .editorial-slideshow--desktop-height-650 .editorial-slideshow__slide,
+  .editorial-slideshow--desktop-height-750 .editorial-slideshow__slide,
+  .editorial-slideshow--desktop-height-850 .editorial-slideshow__slide,
+  .editorial-slideshow--desktop-height-full .editorial-slideshow__slide {
+    height: 100%;
+  }
+
+  .editorial-slideshow__navigator.is-collapsed {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    display: flex;
+    width: min(60%, 830px);
+    min-height: 98px;
+    flex-direction: row;
+    overflow: visible;
+  }
+
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__tabs {
+    display: flex;
+    width: auto;
+    flex: 1 1 auto;
+    flex-direction: row;
+  }
+
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__tab {
+    display: grid;
+    width: auto;
+    min-height: 0;
+    flex: 1 1 0;
+    grid-template-columns: minmax(0, 1fr) auto;
+    grid-template-rows: auto auto;
+    place-items: initial;
+    padding: 16px 20px 17px;
+  }
+
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__tab-label,
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__tab-detail,
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__tab-progress,
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__navigator-arrow-label,
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__autoplay {
+    display: initial;
+  }
+
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__tab-number {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__navigator-arrow,
+  .editorial-slideshow__navigator.is-collapsed .editorial-slideshow__autoplay {
+    display: flex;
+    width: auto;
+    flex: 0 0 56px;
+  }
+}
+
+@media screen and (max-width: 767.98px) {
+  .editorial-slideshow,
+  .editorial-slideshow--mobile-height-450,
+  .editorial-slideshow--mobile-height-550,
+  .editorial-slideshow--mobile-height-650,
+  .editorial-slideshow--mobile-height-adapt,
+  .editorial-slideshow--mobile-height-full {
+    height: auto;
+    min-height: 0;
+    aspect-ratio: auto;
+  }
+
+  .editorial-slideshow__viewport,
+  .editorial-slideshow__wrapper,
+  .editorial-slideshow__slide {
+    height: auto;
+    min-height: 0;
+  }
+
+  .editorial-slideshow .editorial-slideshow__slide {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto auto auto;
+    overflow: visible;
+  }
+
+  .editorial-slideshow__media {
+    min-height: 0;
+    aspect-ratio: 4 / 5;
+    grid-column: 1;
+    grid-row: 1;
+  }
+
+  .editorial-slideshow__content-positioner {
+    padding: 32px var(--page-margin);
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .editorial-slideshow__content {
+    gap: 24px;
+  }
+
+  .editorial-slideshow__content-main {
+    min-height: 0;
+  }
+
+  .editorial-slideshow__product-card {
+    width: 100%;
+    grid-column: 1;
+    grid-row: 3;
+  }
+
+  .editorial-slideshow__navigator,
+  .editorial-slideshow__navigator.is-collapsed {
+    position: relative;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    display: grid;
+    width: 100%;
+    min-height: 56px;
+    align-self: stretch;
+    margin: 0;
+    grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  }
+}

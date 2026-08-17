@@ -18,7 +18,9 @@ class EditorialSlideshow extends HTMLElement {
     this.tabs = [];
     this.progressBars = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.compactNavigator = window.matchMedia('(min-width: 768px) and (max-width: 1540px)');
+    // The split layout keeps the navigator in its own lower row. It must remain
+    // horizontal at every desktop width rather than collapsing over the slide.
+    this.compactNavigator = window.matchMedia('(max-width: 0px)');
     this.isCompactNavigator = this.compactNavigator.matches;
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
