@@ -678,10 +678,12 @@ class EditorialSlideshow extends HTMLElement {
     this.progressStartedAt = null;
     this.progressBars.forEach((bar, index) => {
       if (this.tabs[index]?.classList.contains('is-progress-exiting')) return;
-      bar.style.transition = 'none';
-      bar.style.transform = this.autoplayManuallyPaused && index === activeIndex
-        ? `scaleX(${shouldAnimatePausedProgress ? pausedProgressRatio : 1})`
-        : 'scaleX(0)';
+      this.setProgress(
+        bar,
+        this.autoplayManuallyPaused && index === activeIndex
+          ? (shouldAnimatePausedProgress ? pausedProgressRatio : 1)
+          : 0,
+      );
     });
 
     if (!this.isPlaying) {
@@ -689,8 +691,7 @@ class EditorialSlideshow extends HTMLElement {
       if (shouldAnimatePausedProgress && progressBar) {
         window.requestAnimationFrame(() => {
           if (!this.autoplayManuallyPaused || this.activeIndex !== activeIndex) return;
-          progressBar.style.transition = 'transform 420ms cubic-bezier(.22, 1, .36, 1)';
-          progressBar.style.transform = 'scaleX(1)';
+          this.setProgress(progressBar, 1, 420, 'cubic-bezier(.22, 1, .36, 1)');
         });
       }
       return;
@@ -710,10 +711,9 @@ class EditorialSlideshow extends HTMLElement {
       return;
     }
 
-    progressBar.style.transform = `scaleX(${resumeElapsed / this.autoplayDelay})`;
+    this.setProgress(progressBar, resumeElapsed / this.autoplayDelay);
     this.progressFrame = window.requestAnimationFrame(() => {
-      progressBar.style.transition = `transform ${remainingDelay}ms linear`;
-      progressBar.style.transform = 'scaleX(1)';
+      this.setProgress(progressBar, 1, remainingDelay, 'linear');
       this.progressStartedAt = performance.now();
       this.progressStartElapsed = resumeElapsed;
       this.progressStartIndex = activeIndex;
@@ -733,11 +733,18 @@ class EditorialSlideshow extends HTMLElement {
     );
   }
 
+  setProgress(progressBar, progress, duration = 0, easing = 'linear') {
+    if (!progressBar) return;
+
+    progressBar.style.setProperty('--editorial-tab-progress-duration', `${Math.max(0, duration)}ms`);
+    progressBar.style.setProperty('--editorial-tab-progress-easing', easing);
+    progressBar.style.setProperty('--editorial-tab-progress', `${Math.max(0, Math.min(1, progress)) * 100}%`);
+  }
+
   resetProgress(exitingIndex) {
     this.progressBars.forEach((bar, index) => {
       if (index === exitingIndex && this.tabs[index]?.classList.contains('is-progress-exiting')) return;
-      bar.style.transition = 'none';
-      bar.style.transform = 'scaleX(0)';
+      this.setProgress(bar, 0);
     });
   }
 
@@ -759,20 +766,17 @@ class EditorialSlideshow extends HTMLElement {
 
     this.clearProgressExit(previousIndex);
     previousTab.classList.add('is-progress-exiting');
-    progressBar.style.transition = 'none';
-    progressBar.style.transform = 'scaleX(1)';
+    this.setProgress(progressBar, 1);
 
     window.requestAnimationFrame(() => {
       if (!previousTab.classList.contains('is-progress-exiting')) return;
-      progressBar.style.transition = 'transform 420ms cubic-bezier(.22, 1, .36, 1)';
-      progressBar.style.transform = 'scaleX(0)';
+      this.setProgress(progressBar, 0, 420, 'cubic-bezier(.22, 1, .36, 1)');
     });
 
     const timer = window.setTimeout(() => {
       previousTab.classList.remove('is-progress-exiting');
       this.progressExitTimers.delete(previousIndex);
-      progressBar.style.transition = 'none';
-      progressBar.style.transform = 'scaleX(0)';
+      this.setProgress(progressBar, 0);
     }, 440);
     this.progressExitTimers.set(previousIndex, timer);
   }
