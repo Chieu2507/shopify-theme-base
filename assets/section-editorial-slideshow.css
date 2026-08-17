@@ -519,39 +519,45 @@
 }
 
 .editorial-slideshow__tab-progress {
+  --editorial-tab-progress: 0%;
+  --editorial-tab-progress-duration: 0ms;
+  --editorial-tab-progress-easing: linear;
   position: absolute;
   right: 20px;
   bottom: 9px;
   left: 20px;
   height: 1px;
   overflow: hidden;
-  background: color-mix(in srgb, var(--color-variant-border) 58%, transparent);
-  transition: background-color 280ms ease;
+  isolation: isolate;
 }
 
-.editorial-slideshow__tab-progress span {
-  display: block;
+.editorial-slideshow__tab-progress::before,
+.editorial-slideshow__tab-progress::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+}
+
+.editorial-slideshow__tab-progress::before {
+  z-index: 1;
+  width: var(--editorial-tab-progress);
   width: 100%;
   height: 100%;
-  background: var(--color-variant-bar-background);
-  transform: scaleX(0);
-  transform-origin: left center;
+  background: var(--color-text);
+  transition: width var(--editorial-tab-progress-duration) var(--editorial-tab-progress-easing);
+}
+
+.editorial-slideshow__tab-progress::after {
+  z-index: 0;
+  background: color-mix(in srgb, var(--color-text) 25%, transparent);
 }
 
 .editorial-slideshow__tab.is-active .editorial-slideshow__tab-progress {
-  background: color-mix(in srgb, var(--color-variant-border) 58%, transparent);
+  opacity: 1;
 }
 
-.editorial-slideshow__tab.is-active .editorial-slideshow__tab-progress span {
-  background: var(--color-text);
-}
-
-.editorial-slideshow__tab.is-progress-exiting .editorial-slideshow__tab-progress span {
-  background: var(--color-text);
-}
-
-.editorial-slideshow__tab.is-active .editorial-slideshow__tab-progress span {
-  transform: scaleX(1);
+.editorial-slideshow__tab.is-progress-exiting .editorial-slideshow__tab-progress {
+  opacity: 1;
 }
 
 .editorial-slideshow__navigator-arrow,
@@ -1367,13 +1373,13 @@
     transition: opacity 180ms ease;
   }
 
-  .editorial-slideshow__tab.is-active .editorial-slideshow__tab-progress {
-    background: color-mix(in srgb, var(--color-variant-border) 58%, transparent);
+  .editorial-slideshow__tab.is-active .editorial-slideshow__tab-progress,
+  .editorial-slideshow__tab.is-progress-exiting .editorial-slideshow__tab-progress {
     opacity: 1;
   }
 
-  .editorial-slideshow__tab.is-active .editorial-slideshow__tab-progress span {
-    background: var(--color-text);
+  .editorial-slideshow__tab-progress::before,
+  .editorial-slideshow__tab-progress::after {
     border-radius: inherit;
   }
 
@@ -1475,7 +1481,7 @@
     transition: none;
   }
 
-  .editorial-slideshow__tab-progress span {
+  .editorial-slideshow__tab-progress::before {
     transition: none;
   }
 
