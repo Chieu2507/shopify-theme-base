@@ -170,7 +170,7 @@ class EditorialSlideshow extends HTMLElement {
 
     const setHeight = () => {
       if (!this.isConnected || !this.mobileStackedLayout.matches) return;
-      this.slider.style.height = `${activeSlide.scrollHeight}px`;
+      this.slider.style.setProperty('height', `${activeSlide.scrollHeight}px`, 'important');
     };
 
     window.requestAnimationFrame(() => window.requestAnimationFrame(setHeight));
