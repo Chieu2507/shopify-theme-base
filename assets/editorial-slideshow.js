@@ -770,14 +770,14 @@ class EditorialSlideshow extends HTMLElement {
 
     window.requestAnimationFrame(() => {
       if (!previousTab.classList.contains('is-progress-exiting')) return;
-      this.setProgress(progressBar, 0, 420, 'cubic-bezier(.22, 1, .36, 1)');
+      this.setProgress(progressBar, 0, 700, 'ease-in-out');
     });
 
     const timer = window.setTimeout(() => {
       previousTab.classList.remove('is-progress-exiting');
       this.progressExitTimers.delete(previousIndex);
       this.setProgress(progressBar, 0);
-    }, 440);
+    }, 720);
     this.progressExitTimers.set(previousIndex, timer);
   }
 
