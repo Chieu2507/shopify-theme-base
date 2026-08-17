@@ -38,6 +38,10 @@
   if rendered_count == 0
     assign rendered_count = skeleton_count
   endif
+  assign initial_showing_count = rendered_count
+  if initial_showing_count > desktop_columns
+    assign initial_showing_count = desktop_columns
+  endif
   assign has_more_articles = false
   if matching_articles_count > posts_to_show
     assign has_more_articles = true
@@ -194,7 +198,17 @@
         </ul>
       </div>
 
-      <div class="blog-posts__footer">
+      <footer class="blog-posts__footer" data-reveal>
+        <span
+          class="blog-posts__count"
+          data-blog-posts-showing
+          data-showing-prefix="Showing"
+          data-showing-separator="of"
+          data-total="{{ rendered_count }}"
+        >
+          Showing {{ initial_showing_count }} of {{ rendered_count }}
+        </span>
+        <div class="blog-posts__progress" aria-hidden="true"><span data-blog-posts-progress></span></div>
         {% if show_more_available %}
           <button class="btn-tertiary blog-posts__show-more" type="button" data-blog-posts-show-more>
             <span>{{ section.settings.show_more_label | escape }}</span>
@@ -207,7 +221,7 @@
             <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
           </a>
         {% endif %}
-      </div>
+      </footer>
 
       <button class="blog-posts__arrow blog-posts__arrow--previous" type="button" aria-label="Previous blog posts" data-blog-posts-previous>
         {% render 'icon', name: 'chevron-left' %}
@@ -257,7 +271,7 @@
     { "type": "text", "id": "read_button_label", "label": "Read button label", "default": "Read now", "visible_if": "{{ section.settings.show_read_button }}" },
 
     { "type": "header", "content": "Carousel" },
-    { "type": "checkbox", "id": "enable_carousel_desktop", "label": "Enable carousel on desktop", "default": false },
+    { "type": "checkbox", "id": "enable_carousel_desktop", "label": "Enable carousel on desktop", "default": true },
     { "type": "checkbox", "id": "enable_swipe_mobile", "label": "Enable swipe on mobile", "default": true },
 
     { "type": "header", "content": "Appearance" },
