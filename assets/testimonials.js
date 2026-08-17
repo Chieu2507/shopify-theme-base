@@ -1,4 +1,4 @@
-import { A11y, Navigation, Swiper } from './swiper-loader.js';
+import { A11y, EffectFade, Navigation, Swiper } from './swiper-loader.js';
 import { initializeWhenVisible } from './initialize-when-visible.js';
 
 class TestimonialsSlider extends HTMLElement {
@@ -39,13 +39,18 @@ class TestimonialsSlider extends HTMLElement {
 
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
     this.swiper = new Swiper(this.slider, {
-      modules: [A11y, Navigation],
+      modules: [A11y, EffectFade, Navigation],
       slidesPerView: 1,
       spaceBetween: 0,
-      speed: this.reduceMotion.matches ? 0 : 360,
+      speed: this.reduceMotion.matches ? 0 : 700,
+      effect: 'fade',
+      fadeEffect: {
+        crossFade: true,
+      },
       watchOverflow: true,
       grabCursor: slideCount > 1,
-      loop: slideCount > 1,
+      loop: false,
+      rewind: slideCount > 1,
       navigation: {
         prevEl: this.previousButton,
         nextEl: this.nextButton,
@@ -57,15 +62,16 @@ class TestimonialsSlider extends HTMLElement {
         slideRole: null,
       },
       on: {
-        init: () => this.updateCounter(slideCount),
-        slideChange: () => this.updateCounter(slideCount),
+        init: (swiper) => this.updateCounter(slideCount, swiper),
+        slideChange: (swiper) => this.updateCounter(slideCount, swiper),
       },
     });
+    this.classList.add('testimonials--ready');
   }
 
-  updateCounter(slideCount) {
+  updateCounter(slideCount, swiper = this.swiper) {
     if (!this.currentCount || !this.totalCount) return;
-    const currentIndex = (this.swiper?.realIndex ?? 0) + 1;
+    const currentIndex = (swiper?.realIndex ?? 0) + 1;
     this.currentCount.textContent = String(currentIndex).padStart(2, '0');
     this.totalCount.textContent = String(slideCount).padStart(2, '0');
   }
@@ -79,6 +85,7 @@ class TestimonialsSlider extends HTMLElement {
   destroySlider() {
     this.swiper?.destroy(true, true);
     this.swiper = null;
+    this.classList.remove('testimonials--ready');
   }
 
   handleBlockSelect(event) {
