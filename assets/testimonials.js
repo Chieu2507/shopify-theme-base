@@ -1,4 +1,4 @@
-import { A11y, EffectFade, Swiper } from './swiper-loader.js';
+import { A11y, EffectFade, Navigation, Swiper } from './swiper-loader.js';
 import { initializeWhenVisible } from './initialize-when-visible.js';
 
 class TestimonialsSlider extends HTMLElement {
@@ -12,12 +12,8 @@ class TestimonialsSlider extends HTMLElement {
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.swiper = null;
     this.onBlockSelect = this.handleBlockSelect.bind(this);
-    this.onPreviousClick = this.handlePreviousClick.bind(this);
-    this.onNextClick = this.handleNextClick.bind(this);
 
     document.addEventListener('shopify:block:select', this.onBlockSelect);
-    this.previousButton?.addEventListener('click', this.onPreviousClick);
-    this.nextButton?.addEventListener('click', this.onNextClick);
     this.isReady = false;
     this.cancelDeferredInitialization = initializeWhenVisible(this, () => {
       this.isReady = true;
@@ -27,8 +23,6 @@ class TestimonialsSlider extends HTMLElement {
 
   disconnectedCallback() {
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
-    this.previousButton?.removeEventListener('click', this.onPreviousClick);
-    this.nextButton?.removeEventListener('click', this.onNextClick);
     this.cancelDeferredInitialization?.();
     this.destroySlider();
   }
@@ -45,7 +39,7 @@ class TestimonialsSlider extends HTMLElement {
 
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
     this.swiper = new Swiper(this.slider, {
-      modules: [A11y, EffectFade],
+      modules: [A11y, EffectFade, Navigation],
       slidesPerView: 1,
       spaceBetween: 0,
       speed: this.reduceMotion.matches ? 0 : 700,
@@ -57,6 +51,10 @@ class TestimonialsSlider extends HTMLElement {
       grabCursor: slideCount > 1,
       loop: false,
       rewind: slideCount > 1,
+      navigation: {
+        prevEl: this.previousButton,
+        nextEl: this.nextButton,
+      },
       a11y: {
         enabled: true,
         prevSlideMessage: this.previousButton?.getAttribute('aria-label') || '',
@@ -64,16 +62,16 @@ class TestimonialsSlider extends HTMLElement {
         slideRole: null,
       },
       on: {
-        init: () => this.updateCounter(slideCount),
-        slideChange: () => this.updateCounter(slideCount),
+        init: (swiper) => this.updateCounter(slideCount, swiper),
+        slideChange: (swiper) => this.updateCounter(slideCount, swiper),
       },
     });
     this.classList.add('testimonials--ready');
   }
 
-  updateCounter(slideCount) {
+  updateCounter(slideCount, swiper = this.swiper) {
     if (!this.currentCount || !this.totalCount) return;
-    const currentIndex = (this.swiper?.realIndex ?? 0) + 1;
+    const currentIndex = (swiper?.realIndex ?? 0) + 1;
     this.currentCount.textContent = String(currentIndex).padStart(2, '0');
     this.totalCount.textContent = String(slideCount).padStart(2, '0');
   }
@@ -88,18 +86,6 @@ class TestimonialsSlider extends HTMLElement {
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.classList.remove('testimonials--ready');
-  }
-
-  handlePreviousClick(event) {
-    event.preventDefault();
-    if (!this.swiper || this.swiper.animating) return;
-    this.swiper.slidePrev();
-  }
-
-  handleNextClick(event) {
-    event.preventDefault();
-    if (!this.swiper || this.swiper.animating) return;
-    this.swiper.slideNext();
   }
 
   handleBlockSelect(event) {
