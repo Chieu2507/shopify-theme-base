@@ -8,6 +8,7 @@ class EditorialSlideshow extends HTMLElement {
     const { signal } = this.abortController;
     this.slider = this.querySelector('[data-editorial-slideshow-slider]');
     this.navigator = this.querySelector('[data-editorial-navigator]');
+    this.productStage = this.querySelector('[data-editorial-product-stage]');
     this.tabsContainer = this.querySelector('[data-editorial-slide-tabs]');
     this.mobileCurrent = this.querySelector('[data-editorial-mobile-current]');
     this.mobileTotal = this.querySelector('[data-editorial-mobile-total]');
@@ -17,13 +18,20 @@ class EditorialSlideshow extends HTMLElement {
     this.autoplayToggle = this.querySelector('[data-editorial-autoplay-toggle]');
     this.tabs = [];
     this.progressBars = [];
+    this.productCards = [];
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.compactNavigator = window.matchMedia('(min-width: 768px) and (max-width: 1540px)');
+    this.mobileStackedLayout = window.matchMedia('(max-width: 767.98px)');
+    // The split layout keeps the navigator in its own lower row. It must remain
+    // horizontal at every desktop width rather than collapsing over the slide.
+    this.compactNavigator = window.matchMedia('(max-width: 0px)');
     this.isCompactNavigator = this.compactNavigator.matches;
     this.autoplaySetting = this.dataset.autoplay === 'true';
     this.autoplayDelay = Math.max(1000, Number(this.dataset.autoplayDelay) || 6000);
     this.autoplayManuallyPaused = false;
     this.manualPauseProgress = null;
+    this.animatePausedProgress = false;
+    this.delayProgressStartForExit = false;
+    this.progressExitTimers = new Map();
     this.progressStartedAt = null;
     this.progressStartElapsed = 0;
     this.progressStartIndex = null;
@@ -100,6 +108,8 @@ class EditorialSlideshow extends HTMLElement {
     this.visibilityObserver = null;
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
+    this.progressExitTimers?.forEach((timer) => window.clearTimeout(timer));
+    this.progressExitTimers?.clear();
     this.clearNavigatorRevealTimer();
     if (this.pointerFocusTimer) window.clearTimeout(this.pointerFocusTimer);
     this.pointerFocusTimer = null;
@@ -117,6 +127,68 @@ class EditorialSlideshow extends HTMLElement {
     return this.slider
       ? [...this.slider.querySelectorAll('.editorial-slideshow__slide:not(.swiper-slide-duplicate)')]
       : [];
+  }
+
+  collectProductCards() {
+    if (!this.productStage) return;
+
+    const cards = [];
+    this.getSlides().forEach((slide) => {
+      const productCard = slide.querySelector('.editorial-slideshow__product-card');
+      if (!productCard) return;
+
+      productCard.dataset.editorialSlideId = slide.dataset.blockId || '';
+      cards.push(productCard);
+    });
+
+    this.productCards = [
+      ...this.productStage.querySelectorAll('.editorial-slideshow__product-card'),
+      ...cards,
+    ].filter((card, index, collection) => collection.indexOf(card) === index);
+
+    this.productCards.forEach((productCard) => this.productStage.append(productCard));
+  }
+
+  syncActiveProductCard(index) {
+    if (!this.productCards.length) return;
+
+    const activeSlide = this.getSlides()[index];
+    const activeBlockId = activeSlide?.dataset.blockId || '';
+
+    this.productCards.forEach((productCard) => {
+      const isActive = productCard.dataset.editorialSlideId === activeBlockId;
+      productCard.classList.toggle('is-active', isActive);
+      productCard.toggleAttribute('aria-hidden', !isActive);
+    });
+  }
+
+  syncMobileViewportHeight() {
+    if (!this.slider) return;
+
+    if (!this.mobileStackedLayout.matches) {
+      this.slider.style.removeProperty('height');
+      return;
+    }
+
+    const setHeight = () => {
+      if (!this.isConnected || !this.mobileStackedLayout.matches) return;
+
+      // A desktop-to-mobile breakpoint change can leave the last desktop
+      // height inline on the Swiper viewport. Clear it before measuring so
+      // the normal-flow mobile slide determines its own height immediately.
+      this.slider.style.setProperty('height', 'auto', 'important');
+
+      window.requestAnimationFrame(() => {
+        if (!this.isConnected || !this.mobileStackedLayout.matches) return;
+
+        const activeSlide = this.getSlides()[this.activeIndex || 0];
+        if (!activeSlide) return;
+
+        this.slider.style.setProperty('height', `${activeSlide.scrollHeight}px`, 'important');
+      });
+    };
+
+    window.requestAnimationFrame(() => window.requestAnimationFrame(setHeight));
   }
 
   observeAnnouncementBars() {
@@ -224,6 +296,7 @@ class EditorialSlideshow extends HTMLElement {
       || this.tabs[this.activeIndex || 0]?.dataset.editorialBlockId;
     this.classList.remove('editorial-slideshow--ready');
     this.destroySwiper();
+    this.collectProductCards();
     this.buildNavigatorTabs();
     this.bindNavigatorTabs();
 
@@ -267,7 +340,6 @@ class EditorialSlideshow extends HTMLElement {
       const detail = document.createElement('span');
       const number = document.createElement('span');
       const progress = document.createElement('span');
-      const progressBar = document.createElement('span');
       const isActive = index === 0;
 
       tab.className = `editorial-slideshow__tab${isActive ? ' is-active' : ''}`;
@@ -288,14 +360,12 @@ class EditorialSlideshow extends HTMLElement {
       tab.setAttribute('aria-label', `${number.textContent} ${label.textContent}`);
       progress.className = 'editorial-slideshow__tab-progress';
       progress.setAttribute('aria-hidden', 'true');
-      progressBar.setAttribute('aria-hidden', 'true');
-      progress.append(progressBar);
       tab.append(label, detail, number, progress);
       this.tabsContainer.append(tab);
     });
 
     this.tabs = [...this.tabsContainer.querySelectorAll('[data-editorial-slide-tab]')];
-    this.progressBars = [...this.tabsContainer.querySelectorAll('.editorial-slideshow__tab-progress span')];
+    this.progressBars = [...this.tabsContainer.querySelectorAll('.editorial-slideshow__tab-progress')];
     if (this.mobileTotal) this.mobileTotal.textContent = String(this.tabs.length).padStart(2, '0');
     if (this.mobileCurrent) this.mobileCurrent.textContent = '01';
     if (this.mobileLabel) this.mobileLabel.textContent = this.getSlides()[0]?.dataset.editorialNavLabel || 'Slide';
@@ -334,6 +404,7 @@ class EditorialSlideshow extends HTMLElement {
     this.classList.toggle('editorial-slideshow--ready', slideCount > 0);
     if (!slideCount) return;
 
+    this.collectProductCards();
     this.preloadAdjacentSlides(initialSlide);
 
     try {
@@ -373,6 +444,7 @@ class EditorialSlideshow extends HTMLElement {
     this.swiper.on('slideChangeTransitionEnd', revealNavigator);
     this.swiper.on('transitionEnd', revealNavigator);
     this.syncActiveState(this.swiper.realIndex || 0, false);
+    this.syncMobileViewportHeight();
     this.syncPlayback();
   }
 
@@ -427,7 +499,12 @@ class EditorialSlideshow extends HTMLElement {
     if (!this.tabs.length) return;
 
     const activeIndex = Math.max(0, Math.min(index, this.tabs.length - 1));
+    const previousIndex = this.activeIndex;
     this.activeIndex = activeIndex;
+    this.delayProgressStartForExit = restartProgress
+      && Number.isInteger(previousIndex)
+      && previousIndex !== activeIndex;
+    this.clearProgressExit(activeIndex);
     this.preloadAdjacentSlides(activeIndex);
     this.tabs.forEach((tab, tabIndex) => {
       const isActive = tabIndex === activeIndex;
@@ -439,13 +516,17 @@ class EditorialSlideshow extends HTMLElement {
     if (this.mobileLabel) {
       this.mobileLabel.textContent = this.getSlides()[activeIndex]?.dataset.editorialNavLabel || 'Slide';
     }
+    this.syncActiveProductCard(activeIndex);
+    this.syncMobileViewportHeight();
 
     if (restartProgress) {
       this.manualPauseProgress = null;
+      this.animatePausedProgress = this.autoplayManuallyPaused;
       this.progressStartedAt = null;
       this.progressStartElapsed = 0;
       this.progressStartIndex = activeIndex;
-      this.resetProgress();
+      this.animateProgressExit(previousIndex, activeIndex);
+      this.resetProgress(previousIndex);
       this.syncPlayback();
     }
   }
@@ -473,6 +554,7 @@ class EditorialSlideshow extends HTMLElement {
     }
 
     this.syncNavigatorViewportState();
+    this.syncMobileViewportHeight();
   }
 
   handleKeydown(event) {
@@ -542,8 +624,11 @@ class EditorialSlideshow extends HTMLElement {
         return false;
       }
     });
+    const selectedProductCard = eventTarget?.closest('.editorial-slideshow__product-card')
+      || selectedBlock?.closest('.editorial-slideshow__product-card');
     const selectedSlide = eventTarget?.closest('.editorial-slideshow__slide')
       || selectedBlock?.closest('.editorial-slideshow__slide')
+      || this.getSlides().find((slide) => slide.dataset.blockId === selectedProductCard?.dataset.editorialSlideId)
       || this.querySelector(`[data-block-id="${CSS.escape(event.detail.blockId)}"]`);
     if (!selectedSlide) return;
 
@@ -565,6 +650,9 @@ class EditorialSlideshow extends HTMLElement {
         elapsed: this.getCurrentProgressElapsed(),
         index: this.activeIndex || 0,
       };
+      this.animatePausedProgress = true;
+    } else {
+      this.animatePausedProgress = false;
     }
 
     this.autoplayManuallyPaused = !this.autoplayManuallyPaused;
@@ -586,18 +674,41 @@ class EditorialSlideshow extends HTMLElement {
     this.clearAutoplayTimer();
     this.cancelProgressFrame();
     const activeIndex = this.activeIndex || 0;
+    const pausedProgressRatio = this.manualPauseProgress?.index === activeIndex
+      ? this.manualPauseProgress.elapsed / this.autoplayDelay
+      : 0;
+    const shouldAnimatePausedProgress = this.autoplayManuallyPaused && this.animatePausedProgress;
+    this.animatePausedProgress = false;
     this.progressStartedAt = null;
     this.progressBars.forEach((bar, index) => {
-      bar.style.transition = 'none';
-      bar.style.transform = this.autoplayManuallyPaused && index === activeIndex ? 'scaleX(1)' : 'scaleX(0)';
+      if (this.tabs[index]?.classList.contains('is-progress-exiting')) return;
+      this.setProgress(
+        bar,
+        this.autoplayManuallyPaused && index === activeIndex
+          ? (shouldAnimatePausedProgress ? pausedProgressRatio : 1)
+          : 0,
+      );
     });
 
-    if (!this.isPlaying) return;
+    if (!this.isPlaying) {
+      const progressBar = this.progressBars[activeIndex];
+      if (shouldAnimatePausedProgress && progressBar) {
+        window.requestAnimationFrame(() => {
+          if (!this.autoplayManuallyPaused || this.activeIndex !== activeIndex) return;
+          this.setProgress(progressBar, 1, 420, 'cubic-bezier(.22, 1, .36, 1)');
+        });
+      }
+      return;
+    }
 
     const resumeElapsed = this.manualPauseProgress?.index === activeIndex
       ? this.manualPauseProgress.elapsed
       : 0;
     const remainingDelay = Math.max(0, this.autoplayDelay - resumeElapsed);
+    const progressStartDelay = this.delayProgressStartForExit
+      ? Math.min(700, remainingDelay)
+      : 0;
+    this.delayProgressStartForExit = false;
     this.manualPauseProgress = null;
 
     const progressBar = this.progressBars[activeIndex];
@@ -608,10 +719,9 @@ class EditorialSlideshow extends HTMLElement {
       return;
     }
 
-    progressBar.style.transform = `scaleX(${resumeElapsed / this.autoplayDelay})`;
+    this.setProgress(progressBar, resumeElapsed / this.autoplayDelay);
     this.progressFrame = window.requestAnimationFrame(() => {
-      progressBar.style.transition = `transform ${remainingDelay}ms linear`;
-      progressBar.style.transform = 'scaleX(1)';
+      this.setProgress(progressBar, 1, Math.max(0, remainingDelay - progressStartDelay), 'linear', progressStartDelay);
       this.progressStartedAt = performance.now();
       this.progressStartElapsed = resumeElapsed;
       this.progressStartIndex = activeIndex;
@@ -631,11 +741,53 @@ class EditorialSlideshow extends HTMLElement {
     );
   }
 
-  resetProgress() {
-    this.progressBars.forEach((bar) => {
-      bar.style.transition = 'none';
-      bar.style.transform = 'scaleX(0)';
+  setProgress(progressBar, progress, duration = 0, easing = 'linear', delay = 0) {
+    if (!progressBar) return;
+
+    progressBar.style.setProperty('--editorial-tab-progress-duration', `${Math.max(0, duration)}ms`);
+    progressBar.style.setProperty('--editorial-tab-progress-easing', easing);
+    progressBar.style.setProperty('--editorial-tab-progress-delay', `${Math.max(0, delay)}ms`);
+    progressBar.style.setProperty('--editorial-tab-progress', `${Math.max(0, Math.min(1, progress)) * 100}%`);
+  }
+
+  resetProgress(exitingIndex) {
+    this.progressBars.forEach((bar, index) => {
+      if (index === exitingIndex && this.tabs[index]?.classList.contains('is-progress-exiting')) return;
+      this.setProgress(bar, 0);
     });
+  }
+
+  clearProgressExit(index) {
+    if (!Number.isInteger(index)) return;
+
+    const timer = this.progressExitTimers.get(index);
+    if (timer) window.clearTimeout(timer);
+    this.progressExitTimers.delete(index);
+    this.tabs[index]?.classList.remove('is-progress-exiting');
+  }
+
+  animateProgressExit(previousIndex, activeIndex) {
+    if (!Number.isInteger(previousIndex) || previousIndex === activeIndex) return;
+
+    const previousTab = this.tabs[previousIndex];
+    const progressBar = this.progressBars[previousIndex];
+    if (!previousTab || !progressBar) return;
+
+    this.clearProgressExit(previousIndex);
+    previousTab.classList.add('is-progress-exiting');
+    this.setProgress(progressBar, 1);
+
+    window.requestAnimationFrame(() => {
+      if (!previousTab.classList.contains('is-progress-exiting')) return;
+      this.setProgress(progressBar, 0, 700, 'ease-in-out');
+    });
+
+    const timer = window.setTimeout(() => {
+      previousTab.classList.remove('is-progress-exiting');
+      this.progressExitTimers.delete(previousIndex);
+      this.setProgress(progressBar, 0);
+    }, 720);
+    this.progressExitTimers.set(previousIndex, timer);
   }
 
   clearAutoplayTimer() {
