@@ -1,4 +1,4 @@
-import { A11y, Navigation, Swiper } from './swiper-loader.js';
+import { A11y, EffectFade, Navigation, Swiper } from './swiper-loader.js';
 import { initializeWhenVisible } from './initialize-when-visible.js';
 
 class TestimonialsSlider extends HTMLElement {
@@ -39,10 +39,14 @@ class TestimonialsSlider extends HTMLElement {
 
     const slideCount = this.slider.querySelectorAll('.swiper-slide').length;
     this.swiper = new Swiper(this.slider, {
-      modules: [A11y, Navigation],
+      modules: [A11y, EffectFade, Navigation],
       slidesPerView: 1,
       spaceBetween: 0,
-      speed: this.reduceMotion.matches ? 0 : 360,
+      speed: this.reduceMotion.matches ? 0 : 700,
+      effect: 'fade',
+      fadeEffect: {
+        crossFade: true,
+      },
       watchOverflow: true,
       grabCursor: slideCount > 1,
       loop: slideCount > 1,
@@ -61,6 +65,7 @@ class TestimonialsSlider extends HTMLElement {
         slideChange: () => this.updateCounter(slideCount),
       },
     });
+    this.classList.add('testimonials--ready');
   }
 
   updateCounter(slideCount) {
@@ -79,6 +84,7 @@ class TestimonialsSlider extends HTMLElement {
   destroySlider() {
     this.swiper?.destroy(true, true);
     this.swiper = null;
+    this.classList.remove('testimonials--ready');
   }
 
   handleBlockSelect(event) {
