@@ -38,16 +38,16 @@
       </div>
     {% endif %}
     <div class="testimonials__inner section-spacing">
+      {% if section.settings.section_label != blank %}
+        <p class="testimonials__section-label">{{ section.settings.section_label | escape }}</p>
+      {% endif %}
       <div class="testimonials__carousel">
         <div class="testimonials__slider swiper" data-testimonials-slider>
           <div class="testimonials__items swiper-wrapper" role="list">
             {% for block in section.blocks %}
               {% if block.type == 'testimonial' %}
                 {% if block.settings.quote != blank or block.settings.author != blank or block.settings.role != blank %}
-                  <figure class="testimonials__item swiper-slide" role="listitem" data-block-id="{{ block.id }}" {{ block.shopify_attributes }}>
-                  {% if block.settings.label != blank %}
-                    <p class="testimonials__label" data-testimonials-reveal>{{ block.settings.label | escape }}</p>
-                  {% endif %}
+                  <figure class="testimonials__item swiper-slide" role="listitem" data-block-id="{{ block.id }}" style="--testimonial-author-size: {{ block.settings.author_size }}px; --testimonial-location-size: {{ block.settings.location_size }}px; --testimonial-button-size: {{ block.settings.button_size }}px;" {{ block.shopify_attributes }}>
 
                   {% if block.settings.quote != blank %}
                     <blockquote class="testimonials__quote" data-testimonials-reveal>
@@ -142,6 +142,12 @@
         {"value": "custom", "label": "Custom"}
       ],
       "default": "medium"
+    },
+    {
+      "type": "text",
+      "id": "section_label",
+      "label": "Section label",
+      "default": "CUSTOMER STORIES / PRIVATE NOTES"
     },
     {
       "type": "range",
@@ -272,13 +278,41 @@
         },
         {
           "type": "header",
-          "content": "Additional details"
+          "content": "Typography"
         },
         {
-          "type": "text",
-          "id": "label",
-          "label": "Label",
-          "default": "CUSTOMER STORIES / PRIVATE NOTES"
+          "type": "range",
+          "id": "author_size",
+          "min": 8,
+          "max": 24,
+          "step": 1,
+          "unit": "px",
+          "label": "Author size",
+          "default": 10
+        },
+        {
+          "type": "range",
+          "id": "location_size",
+          "min": 8,
+          "max": 24,
+          "step": 1,
+          "unit": "px",
+          "label": "Location size",
+          "default": 9
+        },
+        {
+          "type": "range",
+          "id": "button_size",
+          "min": 8,
+          "max": 24,
+          "step": 1,
+          "unit": "px",
+          "label": "Button size",
+          "default": 10
+        },
+        {
+          "type": "header",
+          "content": "Additional details"
         },
         {
           "type": "text",
