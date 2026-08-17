@@ -339,7 +339,6 @@ class EditorialSlideshow extends HTMLElement {
       const detail = document.createElement('span');
       const number = document.createElement('span');
       const progress = document.createElement('span');
-      const progressBar = document.createElement('span');
       const isActive = index === 0;
 
       tab.className = `editorial-slideshow__tab${isActive ? ' is-active' : ''}`;
@@ -360,14 +359,12 @@ class EditorialSlideshow extends HTMLElement {
       tab.setAttribute('aria-label', `${number.textContent} ${label.textContent}`);
       progress.className = 'editorial-slideshow__tab-progress';
       progress.setAttribute('aria-hidden', 'true');
-      progressBar.setAttribute('aria-hidden', 'true');
-      progress.append(progressBar);
       tab.append(label, detail, number, progress);
       this.tabsContainer.append(tab);
     });
 
     this.tabs = [...this.tabsContainer.querySelectorAll('[data-editorial-slide-tab]')];
-    this.progressBars = [...this.tabsContainer.querySelectorAll('.editorial-slideshow__tab-progress span')];
+    this.progressBars = [...this.tabsContainer.querySelectorAll('.editorial-slideshow__tab-progress')];
     if (this.mobileTotal) this.mobileTotal.textContent = String(this.tabs.length).padStart(2, '0');
     if (this.mobileCurrent) this.mobileCurrent.textContent = '01';
     if (this.mobileLabel) this.mobileLabel.textContent = this.getSlides()[0]?.dataset.editorialNavLabel || 'Slide';
