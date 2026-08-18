@@ -100,7 +100,7 @@ class BlogPostsCarousel extends HTMLElement {
     this.next && (this.next.disabled = !hasOverflow);
 
     const footer = this.querySelector('.blog-posts__footer');
-    const viewAll = this.querySelector('.blog-posts__view-all');
+    const viewAll = this.querySelector('[data-blog-posts-view-all]');
     if (viewAll) viewAll.hidden = !hasOverflow;
     if (footer) footer.hidden = !hasOverflow && !this.showMore;
 

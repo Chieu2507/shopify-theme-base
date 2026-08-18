@@ -42,6 +42,7 @@
   if initial_showing_count > desktop_columns
     assign initial_showing_count = desktop_columns
   endif
+  assign blog_navigation_label = selected_blog.title | default: 'Blog'
   assign has_more_articles = false
   if matching_articles_count > posts_to_show
     assign has_more_articles = true
@@ -209,6 +210,7 @@
           Showing {{ initial_showing_count }} of {{ rendered_count }}
         </span>
         <div class="blog-posts__progress" aria-hidden="true"><span data-blog-posts-progress></span></div>
+        <span class="blog-posts__collection-link">{{ blog_navigation_label | escape }} / Page 01</span>
         {% if show_more_available %}
           <button class="btn-tertiary blog-posts__show-more" type="button" data-blog-posts-show-more>
             <span>{{ section.settings.show_more_label | escape }}</span>
@@ -216,17 +218,22 @@
           </button>
         {% endif %}
         {% if section.settings.show_view_all_button and selected_blog != blank %}
-          <a class="btn-tertiary blog-posts__view-all" href="{{ selected_blog.url | escape }}">
+          <a class="btn-tertiary blog-posts__view-all" href="{{ selected_blog.url | escape }}" data-blog-posts-view-all>
             <span>{{ section.settings.view_all_label | escape }}</span>
             <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
           </a>
+        {% elsif section.settings.show_view_all_button %}
+          <span class="btn-tertiary blog-posts__view-all" data-blog-posts-view-all>
+            <span>{{ section.settings.view_all_label | escape }}</span>
+            <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+          </span>
         {% endif %}
       </footer>
 
-      <button class="blog-posts__arrow blog-posts__arrow--previous" type="button" aria-label="Previous blog posts" data-blog-posts-previous>
+      <button class="blog-posts__arrow blog-posts__arrow--previous featured-collection__carousel-button featured-collection__carousel-button--previous" type="button" aria-label="Previous blog posts" data-blog-posts-previous>
         {% render 'icon', name: 'chevron-left' %}
       </button>
-      <button class="blog-posts__arrow blog-posts__arrow--next" type="button" aria-label="Next blog posts" data-blog-posts-next>
+      <button class="blog-posts__arrow blog-posts__arrow--next featured-collection__carousel-button featured-collection__carousel-button--next" type="button" aria-label="Next blog posts" data-blog-posts-next>
         {% render 'icon', name: 'chevron-right' %}
       </button>
     </div>
