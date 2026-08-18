@@ -102,8 +102,8 @@ class ProductFeaturedCollection extends HTMLElement {
     const progressTrack = progressBar?.closest('.product-featured-collection__progress');
     if (!progressBar || !this.swiper?.slides?.length) return;
 
-    const desktopColumns = Number(this.dataset.desktopColumns) || 1;
-    const hasOverflow = this.swiper.slides.length > desktopColumns;
+    const hasOverflow = !this.swiper.isLocked;
+    this.panel?.classList.toggle('is-carousel-scrollable', hasOverflow);
     if (progressTrack) progressTrack.hidden = !hasOverflow;
     if (!hasOverflow) return;
 
