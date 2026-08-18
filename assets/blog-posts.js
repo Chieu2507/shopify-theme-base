@@ -53,6 +53,7 @@ class BlogPostsCarousel extends HTMLElement {
     if (!this.carousel || !this.scroller) return;
     const slides = this.visibleItems;
     const perView = this.slidesPerView();
+    this.updateMediaCenter();
     const canScroll = this.shouldUseCarousel() && slides.length > Math.ceil(perView);
     this.classList.toggle('is-carousel-scrollable', canScroll);
 
@@ -85,6 +86,16 @@ class BlogPostsCarousel extends HTMLElement {
     });
     this.swiper.on('update resize breakpoint slideChange transitionEnd', () => this.updateNavigation(this.swiper));
     this.updateNavigation(this.swiper);
+  }
+
+  updateMediaCenter() {
+    const media = this.querySelector('.blog-posts__media');
+    const panel = this.querySelector('[data-blog-posts-panel]');
+    if (!media || !panel) return;
+    const panelRect = panel.getBoundingClientRect();
+    const mediaRect = media.getBoundingClientRect();
+    const center = mediaRect.top - panelRect.top + (mediaRect.height / 2);
+    this.style.setProperty('--blog-posts-media-center', `${center}px`);
   }
 
   updateNavigation(swiper) {
