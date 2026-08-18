@@ -17,13 +17,22 @@
   if panel_number < 10
     assign panel_number = panel_number | prepend: '0'
   endif
+  assign image_ratio = block.settings.image_ratio | default: '4-5'
+  case image_ratio
+    when 'adapt'
+      assign image_ratio = 'auto'
+    when 'square'
+      assign image_ratio = '1 / 1'
+    else
+      assign image_ratio = image_ratio | replace: '-', ' / '
+  endcase
 %}
 
 <article
   class="sticky-scroll__panel sticky-image-text-scroll__panel"
   data-sticky-scroll-panel
   data-sticky-scroll-index="{{ panel_index }}"
-  style="--sticky-scroll-content-width: {{ block.settings.content_width }}px; --sticky-scroll-content-gap: {{ block.settings.content_gap }}px; --sticky-scroll-image-position: {{ block.settings.image_position }}; --sticky-image-text-image-ratio: {{ block.settings.image_ratio | replace: '-', ' / ' }};"
+  style="--sticky-scroll-content-width: {{ block.settings.content_width }}px; --sticky-scroll-content-gap: {{ block.settings.content_gap }}px; --sticky-scroll-image-position: {{ block.settings.image_position }}; --sticky-image-text-image-ratio: {{ image_ratio }};"
   {{ block.shopify_attributes }}
 >
   <div class="sticky-scroll__media">
