@@ -129,6 +129,10 @@
                       assign is_alternate = true
                     endif
                     assign article_alt = article.image.alt | default: article.title
+                    assign article_image_ratio = section.settings.image_ratio
+                    if use_editorial_grid and rendered_article_index == 0
+                      assign article_image_ratio = section.settings.feature_image_ratio
+                    endif
                   %}
                   <article
                     class="blog-posts__card{% if is_alternate %} blog-posts__card--alternate{% endif %} blog-posts__card--align-{{ section.settings.content_alignment }}"
@@ -136,7 +140,7 @@
                     style="--reveal-order: {{ rendered_article_index }};"
                   >
                     {% if section.settings.show_featured_image %}
-                      <a class="blog-posts__media blog-posts__media--{{ section.settings.image_ratio }}" href="{{ article.url | escape }}">
+                      <a class="blog-posts__media blog-posts__media--{{ article_image_ratio }}" href="{{ article.url | escape }}">
                         {% render 'responsive-media',
                           image: article.image,
                           max_width: 1200,
@@ -182,10 +186,16 @@
             {% endfor %}
           {% else %}
             {% for placeholder_index in (1..skeleton_count) %}
+              {% liquid
+                assign placeholder_image_ratio = section.settings.image_ratio
+                if use_editorial_grid and forloop.first
+                  assign placeholder_image_ratio = section.settings.feature_image_ratio
+                endif
+              %}
               <li class="blog-posts__item swiper-slide{% if use_editorial_grid %}{% if forloop.first %} blog-posts__item--feature{% else %} blog-posts__item--compact{% endif %}{% endif %}" data-blog-posts-item>
                 <article class="blog-posts__card blog-posts__card--placeholder" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                   {% if section.settings.show_featured_image %}
-                    <div class="blog-posts__media blog-posts__media--{{ section.settings.image_ratio }}">
+                    <div class="blog-posts__media blog-posts__media--{{ placeholder_image_ratio }}">
                       {{ 'image' | placeholder_svg_tag: 'blog-posts__placeholder media-cover' }}
                     </div>
                   {% endif %}
@@ -273,6 +283,7 @@
     { "type": "header", "content": "Blog items" },
     { "type": "checkbox", "id": "show_featured_image", "label": "Show featured image", "default": true },
     { "type": "select", "id": "image_ratio", "label": "Image ratio", "options": [{ "value": "wide", "label": "Wide (16:9)" }, { "value": "landscape", "label": "Landscape (4:3)" }, { "value": "square", "label": "Square (1:1)" }, { "value": "portrait", "label": "Portrait (4:5)" }, { "value": "tall", "label": "Tall portrait (2:3)" }], "default": "landscape", "visible_if": "{{ section.settings.show_featured_image }}" },
+    { "type": "select", "id": "feature_image_ratio", "label": "Feature image ratio", "options": [{ "value": "wide", "label": "Wide (16:9)" }, { "value": "landscape", "label": "Landscape (4:3)" }, { "value": "square", "label": "Square (1:1)" }, { "value": "portrait", "label": "Portrait (4:5)" }, { "value": "tall", "label": "Tall portrait (2:3)" }], "default": "portrait", "visible_if": "{{ section.settings.enable_carousel_desktop == false }}" },
     { "type": "checkbox", "id": "show_author", "label": "Show author", "default": false },
     { "type": "checkbox", "id": "show_blog", "label": "Show blog", "default": false },
     { "type": "checkbox", "id": "show_date", "label": "Show date", "default": true },
