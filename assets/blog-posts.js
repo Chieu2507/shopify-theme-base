@@ -12,6 +12,13 @@ class BlogPostsCarousel extends HTMLElement {
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.desktopQuery = window.matchMedia('(min-width: 990px)');
     this.mobileQuery = window.matchMedia('(max-width: 767.98px)');
+    this.header = document.querySelector('.header');
+    this.updateStickyOffset = this.updateStickyOffset.bind(this);
+    this.updateStickyOffset();
+    if (this.header && 'ResizeObserver' in window) {
+      this.headerResizeObserver = new ResizeObserver(this.updateStickyOffset);
+      this.headerResizeObserver.observe(this.header);
+    }
     this.onViewportChange = this.refresh.bind(this);
     this.desktopQuery.addEventListener('change', this.onViewportChange);
     this.mobileQuery.addEventListener('change', this.onViewportChange);
@@ -22,6 +29,8 @@ class BlogPostsCarousel extends HTMLElement {
     this.desktopQuery?.removeEventListener('change', this.onViewportChange);
     this.mobileQuery?.removeEventListener('change', this.onViewportChange);
     this.cancelDeferredInitialization?.();
+    this.headerResizeObserver?.disconnect();
+    cancelAnimationFrame(this.mediaCenterFrame);
     this.swiper?.destroy(true, true);
     this.swiper = null;
     this.initialized = false;
@@ -47,6 +56,7 @@ class BlogPostsCarousel extends HTMLElement {
 
   refresh() {
     if (!this.carousel || !this.scroller) return;
+    this.updateStickyOffset();
     const slides = this.visibleItems;
     const perView = this.slidesPerView();
     const canScroll = this.shouldUseCarousel() && slides.length > Math.ceil(perView);
@@ -102,6 +112,12 @@ class BlogPostsCarousel extends HTMLElement {
     const mediaRect = media.getBoundingClientRect();
     const center = mediaRect.top - panelRect.top + (mediaRect.height / 2);
     this.style.setProperty('--blog-posts-media-center', `${center}px`);
+  }
+
+  updateStickyOffset() {
+    if (!this.header?.isConnected) this.header = document.querySelector('.header');
+    const headerHeight = this.header?.getBoundingClientRect().height || 0;
+    this.style.setProperty('--blog-posts-sticky-offset', `${Math.ceil(headerHeight)}px`);
   }
 
   updateNavigation(swiper) {
