@@ -53,13 +53,13 @@ class BlogPostsCarousel extends HTMLElement {
     if (!this.carousel || !this.scroller) return;
     const slides = this.visibleItems;
     const perView = this.slidesPerView();
-    this.updateMediaCenter();
     const canScroll = this.shouldUseCarousel() && slides.length > Math.ceil(perView);
     this.classList.toggle('is-carousel-scrollable', canScroll);
 
     if (!canScroll) {
       this.swiper?.destroy(true, true);
       this.swiper = null;
+      this.updateMediaCenter();
       this.updateNavigation(null);
       return;
     }
@@ -71,6 +71,7 @@ class BlogPostsCarousel extends HTMLElement {
       this.swiper.params.slidesPerView = perView;
       this.swiper.params.spaceBetween = this.mobileQuery.matches ? mobileGap : desktopGap;
       this.swiper.update();
+      this.scheduleMediaCenterUpdate();
       this.updateNavigation(this.swiper);
       return;
     }
@@ -84,8 +85,17 @@ class BlogPostsCarousel extends HTMLElement {
       navigation: { prevEl: this.previous, nextEl: this.next },
       a11y: { enabled: true, slideRole: 'listitem' },
     });
-    this.swiper.on('update resize breakpoint slideChange transitionEnd', () => this.updateNavigation(this.swiper));
+    this.swiper.on('update resize breakpoint slideChange transitionEnd', () => {
+      this.scheduleMediaCenterUpdate();
+      this.updateNavigation(this.swiper);
+    });
+    this.scheduleMediaCenterUpdate();
     this.updateNavigation(this.swiper);
+  }
+
+  scheduleMediaCenterUpdate() {
+    cancelAnimationFrame(this.mediaCenterFrame);
+    this.mediaCenterFrame = requestAnimationFrame(() => this.updateMediaCenter());
   }
 
   updateMediaCenter() {
