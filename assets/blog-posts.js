@@ -9,22 +9,18 @@ class BlogPostsCarousel extends HTMLElement {
     this.scroller = this.querySelector('[data-blog-posts-scroller]');
     this.previous = this.querySelector('[data-blog-posts-previous]');
     this.next = this.querySelector('[data-blog-posts-next]');
-    this.showMore = this.querySelector('[data-blog-posts-show-more]');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
     this.desktopQuery = window.matchMedia('(min-width: 990px)');
     this.mobileQuery = window.matchMedia('(max-width: 767.98px)');
     this.onViewportChange = this.refresh.bind(this);
-    this.onShowMore = this.revealMore.bind(this);
     this.desktopQuery.addEventListener('change', this.onViewportChange);
     this.mobileQuery.addEventListener('change', this.onViewportChange);
-    this.showMore?.addEventListener('click', this.onShowMore);
     this.cancelDeferredInitialization = initializeWhenVisible(this, () => this.refresh());
   }
 
   disconnectedCallback() {
     this.desktopQuery?.removeEventListener('change', this.onViewportChange);
     this.mobileQuery?.removeEventListener('change', this.onViewportChange);
-    this.showMore?.removeEventListener('click', this.onShowMore);
     this.cancelDeferredInitialization?.();
     this.swiper?.destroy(true, true);
     this.swiper = null;
@@ -145,13 +141,6 @@ class BlogPostsCarousel extends HTMLElement {
     progress.style.setProperty('--blog-posts-progress', thumb + (swiper.progress * (1 - thumb)));
   }
 
-  revealMore() {
-    this.scroller.querySelectorAll('[data-blog-posts-item][hidden]').forEach((item) => item.removeAttribute('hidden'));
-    this.showMore?.remove();
-    this.showMore = null;
-    this.refresh();
-    window.ThemeAnimations?.refresh(this);
-  }
 }
 
 if (!customElements.get('blog-posts-carousel')) customElements.define('blog-posts-carousel', BlogPostsCarousel);

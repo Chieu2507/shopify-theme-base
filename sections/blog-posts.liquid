@@ -38,22 +38,14 @@
   assign rendered_count = matching_articles_count
   if rendered_count == 0
     assign rendered_count = skeleton_count
+  elsif rendered_count > posts_to_show
+    assign rendered_count = posts_to_show
   endif
   assign initial_showing_count = rendered_count
   if initial_showing_count > desktop_columns
     assign initial_showing_count = desktop_columns
   endif
   assign blog_navigation_label = selected_blog.title | default: 'Blog'
-  assign has_more_articles = false
-  if matching_articles_count > posts_to_show
-    assign has_more_articles = true
-  endif
-
-  assign show_more_available = false
-  if section.settings.show_more_button and section.settings.enable_carousel_desktop == false and section.settings.enable_swipe_mobile == false and has_more_articles
-    assign show_more_available = true
-  endif
-
   assign use_editorial_grid = false
   if section.settings.enable_carousel_desktop == false
     assign use_editorial_grid = true
@@ -118,11 +110,7 @@
                   endfor
                 endif
               %}
-              {% if article_matches %}
-                {% assign article_hidden = false %}
-                {% if show_more_available and rendered_article_index >= posts_to_show %}
-                  {% assign article_hidden = true %}
-                {% endif %}
+              {% if article_matches and rendered_article_index < posts_to_show %}
                 {% if use_editorial_grid and rendered_article_index == 1 %}
                   <li class="blog-posts__compact-column">
                     <ul class="blog-posts__compact-list" role="list">
@@ -130,7 +118,6 @@
                 <li
                   class="blog-posts__item swiper-slide{% if use_editorial_grid %}{% if rendered_article_index == 0 %} blog-posts__item--feature{% else %} blog-posts__item--compact{% endif %}{% endif %}"
                   data-blog-posts-item
-                  {% if article_hidden %}hidden{% endif %}
                 >
                   {% liquid
                     assign article_modulo = rendered_article_index | modulo: 2
@@ -192,7 +179,7 @@
                   </article>
                 </li>
                 {% assign rendered_article_index = rendered_article_index | plus: 1 %}
-                {% if use_editorial_grid and rendered_article_index == matching_articles_count %}
+                {% if use_editorial_grid and rendered_article_index == rendered_count %}
                     </ul>
                   </li>
                 {% endif %}
@@ -249,12 +236,6 @@
         </span>
         <div class="blog-posts__progress" aria-hidden="true"><span data-blog-posts-progress></span></div>
         <span class="blog-posts__collection-link">{{ blog_navigation_label | escape }} / Page 01</span>
-        {% if show_more_available %}
-          <button class="btn-tertiary blog-posts__show-more" type="button" data-blog-posts-show-more>
-            <span>{{ section.settings.show_more_label | escape }}</span>
-            <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
-          </button>
-        {% endif %}
         {% if section.settings.show_view_all_button and selected_blog != blank %}
           <a class="btn-tertiary blog-posts__view-all" href="{{ selected_blog.url | escape }}" data-blog-posts-view-all>
             <span>{{ section.settings.view_all_label | escape }}</span>
@@ -288,8 +269,6 @@
     { "type": "blog", "id": "blog", "label": "Blog" },
     { "type": "textarea", "id": "blog_tags", "label": "Blogs with tags", "info": "Blog posts with one of the tags listed will display in this section. One tag per line." },
     { "type": "range", "id": "posts_to_show", "label": "Blog posts", "min": 3, "max": 12, "step": 1, "default": 6 },
-    { "type": "checkbox", "id": "show_more_button", "label": "Show \"Show more\" button", "info": "\"Show more\" button will be disabled when Carousel is enabled.", "default": false },
-    { "type": "text", "id": "show_more_label", "label": "Show more label", "default": "Show more", "visible_if": "{{ section.settings.show_more_button }}" },
     { "type": "checkbox", "id": "show_view_all_button", "label": "Show \"View all\" button", "default": true },
     { "type": "text", "id": "view_all_label", "label": "View all label", "default": "View all articles", "visible_if": "{{ section.settings.show_view_all_button }}" },
 
