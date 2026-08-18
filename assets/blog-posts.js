@@ -141,7 +141,11 @@ class BlogPostsCarousel extends HTMLElement {
     if (showing) {
       const configuredTotal = Number.parseInt(showing.dataset.total, 10);
       const totalForCopy = Number.isNaN(configuredTotal) ? total : configuredTotal;
-      const current = swiper ? Math.min(totalForCopy, swiper.activeIndex + Math.ceil(visible)) : Math.min(totalForCopy, Math.ceil(visible));
+      const current = this.classList.contains('blog-posts--editorial-grid') && !swiper
+        ? totalForCopy
+        : swiper
+          ? Math.min(totalForCopy, swiper.activeIndex + Math.ceil(visible))
+          : Math.min(totalForCopy, Math.ceil(visible));
       showing.textContent = `${showing.dataset.showingPrefix || 'Showing'} ${current} ${showing.dataset.showingSeparator || 'of'} ${totalForCopy}`;
     }
 
