@@ -236,20 +236,24 @@
               {% endif %}
               <div class="search-drawer__recent-list" data-search-drawer-recent-list>
                 {% if search_drawer_preview %}
-                  <article class="search-drawer__recent-product" data-search-drawer-design-placeholder>
-                    <span class="search-drawer__recent-media" aria-hidden="true">
-                      {{ 'product-1' | placeholder_svg_tag: 'search-drawer__recent-placeholder-svg' }}
-                    </span>
-                    <div class="search-drawer__recent-details">
-                      <h4 class="search-drawer__recent-title product-title-text heading-h4 heading-text">{{ 'onboarding.product_title' | t }}</h4>
-                      <p class="search-drawer__recent-price">{% render 'money', amount: 10000 %}</p>
-                    </div>
-                    {% if section.settings.show_quick_add %}
-                      <button class="quick-add-button search-drawer__quick-add" type="button" aria-label="{{ 'product_card.quick_add' | t | escape }}" disabled>
-                        {% render 'icon', name: 'bag-simple' %}
-                      </button>
-                    {% endif %}
-                  </article>
+                  {% for placeholder_index in (1..section.settings.recently_viewed_limit) %}
+                    <article class="search-drawer__recent-product" data-search-drawer-design-placeholder>
+                      <span class="search-drawer__recent-media" aria-hidden="true">
+                        {% assign product_placeholder_index = placeholder_index | modulo: 6 %}
+                        {% if product_placeholder_index == 0 %}{% assign product_placeholder_index = 6 %}{% endif %}
+                        {{ 'product-' | append: product_placeholder_index | placeholder_svg_tag: 'search-drawer__recent-placeholder-svg' }}
+                      </span>
+                      <div class="search-drawer__recent-details">
+                        <h4 class="search-drawer__recent-title product-title-text heading-h4 heading-text">{{ 'onboarding.product_title' | t }}</h4>
+                        <p class="search-drawer__recent-price">{% render 'money', amount: 10000 %}</p>
+                      </div>
+                      {% if section.settings.show_quick_add %}
+                        <button class="quick-add-button search-drawer__quick-add" type="button" aria-label="{{ 'product_card.quick_add' | t | escape }}" disabled>
+                          {% render 'icon', name: 'bag-simple' %}
+                        </button>
+                      {% endif %}
+                    </article>
+                  {% endfor %}
                 {% endif %}
               </div>
             </div>
@@ -430,7 +434,7 @@
     },
     { "type": "range", "id": "recently_viewed_heading_font_size", "label": "t:typography_blocks.size", "min": 8, "max": 100, "step": 2, "unit": "px", "default": 50, "visible_if": "{{ section.settings.show_recently_viewed and section.settings.recently_viewed_heading_size == 'custom' }}" },
     { "type": "range", "id": "recently_viewed_heading_font_size_mobile", "label": "t:typography_blocks.mobile_size", "min": 8, "max": 100, "step": 2, "unit": "px", "default": 30, "visible_if": "{{ section.settings.show_recently_viewed and section.settings.recently_viewed_heading_size == 'custom' }}" },
-    { "type": "range", "id": "recently_viewed_limit", "label": "Product limit", "min": 1, "max": 6, "step": 1, "default": 4, "visible_if": "{{ section.settings.show_recently_viewed }}" },
+    { "type": "range", "id": "recently_viewed_limit", "label": "Product limit", "min": 1, "max": 6, "step": 1, "default": 6, "visible_if": "{{ section.settings.show_recently_viewed }}" },
     { "type": "checkbox", "id": "show_quick_add", "label": "Show quick-add icon", "default": true, "visible_if": "{{ section.settings.show_recently_viewed }}" },
     { "type": "header", "content": "Appearance" },
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
