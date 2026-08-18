@@ -53,6 +53,11 @@
   if section.settings.show_more_button and section.settings.enable_carousel_desktop == false and section.settings.enable_swipe_mobile == false and has_more_articles
     assign show_more_available = true
   endif
+
+  assign use_editorial_grid = false
+  if section.settings.enable_carousel_desktop == false
+    assign use_editorial_grid = true
+  endif
 %}
 
 {% style %}
@@ -62,7 +67,7 @@
 {% endstyle %}
 
 <blog-posts-carousel
-  class="blog-posts color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.show_tags_and_lines %} blog-posts--show-lines{% endif %}"
+  class="blog-posts color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section.settings.show_tags_and_lines %} blog-posts--show-lines{% endif %}{% if use_editorial_grid %} blog-posts--editorial-grid{% endif %}"
   data-deferred-module="{{ 'blog-posts.js' | asset_url }}"
   data-desktop-columns="{{ desktop_columns }}"
   data-mobile-columns="{{ mobile_columns }}"
@@ -113,7 +118,7 @@
                   {% assign article_hidden = true %}
                 {% endif %}
                 <li
-                  class="blog-posts__item swiper-slide"
+                  class="blog-posts__item swiper-slide{% if use_editorial_grid %}{% if rendered_article_index == 0 %} blog-posts__item--feature{% else %} blog-posts__item--compact{% endif %}{% endif %}"
                   data-blog-posts-item
                   {% if article_hidden %}hidden{% endif %}
                 >
@@ -177,7 +182,7 @@
             {% endfor %}
           {% else %}
             {% for placeholder_index in (1..skeleton_count) %}
-              <li class="blog-posts__item swiper-slide" data-blog-posts-item>
+              <li class="blog-posts__item swiper-slide{% if use_editorial_grid %}{% if forloop.first %} blog-posts__item--feature{% else %} blog-posts__item--compact{% endif %}{% endif %}" data-blog-posts-item>
                 <article class="blog-posts__card blog-posts__card--placeholder" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
                   {% if section.settings.show_featured_image %}
                     <div class="blog-posts__media blog-posts__media--{{ section.settings.image_ratio }}">
