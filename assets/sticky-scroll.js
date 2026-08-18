@@ -10,6 +10,7 @@ class StickyScroll extends HTMLElement {
     this.desktopQuery = window.matchMedia('(min-width: 768px)');
     this.mobileLayout = this.dataset.mobileLayout || 'stacked';
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+    this.header = document.querySelector('[data-header], .header');
     this.activeIndex = 0;
     this.scrollFrame = null;
     this.refreshFrame = null;
@@ -73,6 +74,7 @@ class StickyScroll extends HTMLElement {
 
   refresh() {
     const panels = this.panels;
+    this.updateHeaderOffset();
     this.style.setProperty('--sticky-scroll-panel-count', Math.max(panels.length, 1));
     this.buildSteps();
 
@@ -91,6 +93,15 @@ class StickyScroll extends HTMLElement {
     const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
     this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * 1.2}px`);
     this.updateFromScroll();
+  }
+
+  updateHeaderOffset() {
+    if (!this.header?.isConnected) {
+      this.header = document.querySelector('[data-header], .header');
+    }
+
+    const headerHeight = this.header?.getBoundingClientRect().height || 0;
+    this.style.setProperty('--sticky-scroll-header-offset', `${Math.ceil(headerHeight)}px`);
   }
 
   buildSteps() {
