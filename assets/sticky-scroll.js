@@ -9,6 +9,7 @@ class StickyScroll extends HTMLElement {
     this.designMode = this.dataset.designMode === 'true';
     this.desktopQuery = window.matchMedia('(min-width: 768px)');
     this.mobileLayout = this.dataset.mobileLayout || 'stacked';
+    this.scrollEffectStyle = this.dataset.scrollEffectStyle || '';
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.header = document.querySelector('[data-header], .header');
     this.activeIndex = 0;
@@ -61,6 +62,7 @@ class StickyScroll extends HTMLElement {
   }
 
   shouldEnhance() {
+    if (this.scrollEffectStyle === 'vertical') return false;
     return this.desktopQuery.matches || this.mobileLayout === 'sticky';
   }
 
@@ -154,6 +156,8 @@ class StickyScroll extends HTMLElement {
     const progress = Math.min(1, Math.max(0, (window.scrollY - scrollStart) / availableScroll));
     const activeIndex = Math.min(panels.length - 1, Math.floor(progress * panels.length));
 
+    this.updateEffectProgress(panels, progress);
+
     panels.forEach((panel, index) => {
       const isActive = index === activeIndex;
       panel.classList.toggle('is-active', isActive);
@@ -169,6 +173,16 @@ class StickyScroll extends HTMLElement {
       step.classList.toggle('is-active', isActive);
       if (isActive) step.setAttribute('aria-current', 'step');
       else step.removeAttribute('aria-current');
+    });
+  }
+
+  updateEffectProgress(panels, progress) {
+    if (this.scrollEffectStyle !== 'horizontal') return;
+
+    panels.forEach((panel, index) => {
+      const sceneProgress = Math.min(1, Math.max(0, (progress * panels.length) - index));
+      panel.style.setProperty('--image-stack-scene-reveal', `${Math.round(sceneProgress * 100)}%`);
+      panel.style.setProperty('--image-stack-scene-z-index', String(index + 1));
     });
   }
 
