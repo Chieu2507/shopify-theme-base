@@ -13,6 +13,7 @@ class StickyScroll extends HTMLElement {
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.header = document.querySelector('[data-header], .header');
     this.activeIndex = 0;
+    this.previousProgress = 0;
     this.scrollFrame = null;
     this.refreshFrame = null;
 
@@ -59,6 +60,10 @@ class StickyScroll extends HTMLElement {
 
   get panels() {
     return [...this.querySelectorAll('[data-sticky-scroll-panel]')];
+  }
+
+  get mediaLayers() {
+    return [...this.querySelectorAll('[data-image-stack-media-index]')];
   }
 
   shouldEnhance() {
@@ -156,6 +161,8 @@ class StickyScroll extends HTMLElement {
     const progress = Math.min(1, Math.max(0, (window.scrollY - scrollStart) / availableScroll));
     const activeIndex = Math.min(panels.length - 1, Math.floor(progress * panels.length));
 
+    const isMovingBackward = progress < this.previousProgress;
+    this.dataset.scrollDirection = isMovingBackward ? 'backward' : 'forward';
     this.updateEffectProgress(panels, progress);
 
     panels.forEach((panel, index) => {
@@ -167,6 +174,16 @@ class StickyScroll extends HTMLElement {
       if (!this.designMode) panel.inert = !isActive;
     });
 
+    this.mediaLayers.forEach((layer) => {
+      const layerIndex = Number.parseInt(layer.dataset.imageStackMediaIndex, 10);
+      const panel = panels[layerIndex];
+      if (!panel) return;
+
+      layer.classList.toggle('is-active', panel.classList.contains('is-active'));
+      layer.classList.toggle('is-before', panel.classList.contains('is-before'));
+      layer.classList.toggle('is-after', panel.classList.contains('is-after'));
+    });
+
     this.activeIndex = activeIndex;
     this.steps?.querySelectorAll('[data-sticky-scroll-step]').forEach((step, index) => {
       const isActive = index === activeIndex;
@@ -174,6 +191,8 @@ class StickyScroll extends HTMLElement {
       if (isActive) step.setAttribute('aria-current', 'step');
       else step.removeAttribute('aria-current');
     });
+
+    this.previousProgress = progress;
   }
 
   updateEffectProgress(panels, progress) {

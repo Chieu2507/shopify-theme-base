@@ -36,40 +36,47 @@
   transform: none;
 }
 
-/* Scene panels switch immediately. The foreground media alone owns motion. */
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel {
-  opacity: 1;
-  visibility: visible;
-  transform: none;
+/* Scene keeps the panel lifecycle (content/background fade) separate from the
+   visual media transition. The card layers share one fixed position so the
+   outgoing image always remains underneath the clipping incoming image. */
+.image-stack--effect-scene.is-enhanced .image-stack__scene .image-stack__media {
+  display: none;
+}
+
+.image-stack__media-stack {
+  position: absolute;
+  z-index: 3;
+  inset: 0;
   pointer-events: none;
-  transition: none;
 }
 
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel.is-active {
-  z-index: 2;
-  pointer-events: auto;
-}
-
-.image-stack--effect-scene.is-enhanced .image-stack__scene-background {
-  opacity: 0;
-  transition: none;
-}
-
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel:is(.is-before, .is-active) .image-stack__scene-background {
+.image-stack__media-layer {
+  position: absolute;
+  top: 50%;
+  right: clamp(32px, 4.2vw, 68px);
+  width: min(28vw, 400px);
+  aspect-ratio: var(--image-stack-card-ratio);
+  overflow: hidden;
+  border-radius: var(--style-border-radius, 0);
+  box-shadow: 0 24px 72px rgb(0 0 0 / 24%);
+  transform: translateY(-50%);
   opacity: 1;
+  clip-path: inset(100% 0 0 0);
+  transition: clip-path 720ms cubic-bezier(.22, 1, .36, 1);
+  will-change: clip-path;
 }
 
-.image-stack--effect-scene.is-enhanced .image-stack__media {
-  /* Hidden from the bottom: next reveals top-to-bottom, previous reveals
-     underneath from the bottom while scrolling back. */
-  clip-path: inset(0 0 100% 0);
-  transition: clip-path 750ms cubic-bezier(.22, 1, .36, 1);
-}
-
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel.is-before .image-stack__media,
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel.is-active .image-stack__media {
+.image-stack__media-layer:is(.is-active, .is-before) {
   clip-path: inset(0 0 0 0);
 }
+
+.image-stack--effect-scene[data-scroll-direction='backward'] .image-stack__media-layer.is-after {
+  clip-path: inset(0 0 100% 0);
+}
+
+.image-stack--effect-scene.is-enhanced .image-stack__media-layer.is-active { z-index: 2; }
+.image-stack--effect-scene.is-enhanced .image-stack__media-layer.is-before { z-index: 1; }
+.image-stack--effect-scene.is-enhanced .image-stack__media-layer.is-after { z-index: 3; }
 
 .image-stack--effect-vertical .sticky-scroll__panel {
   position: sticky;
