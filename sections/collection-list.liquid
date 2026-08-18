@@ -41,12 +41,26 @@
       assign split_height_mobile = 480
   endcase
 
-  assign collection_image_ratio = '5 / 6'
+  assign collection_image_ratio = 'auto'
   case section.settings.image_ratio
+    when 'portrait'
+      assign collection_image_ratio = '5 / 6'
     when 'square'
       assign collection_image_ratio = '1 / 1'
-    when 'landscape'
+    when '2-3'
+      assign collection_image_ratio = '2 / 3'
+    when '3-4'
+      assign collection_image_ratio = '3 / 4'
+    when '6-7'
+      assign collection_image_ratio = '6 / 7'
+    when '3-2'
+      assign collection_image_ratio = '3 / 2'
+    when '4-5'
+      assign collection_image_ratio = '4 / 5'
+    when '4-3', 'landscape'
       assign collection_image_ratio = '4 / 3'
+    when '16-9'
+      assign collection_image_ratio = '16 / 9'
   endcase
 %}
 
@@ -173,6 +187,12 @@
                 endif
               endif
 
+              assign card_placeholder_asset = 'collection-1'
+              if section.settings.layout == 'split-promotions'
+                assign card_placeholder_index = split_card_index | minus: 1 | modulo: 5 | plus: 1
+                assign card_placeholder_asset = 'collection-' | append: card_placeholder_index
+              endif
+
               assign card_loading = 'lazy'
               assign card_fetchpriority = 'auto'
               assign card_preload = false
@@ -215,7 +235,7 @@
                     preload: card_preload,
                     decoding: card_decoding,
                     alt: card_alt,
-                    placeholder_asset: 'placeholder-image-collection-1.svg',
+                    placeholder_asset: card_placeholder_asset,
                     placeholder_class: 'collection-list__placeholder'
                   %}
                 </div>
@@ -503,19 +523,18 @@
       "label": "Image ratio",
       "options": [
         {
-          "value": "portrait",
-          "label": "Portrait"
+          "value": "adapt", "label": "Adapt"
         },
-        {
-          "value": "square",
-          "label": "Square"
-        },
-        {
-          "value": "landscape",
-          "label": "Landscape"
-        }
+        { "value": "square", "label": "Square (1:1)" },
+        { "value": "2-3", "label": "2:3" },
+        { "value": "3-4", "label": "3:4" },
+        { "value": "4-5", "label": "4:5" },
+        { "value": "6-7", "label": "6:7" },
+        { "value": "3-2", "label": "3:2" },
+        { "value": "4-3", "label": "4:3" },
+        { "value": "16-9", "label": "16:9" }
       ],
-      "default": "portrait",
+      "default": "4-5",
       "info": "For Split promotions, desktop and tablet height still follows the layout height settings. This ratio controls the responsive card proportions on mobile."
     },
     {

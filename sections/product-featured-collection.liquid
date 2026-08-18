@@ -65,7 +65,7 @@
   endif
 
   if show_editor_skeleton
-    assign product_count = section.settings.columns_desktop | plus: 2
+    assign product_count = section.settings.products_to_show
   endif
 
   assign panel_has_overflow = false
@@ -156,10 +156,10 @@
               </ul>
             </div>
 
-            <button class="product-featured-collection__carousel-button product-featured-collection__carousel-button--previous" type="button" aria-label="{{ 'featured_collection.previous_products' | t | escape }}" data-product-featured-collection-previous>
+            <button class="product-featured-collection__carousel-button product-featured-collection__carousel-button--previous carousel-navigator__arrow carousel-navigator__arrow--previous" type="button" aria-label="{{ 'featured_collection.previous_products' | t | escape }}" data-product-featured-collection-previous>
               {% render 'icon', name: 'chevron-left' %}
             </button>
-            <button class="product-featured-collection__carousel-button product-featured-collection__carousel-button--next" type="button" aria-label="{{ 'featured_collection.next_products' | t | escape }}" data-product-featured-collection-next>
+            <button class="product-featured-collection__carousel-button product-featured-collection__carousel-button--next carousel-navigator__arrow carousel-navigator__arrow--next" type="button" aria-label="{{ 'featured_collection.next_products' | t | escape }}" data-product-featured-collection-next>
               {% render 'icon', name: 'chevron-right' %}
             </button>
             <div class="product-featured-collection__progress"{% unless panel_has_overflow %} hidden{% endunless %} aria-hidden="true">
@@ -429,59 +429,6 @@
     width: 100%;
   }
 
-  .product-featured-collection__carousel-button {
-    position: absolute;
-    z-index: 3;
-    top: 50%;
-    display: grid;
-    width: 36px;
-    height: 36px;
-    padding: 0;
-    border: 0;
-    border-radius: 50%;
-    background: var(--color-background);
-    box-shadow: 0 2px 12px rgb(0 0 0 / 10%);
-    color: var(--color-heading);
-    cursor: pointer;
-    place-items: center;
-    transform: translateY(-50%);
-    opacity: 0;
-    pointer-events: none;
-    transition: box-shadow 220ms ease, opacity 220ms ease, transform 220ms ease;
-  }
-
-  .product-featured-collection__panel:hover .product-featured-collection__carousel-button:not(:disabled),
-  .product-featured-collection__panel:focus-within .product-featured-collection__carousel-button:not(:disabled) {
-    opacity: 1;
-    pointer-events: auto;
-  }
-
-  .product-featured-collection__carousel-button:hover:not(:disabled) {
-    box-shadow: 0 5px 18px rgb(0 0 0 / 16%);
-    transform: translateY(-50%) scale(1.06);
-  }
-
-  .product-featured-collection__carousel-button:active:not(:disabled) {
-    transform: translateY(-50%) scale(0.94);
-  }
-
-  .product-featured-collection__carousel-button svg {
-    width: 18px;
-    height: 18px;
-  }
-
-  .product-featured-collection__carousel-button--previous {
-    left: 12px;
-  }
-
-  .product-featured-collection__carousel-button--next {
-    right: 12px;
-  }
-
-  .product-featured-collection__carousel-button:disabled {
-    visibility: hidden;
-  }
-
   .product-featured-collection__progress {
     width: 100%;
     height: 1px;
@@ -594,7 +541,7 @@
 
   }
 {% endstylesheet %}
-
+{% render 'section-stylesheet', asset: 'component-carousel-navigator.css', defer_on_home: true %}
 
 {% schema %}
 {
