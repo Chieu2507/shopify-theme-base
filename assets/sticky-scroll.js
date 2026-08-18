@@ -13,7 +13,6 @@ class StickyScroll extends HTMLElement {
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.header = document.querySelector('[data-header], .header');
     this.activeIndex = 0;
-    this.lastScrollProgress = 0;
     this.scrollFrame = null;
     this.refreshFrame = null;
 
@@ -158,7 +157,6 @@ class StickyScroll extends HTMLElement {
     const activeIndex = Math.min(panels.length - 1, Math.floor(progress * panels.length));
 
     this.updateEffectProgress(panels, progress);
-    this.lastScrollProgress = progress;
 
     panels.forEach((panel, index) => {
       const isActive = index === activeIndex;
@@ -179,48 +177,17 @@ class StickyScroll extends HTMLElement {
   }
 
   updateEffectProgress(panels, progress) {
-    if (!['horizontal', 'scene'].includes(this.scrollEffectStyle)) return;
+    if (this.scrollEffectStyle !== 'horizontal') return;
 
     const scaledProgress = progress * panels.length;
-    const activeIndex = Math.min(panels.length - 1, Math.floor(scaledProgress));
-    const phase = Math.min(1, Math.max(0, scaledProgress - activeIndex));
-    const isScrollingUp = progress < this.lastScrollProgress;
 
     panels.forEach((panel, index) => {
       panel.style.setProperty('--image-stack-scene-z-index', String(index + 1));
 
-      if (this.scrollEffectStyle === 'horizontal') {
-        const sceneProgress = index === 0
-          ? 1
-          : Math.min(1, Math.max(0, scaledProgress - index));
-        panel.style.setProperty('--image-stack-scene-reveal', `${(sceneProgress * 100).toFixed(3)}%`);
-        return;
-      }
-
-      // Scene uses a directional wipe rather than cross-fading full scenes.
-      // Down: the incoming scene grows from the top. Up: the previous scene
-      // grows from the bottom, then becomes the active panel at the boundary.
-      panel.style.setProperty('--image-stack-scene-clip-top', '100%');
-      panel.style.setProperty('--image-stack-scene-clip-bottom', '0%');
-
-      if (activeIndex === 0) {
-        if (index === 0) panel.style.setProperty('--image-stack-scene-clip-top', '0%');
-        return;
-      }
-
-      if (index === activeIndex) {
-        panel.style.setProperty('--image-stack-scene-clip-top', '0%');
-        panel.style.setProperty('--image-stack-scene-clip-bottom', isScrollingUp ? '0%' : `${((1 - phase) * 100).toFixed(3)}%`);
-      }
-
-      if (index === activeIndex - 1) {
-        if (isScrollingUp) {
-          panel.style.setProperty('--image-stack-scene-z-index', String(panels.length + 1));
-          panel.style.setProperty('--image-stack-scene-clip-top', `${(phase * 100).toFixed(3)}%`);
-        } else {
-          panel.style.setProperty('--image-stack-scene-clip-top', '0%');
-        }
-      }
+      const sceneProgress = index === 0
+        ? 1
+        : Math.min(1, Math.max(0, scaledProgress - index));
+      panel.style.setProperty('--image-stack-scene-reveal', `${(sceneProgress * 100).toFixed(3)}%`);
     });
   }
 
