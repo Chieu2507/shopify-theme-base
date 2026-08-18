@@ -36,23 +36,33 @@
   transform: none;
 }
 
-/* Scene keeps the default panel transition. Only the foreground media wipes. */
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel:is(.is-before, .is-after, .is-active) {
-  transform: none;
-}
-
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel.is-before {
-  z-index: 1;
+/* Scene panels switch immediately. The foreground media alone owns motion. */
+.image-stack--effect-scene.is-enhanced .sticky-scroll__panel {
   opacity: 1;
   visibility: visible;
+  transform: none;
+  pointer-events: none;
+  transition: none;
 }
 
 .image-stack--effect-scene.is-enhanced .sticky-scroll__panel.is-active {
   z-index: 2;
+  pointer-events: auto;
+}
+
+.image-stack--effect-scene.is-enhanced .image-stack__scene-background {
+  opacity: 0;
+  transition: none;
+}
+
+.image-stack--effect-scene.is-enhanced .sticky-scroll__panel:is(.is-before, .is-active) .image-stack__scene-background {
+  opacity: 1;
 }
 
 .image-stack--effect-scene.is-enhanced .image-stack__media {
-  clip-path: inset(100% 0 0 0);
+  /* Hidden from the bottom: next reveals top-to-bottom, previous reveals
+     underneath from the bottom while scrolling back. */
+  clip-path: inset(0 0 100% 0);
   transition: clip-path 750ms cubic-bezier(.22, 1, .36, 1);
 }
 
