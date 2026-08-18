@@ -32,6 +32,7 @@ class BlogPostsCarousel extends HTMLElement {
     this.headerResizeObserver?.disconnect();
     cancelAnimationFrame(this.mediaCenterFrame);
     this.swiper?.destroy(true, true);
+    this.restoreEditorialGridSlides();
     this.swiper = null;
     this.initialized = false;
   }
@@ -57,6 +58,16 @@ class BlogPostsCarousel extends HTMLElement {
   refresh() {
     if (!this.carousel || !this.scroller) return;
     this.updateStickyOffset();
+
+    const shouldFlattenEditorialGrid = this.mobileQuery.matches && this.dataset.enableSwipeMobile === 'true';
+    if (shouldFlattenEditorialGrid) {
+      this.flattenEditorialGridSlides();
+    } else if (this.editorialGridSlidesFlattened) {
+      this.swiper?.destroy(true, true);
+      this.swiper = null;
+      this.restoreEditorialGridSlides();
+    }
+
     const slides = this.visibleItems;
     const perView = this.slidesPerView();
     const canScroll = this.shouldUseCarousel() && slides.length > Math.ceil(perView);
@@ -97,6 +108,31 @@ class BlogPostsCarousel extends HTMLElement {
     });
     this.scheduleMediaCenterUpdate();
     this.updateNavigation(this.swiper);
+  }
+
+  flattenEditorialGridSlides() {
+    if (this.editorialGridSlidesFlattened || !this.classList.contains('blog-posts--editorial-grid')) return;
+
+    const compactColumn = this.scroller.querySelector(':scope > .blog-posts__compact-column');
+    const compactList = compactColumn?.querySelector(':scope > .blog-posts__compact-list');
+    if (!compactColumn || !compactList) return;
+
+    this.editorialCompactColumn = compactColumn;
+    this.editorialCompactList = compactList;
+    Array.from(compactList.children).forEach((item) => this.scroller.insertBefore(item, compactColumn));
+    compactColumn.hidden = true;
+    this.editorialGridSlidesFlattened = true;
+  }
+
+  restoreEditorialGridSlides() {
+    if (!this.editorialGridSlidesFlattened || !this.editorialCompactColumn || !this.editorialCompactList) return;
+
+    const compactSlides = Array.from(this.scroller.querySelectorAll(':scope > .blog-posts__item--compact'));
+    compactSlides.forEach((item) => this.editorialCompactList.append(item));
+    this.editorialCompactColumn.hidden = false;
+    this.editorialGridSlidesFlattened = false;
+    this.editorialCompactColumn = null;
+    this.editorialCompactList = null;
   }
 
   scheduleMediaCenterUpdate() {
