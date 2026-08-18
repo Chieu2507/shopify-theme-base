@@ -177,12 +177,23 @@ class StickyScroll extends HTMLElement {
   }
 
   updateEffectProgress(panels, progress) {
-    if (this.scrollEffectStyle !== 'horizontal') return;
+    if (!['horizontal', 'scene'].includes(this.scrollEffectStyle)) return;
 
     panels.forEach((panel, index) => {
-      const sceneProgress = Math.min(1, Math.max(0, (progress * panels.length) - index));
-      panel.style.setProperty('--image-stack-scene-reveal', `${Math.round(sceneProgress * 100)}%`);
+      // The opening scene is fully visible. Every following scene receives its
+      // own slice of the scroll range so the reveal remains continuous.
+      const sceneProgress = index === 0
+        ? 1
+        : Math.min(1, Math.max(0, (progress * panels.length) - index));
+      const reveal = `${(sceneProgress * 100).toFixed(3)}%`;
       panel.style.setProperty('--image-stack-scene-z-index', String(index + 1));
+
+      if (this.scrollEffectStyle === 'horizontal') {
+        panel.style.setProperty('--image-stack-scene-reveal', reveal);
+      } else {
+        // A decreasing top inset reveals the incoming image from bottom to top.
+        panel.style.setProperty('--image-stack-scene-clip', `${((1 - sceneProgress) * 100).toFixed(3)}%`);
+      }
     });
   }
 
