@@ -21,12 +21,12 @@
 {% endif %}
 
 <sticky-scroll
-  class="sticky-scroll sticky-scroll--image-text sticky-scroll--width-{{ section.settings.section_width }} sticky-scroll--mobile-{{ section.settings.mobile_layout }} sticky-scroll--mobile-ratio-{{ section.settings.mobile_image_ratio }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section_background_image != blank %} sticky-scroll--has-background-image{% endif %}"
+  class="sticky-scroll sticky-scroll--image-text sticky-scroll--image-text-content-{{ section.settings.content_position }} sticky-scroll--width-{{ section.settings.section_width }} sticky-scroll--mobile-stacked sticky-scroll--mobile-ratio-{{ section.settings.mobile_image_ratio }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}{% if section_background_image != blank %} sticky-scroll--has-background-image{% endif %}"
   role="region"
   aria-label="{{ section_description | escape }}"
   data-section-id="{{ section.id }}"
   data-design-mode="{{ request.design_mode }}"
-  data-mobile-layout="{{ section.settings.mobile_layout }}"
+  data-mobile-layout="stacked"
   style="--sticky-scroll-panel-count: {{ section.blocks.size }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
   <div class="sticky-scroll__stage" data-sticky-scroll-stage>
@@ -60,13 +60,14 @@
     },
     {
       "type": "select",
-      "id": "mobile_layout",
-      "label": "Mobile layout",
+      "id": "content_position",
+      "label": "Content position",
       "options": [
-        { "value": "stacked", "label": "Stacked" },
-        { "value": "sticky", "label": "Sticky" }
+        { "value": "top", "label": "Top" },
+        { "value": "center", "label": "Center" },
+        { "value": "bottom", "label": "Bottom" }
       ],
-      "default": "stacked"
+      "default": "bottom"
     },
     {
       "type": "select",
@@ -84,7 +85,7 @@
         { "value": "16-9", "label": "Wide (16:9)" }
       ],
       "default": "4-5",
-      "visible_if": "{{ section.settings.mobile_layout == 'stacked' }}"
+      "visible_if": "{{ true }}"
     },
     { "type": "header", "content": "Appearance" },
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-4" },
@@ -103,7 +104,7 @@
     {
       "name": "Sticky image text scroll",
       "category": "Editorial content",
-      "settings": { "section_width": "full", "mobile_layout": "stacked", "mobile_image_ratio": "4-5" },
+      "settings": { "section_width": "full", "content_position": "bottom", "mobile_image_ratio": "4-5" },
       "blocks": [
         {
           "type": "sticky-image-text-scroll-panel",
