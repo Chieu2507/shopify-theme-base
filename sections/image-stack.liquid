@@ -44,27 +44,25 @@
     {% if section.settings.scroll_effect_style == 'scene' %}
       <div class="image-stack__media-stack" aria-hidden="true" data-image-stack-media-stack>
         {% for block in section.blocks %}
-          {% if block.type == 'image-stack-scene' %}
-            {% liquid
-              assign panel_alt = block.settings.alt | default: block.settings.image.alt
-              assign card_ratio = block.settings.image_ratio | default: '4-5'
-              case card_ratio
-                when 'adapt'
-                  assign card_ratio = 'auto'
-                when 'square'
-                  assign card_ratio = '1 / 1'
-                else
-                  assign card_ratio = card_ratio | replace: '-', ' / '
-              endcase
-            %}
-            <div
-              class="image-stack__media-layer"
-              data-image-stack-media-index="{{ forloop.index0 }}"
-              style="--image-stack-card-ratio: {{ card_ratio }}; --sticky-scroll-image-position: {{ block.settings.image_position }};"
-            >
-              {% render 'responsive-media', image: block.settings.image, mobile_image: block.settings.mobile_image, mobile_breakpoint: 767, max_width: 1200, mobile_max_width: 960, widths: '320, 480, 640, 800, 960, 1200', mobile_widths: '375, 550, 750, 960', sizes: '(min-width: 768px) 28vw, calc(100vw - 2 * var(--page-margin))', class: 'image-stack__media-image', loading: 'lazy', alt: panel_alt, placeholder_asset: 'image', placeholder_class: 'image-stack__media-placeholder' %}
-            </div>
-          {% endif %}
+          {% liquid
+            assign panel_alt = block.settings.alt | default: block.settings.image.alt
+            assign card_ratio = block.settings.image_ratio | default: '4-5'
+            case card_ratio
+              when 'adapt'
+                assign card_ratio = 'auto'
+              when 'square'
+                assign card_ratio = '1 / 1'
+              else
+                assign card_ratio = card_ratio | replace: '-', ' / '
+            endcase
+          %}
+          <div
+            class="image-stack__media-layer"
+            data-image-stack-media-index="{{ forloop.index0 }}"
+            style="--image-stack-card-ratio: {{ card_ratio }}; --sticky-scroll-image-position: {{ block.settings.image_position }};"
+          >
+            {% render 'responsive-media', image: block.settings.image, mobile_image: block.settings.mobile_image, mobile_breakpoint: 767, max_width: 1200, mobile_max_width: 960, widths: '320, 480, 640, 800, 960, 1200', mobile_widths: '375, 550, 750, 960', sizes: '(min-width: 768px) 28vw, calc(100vw - 2 * var(--page-margin))', class: 'image-stack__media-image', loading: 'lazy', alt: panel_alt, placeholder_asset: 'image', placeholder_class: 'image-stack__media-placeholder' %}
+          </div>
         {% endfor %}
       </div>
     {% endif %}
