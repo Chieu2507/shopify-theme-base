@@ -247,8 +247,13 @@ class StickyScroll extends HTMLElement {
         // the incoming image appears at full size instead of revealing.
         void incomingLayer.offsetWidth;
         this.mediaTransitionFrame = window.requestAnimationFrame(() => {
-          this.mediaTransitionFrame = null;
-          incomingLayer.classList.remove('is-entering');
+          // A second frame keeps the clipped state observable in WebKit before
+          // transitioning it to the active state. This is especially important
+          // when a fast upward scroll crosses two scene thresholds at once.
+          this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+            this.mediaTransitionFrame = null;
+            incomingLayer.classList.remove('is-entering');
+          });
         });
       }
     }
