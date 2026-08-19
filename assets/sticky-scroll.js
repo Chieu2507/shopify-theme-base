@@ -176,6 +176,18 @@ class StickyScroll extends HTMLElement {
     const panels = this.panels;
     if (!this.shouldEnhance() || panels.length === 0) return;
 
+    // Vertical Image stack is a document-flow stack: each panel owns its own
+    // sticky position. Do not apply the slideshow visibility/inert lifecycle,
+    // otherwise the shared controller turns the stacked panels invisible.
+    if (this.scrollEffectStyle === 'vertical') {
+      panels.forEach((panel) => {
+        panel.classList.remove('is-active', 'is-before', 'is-after');
+        panel.setAttribute('aria-hidden', 'false');
+        panel.inert = false;
+      });
+      return;
+    }
+
     const rootTop = this.getBoundingClientRect().top + window.scrollY;
     const rootStyles = window.getComputedStyle(this);
     const paddingTop = Number.parseFloat(rootStyles.paddingTop) || 0;
