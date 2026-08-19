@@ -1,8 +1,12 @@
 {% liquid
   assign scene_background_image = block.settings.background_image
   assign scene_mobile_background_image = block.settings.mobile_background_image
-  assign section_background_image = section.settings.background_image
-  assign section_mobile_background_image = section.settings.mobile_background_image
+  assign section_background_image = ''
+  assign section_mobile_background_image = ''
+  if section.settings.use_custom_background_image
+    assign section_background_image = section.settings.background_image
+    assign section_mobile_background_image = section.settings.mobile_background_image
+  endif
 
   comment
     Panel backdrop priority:
@@ -13,11 +17,15 @@
   assign panel_background_image = scene_background_image
   assign panel_mobile_background_image = scene_mobile_background_image
   assign panel_background_alt = block.settings.background_alt
+  assign panel_uses_section_placeholder = false
 
   if panel_background_image == blank and panel_mobile_background_image == blank
     assign panel_background_image = section_background_image | default: section_mobile_background_image
     assign panel_mobile_background_image = section_mobile_background_image | default: panel_background_image
     assign panel_background_alt = section_background_image.alt | default: panel_background_image.alt
+    if panel_background_image == blank and section.settings.use_custom_background_image
+      assign panel_uses_section_placeholder = true
+    endif
   else
     assign panel_background_image = panel_background_image | default: panel_mobile_background_image
     assign panel_mobile_background_image = panel_mobile_background_image | default: panel_background_image
@@ -58,7 +66,7 @@
   <div class="image-stack__scene-background" aria-hidden="true">
     {% if panel_background_image != blank %}
       {% render 'responsive-media', image: panel_background_image, mobile_image: panel_mobile_background_image, mobile_breakpoint: 767, max_width: 2400, mobile_max_width: 1280, widths: '750, 960, 1200, 1600, 1920, 2400', mobile_widths: '375, 550, 750, 960, 1280', sizes: '100vw', class: 'image-stack__background-image', loading: 'lazy', alt: panel_background_alt %}
-    {% else %}
+    {% elsif panel_uses_section_placeholder %}
       {{ 'lifestyle-1' | placeholder_svg_tag: 'image-stack__background-placeholder image-stack__background-placeholder--section' }}
     {% endif %}
   </div>
