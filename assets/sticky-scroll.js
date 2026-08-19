@@ -123,7 +123,7 @@ class StickyScroll extends HTMLElement {
 
   refresh() {
     const panels = this.panels;
-    this.updateHeaderOffset();
+    const headerHeight = this.updateHeaderOffset();
     this.style.setProperty('--sticky-scroll-panel-count', Math.max(panels.length, 1));
     this.syncSceneMediaLayers(panels);
     this.buildSteps();
@@ -141,7 +141,11 @@ class StickyScroll extends HTMLElement {
 
     this.classList.add('is-enhanced');
     const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
-    this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * 1.2}px`);
+    // A sticky element positioned below a fixed header reaches the bottom of
+    // its containing block one header-height earlier than a top: 0 element.
+    // Reserve that distance so the final panel remains pinned until progress
+    // reaches 100%, rather than dropping out of the stage prematurely.
+    this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * 1.2 + headerHeight}px`);
     this.updateFromScroll();
   }
 
@@ -151,7 +155,9 @@ class StickyScroll extends HTMLElement {
     }
 
     const headerHeight = this.header?.getBoundingClientRect().height || 0;
-    this.style.setProperty('--sticky-scroll-header-offset', `${Math.ceil(headerHeight)}px`);
+    const offset = Math.ceil(headerHeight);
+    this.style.setProperty('--sticky-scroll-header-offset', `${offset}px`);
+    return offset;
   }
 
   buildSteps() {
@@ -198,9 +204,10 @@ class StickyScroll extends HTMLElement {
     const rootStyles = window.getComputedStyle(this);
     const paddingTop = Number.parseFloat(rootStyles.paddingTop) || 0;
     const paddingBottom = Number.parseFloat(rootStyles.paddingBottom) || 0;
+    const headerHeight = Number.parseFloat(rootStyles.getPropertyValue('--sticky-scroll-header-offset')) || 0;
     const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
-    const scrollStart = rootTop + paddingTop;
-    const availableScroll = Math.max(1, this.offsetHeight - paddingTop - paddingBottom - stageHeight);
+    const scrollStart = rootTop + paddingTop - headerHeight;
+    const availableScroll = Math.max(1, this.offsetHeight - paddingTop - paddingBottom - stageHeight - headerHeight);
     const progress = Math.min(1, Math.max(0, (window.scrollY - scrollStart) / availableScroll));
     const activeIndex = Math.min(panels.length - 1, Math.floor(progress * panels.length));
 
@@ -318,9 +325,10 @@ class StickyScroll extends HTMLElement {
     const rootStyles = window.getComputedStyle(this);
     const paddingTop = Number.parseFloat(rootStyles.paddingTop) || 0;
     const paddingBottom = Number.parseFloat(rootStyles.paddingBottom) || 0;
+    const headerHeight = Number.parseFloat(rootStyles.getPropertyValue('--sticky-scroll-header-offset')) || 0;
     const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
-    const availableScroll = Math.max(0, this.offsetHeight - paddingTop - paddingBottom - stageHeight);
-    const target = rootTop + paddingTop + availableScroll * (index / (panels.length - 1));
+    const availableScroll = Math.max(0, this.offsetHeight - paddingTop - paddingBottom - stageHeight - headerHeight);
+    const target = rootTop + paddingTop - headerHeight + availableScroll * (index / (panels.length - 1));
     window.scrollTo({ top: target, behavior: this.reducedMotionQuery.matches ? 'auto' : 'smooth' });
   }
 
