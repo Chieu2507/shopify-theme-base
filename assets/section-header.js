@@ -875,7 +875,8 @@ if (!window.SpinelHeaderMenus) {
       || main?.querySelector('.shopify-section');
     if (!firstContentSection) return Number.POSITIVE_INFINITY;
     const sectionTop = firstContentSection.getBoundingClientRect().top + window.scrollY;
-    return Math.max(0, sectionTop + firstContentSection.offsetHeight - window.innerHeight);
+    // Begin auto-hiding only once the first content section has fully left the viewport.
+    return Math.max(0, sectionTop + firstContentSection.offsetHeight);
   };
 
   const syncDesktopStickyHeaders = () => {
