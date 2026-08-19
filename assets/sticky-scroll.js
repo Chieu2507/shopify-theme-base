@@ -9,6 +9,7 @@ class StickyScroll extends HTMLElement {
     this.designMode = this.dataset.designMode === 'true';
     this.desktopQuery = window.matchMedia('(min-width: 768px)');
     this.mobileLayout = this.dataset.mobileLayout || 'stacked';
+    this.ignoreHeaderOffset = this.dataset.stickyScrollIgnoreHeaderOffset === 'true';
     this.scrollEffectStyle = this.dataset.scrollEffectStyle || '';
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.header = document.querySelector('[data-header], .header');
@@ -151,6 +152,13 @@ class StickyScroll extends HTMLElement {
   }
 
   updateHeaderOffset() {
+    // Image stack owns a full viewport canvas. It intentionally starts at the
+    // viewport edge, independent of the fixed header and its changing height.
+    if (this.ignoreHeaderOffset) {
+      this.style.setProperty('--sticky-scroll-header-offset', '0px');
+      return 0;
+    }
+
     // Mobile sticky panels deliberately use the full viewport. The header may
     // overlay them, but it must not shorten their sticky range or move it down.
     if (!this.desktopQuery.matches && this.mobileLayout === 'sticky') {
