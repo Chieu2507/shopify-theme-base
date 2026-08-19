@@ -56,6 +56,19 @@ class StickyScroll extends HTMLElement {
       });
     }
 
+    if ('MutationObserver' in window) {
+      this.effectObserver = new MutationObserver((mutations) => {
+        if (mutations.some((mutation) => mutation.attributeName === 'data-scroll-effect-style')) {
+          this.syncEffectStyle();
+          this.refresh();
+        }
+      });
+      this.effectObserver.observe(this, {
+        attributes: true,
+        attributeFilter: ['data-scroll-effect-style'],
+      });
+    }
+
     this.refresh();
   }
 
@@ -64,6 +77,8 @@ class StickyScroll extends HTMLElement {
     this.abortController = null;
     this.mutationObserver?.disconnect();
     this.mutationObserver = null;
+    this.effectObserver?.disconnect();
+    this.effectObserver = null;
     if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
     if (this.refreshFrame) window.cancelAnimationFrame(this.refreshFrame);
     this.scrollFrame = null;
@@ -79,6 +94,22 @@ class StickyScroll extends HTMLElement {
     return this.panels.map((panel) => panel.querySelector('.image-stack__media'));
   }
 
+  syncEffectStyle() {
+    const nextEffectStyle = this.dataset.scrollEffectStyle || '';
+    if (nextEffectStyle === this.scrollEffectStyle) return;
+
+    if (this.scrollEffectStyle) {
+      this.classList.remove(`image-stack--effect-${this.scrollEffectStyle}`);
+    }
+    if (nextEffectStyle) {
+      this.classList.add(`image-stack--effect-${nextEffectStyle}`);
+    }
+
+    this.scrollEffectStyle = nextEffectStyle;
+    this.hasActivePanel = false;
+    this.previousProgress = 0;
+  }
+
   shouldEnhance() {
     return this.desktopQuery.matches || this.mobileLayout === 'sticky';
   }
@@ -92,6 +123,7 @@ class StickyScroll extends HTMLElement {
   }
 
   refresh() {
+    this.syncEffectStyle();
     const panels = this.panels;
     const headerHeight = this.updateHeaderOffset();
     this.style.setProperty('--sticky-scroll-panel-count', Math.max(panels.length, 1));
