@@ -3,8 +3,12 @@
 
 {% liquid
   assign section_background = section.settings.background_color
-  assign section_background_image = section.settings.background_image
-  assign section_mobile_background_image = section.settings.mobile_background_image
+  assign section_background_image = ''
+  assign section_mobile_background_image = ''
+  if section.settings.use_custom_background_image
+    assign section_background_image = section.settings.background_image
+    assign section_mobile_background_image = section.settings.mobile_background_image
+  endif
   assign section_description = section.settings.accessibility_label | default: 'Image stack'
   assign mobile_image_position = section.settings.mobile_image_position | default: 'center'
 %}
@@ -118,8 +122,9 @@
     { "type": "header", "content": "Appearance" },
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-4" },
     { "type": "color", "id": "background_color", "label": "Background color" },
-    { "type": "image_picker", "id": "background_image", "label": "Background image" },
-    { "type": "image_picker", "id": "mobile_background_image", "label": "Mobile background image" },
+    { "type": "checkbox", "id": "use_custom_background_image", "label": "Use custom background image", "default": false },
+    { "type": "image_picker", "id": "background_image", "label": "Background image", "visible_if": "{{ section.settings.use_custom_background_image }}" },
+    { "type": "image_picker", "id": "mobile_background_image", "label": "Mobile background image", "visible_if": "{{ section.settings.use_custom_background_image }}" },
     { "type": "header", "content": "Accessibility" },
     { "type": "text", "id": "accessibility_label", "label": "Accessibility label", "info": "Describes this section for screen reader users.", "default": "Image stack" },
     { "type": "header", "content": "Section padding" },
