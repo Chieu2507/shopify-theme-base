@@ -43,6 +43,7 @@ if (!window.SpinelHeaderMenus) {
   const responsiveHeaderExitMotions = new WeakMap();
   const transparentHeaderSchemeExitTimers = new WeakMap();
   const mobileStickyHeaderStates = new WeakMap();
+  const desktopStickyHeaderStates = new WeakMap();
   const localizationHoverTimers = new WeakMap();
   let wasMobileHeaderViewport = window.matchMedia(headerMobileMediaQuery).matches;
 
@@ -868,6 +869,53 @@ if (!window.SpinelHeaderMenus) {
     });
   };
 
+  const getDesktopStickyHeaderTrigger = (header) => {
+    const headerSection = header.parentElement;
+    let firstContentSection = headerSection?.nextElementSibling;
+
+    while (firstContentSection && !firstContentSection.classList.contains('shopify-section')) {
+      firstContentSection = firstContentSection.nextElementSibling;
+    }
+
+    if (!firstContentSection) return Number.POSITIVE_INFINITY;
+    const sectionTop = firstContentSection.getBoundingClientRect().top + window.scrollY;
+    return Math.max(0, sectionTop + firstContentSection.offsetHeight - window.innerHeight);
+  };
+
+  const syncDesktopStickyHeaders = () => {
+    if (!window.matchMedia(headerDesktopMediaQuery).matches) {
+      document.querySelectorAll('[data-header]').forEach((header) => {
+        header.classList.remove('header--desktop-hidden');
+        desktopStickyHeaderStates.delete(header);
+      });
+      return;
+    }
+
+    const currentScrollY = window.scrollY;
+    document.querySelectorAll('[data-header].header--sticky').forEach((header) => {
+      const previousState = desktopStickyHeaderStates.get(header) || {
+        lastScrollY: currentScrollY,
+        hidden: false
+      };
+      const hasOpenOverlay = Boolean(header.querySelector(
+        '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
+      ));
+      const hasPassedFirstSection = currentScrollY > getDesktopStickyHeaderTrigger(header);
+      let hidden = previousState.hidden;
+
+      if (!hasPassedFirstSection || hasOpenOverlay) {
+        hidden = false;
+      } else if (currentScrollY > previousState.lastScrollY + 0.5) {
+        hidden = true;
+      } else if (currentScrollY < previousState.lastScrollY - 0.5) {
+        hidden = false;
+      }
+
+      header.classList.toggle('header--desktop-hidden', hidden);
+      desktopStickyHeaderStates.set(header, { lastScrollY: currentScrollY, hidden });
+    });
+  };
+
   const syncResponsiveHeader = (header) => {
     const isFloatingHeader = header.dataset.floatingHeader === 'true';
     const isTransparentHeader = header.dataset.transparentHeader === 'true';
@@ -910,6 +958,7 @@ if (!window.SpinelHeaderMenus) {
   const syncResponsiveHeaders = () => {
     transparentHeaderFrame = 0;
     syncMobileStickyHeaders();
+    syncDesktopStickyHeaders();
     document.querySelectorAll('[data-transparent-header="true"], [data-floating-header="true"]').forEach(syncResponsiveHeader);
     syncDesktopAccountDialogPositions();
   };
