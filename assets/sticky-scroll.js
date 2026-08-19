@@ -13,6 +13,9 @@ class StickyScroll extends HTMLElement {
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.header = document.querySelector('[data-header], .header');
     this.activeIndex = 0;
+    this.hasActivePanel = false;
+    this.mediaTransitionFrame = null;
+    this.mediaTransitionTimeout = null;
     this.previousProgress = 0;
     this.scrollFrame = null;
     this.refreshFrame = null;
@@ -63,6 +66,8 @@ class StickyScroll extends HTMLElement {
     this.mutationObserver = null;
     if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
     if (this.refreshFrame) window.cancelAnimationFrame(this.refreshFrame);
+    if (this.mediaTransitionFrame) window.cancelAnimationFrame(this.mediaTransitionFrame);
+    if (this.mediaTransitionTimeout) window.clearTimeout(this.mediaTransitionTimeout);
     this.scrollFrame = null;
     this.refreshFrame = null;
   }
@@ -220,9 +225,41 @@ class StickyScroll extends HTMLElement {
       layer.classList.toggle('is-active', panel.classList.contains('is-active'));
       layer.classList.toggle('is-before', panel.classList.contains('is-before'));
       layer.classList.toggle('is-after', panel.classList.contains('is-after'));
+      layer.classList.remove('is-entering', 'is-leaving');
     });
 
+    const activeChanged = this.hasActivePanel && activeIndex !== this.activeIndex;
+    if (activeChanged && this.scrollEffectStyle === 'scene') {
+      const outgoingLayer = this.mediaLayers.find((layer) =>
+        Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === this.activeIndex
+      );
+      const incomingLayer = this.mediaLayers.find((layer) =>
+        Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === activeIndex
+      );
+
+      if (this.mediaTransitionFrame) window.cancelAnimationFrame(this.mediaTransitionFrame);
+      if (this.mediaTransitionTimeout) window.clearTimeout(this.mediaTransitionTimeout);
+
+      if (activeIndex > this.activeIndex && incomingLayer) {
+        // Downward: the newly active media reveals from the top edge.
+        incomingLayer.classList.add('is-entering');
+        this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+          this.mediaTransitionFrame = null;
+          incomingLayer.classList.remove('is-entering');
+        });
+      } else if (outgoingLayer) {
+        // Upward: the outgoing media clips from the top edge to uncover the
+        // preceding image. Only this layer may animate while reversing.
+        outgoingLayer.classList.add('is-leaving');
+        this.mediaTransitionTimeout = window.setTimeout(() => {
+          outgoingLayer.classList.remove('is-leaving');
+          this.mediaTransitionTimeout = null;
+        }, 740);
+      }
+    }
+
     this.activeIndex = activeIndex;
+    this.hasActivePanel = true;
     this.steps?.querySelectorAll('[data-sticky-scroll-step]').forEach((step, index) => {
       const isActive = index === activeIndex;
       step.classList.toggle('is-active', isActive);
