@@ -99,6 +99,12 @@ class StickyScroll extends HTMLElement {
       layer.className = 'image-stack__media-layer';
       layer.dataset.imageStackMediaIndex = String(index);
       layer.dataset.sourceMarkup = source.innerHTML;
+      const sourcePanel = source.closest('[data-sticky-scroll-panel]');
+      layer.dataset.contentAlignment = sourcePanel?.classList.contains('image-stack__scene--alignment-right')
+        ? 'right'
+        : sourcePanel?.classList.contains('image-stack__scene--alignment-left')
+          ? 'left'
+          : 'center';
       layer.style.setProperty('--image-stack-card-ratio', source.closest('[data-sticky-scroll-panel]')?.style.getPropertyValue('--image-stack-card-ratio') || '4 / 5');
       layer.style.setProperty('--sticky-scroll-image-position', source.closest('[data-sticky-scroll-panel]')?.style.getPropertyValue('--sticky-scroll-image-position') || 'center center');
       layer.innerHTML = source.innerHTML;
@@ -149,6 +155,13 @@ class StickyScroll extends HTMLElement {
   }
 
   updateHeaderOffset() {
+    // Mobile sticky panels deliberately use the full viewport. The header may
+    // overlay them, but it must not shorten their sticky range or move it down.
+    if (!this.desktopQuery.matches && this.mobileLayout === 'sticky') {
+      this.style.setProperty('--sticky-scroll-header-offset', '0px');
+      return 0;
+    }
+
     if (!this.header?.isConnected) {
       this.header = document.querySelector('[data-header], .header');
     }
