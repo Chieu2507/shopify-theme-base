@@ -869,14 +869,10 @@ if (!window.SpinelHeaderMenus) {
     });
   };
 
-  const getDesktopStickyHeaderTrigger = (header) => {
-    const headerSection = header.parentElement;
-    let firstContentSection = headerSection?.nextElementSibling;
-
-    while (firstContentSection && !firstContentSection.classList.contains('shopify-section')) {
-      firstContentSection = firstContentSection.nextElementSibling;
-    }
-
+  const getDesktopStickyHeaderTrigger = () => {
+    const main = document.querySelector('#MainContent');
+    const firstContentSection = main?.querySelector(':scope > .shopify-section')
+      || main?.querySelector('.shopify-section');
     if (!firstContentSection) return Number.POSITIVE_INFINITY;
     const sectionTop = firstContentSection.getBoundingClientRect().top + window.scrollY;
     return Math.max(0, sectionTop + firstContentSection.offsetHeight - window.innerHeight);
@@ -900,7 +896,7 @@ if (!window.SpinelHeaderMenus) {
       const hasOpenOverlay = Boolean(header.querySelector(
         '.header__submenu-disclosure[open]:not([data-closing="true"]), .header__actions .header__localization-selector[open]:not([data-closing="true"])'
       ));
-      const hasPassedFirstSection = currentScrollY > getDesktopStickyHeaderTrigger(header);
+      const hasPassedFirstSection = currentScrollY > getDesktopStickyHeaderTrigger();
       let hidden = previousState.hidden;
 
       if (!hasPassedFirstSection || hasOpenOverlay) {

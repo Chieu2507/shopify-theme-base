@@ -66,8 +66,6 @@ class StickyScroll extends HTMLElement {
     this.mutationObserver = null;
     if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
     if (this.refreshFrame) window.cancelAnimationFrame(this.refreshFrame);
-    if (this.mediaTransitionFrame) window.cancelAnimationFrame(this.mediaTransitionFrame);
-    if (this.mediaTransitionTimeout) window.clearTimeout(this.mediaTransitionTimeout);
     this.scrollFrame = null;
     this.refreshFrame = null;
   }
@@ -76,53 +74,9 @@ class StickyScroll extends HTMLElement {
     return [...this.querySelectorAll('[data-sticky-scroll-panel]')];
   }
 
-  get mediaLayers() {
-    return [...this.querySelectorAll('[data-image-stack-media-index]')];
-  }
-
-  syncSceneMediaLayers(panels = this.panels) {
-    const stack = this.querySelector('[data-image-stack-media-stack]');
-    if (this.scrollEffectStyle !== 'scene' || !stack) return;
-
-    const currentLayers = [...stack.querySelectorAll('[data-image-stack-media-index]')];
-    const sources = panels.map((panel) => panel.querySelector('.image-stack__media'));
-    const isCurrent = currentLayers.length === sources.length
-      && currentLayers.every((layer, index) => {
-        const source = sources[index];
-        const sourcePanel = source?.closest('[data-sticky-scroll-panel]');
-        const alignment = sourcePanel?.classList.contains('image-stack__scene--alignment-right')
-          ? 'right'
-          : sourcePanel?.classList.contains('image-stack__scene--alignment-left')
-            ? 'left'
-            : 'center';
-
-        return layer.dataset.sourceMarkup === source?.innerHTML
-          && layer.dataset.contentAlignment === alignment;
-      });
-
-    if (isCurrent) return;
-
-    const fragment = document.createDocumentFragment();
-    sources.forEach((source, index) => {
-      if (!source) return;
-
-      const layer = document.createElement('div');
-      layer.className = 'image-stack__media-layer';
-      layer.dataset.imageStackMediaIndex = String(index);
-      layer.dataset.sourceMarkup = source.innerHTML;
-      const sourcePanel = source.closest('[data-sticky-scroll-panel]');
-      layer.dataset.contentAlignment = sourcePanel?.classList.contains('image-stack__scene--alignment-right')
-        ? 'right'
-        : sourcePanel?.classList.contains('image-stack__scene--alignment-left')
-          ? 'left'
-          : 'center';
-      layer.style.setProperty('--image-stack-card-ratio', source.closest('[data-sticky-scroll-panel]')?.style.getPropertyValue('--image-stack-card-ratio') || '4 / 5');
-      layer.style.setProperty('--sticky-scroll-image-position', source.closest('[data-sticky-scroll-panel]')?.style.getPropertyValue('--sticky-scroll-image-position') || 'center center');
-      layer.innerHTML = source.innerHTML;
-      fragment.append(layer);
-    });
-
-    stack.replaceChildren(fragment);
+  get sceneMedia() {
+    if (this.scrollEffectStyle !== 'scene') return [];
+    return this.panels.map((panel) => panel.querySelector('.image-stack__media'));
   }
 
   shouldEnhance() {
@@ -141,7 +95,6 @@ class StickyScroll extends HTMLElement {
     const panels = this.panels;
     const headerHeight = this.updateHeaderOffset();
     this.style.setProperty('--sticky-scroll-panel-count', Math.max(panels.length, 1));
-    this.syncSceneMediaLayers(panels);
     this.buildSteps();
 
     if (!this.shouldEnhance() || panels.length === 0) {
@@ -247,29 +200,26 @@ class StickyScroll extends HTMLElement {
       if (!this.designMode) panel.inert = !isActive;
     });
 
-    this.mediaLayers.forEach((layer) => {
-      const layerIndex = Number.parseInt(layer.dataset.imageStackMediaIndex, 10);
-      const panel = panels[layerIndex];
-      if (!panel) return;
+    this.sceneMedia.forEach((media, index) => {
+      const panel = panels[index];
+      if (!media || !panel) return;
 
-      layer.classList.toggle('is-active', panel.classList.contains('is-active'));
-      layer.classList.toggle('is-before', panel.classList.contains('is-before'));
-      layer.classList.toggle('is-after', panel.classList.contains('is-after'));
-      layer.classList.remove('is-entering', 'is-leaving');
+      media.classList.toggle('is-active', panel.classList.contains('is-active'));
+      media.classList.toggle('is-before', panel.classList.contains('is-before'));
+      media.classList.toggle('is-after', panel.classList.contains('is-after'));
+      media.classList.remove('is-entering');
     });
 
     const activeChanged = this.hasActivePanel && activeIndex !== this.activeIndex;
     if (activeChanged && this.scrollEffectStyle === 'scene') {
       if (this.mediaTransitionFrame) window.cancelAnimationFrame(this.mediaTransitionFrame);
       if (this.mediaTransitionTimeout) window.clearTimeout(this.mediaTransitionTimeout);
-      this.mediaLayers.forEach((layer) => {
-        layer.classList.remove('is-reverse-entering', 'is-reverse-exiting');
+      this.sceneMedia.forEach((media) => {
+        media?.classList.remove('is-reverse-entering', 'is-reverse-exiting');
       });
 
       if (isMovingBackward) {
-        const outgoingLayer = this.mediaLayers.find((layer) =>
-          Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === this.activeIndex
-        );
+        const outgoingLayer = this.sceneMedia[this.activeIndex];
 
         if (outgoingLayer) {
           // Reverse the downward reveal: keep the departing image above the
@@ -290,9 +240,7 @@ class StickyScroll extends HTMLElement {
           });
         }
       } else {
-        const incomingLayer = this.mediaLayers.find((layer) =>
-          Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === activeIndex
-        );
+        const incomingLayer = this.sceneMedia[activeIndex];
 
         if (incomingLayer) {
           incomingLayer.classList.add('is-entering');
