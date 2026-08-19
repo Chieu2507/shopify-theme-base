@@ -2,6 +2,10 @@
   assign scene_background_image = block.settings.background_image
   assign scene_mobile_background_image = block.settings.mobile_background_image
   assign scene_background_alt = block.settings.background_alt | default: scene_background_image.alt
+  assign inherits_section_background = false
+  if scene_background_image == blank
+    assign inherits_section_background = true
+  endif
   assign panel_alt = block.settings.alt | default: block.settings.image.alt
   assign panel_index = 0
   for section_block in section.blocks
@@ -28,7 +32,7 @@
 %}
 
 <article
-  class="sticky-scroll__panel image-stack__scene image-stack__scene--{{ block.settings.content_position }} image-stack__scene--alignment-{{ block.settings.content_alignment }}"
+  class="sticky-scroll__panel image-stack__scene image-stack__scene--{{ block.settings.content_position }} image-stack__scene--alignment-{{ block.settings.content_alignment }}{% if inherits_section_background %} image-stack__scene--inherits-section-background{% endif %}"
   data-sticky-scroll-panel
   data-sticky-scroll-index="{{ panel_index }}"
   style="--sticky-scroll-content-width: {{ block.settings.content_width }}px; --sticky-scroll-content-gap: {{ block.settings.content_gap }}px; --sticky-scroll-image-position: {{ block.settings.image_position }}; --image-stack-card-ratio: {{ card_ratio }};"
