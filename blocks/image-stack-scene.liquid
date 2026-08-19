@@ -1,10 +1,27 @@
 {% liquid
   assign scene_background_image = block.settings.background_image
   assign scene_mobile_background_image = block.settings.mobile_background_image
-  assign scene_background_alt = block.settings.background_alt | default: scene_background_image.alt
-  assign inherits_section_background = false
-  if scene_background_image == blank
-    assign inherits_section_background = true
+  assign section_background_image = section.settings.background_image
+  assign section_mobile_background_image = section.settings.mobile_background_image
+
+  comment
+    Panel backdrop priority:
+    1. Background configured on this item.
+    2. Background configured on the parent section.
+    3. The section's lifestyle-1 placeholder.
+  endcomment
+  assign panel_background_image = scene_background_image
+  assign panel_mobile_background_image = scene_mobile_background_image
+  assign panel_background_alt = block.settings.background_alt
+
+  if panel_background_image == blank and panel_mobile_background_image == blank
+    assign panel_background_image = section_background_image | default: section_mobile_background_image
+    assign panel_mobile_background_image = section_mobile_background_image | default: panel_background_image
+    assign panel_background_alt = section_background_image.alt | default: panel_background_image.alt
+  else
+    assign panel_background_image = panel_background_image | default: panel_mobile_background_image
+    assign panel_mobile_background_image = panel_mobile_background_image | default: panel_background_image
+    assign panel_background_alt = panel_background_alt | default: panel_background_image.alt
   endif
   assign panel_alt = block.settings.alt | default: block.settings.image.alt
   assign panel_index = 0
@@ -32,15 +49,17 @@
 %}
 
 <article
-  class="sticky-scroll__panel image-stack__scene image-stack__scene--{{ block.settings.content_position }} image-stack__scene--alignment-{{ block.settings.content_alignment }}{% if inherits_section_background %} image-stack__scene--inherits-section-background{% endif %}"
+  class="sticky-scroll__panel image-stack__scene image-stack__scene--{{ block.settings.content_position }} image-stack__scene--alignment-{{ block.settings.content_alignment }}"
   data-sticky-scroll-panel
   data-sticky-scroll-index="{{ panel_index }}"
   style="--sticky-scroll-content-width: {{ block.settings.content_width }}px; --sticky-scroll-content-gap: {{ block.settings.content_gap }}px; --sticky-scroll-image-position: {{ block.settings.image_position }}; --image-stack-card-ratio: {{ card_ratio }};"
   {{ block.shopify_attributes }}
 >
   <div class="image-stack__scene-background" aria-hidden="true">
-    {% if scene_background_image != blank %}
-      {% render 'responsive-media', image: scene_background_image, mobile_image: scene_mobile_background_image, mobile_breakpoint: 767, max_width: 2400, mobile_max_width: 1280, widths: '750, 960, 1200, 1600, 1920, 2400', mobile_widths: '375, 550, 750, 960, 1280', sizes: '100vw', class: 'image-stack__background-image', loading: 'lazy', alt: scene_background_alt %}
+    {% if panel_background_image != blank %}
+      {% render 'responsive-media', image: panel_background_image, mobile_image: panel_mobile_background_image, mobile_breakpoint: 767, max_width: 2400, mobile_max_width: 1280, widths: '750, 960, 1200, 1600, 1920, 2400', mobile_widths: '375, 550, 750, 960, 1280', sizes: '100vw', class: 'image-stack__background-image', loading: 'lazy', alt: panel_background_alt %}
+    {% else %}
+      {{ 'lifestyle-1' | placeholder_svg_tag: 'image-stack__background-placeholder image-stack__background-placeholder--section' }}
     {% endif %}
   </div>
   <div class="image-stack__overlay" aria-hidden="true"></div>
