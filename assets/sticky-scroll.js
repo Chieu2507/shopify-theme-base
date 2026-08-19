@@ -41,7 +41,12 @@ class StickyScroll extends HTMLElement {
 
         if (hasPanelChange) this.scheduleRefresh();
       });
-      this.mutationObserver.observe(this.stage, { childList: true });
+      this.mutationObserver.observe(this.stage, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src', 'srcset', 'style'],
+      });
     }
 
     this.refresh();
@@ -66,6 +71,34 @@ class StickyScroll extends HTMLElement {
     return [...this.querySelectorAll('[data-image-stack-media-index]')];
   }
 
+  syncSceneMediaLayers(panels = this.panels) {
+    const stack = this.querySelector('[data-image-stack-media-stack]');
+    if (this.scrollEffectStyle !== 'scene' || !stack) return;
+
+    const currentLayers = [...stack.querySelectorAll('[data-image-stack-media-index]')];
+    const sources = panels.map((panel) => panel.querySelector('.image-stack__media'));
+    const isCurrent = currentLayers.length === sources.length
+      && currentLayers.every((layer, index) => layer.dataset.sourceMarkup === sources[index]?.innerHTML);
+
+    if (isCurrent) return;
+
+    const fragment = document.createDocumentFragment();
+    sources.forEach((source, index) => {
+      if (!source) return;
+
+      const layer = document.createElement('div');
+      layer.className = 'image-stack__media-layer';
+      layer.dataset.imageStackMediaIndex = String(index);
+      layer.dataset.sourceMarkup = source.innerHTML;
+      layer.style.setProperty('--image-stack-card-ratio', source.closest('[data-sticky-scroll-panel]')?.style.getPropertyValue('--image-stack-card-ratio') || '4 / 5');
+      layer.style.setProperty('--sticky-scroll-image-position', source.closest('[data-sticky-scroll-panel]')?.style.getPropertyValue('--sticky-scroll-image-position') || 'center center');
+      layer.innerHTML = source.innerHTML;
+      fragment.append(layer);
+    });
+
+    stack.replaceChildren(fragment);
+  }
+
   shouldEnhance() {
     if (this.scrollEffectStyle === 'vertical') return false;
     return this.desktopQuery.matches || this.mobileLayout === 'sticky';
@@ -83,6 +116,7 @@ class StickyScroll extends HTMLElement {
     const panels = this.panels;
     this.updateHeaderOffset();
     this.style.setProperty('--sticky-scroll-panel-count', Math.max(panels.length, 1));
+    this.syncSceneMediaLayers(panels);
     this.buildSteps();
 
     if (!this.shouldEnhance() || panels.length === 0) {
