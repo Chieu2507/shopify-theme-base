@@ -8,11 +8,9 @@ class StickyScroll extends HTMLElement {
     this.steps = this.querySelector('[data-sticky-scroll-steps]');
     this.designMode = this.dataset.designMode === 'true';
     this.desktopQuery = window.matchMedia('(min-width: 768px)');
-    this.mobileLayout = this.dataset.mobileLayout || 'stacked';
-    this.ignoreHeaderOffset = this.dataset.stickyScrollIgnoreHeaderOffset === 'true';
+    this.mobileLayout = this.dataset.mobileLayout || 'sticky';
     this.scrollEffectStyle = this.dataset.scrollEffectStyle || '';
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    this.header = document.querySelector('[data-header], .header');
     this.activeIndex = 0;
     this.hasActivePanel = false;
     this.mediaTransitionFrame = null;
@@ -138,7 +136,6 @@ class StickyScroll extends HTMLElement {
   refresh() {
     this.syncEffectStyle();
     const panels = this.panels;
-    const headerHeight = this.updateHeaderOffset();
     this.style.setProperty('--sticky-scroll-panel-count', Math.max(panels.length, 1));
     this.buildSteps();
 
@@ -158,37 +155,8 @@ class StickyScroll extends HTMLElement {
     const animationDuration = this.getScrollAnimationDuration();
     this.style.setProperty('--image-stack-scroll-animation-duration', `${animationDuration}ms`);
 
-    // A sticky element positioned below a fixed header reaches the bottom of
-    // its containing block one header-height earlier than a top: 0 element.
-    // Reserve that distance so the final panel remains pinned until progress
-    // reaches 100%, rather than dropping out of the stage prematurely.
-    this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * 1.2 + headerHeight}px`);
+    this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * 1.2}px`);
     this.updateFromScroll();
-  }
-
-  updateHeaderOffset() {
-    // Image stack owns a full viewport canvas. It intentionally starts at the
-    // viewport edge, independent of the fixed header and its changing height.
-    if (this.ignoreHeaderOffset) {
-      this.style.setProperty('--sticky-scroll-header-offset', '0px');
-      return 0;
-    }
-
-    // Mobile sticky panels deliberately use the full viewport. The header may
-    // overlay them, but it must not shorten their sticky range or move it down.
-    if (!this.desktopQuery.matches && this.mobileLayout === 'sticky') {
-      this.style.setProperty('--sticky-scroll-header-offset', '0px');
-      return 0;
-    }
-
-    if (!this.header?.isConnected) {
-      this.header = document.querySelector('[data-header], .header');
-    }
-
-    const headerHeight = this.header?.getBoundingClientRect().height || 0;
-    const offset = Math.ceil(headerHeight);
-    this.style.setProperty('--sticky-scroll-header-offset', `${offset}px`);
-    return offset;
   }
 
   buildSteps() {
@@ -247,10 +215,9 @@ class StickyScroll extends HTMLElement {
     const rootStyles = window.getComputedStyle(this);
     const paddingTop = Number.parseFloat(rootStyles.paddingTop) || 0;
     const paddingBottom = Number.parseFloat(rootStyles.paddingBottom) || 0;
-    const headerHeight = Number.parseFloat(rootStyles.getPropertyValue('--sticky-scroll-header-offset')) || 0;
     const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
-    const scrollStart = rootTop + paddingTop - headerHeight;
-    const availableScroll = Math.max(1, this.offsetHeight - paddingTop - paddingBottom - stageHeight - headerHeight);
+    const scrollStart = rootTop + paddingTop;
+    const availableScroll = Math.max(1, this.offsetHeight - paddingTop - paddingBottom - stageHeight);
     const progress = Math.min(1, Math.max(0, (window.scrollY - scrollStart) / availableScroll));
     const activeIndex = Math.min(panels.length - 1, Math.floor(progress * panels.length));
 
@@ -363,10 +330,9 @@ class StickyScroll extends HTMLElement {
     const rootStyles = window.getComputedStyle(this);
     const paddingTop = Number.parseFloat(rootStyles.paddingTop) || 0;
     const paddingBottom = Number.parseFloat(rootStyles.paddingBottom) || 0;
-    const headerHeight = Number.parseFloat(rootStyles.getPropertyValue('--sticky-scroll-header-offset')) || 0;
     const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
-    const availableScroll = Math.max(0, this.offsetHeight - paddingTop - paddingBottom - stageHeight - headerHeight);
-    const target = rootTop + paddingTop - headerHeight + availableScroll * (index / (panels.length - 1));
+    const availableScroll = Math.max(0, this.offsetHeight - paddingTop - paddingBottom - stageHeight);
+    const target = rootTop + paddingTop + availableScroll * (index / (panels.length - 1));
     window.scrollTo({ top: target, behavior: this.reducedMotionQuery.matches ? 'auto' : 'smooth' });
   }
 
