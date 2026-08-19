@@ -230,31 +230,50 @@ class StickyScroll extends HTMLElement {
 
     const activeChanged = this.hasActivePanel && activeIndex !== this.activeIndex;
     if (activeChanged && this.scrollEffectStyle === 'scene') {
-      const incomingLayer = this.mediaLayers.find((layer) =>
-        Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === activeIndex
-      );
-
       if (this.mediaTransitionFrame) window.cancelAnimationFrame(this.mediaTransitionFrame);
       if (this.mediaTransitionTimeout) window.clearTimeout(this.mediaTransitionTimeout);
+      this.mediaLayers.forEach((layer) => {
+        layer.classList.remove('is-reverse-entering', 'is-reverse-exiting');
+      });
 
-      if (incomingLayer) {
-        // Both directions reveal the newly active scene from the top edge.
-        // This prevents the prior scene, which sits underneath the stack,
-        // from visibly jumping in before its clip transition begins.
-        incomingLayer.classList.add('is-entering');
-        // Commit the clipped state before the next frame. Without this layout
-        // flush, rapid reverse scrolling can coalesce both class changes and
-        // the incoming image appears at full size instead of revealing.
-        void incomingLayer.offsetWidth;
-        this.mediaTransitionFrame = window.requestAnimationFrame(() => {
-          // A second frame keeps the clipped state observable in WebKit before
-          // transitioning it to the active state. This is especially important
-          // when a fast upward scroll crosses two scene thresholds at once.
+      if (isMovingBackward) {
+        const outgoingLayer = this.mediaLayers.find((layer) =>
+          Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === this.activeIndex
+        );
+
+        if (outgoingLayer) {
+          // Reverse the downward reveal: keep the departing image above the
+          // newly-active one, then clip it from the top edge to expose the
+          // image beneath. This makes upward scrolling the true inverse.
+          outgoingLayer.classList.add('is-reverse-entering');
+          void outgoingLayer.offsetWidth;
           this.mediaTransitionFrame = window.requestAnimationFrame(() => {
-            this.mediaTransitionFrame = null;
-            incomingLayer.classList.remove('is-entering');
+            this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+              this.mediaTransitionFrame = null;
+              outgoingLayer.classList.remove('is-reverse-entering');
+              outgoingLayer.classList.add('is-reverse-exiting');
+              this.mediaTransitionTimeout = window.setTimeout(() => {
+                this.mediaTransitionTimeout = null;
+                outgoingLayer.classList.remove('is-reverse-exiting');
+              }, 760);
+            });
           });
-        });
+        }
+      } else {
+        const incomingLayer = this.mediaLayers.find((layer) =>
+          Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === activeIndex
+        );
+
+        if (incomingLayer) {
+          incomingLayer.classList.add('is-entering');
+          void incomingLayer.offsetWidth;
+          this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+            this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+              this.mediaTransitionFrame = null;
+              incomingLayer.classList.remove('is-entering');
+            });
+          });
+        }
       }
     }
 
