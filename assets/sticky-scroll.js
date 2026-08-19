@@ -242,6 +242,10 @@ class StickyScroll extends HTMLElement {
         // This prevents the prior scene, which sits underneath the stack,
         // from visibly jumping in before its clip transition begins.
         incomingLayer.classList.add('is-entering');
+        // Commit the clipped state before the next frame. Without this layout
+        // flush, rapid reverse scrolling can coalesce both class changes and
+        // the incoming image appears at full size instead of revealing.
+        void incomingLayer.offsetWidth;
         this.mediaTransitionFrame = window.requestAnimationFrame(() => {
           this.mediaTransitionFrame = null;
           incomingLayer.classList.remove('is-entering');
