@@ -87,7 +87,18 @@ class StickyScroll extends HTMLElement {
     const currentLayers = [...stack.querySelectorAll('[data-image-stack-media-index]')];
     const sources = panels.map((panel) => panel.querySelector('.image-stack__media'));
     const isCurrent = currentLayers.length === sources.length
-      && currentLayers.every((layer, index) => layer.dataset.sourceMarkup === sources[index]?.innerHTML);
+      && currentLayers.every((layer, index) => {
+        const source = sources[index];
+        const sourcePanel = source?.closest('[data-sticky-scroll-panel]');
+        const alignment = sourcePanel?.classList.contains('image-stack__scene--alignment-right')
+          ? 'right'
+          : sourcePanel?.classList.contains('image-stack__scene--alignment-left')
+            ? 'left'
+            : 'center';
+
+        return layer.dataset.sourceMarkup === source?.innerHTML
+          && layer.dataset.contentAlignment === alignment;
+      });
 
     if (isCurrent) return;
 
