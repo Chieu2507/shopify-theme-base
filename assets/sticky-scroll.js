@@ -32,12 +32,16 @@ class StickyScroll extends HTMLElement {
 
     if (this.designMode && 'MutationObserver' in window) {
       this.mutationObserver = new MutationObserver((mutations) => {
-        const hasPanelChange = mutations.some((mutation) =>
-          [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+        const hasPanelChange = mutations.some((mutation) => {
+          if (mutation.type === 'attributes') {
+            return mutation.target.closest?.('[data-sticky-scroll-panel]');
+          }
+
+          return [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
             node.nodeType === Node.ELEMENT_NODE
-            && node.matches?.('[data-sticky-scroll-panel]')
-          )
-        );
+            && (node.matches?.('[data-sticky-scroll-panel]') || node.querySelector?.('[data-sticky-scroll-panel]'))
+          );
+        });
 
         if (hasPanelChange) this.scheduleRefresh();
       });
