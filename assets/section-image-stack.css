@@ -71,7 +71,7 @@
   transform: translate3d(0, 0, 0);
   /* Keep moving briefly after the wheel/touch input stops so the reveal feels
      like a continuous layer, not a direct one-to-one scroll transform. */
-  transition: clip-path 750ms cubic-bezier(.22, 1, .36, 1);
+  transition: clip-path var(--image-stack-scroll-animation-duration, 750ms) cubic-bezier(.22, 1, .36, 1);
   will-change: clip-path;
 }
 
@@ -146,7 +146,7 @@
   position: relative;
   z-index: 10;
   clip-path: inset(100% 0 0 0);
-  transition: clip-path 720ms cubic-bezier(.22, 1, .36, 1);
+  transition: clip-path var(--image-stack-scroll-animation-duration, 750ms) cubic-bezier(.22, 1, .36, 1);
   will-change: clip-path;
 }
 
@@ -169,7 +169,7 @@
 .image-stack--effect-scene.is-enhanced .image-stack__media.is-reverse-exiting {
   z-index: 12;
   clip-path: inset(100% 0 0 0);
-  transition: clip-path 720ms cubic-bezier(.22, 1, .36, 1);
+  transition: clip-path var(--image-stack-scroll-animation-duration, 750ms) cubic-bezier(.22, 1, .36, 1);
 }
 
 .image-stack--effect-scene.is-enhanced .image-stack__media.is-active { z-index: 11; }
@@ -195,8 +195,8 @@
   inset: auto;
   top: 0;
   display: grid !important;
-  height: var(--image-stack-vertical-panel-height, 100svh);
-  min-height: var(--image-stack-vertical-panel-height, 100svh);
+  height: 100svh;
+  min-height: 100svh;
   opacity: 1 !important;
   visibility: visible !important;
   transform: none;
@@ -265,6 +265,15 @@
     min-height: var(--image-stack-mobile-panel-height);
   }
 
+  /* responsive-media emits a picture only when a Mobile image is selected.
+     Make that wrapper fill the scene canvas so its inner image can use the
+     existing 100% cover contract instead of shrinking to intrinsic height. */
+  .image-stack__scene-background picture {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
   .image-stack.sticky-scroll--mobile-sticky .image-stack__scene-layout {
     display: grid;
     width: 100%;
@@ -320,8 +329,8 @@
     inset: auto;
     top: 0;
     display: grid;
-    height: var(--image-stack-vertical-panel-height, var(--image-stack-mobile-panel-height));
-    min-height: var(--image-stack-vertical-panel-height, var(--image-stack-mobile-panel-height));
+    height: var(--image-stack-mobile-panel-height);
+    min-height: var(--image-stack-mobile-panel-height);
     opacity: 1;
     visibility: visible;
     transform: none;
