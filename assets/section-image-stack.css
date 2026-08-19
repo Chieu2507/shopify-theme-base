@@ -168,4 +168,89 @@
 
 .image-stack--effect-vertical .sticky-scroll__steps { display: none; }
 .image-stack--effect-vertical .sticky-scroll__ghost-number { display: none; }
-@media screen and (max-width: 767.98px) { .image-stack--mobile-stacked .sticky-scroll__panel { position: relative; display: block; min-height: 0; }.image-stack--mobile-stacked .image-stack__scene-layout { grid-template-columns: 1fr; min-height: min(100svh, 720px); padding: 32px var(--page-margin) 48px; }.image-stack--mobile-stacked .image-stack__content-positioner { min-height: 0; }.image-stack--mobile-stacked .image-stack__media { width: min(78%, 340px); justify-self: end; }.image-stack--mobile-stacked .image-stack__media-stack { display: none; }.image-stack--mobile-stacked .sticky-scroll__steps, .image-stack--mobile-stacked .sticky-scroll__ghost-number { display: none; } }
+
+@media screen and (max-width: 767.98px) {
+  /* Every Image stack effect keeps its interactive lifecycle on mobile. Each
+     panel uses a stable 50/50 composition: centred media above, content below. */
+  .image-stack {
+    --image-stack-mobile-panel-height: max(100svh, 550px);
+    padding-inline: 0;
+  }
+
+  .image-stack.sticky-scroll--mobile-sticky.is-enhanced {
+    min-height: var(--sticky-scroll-scroll-height);
+  }
+
+  .image-stack--mobile-sticky .sticky-scroll__panel,
+  .image-stack--mobile-sticky.is-enhanced .sticky-scroll__panel {
+    min-height: var(--image-stack-mobile-panel-height);
+  }
+
+  .image-stack--mobile-sticky .image-stack__scene-layout {
+    display: grid;
+    width: 100%;
+    min-height: var(--image-stack-mobile-panel-height);
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    gap: 0;
+    padding: 0 var(--page-margin);
+  }
+
+  .image-stack--mobile-sticky .image-stack__content-positioner {
+    grid-row: 2;
+    min-height: 0;
+    height: 100%;
+    padding: 28px 0 36px;
+  }
+
+  .image-stack--mobile-sticky .image-stack__media {
+    position: relative;
+    grid-row: 1;
+    width: min(50%, 260px);
+    max-width: 50%;
+    align-self: center;
+    justify-self: center;
+  }
+
+  .image-stack--mobile-sticky .image-stack__media-stack {
+    display: block;
+  }
+
+  .image-stack--mobile-sticky .image-stack__media-layer {
+    top: 25%;
+    right: auto;
+    left: 50%;
+    width: min(50vw, 260px);
+    max-width: 50%;
+    transform: translate(-50%, -50%);
+  }
+
+  .image-stack--mobile-sticky .sticky-scroll__steps {
+    right: 12px;
+  }
+
+  .image-stack--effect-vertical.is-enhanced {
+    min-height: auto;
+  }
+
+  .image-stack--effect-vertical.is-enhanced .sticky-scroll__stage {
+    position: relative;
+    top: auto;
+    height: auto;
+    overflow: visible;
+  }
+
+  .image-stack--effect-vertical.is-enhanced .sticky-scroll__panel,
+  .image-stack--effect-vertical.is-enhanced .sticky-scroll__panel:is(.is-before, .is-after, .is-active) {
+    position: sticky;
+    inset: auto;
+    top: var(--sticky-scroll-header-offset);
+    display: grid;
+    min-height: var(--image-stack-mobile-panel-height);
+    opacity: 1;
+    visibility: visible;
+    transform: none;
+    pointer-events: auto;
+    transition: none;
+  }
+}

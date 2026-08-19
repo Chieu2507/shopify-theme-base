@@ -109,7 +109,6 @@ class StickyScroll extends HTMLElement {
   }
 
   shouldEnhance() {
-    if (this.scrollEffectStyle === 'vertical') return false;
     return this.desktopQuery.matches || this.mobileLayout === 'sticky';
   }
 
