@@ -230,9 +230,6 @@ class StickyScroll extends HTMLElement {
 
     const activeChanged = this.hasActivePanel && activeIndex !== this.activeIndex;
     if (activeChanged && this.scrollEffectStyle === 'scene') {
-      const outgoingLayer = this.mediaLayers.find((layer) =>
-        Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === this.activeIndex
-      );
       const incomingLayer = this.mediaLayers.find((layer) =>
         Number.parseInt(layer.dataset.imageStackMediaIndex, 10) === activeIndex
       );
@@ -240,21 +237,15 @@ class StickyScroll extends HTMLElement {
       if (this.mediaTransitionFrame) window.cancelAnimationFrame(this.mediaTransitionFrame);
       if (this.mediaTransitionTimeout) window.clearTimeout(this.mediaTransitionTimeout);
 
-      if (activeIndex > this.activeIndex && incomingLayer) {
-        // Downward: the newly active media reveals from the top edge.
+      if (incomingLayer) {
+        // Both directions reveal the newly active scene from the top edge.
+        // This prevents the prior scene, which sits underneath the stack,
+        // from visibly jumping in before its clip transition begins.
         incomingLayer.classList.add('is-entering');
         this.mediaTransitionFrame = window.requestAnimationFrame(() => {
           this.mediaTransitionFrame = null;
           incomingLayer.classList.remove('is-entering');
         });
-      } else if (outgoingLayer) {
-        // Upward: the outgoing media clips from the top edge to uncover the
-        // preceding image. Only this layer may animate while reversing.
-        outgoingLayer.classList.add('is-leaving');
-        this.mediaTransitionTimeout = window.setTimeout(() => {
-          outgoingLayer.classList.remove('is-leaving');
-          this.mediaTransitionTimeout = null;
-        }, 740);
       }
     }
 
