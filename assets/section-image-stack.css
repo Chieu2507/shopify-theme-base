@@ -9,7 +9,7 @@
 .image-stack__content-positioner { display: flex; min-width: 0; min-height: 100%; padding: 0; }
 .image-stack__content { color: #fff; --content-block-color: #fff; }
 .image-stack__content :is(.content-block, .content-button, .btn-tertiary), .image-stack__content .content-block--heading :is(h1, h2, h3, h4, h5, h6), .image-stack__content .content-block--label, .image-stack__content .content-block--text { color: inherit; }
-.image-stack__media { width: min(100%, 460px); aspect-ratio: var(--image-stack-card-ratio); align-self: center; justify-self: center; overflow: hidden; border-radius: var(--style-border-radius, 0); box-shadow: 0 24px 72px rgb(0 0 0 / 24%); }
+.image-stack__media { width: 72%; max-width: 100%; aspect-ratio: var(--image-stack-card-ratio); align-self: center; justify-self: center; overflow: hidden; border-radius: var(--style-border-radius, 0); box-shadow: 0 24px 72px rgb(0 0 0 / 24%); }
 .image-stack__scene--top-left .image-stack__content-positioner { align-items: flex-start; justify-content: flex-start; }.image-stack__scene--top-center .image-stack__content-positioner { align-items: flex-start; justify-content: center; }.image-stack__scene--top-right .image-stack__content-positioner { align-items: flex-start; justify-content: flex-end; }.image-stack__scene--middle-left .image-stack__content-positioner { align-items: center; justify-content: flex-start; }.image-stack__scene--middle-center .image-stack__content-positioner { align-items: center; justify-content: center; }.image-stack__scene--middle-right .image-stack__content-positioner { align-items: center; justify-content: flex-end; }.image-stack__scene--bottom-left .image-stack__content-positioner { align-items: flex-end; justify-content: flex-start; }.image-stack__scene--bottom-center .image-stack__content-positioner { align-items: flex-end; justify-content: center; }.image-stack__scene--bottom-right .image-stack__content-positioner { align-items: flex-end; justify-content: flex-end; }
 .image-stack__scene--alignment-center .image-stack__content { align-items: center; text-align: center; }.image-stack__scene--alignment-right .image-stack__content { align-items: flex-end; text-align: right; }
 
@@ -19,10 +19,6 @@
   .image-stack.sticky-scroll--width-page .image-stack__scene-layout {
     width: min(var(--page-width), calc(100% - (var(--page-margin) * 2)));
     margin-inline: auto;
-  }
-
-  .image-stack.sticky-scroll--width-page .image-stack__media-layer {
-    right: max(var(--page-margin), calc((100vw - var(--page-width)) / 2));
   }
 
   .image-stack--content-right .image-stack__content-positioner {
@@ -36,16 +32,6 @@
     justify-self: center;
   }
 
-  .image-stack--content-right .image-stack__media-layer {
-    right: auto;
-    left: 25%;
-    transform: translate(-50%, -50%);
-  }
-
-  .image-stack.sticky-scroll--width-page.image-stack--content-right .image-stack__media-layer {
-    right: auto;
-    left: calc(50% - (min(var(--page-width), calc(100% - (var(--page-margin) * 2))) / 4));
-  }
 }
 
 @media screen and (min-width: 768px) and (max-width: 1149.98px) {
@@ -79,81 +65,68 @@
   transform: none;
 }
 
-/* Scene changes only opacity/clip state. Keeping the panel and its content in
-   one fixed composition prevents a scene from drifting while active changes. */
+/* Scene keeps every media element in its original panel/grid. Panels share the
+   sticky canvas but don't establish stacking contexts, so the incoming media
+   can clip over its sibling without a cloned, fixed-width media stack. */
 .image-stack--effect-scene.is-enhanced .sticky-scroll__panel,
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel:is(.is-before, .is-after, .is-active),
-.image-stack--effect-scene.is-enhanced .sticky-scroll__content > :is(.shopify-block, .content-block, .content-button),
-.image-stack--effect-scene.is-enhanced .sticky-scroll__panel:is(.is-before, .is-after, .is-active) .sticky-scroll__content > :is(.shopify-block, .content-block, .content-button) {
+.image-stack--effect-scene.is-enhanced .sticky-scroll__panel:is(.is-before, .is-after, .is-active) {
+  opacity: 1;
+  visibility: visible;
+  isolation: auto;
   transform: none;
-}
-
-/* Scene keeps the panel lifecycle (content/background fade) separate from the
-   visual media transition. The card layers share one fixed position so the
-   outgoing image always remains underneath the clipping incoming image. */
-.image-stack--effect-scene.is-enhanced .image-stack__scene .image-stack__media {
-  display: none;
-}
-
-.image-stack__media-stack {
-  position: absolute;
-  z-index: 3;
-  inset: 0;
+  transition: none;
   pointer-events: none;
 }
 
-.image-stack__media-layer {
-  position: absolute;
-  top: 50%;
-  right: clamp(32px, 4.2vw, 68px);
-  width: min(32vw, 460px);
-  aspect-ratio: var(--image-stack-card-ratio);
-  overflow: hidden;
-  border-radius: var(--style-border-radius, 0);
-  box-shadow: 0 24px 72px rgb(0 0 0 / 24%);
-  transform: translateY(-50%);
+.image-stack--effect-scene.is-enhanced .image-stack__scene-background,
+.image-stack--effect-scene.is-enhanced .image-stack__overlay {
+  z-index: 0;
+  opacity: 0;
+  transition: opacity 360ms ease;
+}
+
+.image-stack--effect-scene.is-enhanced .sticky-scroll__panel.is-active :is(.image-stack__scene-background, .image-stack__overlay) {
   opacity: 1;
+}
+
+.image-stack--effect-scene.is-enhanced .image-stack__content-positioner {
+  position: relative;
+  z-index: 20;
+}
+
+.image-stack--effect-scene.is-enhanced .image-stack__media {
+  position: relative;
+  z-index: 10;
   clip-path: inset(100% 0 0 0);
   transition: clip-path 720ms cubic-bezier(.22, 1, .36, 1);
   will-change: clip-path;
 }
 
-.image-stack__media-layer:first-child:not(.is-entering):not(.is-after) {
-  /* Theme Editor and no-JavaScript fallback: a selected first image is never
-     hidden while the custom element is being initialised. */
+.image-stack--effect-scene.is-enhanced .image-stack__media:is(.is-active, .is-before) {
   clip-path: inset(0 0 0 0);
 }
 
-.image-stack__media-layer:is(.is-active, .is-before) {
-  clip-path: inset(0 0 0 0);
-}
-
-.image-stack__media-layer.is-after {
+.image-stack--effect-scene.is-enhanced .image-stack__media.is-after,
+.image-stack--effect-scene.is-enhanced .image-stack__media.is-entering {
   clip-path: inset(100% 0 0 0);
   transition: none;
 }
 
-.image-stack__media-layer.is-entering {
-  clip-path: inset(100% 0 0 0);
-  transition: none;
-}
-
-.image-stack__media-layer.is-reverse-entering {
-  z-index: 4;
+.image-stack--effect-scene.is-enhanced .image-stack__media.is-reverse-entering {
+  z-index: 12;
   clip-path: inset(0 0 0 0);
   transition: none;
 }
 
-.image-stack__media-layer.is-reverse-exiting {
-  z-index: 4;
+.image-stack--effect-scene.is-enhanced .image-stack__media.is-reverse-exiting {
+  z-index: 12;
   clip-path: inset(100% 0 0 0);
   transition: clip-path 720ms cubic-bezier(.22, 1, .36, 1);
 }
 
-.image-stack--effect-scene.is-enhanced .image-stack__media-layer.is-active { z-index: 2; }
-.image-stack--effect-scene.is-enhanced .image-stack__media-layer.is-before { z-index: 1; }
-.image-stack--effect-scene.is-enhanced .image-stack__media-layer.is-after { z-index: 3; }
-.image-stack--effect-scene.is-enhanced .image-stack__media-layer:is(.is-reverse-entering, .is-reverse-exiting) { z-index: 4; }
+.image-stack--effect-scene.is-enhanced .image-stack__media.is-active { z-index: 11; }
+.image-stack--effect-scene.is-enhanced .image-stack__media.is-before { z-index: 10; }
+.image-stack--effect-scene.is-enhanced .image-stack__media.is-after { z-index: 12; }
 
 .image-stack--effect-vertical .sticky-scroll__panel {
   position: sticky;
@@ -229,31 +202,6 @@
 
   .image-stack.image-stack--mobile-image-right .image-stack__media {
     justify-self: end;
-  }
-
-  .image-stack.sticky-scroll--mobile-sticky .image-stack__media-stack {
-    display: block;
-  }
-
-  .image-stack.sticky-scroll--mobile-sticky .image-stack__media-layer {
-    top: 25%;
-    right: auto;
-    left: 50%;
-    width: min(50vw, 260px);
-    max-width: 50%;
-    transform: translate(-50%, -50%);
-  }
-
-  .image-stack.image-stack--mobile-image-left .image-stack__media-layer {
-    left: var(--page-margin);
-    right: auto;
-    transform: translateY(-50%);
-  }
-
-  .image-stack.image-stack--mobile-image-right .image-stack__media-layer {
-    right: var(--page-margin);
-    left: auto;
-    transform: translateY(-50%);
   }
 
   .image-stack.sticky-scroll--mobile-sticky .sticky-scroll__steps {
