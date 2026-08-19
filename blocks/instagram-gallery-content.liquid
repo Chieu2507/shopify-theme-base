@@ -1,0 +1,66 @@
+{% doc %}
+  Renders the editorial content card that sits inside the Instagram gallery grid.
+  It intentionally exposes only the controls that affect this fixed composition.
+{% enddoc %}
+
+{% liquid
+  assign content_background = block.settings.background_color
+  if content_background == blank and block.settings.enable_appearance
+    assign content_background = block.settings.color_scheme.settings.background_gradient | default: block.settings.color_scheme.settings.background
+  endif
+%}
+
+<aside
+  class="gallery__content-card{% if block.settings.enable_appearance %} color-scheme color-{{ block.settings.color_scheme.id }}{% endif %}"
+  style="--gallery-content-padding: {{ block.settings.padding }}px;{% if block.settings.enable_appearance %} background: {{ content_background }};{% endif %}"
+  data-reveal-item
+  {{ block.shopify_attributes }}
+>
+  <div class="gallery__content-card-primary">
+    {% for child_block in block.blocks %}
+      {% if child_block.type == 'label' or child_block.type == 'heading' %}
+        {% render child_block %}
+      {% endif %}
+    {% endfor %}
+  </div>
+
+  <div class="gallery__content-card-secondary">
+    {% for child_block in block.blocks %}
+      {% if child_block.type == 'text' or child_block.type == 'button' %}
+        {% render child_block %}
+      {% endif %}
+    {% endfor %}
+  </div>
+</aside>
+
+{% schema %}
+{
+  "name": "Instagram gallery content",
+  "blocks": [
+    { "type": "label" },
+    { "type": "heading" },
+    { "type": "text" },
+    { "type": "button" }
+  ],
+  "settings": [
+    { "type": "header", "content": "Padding" },
+    { "type": "range", "id": "padding", "label": "All sides", "min": 0, "max": 120, "step": 2, "unit": "px", "default": 48 },
+    { "type": "header", "content": "Appearance" },
+    { "type": "checkbox", "id": "enable_appearance", "label": "Enable appearance", "default": true },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-4", "visible_if": "{{ block.settings.enable_appearance }}" },
+    { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the selected color scheme background.", "visible_if": "{{ block.settings.enable_appearance }}" }
+  ],
+  "presets": [
+    {
+      "name": "Instagram gallery content",
+      "settings": { "padding": 48, "enable_appearance": true, "color_scheme": "scheme-4" },
+      "blocks": [
+        { "type": "label", "settings": { "text": "<p>THE SPINEL CIRCLE</p>" } },
+        { "type": "heading", "settings": { "heading": "<h3>Worn close.<br>Shared softly.</h3>", "type_preset": "h3" } },
+        { "type": "text", "settings": { "text": "<p>Jewels in motion.<br>Shared by our circle.</p>", "type_preset": "sm" } },
+        { "type": "button", "settings": { "label": "Follow @spinel", "style": "tertiary", "icon": "arrow-right" } }
+      ]
+    }
+  ]
+}
+{% endschema %}
