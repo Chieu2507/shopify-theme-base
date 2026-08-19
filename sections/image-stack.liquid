@@ -24,6 +24,10 @@
         #shopify-section-{{ section.id }} {
           background-image: url('{{ section_mobile_background_image | image_url: width: 1280 }}');
         }
+
+        #shopify-section-{{ section.id }} .image-stack__section-placeholder {
+          display: none;
+        }
       }
     {% endif %}
   </style>
@@ -39,6 +43,12 @@
   data-scroll-effect-style="{{ section.settings.scroll_effect_style }}"
   style="--sticky-scroll-panel-count: {{ section.blocks.size }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
+  {% if section_background_image == blank %}
+    <div class="image-stack__section-placeholder" aria-hidden="true">
+      {{ 'image' | placeholder_svg_tag: 'image-stack__section-placeholder-svg' }}
+    </div>
+  {% endif %}
+
   <div class="sticky-scroll__stage" data-sticky-scroll-stage>
     {% content_for 'blocks' %}
 
