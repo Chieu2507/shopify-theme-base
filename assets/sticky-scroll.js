@@ -95,16 +95,16 @@ class StickyScroll extends HTMLElement {
     return this.panels.map((panel) => panel.querySelector('.image-stack__media'));
   }
 
-  getScrollAnimationMultiplier() {
-    // Longer distance means each panel transition takes more physical scroll.
-    // Image stack shares the same Slow / Medium / Fast contract as Highlight
-    // text with image; legacy sticky sections retain their former 1.2 pace.
+  getScrollAnimationDuration() {
+    // This controls visual catch-up, not document length. The page retains the
+    // same scroll distance at every setting; only the effect's response is
+    // slower or faster.
     const speed = this.dataset.scrollAnimationSpeed;
     return {
-      slow: 1.65,
-      medium: 1.35,
-      fast: 1.15,
-    }[speed] || 1.2;
+      slow: 950,
+      medium: 750,
+      fast: 500,
+    }[speed] || 750;
   }
 
   syncEffectStyle() {
@@ -155,23 +155,14 @@ class StickyScroll extends HTMLElement {
 
     this.classList.add('is-enhanced');
     const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
-    const scrollMultiplier = this.getScrollAnimationMultiplier();
-    this.style.setProperty('--sticky-scroll-scroll-speed-multiplier', String(scrollMultiplier));
-
-    if (this.scrollEffectStyle === 'vertical') {
-      const viewportHeight = this.desktopQuery.matches
-        ? window.innerHeight
-        : Math.max(window.innerHeight, 550);
-      this.style.setProperty('--image-stack-vertical-panel-height', `${Math.ceil(viewportHeight * scrollMultiplier)}px`);
-    } else {
-      this.style.removeProperty('--image-stack-vertical-panel-height');
-    }
+    const animationDuration = this.getScrollAnimationDuration();
+    this.style.setProperty('--image-stack-scroll-animation-duration', `${animationDuration}ms`);
 
     // A sticky element positioned below a fixed header reaches the bottom of
     // its containing block one header-height earlier than a top: 0 element.
     // Reserve that distance so the final panel remains pinned until progress
     // reaches 100%, rather than dropping out of the stage prematurely.
-    this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * scrollMultiplier + headerHeight}px`);
+    this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * 1.2 + headerHeight}px`);
     this.updateFromScroll();
   }
 
@@ -311,7 +302,7 @@ class StickyScroll extends HTMLElement {
               this.mediaTransitionTimeout = window.setTimeout(() => {
                 this.mediaTransitionTimeout = null;
                 outgoingLayer.classList.remove('is-reverse-exiting');
-              }, 760);
+              }, Number.parseFloat(getComputedStyle(this).getPropertyValue('--image-stack-scroll-animation-duration')) || 750);
             });
           });
         }
