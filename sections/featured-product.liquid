@@ -20,6 +20,10 @@
   }
 {% endstyle %}
 
+{% capture featured_product_blocks %}
+  {% content_for 'blocks', closest.product: featured_product %}
+{% endcapture %}
+
 {% if featured_product != blank %}
   {% assign form_id = 'product-form-' | append: section.id %}
   {% if template.suffix != blank %}{% assign form_id = form_id | append: '-' | append: template.suffix %}{% endif %}
@@ -46,7 +50,7 @@
   >
     <div class="featured-product__inner section-spacing{% if section.settings.section_width == 'page' %} featured-product__inner--page{% endif %}">
       <div class="product-page__layout">
-        {% content_for 'blocks', closest.product: featured_product %}
+        {{ featured_product_blocks }}
       </div>
     </div>
     <script type="application/json" data-product-variants>{{ featured_product.variants | json }}</script>
@@ -54,69 +58,13 @@
     <p class="visually-hidden" data-product-status role="status" aria-live="polite"></p>
   </product-page>
 {% else %}
-  {% liquid
-    assign gallery_block = null
-    assign details_block = null
-    for section_block in section.blocks
-      if section_block.type == '_product-media-gallery'
-        assign gallery_block = section_block
-      elsif section_block.type == '_product-details'
-        assign details_block = section_block
-      endif
-    endfor
-  %}
   <div
     class="product-page featured-product featured-product--placeholder color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
     style="--product-layout-gap: {{ section.settings.desktop_gap }}px; --product-media-width: {{ section.settings.media_width }}%; --product-mobile-gap: {{ section.settings.mobile_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
   >
     <div class="featured-product__inner section-spacing{% if section.settings.section_width == 'page' %} featured-product__inner--page{% endif %}">
       <div class="product-page__layout" aria-label="{{ 'featured_product.select_product' | t | escape }}">
-        <div class="product-gallery"{% if gallery_block != null %} {{ gallery_block.shopify_attributes }}{% endif %}>
-          <div class="product-gallery__media">
-            <div class="product-gallery__main">
-              <figure class="product-media">
-                {% render 'media-placeholder', class_name: 'product-media__image', placeholder_name: 'product-1' %}
-              </figure>
-            </div>
-          </div>
-        </div>
-
-        <div class="product-details product-details--not-sticky"{% if details_block != null %} {{ details_block.shopify_attributes }}{% endif %}>
-          {% if details_block != null %}
-            {% for child_block in details_block.blocks %}
-              {% case child_block.type %}
-                {% when 'product-title' %}
-                  <{{ child_block.settings.html_tag | default: 'h2' }} class="product-title product-title-text product-title--{{ child_block.settings.heading_size | default: 'h2' }} {% render 'typography-class', preset: child_block.settings.heading_size, fallback: 'h2' %}" {{ child_block.shopify_attributes }}>{{ 'onboarding.product_title' | t }}</{{ child_block.settings.html_tag | default: 'h2' }}>
-                {% when 'product-price' %}
-                  <div class="product-price product-price--{{ child_block.settings.price_size | default: 'medium' }}" {{ child_block.shopify_attributes }}>
-                    <span class="product-price__current">{% render 'money', amount: 0 %}</span>
-                  </div>
-                {% when 'product-option-picker' %}
-                  <div class="product-option-picker" {{ child_block.shopify_attributes }}>
-                    <fieldset class="product-option-picker__group product-option-picker__group--button">
-                      <legend>Size</legend>
-                      <div class="product-option-picker__values">
-                        <span class="product-option-picker__value">S</span>
-                        <span class="product-option-picker__value">M</span>
-                        <span class="product-option-picker__value">L</span>
-                      </div>
-                    </fieldset>
-                  </div>
-                {% when 'product-buy-buttons' %}
-                  <div class="product-buy-buttons" {{ child_block.shopify_attributes }}>
-                    <div class="quantity-selector">
-                      <div class="quantity-selector__control">
-                        <span aria-hidden="true">−</span>
-                        <span>1</span>
-                        <span aria-hidden="true">+</span>
-                      </div>
-                    </div>
-                    <span class="product-buy-buttons__add">{{ 'product.add_to_cart' | t }}</span>
-                  </div>
-              {% endcase %}
-            {% endfor %}
-          {% endif %}
-        </div>
+        {{ featured_product_blocks }}
       </div>
     </div>
   </div>
