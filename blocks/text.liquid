@@ -5,9 +5,17 @@
   {% content_for 'block', type: 'text', id: 'text' %}
 {% enddoc %}
 
+{% liquid
+  assign text_content = block.settings.text
+  assign context_product = closest.product | default: product
+  if text_content == blank and context_product == blank and section.type == 'featured-product'
+    assign text_content = '<p>Product description</p>'
+  endif
+%}
+
 {% render 'content-block',
   block: block,
-  content: block.settings.text,
+  content: text_content,
   kind: 'text',
   default_preset: 'md',
   default_font: 'body'
