@@ -1,7 +1,18 @@
 {% assign product = closest.product | default: product %}
 {% assign form_id = 'product-form-' | append: section.id %}
 {% if template.suffix != blank %}{% assign form_id = form_id | append: '-' | append: template.suffix %}{% endif %}
-{% unless product.has_only_default_variant %}
+{% if product == blank %}
+  <div class="product-option-picker" {{ block.shopify_attributes }}>
+    <fieldset class="product-option-picker__group product-option-picker__group--button">
+      <legend><span>Size</span></legend>
+      <div class="product-option-picker__values">
+        <span class="product-option-picker__value">S</span>
+        <span class="product-option-picker__value">M</span>
+        <span class="product-option-picker__value">L</span>
+      </div>
+    </fieldset>
+  </div>
+{% elsif product.has_only_default_variant == false %}
   <div class="product-option-picker" {{ block.shopify_attributes }} data-product-options>
     {% assign size_option_names = block.settings.size_option_names | default: 'size, kích thước, taille, größe, groesse, taglia, tamaño, tamanho, размер' | split: ',' %}
     {% for option in product.options_with_values %}
@@ -100,7 +111,7 @@
       %}
     {% endif %}
   </div>
-{% endunless %}
+{% endif %}
 {% schema %}
 {
   "name": "Variant picker",

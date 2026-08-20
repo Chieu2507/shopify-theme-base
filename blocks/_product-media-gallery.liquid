@@ -1,5 +1,17 @@
 {% assign product = closest.product | default: product %}
-{% render 'product-media-gallery', product: product, selected_variant: product.selected_or_first_available_variant, block: block %}
+{% if product != blank %}
+  {% render 'product-media-gallery', product: product, selected_variant: product.selected_or_first_available_variant, block: block %}
+{% else %}
+  <div class="product-gallery product-gallery--placeholder product-gallery--ratio-{{ block.settings.media_ratio | default: '4-5' }}" {{ block.shopify_attributes }}>
+    <div class="product-gallery__media">
+      <div class="product-gallery__main">
+        <figure class="product-media">
+          {% render 'media-placeholder', class_name: 'product-media__image', placeholder_name: 'product-1' %}
+        </figure>
+      </div>
+    </div>
+  </div>
+{% endif %}
 
 {% schema %}
 {
