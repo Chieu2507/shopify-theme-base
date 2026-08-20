@@ -6,10 +6,12 @@
 {% unless block.settings.enable_sticky %}{% assign details_class = details_class | append: ' product-details--not-sticky' %}{% endunless %}
 <div class="{{ details_class }}" style="{{ details_style }}" {{ block.shopify_attributes }}>
   {% content_for 'blocks' %}
-  {% form 'product', product, id: payment_terms_form_id, class: 'product-payment-terms', data-payment-terms-form: '' %}
-    <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" data-payment-terms-variant-id>
-    {{ form | payment_terms }}
-  {% endform %}
+  {% if product != blank %}
+    {% form 'product', product, id: payment_terms_form_id, class: 'product-payment-terms', data-payment-terms-form: '' %}
+      <input type="hidden" name="id" value="{{ product.selected_or_first_available_variant.id }}" data-payment-terms-variant-id>
+      {{ form | payment_terms }}
+    {% endform %}
+  {% endif %}
 </div>
 
 {% schema %}
