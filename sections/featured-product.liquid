@@ -2,7 +2,23 @@
 {% render 'section-stylesheet', asset: 'product-page.css', defer_on_home: true %}
 {% render 'swiper-stylesheet', defer_on_home: true %}
 
-{% assign featured_product = section.settings.product %}
+{% liquid
+  assign featured_product = section.settings.product
+  assign featured_product_background = section.settings.background_color
+  if featured_product_background == blank
+    assign featured_product_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+%}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ featured_product_background }};
+  }
+
+  #shopify-section-{{ section.id }} .featured-product {
+    background: transparent;
+  }
+{% endstyle %}
 
 {% if featured_product != blank %}
   {% assign form_id = 'product-form-' | append: section.id %}
@@ -37,7 +53,7 @@
     <script type="application/json" data-product-media>{{ featured_product.media | json }}</script>
     <p class="visually-hidden" data-product-status role="status" aria-live="polite"></p>
   </product-page>
-{% elsif request.design_mode or request.visual_preview_mode %}
+{% else %}
   <div
     class="product-page featured-product featured-product--placeholder color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
     style="--product-layout-gap: {{ section.settings.desktop_gap }}px; --product-media-width: {{ section.settings.media_width }}%; --product-mobile-gap: {{ section.settings.mobile_gap }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
@@ -47,7 +63,7 @@
         <div class="featured-product__placeholder-media" aria-hidden="true">
           {% render 'media-placeholder',
             class_name: 'featured-product__placeholder-image',
-            asset_name: 'placeholder-image-product-1.svg'
+            placeholder_name: 'product-1'
           %}
         </div>
 
@@ -173,6 +189,11 @@
       "id": "color_scheme",
       "label": "Color scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "Background color"
     },
     {
       "type": "header",
