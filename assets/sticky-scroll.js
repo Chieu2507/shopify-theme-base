@@ -8,9 +8,14 @@ class StickyScroll extends HTMLElement {
     this.steps = this.querySelector('[data-sticky-scroll-steps]');
     this.designMode = this.dataset.designMode === 'true';
     this.desktopQuery = window.matchMedia('(min-width: 768px)');
-    this.mobileLayout = this.dataset.mobileLayout || 'stacked';
+    this.mobileLayout = this.dataset.mobileLayout || 'sticky';
+    this.scrollEffectStyle = this.dataset.scrollEffectStyle || '';
     this.reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
     this.activeIndex = 0;
+    this.hasActivePanel = false;
+    this.mediaTransitionFrame = null;
+    this.mediaTransitionTimeout = null;
+    this.previousProgress = 0;
     this.scrollFrame = null;
     this.refreshFrame = null;
 
@@ -29,16 +34,38 @@ class StickyScroll extends HTMLElement {
 
     if (this.designMode && 'MutationObserver' in window) {
       this.mutationObserver = new MutationObserver((mutations) => {
-        const hasPanelChange = mutations.some((mutation) =>
-          [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
+        const hasPanelChange = mutations.some((mutation) => {
+          if (mutation.type === 'attributes') {
+            return mutation.target.closest?.('[data-sticky-scroll-panel]');
+          }
+
+          return [...mutation.addedNodes, ...mutation.removedNodes].some((node) =>
             node.nodeType === Node.ELEMENT_NODE
-            && node.matches?.('[data-sticky-scroll-panel]')
-          )
-        );
+            && (node.matches?.('[data-sticky-scroll-panel]') || node.querySelector?.('[data-sticky-scroll-panel]'))
+          );
+        });
 
         if (hasPanelChange) this.scheduleRefresh();
       });
-      this.mutationObserver.observe(this.stage, { childList: true });
+      this.mutationObserver.observe(this.stage, {
+        childList: true,
+        subtree: true,
+        attributes: true,
+        attributeFilter: ['src', 'srcset', 'style'],
+      });
+    }
+
+    if ('MutationObserver' in window) {
+      this.effectObserver = new MutationObserver((mutations) => {
+        if (mutations.some((mutation) => mutation.attributeName === 'data-scroll-effect-style')) {
+          this.syncEffectStyle();
+          this.refresh();
+        }
+      });
+      this.effectObserver.observe(this, {
+        attributes: true,
+        attributeFilter: ['data-scroll-effect-style'],
+      });
     }
 
     this.refresh();
@@ -49,6 +76,8 @@ class StickyScroll extends HTMLElement {
     this.abortController = null;
     this.mutationObserver?.disconnect();
     this.mutationObserver = null;
+    this.effectObserver?.disconnect();
+    this.effectObserver = null;
     if (this.scrollFrame) window.cancelAnimationFrame(this.scrollFrame);
     if (this.refreshFrame) window.cancelAnimationFrame(this.refreshFrame);
     this.scrollFrame = null;
@@ -57,6 +86,39 @@ class StickyScroll extends HTMLElement {
 
   get panels() {
     return [...this.querySelectorAll('[data-sticky-scroll-panel]')];
+  }
+
+  get sceneMedia() {
+    if (this.scrollEffectStyle !== 'scene') return [];
+    return this.panels.map((panel) => panel.querySelector('.image-stack__media'));
+  }
+
+  getScrollAnimationDuration() {
+    // This controls visual catch-up, not document length. The page retains the
+    // same scroll distance at every setting; only the effect's response is
+    // slower or faster.
+    const speed = this.dataset.scrollAnimationSpeed;
+    return {
+      slow: 950,
+      medium: 750,
+      fast: 500,
+    }[speed] || 750;
+  }
+
+  syncEffectStyle() {
+    const nextEffectStyle = this.dataset.scrollEffectStyle || '';
+    if (nextEffectStyle === this.scrollEffectStyle) return;
+
+    if (this.scrollEffectStyle) {
+      this.classList.remove(`image-stack--effect-${this.scrollEffectStyle}`);
+    }
+    if (nextEffectStyle) {
+      this.classList.add(`image-stack--effect-${nextEffectStyle}`);
+    }
+
+    this.scrollEffectStyle = nextEffectStyle;
+    this.hasActivePanel = false;
+    this.previousProgress = 0;
   }
 
   shouldEnhance() {
@@ -72,6 +134,7 @@ class StickyScroll extends HTMLElement {
   }
 
   refresh() {
+    this.syncEffectStyle();
     const panels = this.panels;
     this.style.setProperty('--sticky-scroll-panel-count', Math.max(panels.length, 1));
     this.buildSteps();
@@ -89,6 +152,9 @@ class StickyScroll extends HTMLElement {
 
     this.classList.add('is-enhanced');
     const stageHeight = Math.max(1, this.stage.getBoundingClientRect().height);
+    const animationDuration = this.getScrollAnimationDuration();
+    this.style.setProperty('--image-stack-scroll-animation-duration', `${animationDuration}ms`);
+
     this.style.setProperty('--sticky-scroll-scroll-height', `${stageHeight * panels.length * 1.2}px`);
     this.updateFromScroll();
   }
@@ -133,6 +199,18 @@ class StickyScroll extends HTMLElement {
     const panels = this.panels;
     if (!this.shouldEnhance() || panels.length === 0) return;
 
+    // Vertical Image stack is a document-flow stack: each panel owns its own
+    // sticky position. Do not apply the slideshow visibility/inert lifecycle,
+    // otherwise the shared controller turns the stacked panels invisible.
+    if (this.scrollEffectStyle === 'vertical') {
+      panels.forEach((panel) => {
+        panel.classList.remove('is-active', 'is-before', 'is-after');
+        panel.setAttribute('aria-hidden', 'false');
+        panel.inert = false;
+      });
+      return;
+    }
+
     const rootTop = this.getBoundingClientRect().top + window.scrollY;
     const rootStyles = window.getComputedStyle(this);
     const paddingTop = Number.parseFloat(rootStyles.paddingTop) || 0;
@@ -143,6 +221,10 @@ class StickyScroll extends HTMLElement {
     const progress = Math.min(1, Math.max(0, (window.scrollY - scrollStart) / availableScroll));
     const activeIndex = Math.min(panels.length - 1, Math.floor(progress * panels.length));
 
+    const isMovingBackward = progress < this.previousProgress;
+    this.dataset.scrollDirection = isMovingBackward ? 'backward' : 'forward';
+    this.updateEffectProgress(panels, progress);
+
     panels.forEach((panel, index) => {
       const isActive = index === activeIndex;
       panel.classList.toggle('is-active', isActive);
@@ -152,12 +234,85 @@ class StickyScroll extends HTMLElement {
       if (!this.designMode) panel.inert = !isActive;
     });
 
+    this.sceneMedia.forEach((media, index) => {
+      const panel = panels[index];
+      if (!media || !panel) return;
+
+      media.classList.toggle('is-active', panel.classList.contains('is-active'));
+      media.classList.toggle('is-before', panel.classList.contains('is-before'));
+      media.classList.toggle('is-after', panel.classList.contains('is-after'));
+      media.classList.remove('is-entering');
+    });
+
+    const activeChanged = this.hasActivePanel && activeIndex !== this.activeIndex;
+    if (activeChanged && this.scrollEffectStyle === 'scene') {
+      if (this.mediaTransitionFrame) window.cancelAnimationFrame(this.mediaTransitionFrame);
+      if (this.mediaTransitionTimeout) window.clearTimeout(this.mediaTransitionTimeout);
+      this.sceneMedia.forEach((media) => {
+        media?.classList.remove('is-reverse-entering', 'is-reverse-exiting');
+      });
+
+      if (isMovingBackward) {
+        const outgoingLayer = this.sceneMedia[this.activeIndex];
+
+        if (outgoingLayer) {
+          // Reverse the downward reveal: keep the departing image above the
+          // newly-active one, then clip it from the top edge to expose the
+          // image beneath. This makes upward scrolling the true inverse.
+          outgoingLayer.classList.add('is-reverse-entering');
+          void outgoingLayer.offsetWidth;
+          this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+            this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+              this.mediaTransitionFrame = null;
+              outgoingLayer.classList.remove('is-reverse-entering');
+              outgoingLayer.classList.add('is-reverse-exiting');
+              this.mediaTransitionTimeout = window.setTimeout(() => {
+                this.mediaTransitionTimeout = null;
+                outgoingLayer.classList.remove('is-reverse-exiting');
+              }, Number.parseFloat(getComputedStyle(this).getPropertyValue('--image-stack-scroll-animation-duration')) || 750);
+            });
+          });
+        }
+      } else {
+        const incomingLayer = this.sceneMedia[activeIndex];
+
+        if (incomingLayer) {
+          incomingLayer.classList.add('is-entering');
+          void incomingLayer.offsetWidth;
+          this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+            this.mediaTransitionFrame = window.requestAnimationFrame(() => {
+              this.mediaTransitionFrame = null;
+              incomingLayer.classList.remove('is-entering');
+            });
+          });
+        }
+      }
+    }
+
     this.activeIndex = activeIndex;
+    this.hasActivePanel = true;
     this.steps?.querySelectorAll('[data-sticky-scroll-step]').forEach((step, index) => {
       const isActive = index === activeIndex;
       step.classList.toggle('is-active', isActive);
       if (isActive) step.setAttribute('aria-current', 'step');
       else step.removeAttribute('aria-current');
+    });
+
+    this.previousProgress = progress;
+  }
+
+  updateEffectProgress(panels, progress) {
+    if (this.scrollEffectStyle !== 'horizontal') return;
+
+    const scaledProgress = progress * panels.length;
+
+    panels.forEach((panel, index) => {
+      panel.style.setProperty('--image-stack-scene-z-index', String(index + 1));
+
+      const sceneProgress = index === 0
+        ? 1
+        : Math.min(1, Math.max(0, scaledProgress - index));
+      panel.style.setProperty('--image-stack-scene-reveal', `${(sceneProgress * 100).toFixed(3)}%`);
     });
   }
 

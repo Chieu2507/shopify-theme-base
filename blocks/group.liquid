@@ -31,7 +31,7 @@
 %}
 
 <div
-  class="group {{ block.settings.layout_direction }} group--width-{{ block.settings.width | default: 'fill' }}{% if block.settings.enable_appearance %} group--appearance color-scheme color-{{ block.settings.color_scheme.id }}{% endif %}"
+  class="group group--{{ block.settings.composition | default: 'standard' }} {{ block.settings.layout_direction }} group--width-{{ block.settings.width | default: 'fill' }}{% if block.settings.enable_appearance %} group--appearance color-scheme color-{{ block.settings.color_scheme.id }}{% endif %}"
   style="
     --group-gap: {{ block.settings.gap | default: 0 }}px;
     --group-padding-top: {{ group_padding_top }}px;
@@ -44,7 +44,24 @@
   data-reveal-item
   {{ block.shopify_attributes }}
 >
-  {% content_for 'blocks' %}
+  {% if block.settings.composition == 'instagram-gallery' %}
+    <div class="gallery__content-card-primary">
+      {% for child_block in block.blocks %}
+        {% if forloop.index <= 2 %}
+          {% render child_block %}
+        {% endif %}
+      {% endfor %}
+    </div>
+    <div class="gallery__content-card-secondary">
+      {% for child_block in block.blocks %}
+        {% if forloop.index > 2 %}
+          {% render child_block %}
+        {% endif %}
+      {% endfor %}
+    </div>
+  {% else %}
+    {% content_for 'blocks' %}
+  {% endif %}
 </div>
 
 {% stylesheet %}
@@ -87,6 +104,17 @@
     },
     {
       "type": "select",
+      "id": "composition",
+      "label": "Content style",
+      "default": "standard",
+      "options": [
+        { "value": "standard", "label": "Standard" },
+        { "value": "instagram-gallery", "label": "Instagram gallery content" }
+      ]
+    },
+    {
+      "visible_if": "{{ block.settings.composition != 'instagram-gallery' }}",
+      "type": "select",
       "id": "layout_direction",
       "label": "t:labels.layout_direction",
       "default": "group--vertical",
@@ -102,7 +130,7 @@
       ]
     },
     {
-      "visible_if": "{{ block.settings.layout_direction == 'group--vertical' }}",
+      "visible_if": "{{ block.settings.composition != 'instagram-gallery' and block.settings.layout_direction == 'group--vertical' }}",
       "type": "select",
       "id": "alignment",
       "label": "t:labels.alignment",
@@ -123,6 +151,7 @@
       ]
     },
     {
+      "visible_if": "{{ block.settings.composition != 'instagram-gallery' }}",
       "type": "range",
       "id": "gap",
       "label": "Gap",
@@ -133,10 +162,12 @@
       "unit": "px"
     },
     {
+      "visible_if": "{{ block.settings.composition != 'instagram-gallery' }}",
       "type": "header",
       "content": "Size"
     },
     {
+      "visible_if": "{{ block.settings.composition != 'instagram-gallery' }}",
       "type": "select",
       "id": "width",
       "label": "Width",
@@ -230,6 +261,7 @@
       "name": "t:general.column",
       "category": "t:general.layout",
       "settings": {
+        "composition": "standard",
         "layout_direction": "group--vertical",
         "alignment": "flex-start",
         "padding": 0
@@ -239,6 +271,7 @@
       "name": "t:general.row",
       "category": "t:general.layout",
       "settings": {
+        "composition": "standard",
         "layout_direction": "group--horizontal",
         "padding": 0
       }
