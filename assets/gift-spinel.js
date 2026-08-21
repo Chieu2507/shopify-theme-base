@@ -196,6 +196,9 @@ class GiftSpinel extends HTMLElement {
 
     const change = event.target.closest('[data-gift-spinel-change]');
     if (change && this.contains(change)) this.changeRecipient();
+
+    const bundleAdd = event.target.closest('[data-gift-spinel-bundle-add]');
+    if (bundleAdd && this.contains(bundleAdd)) this.addBundle(bundleAdd);
   }
 
   handleBlockSelect(event) {
@@ -476,6 +479,86 @@ class GiftSpinel extends HTMLElement {
         });
       });
     });
+  }
+
+  async addBundle(button) {
+    if (button.disabled) return;
+
+    let items;
+    try {
+      items = JSON.parse(button.dataset.giftSpinelBundleItems || '[]');
+    } catch (_) {
+      items = [];
+    }
+    if (!Array.isArray(items) || !items.length) return;
+
+    const label = button.querySelector('[data-gift-spinel-bundle-label]');
+    const initialLabel = button.dataset.giftSpinelBundleLabel || label?.textContent || '';
+    const addingLabel = button.dataset.giftSpinelBundleAddingLabel || initialLabel;
+    const addedLabel = button.dataset.giftSpinelBundleAddedLabel || initialLabel;
+    const errorLabel = button.dataset.giftSpinelBundleErrorLabel || 'Unable to add this gift edit.';
+    const bundleName = button.dataset.giftSpinelBundleName || 'Gift finder edit';
+
+    button.disabled = true;
+    button.classList.add('is-loading');
+    button.setAttribute('aria-busy', 'true');
+    if (label) label.textContent = addingLabel;
+    if (this.status) this.status.textContent = addingLabel;
+
+    const recipient = this.recipient?.label || '';
+    const cartItems = items.map((item) => ({
+      id: item.id,
+      quantity: Number(item.quantity) || 1,
+      properties: {
+        _bundle: bundleName,
+        _gift_recipient: recipient,
+      },
+    }));
+
+    try {
+      const response = await fetch(window.routes?.cart_add_url || '/cart/add.js', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({ items: cartItems }),
+      });
+      const item = await response.json();
+      if (!response.ok) throw new Error(item.description || item.message || errorLabel);
+
+      let cart = null;
+      try {
+        const cartResponse = await fetch('/cart.js', { headers: { Accept: 'application/json' } });
+        if (cartResponse.ok) cart = await cartResponse.json();
+      } catch (_) {
+        // Cart drawer refreshes independently when the add succeeds.
+      }
+
+      if (label) label.textContent = addedLabel;
+      button.classList.add('is-added');
+      if (this.status) this.status.textContent = addedLabel;
+      document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true, detail: { item, cart } }));
+      document.dispatchEvent(new CustomEvent('cart:add:success', { bubbles: true, detail: { item, cart, button } }));
+
+      window.setTimeout(() => {
+        if (!button.isConnected) return;
+        button.classList.remove('is-added');
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        if (label) label.textContent = initialLabel;
+        if (this.status) this.status.textContent = '';
+      }, 1600);
+    } catch (error) {
+      console.error('[Spinel] Gift bundle add failed', error);
+      if (label) label.textContent = initialLabel;
+      if (this.status) this.status.textContent = error.message || errorLabel;
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    } finally {
+      button.classList.remove('is-loading');
+    }
   }
 }
 
