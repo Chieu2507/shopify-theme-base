@@ -65,21 +65,9 @@
           </div>
           <div class="gift-spinel__intro-copy rte">{% content_for 'block', type: 'text', id: 'finder_intro' %}</div>
           <div class="gift-spinel__question" id="GiftSpinelQuestion-{{ section.id }}" data-gift-spinel-question tabindex="-1">{% content_for 'block', type: 'heading', id: 'finder_question' %}</div>
-          <p class="gift-spinel__question-hint" id="GiftSpinelHint-{{ section.id }}">{{ 'gift_spinel.choose_hint' | t }}</p>
+          <div class="gift-spinel__question-hint" id="GiftSpinelHint-{{ section.id }}">{% content_for 'block', type: 'text', id: 'finder_hint' %}</div>
           <div class="gift-spinel__choices" data-gift-spinel-choices role="group" aria-labelledby="GiftSpinelQuestion-{{ section.id }}" aria-describedby="GiftSpinelHint-{{ section.id }}">
-            {% for block in section.blocks %}
-              {% liquid
-                assign choice_label = block.settings.recipient_label | default: block.settings.recipient
-              %}
-              <button
-                class="gift-spinel__choice"
-                type="button"
-                data-gift-spinel-choice="{{ block.id }}"
-                data-recipient="{{ block.settings.recipient | escape }}"
-                aria-pressed="false"
-                {{ block.shopify_attributes }}
-              ><span>{{ choice_label | escape }}</span><span class="gift-spinel__choice-icon button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span></button>
-            {% endfor %}
+            {% content_for 'blocks' %}
           </div>
         </div>
 
@@ -92,66 +80,6 @@
   </div>
 
   {% if section.blocks.size > 0 %}
-    {% for block in section.blocks %}
-    {% liquid
-      assign path_collection = block.settings.collection
-      assign path_primary_link = path_collection.url
-      assign path_heading = block.settings.heading
-      assign path_copy = block.settings.copy
-      assign path_products = path_collection.products
-    %}
-    <template
-      data-gift-spinel-path
-      data-block-id="{{ block.id }}"
-      data-recipient="{{ block.settings.recipient | escape }}"
-    >
-      <div class="gift-spinel__result-content" data-gift-spinel-result-block="{{ block.id }}">
-        {% if block.settings.featured_badge != blank %}
-          <div class="gift-spinel__result-kicker gift-spinel__richtext gift-spinel__text--preset-{{ block.settings.featured_badge_preset }}">{{ block.settings.featured_badge }}</div>
-        {% else %}
-          <p class="gift-spinel__result-kicker">{{ 'gift_spinel.curated_edit' | t }}</p>
-        {% endif %}
-        <div class="gift-spinel__result-heading gift-spinel__richtext gift-spinel__text--preset-{{ block.settings.heading_preset }}" data-gift-spinel-result-heading tabindex="-1">{% render 'typography-content', content: path_heading %}</div>
-        {% if path_copy != blank %}<div class="gift-spinel__result-copy gift-spinel__richtext gift-spinel__text--preset-{{ block.settings.copy_preset }} rte" data-gift-spinel-result-copy>{{ path_copy }}</div>{% endif %}
-        <div class="gift-spinel__result-tools">
-          <div class="gift-spinel__chips" data-gift-spinel-chips></div>
-          <button class="gift-spinel__change" type="button" data-gift-spinel-change>{{ 'gift_spinel.change_recipient' | t }}</button>
-        </div>
-
-        <div class="gift-spinel__actions">
-          {% render 'cta', label: block.settings.primary_label, url: path_primary_link, style: 'primary' %}
-          {% if block.settings.show_personalization and block.settings.personalization_link != blank %}
-            {% render 'cta', label: block.settings.personalization_label, url: block.settings.personalization_link, style: 'tertiary' %}
-          {% endif %}
-        </div>
-
-        {% if path_products != blank %}
-          <ul class="gift-spinel__products" role="list" data-reveal-group>
-            {% for product in path_products limit: section.settings.products_to_show %}
-              <li class="gift-spinel__product" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
-                {% render 'product-card',
-                  product: product,
-                  show_media_actions: true,
-                  enable_quick_view: true
-                %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% else %}
-          <ul class="gift-spinel__products" role="list" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}" data-reveal-group>
-            {% for placeholder_number in (1..section.settings.products_to_show) %}
-              <li class="gift-spinel__product" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
-                {% render 'product-card',
-                  placeholder_index: placeholder_number
-                %}
-              </li>
-            {% endfor %}
-          </ul>
-        {% endif %}
-      </div>
-    </template>
-    {% endfor %}
-
     <template data-gift-spinel-placeholder>
     <div class="gift-spinel__result-content">
       <div class="gift-spinel__result-tools">
@@ -168,16 +96,6 @@
     </div>
     </template>
 
-    <script type="application/json" data-gift-spinel-options>
-    [
-      {% for block in section.blocks %}
-        {% liquid
-          assign choice_label = block.settings.recipient_label | default: block.settings.recipient
-        %}
-        { "value": {{ block.id | json }}, "label": {{ choice_label | json }} }{% unless forloop.last %},{% endunless %}
-      {% endfor %}
-    ]
-    </script>
   {% endif %}
 </gift-spinel>
 

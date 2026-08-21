@@ -151,6 +151,12 @@ class GiftSpinel extends HTMLElement {
   }
 
   readOptions() {
+    const choiceOptions = Array.from(this.querySelectorAll('[data-gift-spinel-choice]')).map((choice) => ({
+      value: choice.dataset.giftSpinelChoice,
+      label: choice.querySelector('.gift-spinel__choice-label')?.textContent?.trim() || choice.dataset.recipient || '',
+    }));
+    if (choiceOptions.length) return choiceOptions;
+
     try {
       return JSON.parse(this.querySelector('[data-gift-spinel-options]')?.textContent || '[]');
     } catch (error) {
