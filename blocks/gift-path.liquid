@@ -8,37 +8,28 @@
   assign path_products = block.settings.products
 %}
 
-<button
-  class="gift-spinel__choice"
-  type="button"
-  data-gift-spinel-choice="{{ block.id }}"
-  data-recipient="{{ block.settings.recipient | escape }}"
-  aria-pressed="false"
-  {{ block.shopify_attributes }}
->
-  <span class="gift-spinel__choice-label">{{ choice_label | escape }}</span>
-  <span class="gift-spinel__choice-icon button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
-</button>
+<div class="gift-spinel__path" {{ block.shopify_attributes }}>
+  <button
+    class="gift-spinel__choice"
+    type="button"
+    data-gift-spinel-choice="{{ block.id }}"
+    data-recipient="{{ block.settings.recipient | escape }}"
+    aria-pressed="false"
+  >
+    <span class="gift-spinel__choice-label">{{ choice_label | escape }}</span>
+    <span class="gift-spinel__choice-icon button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+  </button>
 
-<div
-  data-gift-spinel-path
-  data-block-id="{{ block.id }}"
-  data-recipient="{{ block.settings.recipient | escape }}"
-  hidden
->
+  <div
+    data-gift-spinel-path
+    data-block-id="{{ block.id }}"
+    data-recipient="{{ block.settings.recipient | escape }}"
+    hidden
+  >
   <div class="gift-spinel__result-content" data-gift-spinel-result-block="{{ block.id }}">
-    {% for child_block in block.blocks %}
-      {% case child_block.type %}
-        {% when 'label' %}
-          <div class="gift-spinel__result-kicker">{% render child_block %}</div>
-        {% when 'heading' %}
-          <div class="gift-spinel__result-heading" data-gift-spinel-result-heading tabindex="-1">{% render child_block %}</div>
-        {% when 'text' %}
-          <div class="gift-spinel__result-copy rte" data-gift-spinel-result-copy>{% render child_block %}</div>
-        {% when 'button' %}
-          <div class="gift-spinel__actions">{% render child_block %}</div>
-      {% endcase %}
-    {% endfor %}
+    <div class="gift-spinel__result-blocks">
+      {% content_for 'blocks' %}
+    </div>
 
     <div class="gift-spinel__result-tools">
       <div class="gift-spinel__chips" data-gift-spinel-chips></div>
@@ -85,6 +76,7 @@
         {% endfor %}
       </ul>
     {% endif %}
+  </div>
   </div>
 </div>
 

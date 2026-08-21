@@ -297,14 +297,14 @@ class GiftSpinel extends HTMLElement {
     this.result.replaceChildren(content);
     this.result.hidden = false;
     window.ThemeAnimations?.refresh(this.result);
-    if (this.status) this.status.textContent = this.result.querySelector('[data-gift-spinel-result-heading]')?.textContent?.trim() || '';
+    if (this.status) this.status.textContent = this.result.querySelector('.content-block--heading')?.textContent?.trim() || '';
     this.result.dispatchEvent(
       new CustomEvent('gift-spinel:products-loaded', {
         bubbles: true,
         detail: { panel: this.result },
       }),
     );
-    if (shouldFocus) this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
+    if (shouldFocus) this.result.querySelector('.content-block--heading')?.focus({ preventScroll: true });
   }
 
   resetRecipientView(shouldFocus = true) {
@@ -387,7 +387,7 @@ class GiftSpinel extends HTMLElement {
           if (!this.isPanelTransitioning) return;
           this.finder.style.removeProperty('height');
           this.isPanelTransitioning = false;
-          this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
+          this.result.querySelector('.content-block--heading')?.focus({ preventScroll: true });
           this.releaseScrollAnchoring();
         });
       });
