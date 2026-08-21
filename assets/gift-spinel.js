@@ -111,6 +111,7 @@ class GiftSpinel extends HTMLElement {
 
     window.clearTimeout(this.transitionTimer);
     this.recipient = undefined;
+    this.finder.classList.remove('is-showing-path');
     this.questions.hidden = false;
     this.result.hidden = true;
     this.result.replaceChildren();
@@ -311,6 +312,7 @@ class GiftSpinel extends HTMLElement {
       path.before(this.activePathMarker);
       this.result.replaceChildren(path);
       path.classList.add('is-active-path');
+      this.finder?.classList.add('is-showing-path');
       path.querySelector('[data-gift-spinel-path]')?.removeAttribute('hidden');
       source = path.querySelector('[data-gift-spinel-result-block]');
     } else {
@@ -346,6 +348,7 @@ class GiftSpinel extends HTMLElement {
   resetRecipientView(shouldFocus = true) {
     this.recipient = undefined;
     this.restoreActiveResultSource();
+    this.finder?.classList.remove('is-showing-path');
     this.result.hidden = true;
     this.result.replaceChildren();
     if (this.status) this.status.textContent = '';
