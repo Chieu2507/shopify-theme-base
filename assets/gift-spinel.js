@@ -46,6 +46,7 @@ class GiftSpinel extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.restoreActiveResultSource();
     this.removeEventListener('click', this.onClick);
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     document.removeEventListener('shopify:section:load', this.onSectionLoad);
@@ -261,6 +262,11 @@ class GiftSpinel extends HTMLElement {
   pathForVisibleEditorBlock(blockId) {
     if (!blockId || !this.result) return null;
 
+    if (this.result.getAttribute('data-shopify-editor-block') === blockId) {
+      const activeSource = this.result.querySelector('[data-gift-spinel-result-block]');
+      return this.paths.find((path) => path.dataset.blockId === activeSource?.dataset.giftSpinelResultBlock) || null;
+    }
+
     const selected = this.result.querySelector(`[data-shopify-editor-block="${CSS.escape(blockId)}"]`);
     const resultBlock = selected?.closest('[data-gift-spinel-result-block]');
     if (!resultBlock) return null;
@@ -274,11 +280,28 @@ class GiftSpinel extends HTMLElement {
     const source = this.result.querySelector('[data-gift-spinel-result-block]');
     if (!source) return;
 
+    this.activeResultEditorAttributes?.forEach(({ name, value }) => {
+      this.result.removeAttribute(name);
+      source.setAttribute(name, value);
+    });
+    this.activeResultEditorAttributes = undefined;
+
     const path = this.paths.find((item) => item.dataset.blockId === source.dataset.giftSpinelResultBlock);
     if (path) {
       path.append(source);
       path.hidden = true;
     }
+  }
+
+  moveEditorAttributesToResult(source) {
+    this.activeResultEditorAttributes = Array.from(source.attributes)
+      .filter(({ name }) => name.startsWith('data-shopify-'))
+      .map(({ name, value }) => ({ name, value }));
+
+    this.activeResultEditorAttributes.forEach(({ name, value }) => {
+      this.result.setAttribute(name, value);
+      source.removeAttribute(name);
+    });
   }
 
   showResult(preferredPath, shouldFocus = true) {
@@ -298,6 +321,7 @@ class GiftSpinel extends HTMLElement {
     if (!source) return;
 
     const content = path.matches('[data-gift-spinel-path]') ? source : source;
+    if (path.matches('[data-gift-spinel-path]')) this.moveEditorAttributesToResult(content);
     this.replaceTokens(content);
     const chips = content.querySelector('[data-gift-spinel-chips]');
     if (chips && this.recipient) {
