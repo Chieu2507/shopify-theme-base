@@ -115,6 +115,7 @@ class GiftSpinel extends HTMLElement {
     this.result.replaceChildren();
     if (this.status) this.status.textContent = '';
     this.resetChoices();
+    this.openOnlyPath();
   }
 
   scheduleInitialize() {
@@ -172,6 +173,20 @@ class GiftSpinel extends HTMLElement {
     });
   }
 
+  openOnlyPath() {
+    if (this.paths.length !== 1 || !this.options.length) return;
+
+    const path = this.paths[0];
+    this.recipient = this.optionFor(path.dataset.blockId);
+    const choice = this.choices.querySelector(`[data-gift-spinel-choice="${CSS.escape(path.dataset.blockId || '')}"]`);
+    if (choice) {
+      choice.classList.add('is-selected');
+      choice.setAttribute('aria-pressed', 'true');
+      choice.disabled = true;
+    }
+    this.showResult(path, false);
+  }
+
   handleClick(event) {
     const choice = event.target.closest('[data-gift-spinel-choice]');
     if (choice && this.contains(choice)) {
@@ -184,7 +199,9 @@ class GiftSpinel extends HTMLElement {
   }
 
   handleBlockSelect(event) {
-    const path = this.paths.find((item) => item.dataset.blockId === event.detail?.blockId);
+    const selectedBlockId = event.detail?.blockId;
+    const path = this.paths.find((item) => item.dataset.blockId === selectedBlockId)
+      || this.paths.find((item) => item.content.querySelector(`[data-shopify-editor-block="${CSS.escape(selectedBlockId || '')}"]`));
     if (!path) return;
     this.recipient = this.optionFor(path.dataset.blockId);
     this.disableScrollAnchoring();

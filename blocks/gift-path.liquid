@@ -6,12 +6,6 @@
 {% liquid
   assign choice_label = block.settings.recipient_label | default: block.settings.recipient
   assign path_products = block.settings.products
-  assign path_primary_link = block.settings.primary_link
-  if path_primary_link == blank and path_products != blank
-    assign path_primary_link = path_products.first.url
-  endif
-  assign path_heading = block.settings.heading
-  assign path_copy = block.settings.copy
 %}
 
 <button
@@ -32,29 +26,23 @@
   data-recipient="{{ block.settings.recipient | escape }}"
 >
   <div class="gift-spinel__result-content" data-gift-spinel-result-block="{{ block.id }}">
-    {% if block.settings.featured_badge != blank %}
-      <div class="gift-spinel__result-kicker gift-spinel__richtext gift-spinel__text--preset-{{ block.settings.featured_badge_preset }}">{{ block.settings.featured_badge }}</div>
-    {% else %}
-      <p class="gift-spinel__result-kicker">{{ 'gift_spinel.curated_edit' | t }}</p>
-    {% endif %}
-
-    <div class="gift-spinel__result-heading gift-spinel__richtext gift-spinel__text--preset-{{ block.settings.heading_preset }}" data-gift-spinel-result-heading tabindex="-1">
-      {% render 'typography-content', content: path_heading %}
-    </div>
-
-    {% if path_copy != blank %}
-      <div class="gift-spinel__result-copy gift-spinel__richtext gift-spinel__text--preset-{{ block.settings.copy_preset }} rte" data-gift-spinel-result-copy>{{ path_copy }}</div>
-    {% endif %}
+    {% for child_block in block.blocks %}
+      {% case child_block.type %}
+        {% when 'label' %}
+          <div class="gift-spinel__result-kicker">{% render child_block %}</div>
+        {% when 'heading' %}
+          <div class="gift-spinel__result-heading" data-gift-spinel-result-heading tabindex="-1">{% render child_block %}</div>
+        {% when 'text' %}
+          <div class="gift-spinel__result-copy rte" data-gift-spinel-result-copy>{% render child_block %}</div>
+        {% when 'button' %}
+          <div class="gift-spinel__actions">{% render child_block %}</div>
+      {% endcase %}
+    {% endfor %}
 
     <div class="gift-spinel__result-tools">
       <div class="gift-spinel__chips" data-gift-spinel-chips></div>
-      <button class="gift-spinel__change" type="button" data-gift-spinel-change>{{ 'gift_spinel.change_recipient' | t }}</button>
-    </div>
-
-    <div class="gift-spinel__actions">
-      {% render 'cta', label: block.settings.primary_label, url: path_primary_link, style: 'primary' %}
-      {% if block.settings.show_personalization and block.settings.personalization_link != blank %}
-        {% render 'cta', label: block.settings.personalization_label, url: block.settings.personalization_link, style: 'tertiary' %}
+      {% if section.blocks.size > 1 %}
+        <button class="gift-spinel__change" type="button" data-gift-spinel-change>{{ 'gift_spinel.change_recipient' | t }}</button>
       {% endif %}
     </div>
 
@@ -103,29 +91,31 @@
 {
   "name": "Gift path",
   "tag": null,
+  "blocks": [
+    { "type": "label" },
+    { "type": "heading" },
+    { "type": "text" },
+    { "type": "button" }
+  ],
   "settings": [
     { "type": "header", "content": "Gift path" },
     { "type": "paragraph", "content": "Select up to 4 products for this recipient's edit." },
     { "type": "header", "content": "Recipient" },
     { "type": "select", "id": "recipient", "label": "Recipient", "options": [{ "value": "partner", "label": "Partner" }, { "value": "mother", "label": "Mother" }, { "value": "friend", "label": "Friend" }, { "value": "myself", "label": "Myself" }], "default": "partner" },
     { "type": "text", "id": "recipient_label", "label": "Display label", "default": "Gift recipient", "info": "Text shown on the recipient choice card." },
-    { "type": "product_list", "id": "products", "label": "Products", "limit": 4 },
-    { "type": "header", "content": "Result content" },
-    { "type": "text", "id": "primary_label", "label": "Primary button label", "default": "Explore this gift edit" },
-    { "type": "url", "id": "primary_link", "label": "Primary button link", "info": "When blank, the button links to the first selected product." },
-    { "type": "richtext", "id": "featured_badge", "label": "Featured badge", "default": "<p>Your curated gift edit</p>" },
-    { "type": "select", "id": "featured_badge_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-    { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>A thoughtful edit, chosen with care.</p>", "info": "Supports {recipient}." },
-    { "type": "select", "id": "heading_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-    { "type": "richtext", "id": "copy", "label": "Copy", "default": "<p>Chosen for its quiet symbolism and made to become part of their everyday ritual.</p>", "info": "Supports {recipient}." },
-    { "type": "select", "id": "copy_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-    { "type": "header", "content": "Personalization button" },
-    { "type": "checkbox", "id": "show_personalization", "label": "Show personalization button", "default": false },
-    { "type": "text", "id": "personalization_label", "label": "Personalization button label", "default": "Make it personal" },
-    { "type": "url", "id": "personalization_link", "label": "Personalization button link" }
+    { "type": "product_list", "id": "products", "label": "Products", "limit": 4 }
   ],
   "presets": [
-    { "name": "Gift path", "category": "Gifting" }
+    {
+      "name": "Gift path",
+      "category": "Gifting",
+      "blocks": [
+        { "type": "label", "settings": { "text": "<p>Your curated gift edit</p>" } },
+        { "type": "heading", "settings": { "heading": "<h2>A thoughtful edit, chosen with care.</h2>", "type_preset": "h4" } },
+        { "type": "text", "settings": { "text": "<p>Chosen for its quiet symbolism and made to become part of their everyday ritual.</p>", "type_preset": "sm" } },
+        { "type": "button", "settings": { "label": "Explore this gift edit", "style": "primary", "icon": "arrow-right" } }
+      ]
+    }
   ]
 }
 {% endschema %}
