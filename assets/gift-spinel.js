@@ -58,7 +58,6 @@ class GiftSpinel extends HTMLElement {
     window.cancelAnimationFrame(this.initializeFrame);
     window.cancelAnimationFrame(this.anchorScrollFrame);
     window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
-    window.cancelAnimationFrame(this.editorScrollFrame);
     giftSpinelLayoutOwners.delete(this);
     syncGiftSpinelLayoutState();
     this.isBound = false;
@@ -209,24 +208,7 @@ class GiftSpinel extends HTMLElement {
     this.recipient = this.optionFor(path.dataset.blockId);
     this.disableScrollAnchoring();
     this.showResult(path, false);
-    this.scrollToEditorBlock(path);
     this.releaseScrollAnchoring();
-  }
-
-  scrollToEditorBlock(path) {
-    if (!this.result) return;
-
-    window.cancelAnimationFrame(this.editorScrollFrame);
-    this.editorScrollFrame = window.requestAnimationFrame(() => {
-      this.editorScrollFrame = window.requestAnimationFrame(() => {
-        this.editorScrollFrame = null;
-        const blockId = path?.dataset.blockId;
-        const anchor = Array.from(this.querySelectorAll('[data-gift-spinel-editor-block]')).find(
-          (element) => element.dataset.giftSpinelEditorBlock === blockId,
-        );
-        (anchor || this).scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      });
-    });
   }
 
   optionFor(value) {
