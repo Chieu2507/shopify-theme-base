@@ -2,12 +2,23 @@
 
 {% liquid
   assign image_column_position = section.settings.image_position
+  assign gift_spinel_background = section.settings.background_color
+  if gift_spinel_background == blank
+    assign gift_spinel_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+
   if image_column_position contains 'right'
     assign image_column_position = 'right'
   else
     assign image_column_position = 'left'
   endif
 %}
+
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background: {{ gift_spinel_background }};
+  }
+{% endstyle %}
 
 <gift-spinel
   id="gift-spinel-{{ section.id }}"
@@ -35,6 +46,8 @@
               loading: 'lazy',
               decorative: true
             %}
+          {% else %}
+            {% render 'media-placeholder', class_name: 'gift-spinel__intro-image gift-spinel__intro-placeholder', placeholder_name: 'lifestyle-1' %}
           {% endif %}
         </div>
         <div class="gift-spinel__intro-content gift-spinel__intro-content--position-{{ section.settings.intro_card_position }}{% if section.settings.enable_intro_card %} gift-spinel__intro-content--card{% endif %}">
@@ -47,7 +60,8 @@
         </div>
       </div>
 
-      <div class="gift-spinel__finder">
+      {% if section.blocks.size > 0 %}
+        <div class="gift-spinel__finder">
         <div class="gift-spinel__editor-block-anchors" aria-hidden="true">
           {% for block in section.blocks %}
             <span
@@ -86,11 +100,13 @@
         <p class="visually-hidden" data-gift-spinel-status role="status" aria-live="polite"></p>
         <div class="gift-spinel__result" data-gift-spinel-result hidden></div>
 
-      </div>
+        </div>
+      {% endif %}
     </div>
   </div>
 
-  {% for block in section.blocks %}
+  {% if section.blocks.size > 0 %}
+    {% for block in section.blocks %}
     {% liquid
       assign path_collection = block.settings.collection
       assign path_primary_link = path_collection.url
@@ -148,9 +164,9 @@
         {% endif %}
       </div>
     </template>
-  {% endfor %}
+    {% endfor %}
 
-  <template data-gift-spinel-placeholder>
+    <template data-gift-spinel-placeholder>
     <div class="gift-spinel__result-content">
       <div class="gift-spinel__result-tools">
         <div class="gift-spinel__chips" data-gift-spinel-chips></div>
@@ -164,9 +180,9 @@
         {% endfor %}
       </ul>
     </div>
-  </template>
+    </template>
 
-  <script type="application/json" data-gift-spinel-options>
+    <script type="application/json" data-gift-spinel-options>
     [
       {% for block in section.blocks %}
         {% liquid
@@ -175,7 +191,8 @@
         { "value": {{ block.id | json }}, "label": {{ choice_label | json }} }{% unless forloop.last %},{% endunless %}
       {% endfor %}
     ]
-  </script>
+    </script>
+  {% endif %}
 </gift-spinel>
 
 {% schema %}
@@ -218,7 +235,8 @@
     { "type": "range", "id": "products_to_show", "label": "Product count", "min": 3, "max": 6, "step": 1, "default": 6 },
     { "type": "select", "id": "product_columns", "label": "Product columns", "options": [{ "value": "2", "label": "2 columns" }, { "value": "3", "label": "3 columns" }], "default": "3" },
     { "type": "header", "content": "Appearance" },
-    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" }
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme." }
   ],
   "blocks": [
     {
@@ -249,6 +267,9 @@
       ]
     }
   ],
+  "enabled_on": {
+    "templates": ["index"]
+  },
   "presets": [
     {
       "name": "Gift Spinel",
