@@ -1,8 +1,38 @@
-# Section & Block Eligibility Audit
+# Eligibility Audit
 
-Status: proposed implementation contract. Scope is limited to sections currently
-active in `templates/index.json` plus active Header and Footer group sections.
-Dormant or hidden sections are intentionally excluded.
+Scope: active instances in `templates/index.json`, Header group, and Footer
+group. Dormant or hidden sections are intentionally excluded.
+
+## Summary
+
+PASS: Active Home sections use explicit `enabled_on` template rules; active
+Header/Footer sections use explicit group rules; the curated item streams in
+this scope no longer expose `@theme`.
+
+WARN: Shopify Theme Block schemas do not support per-type child limits. Global
+section caps and fixed static slots are used where the active layout needs an
+exact cardinality.
+
+FAIL: None.
+
+## Section matrix
+
+| Section | Placement | Allow-list | Static/dynamic | Limits | Existing data | Result |
+| --- | --- | --- | --- | --- | --- | --- |
+| Editorial slideshow | Home only | `editorial-slide` | Dynamic slides | Existing section cap | Preserved | PASS |
+| Editorial collection tabs | Home only | `editorial-collection-tab` | Dynamic tabs | Existing cap 6 | Preserved | PASS |
+| Testimonials | Home only | `testimonial` | Dynamic Swiper items | Section cap 6 | Preserved | PASS |
+| Gallery | Home only | `instagram-gallery-image` | 8 dynamic images + static content card | Section cap 9 | `instagram_content` migrated static | PASS |
+| Gift Spinel | Home only | `gift-path` | Dynamic paths with nested curated kernels | Existing cap | Preserved | PASS |
+| Image stack | Home only | `image-stack-scene` | Dynamic scenes with nested curated kernels | Existing cap | Preserved | PASS |
+| Video banner | Home only | label/heading/text/button/spacer | Dynamic document-order content | Section cap 4 | Preserved | PASS |
+| Header | Header group only | Existing header roles | Curated | Section cap 6 | Preserved | PASS |
+| Footer | Footer group only | Existing footer roles | Curated | Section cap 4 | Preserved | PASS |
+| Icon with text | Footer group only | Existing trust-point roles | Curated | Section cap 7 | Preserved | PASS |
+
+For the remaining active Home sections, the current schema already has an
+explicit `enabled_on: { "templates": ["index"] }` rule and an allow-list that
+matches its renderer. They are retained without unrelated migration.
 
 ## Decisions
 
@@ -30,14 +60,17 @@ Footer/Overlay component may be addable to a page template.
 ## Shopify schema constraint
 
 Shopify does not permit `max_blocks` or per-child `limit` in a Theme Block
-schema. It also rejects a section that combines static Theme Blocks with local
-section block definitions. Therefore, sections that retain fixed kernel blocks
-as static (`Editorial collection tabs`, `Shoppable video`, `Video banner`,
-`Testimonials`, and `Instagram gallery`) must retain `@theme` as their dynamic
-extension mechanism until their static composition is intentionally migrated to
-local blocks. Their active IDs and settings are preserved; their broader Add
-block catalogue is a documented, migration-sensitive exception rather than an
-invalid schema workaround.
+schema. It also rejects a section that combines **local section block
+definitions** with static Theme Blocks. That restriction does *not* require a
+curated section to retain `@theme`: a section can combine static Theme Blocks
+with an explicit direct Theme Block allow-list such as
+`{ "type": "testimonial" }`.
+
+Direct Theme Block references must contain only `type`. Adding local-block
+properties such as `name`, `settings`, or `limit` changes the schema entry into
+a local section block and makes that combination invalid. Curated sections
+therefore use explicit direct type references; `@theme` remains reserved for a
+documented generic composition surface.
 
 ## Active Home section block model
 
@@ -48,15 +81,15 @@ invalid schema workaround.
 | Highlight text with image | Heading/text composition is section-owned | Inline image | 1–8 inline images |
 | Editorial collection | Label, Heading, Text | None; products come from Collection picker | N/A |
 | Shoppable video | Label, Heading, Text | Shoppable video | 2–6 items |
-| Video banner | Media is section-owned | Label, Heading, Text, Button/Button group, Spacer | each content kernel 1, Spacer 2 |
+| Video banner | Media is section-owned | Label, Heading, Text, Button, Spacer | section max 4; content stack renders in document order |
 | Editorial collection tabs | Label, Heading, Text | Editorial collection tab | 2–6 tabs |
 | Collection list split promotions | Label, Heading, Text, Button | Collection card and a dedicated promotion card if implemented | Collection cards 2–6; promotion card 1 |
 | Image stack | None at section level | Image stack scene | 2–6 scenes |
 | Image stack scene | Media/background are item settings | Label, Heading, Text, Button, Spacer | Label 1, Heading 1, Text 1, Button 1, Spacer 2 |
 | Shop the look | Label, Heading, Text | Product hotspot | 1–5 hotspots |
 | Blog posts | Label, Heading, Text, Button | None; posts come from Blog picker | N/A |
-| Testimonials | Section label | Testimonial | 2–6 testimonials |
-| Instagram gallery | Header Label, Heading, Text, Button | Instagram image, Instagram gallery content | Images 4–8; content card 1 |
+| Testimonials | Section label | Testimonial | section max 6; no generic content or Gift path block in the Swiper item stream |
+| Instagram gallery | Header Label, Heading, Text, Button, Instagram content card | Instagram image | section max 9; the card is static and its nested content remains merchant-editable |
 
 ## Header and Footer model
 
@@ -68,37 +101,28 @@ invalid schema workaround.
 | Icon with text | Footer group only | Optional fixed header slot; trust-point items, 2–6 recommended |
 | Footer | Footer group only | Static newsletter, appointment and house-signature; Footer menu items 2–4 |
 
-## Findings requiring schema work
+## Implemented schema work
 
 ### P1 — generic block lists
 
-- `sections/editorial-collection-tabs.liquid` uses `@theme` although it renders
-  only `editorial-collection-tab` items. Replace with that explicit type and a
-  six-item cap.
-- `sections/gallery.liquid` uses `@theme` despite its editorial grid requiring
-  only image items and one content card. Replace it with
-  `instagram-gallery-image` and `instagram-gallery-content` (`limit: 1`).
-- Nested slide/scene/content-card schemas must apply the same explicit
-  allow-list and per-kernel limits.
+- `sections/editorial-collection-tabs.liquid` now allows only
+  `editorial-collection-tab`, with the existing six-item cap.
+- `sections/gallery.liquid` now allows only `instagram-gallery-image`. Its
+  single Instagram content card is a static Theme Block; its existing active
+  `instagram_content` ID, settings, and nested child blocks were preserved and
+  removed from `block_order` as required by Shopify.
+- `sections/testimonials.liquid` now allows only `testimonial`; arbitrary
+  theme blocks can no longer enter its Swiper item stream.
+- `sections/video-banner.liquid`, `sections/gift-spinel.liquid`, and
+  `sections/image-stack.liquid` now expose only the Theme Block types each
+  renderer supports.
 
-### P1 — group placement is not strict enough
+### P2 — platform limitation retained intentionally
 
-- `sections/footer.liquid` has no explicit Footer-group allow-list.
-- `sections/icon-with-text.liquid` only excludes Header; it should be Footer
-  group only because the active configuration places it before Footer there.
-
-### P2 — Home editorial placement is currently broad
-
-The active editorial sections do not consistently constrain their template
-placement. Add `enabled_on: { "templates": ["index"] }` when touching each
-section schema, after confirming every active JSON instance is preserved.
-
-### P2 — fixed slot migration needs data-aware handling
-
-Some active sections already store header kernels in `block_order` while newer
-ones correctly use static IDs. Do not flip these to static in a blind schema
-edit: migrate the matching active JSON config at the same time, or retain the
-current block type with `limit: 1` until a dedicated migration pass.
+Theme Blocks cannot declare per-type `limit` values. Where a section needs a
+single fixed visual role, it uses a static block (Gallery's content card). For
+repeatable Theme Block streams, the section-level cap is retained; narrowing it
+below the current active count is intentionally avoided.
 
 ## Implementation sequence
 
@@ -106,10 +130,12 @@ current block type with `limit: 1` until a dedicated migration pass.
    allow-list; in particular Gallery's content-card type must exist before its
    schema stops using `@theme`.
 2. Apply group `enabled_on` restrictions first (Header, Footer, Overlay).
-3. Replace curated `@theme` lists with exact types, preserving the active JSON
-   block IDs and order.
-4. Add per-type limits and reduce global caps only where the existing active
-   configuration is already within the new limit.
+3. Replace curated `@theme` lists with direct exact Theme Block types,
+   preserving the active JSON block IDs and order. Do not add `name`, `limit`,
+   or local `settings` to those direct references.
+4. Add a global section cap only where it is valid for the already active
+   configuration. Theme Block child caps are unsupported and remain an
+   intentional platform limitation.
 5. Migrate fixed slots to `static: true` only with a matching JSON migration.
 6. Validate Theme Editor Add section/Add block, duplicate, reorder, remove,
    block selection, and save behavior.
@@ -117,8 +143,11 @@ current block type with `limit: 1` until a dedicated migration pass.
 ## Acceptance checks
 
 - The editor never offers an unrelated block in a curated section.
-- Gallery offers only Instagram image and one Instagram content card.
+- Gallery offers only Instagram image; its single editable content card is
+  static and cannot be duplicated into an invalid grid position.
 - Footer cannot offer slideshow, gallery, product hotspot, or other page blocks.
 - A Home section cannot be added to Header, Footer, or Overlay.
 - Existing active configuration data remains valid and uses only declared block
   types.
+- An item-stream section never receives unrelated content blocks that would be
+  rendered as malformed rows or slides.

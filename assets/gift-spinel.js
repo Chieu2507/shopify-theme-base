@@ -46,6 +46,7 @@ class GiftSpinel extends HTMLElement {
   }
 
   disconnectedCallback() {
+    this.restoreActiveResultSource();
     this.removeEventListener('click', this.onClick);
     document.removeEventListener('shopify:block:select', this.onBlockSelect);
     document.removeEventListener('shopify:section:load', this.onSectionLoad);
@@ -58,7 +59,6 @@ class GiftSpinel extends HTMLElement {
     window.cancelAnimationFrame(this.initializeFrame);
     window.cancelAnimationFrame(this.anchorScrollFrame);
     window.cancelAnimationFrame(this.scrollAnchorReleaseFrame);
-    window.cancelAnimationFrame(this.editorScrollFrame);
     giftSpinelLayoutOwners.delete(this);
     syncGiftSpinelLayoutState();
     this.isBound = false;
@@ -95,6 +95,7 @@ class GiftSpinel extends HTMLElement {
 
   initialize() {
     this.cancelPanelTransition();
+    this.restoreActiveResultSource();
     this.finder = this.querySelector('.gift-spinel__finder');
     this.intro = this.querySelector('.gift-spinel__intro');
     this.questions = this.querySelector('[data-gift-spinel-questions]');
@@ -102,7 +103,7 @@ class GiftSpinel extends HTMLElement {
     this.status = this.querySelector('[data-gift-spinel-status]');
     this.question = this.querySelector('[data-gift-spinel-question]');
     this.choices = this.querySelector('[data-gift-spinel-choices]');
-    this.paths = Array.from(this.querySelectorAll('template[data-gift-spinel-path]'));
+    this.paths = Array.from(this.querySelectorAll('[data-gift-spinel-path-root]'));
     this.placeholderPath = this.querySelector('template[data-gift-spinel-placeholder]');
     this.options = this.readOptions();
 
@@ -110,11 +111,13 @@ class GiftSpinel extends HTMLElement {
 
     window.clearTimeout(this.transitionTimer);
     this.recipient = undefined;
+    this.finder.classList.remove('is-showing-path');
     this.questions.hidden = false;
     this.result.hidden = true;
     this.result.replaceChildren();
     if (this.status) this.status.textContent = '';
     this.resetChoices();
+    this.openOnlyPath();
   }
 
   scheduleInitialize() {
@@ -151,6 +154,12 @@ class GiftSpinel extends HTMLElement {
   }
 
   readOptions() {
+    const choiceOptions = Array.from(this.querySelectorAll('[data-gift-spinel-choice]')).map((choice) => ({
+      value: choice.dataset.giftSpinelChoice,
+      label: choice.querySelector('.gift-spinel__choice-label')?.textContent?.trim() || choice.dataset.recipient || '',
+    }));
+    if (choiceOptions.length) return choiceOptions;
+
     try {
       return JSON.parse(this.querySelector('[data-gift-spinel-options]')?.textContent || '[]');
     } catch (error) {
@@ -166,6 +175,20 @@ class GiftSpinel extends HTMLElement {
     });
   }
 
+  openOnlyPath() {
+    if (this.paths.length !== 1 || !this.options.length) return;
+
+    const path = this.paths[0];
+    this.recipient = this.optionFor(path.dataset.blockId);
+    const choice = this.choices.querySelector(`[data-gift-spinel-choice="${CSS.escape(path.dataset.blockId || '')}"]`);
+    if (choice) {
+      choice.classList.add('is-selected');
+      choice.setAttribute('aria-pressed', 'true');
+      choice.disabled = true;
+    }
+    this.showResult(path, false);
+  }
+
   handleClick(event) {
     const choice = event.target.closest('[data-gift-spinel-choice]');
     if (choice && this.contains(choice)) {
@@ -175,32 +198,21 @@ class GiftSpinel extends HTMLElement {
 
     const change = event.target.closest('[data-gift-spinel-change]');
     if (change && this.contains(change)) this.changeRecipient();
+
+    const bundleAdd = event.target.closest('[data-gift-spinel-bundle-add]');
+    if (bundleAdd && this.contains(bundleAdd)) this.addBundle(bundleAdd);
   }
 
   handleBlockSelect(event) {
-    const path = this.paths.find((item) => item.dataset.blockId === event.detail?.blockId);
+    const selectedBlockId = event.detail?.blockId;
+    const path = this.paths.find((item) => item.dataset.blockId === selectedBlockId)
+      || this.paths.find((item) => item.querySelector(`[data-shopify-editor-block="${CSS.escape(selectedBlockId || '')}"]`))
+      || this.pathForVisibleEditorBlock(selectedBlockId);
     if (!path) return;
     this.recipient = this.optionFor(path.dataset.blockId);
     this.disableScrollAnchoring();
     this.showResult(path, false);
-    this.scrollToEditorBlock(path);
     this.releaseScrollAnchoring();
-  }
-
-  scrollToEditorBlock(path) {
-    if (!this.result) return;
-
-    window.cancelAnimationFrame(this.editorScrollFrame);
-    this.editorScrollFrame = window.requestAnimationFrame(() => {
-      this.editorScrollFrame = window.requestAnimationFrame(() => {
-        this.editorScrollFrame = null;
-        const blockId = path?.dataset.blockId;
-        const anchor = Array.from(this.querySelectorAll('[data-gift-spinel-editor-block]')).find(
-          (element) => element.dataset.giftSpinelEditorBlock === blockId,
-        );
-        (anchor || this).scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'nearest' });
-      });
-    });
   }
 
   optionFor(value) {
@@ -243,9 +255,43 @@ class GiftSpinel extends HTMLElement {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
-    nodes.forEach((node) => {
-      node.nodeValue = node.nodeValue.replaceAll('{recipient}', this.recipient?.label || '');
-    });
+    return nodes.reduce((changes, node) => {
+      const value = node.nodeValue.replaceAll('{recipient}', this.recipient?.label || '');
+      if (value !== node.nodeValue) {
+        changes.push({ node, value: node.nodeValue });
+        node.nodeValue = value;
+      }
+      return changes;
+    }, []);
+  }
+
+  pathForVisibleEditorBlock(blockId) {
+    if (!blockId || !this.result) return null;
+
+    const selected = this.result.querySelector(`[data-shopify-editor-block="${CSS.escape(blockId)}"]`);
+    const path = selected?.closest('.gift-spinel__path');
+    if (path && this.paths.includes(path)) return path;
+
+    const resultBlock = selected?.closest('[data-gift-spinel-result-block]');
+    if (!resultBlock) return null;
+
+    return this.paths.find((path) => path.dataset.blockId === resultBlock.dataset.giftSpinelResultBlock) || null;
+  }
+
+  restoreActiveResultSource() {
+    if (!this.result || !this.paths?.length) return;
+
+    const path = this.paths.find((item) => item.parentElement === this.result);
+    if (!path) return;
+
+    this.activeTokenChanges?.forEach(({ node, value }) => { node.nodeValue = value; });
+    this.activeTokenChanges = undefined;
+    path.querySelector('[data-gift-spinel-path]')?.setAttribute('hidden', '');
+    path.classList.remove('is-active-path');
+
+    if (this.activePathMarker?.parentNode) this.activePathMarker.replaceWith(path);
+    else this.choices?.append(path);
+    this.activePathMarker = undefined;
   }
 
   showResult(preferredPath, shouldFocus = true) {
@@ -257,10 +303,28 @@ class GiftSpinel extends HTMLElement {
       return;
     }
 
-    const content = path.content.cloneNode(true);
-    this.replaceTokens(content);
+    this.restoreActiveResultSource();
+
+    const isGiftPath = path.matches('[data-gift-spinel-path-root]');
+    let source;
+    if (isGiftPath) {
+      this.activePathMarker = document.createComment('gift-spinel-path-position');
+      path.before(this.activePathMarker);
+      this.result.replaceChildren(path);
+      path.classList.add('is-active-path');
+      this.finder?.classList.add('is-showing-path');
+      path.querySelector('[data-gift-spinel-path]')?.removeAttribute('hidden');
+      source = path.querySelector('[data-gift-spinel-result-block]');
+    } else {
+      source = path.content?.cloneNode(true);
+    }
+    if (!source) return;
+
+    const content = source;
+    this.activeTokenChanges = isGiftPath ? this.replaceTokens(content) : undefined;
     const chips = content.querySelector('[data-gift-spinel-chips]');
     if (chips && this.recipient) {
+      chips.replaceChildren();
       const chip = document.createElement('span');
       chip.className = 'gift-spinel__chip';
       chip.textContent = this.recipient.label;
@@ -268,21 +332,23 @@ class GiftSpinel extends HTMLElement {
     }
 
     this.questions.hidden = true;
-    this.result.replaceChildren(content);
+    if (!isGiftPath) this.result.replaceChildren(content);
     this.result.hidden = false;
     window.ThemeAnimations?.refresh(this.result);
-    if (this.status) this.status.textContent = this.result.querySelector('[data-gift-spinel-result-heading]')?.textContent?.trim() || '';
+    if (this.status) this.status.textContent = this.result.querySelector('.content-block--heading')?.textContent?.trim() || '';
     this.result.dispatchEvent(
       new CustomEvent('gift-spinel:products-loaded', {
         bubbles: true,
         detail: { panel: this.result },
       }),
     );
-    if (shouldFocus) this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
+    if (shouldFocus) this.result.querySelector('.content-block--heading')?.focus({ preventScroll: true });
   }
 
   resetRecipientView(shouldFocus = true) {
     this.recipient = undefined;
+    this.restoreActiveResultSource();
+    this.finder?.classList.remove('is-showing-path');
     this.result.hidden = true;
     this.result.replaceChildren();
     if (this.status) this.status.textContent = '';
@@ -361,7 +427,7 @@ class GiftSpinel extends HTMLElement {
           if (!this.isPanelTransitioning) return;
           this.finder.style.removeProperty('height');
           this.isPanelTransitioning = false;
-          this.result.querySelector('[data-gift-spinel-result-heading]')?.focus({ preventScroll: true });
+          this.result.querySelector('.content-block--heading')?.focus({ preventScroll: true });
           this.releaseScrollAnchoring();
         });
       });
@@ -404,6 +470,11 @@ class GiftSpinel extends HTMLElement {
     exitAnimation.finished.catch(() => null).then(() => {
       if (!this.isPanelTransitioning) return;
 
+      // This animation runs on the actual Gift path root (rather than a clone)
+      // so its `fill: forwards` state must be cleared before that root returns
+      // to the recipient choice grid. Otherwise the choice remains clickable
+      // but inherits opacity: 0 after "Change recipient".
+      exitAnimation.cancel();
       this.resetRecipientView(false);
       const targetHeight = this.getFinderTargetHeight(this.questions);
 
@@ -450,6 +521,86 @@ class GiftSpinel extends HTMLElement {
         });
       });
     });
+  }
+
+  async addBundle(button) {
+    if (button.disabled) return;
+
+    let items;
+    try {
+      items = JSON.parse(button.dataset.giftSpinelBundleItems || '[]');
+    } catch (_) {
+      items = [];
+    }
+    if (!Array.isArray(items) || !items.length) return;
+
+    const label = button.querySelector('[data-gift-spinel-bundle-label]');
+    const initialLabel = button.dataset.giftSpinelBundleLabel || label?.textContent || '';
+    const addingLabel = button.dataset.giftSpinelBundleAddingLabel || initialLabel;
+    const addedLabel = button.dataset.giftSpinelBundleAddedLabel || initialLabel;
+    const errorLabel = button.dataset.giftSpinelBundleErrorLabel || 'Unable to add this gift edit.';
+    const bundleName = button.dataset.giftSpinelBundleName || 'Gift finder edit';
+
+    button.disabled = true;
+    button.classList.add('is-loading');
+    button.setAttribute('aria-busy', 'true');
+    if (label) label.textContent = addingLabel;
+    if (this.status) this.status.textContent = addingLabel;
+
+    const recipient = this.recipient?.label || '';
+    const cartItems = items.map((item) => ({
+      id: item.id,
+      quantity: Number(item.quantity) || 1,
+      properties: {
+        _bundle: bundleName,
+        _gift_recipient: recipient,
+      },
+    }));
+
+    try {
+      const response = await fetch(window.routes?.cart_add_url || '/cart/add.js', {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({ items: cartItems }),
+      });
+      const item = await response.json();
+      if (!response.ok) throw new Error(item.description || item.message || errorLabel);
+
+      let cart = null;
+      try {
+        const cartResponse = await fetch('/cart.js', { headers: { Accept: 'application/json' } });
+        if (cartResponse.ok) cart = await cartResponse.json();
+      } catch (_) {
+        // Cart drawer refreshes independently when the add succeeds.
+      }
+
+      if (label) label.textContent = addedLabel;
+      button.classList.add('is-added');
+      if (this.status) this.status.textContent = addedLabel;
+      document.dispatchEvent(new CustomEvent('cart:updated', { bubbles: true, detail: { item, cart } }));
+      document.dispatchEvent(new CustomEvent('cart:add:success', { bubbles: true, detail: { item, cart, button } }));
+
+      window.setTimeout(() => {
+        if (!button.isConnected) return;
+        button.classList.remove('is-added');
+        button.disabled = false;
+        button.removeAttribute('aria-busy');
+        if (label) label.textContent = initialLabel;
+        if (this.status) this.status.textContent = '';
+      }, 1600);
+    } catch (error) {
+      console.error('[Spinel] Gift bundle add failed', error);
+      if (label) label.textContent = initialLabel;
+      if (this.status) this.status.textContent = error.message || errorLabel;
+      button.disabled = false;
+      button.removeAttribute('aria-busy');
+    } finally {
+      button.classList.remove('is-loading');
+    }
   }
 }
 
