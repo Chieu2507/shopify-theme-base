@@ -254,20 +254,23 @@ class GiftSpinel extends HTMLElement {
     const walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT);
     const nodes = [];
     while (walker.nextNode()) nodes.push(walker.currentNode);
-    nodes.forEach((node) => {
-      node.nodeValue = node.nodeValue.replaceAll('{recipient}', this.recipient?.label || '');
-    });
+    return nodes.reduce((changes, node) => {
+      const value = node.nodeValue.replaceAll('{recipient}', this.recipient?.label || '');
+      if (value !== node.nodeValue) {
+        changes.push({ node, value: node.nodeValue });
+        node.nodeValue = value;
+      }
+      return changes;
+    }, []);
   }
 
   pathForVisibleEditorBlock(blockId) {
     if (!blockId || !this.result) return null;
 
-    if (this.result.getAttribute('data-shopify-editor-block') === blockId) {
-      const activeSource = this.result.querySelector('[data-gift-spinel-result-block]');
-      return this.paths.find((path) => path.dataset.blockId === activeSource?.dataset.giftSpinelResultBlock) || null;
-    }
-
     const selected = this.result.querySelector(`[data-shopify-editor-block="${CSS.escape(blockId)}"]`);
+    const path = selected?.closest('.gift-spinel__path');
+    if (path && this.paths.includes(path)) return path;
+
     const resultBlock = selected?.closest('[data-gift-spinel-result-block]');
     if (!resultBlock) return null;
 
@@ -277,31 +280,17 @@ class GiftSpinel extends HTMLElement {
   restoreActiveResultSource() {
     if (!this.result || !this.paths?.length) return;
 
-    const source = this.result.querySelector('[data-gift-spinel-result-block]');
-    if (!source) return;
+    const path = this.paths.find((item) => item.parentElement === this.result);
+    if (!path) return;
 
-    this.activeResultEditorAttributes?.forEach(({ name, value }) => {
-      this.result.removeAttribute(name);
-      source.setAttribute(name, value);
-    });
-    this.activeResultEditorAttributes = undefined;
+    this.activeTokenChanges?.forEach(({ node, value }) => { node.nodeValue = value; });
+    this.activeTokenChanges = undefined;
+    path.querySelector('[data-gift-spinel-path]')?.setAttribute('hidden', '');
+    path.classList.remove('is-active-path');
 
-    const path = this.paths.find((item) => item.dataset.blockId === source.dataset.giftSpinelResultBlock);
-    if (path) {
-      path.append(source);
-      path.hidden = true;
-    }
-  }
-
-  moveEditorAttributesToResult(source) {
-    this.activeResultEditorAttributes = Array.from(source.attributes)
-      .filter(({ name }) => name.startsWith('data-shopify-'))
-      .map(({ name, value }) => ({ name, value }));
-
-    this.activeResultEditorAttributes.forEach(({ name, value }) => {
-      this.result.setAttribute(name, value);
-      source.removeAttribute(name);
-    });
+    if (this.activePathMarker?.parentNode) this.activePathMarker.replaceWith(path);
+    else this.choices?.append(path);
+    this.activePathMarker = undefined;
   }
 
   showResult(preferredPath, shouldFocus = true) {
@@ -315,14 +304,22 @@ class GiftSpinel extends HTMLElement {
 
     this.restoreActiveResultSource();
 
-    const source = path.matches('[data-gift-spinel-path]')
-      ? path.querySelector('[data-gift-spinel-result-block]')
-      : path.content?.cloneNode(true);
+    const isGiftPath = path.matches('[data-gift-spinel-path]');
+    let source;
+    if (isGiftPath) {
+      this.activePathMarker = document.createComment('gift-spinel-path-position');
+      path.before(this.activePathMarker);
+      this.result.replaceChildren(path);
+      path.classList.add('is-active-path');
+      path.querySelector('[data-gift-spinel-path]')?.removeAttribute('hidden');
+      source = path.querySelector('[data-gift-spinel-result-block]');
+    } else {
+      source = path.content?.cloneNode(true);
+    }
     if (!source) return;
 
-    const content = path.matches('[data-gift-spinel-path]') ? source : source;
-    if (path.matches('[data-gift-spinel-path]')) this.moveEditorAttributesToResult(content);
-    this.replaceTokens(content);
+    const content = source;
+    this.activeTokenChanges = isGiftPath ? this.replaceTokens(content) : undefined;
     const chips = content.querySelector('[data-gift-spinel-chips]');
     if (chips && this.recipient) {
       chips.replaceChildren();
@@ -333,7 +330,7 @@ class GiftSpinel extends HTMLElement {
     }
 
     this.questions.hidden = true;
-    this.result.replaceChildren(content);
+    if (!isGiftPath) this.result.replaceChildren(content);
     this.result.hidden = false;
     window.ThemeAnimations?.refresh(this.result);
     if (this.status) this.status.textContent = this.result.querySelector('.content-block--heading')?.textContent?.trim() || '';
