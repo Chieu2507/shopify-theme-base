@@ -6,7 +6,21 @@
 {% liquid
   assign choice_label = block.settings.recipient_label | default: block.settings.recipient
   assign path_products = block.settings.products
+  assign bundle_total = 0
+  assign bundle_product_count = 0
 %}
+
+{% capture bundle_items %}[
+  {% for product in path_products limit: 4 %}
+    {% assign product_variant = product.selected_or_first_available_variant %}
+    {% if product_variant != blank and product_variant.available %}
+      {% if bundle_product_count > 0 %},{% endif %}
+      {"id":{{ product_variant.id }},"quantity":1}
+      {% assign bundle_total = bundle_total | plus: product_variant.price %}
+      {% assign bundle_product_count = bundle_product_count | plus: 1 %}
+    {% endif %}
+  {% endfor %}
+]{% endcapture %}
 
 <div class="gift-spinel__path" {{ block.shopify_attributes }}>
   <button
@@ -60,6 +74,32 @@
           </li>
         {% endfor %}
       </ul>
+
+      {% if bundle_product_count > 0 %}
+        <div class="gift-spinel__bundle" data-gift-spinel-bundle>
+          {% if section.settings.bundle_discount_message != blank %}
+            <p class="gift-spinel__bundle-message">{{ section.settings.bundle_discount_message | escape }}</p>
+          {% endif %}
+          <div class="gift-spinel__bundle-summary">
+            <span>{{ 'gift_spinel.bundle_items' | t: count: bundle_product_count }}</span>
+            <strong>{% render 'money', amount: bundle_total %}</strong>
+          </div>
+          <button
+            class="btn-primary gift-spinel__bundle-add"
+            type="button"
+            data-gift-spinel-bundle-add
+            data-gift-spinel-bundle-items='{{ bundle_items | strip_newlines | strip | escape }}'
+            data-gift-spinel-bundle-name="{{ section.settings.bundle_name | escape }}"
+            data-gift-spinel-bundle-label="{{ section.settings.bundle_add_label | escape }}"
+            data-gift-spinel-bundle-adding-label="{{ section.settings.bundle_adding_label | escape }}"
+            data-gift-spinel-bundle-added-label="{{ section.settings.bundle_added_label | escape }}"
+            data-gift-spinel-bundle-error-label="{{ section.settings.bundle_error_label | escape }}"
+          >
+            <span data-gift-spinel-bundle-label>{{ section.settings.bundle_add_label | escape }}</span>
+            <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'bag-simple' %}</span>
+          </button>
+        </div>
+      {% endif %}
     {% else %}
       <ul class="gift-spinel__products" role="list" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}" data-reveal-group>
         {% for placeholder_number in (1..4) %}
