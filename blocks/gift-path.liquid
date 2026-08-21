@@ -5,11 +5,13 @@
 
 {% liquid
   assign choice_label = block.settings.recipient_label | default: block.settings.recipient
-  assign path_collection = block.settings.collection
-  assign path_primary_link = path_collection.url
+  assign path_products = block.settings.products
+  assign path_primary_link = block.settings.primary_link
+  if path_primary_link == blank and path_products != blank
+    assign path_primary_link = path_products.first.url
+  endif
   assign path_heading = block.settings.heading
   assign path_copy = block.settings.copy
-  assign path_products = path_collection.products
 %}
 
 <button
@@ -58,17 +60,38 @@
 
     {% if path_products != blank %}
       <ul class="gift-spinel__products" role="list" data-reveal-group>
-        {% for product in path_products limit: section.settings.products_to_show %}
+        {% for product in path_products limit: 4 %}
+          {% assign product_variant = product.selected_or_first_available_variant %}
           <li class="gift-spinel__product" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
-            {% render 'product-card', product: product, show_media_actions: true, enable_quick_view: true %}
+            <article class="gift-spinel__product-row">
+              <a class="gift-spinel__product-media" href="{{ product.url | escape }}" aria-label="{{ product.title | escape }}">
+                {% if product.featured_image %}
+                  {{ product.featured_image | image_url: width: 160 | image_tag: loading: 'lazy', widths: '80, 120, 160', sizes: '72px', alt: product.featured_image.alt | default: product.title | escape }}
+                {% else %}
+                  {{ 'product-' | append: forloop.index | placeholder_svg_tag: 'gift-spinel__product-placeholder' }}
+                {% endif %}
+              </a>
+              <div class="gift-spinel__product-details">
+                <h3 class="gift-spinel__product-title product-title-text heading-text"><a href="{{ product.url | escape }}">{{ product.title | escape }}</a></h3>
+                <p class="gift-spinel__product-price">{% render 'money', amount: product_variant.price %}</p>
+              </div>
+              <a class="gift-spinel__product-action" href="{{ product.url | escape }}" aria-label="{{ 'product_recommendations.view_product' | t: product: product.title | escape }}">{% render 'icon', name: 'bag-simple' %}</a>
+            </article>
           </li>
         {% endfor %}
       </ul>
     {% else %}
       <ul class="gift-spinel__products" role="list" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}" data-reveal-group>
-        {% for placeholder_number in (1..section.settings.products_to_show) %}
+        {% for placeholder_number in (1..4) %}
           <li class="gift-spinel__product" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
-            {% render 'product-card', placeholder_index: placeholder_number %}
+            <article class="gift-spinel__product-row gift-spinel__product-row--placeholder" aria-hidden="true">
+              <span class="gift-spinel__product-media">{{ 'product-' | append: placeholder_number | placeholder_svg_tag: 'gift-spinel__product-placeholder' }}</span>
+              <div class="gift-spinel__product-details">
+                <h3 class="gift-spinel__product-title product-title-text heading-text">{{ 'onboarding.product_title' | t }}</h3>
+                <p class="gift-spinel__product-price">{% render 'money', amount: 10000 %}</p>
+              </div>
+              <span class="gift-spinel__product-action">{% render 'icon', name: 'bag-simple' %}</span>
+            </article>
           </li>
         {% endfor %}
       </ul>
@@ -82,13 +105,14 @@
   "tag": null,
   "settings": [
     { "type": "header", "content": "Gift path" },
-    { "type": "paragraph", "content": "Choose one collection for this recipient. Its products and URL are used automatically." },
+    { "type": "paragraph", "content": "Select up to 4 products for this recipient's edit." },
     { "type": "header", "content": "Recipient" },
     { "type": "select", "id": "recipient", "label": "Recipient", "options": [{ "value": "partner", "label": "Partner" }, { "value": "mother", "label": "Mother" }, { "value": "friend", "label": "Friend" }, { "value": "myself", "label": "Myself" }], "default": "partner" },
     { "type": "text", "id": "recipient_label", "label": "Display label", "default": "Gift recipient", "info": "Text shown on the recipient choice card." },
-    { "type": "collection", "id": "collection", "label": "Collection", "info": "Supplies the product cards and primary button destination." },
+    { "type": "product_list", "id": "products", "label": "Products", "limit": 4 },
     { "type": "header", "content": "Result content" },
     { "type": "text", "id": "primary_label", "label": "Primary button label", "default": "Explore this gift edit" },
+    { "type": "url", "id": "primary_link", "label": "Primary button link", "info": "When blank, the button links to the first selected product." },
     { "type": "richtext", "id": "featured_badge", "label": "Featured badge", "default": "<p>Your curated gift edit</p>" },
     { "type": "select", "id": "featured_badge_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
     { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>A thoughtful edit, chosen with care.</p>", "info": "Supports {recipient}." },
