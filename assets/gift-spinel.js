@@ -94,6 +94,7 @@ class GiftSpinel extends HTMLElement {
 
   initialize() {
     this.cancelPanelTransition();
+    this.restoreActiveResultSource();
     this.finder = this.querySelector('.gift-spinel__finder');
     this.intro = this.querySelector('.gift-spinel__intro');
     this.questions = this.querySelector('[data-gift-spinel-questions]');
@@ -203,7 +204,8 @@ class GiftSpinel extends HTMLElement {
   handleBlockSelect(event) {
     const selectedBlockId = event.detail?.blockId;
     const path = this.paths.find((item) => item.dataset.blockId === selectedBlockId)
-      || this.paths.find((item) => item.querySelector(`[data-shopify-editor-block="${CSS.escape(selectedBlockId || '')}"]`));
+      || this.paths.find((item) => item.querySelector(`[data-shopify-editor-block="${CSS.escape(selectedBlockId || '')}"]`))
+      || this.pathForVisibleEditorBlock(selectedBlockId);
     if (!path) return;
     this.recipient = this.optionFor(path.dataset.blockId);
     this.disableScrollAnchoring();
@@ -256,6 +258,29 @@ class GiftSpinel extends HTMLElement {
     });
   }
 
+  pathForVisibleEditorBlock(blockId) {
+    if (!blockId || !this.result) return null;
+
+    const selected = this.result.querySelector(`[data-shopify-editor-block="${CSS.escape(blockId)}"]`);
+    const resultBlock = selected?.closest('[data-gift-spinel-result-block]');
+    if (!resultBlock) return null;
+
+    return this.paths.find((path) => path.dataset.blockId === resultBlock.dataset.giftSpinelResultBlock) || null;
+  }
+
+  restoreActiveResultSource() {
+    if (!this.result || !this.paths?.length) return;
+
+    const source = this.result.querySelector('[data-gift-spinel-result-block]');
+    if (!source) return;
+
+    const path = this.paths.find((item) => item.dataset.blockId === source.dataset.giftSpinelResultBlock);
+    if (path) {
+      path.append(source);
+      path.hidden = true;
+    }
+  }
+
   showResult(preferredPath, shouldFocus = true) {
     const path = preferredPath || this.findMatchingPath();
     if (!path || !this.result) {
@@ -265,13 +290,18 @@ class GiftSpinel extends HTMLElement {
       return;
     }
 
+    this.restoreActiveResultSource();
+
     const source = path.matches('[data-gift-spinel-path]')
       ? path.querySelector('[data-gift-spinel-result-block]')
-      : path.content;
-    const content = source.cloneNode(true);
+      : path.content?.cloneNode(true);
+    if (!source) return;
+
+    const content = path.matches('[data-gift-spinel-path]') ? source : source;
     this.replaceTokens(content);
     const chips = content.querySelector('[data-gift-spinel-chips]');
     if (chips && this.recipient) {
+      chips.replaceChildren();
       const chip = document.createElement('span');
       chip.className = 'gift-spinel__chip';
       chip.textContent = this.recipient.label;
@@ -294,6 +324,7 @@ class GiftSpinel extends HTMLElement {
 
   resetRecipientView(shouldFocus = true) {
     this.recipient = undefined;
+    this.restoreActiveResultSource();
     this.result.hidden = true;
     this.result.replaceChildren();
     if (this.status) this.status.textContent = '';
