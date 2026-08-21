@@ -8,7 +8,7 @@
   assign path_products = block.settings.products
   assign bundle_total = 0
   assign bundle_product_count = 0
-  assign bundle_discount_percentage = section.settings.bundle_discount_percentage | default: 0
+  assign bundle_discount_percentage = block.settings.bundle_discount_percentage | default: 0
 %}
 
 {% capture bundle_items %}[
@@ -88,8 +88,8 @@
               <span>{{ 'gift_spinel.bundle_savings' | t: amount: bundle_savings }}</span>
             </div>
           {% endif %}
-          {% if section.settings.bundle_discount_message != blank %}
-            <p class="gift-spinel__bundle-message">{{ section.settings.bundle_discount_message | escape }}</p>
+          {% if block.settings.bundle_discount_message != blank %}
+            <p class="gift-spinel__bundle-message">{{ block.settings.bundle_discount_message | escape }}</p>
           {% endif %}
           <div class="gift-spinel__bundle-summary">
             <span>{{ 'gift_spinel.bundle_items' | t: count: bundle_product_count }}</span>
@@ -150,7 +150,11 @@
     { "type": "header", "content": "Recipient" },
     { "type": "select", "id": "recipient", "label": "Recipient", "options": [{ "value": "partner", "label": "Partner" }, { "value": "mother", "label": "Mother" }, { "value": "friend", "label": "Friend" }, { "value": "myself", "label": "Myself" }], "default": "partner" },
     { "type": "text", "id": "recipient_label", "label": "Display label", "default": "Gift recipient", "info": "Text shown on the recipient choice card." },
-    { "type": "product_list", "id": "products", "label": "Products", "limit": 4 }
+    { "type": "product_list", "id": "products", "label": "Products", "limit": 4 },
+    { "type": "header", "content": "Bundle discount" },
+    { "type": "paragraph", "content": "Create the matching automatic discount in Shopify admin. This Gift path adds its selected products to the cart; Shopify applies the discount when its conditions are met." },
+    { "type": "range", "id": "bundle_discount_percentage", "label": "Bundle discount", "min": 0, "max": 100, "step": 1, "unit": "%", "default": 15, "info": "Must match the automatic discount configured in Shopify admin." },
+    { "type": "text", "id": "bundle_discount_message", "label": "Discount message", "default": "Add this complete gift edit to receive your bundle discount." }
   ],
   "presets": [
     {
