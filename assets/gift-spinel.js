@@ -103,7 +103,7 @@ class GiftSpinel extends HTMLElement {
     this.status = this.querySelector('[data-gift-spinel-status]');
     this.question = this.querySelector('[data-gift-spinel-question]');
     this.choices = this.querySelector('[data-gift-spinel-choices]');
-    this.paths = Array.from(this.querySelectorAll('[data-gift-spinel-path]'));
+    this.paths = Array.from(this.querySelectorAll('[data-gift-spinel-path-root]'));
     this.placeholderPath = this.querySelector('template[data-gift-spinel-placeholder]');
     this.options = this.readOptions();
 
@@ -304,7 +304,7 @@ class GiftSpinel extends HTMLElement {
 
     this.restoreActiveResultSource();
 
-    const isGiftPath = path.matches('[data-gift-spinel-path]');
+    const isGiftPath = path.matches('[data-gift-spinel-path-root]');
     let source;
     if (isGiftPath) {
       this.activePathMarker = document.createComment('gift-spinel-path-position');
