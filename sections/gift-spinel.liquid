@@ -33,7 +33,7 @@
       <div
         class="gift-spinel__intro"
         style="--gift-spinel-card-color: {{ section.settings.image_overlay_color }}; --gift-spinel-card-reflection: {{ section.settings.intro_card_reflection | divided_by: 100.0 }};"
-        {% if section.settings.heading != blank %}aria-labelledby="GiftSpinelTitle-{{ section.id }}"{% endif %}
+        aria-label="{{ 'gift_spinel.quick_choice' | t | escape }}"
       >
         <div class="gift-spinel__intro-media" aria-hidden="true">
           {% if section.settings.image != blank %}
@@ -51,35 +51,20 @@
           {% endif %}
         </div>
         <div class="gift-spinel__intro-content gift-spinel__intro-content--position-{{ section.settings.intro_card_position }}{% if section.settings.enable_intro_card %} gift-spinel__intro-content--card{% endif %}">
-          {% if section.settings.subheading != blank %}
-            <div class="gift-spinel__subheading subheading-text gift-spinel__richtext gift-spinel__text--preset-{{ section.settings.subheading_preset }}">{{ section.settings.subheading }}</div>
-          {% endif %}
-          {% if section.settings.heading != blank %}
-            <div class="gift-spinel__heading gift-spinel__richtext gift-spinel__text--preset-{{ section.settings.heading_preset }}" id="GiftSpinelTitle-{{ section.id }}">{% render 'typography-content', content: section.settings.heading %}</div>
-          {% endif %}
+          <div class="gift-spinel__subheading subheading-text">{% content_for 'block', type: 'label', id: 'intro_label' %}</div>
+          <div class="gift-spinel__heading" id="GiftSpinelTitle-{{ section.id }}">{% content_for 'block', type: 'heading', id: 'intro_heading' %}</div>
         </div>
       </div>
 
       {% if section.blocks.size > 0 %}
         <div class="gift-spinel__finder">
-        <div class="gift-spinel__editor-block-anchors" aria-hidden="true">
-          {% for block in section.blocks %}
-            <span
-              class="gift-spinel__editor-block-anchor"
-              data-gift-spinel-editor-block="{{ block.id }}"
-              {{ block.shopify_attributes }}
-            ></span>
-          {% endfor %}
-        </div>
         <div class="gift-spinel__questions" data-gift-spinel-questions>
           <div class="gift-spinel__step-meta">
             <span>{{ 'gift_spinel.quick_choice' | t }}</span>
-            <span>{{ section.settings.concierge_label | escape }}</span>
+            <span class="gift-spinel__concierge-label">{% content_for 'block', type: 'label', id: 'finder_label' %}</span>
           </div>
-          {% if section.settings.intro != blank %}
-            <div class="gift-spinel__intro-copy gift-spinel__richtext gift-spinel__text--preset-{{ section.settings.intro_preset }} rte">{{ section.settings.intro }}</div>
-          {% endif %}
-          <div class="gift-spinel__question gift-spinel__richtext gift-spinel__text--preset-{{ section.settings.question_recipient_preset }}" id="GiftSpinelQuestion-{{ section.id }}" data-gift-spinel-question tabindex="-1">{{ section.settings.question_recipient }}</div>
+          <div class="gift-spinel__intro-copy rte">{% content_for 'block', type: 'text', id: 'finder_intro' %}</div>
+          <div class="gift-spinel__question" id="GiftSpinelQuestion-{{ section.id }}" data-gift-spinel-question tabindex="-1">{% content_for 'block', type: 'heading', id: 'finder_question' %}</div>
           <p class="gift-spinel__question-hint" id="GiftSpinelHint-{{ section.id }}">{{ 'gift_spinel.choose_hint' | t }}</p>
           <div class="gift-spinel__choices" data-gift-spinel-choices role="group" aria-labelledby="GiftSpinelQuestion-{{ section.id }}" aria-describedby="GiftSpinelHint-{{ section.id }}">
             {% for block in section.blocks %}
@@ -92,6 +77,7 @@
                 data-gift-spinel-choice="{{ block.id }}"
                 data-recipient="{{ block.settings.recipient | escape }}"
                 aria-pressed="false"
+                {{ block.shopify_attributes }}
               ><span>{{ choice_label | escape }}</span><span class="gift-spinel__choice-icon button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span></button>
             {% endfor %}
           </div>
@@ -209,16 +195,6 @@
     { "type": "header", "content": "Section padding" },
     { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 80 },
     { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 80 },
-    {
-      "type": "header",
-      "content": "Content"
-    },
-    { "type": "richtext", "id": "subheading", "label": "Subheading", "default": "<p>Gifting, made simple</p>" },
-    { "type": "select", "id": "subheading_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-    { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>Find their gift.</p>" },
-    { "type": "select", "id": "heading_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-    { "type": "richtext", "id": "intro", "label": "Intro text", "default": "<p>Choose who you are shopping for and we will show you a ready-to-gift jewelry edit.</p>" },
-    { "type": "select", "id": "intro_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
     { "type": "header", "content": "Editorial image" },
     { "type": "image_picker", "id": "image", "label": "Image", "info": "Select an image for this section." },
     { "type": "select", "id": "image_position", "label": "Image position", "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }], "default": "left", "info": "Changes the desktop column position. On mobile, the gift finder is shown first and the image second." },
@@ -227,10 +203,6 @@
     { "type": "color", "id": "image_overlay_color", "label": "Card color", "default": "#F3F1EE" },
     { "type": "select", "id": "intro_card_position", "label": "Card position", "options": [{ "value": "top-left", "label": "Top left" }, { "value": "top-center", "label": "Top center" }, { "value": "top-right", "label": "Top right" }, { "value": "center-left", "label": "Center left" }, { "value": "center", "label": "Center" }, { "value": "center-right", "label": "Center right" }, { "value": "bottom-left", "label": "Bottom left" }, { "value": "bottom-center", "label": "Bottom center" }, { "value": "bottom-right", "label": "Bottom right" }], "default": "top-left", "info": "Controls the text card placement over the image." },
     { "type": "range", "id": "intro_card_reflection", "label": "Mirror reflection", "min": 0, "max": 100, "step": 5, "unit": "%", "default": 25, "info": "Controls the soft reflective sheen on the text card.", "visible_if": "{{ section.settings.enable_intro_card }}" },
-    { "type": "text", "id": "concierge_label", "label": "Interaction label", "default": "Gift finder" },
-    { "type": "header", "content": "Recipient choices" },
-    { "type": "richtext", "id": "question_recipient", "label": "Question text", "default": "<p>Who are you shopping for?</p>" },
-    { "type": "select", "id": "question_recipient_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
     { "type": "header", "content": "Product cards" },
     { "type": "range", "id": "products_to_show", "label": "Product count", "min": 3, "max": 6, "step": 1, "default": 6 },
     { "type": "select", "id": "product_columns", "label": "Product columns", "options": [{ "value": "2", "label": "2 columns" }, { "value": "3", "label": "3 columns" }], "default": "3" },
@@ -239,33 +211,7 @@
     { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme." }
   ],
   "blocks": [
-    {
-      "type": "gift_path",
-      "name": "Gift path",
-      "settings": [
-        {
-          "type": "header",
-          "content": "Gift path"
-        },
-        { "type": "paragraph", "content": "Choose one collection for this recipient. Its products and URL are used automatically." },
-        { "type": "header", "content": "Recipient" },
-        { "type": "select", "id": "recipient", "label": "Recipient", "options": [{ "value": "partner", "label": "Partner" }, { "value": "mother", "label": "Mother" }, { "value": "friend", "label": "Friend" }, { "value": "myself", "label": "Myself" }], "default": "partner" },
-        { "type": "text", "id": "recipient_label", "label": "Display label", "default": "Gift recipient", "info": "Text shown on the recipient choice card." },
-        { "type": "collection", "id": "collection", "label": "Collection", "info": "Supplies the product cards and primary button destination." },
-        { "type": "header", "content": "Result content" },
-        { "type": "text", "id": "primary_label", "label": "Primary button label", "default": "Explore this gift edit" },
-        { "type": "richtext", "id": "featured_badge", "label": "Featured badge", "default": "<p>Your curated gift edit</p>" },
-        { "type": "select", "id": "featured_badge_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-        { "type": "richtext", "id": "heading", "label": "Heading", "default": "<p>A thoughtful edit, chosen with care.</p>", "info": "Supports {recipient}." },
-        { "type": "select", "id": "heading_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-        { "type": "richtext", "id": "copy", "label": "Copy", "default": "<p>Chosen for its quiet symbolism and made to become part of their everyday ritual.</p>", "info": "Supports {recipient}." },
-        { "type": "select", "id": "copy_preset", "label": "Preset", "options": [{ "value": "default", "label": "Default" }, { "value": "paragraph", "label": "Paragraph" }, { "value": "subheading", "label": "Subheading" }, { "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "default" },
-        { "type": "header", "content": "Personalization button" },
-        { "type": "checkbox", "id": "show_personalization", "label": "Show personalization button", "default": false },
-        { "type": "text", "id": "personalization_label", "label": "Personalization button label", "default": "Make it personal" },
-        { "type": "url", "id": "personalization_link", "label": "Personalization button link" }
-      ]
-    }
+    { "type": "gift-path" }
   ],
   "enabled_on": {
     "templates": ["index"]
@@ -275,10 +221,15 @@
       "name": "Gift Spinel",
       "category": "Gifting",
       "blocks": [
-        { "type": "gift_path", "settings": { "recipient": "mother", "recipient_label": "Mum", "heading": "<p>A thoughtful edit for Mum.</p>", "featured_badge": "<p>Chosen for Mum</p>" } },
-        { "type": "gift_path", "settings": { "recipient": "partner", "recipient_label": "My partner", "heading": "<p>A keepsake for your shared story.</p>", "featured_badge": "<p>Chosen for your partner</p>" } },
-        { "type": "gift_path", "settings": { "recipient": "friend", "recipient_label": "A friend", "heading": "<p>A gift that feels like them.</p>", "featured_badge": "<p>Chosen for a friend</p>" } },
-        { "type": "gift_path", "settings": { "recipient": "myself", "recipient_label": "Myself", "heading": "<p>A piece to keep close.</p>", "featured_badge": "<p>A gift to yourself</p>" } }
+        { "type": "label", "id": "intro_label", "static": true, "settings": { "text": "<p>Gifting, made simple</p>", "reveal_type": "fade-up", "reveal_delay": 0 } },
+        { "type": "heading", "id": "intro_heading", "static": true, "settings": { "heading": "<h2>Find their gift.</h2>", "type_preset": "h3", "reveal_type": "fade-up", "reveal_delay": 150 } },
+        { "type": "label", "id": "finder_label", "static": true, "settings": { "text": "<p>Gift finder</p>", "reveal_type": "none" } },
+        { "type": "text", "id": "finder_intro", "static": true, "settings": { "text": "<p>Choose who you are shopping for and we will show you a ready-to-gift jewelry edit.</p>", "type_preset": "sm", "reveal_type": "fade-up", "reveal_delay": 0 } },
+        { "type": "heading", "id": "finder_question", "static": true, "settings": { "heading": "<h2>Who are you shopping for?</h2>", "type_preset": "h5", "reveal_type": "fade-up", "reveal_delay": 150 } },
+        { "type": "gift-path", "settings": { "recipient": "mother", "recipient_label": "Mum", "heading": "<p>A thoughtful edit for Mum.</p>", "featured_badge": "<p>Chosen for Mum</p>" } },
+        { "type": "gift-path", "settings": { "recipient": "partner", "recipient_label": "My partner", "heading": "<p>A keepsake for your shared story.</p>", "featured_badge": "<p>Chosen for your partner</p>" } },
+        { "type": "gift-path", "settings": { "recipient": "friend", "recipient_label": "A friend", "heading": "<p>A gift that feels like them.</p>", "featured_badge": "<p>Chosen for a friend</p>" } },
+        { "type": "gift-path", "settings": { "recipient": "myself", "recipient_label": "Myself", "heading": "<p>A piece to keep close.</p>", "featured_badge": "<p>A gift to yourself</p>" } }
       ]
     }
   ]
