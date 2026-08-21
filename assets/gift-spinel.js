@@ -467,6 +467,11 @@ class GiftSpinel extends HTMLElement {
     exitAnimation.finished.catch(() => null).then(() => {
       if (!this.isPanelTransitioning) return;
 
+      // This animation runs on the actual Gift path root (rather than a clone)
+      // so its `fill: forwards` state must be cleared before that root returns
+      // to the recipient choice grid. Otherwise the choice remains clickable
+      // but inherits opacity: 0 after "Change recipient".
+      exitAnimation.cancel();
       this.resetRecipientView(false);
       const targetHeight = this.getFinderTargetHeight(this.questions);
 
