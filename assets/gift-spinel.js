@@ -102,7 +102,7 @@ class GiftSpinel extends HTMLElement {
     this.status = this.querySelector('[data-gift-spinel-status]');
     this.question = this.querySelector('[data-gift-spinel-question]');
     this.choices = this.querySelector('[data-gift-spinel-choices]');
-    this.paths = Array.from(this.querySelectorAll('template[data-gift-spinel-path]'));
+    this.paths = Array.from(this.querySelectorAll('[data-gift-spinel-path]'));
     this.placeholderPath = this.querySelector('template[data-gift-spinel-placeholder]');
     this.options = this.readOptions();
 
@@ -201,7 +201,7 @@ class GiftSpinel extends HTMLElement {
   handleBlockSelect(event) {
     const selectedBlockId = event.detail?.blockId;
     const path = this.paths.find((item) => item.dataset.blockId === selectedBlockId)
-      || this.paths.find((item) => item.content.querySelector(`[data-shopify-editor-block="${CSS.escape(selectedBlockId || '')}"]`));
+      || this.paths.find((item) => item.querySelector(`[data-shopify-editor-block="${CSS.escape(selectedBlockId || '')}"]`));
     if (!path) return;
     this.recipient = this.optionFor(path.dataset.blockId);
     this.disableScrollAnchoring();
@@ -280,7 +280,10 @@ class GiftSpinel extends HTMLElement {
       return;
     }
 
-    const content = path.content.cloneNode(true);
+    const source = path.matches('[data-gift-spinel-path]')
+      ? path.querySelector('[data-gift-spinel-result-block]')
+      : path.content;
+    const content = source.cloneNode(true);
     this.replaceTokens(content);
     const chips = content.querySelector('[data-gift-spinel-chips]');
     if (chips && this.recipient) {
