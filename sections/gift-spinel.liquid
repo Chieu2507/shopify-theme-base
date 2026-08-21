@@ -25,7 +25,7 @@
   class="gift-spinel gift-spinel--layout-{{ section.settings.layout_ratio }} gift-spinel--image-{{ image_column_position }} gift-spinel--choices-{{ section.settings.choice_style }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width gift-spinel--full{% endif %}"
   data-deferred-module="{{ 'gift-spinel.js' | asset_url }}"
   data-editor-mode="{% if request.design_mode %}true{% else %}false{% endif %}"
-  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --gift-spinel-product-columns: {{ section.settings.product_columns }};"
+  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
   <a name="gift-spinel" tabindex="-1" aria-hidden="true"></a>
   <div class="gift-spinel__spacing section-spacing">
@@ -87,9 +87,16 @@
         <button class="gift-spinel__change" type="button" data-gift-spinel-change>{{ 'gift_spinel.change_recipient' | t }}</button>
       </div>
       <ul class="gift-spinel__products" role="list" data-reveal-group>
-        {% for placeholder_number in (1..section.settings.products_to_show) %}
+        {% for placeholder_number in (1..4) %}
           <li class="gift-spinel__product" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
-            {% render 'product-card', placeholder_index: placeholder_number %}
+            <article class="gift-spinel__product-row gift-spinel__product-row--placeholder" aria-hidden="true">
+              <span class="gift-spinel__product-media">{{ 'product-' | append: placeholder_number | placeholder_svg_tag: 'gift-spinel__product-placeholder' }}</span>
+              <div class="gift-spinel__product-details">
+                <h3 class="gift-spinel__product-title product-title-text heading-text">{{ 'onboarding.product_title' | t }}</h3>
+                <p class="gift-spinel__product-price">{% render 'money', amount: 10000 %}</p>
+              </div>
+              <span class="gift-spinel__product-action">{% render 'icon', name: 'bag-simple' %}</span>
+            </article>
           </li>
         {% endfor %}
       </ul>
@@ -121,9 +128,6 @@
     { "type": "color", "id": "image_overlay_color", "label": "Card color", "default": "#F3F1EE" },
     { "type": "select", "id": "intro_card_position", "label": "Card position", "options": [{ "value": "top-left", "label": "Top left" }, { "value": "top-center", "label": "Top center" }, { "value": "top-right", "label": "Top right" }, { "value": "center-left", "label": "Center left" }, { "value": "center", "label": "Center" }, { "value": "center-right", "label": "Center right" }, { "value": "bottom-left", "label": "Bottom left" }, { "value": "bottom-center", "label": "Bottom center" }, { "value": "bottom-right", "label": "Bottom right" }], "default": "top-left", "info": "Controls the text card placement over the image." },
     { "type": "range", "id": "intro_card_reflection", "label": "Mirror reflection", "min": 0, "max": 100, "step": 5, "unit": "%", "default": 25, "info": "Controls the soft reflective sheen on the text card.", "visible_if": "{{ section.settings.enable_intro_card }}" },
-    { "type": "header", "content": "Product cards" },
-    { "type": "range", "id": "products_to_show", "label": "Product count", "min": 3, "max": 6, "step": 1, "default": 6 },
-    { "type": "select", "id": "product_columns", "label": "Product columns", "options": [{ "value": "2", "label": "2 columns" }, { "value": "3", "label": "3 columns" }], "default": "3" },
     { "type": "header", "content": "Appearance" },
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
     { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme." }
