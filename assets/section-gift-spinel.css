@@ -297,6 +297,7 @@
   flex-direction: column;
   align-items: flex-start;
   gap: 14px;
+  padding-inline-end: 60px;
 }
 
 .gift-spinel__result-blocks > .content-block,
@@ -373,21 +374,18 @@
 .gift-spinel__choice:disabled { cursor: wait; opacity: .85; }
 .gift-spinel__choice.is-selected:disabled { opacity: 1; }
 
-.gift-spinel__result-content { animation: gift-spinel-enter var(--motion-duration) ease both; }
-
-.gift-spinel__result-tools {
-  display: flex;
-  flex-wrap: wrap;
-  align-items: center;
-  justify-content: space-between;
-  gap: 12px 18px;
-  margin-top: 22px;
+.gift-spinel__result-content {
+  position: relative;
+  animation: gift-spinel-enter var(--motion-duration) ease both;
 }
 
 .gift-spinel__chips {
   display: flex;
   flex-wrap: wrap;
   gap: 8px;
+  min-height: 30px;
+  margin-bottom: 14px;
+  padding-inline-end: 60px;
 }
 
 .gift-spinel__chip {
@@ -405,19 +403,34 @@
 }
 
 .gift-spinel__change {
-  padding: 4px 0;
-  border: 0;
-  border-bottom: 1px solid currentcolor;
-  background: transparent;
-  color: var(--color-text);
+  position: absolute;
+  z-index: 1;
+  inset-block-start: 0;
+  inset-inline-end: 0;
+  color: var(--color-heading);
   cursor: pointer;
-  font: inherit;
-  font-size: var(--p2-size-sm);
-  line-height: 1.4;
 }
 
-.gift-spinel__change:hover { color: var(--color-heading); }
-.gift-spinel__change:focus-visible { outline: 2px solid currentcolor; outline-offset: 3px; }
+.gift-spinel__result-blocks :is(.btn-primary, .button--primary) {
+  --gift-spinel-button-outline: var(--color-primary-button-outline);
+}
+
+.gift-spinel__result-blocks :is(.btn-secondary, .button--secondary) {
+  --gift-spinel-button-outline: var(--color-secondary-button-outline);
+}
+
+/* Keep a persistent inset border while the global button fill paints on hover. */
+.gift-spinel__result-blocks :is(.btn-primary, .btn-secondary, .button--primary, .button--secondary) {
+  border-style: solid;
+  box-shadow: inset 0 0 0 1px var(--gift-spinel-button-outline);
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .gift-spinel__result-blocks :is(.btn-primary, .btn-secondary, .button--primary, .button--secondary):not(:disabled, [aria-disabled='true']):hover {
+    border-color: var(--button-hover-label);
+    box-shadow: inset 0 0 0 1px var(--button-hover-label);
+  }
+}
 
 .gift-spinel__products {
   display: grid;
