@@ -1,8 +1,19 @@
 {% render 'section-stylesheet', asset: 'section-countdown-timer.css', defer_on_home: true %}
 
+{% liquid
+  assign has_button = false
+
+  for block in section.blocks
+    if block.type == 'button' and block.settings.label != blank and block.settings.link != blank
+      assign has_button = true
+      break
+    endif
+  endfor
+%}
+
 {% if section.blocks.size > 0 %}
   <div
-    class="countdown-timer color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} countdown-timer--full full-width{% endif %} countdown-timer--mobile-{{ section.settings.mobile_alignment }}"
+    class="countdown-timer color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} countdown-timer--full full-width{% endif %}{% if has_button %} countdown-timer--has-button{% endif %} countdown-timer--mobile-{{ section.settings.mobile_alignment }}"
     style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --countdown-timer-column-gap: {{ section.settings.column_gap }}px; --countdown-timer-mobile-row-gap: {{ section.settings.mobile_row_gap }}px;"
     data-deferred-module="{{ 'section-countdown-timer.js' | asset_url }}"
   >
@@ -27,24 +38,28 @@
             {% liquid
               assign countdown_is_configured = false
               assign countdown_is_preview = false
+              assign countdown_is_static = false
 
               if block.settings.end_at != blank
                 assign countdown_is_configured = true
               elsif request.design_mode
                 assign countdown_is_preview = true
+              else
+                assign countdown_is_static = true
               endif
             %}
-            {% if countdown_is_configured or countdown_is_preview %}
-              <countdown-timer
-                class="countdown-timer__timer"
-                {% if countdown_is_configured %}
-                  data-end-at="{{ block.settings.end_at | escape }}"
-                  data-show-completion-message="{{ block.settings.show_completion_message }}"
-                {% else %}
-                  data-countdown-preview
-                {% endif %}
-                {{ block.shopify_attributes }}
-              >
+            <countdown-timer
+              class="countdown-timer__timer"
+              {% if countdown_is_configured %}
+                data-end-at="{{ block.settings.end_at | escape }}"
+                data-show-completion-message="{{ block.settings.show_completion_message }}"
+              {% elsif countdown_is_preview %}
+                data-countdown-preview
+              {% elsif countdown_is_static %}
+                data-countdown-static
+              {% endif %}
+              {{ block.shopify_attributes }}
+            >
                 <time
                   class="countdown-timer__units"
                   {% if countdown_is_configured %}datetime="{{ block.settings.end_at | escape }}"{% endif %}
@@ -71,8 +86,7 @@
                 <p class="countdown-timer__complete" data-countdown-complete hidden aria-live="polite">
                   {{ block.settings.completion_message | escape }}
                 </p>
-              </countdown-timer>
-            {% endif %}
+            </countdown-timer>
 
           {% when 'button' %}
             {% if block.settings.label != blank and block.settings.link != blank %}
