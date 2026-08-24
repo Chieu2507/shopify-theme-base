@@ -2,7 +2,7 @@ if (!customElements.get('countdown-timer')) {
   class CountdownTimer extends HTMLElement {
     connectedCallback() {
       this.stop();
-      if (this.hasAttribute('data-countdown-preview') || this.hasAttribute('data-countdown-static')) return;
+      if (this.hasAttribute('data-countdown-preview')) return;
       this.units = this.querySelector('[data-countdown-units]');
       this.completeMessage = this.querySelector('[data-countdown-complete]');
       this.outputs = {
