@@ -8,6 +8,7 @@
   assign card_label = block.settings.label | default: 'ARCHIVE'
   assign card_title = block.settings.title | default: 'Archive title'
   assign card_action_label = block.settings.action_label | default: 'Enter'
+  assign card_ratio = block.settings.image_ratio | default: '4-3'
 %}
 
 {% if block.settings.link != blank %}
@@ -23,7 +24,7 @@
 {% else %}
   <article class="why-choose-us__archive-card" role="listitem" data-reveal-item {{ block.shopify_attributes }}>
 {% endif %}
-    <div class="why-choose-us__archive-media">
+    <div class="why-choose-us__archive-media why-choose-us__archive-media--{{ card_ratio }}">
       {% render 'responsive-media',
         image: card_image,
         max_width: 560,
@@ -37,12 +38,14 @@
       %}
     </div>
     <div class="why-choose-us__archive-content">
-      <p class="why-choose-us__archive-label">{{ card_label | escape }}</p>
-      <p class="why-choose-us__archive-title heading-text">{{ card_title | escape }}</p>
-      <span class="why-choose-us__archive-action">
-        <span>{{ card_action_label | escape }}</span>
-        <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
-      </span>
+      <p class="why-choose-us__archive-label" style="--why-choose-us-archive-label-size: {{ block.settings.label_size }}px;">{{ card_label | escape }}</p>
+      <p class="why-choose-us__archive-title {% if block.settings.title_font == 'body' %}body-text{% else %}heading-text{% endif %}" style="--why-choose-us-archive-title-size: {{ block.settings.title_size }}px; --why-choose-us-archive-title-size-mobile: {{ block.settings.title_size_mobile }}px;">{{ card_title | escape }}</p>
+      {% if card_action_label != blank %}
+        <span class="why-choose-us__archive-action btn-{{ block.settings.button_style }}">
+          <span>{{ card_action_label | escape }}</span>
+          <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+        </span>
+      {% endif %}
     </div>
 {% if block.settings.link != blank %}
   </a>
@@ -55,12 +58,21 @@
   "name": "Why choose us archive",
   "tag": null,
   "settings": [
+    { "type": "header", "content": "Image" },
     { "type": "image_picker", "id": "image", "label": "Image" },
     { "type": "text", "id": "alt", "label": "Alt text" },
+    { "type": "select", "id": "image_ratio", "label": "Image ratio", "options": [{ "value": "square", "label": "Square (1:1)" }, { "value": "4-3", "label": "Landscape (4:3)" }, { "value": "3-2", "label": "Landscape (3:2)" }, { "value": "2-3", "label": "Portrait (2:3)" }, { "value": "3-4", "label": "Standard (3:4)" }, { "value": "4-5", "label": "Portrait (4:5)" }, { "value": "6-7", "label": "Classic (6:7)" }], "default": "4-3" },
+    { "type": "header", "content": "Content" },
     { "type": "text", "id": "label", "label": "Label", "default": "ARCHIVE N° 01" },
+    { "type": "range", "id": "label_size", "label": "Label size", "min": 9, "max": 18, "step": 1, "unit": "px", "default": 10 },
     { "type": "text", "id": "title", "label": "Title", "default": "The Necklaces" },
+    { "type": "select", "id": "title_font", "label": "Title font", "options": [{ "value": "heading", "label": "Heading" }, { "value": "body", "label": "Body" }], "default": "heading" },
+    { "type": "range", "id": "title_size", "label": "Title size", "min": 14, "max": 48, "step": 1, "unit": "px", "default": 24 },
+    { "type": "range", "id": "title_size_mobile", "label": "Mobile title size", "min": 14, "max": 36, "step": 1, "unit": "px", "default": 20 },
+    { "type": "header", "content": "Button" },
     { "type": "url", "id": "link", "label": "Link" },
     { "type": "text", "id": "action_label", "label": "Action label", "default": "Enter" },
+    { "type": "select", "id": "button_style", "label": "Button style", "options": [{ "value": "tertiary", "label": "Tertiary" }, { "value": "primary", "label": "Primary" }, { "value": "secondary", "label": "Secondary" }], "default": "tertiary" },
     { "type": "checkbox", "id": "open_in_new_tab", "label": "Open link in new tab", "default": false },
     { "type": "text", "id": "accessibility_label", "label": "Accessibility label" }
   ]
