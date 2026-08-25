@@ -1,4 +1,14 @@
-<div class="product-usp-list product-usp-list--icon-{{ block.settings.icon_size | default: 'small' }} spinel-text--{{ block.settings.text_size | default: 'small' }}" style="--product-benefits-columns-desktop: {{ block.settings.columns_desktop }}; --product-benefits-columns-mobile: {{ block.settings.columns_mobile }};" {{ block.shopify_attributes }}>
+{% liquid
+  assign content_alignment = block.settings.content_alignment | default: 'center'
+  assign content_justify = 'center'
+  if content_alignment == 'left'
+    assign content_justify = 'start'
+  elsif content_alignment == 'right'
+    assign content_justify = 'end'
+  endif
+%}
+
+<div class="product-usp-list product-usp-list--icon-{{ block.settings.icon_size | default: 'small' }} spinel-text--{{ block.settings.text_size | default: 'small' }}" style="--product-benefits-columns-desktop: {{ block.settings.columns_desktop }}; --product-benefits-columns-mobile: {{ block.settings.columns_mobile }}; --product-benefits-content-alignment: {{ content_alignment }}; --product-benefits-content-justify: {{ content_justify }};" {{ block.shopify_attributes }}>
   {% content_for 'blocks' %}
 </div>
 
@@ -54,6 +64,12 @@
         }
       ],
       "default": "2"
+    },
+    {
+      "type": "text_alignment",
+      "id": "content_alignment",
+      "label": "Content alignment",
+      "default": "center"
     },
     {
       "type": "select",
