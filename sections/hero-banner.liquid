@@ -5,7 +5,7 @@
 
 {% if section.blocks.size > 0 %}
   <div
-    class="hero-banner color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} hero-banner--content-{{ section.settings.content_position }}"
+    class="hero-banner color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} hero-banner--content-{{ section.settings.content_position }} hero-banner--light-sweep-{{ section.settings.light_sweep_size | default: 'medium' }}"
     style="--hero-height: {{ section.settings.height_desktop }}px; --hero-height-tablet: {{ section.settings.height_tablet }}px; --hero-height-mobile: {{ section.settings.height_mobile }}px; --hero-overlay-color: {{ hero_overlay_color }}; --hero-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }}; --hero-content-width: {{ section.settings.content_width }}px; --hero-light-sweep-x: {{ section.settings.light_sweep_x_desktop }}%; --hero-light-sweep-y: {{ section.settings.light_sweep_y_desktop }}%; --hero-light-sweep-mobile-x: {{ section.settings.light_sweep_x_mobile }}%; --hero-light-sweep-mobile-y: {{ section.settings.light_sweep_y_mobile }}%;"
   >
     {% if media_count > 0 %}
@@ -104,6 +104,18 @@
     min-height: var(--hero-height-mobile);
     background: var(--gradient-background, var(--color-background));
     isolation: isolate;
+    --hero-light-sweep-size: clamp(104px, 11vw, 208px);
+    --hero-light-sweep-mobile-size: clamp(88px, 28vw, 150px);
+  }
+
+  .hero-banner--light-sweep-small {
+    --hero-light-sweep-size: clamp(76px, 8vw, 152px);
+    --hero-light-sweep-mobile-size: clamp(66px, 20vw, 112px);
+  }
+
+  .hero-banner--light-sweep-large {
+    --hero-light-sweep-size: clamp(132px, 14vw, 264px);
+    --hero-light-sweep-mobile-size: clamp(110px, 34vw, 190px);
   }
 
   .hero-banner__media-grid,
@@ -151,7 +163,7 @@
     z-index: 0;
     top: var(--hero-light-sweep-y);
     left: var(--hero-light-sweep-x);
-    width: clamp(104px, 11vw, 208px);
+    width: var(--hero-light-sweep-size);
     aspect-ratio: 1;
     overflow: hidden;
     border-radius: 50%;
@@ -303,7 +315,7 @@
     .hero-banner__light-sweep {
       top: var(--hero-light-sweep-mobile-y);
       left: var(--hero-light-sweep-mobile-x);
-      width: clamp(88px, 28vw, 150px);
+      width: var(--hero-light-sweep-mobile-size);
     }
 
     .hero-banner__content-positioner {
@@ -478,6 +490,27 @@
       "id": "enable_light_sweep",
       "label": "Show light sweep",
       "default": false
+    },
+    {
+      "type": "select",
+      "id": "light_sweep_size",
+      "label": "Size",
+      "options": [
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        }
+      ],
+      "default": "medium",
+      "visible_if": "{{ section.settings.enable_light_sweep }}"
     },
     {
       "type": "range",
