@@ -31,18 +31,31 @@
     "
   >
     <div class="footer__inner">
-      <div class="footer__lead">
+      <div class="footer__top">
         {% content_for 'block', type: '_footer-newsletter', id: 'newsletter' %}
-        {% content_for 'block', type: '_footer-appointment', id: 'appointment' %}
       </div>
 
-      <div class="footer__menus">
-        {% content_for 'blocks' %}
-      </div>
+      <div class="footer__bottom">
+        <div class="footer__bottom-main">
+          <div class="footer__menus">
+            {% content_for 'blocks' %}
+          </div>
 
-      {% content_for 'block', type: '_footer-signature', id: 'signature' %}
+          {% content_for 'block', type: '_footer-signature', id: 'signature' %}
 
-      <div class="footer__utility">
+          <aside class="footer__connect" aria-label="{{ 'footer.social_links' | t | escape }}">
+            {% if settings.instagram_url != blank or settings.pinterest_url != blank %}
+              <nav class="footer__social" aria-label="{{ 'footer.social_links' | t | escape }}">
+                <ul class="footer__social-list" role="list">
+                  {% if settings.instagram_url != blank %}<li><a class="footer__social-link" href="{{ settings.instagram_url | escape }}" target="_blank" rel="noopener noreferrer"><span>{% render 'social-icon', name: 'instagram' %}</span><span>Instagram</span></a></li>{% endif %}
+                  {% if settings.pinterest_url != blank %}<li><a class="footer__social-link" href="{{ settings.pinterest_url | escape }}" target="_blank" rel="noopener noreferrer"><span>{% render 'social-icon', name: 'pinterest' %}</span><span>Pinterest</span></a></li>{% endif %}
+                </ul>
+              </nav>
+            {% endif %}
+          </aside>
+        </div>
+
+        <div class="footer__utility">
         <div class="footer__utility-start">
           {% if section.settings.show_country_selector or section.settings.show_language_selector %}
             <footer-localization class="footer__localization">
@@ -108,21 +121,22 @@
             </nav>
           {% endif %}
         </div>
+        </div>
+
+        {% if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 %}
+          <div class="footer__payments" aria-label="{{ 'footer.payment_methods' | t | escape }}">
+            {% for type in shop.enabled_payment_types %}
+              {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
+            {% endfor %}
+          </div>
+        {% endif %}
+
+        {% if section.settings.show_follow_on_shop %}
+          <div class="footer__follow-on-shop">
+            {{ shop | login_button: action: 'follow' }}
+          </div>
+        {% endif %}
       </div>
-
-      {% if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 %}
-        <div class="footer__payments" aria-label="{{ 'footer.payment_methods' | t | escape }}">
-          {% for type in shop.enabled_payment_types %}
-            {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
-          {% endfor %}
-        </div>
-      {% endif %}
-
-      {% if section.settings.show_follow_on_shop %}
-        <div class="footer__follow-on-shop">
-          {{ shop | login_button: action: 'follow' }}
-        </div>
-      {% endif %}
     </div>
   </footer>
 </footer-house>
@@ -304,58 +318,6 @@
             }
               ]
             },
-        {
-          "type": "_footer-appointment",
-          "id": "appointment",
-          "static": true,
-          "settings": {
-            "color_scheme": "scheme-5",
-            "background_color": "",
-            "padding_top": 28,
-            "padding_right": 32,
-            "padding_bottom": 30,
-            "padding_left": 32
-          },
-          "blocks": [
-            {
-              "type": "label",
-              "id": "appointment_eyebrow",
-              "static": true,
-              "settings": {
-                "text": "<p>PRIVATE APPOINTMENTS</p>"
-              }
-            },
-            {
-              "type": "heading",
-              "id": "appointment_heading",
-              "static": true,
-              "settings": {
-                "heading": "<h2>Discover Spinel,<br>one stone at a time.</h2>",
-                "type_preset": "xl"
-              }
-            },
-            {
-              "type": "text",
-              "id": "appointment_text",
-              "static": true,
-              "settings": {
-                "text": "<p>Private consultations shaped around your intention,<br>timing and next piece.</p>",
-                "type_preset": "sm"
-              }
-            },
-            {
-              "type": "button",
-              "id": "appointment_button",
-              "static": true,
-              "settings": {
-                "label": "BOOK AN APPOINTMENT",
-                "link": "/pages/contact",
-                "style": "secondary",
-                "icon": "arrow-right"
-              }
-            }
-          ]
-        },
         {
           "type": "footer-menu",
           "settings": {
