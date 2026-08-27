@@ -6,7 +6,7 @@
 {% if section.blocks.size > 0 %}
   <div
     class="hero-banner color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} hero-banner--content-{{ section.settings.content_position }}"
-    style="--hero-height: {{ section.settings.height_desktop }}px; --hero-height-tablet: {{ section.settings.height_tablet }}px; --hero-height-mobile: {{ section.settings.height_mobile }}px; --hero-overlay-color: {{ hero_overlay_color }}; --hero-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }}; --hero-content-width: {{ section.settings.content_width }}px;"
+    style="--hero-height: {{ section.settings.height_desktop }}px; --hero-height-tablet: {{ section.settings.height_tablet }}px; --hero-height-mobile: {{ section.settings.height_mobile }}px; --hero-overlay-color: {{ hero_overlay_color }}; --hero-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }}; --hero-content-width: {{ section.settings.content_width }}px; --hero-light-sweep-x: {{ section.settings.light_sweep_x_desktop }}%; --hero-light-sweep-y: {{ section.settings.light_sweep_y_desktop }}%; --hero-light-sweep-mobile-x: {{ section.settings.light_sweep_x_mobile }}%; --hero-light-sweep-mobile-y: {{ section.settings.light_sweep_y_mobile }}%;"
   >
     {% if media_count > 0 %}
       <div class="hero-banner__media-grid">
@@ -50,6 +50,10 @@
       </div>
 
       <div class="hero-banner__overlay" aria-hidden="true"></div>
+    {% endif %}
+
+    {% if section.settings.enable_light_sweep %}
+      <div class="hero-banner__light-sweep" aria-hidden="true"></div>
     {% endif %}
 
     <div class="hero-banner__content-positioner">
@@ -142,7 +146,77 @@
     pointer-events: none;
   }
 
+  .hero-banner__light-sweep {
+    position: absolute;
+    z-index: 0;
+    top: var(--hero-light-sweep-y);
+    left: var(--hero-light-sweep-x);
+    width: clamp(104px, 11vw, 208px);
+    aspect-ratio: 1;
+    overflow: hidden;
+    border-radius: 50%;
+    transform: translate(-50%, -50%);
+    pointer-events: none;
+    mix-blend-mode: screen;
+  }
+
+  .hero-banner__light-sweep::before,
+  .hero-banner__light-sweep::after {
+    position: absolute;
+    content: '';
+    pointer-events: none;
+  }
+
+  .hero-banner__light-sweep::before {
+    inset: -70%;
+    background: linear-gradient(118deg, transparent 44%, rgb(255 255 255 / 0) 47%, rgb(255 255 255 / 0.85) 49.5%, rgb(255 249 223 / 0.96) 50%, rgb(255 255 255 / 0.85) 50.5%, rgb(255 255 255 / 0) 53%, transparent 56%);
+    filter: blur(1px);
+    animation: hero-banner-light-sweep 5.6s cubic-bezier(.22, 1, .36, 1) infinite;
+  }
+
+  .hero-banner__light-sweep::after {
+    inset: 35%;
+    border-radius: 50%;
+    background: radial-gradient(circle, rgb(255 255 255 / 0.98) 0, rgb(255 247 205 / 0.7) 16%, rgb(255 236 159 / 0.18) 38%, transparent 70%);
+    box-shadow: 0 0 18px 6px rgb(255 231 147 / 0.22);
+    animation: hero-banner-light-spark 5.6s ease-in-out infinite;
+  }
+
+  @keyframes hero-banner-light-sweep {
+    0%, 18% {
+      opacity: 0;
+      transform: translateX(-46%);
+    }
+
+    28% {
+      opacity: 0.9;
+    }
+
+    52% {
+      opacity: 0.8;
+      transform: translateX(46%);
+    }
+
+    62%, 100% {
+      opacity: 0;
+      transform: translateX(46%);
+    }
+  }
+
+  @keyframes hero-banner-light-spark {
+    0%, 24%, 60%, 100% {
+      opacity: 0;
+      transform: scale(0.35);
+    }
+
+    36%, 48% {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
   .hero-banner__content-positioner {
+    z-index: 1;
     display: flex;
     align-items: flex-end;
     justify-content: flex-start;
@@ -226,6 +300,12 @@
   }
 
   @media screen and (max-width: 767.98px) {
+    .hero-banner__light-sweep {
+      top: var(--hero-light-sweep-mobile-y);
+      left: var(--hero-light-sweep-mobile-x);
+      width: clamp(88px, 28vw, 150px);
+    }
+
     .hero-banner__content-positioner {
       padding-block: 32px;
       width: 100%;
@@ -253,6 +333,23 @@
   @media screen and (min-width: 1150px) {
     .hero-banner {
       min-height: var(--hero-height);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .hero-banner__light-sweep::before,
+    .hero-banner__light-sweep::after {
+      animation: none;
+    }
+
+    .hero-banner__light-sweep::before {
+      opacity: 0.48;
+      transform: none;
+    }
+
+    .hero-banner__light-sweep::after {
+      opacity: 0.72;
+      transform: none;
     }
   }
 {% endstylesheet %}
@@ -371,6 +468,60 @@
       "unit": "px",
       "label": "Mobile",
       "default": 440
+    },
+    {
+      "type": "header",
+      "content": "Light sweep"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_light_sweep",
+      "label": "Show light sweep",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "light_sweep_x_desktop",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "Desktop horizontal position",
+      "default": 50,
+      "visible_if": "{{ section.settings.enable_light_sweep }}"
+    },
+    {
+      "type": "range",
+      "id": "light_sweep_y_desktop",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "Desktop vertical position",
+      "default": 50,
+      "visible_if": "{{ section.settings.enable_light_sweep }}"
+    },
+    {
+      "type": "range",
+      "id": "light_sweep_x_mobile",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "Mobile horizontal position",
+      "default": 50,
+      "visible_if": "{{ section.settings.enable_light_sweep }}"
+    },
+    {
+      "type": "range",
+      "id": "light_sweep_y_mobile",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "label": "Mobile vertical position",
+      "default": 50,
+      "visible_if": "{{ section.settings.enable_light_sweep }}"
     },
     {
       "type": "header",
