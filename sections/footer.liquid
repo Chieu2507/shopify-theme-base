@@ -55,54 +55,51 @@
                 </ul>
               </nav>
             {% endif %}
+
+            {% if section.settings.show_country_selector or section.settings.show_language_selector %}
+              <div class="footer__connect-divider" aria-hidden="true"><span>✦</span></div>
+              <div class="footer__utility-start footer__utility-start--connect">
+                <footer-localization class="footer__localization">
+                  {% form 'localization', id: localization_form_id %}
+                    <div class="footer__region">
+                      {% if section.settings.show_country_selector %}
+                        {% if localization.available_countries.size > 1 %}
+                          <label class="visually-hidden" for="FooterCountry-{{ section.id }}">{{ 'footer.country_region' | t }}</label>
+                          <span class="footer__localization-select">
+                            <select id="FooterCountry-{{ section.id }}" name="country_code" data-footer-localization-select>
+                              {% for country in localization.available_countries %}
+                                <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.currency.iso_code | escape }} $</option>
+                              {% endfor %}
+                            </select>
+                            <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                          </span>
+                        {% else %}
+                          <span>{{ localization.country.currency.iso_code | escape }} $</span>
+                        {% endif %}
+                      {% endif %}
+
+                      {% if section.settings.show_language_selector and localization.available_languages.size > 1 %}
+                        {% if section.settings.show_country_selector %}<span class="footer__utility-divider" aria-hidden="true">/</span>{% endif %}
+                        <label class="visually-hidden" for="FooterLanguage-{{ section.id }}">{{ 'footer.language' | t }}</label>
+                        <span class="footer__localization-select">
+                          <select id="FooterLanguage-{{ section.id }}" name="locale_code" data-footer-localization-select>
+                            {% for language in localization.available_languages %}
+                              <option value="{{ language.iso_code }}" lang="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | capitalize | escape }}</option>
+                            {% endfor %}
+                          </select>
+                          <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
+                        </span>
+                      {% endif %}
+                    </div>
+                    <noscript><button type="submit">{{ 'footer.apply' | t }}</button></noscript>
+                  {% endform %}
+                </footer-localization>
+              </div>
+            {% endif %}
           </aside>
         </div>
 
         <div class="footer__utility">
-        <div class="footer__utility-start">
-          {% if section.settings.show_country_selector or section.settings.show_language_selector %}
-            <footer-localization class="footer__localization">
-              {% form 'localization', id: localization_form_id %}
-                <div class="footer__region">
-                  {% if section.settings.show_country_selector %}
-                    {% if localization.available_countries.size > 1 %}
-                      <label class="visually-hidden" for="FooterCountry-{{ section.id }}">{{ 'footer.country_region' | t }}</label>
-                      <span class="footer__localization-select">
-                        <select id="FooterCountry-{{ section.id }}" name="country_code" data-footer-localization-select>
-                          {% for country in localization.available_countries %}
-                            <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>
-                              {{ country.name | escape }} / {{ country.currency.iso_code | escape }}
-                            </option>
-                          {% endfor %}
-                        </select>
-                        <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                      </span>
-                    {% else %}
-                      <span>{{ localization.country.name | escape }} / {{ localization.country.currency.iso_code | escape }}</span>
-                    {% endif %}
-                  {% endif %}
-
-                  {% if section.settings.show_language_selector and localization.available_languages.size > 1 %}
-                    {% if section.settings.show_country_selector %}<span class="footer__utility-divider" aria-hidden="true">/</span>{% endif %}
-                    <label class="visually-hidden" for="FooterLanguage-{{ section.id }}">{{ 'footer.language' | t }}</label>
-                    <span class="footer__localization-select">
-                      <select id="FooterLanguage-{{ section.id }}" name="locale_code" data-footer-localization-select>
-                        {% for language in localization.available_languages %}
-                          <option value="{{ language.iso_code }}" lang="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>
-                            {{ language.endonym_name | capitalize | escape }}
-                          </option>
-                        {% endfor %}
-                      </select>
-                      <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                    </span>
-                  {% endif %}
-                </div>
-                <noscript><button type="submit">{{ 'footer.apply' | t }}</button></noscript>
-              {% endform %}
-            </footer-localization>
-          {% endif %}
-        </div>
-
         <div class="footer__copyright">
           &copy; {{ copyright_name | escape }} {{ 'now' | date: '%Y' }}
         </div>
