@@ -39,7 +39,15 @@
   endif
 %}
 
-<section class="footer__newsletter" data-reveal {{ block.shopify_attributes }}>
+<section class="footer__newsletter{% if block.settings.use_custom_background_image %} footer__newsletter--has-background-image{% endif %}" data-reveal {{ block.shopify_attributes }}>
+  {% if block.settings.use_custom_background_image %}
+    <div class="footer__newsletter-background" aria-hidden="true">
+      {% render 'responsive-media', image: block.settings.background_image, mobile_image: block.settings.mobile_background_image, mobile_breakpoint: 767, max_width: 2400, mobile_max_width: 1280, widths: '750, 960, 1200, 1600, 1920, 2400', mobile_widths: '375, 550, 750, 960, 1280', sizes: '100vw', class: 'footer__newsletter-background-image', decorative: true, loading: 'lazy', placeholder_asset: 'placeholder-image-default-3.svg', placeholder_class: 'footer__newsletter-background-placeholder' %}
+    </div>
+    <div class="footer__newsletter-overlay" aria-hidden="true" style="--footer-newsletter-overlay-color: {{ block.settings.overlay_color }}; --footer-newsletter-overlay-opacity: {{ block.settings.overlay_opacity | divided_by: 100.0 }};"></div>
+  {% endif %}
+
+  <div class="footer__newsletter-content">
   <div class="footer__eyebrow footer__newsletter-eyebrow">
     {% content_for 'block', type: 'label', id: 'newsletter_eyebrow' %}
   </div>
@@ -136,6 +144,7 @@
       </ul>
     </nav>
   {% endif %}
+  </div>
 </section>
 
 {% schema %}
@@ -148,6 +157,13 @@
     { "type": "text" },
     { "type": "newsletter-form" }
   ],
-  "settings": []
+  "settings": [
+    { "type": "header", "content": "Appearance" },
+    { "type": "checkbox", "id": "use_custom_background_image", "label": "Use custom background image", "default": false },
+    { "type": "image_picker", "id": "background_image", "label": "Background image", "visible_if": "{{ block.settings.use_custom_background_image }}" },
+    { "type": "image_picker", "id": "mobile_background_image", "label": "Mobile image", "visible_if": "{{ block.settings.use_custom_background_image }}" },
+    { "type": "color", "id": "overlay_color", "label": "Overlay color", "default": "#000000", "visible_if": "{{ block.settings.use_custom_background_image }}" },
+    { "type": "range", "id": "overlay_opacity", "label": "Overlay opacity", "min": 0, "max": 100, "step": 5, "unit": "%", "default": 45, "visible_if": "{{ block.settings.use_custom_background_image }}" }
+  ]
 }
 {% endschema %}
