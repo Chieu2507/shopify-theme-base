@@ -274,8 +274,16 @@
                     assign product = block.settings.product
                     assign product_variant = product.selected_or_first_available_variant
                     assign product_image = block.settings.cutout_image | default: product.featured_image
+                    assign product_title = block.settings.display_title | default: product.title
+                    assign product_subtitle = block.settings.display_subtitle | default: block.settings.subtitle
+                    if product_subtitle == blank and product != blank
+                      assign product_subtitle = product.type | default: product.vendor
+                    endif
                     assign product_placeholder_index = product_index | modulo: 4 | plus: 1
                     assign product_number = product_index | plus: 1 | prepend: '0' | slice: -2, 2
+                    if product_title == blank
+                      assign product_title = 'onboarding.product_title' | t
+                    endif
                   %}
                   <li
                     class="shop-the-look__product"
@@ -286,7 +294,7 @@
                     <span class="shop-the-look__product-number" aria-hidden="true">{{ product_number }}</span>
 
                     {% if product != blank and product_image != blank %}
-                      <a class="shop-the-look__product-media" href="{{ product.url | escape }}" aria-label="{{ product.title | escape }}">
+                      <a class="shop-the-look__product-media" href="{{ product.url | escape }}" aria-label="{{ product_title | escape }}">
                         {% render 'responsive-image',
                           image: product_image,
                           max_width: 320,
@@ -294,7 +302,7 @@
                           sizes: '(max-width: 767.98px) 24vw, (max-width: 992px) 18vw, 140px',
                           class: 'shop-the-look__product-image',
                           loading: 'lazy',
-                          alt: product.title,
+                          alt: product_title,
                           style: 'width: 100%; height: 100%; object-fit: cover;'
                         %}
                       </a>
@@ -306,14 +314,19 @@
 
                     <div class="shop-the-look__product-details">
                       {% if product != blank %}
-                        <a class="shop-the-look__product-title" href="{{ product.url | escape }}">{{ product.title | escape }}</a>
+                        <a class="shop-the-look__product-title" href="{{ product.url | escape }}">{{ product_title | escape }}</a>
                       {% else %}
-                        <span class="shop-the-look__product-title">{{ 'onboarding.product_title' | t }}</span>
+                        <span class="shop-the-look__product-title">{{ product_title | escape }}</span>
+                      {% endif %}
+                      {% if product_subtitle != blank %}
+                        <span class="shop-the-look__product-subtitle">{{ product_subtitle | escape }}</span>
                       {% endif %}
                     </div>
 
                     <span class="shop-the-look__product-price">
-                      {% if product_variant != blank %}
+                      {% if block.settings.display_price != blank %}
+                        {{ block.settings.display_price | escape }}
+                      {% elsif product_variant != blank %}
                         {{ product_variant.price | money }}
                       {% else %}
                         —
@@ -340,7 +353,7 @@
                 <span data-shop-the-look-bundle-label>{{ bundle_add_label | escape }}</span>
               </button>
               <p class="shop-the-look__bundle-status visually-hidden" data-shop-the-look-bundle-status role="status" aria-live="polite" aria-atomic="true"></p>
-              <p class="shop-the-look__total">{{ total_value_label | escape }} <span>{% if bundle_total > 0 %}{{ bundle_total | money }}{% else %}—{% endif %}</span></p>
+              <p class="shop-the-look__total">{{ total_value_label | escape }} <span>{% if section.settings.total_value_override != blank %}{{ section.settings.total_value_override | escape }}{% elsif bundle_total > 0 %}{{ bundle_total | money }}{% else %}—{% endif %}</span></p>
             </div>
           </div>
         </div>
@@ -527,6 +540,12 @@
       "id": "total_value_label",
       "label": "Total value label",
       "default": "Total value:"
+    },
+    {
+      "type": "text",
+      "id": "total_value_override",
+      "label": "Display total value",
+      "info": "Optional display text. This does not change the product prices or cart total."
     },
     {
       "type": "header",
@@ -1178,6 +1197,28 @@
         },
         {
           "type": "header",
+          "content": "Display content overrides"
+        },
+        {
+          "type": "text",
+          "id": "display_title",
+          "label": "Display title",
+          "info": "Optional visual title override. Cart actions still use the selected product."
+        },
+        {
+          "type": "text",
+          "id": "display_subtitle",
+          "label": "Display subtitle",
+          "info": "Optional visual subtitle override. Falls back to Subtitle, product type, or vendor."
+        },
+        {
+          "type": "text",
+          "id": "display_price",
+          "label": "Display price",
+          "info": "Optional visual price override. This does not change the product price or cart total."
+        },
+        {
+          "type": "header",
           "content": "Desktop marker position"
         },
         {
@@ -1277,7 +1318,10 @@
       "category": "Product discovery",
       "settings": {
         "section_width": "full",
-        "color_scheme": "scheme-4",
+        "color_scheme": "scheme-7",
+        "bundle_price_override": "$5,480",
+        "bundle_savings_text": "Save $610\nwhen bought as a set",
+        "total_value_override": "$6,090",
         "padding_top": 0,
         "padding_bottom": 0
       },
@@ -1292,7 +1336,7 @@
         {
           "type": "text",
           "settings": {
-            "text": "<p>Discover the pieces that complete this look.</p>",
+            "text": "<p>A complete harmony of ruby red and delicate brilliance.<br>Four pieces, one unforgettable presence.</p>",
             "type_preset": "sm",
             "reveal_type": "none"
           }
@@ -1300,7 +1344,7 @@
         {
           "type": "heading",
           "settings": {
-            "heading": "<h2>The complete edit</h2>",
+            "heading": "<h2>The Rouge Set</h2>",
             "type_preset": "h2",
             "reveal_type": "none"
           }
@@ -1308,6 +1352,9 @@
         {
           "type": "product_hotspot",
           "settings": {
+            "display_title": "Royal Bloom",
+            "display_subtitle": "Statement Pendant",
+            "display_price": "$2,280",
             "horizontal_position": 70,
             "vertical_position": 53,
             "connector_horizontal_position": 62,
@@ -1317,6 +1364,9 @@
         {
           "type": "product_hotspot",
           "settings": {
+            "display_title": "Lumière",
+            "display_subtitle": "Floral Ring",
+            "display_price": "$1,480",
             "horizontal_position": 38,
             "vertical_position": 44,
             "connector_horizontal_position": 47,
@@ -1326,6 +1376,9 @@
         {
           "type": "product_hotspot",
           "settings": {
+            "display_title": "Petal Stud",
+            "display_subtitle": "Studs",
+            "display_price": "$650",
             "horizontal_position": 60,
             "vertical_position": 21,
             "connector_horizontal_position": 53,
@@ -1335,6 +1388,9 @@
         {
           "type": "product_hotspot",
           "settings": {
+            "display_title": "Tennis Line",
+            "display_subtitle": "Line Bracelet",
+            "display_price": "$1,680",
             "horizontal_position": 29,
             "vertical_position": 72,
             "connector_horizontal_position": 36,
