@@ -187,6 +187,7 @@ class FeaturedCollection extends HTMLElement {
     const heading = document.createElement('h3');
     heading.className = 'product-card__title heading-h3 heading-text';
     const title = document.createElement('a');
+    title.className = 'hover-underline';
     title.href = product.url;
     title.textContent = product.title || '';
     const price = document.createElement('span');
