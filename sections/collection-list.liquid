@@ -122,6 +122,19 @@
             {% endif %}
           </div>
         </header>
+      {% elsif section.settings.layout == 'editorial' %}
+        <header class="collection-list__editorial-cards-header" data-reveal>
+          {% for block in section.blocks %}
+            {% if block.type == 'heading' and block.settings.heading != blank %}
+              <div class="collection-list__editorial-cards-heading">
+                {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+              </div>
+            {% endif %}
+          {% endfor %}
+          {% if section.settings.editorial_text != blank %}
+            <div class="collection-list__editorial-cards-text rte">{{ section.settings.editorial_text }}</div>
+          {% endif %}
+        </header>
       {% else %}
         {% for block in section.blocks %}
           {% if block.type == 'heading' and block.settings.heading != blank %}
@@ -145,6 +158,14 @@
               assign card_title = block.settings.title
               assign card_link = card_collection.url
               assign card_product_count = card_collection.all_products_count
+              assign card_min_price = blank
+              if card_collection != blank
+                for collection_product in card_collection.products
+                  if card_min_price == blank or collection_product.price < card_min_price
+                    assign card_min_price = collection_product.price
+                  endif
+                endfor
+              endif
               assign card_overlay_opacity = block.settings.overlay_opacity | divided_by: 100.0
               if section.settings.layout != 'split-promotions' and card_overlay_opacity < 0.45
                 assign card_overlay_opacity = 0.45
@@ -185,6 +206,8 @@
                 else
                   assign card_sizes = '(min-width: 1150px) 24vw, (min-width: 768px) 29vw, 50vw'
                 endif
+              elsif section.settings.layout == 'editorial'
+                assign card_sizes = '(min-width: 1150px) 31vw, (min-width: 768px) 32vw, 100vw'
               endif
 
               assign card_placeholder_asset = 'collection-1'
@@ -255,6 +278,24 @@
                     {% if card_link != blank %}
                       <span class="btn-tertiary collection-list__button" aria-hidden="true">
                         <span>{{ block.settings.button_label | default: 'View collection' | escape }}</span>
+                        <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+                      </span>
+                    {% endif %}
+                  </div>
+                {% elsif section.settings.layout == 'editorial' %}
+                  <div class="collection-list__editorial-card-content collection-list__content--{{ section.settings.card_alignment }}">
+                    <{{ section.settings.card_heading_tag | default: 'h3' }} class="collection-list__editorial-card-title {% render 'typography-class', preset: section.settings.card_heading_size, fallback: 'h3' %}">
+                      {{ card_title | escape }}
+                    </{{ section.settings.card_heading_tag | default: 'h3' }}>
+                    {% if block.settings.description != blank %}
+                      <p class="collection-list__editorial-card-description">{{ block.settings.description | escape }}</p>
+                    {% endif %}
+                    {% if card_min_price != blank %}
+                      <p class="collection-list__editorial-card-price"><span>From</span> {% render 'money', amount: card_min_price %}</p>
+                    {% endif %}
+                    {% if card_link != blank %}
+                      <span class="btn-tertiary collection-list__editorial-card-button" aria-hidden="true">
+                        <span>{{ block.settings.button_label | default: 'Explore' | escape }}</span>
                         <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
                       </span>
                     {% endif %}
@@ -339,9 +380,25 @@
         {
           "value": "split-promotions",
           "label": "Split promotions"
+        },
+        {
+          "value": "editorial",
+          "label": "Editorial cards"
         }
       ],
       "default": "grid"
+    },
+    {
+      "type": "header",
+      "content": "Header content",
+      "visible_if": "{{ section.settings.layout == 'editorial' }}"
+    },
+    {
+      "type": "richtext",
+      "id": "editorial_text",
+      "label": "Text below heading",
+      "default": "<p>Three worlds. Three moods.<br>Which one is yours?</p>",
+      "visible_if": "{{ section.settings.layout == 'editorial' }}"
     },
     {
       "type": "select",
@@ -493,14 +550,14 @@
       "min": 2,
       "max": 4,
       "step": 1,
-      "label": "Desktop columns / items",
+      "label": "Desktop columns",
       "default": 3,
       "visible_if": "{{ section.settings.layout == 'grid' }}"
     },
     {
       "type": "select",
       "id": "columns_mobile",
-      "label": "Mobile columns / items",
+      "label": "Mobile columns",
       "options": [
         {
           "value": "1",
@@ -1088,15 +1145,15 @@
         {
           "type": "textarea",
           "id": "description",
-          "label": "Description",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+          "label": "Text",
+          "visible_if": "{{ section.settings.layout == 'split-promotions' or section.settings.layout == 'editorial' }}"
         },
         {
           "type": "text",
           "id": "button_label",
           "label": "Button label",
           "default": "View collection",
-          "visible_if": "{{ section.settings.layout == 'split-promotions' }}"
+          "visible_if": "{{ section.settings.layout == 'split-promotions' or section.settings.layout == 'editorial' }}"
         },
         {
           "type": "select",

@@ -5,7 +5,7 @@
 
 {% if section.blocks.size > 0 %}
   <div
-    class="hero-banner color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} hero-banner--content-{{ section.settings.content_position }} hero-banner--light-sweep-{{ section.settings.light_sweep_size | default: 'medium' }}"
+    class="hero-banner color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} hero-banner--content-{{ section.settings.content_position }} hero-banner--content-container-{{ section.settings.content_container_width | default: 'page' }} hero-banner--light-sweep-{{ section.settings.light_sweep_size | default: 'medium' }}"
     style="--hero-height: {{ section.settings.height_desktop }}px; --hero-height-tablet: {{ section.settings.height_tablet }}px; --hero-height-mobile: {{ section.settings.height_mobile }}px; --hero-overlay-color: {{ hero_overlay_color }}; --hero-overlay-opacity: {{ section.settings.overlay_opacity | divided_by: 100.0 }}; --hero-content-width: {{ section.settings.content_width }}px; --hero-light-sweep-x: {{ section.settings.light_sweep_x_desktop }}%; --hero-light-sweep-y: {{ section.settings.light_sweep_y_desktop }}%; --hero-light-sweep-mobile-x: {{ section.settings.light_sweep_x_mobile }}%; --hero-light-sweep-mobile-y: {{ section.settings.light_sweep_y_mobile }}%;"
   >
     {% if media_count > 0 %}
@@ -156,6 +156,17 @@
     background: var(--hero-overlay-color);
     opacity: var(--hero-overlay-opacity);
     pointer-events: none;
+  }
+
+  @media screen and (min-width: 768px) {
+    .hero-banner--content-container-page .hero-banner__content-positioner {
+      right: auto;
+      left: 50%;
+      width: min(100%, var(--page-width));
+      margin: 0;
+      padding-inline: var(--page-margin);
+      transform: translateX(-50%);
+    }
   }
 
   .hero-banner__light-sweep {
@@ -446,6 +457,22 @@
         }
       ],
       "default": "full"
+    },
+    {
+      "type": "select",
+      "id": "content_container_width",
+      "label": "Content container width",
+      "options": [
+        {
+          "value": "page",
+          "label": "Page width"
+        },
+        {
+          "value": "full",
+          "label": "Full width"
+        }
+      ],
+      "default": "page"
     },
     {
       "type": "header",

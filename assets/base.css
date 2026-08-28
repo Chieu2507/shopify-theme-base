@@ -920,6 +920,39 @@ body {
   transform-origin: left center;
 }
 
+/* Shared text-link underline motion: mirrors the tertiary button interaction. */
+.hover-underline {
+  position: relative;
+  display: inline-block;
+  text-decoration: none;
+}
+
+.hover-underline::after {
+  position: absolute;
+  right: 0;
+  bottom: -3px;
+  left: 0;
+  height: 1px;
+  background: currentcolor;
+  content: '';
+  pointer-events: none;
+  transform: scaleX(0);
+  transform-origin: right center;
+  transition: transform 280ms cubic-bezier(.22, 1, .36, 1);
+}
+
+.hover-underline:is(:focus-visible, :focus-within)::after {
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .hover-underline:hover::after {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
 /** Shared media primitives */
 .media-cover {
   width: 100%;
@@ -1221,8 +1254,7 @@ body {
 }
 
 .product-card__title a:hover {
-  text-decoration: underline;
-  text-underline-offset: 3px;
+  color: var(--color-heading);
 }
 
 .product-card__vendor {
@@ -1590,6 +1622,11 @@ body.shopify-design-mode main [data-shopify-editor-section] [data-shopify-editor
 }
 
 /** Shared section contracts */
+.page-width {
+  width: min(100%, var(--page-width));
+  margin-inline: auto;
+}
+
 .section-spacing {
   padding-block: var(--section-padding-top, 0px) var(--section-padding-bottom, 0px);
 }

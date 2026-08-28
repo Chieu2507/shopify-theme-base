@@ -801,6 +801,7 @@ import { A11y, Swiper } from './swiper-loader.js';
       title.className = 'search-drawer__recent-title product-title-text heading-h4 heading-text';
       title.id = `SearchDrawerRecent-${this.dataset.sectionId}-${String(product.id || index).replace(/[^a-zA-Z0-9_-]/g, '')}`;
       const titleLink = this.createLink(productUrl);
+      titleLink.classList.add('hover-underline');
       titleLink.textContent = product.title || '';
       title.append(titleLink);
       const price = document.createElement('p');
