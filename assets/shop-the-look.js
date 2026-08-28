@@ -8,17 +8,13 @@ class ShopTheLook extends HTMLElement {
     this.bundleStatus = this.querySelector('[data-shop-the-look-bundle-status]');
     this.onClick = this.handleClick.bind(this);
     this.onKeydown = this.handleKeydown.bind(this);
-    this.onBlockSelect = this.handleBlockSelect.bind(this);
     this.addEventListener('click', this.onClick);
     this.addEventListener('keydown', this.onKeydown);
-    document.addEventListener('shopify:block:select', this.onBlockSelect);
-    this.selectProduct(0);
   }
 
   disconnectedCallback() {
     this.removeEventListener('click', this.onClick);
     this.removeEventListener('keydown', this.onKeydown);
-    document.removeEventListener('shopify:block:select', this.onBlockSelect);
     window.clearTimeout(this.resetTimer);
     this.initialized = false;
   }
@@ -27,6 +23,7 @@ class ShopTheLook extends HTMLElement {
     if (!this.products.length) return;
 
     const nextIndex = Math.min(Math.max(Number(index) || 0, 0), this.products.length - 1);
+    this.classList.add('has-active-product');
     this.hotspots.forEach((hotspot, hotspotIndex) => {
       hotspot.setAttribute('aria-pressed', String(hotspotIndex === nextIndex));
     });
@@ -65,11 +62,6 @@ class ShopTheLook extends HTMLElement {
 
     event.preventDefault();
     this.selectProduct(nextIndex, true);
-  }
-
-  handleBlockSelect(event) {
-    const index = this.products.findIndex((product) => product.dataset.blockId === event.detail?.blockId);
-    if (index >= 0) this.selectProduct(index);
   }
 
   parseBundleItems(button) {
