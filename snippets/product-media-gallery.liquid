@@ -4,8 +4,10 @@
   assign featured_video_poster = block.settings.featured_video_poster | default: featured_video.preview_image
   assign featured_video_alt = block.settings.featured_video_alt | default: featured_video_poster.alt | default: product.title
   assign gallery_media_count = product.media.size
+  assign gallery_media_limit = product.media.size
   if featured_video_enabled
     assign gallery_media_count = product.media.size | at_most: 2 | plus: 1
+    assign gallery_media_limit = 2
   endif
   assign desktop_thumbnail_ratio = '4 / 5'
   assign mobile_thumbnail_ratio = '4 / 5'
@@ -55,7 +57,7 @@
             </figure>
           </div>
         {% endif %}
-        {% for media in product.media limit: featured_video_enabled | default: false %}
+        {% for media in product.media limit: gallery_media_limit %}
           <div class="swiper-slide" data-media-id="{{ media.id }}">
             {% if forloop.first and section.index == 1 %}
               {% render 'product-media', media: media, product: product, layout: 'slider', zoom_mode: block.settings.image_zoom, loading: 'eager', fetchpriority: 'high' %}
@@ -67,7 +69,7 @@
       </div>
       {% if block.settings.show_mobile_pagination %}<div class="swiper-pagination" data-product-gallery-pagination></div>{% endif %}
     </div>
-    {% if product.media.size > 1 %}
+    {% if product.media.size > 1 and featured_video_enabled == false %}
       {% if block.settings.desktop_layout == 'carousel' or block.settings.show_mobile_thumbnails %}
         <div class="swiper product-gallery__thumbnails" data-product-thumbnail-gallery aria-label="{{ 'product_gallery.media_thumbnails' | t | escape }}">
           <div class="swiper-wrapper">

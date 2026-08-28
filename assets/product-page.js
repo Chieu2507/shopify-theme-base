@@ -424,6 +424,7 @@ class ProductPage extends HTMLElement {
     const gallery = this.querySelector('[data-product-gallery]');
     if (!gallery) return null;
     if (this.galleryMediaQuery?.matches ?? window.matchMedia('(max-width: 1149.98px)').matches) return 'mobile';
+    if (gallery.classList.contains('product-gallery--featured-video')) return null;
     return gallery.classList.contains('product-gallery--carousel') ? 'desktop' : null;
   }
 
