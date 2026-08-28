@@ -280,6 +280,7 @@
                       assign product_subtitle = product.type | default: product.vendor
                     endif
                     assign product_placeholder_index = product_index | modulo: 4 | plus: 1
+                    assign product_placeholder_asset = 'placeholder-image-product-' | append: product_placeholder_index | append: '.svg'
                     assign product_number = product_index | plus: 1 | prepend: '0' | slice: -2, 2
                     if product_title == blank
                       assign product_title = 'onboarding.product_title' | t
@@ -308,7 +309,15 @@
                       </a>
                     {% else %}
                       <span class="shop-the-look__product-media" aria-hidden="true">
-                        {{ 'product-' | append: product_placeholder_index | placeholder_svg_tag: 'shop-the-look__product-placeholder' }}
+                        <img
+                          src="{{ product_placeholder_asset | asset_url }}"
+                          class="shop-the-look__product-placeholder"
+                          alt=""
+                          width="448"
+                          height="448"
+                          loading="lazy"
+                          decoding="async"
+                        >
                       </span>
                     {% endif %}
 
