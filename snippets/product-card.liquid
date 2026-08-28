@@ -17,6 +17,7 @@
   @param {boolean} [show_media_actions] - Whether card hover actions are visible over the media.
   @param {boolean} [enable_quick_view] - Whether the quick view dialog is available from the card.
   @param {string} [quick_add_style] - Quick add presentation: button (default) or icon.
+  @param {boolean} [show_currency_code] - Whether the currency code is appended to product prices. Defaults to the theme setting.
 
   @example
   {% render 'product-card', product: product, media_ratio: 'portrait', show_badges: true %}
@@ -31,6 +32,10 @@
   assign card_fetchpriority = fetchpriority | default: 'auto'
   assign card_heading_tag = heading_tag | default: 'h3'
   assign card_media_ratio = media_ratio | default: 'global'
+  assign card_show_currency_code = show_currency_code
+  if card_show_currency_code == nil
+    assign card_show_currency_code = settings.show_currency_code
+  endif
   if show_badges == nil
     assign show_badges = true
   endif
@@ -80,14 +85,14 @@
     endif
     assign card_currency_code = cart.currency.iso_code | default: shop.currency
     assign card_price_text = card_price | money
-    if settings.show_currency_code
+    if card_show_currency_code
       assign card_price_text = card_price_text | append: ' ' | append: card_currency_code
     endif
     assign is_on_sale = false
 
     if product.price_varies and card_allocation == blank
       assign card_min_price = product.price_min | money
-      if settings.show_currency_code
+      if card_show_currency_code
         assign card_min_price = card_min_price | append: ' ' | append: card_currency_code
       endif
       assign card_price_text = 'product_card.from_price' | t: price: card_min_price
@@ -272,7 +277,7 @@
               assign variant_purchase_available = false
             endif
 
-            if settings.show_currency_code
+            if card_show_currency_code
               assign variant_price_text = variant_price_text | append: ' ' | append: card_currency_code
               assign variant_compare_at_price_text = variant_compare_at_price_text | append: ' ' | append: card_currency_code
             endif

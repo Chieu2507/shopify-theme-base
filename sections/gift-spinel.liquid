@@ -29,7 +29,7 @@
 
 <gift-spinel
   id="gift-spinel-{{ section.id }}"
-  class="gift-spinel gift-spinel--image-{{ section.settings.image_position }} color-scheme color-{{ section.settings.color_scheme.id }}"
+  class="gift-spinel gift-spinel--image-{{ section.settings.image_position }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
   data-deferred-module="{{ 'gift-spinel.js' | asset_url }}"
   data-editor-mode="{% if request.design_mode %}true{% else %}false{% endif %}"
   style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
@@ -85,18 +85,32 @@
                 {% liquid
                   assign occasion_key = block.settings.occasion
                   if occasion_key == blank
-                    case block.settings.recipient
-                      when 'mother'
+                    case forloop.index
+                      when 1
                         assign occasion_key = 'birthday'
-                      when 'partner'
+                      when 2
                         assign occasion_key = 'anniversary'
-                      when 'friend'
+                      when 3
                         assign occasion_key = 'engagement'
                       else
                         assign occasion_key = 'just-because'
                     endcase
                   endif
-                  assign occasion_label = block.settings.occasion_label | default: block.settings.recipient_label | default: occasion_key
+                  assign occasion_label = block.settings.occasion_label
+                  if occasion_label == blank
+                    case occasion_key
+                      when 'birthday'
+                        assign occasion_label = 'Birthday'
+                      when 'anniversary'
+                        assign occasion_label = 'Anniversary'
+                      when 'engagement'
+                        assign occasion_label = 'Engagement'
+                      when 'just-because'
+                        assign occasion_label = 'Just Because'
+                      else
+                        assign occasion_label = 'Gift path'
+                    endcase
+                  endif
                   assign panel_id = 'GiftSpinelPanel-' | append: section.id | append: '-' | append: block.id
                 %}
                 <button
@@ -121,29 +135,43 @@
       </section>
 
       {% if section.blocks.size > 0 %}
-        <section class="gift-spinel__featured-collection" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}">
+        <section class="gift-spinel__product-band" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}">
           <p class="visually-hidden" data-gift-spinel-status role="status" aria-live="polite"></p>
-          <div class="gift-spinel__featured-panels">
+          <div class="gift-spinel__product-panels">
             {% for block in section.blocks %}
               {% liquid
                 assign occasion_key = block.settings.occasion
                 if occasion_key == blank
-                  case block.settings.recipient
-                    when 'mother'
+                  case forloop.index
+                    when 1
                       assign occasion_key = 'birthday'
-                    when 'partner'
+                    when 2
                       assign occasion_key = 'anniversary'
-                    when 'friend'
+                    when 3
                       assign occasion_key = 'engagement'
                     else
                       assign occasion_key = 'just-because'
                   endcase
                 endif
-                assign occasion_label = block.settings.occasion_label | default: block.settings.recipient_label | default: occasion_key
+                assign occasion_label = block.settings.occasion_label
+                if occasion_label == blank
+                  case occasion_key
+                    when 'birthday'
+                      assign occasion_label = 'Birthday'
+                    when 'anniversary'
+                      assign occasion_label = 'Anniversary'
+                    when 'engagement'
+                      assign occasion_label = 'Engagement'
+                    when 'just-because'
+                      assign occasion_label = 'Just Because'
+                    else
+                      assign occasion_label = 'Gift path'
+                  endcase
+                endif
                 assign panel_id = 'GiftSpinelPanel-' | append: section.id | append: '-' | append: block.id
               %}
               <div
-                class="gift-spinel__featured-panel{% if forloop.first %} is-active{% endif %}"
+                class="gift-spinel__product-panel{% if forloop.first %} is-active{% endif %}"
                 id="{{ panel_id }}"
                 role="tabpanel"
                 aria-labelledby="GiftSpinelChoice-{{ section.id }}-{{ block.id }}"
@@ -153,16 +181,13 @@
                 {% unless forloop.first %}hidden{% endunless %}
               >
                 {% liquid
-                  assign featured_products = block.settings.products
-                  if block.settings.collection != blank and block.settings.collection.products_count > 0
-                    assign featured_products = block.settings.collection.products
-                  endif
+                  assign path_products = block.settings.products
                   assign rendered_product_count = 0
                 %}
-                <ul class="gift-spinel__featured-products" role="list">
-                  {% for card_product in featured_products limit: 3 %}
-                    <li class="gift-spinel__featured-product">
-                      <div class="gift-spinel__featured-product-reveal">
+                <ul class="gift-spinel__product-cards" role="list">
+                  {% for card_product in path_products limit: 3 %}
+                    <li class="gift-spinel__product-card">
+                      <div class="gift-spinel__product-card-reveal">
                         {% render 'product-card',
                           product: card_product,
                           media_ratio: 'landscape',
@@ -171,6 +196,7 @@
                           show_media_actions: false,
                           show_quick_add: false,
                           enable_quick_view: false,
+                          show_currency_code: false,
                           loading: 'lazy',
                           sizes: '(min-width: 993px) 30vw, (min-width: 768px) 32vw, 86vw'
                         %}
@@ -181,14 +207,15 @@
 
                   {% for placeholder_index in (1..3) %}
                     {% if rendered_product_count < 3 %}
-                      <li class="gift-spinel__featured-product" aria-hidden="true">
-                        <div class="gift-spinel__featured-product-reveal">
+                      <li class="gift-spinel__product-card" aria-hidden="true">
+                        <div class="gift-spinel__product-card-reveal">
                           {% render 'product-card',
                             show_badges: false,
                             show_variant_dots: false,
                             show_media_actions: false,
                             show_quick_add: false,
                             enable_quick_view: false,
+                            show_currency_code: false,
                             placeholder_index: placeholder_index,
                             media_ratio: 'landscape',
                             sizes: '(min-width: 993px) 30vw, (min-width: 768px) 32vw, 86vw'
@@ -237,7 +264,7 @@
   "name": "Gift Spinel",
   "tag": "section",
   "class": "section-gift-spinel",
-  "max_blocks": 4,
+  "max_blocks": 3,
   "settings": [
     { "type": "header", "content": "Layout" },
     { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
@@ -306,8 +333,7 @@
       "blocks": [
         { "type": "gift-path", "settings": { "occasion": "birthday", "occasion_label": "Birthday", "recipient": "mother", "recipient_label": "Birthday" } },
         { "type": "gift-path", "settings": { "occasion": "anniversary", "occasion_label": "Anniversary", "recipient": "partner", "recipient_label": "Anniversary" } },
-        { "type": "gift-path", "settings": { "occasion": "engagement", "occasion_label": "Engagement", "recipient": "friend", "recipient_label": "Engagement" } },
-        { "type": "gift-path", "settings": { "occasion": "just-because", "occasion_label": "Just Because", "recipient": "myself", "recipient_label": "Just Because" } }
+        { "type": "gift-path", "settings": { "occasion": "engagement", "occasion_label": "Engagement", "recipient": "friend", "recipient_label": "Engagement" } }
       ]
     }
   ]

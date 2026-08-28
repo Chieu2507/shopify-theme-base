@@ -2,18 +2,59 @@ if (!window.__spinelShopTheLookEditorScrollGuard) {
   window.__spinelShopTheLookEditorScrollGuard = true;
   const sectionScrollPositions = new Map();
   const pendingScrollRestorations = new Map();
+  const restorationTimers = new Map();
 
-  const restoreScrollPosition = ({ top, left }) => {
-    const restore = () => window.scrollTo({ top, left, behavior: 'auto' });
+  const clearScrollRestoration = (sectionId) => {
+    const timer = restorationTimers.get(sectionId);
+    if (timer) window.clearTimeout(timer);
+    restorationTimers.delete(sectionId);
+    pendingScrollRestorations.delete(sectionId);
+  };
+
+  const getSectionRoot = (sectionId) => (
+    sectionId
+      ? document.querySelector(`shop-the-look[data-section-id="${CSS.escape(sectionId)}"]`)
+      : null
+  );
+
+  const restoreScrollPosition = (sectionId, position) => {
+    const shopTheLook = getSectionRoot(sectionId);
+    if (!shopTheLook) return;
+
+    const currentScrollTop = window.scrollY;
+    const currentSectionTop = shopTheLook.getBoundingClientRect().top;
+    const nextScrollTop = Math.max(0, Math.round(currentScrollTop + currentSectionTop - position.sectionTop));
+    const maxScrollTop = Math.max(0, document.documentElement.scrollHeight - window.innerHeight);
+
+    window.scrollTo({
+      top: Math.min(nextScrollTop, maxScrollTop),
+      left: position.left,
+      behavior: 'auto',
+    });
+  };
+
+  const scheduleScrollRestoration = (sectionId, position) => {
+    clearScrollRestoration(sectionId);
+    pendingScrollRestorations.set(sectionId, position);
+
     let frame = 0;
     const restoreAfterLayout = () => {
-      restore();
-      if (frame++ < 3) window.requestAnimationFrame(restoreAfterLayout);
+      const pendingPosition = pendingScrollRestorations.get(sectionId);
+      if (!pendingPosition) return;
+
+      restoreScrollPosition(sectionId, pendingPosition);
+      if (frame++ < 8) window.requestAnimationFrame(restoreAfterLayout);
     };
 
-    restoreAfterLayout();
-    window.setTimeout(restore, 100);
-    window.setTimeout(restore, 300);
+    window.requestAnimationFrame(restoreAfterLayout);
+    [50, 150, 300, 600, 1000].forEach((delay) => {
+      window.setTimeout(() => {
+        const pendingPosition = pendingScrollRestorations.get(sectionId);
+        if (pendingPosition) restoreScrollPosition(sectionId, pendingPosition);
+      }, delay);
+    });
+
+    restorationTimers.set(sectionId, window.setTimeout(() => clearScrollRestoration(sectionId), 1400));
   };
 
   const getShopTheLook = (target, sectionId) => {
@@ -38,8 +79,11 @@ if (!window.__spinelShopTheLookEditorScrollGuard) {
 
     const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
     const sectionId = getSectionId(event, shopTheLook);
-    if (sectionId) {
-      sectionScrollPositions.set(sectionId, { top: window.scrollY, left: window.scrollX });
+    if (sectionId && shopTheLook) {
+      sectionScrollPositions.set(sectionId, {
+        left: window.scrollX,
+        sectionTop: shopTheLook.getBoundingClientRect().top,
+      });
     }
   }, true);
 
@@ -52,23 +96,38 @@ if (!window.__spinelShopTheLookEditorScrollGuard) {
     if (!scrollPosition) return;
 
     sectionScrollPositions.delete(sectionId);
-    pendingScrollRestorations.set(sectionId, scrollPosition);
-    restoreScrollPosition(scrollPosition);
-    window.setTimeout(() => {
-      if (pendingScrollRestorations.get(sectionId) === scrollPosition) pendingScrollRestorations.delete(sectionId);
-    }, 1000);
-  }, true);
+    scheduleScrollRestoration(sectionId, scrollPosition);
+  });
 
-  document.addEventListener('shopify:block:select', (event) => {
-    if (!window.Shopify?.designMode) return;
+  document.addEventListener('shopify:section:select', (event) => {
+    if (!window.Shopify?.designMode || event.detail?.load !== true) return;
 
     const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
     const sectionId = getSectionId(event, shopTheLook);
     const scrollPosition = sectionId ? pendingScrollRestorations.get(sectionId) : undefined;
     if (!scrollPosition) return;
 
-    window.requestAnimationFrame(() => restoreScrollPosition(scrollPosition));
-  }, true);
+    scheduleScrollRestoration(sectionId, scrollPosition);
+  });
+
+  document.addEventListener('shopify:block:select', (event) => {
+    if (!window.Shopify?.designMode || event.detail?.load !== true) return;
+
+    const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, shopTheLook);
+    const scrollPosition = sectionId ? pendingScrollRestorations.get(sectionId) : undefined;
+    if (!scrollPosition) return;
+
+    scheduleScrollRestoration(sectionId, scrollPosition);
+  });
+
+  const cancelPendingRestorations = () => {
+    pendingScrollRestorations.forEach((_, sectionId) => clearScrollRestoration(sectionId));
+  };
+
+  document.addEventListener('pointerdown', cancelPendingRestorations, { capture: true, passive: true });
+  document.addEventListener('wheel', cancelPendingRestorations, { capture: true, passive: true });
+  document.addEventListener('touchstart', cancelPendingRestorations, { capture: true, passive: true });
 }
 
 const editorInstances = new Set();
