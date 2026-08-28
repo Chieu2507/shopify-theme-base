@@ -90,7 +90,7 @@ class GiftSpinel extends HTMLElement {
     const panel = this.panels.find((item) => item.id === targetId) || this.panels[index];
     if (!panel) return;
 
-    this.panels.forEach((item) => item.classList.remove('is-entering'));
+    this.querySelectorAll('.gift-spinel__product-card').forEach((item) => item.classList.remove('is-entering'));
 
     this.choices.forEach((item, itemIndex) => {
       const selected = itemIndex === index;
@@ -107,7 +107,10 @@ class GiftSpinel extends HTMLElement {
 
     if (announce) {
       void panel.offsetWidth;
-      panel.classList.add('is-entering');
+      panel.querySelectorAll('.gift-spinel__product-card').forEach((card, cardIndex) => {
+        card.style.setProperty('--gift-spinel-card-index', cardIndex);
+        card.classList.add('is-entering');
+      });
     }
 
     if (shouldFocus) choice.focus({ preventScroll: true });
