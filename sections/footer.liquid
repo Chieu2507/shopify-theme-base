@@ -99,36 +99,37 @@
         </div>
 
         <div class="footer__utility">
-        <div class="footer__copyright">
-          &copy; {{ copyright_name | escape }} {{ 'now' | date: '%Y' }}
-        </div>
+          <div class="footer__copyright">
+            <span>&copy; {{ copyright_name | escape }} {{ 'now' | date: '%Y' }}</span>
+            <a href="https://www.shopify.com/?utm_campaign=poweredby&amp;utm_medium=shopify&amp;utm_source=onlinestore">Powered by Shopify</a>
+          </div>
 
-        <div class="footer__utility-end">
-          {% if section.settings.legal_menu != blank and section.settings.legal_menu.links.size > 0 %}
-            <nav class="footer__legal" aria-label="{{ 'footer.legal' | t | escape }}">
-              {% for link in section.settings.legal_menu.links %}
-                <a href="{{ link.url | escape }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
+          <div class="footer__utility-end">
+            {% if section.settings.legal_menu != blank and section.settings.legal_menu.links.size > 0 %}
+              <nav class="footer__legal" aria-label="{{ 'footer.legal' | t | escape }}">
+                {% for link in section.settings.legal_menu.links %}
+                  <a href="{{ link.url | escape }}"{% if link.current %} aria-current="page"{% endif %}>{{ link.title | escape }}</a>
+                {% endfor %}
+              </nav>
+            {% elsif shop.policies.size > 0 %}
+              <nav class="footer__legal" aria-label="{{ 'footer.legal' | t | escape }}">
+                {% for policy in shop.policies %}
+                  {% if policy.url != blank and policy.body != blank %}
+                    <a href="{{ policy.url | escape }}">{{ policy.title | escape }}</a>
+                  {% endif %}
+                {% endfor %}
+              </nav>
+            {% endif %}
+          </div>
+
+          {% if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 %}
+            <div class="footer__payments" aria-label="{{ 'footer.payment_methods' | t | escape }}">
+              {% for type in shop.enabled_payment_types %}
+                {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
               {% endfor %}
-            </nav>
-          {% elsif shop.policies.size > 0 %}
-            <nav class="footer__legal" aria-label="{{ 'footer.legal' | t | escape }}">
-              {% for policy in shop.policies %}
-                {% if policy.url != blank and policy.body != blank %}
-                <a href="{{ policy.url | escape }}">{{ policy.title | escape }}</a>
-                {% endif %}
-              {% endfor %}
-            </nav>
+            </div>
           {% endif %}
         </div>
-        </div>
-
-        {% if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 %}
-          <div class="footer__payments" aria-label="{{ 'footer.payment_methods' | t | escape }}">
-            {% for type in shop.enabled_payment_types %}
-              {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
-            {% endfor %}
-          </div>
-        {% endif %}
 
         {% if section.settings.show_follow_on_shop %}
           <div class="footer__follow-on-shop">
