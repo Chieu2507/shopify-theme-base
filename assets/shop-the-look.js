@@ -1,3 +1,76 @@
+if (!window.__spinelShopTheLookEditorScrollGuard) {
+  window.__spinelShopTheLookEditorScrollGuard = true;
+  const sectionScrollPositions = new Map();
+  const pendingScrollRestorations = new Map();
+
+  const restoreScrollPosition = ({ top, left }) => {
+    const restore = () => window.scrollTo({ top, left, behavior: 'auto' });
+    let frame = 0;
+    const restoreAfterLayout = () => {
+      restore();
+      if (frame++ < 3) window.requestAnimationFrame(restoreAfterLayout);
+    };
+
+    restoreAfterLayout();
+    window.setTimeout(restore, 100);
+    window.setTimeout(restore, 300);
+  };
+
+  const getShopTheLook = (target, sectionId) => {
+    const find = (element) => {
+      if (!(element instanceof Element)) return null;
+
+      const shopTheLook = element.matches('shop-the-look')
+        ? element
+        : element.closest('shop-the-look') || element.querySelector('shop-the-look');
+      if (!shopTheLook) return null;
+      if (!sectionId || shopTheLook.dataset.sectionId === sectionId) return shopTheLook;
+      return null;
+    };
+
+    return find(target) || (sectionId ? document.querySelector(`shop-the-look[data-section-id="${CSS.escape(sectionId)}"]`) : null);
+  };
+
+  const getSectionId = (event, shopTheLook) => event.detail?.sectionId || shopTheLook?.dataset.sectionId;
+
+  document.addEventListener('shopify:section:unload', (event) => {
+    if (!window.Shopify?.designMode) return;
+
+    const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, shopTheLook);
+    if (sectionId) {
+      sectionScrollPositions.set(sectionId, { top: window.scrollY, left: window.scrollX });
+    }
+  }, true);
+
+  document.addEventListener('shopify:section:load', (event) => {
+    if (!window.Shopify?.designMode) return;
+
+    const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, shopTheLook);
+    const scrollPosition = sectionId ? sectionScrollPositions.get(sectionId) : undefined;
+    if (!scrollPosition) return;
+
+    sectionScrollPositions.delete(sectionId);
+    pendingScrollRestorations.set(sectionId, scrollPosition);
+    restoreScrollPosition(scrollPosition);
+    window.setTimeout(() => {
+      if (pendingScrollRestorations.get(sectionId) === scrollPosition) pendingScrollRestorations.delete(sectionId);
+    }, 1000);
+  }, true);
+
+  document.addEventListener('shopify:block:select', (event) => {
+    if (!window.Shopify?.designMode) return;
+
+    const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, shopTheLook);
+    const scrollPosition = sectionId ? pendingScrollRestorations.get(sectionId) : undefined;
+    if (!scrollPosition) return;
+
+    window.requestAnimationFrame(() => restoreScrollPosition(scrollPosition));
+  }, true);
+}
+
 const editorInstances = new Set();
 
 const handleEditorBlockSelect = (event) => {
