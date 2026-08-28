@@ -8,7 +8,7 @@
 
   assign hero_title = section.settings.hero_title | default: 'The Gift'
   assign hero_tagline = section.settings.hero_tagline | default: 'For the moments that mean everything.'
-  assign hero_description = section.settings.hero_description | default: '<p>Thoughtful gifts, ready to be cherished by the one who matters most.</p>'
+  assign hero_description = section.settings.hero_description | default: '<p>A token of love. A reason to celebrate.<br>Thoughtful gifts, ready to be cherished<br>by the one who matters most.</p>'
   assign hero_image_class = 'gift-spinel__hero-image gift-spinel__hero-image--desktop'
   if section.settings.mobile_image == blank
     assign hero_image_class = hero_image_class | append: ' gift-spinel__hero-image--mobile-fallback'
@@ -16,7 +16,7 @@
   assign assurance_1_heading = section.settings.assurance_1_heading | default: 'Wrong size?'
   assign assurance_1_text = section.settings.assurance_1_text | default: '<p>Free exchange within 30 days.<br>No hassle.</p>'
   assign assurance_2_heading = section.settings.assurance_2_heading | default: 'How does it arrive?'
-  assign assurance_2_text = section.settings.assurance_2_text | default: '<p>Wrapped with care in our signature gift box.</p>'
+  assign assurance_2_text = section.settings.assurance_2_text | default: '<p>In the signature box,<br>with a handwritten card.</p>'
   assign assurance_3_heading = section.settings.assurance_3_heading | default: 'Will it arrive in time?'
   assign assurance_3_text = section.settings.assurance_3_text | default: '<p>Choose your delivery date at checkout.</p>'
 %}
@@ -29,7 +29,7 @@
 
 <gift-spinel
   id="gift-spinel-{{ section.id }}"
-  class="gift-spinel gift-spinel--layout-{{ section.settings.layout_ratio }} gift-spinel--image-{{ section.settings.image_position }} gift-spinel--choices-{{ section.settings.choice_style }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width gift-spinel--full{% endif %}"
+  class="gift-spinel gift-spinel--image-{{ section.settings.image_position }} color-scheme color-{{ section.settings.color_scheme.id }}"
   data-deferred-module="{{ 'gift-spinel.js' | asset_url }}"
   data-editor-mode="{% if request.design_mode %}true{% else %}false{% endif %}"
   style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
@@ -47,7 +47,8 @@
               widths: '640, 960, 1200, 1600, 2000, 2400',
               sizes: '100vw',
               class: hero_image_class,
-              loading: 'lazy',
+              loading: 'eager',
+              fetchpriority: 'high',
               decorative: true
             %}
           {% elsif section.settings.mobile_image == blank %}
@@ -61,7 +62,8 @@
               widths: '480, 640, 750, 960, 1200, 1600',
               sizes: '100vw',
               class: 'gift-spinel__hero-image gift-spinel__hero-image--mobile',
-              loading: 'lazy',
+              loading: 'eager',
+              fetchpriority: 'high',
               decorative: true
             %}
           {% endif %}
@@ -119,9 +121,9 @@
       </section>
 
       {% if section.blocks.size > 0 %}
-        <section class="gift-spinel__tray" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}">
+        <section class="gift-spinel__featured-collection" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}">
           <p class="visually-hidden" data-gift-spinel-status role="status" aria-live="polite"></p>
-          <div class="gift-spinel__panels">
+          <div class="gift-spinel__featured-panels">
             {% for block in section.blocks %}
               {% liquid
                 assign occasion_key = block.settings.occasion
@@ -141,7 +143,7 @@
                 assign panel_id = 'GiftSpinelPanel-' | append: section.id | append: '-' | append: block.id
               %}
               <div
-                class="gift-spinel__panel{% if forloop.first %} is-active{% endif %}"
+                class="gift-spinel__featured-panel{% if forloop.first %} is-active{% endif %}"
                 id="{{ panel_id }}"
                 role="tabpanel"
                 aria-labelledby="GiftSpinelChoice-{{ section.id }}-{{ block.id }}"
@@ -150,37 +152,51 @@
                 data-occasion="{{ occasion_key | escape }}"
                 {% unless forloop.first %}hidden{% endunless %}
               >
-                <ul class="gift-spinel__products" role="list">
-                  {% for product_index in (1..3) %}
-                    {% assign product = block.settings.products[forloop.index0] %}
-                    {% assign product_variant = product.selected_or_first_available_variant %}
-                    {% assign product_title = product.title | default: section.settings.product_empty_title | default: 'Gift selection' %}
-                    {% assign product_subtitle = product.type | default: product.vendor | default: 'Thoughtfully selected' %}
-                    {% assign product_price = product_variant.price | default: 65000 %}
-                    <li class="gift-spinel__product">
-                      {% if product != blank and product.url != blank %}<a class="gift-spinel__product-link" href="{{ product.url | escape }}" aria-label="{{ product_title | escape }}">{% endif %}
-                        <span class="gift-spinel__product-media">
-                          {% if product != blank and product.featured_image != blank %}
-                            {% render 'responsive-image',
-                              image: product.featured_image,
-                              max_width: 720,
-                              widths: '240, 360, 480, 720',
-                              sizes: '(min-width: 993px) 28vw, (min-width: 768px) 30vw, 80vw',
-                              class: 'gift-spinel__product-image',
-                              loading: 'lazy',
-                              alt: product_title
-                            %}
-                          {% else %}
-                            {{ 'product-' | append: product_index | placeholder_svg_tag: 'gift-spinel__product-image gift-spinel__product-placeholder' }}
-                          {% endif %}
-                        </span>
-                        <span class="gift-spinel__product-details">
-                          <span class="gift-spinel__product-title product-title-text heading-text">{{ product_title | escape }}</span>
-                          <span class="gift-spinel__product-subtitle">{{ product_subtitle | escape }}</span>
-                          <span class="gift-spinel__product-price">{{ product_price | money }}</span>
-                        </span>
-                      {% if product != blank and product.url != blank %}</a>{% endif %}
+                {% liquid
+                  assign featured_products = block.settings.products
+                  if block.settings.collection != blank and block.settings.collection.products_count > 0
+                    assign featured_products = block.settings.collection.products
+                  endif
+                  assign rendered_product_count = 0
+                %}
+                <ul class="gift-spinel__featured-products" role="list">
+                  {% for card_product in featured_products limit: 3 %}
+                    <li class="gift-spinel__featured-product">
+                      <div class="gift-spinel__featured-product-reveal">
+                        {% render 'product-card',
+                          product: card_product,
+                          media_ratio: 'landscape',
+                          show_badges: false,
+                          show_variant_dots: false,
+                          show_media_actions: false,
+                          show_quick_add: false,
+                          enable_quick_view: false,
+                          loading: 'lazy',
+                          sizes: '(min-width: 993px) 30vw, (min-width: 768px) 32vw, 86vw'
+                        %}
+                      </div>
                     </li>
+                    {% assign rendered_product_count = rendered_product_count | plus: 1 %}
+                  {% endfor %}
+
+                  {% for placeholder_index in (1..3) %}
+                    {% if rendered_product_count < 3 %}
+                      <li class="gift-spinel__featured-product" aria-hidden="true">
+                        <div class="gift-spinel__featured-product-reveal">
+                          {% render 'product-card',
+                            show_badges: false,
+                            show_variant_dots: false,
+                            show_media_actions: false,
+                            show_quick_add: false,
+                            enable_quick_view: false,
+                            placeholder_index: placeholder_index,
+                            media_ratio: 'landscape',
+                            sizes: '(min-width: 993px) 30vw, (min-width: 768px) 32vw, 86vw'
+                          %}
+                        </div>
+                      </li>
+                      {% assign rendered_product_count = rendered_product_count | plus: 1 %}
+                    {% endif %}
                   {% endfor %}
                 </ul>
               </div>
@@ -231,14 +247,14 @@
     { "type": "text", "id": "hero_eyebrow", "label": "Eyebrow", "default": "" },
     { "type": "text", "id": "hero_title", "label": "Title", "default": "The Gift" },
     { "type": "text", "id": "hero_tagline", "label": "Tagline", "default": "For the moments that mean everything." },
-    { "type": "richtext", "id": "hero_description", "label": "Description", "default": "<p>Thoughtful gifts, ready to be cherished by the one who matters most.</p>" },
+    { "type": "richtext", "id": "hero_description", "label": "Description", "default": "<p>A token of love. A reason to celebrate.<br>Thoughtful gifts, ready to be cherished<br>by the one who matters most.</p>" },
     { "type": "header", "content": "Product tray" },
     { "type": "text", "id": "product_empty_title", "label": "Placeholder product title", "default": "Gift selection", "info": "Used when a gift path does not have a product selected." },
     { "type": "header", "content": "Assurance strip" },
     { "type": "text", "id": "assurance_1_heading", "label": "First heading", "default": "Wrong size?" },
     { "type": "richtext", "id": "assurance_1_text", "label": "First text", "default": "<p>Free exchange within 30 days.<br>No hassle.</p>" },
     { "type": "text", "id": "assurance_2_heading", "label": "Middle heading", "default": "How does it arrive?" },
-    { "type": "richtext", "id": "assurance_2_text", "label": "Middle text", "default": "<p>Wrapped with care in our signature gift box.</p>" },
+    { "type": "richtext", "id": "assurance_2_text", "label": "Middle text", "default": "<p>In the signature box,<br>with a handwritten card.</p>" },
     { "type": "text", "id": "assurance_3_heading", "label": "Last heading", "default": "Will it arrive in time?" },
     { "type": "richtext", "id": "assurance_3_text", "label": "Last text", "default": "<p>Choose your delivery date at checkout.</p>" },
     { "type": "header", "content": "Cart action" },
@@ -257,7 +273,7 @@
     { "type": "select", "id": "intro_card_position", "label": "Legacy card position", "options": [{ "value": "top-left", "label": "Top left" }, { "value": "top-center", "label": "Top center" }, { "value": "top-right", "label": "Top right" }, { "value": "center-left", "label": "Center left" }, { "value": "center", "label": "Center" }, { "value": "center-right", "label": "Center right" }, { "value": "bottom-left", "label": "Bottom left" }, { "value": "bottom-center", "label": "Bottom center" }, { "value": "bottom-right", "label": "Bottom right" }], "default": "top-left" },
     { "type": "range", "id": "intro_card_reflection", "label": "Legacy mirror reflection", "min": 0, "max": 100, "step": 5, "unit": "%", "default": 25 },
     { "type": "header", "content": "Appearance" },
-    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-6" },
     { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme." },
     { "type": "header", "content": "Section padding" },
     { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 80 },
@@ -279,10 +295,11 @@
         "hero_description": "<p>A token of love. A reason to celebrate.<br>Thoughtful gifts, ready to be cherished<br>by the one who matters most.</p>",
         "choice_style": "pill",
         "image_position": "right",
+        "color_scheme": "scheme-6",
         "assurance_1_heading": "Wrong size?",
         "assurance_1_text": "<p>Free exchange within 30 days.<br>No hassle.</p>",
         "assurance_2_heading": "How does it arrive?",
-        "assurance_2_text": "<p>Wrapped with care in our signature gift box.</p>",
+        "assurance_2_text": "<p>In the signature box,<br>with a handwritten card.</p>",
         "assurance_3_heading": "Will it arrive in time?",
         "assurance_3_text": "<p>Choose your delivery date at checkout.</p>"
       },
