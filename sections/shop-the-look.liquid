@@ -161,19 +161,17 @@
                       <line class="shop-the-look__hotspot-connector-line shop-the-look__hotspot-connector-line--desktop" x1="{{ block.settings.horizontal_position }}" y1="{{ block.settings.vertical_position }}" x2="{{ desktop_connector_x }}" y2="{{ desktop_connector_y }}"></line>
                       <line class="shop-the-look__hotspot-connector-line shop-the-look__hotspot-connector-line--mobile" x1="{{ mobile_hotspot_x }}" y1="{{ mobile_hotspot_y }}" x2="{{ mobile_connector_x }}" y2="{{ mobile_connector_y }}"></line>
                     </svg>
-                    {% if block.settings.product != blank %}
-                      <a
+                    <button
                         class="shop-the-look__hotspot"
-                        href="#ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
+                        type="button"
+                        aria-controls="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
+                        aria-pressed="{% if hotspot_index == 0 %}true{% else %}false{% endif %}"
                         aria-label="{{ 'shop_the_look.select_product' | t: product: hotspot_label | escape }}"
+                        data-shop-the-look-hotspot
+                        data-index="{{ hotspot_index }}"
                       >
                         <span class="shop-the-look__hotspot-number" aria-hidden="true">{{ hotspot_number }}</span>
-                      </a>
-                    {% else %}
-                      <span class="shop-the-look__hotspot" aria-hidden="true">
-                        <span class="shop-the-look__hotspot-number">{{ hotspot_number }}</span>
-                      </span>
-                    {% endif %}
+                    </button>
                   </div>
                   {% assign hotspot_index = hotspot_index | plus: 1 %}
                 {% endif %}
@@ -259,7 +257,12 @@
                     assign product_placeholder_index = product_index | modulo: 4 | plus: 1
                     assign product_number = product_index | plus: 1 | prepend: '0' | slice: -2, 2
                   %}
-                  <li class="shop-the-look__product" id="ShopTheLookProduct-{{ section.id }}-{{ block.id }}">
+                  <li
+                    class="shop-the-look__product{% if product_index == 0 %} is-active{% endif %}"
+                    id="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
+                    data-shop-the-look-product
+                    data-block-id="{{ block.id }}"
+                  >
                     <span class="shop-the-look__product-number" aria-hidden="true">{{ product_number }}</span>
 
                     {% if product != blank and product_image != blank %}

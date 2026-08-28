@@ -3,22 +3,73 @@ class ShopTheLook extends HTMLElement {
     if (this.initialized) return;
 
     this.initialized = true;
+    this.hotspots = Array.from(this.querySelectorAll('[data-shop-the-look-hotspot]'));
+    this.products = Array.from(this.querySelectorAll('[data-shop-the-look-product]'));
     this.bundleStatus = this.querySelector('[data-shop-the-look-bundle-status]');
     this.onClick = this.handleClick.bind(this);
+    this.onKeydown = this.handleKeydown.bind(this);
+    this.onBlockSelect = this.handleBlockSelect.bind(this);
     this.addEventListener('click', this.onClick);
+    this.addEventListener('keydown', this.onKeydown);
+    document.addEventListener('shopify:block:select', this.onBlockSelect);
+    this.selectProduct(0);
   }
 
   disconnectedCallback() {
     this.removeEventListener('click', this.onClick);
+    this.removeEventListener('keydown', this.onKeydown);
+    document.removeEventListener('shopify:block:select', this.onBlockSelect);
     window.clearTimeout(this.resetTimer);
     this.initialized = false;
   }
 
+  selectProduct(index, moveFocus = false) {
+    if (!this.products.length) return;
+
+    const nextIndex = Math.min(Math.max(Number(index) || 0, 0), this.products.length - 1);
+    this.hotspots.forEach((hotspot, hotspotIndex) => {
+      hotspot.setAttribute('aria-pressed', String(hotspotIndex === nextIndex));
+    });
+    this.products.forEach((product, productIndex) => {
+      product.classList.toggle('is-active', productIndex === nextIndex);
+    });
+
+    if (moveFocus) this.hotspots[nextIndex]?.focus();
+  }
+
   handleClick(event) {
+    const hotspot = event.target.closest('[data-shop-the-look-hotspot]');
+    if (hotspot && this.contains(hotspot)) {
+      event.preventDefault();
+      this.selectProduct(this.hotspots.indexOf(hotspot));
+      return;
+    }
+
     const button = event.target.closest('[data-shop-the-look-bundle-add]');
     if (!button || !this.contains(button)) return;
 
     this.addBundle(button);
+  }
+
+  handleKeydown(event) {
+    const hotspot = event.target.closest('[data-shop-the-look-hotspot]');
+    if (!hotspot || !this.contains(hotspot)) return;
+
+    const currentIndex = this.hotspots.indexOf(hotspot);
+    let nextIndex = currentIndex;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = currentIndex + 1;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = currentIndex - 1;
+    if (event.key === 'Home') nextIndex = 0;
+    if (event.key === 'End') nextIndex = this.hotspots.length - 1;
+    if (nextIndex === currentIndex) return;
+
+    event.preventDefault();
+    this.selectProduct(nextIndex, true);
+  }
+
+  handleBlockSelect(event) {
+    const index = this.products.findIndex((product) => product.dataset.blockId === event.detail?.blockId);
+    if (index >= 0) this.selectProduct(index);
   }
 
   parseBundleItems(button) {
