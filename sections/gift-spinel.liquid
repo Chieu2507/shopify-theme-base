@@ -15,9 +15,9 @@
   endif
   assign gift_path_count = 0
   for section_block in section.blocks
-    if section_block.type == 'gift-path'
+    unless section_block.id == 'gift-assurance'
       assign gift_path_count = gift_path_count | plus: 1
-    endif
+    endunless
   endfor
 %}
 
@@ -83,7 +83,7 @@
             <div class="gift-spinel__choices" data-gift-spinel-choices role="tablist" aria-label="{{ 'gift_spinel.occasion_tabs' | t | escape }}">
               {% assign gift_path_index = 0 %}
               {% for block in section.blocks %}
-                {% if block.type == 'gift-path' %}
+                {% unless block.id == 'gift-assurance' %}
                 {% assign gift_path_index = gift_path_index | plus: 1 %}
                 {% liquid
                   assign occasion_key = block.settings.occasion
@@ -131,7 +131,7 @@
                 >
                   <span class="gift-spinel__choice-label">{{ occasion_label | escape }}</span>
                 </button>
-                {% endif %}
+                {% endunless %}
               {% endfor %}
             </div>
           {% endif %}
@@ -144,7 +144,7 @@
           <div class="gift-spinel__product-panels">
             {% assign gift_path_index = 0 %}
             {% for block in section.blocks %}
-              {% if block.type == 'gift-path' %}
+              {% unless block.id == 'gift-assurance' %}
               {% assign gift_path_index = gift_path_index | plus: 1 %}
               {% liquid
                 assign occasion_key = block.settings.occasion
@@ -189,7 +189,7 @@
               >
                 {% render block %}
               </div>
-              {% endif %}
+              {% endunless %}
             {% endfor %}
           </div>
         </section>
