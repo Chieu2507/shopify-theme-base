@@ -1,142 +1,179 @@
-import { A11y, Navigation, Swiper } from './swiper-loader.js';
-import { initializeWhenVisible } from './initialize-when-visible.js';
+if (!window.__spinelShopTheLookEditorScrollGuard) {
+  window.__spinelShopTheLookEditorScrollGuard = true;
+  const sectionScrollPositions = new Map();
+  const pendingScrollRestorations = new Map();
+
+  const restoreScrollPosition = ({ top, left }) => {
+    const restore = () => window.scrollTo({ top, left, behavior: 'auto' });
+    let frame = 0;
+    const restoreAfterLayout = () => {
+      restore();
+      if (frame++ < 3) window.requestAnimationFrame(restoreAfterLayout);
+    };
+
+    restoreAfterLayout();
+    window.setTimeout(restore, 100);
+    window.setTimeout(restore, 300);
+  };
+
+  const getShopTheLook = (target, sectionId) => {
+    const find = (element) => {
+      if (!(element instanceof Element)) return null;
+
+      const shopTheLook = element.matches('shop-the-look')
+        ? element
+        : element.closest('shop-the-look') || element.querySelector('shop-the-look');
+      if (!shopTheLook) return null;
+      if (!sectionId || shopTheLook.dataset.sectionId === sectionId) return shopTheLook;
+      return null;
+    };
+
+    return find(target) || (sectionId ? document.querySelector(`shop-the-look[data-section-id="${CSS.escape(sectionId)}"]`) : null);
+  };
+
+  const getSectionId = (event, shopTheLook) => event.detail?.sectionId || shopTheLook?.dataset.sectionId;
+
+  document.addEventListener('shopify:section:unload', (event) => {
+    if (!window.Shopify?.designMode) return;
+
+    const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, shopTheLook);
+    if (sectionId) {
+      sectionScrollPositions.set(sectionId, { top: window.scrollY, left: window.scrollX });
+    }
+  }, true);
+
+  document.addEventListener('shopify:section:load', (event) => {
+    if (!window.Shopify?.designMode) return;
+
+    const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, shopTheLook);
+    const scrollPosition = sectionId ? sectionScrollPositions.get(sectionId) : undefined;
+    if (!scrollPosition) return;
+
+    sectionScrollPositions.delete(sectionId);
+    pendingScrollRestorations.set(sectionId, scrollPosition);
+    restoreScrollPosition(scrollPosition);
+    window.setTimeout(() => {
+      if (pendingScrollRestorations.get(sectionId) === scrollPosition) pendingScrollRestorations.delete(sectionId);
+    }, 1000);
+  }, true);
+
+  document.addEventListener('shopify:block:select', (event) => {
+    if (!window.Shopify?.designMode) return;
+
+    const shopTheLook = getShopTheLook(event.target, event.detail?.sectionId);
+    const sectionId = getSectionId(event, shopTheLook);
+    const scrollPosition = sectionId ? pendingScrollRestorations.get(sectionId) : undefined;
+    if (!scrollPosition) return;
+
+    window.requestAnimationFrame(() => restoreScrollPosition(scrollPosition));
+  }, true);
+}
+
+const editorInstances = new Set();
+
+const handleEditorBlockSelect = (event) => {
+  editorInstances.forEach((instance) => instance.handleBlockSelect(event));
+};
+
+const handleEditorBlockDeselect = (event) => {
+  editorInstances.forEach((instance) => instance.handleBlockDeselect(event));
+};
+
+const registerEditorInstance = (instance) => {
+  if (!editorInstances.size) {
+    document.addEventListener('shopify:block:select', handleEditorBlockSelect);
+    document.addEventListener('shopify:block:deselect', handleEditorBlockDeselect);
+  }
+  editorInstances.add(instance);
+};
+
+const unregisterEditorInstance = (instance) => {
+  editorInstances.delete(instance);
+  if (editorInstances.size) return;
+  document.removeEventListener('shopify:block:select', handleEditorBlockSelect);
+  document.removeEventListener('shopify:block:deselect', handleEditorBlockDeselect);
+};
 
 class ShopTheLook extends HTMLElement {
   connectedCallback() {
     if (this.initialized) return;
+
     this.initialized = true;
     this.hotspots = Array.from(this.querySelectorAll('[data-shop-the-look-hotspot]'));
     this.products = Array.from(this.querySelectorAll('[data-shop-the-look-product]'));
-    this.paginationCount = this.querySelector('[data-shop-the-look-pagination-count]');
-    this.paginationProgress = this.querySelector('[data-shop-the-look-pagination-progress]');
-    this.spotlight = this.querySelector('.shop-the-look__spotlight');
+    this.annotations = Array.from(this.querySelectorAll('[data-shop-the-look-hotspot-annotation]'));
+    this.editorMode = this.dataset.editorMode === 'true' || Boolean(window.Shopify?.designMode);
+    this.bundleStatus = this.querySelector('[data-shop-the-look-bundle-status]');
     this.onClick = this.handleClick.bind(this);
     this.onKeydown = this.handleKeydown.bind(this);
-    this.onBlockSelect = this.handleBlockSelect.bind(this);
     this.addEventListener('click', this.onClick);
     this.addEventListener('keydown', this.onKeydown);
-    document.addEventListener('shopify:block:select', this.onBlockSelect);
-    this.sliderReady = false;
-    this.resizeObserver = new ResizeObserver(() => this.updateNavigatorPosition());
-    if (this.spotlight) this.resizeObserver.observe(this.spotlight);
-    this.cancelDeferredInitialization = initializeWhenVisible(this, () => this.activateSlider());
+    if (this.editorMode) registerEditorInstance(this);
   }
 
   disconnectedCallback() {
     this.removeEventListener('click', this.onClick);
     this.removeEventListener('keydown', this.onKeydown);
-    document.removeEventListener('shopify:block:select', this.onBlockSelect);
-    this.cancelDeferredInitialization?.();
-    this.resizeObserver?.disconnect();
-    this.swiper?.destroy(true, true);
-    this.swiper = null;
+    if (this.editorMode) unregisterEditorInstance(this);
+    window.clearTimeout(this.resetTimer);
     this.initialized = false;
   }
 
-  initializeSlider() {
-    const slider = this.querySelector('[data-shop-the-look-slider]');
-    if (!slider || !this.products.length) return;
-
-    this.swiper = new Swiper(slider, {
-      modules: [A11y, Navigation],
-      slidesPerView: 1,
-      autoHeight: true,
-      speed: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 360,
-      rewind: this.products.length > 1,
-      watchOverflow: true,
-      navigation: {
-        prevEl: this.querySelector('[data-shop-the-look-previous]'),
-        nextEl: this.querySelector('[data-shop-the-look-next]'),
-      },
-      a11y: {
-        enabled: true,
-        slideRole: null,
-        slideLabelMessage: null,
-      },
-      on: {
-        init: (swiper) => this.syncActiveState(swiper.activeIndex),
-        slideChange: (swiper) => this.syncActiveState(swiper.activeIndex),
-        imagesReady: () => this.updateNavigation(),
-        resize: () => this.updateNavigation(),
-      },
-    });
-  }
-
-  activateSlider() {
-    if (this.sliderReady) return;
-    this.sliderReady = true;
-    this.initializeSlider();
-  }
-
-  selectIndex(index, moveFocus = false) {
+  selectProduct(index, moveFocus = false) {
     if (!this.products.length) return;
-    this.activateSlider();
-    if (!this.swiper) return;
-    const nextIndex = (index + this.products.length) % this.products.length;
-    this.swiper.slideTo(nextIndex);
-    this.syncActiveState(nextIndex);
+
+    const nextIndex = Math.min(Math.max(Number(index) || 0, 0), this.products.length - 1);
+    this.classList.add('has-active-product');
+    this.hotspots.forEach((hotspot, hotspotIndex) => {
+      hotspot.setAttribute('aria-pressed', String(hotspotIndex === nextIndex));
+    });
+    this.products.forEach((product, productIndex) => {
+      product.classList.toggle('is-active', productIndex === nextIndex);
+    });
+    this.annotations.forEach((annotation, annotationIndex) => {
+      annotation.classList.toggle('is-editor-selected', this.editorMode && annotationIndex === nextIndex);
+    });
+
     if (moveFocus) this.hotspots[nextIndex]?.focus();
   }
 
-  syncActiveState(index) {
-    this.hotspots.forEach((hotspot, hotspotIndex) => {
-      const isActive = hotspotIndex === index;
-      hotspot.setAttribute('aria-selected', String(isActive));
-      hotspot.tabIndex = isActive ? 0 : -1;
-    });
+  handleBlockSelect(event) {
+    if (!this.editorMode) return;
 
-    this.products.forEach((product, productIndex) => {
-      const isActive = productIndex === index;
-      product.setAttribute('aria-hidden', String(!isActive));
-      product.toggleAttribute('inert', !isActive);
-    });
+    const blockId = event.detail?.blockId;
+    const index = this.annotations.findIndex((annotation) => annotation.dataset.blockId === blockId);
+    if (index < 0) return;
 
-    this.updatePagination(index);
-    this.updateNavigation(index);
+    this.selectProduct(index);
   }
 
-  updateNavigatorPosition(index = this.swiper?.activeIndex || 0) {
-    if (!this.spotlight) return;
-    requestAnimationFrame(() => {
-      const activeProduct = this.products[index] || this.products[0];
-      const media = activeProduct?.querySelector('.product-card__media');
-      if (!media) return;
-      const spotlightRect = this.spotlight.getBoundingClientRect();
-      const mediaRect = media.getBoundingClientRect();
-      const center = mediaRect.top - spotlightRect.top + (mediaRect.height / 2);
-      this.spotlight.style.setProperty('--shop-the-look-media-center', `${center}px`);
-    });
-  }
+  handleBlockDeselect(event) {
+    if (!this.editorMode) return;
 
-  updateNavigation(index = this.swiper?.activeIndex || 0) {
-    if (!this.spotlight || !this.swiper?.slides?.length) return;
-    const visible = Math.min(Math.max(this.swiper.slidesPerViewDynamic(), Number(this.swiper.params.slidesPerView) || 1), this.swiper.slides.length);
-    const hasOverflow = this.swiper.slides.length > Math.ceil(visible);
-    this.spotlight.classList.toggle('is-carousel-scrollable', hasOverflow);
-    this.querySelectorAll('[data-shop-the-look-previous], [data-shop-the-look-next]').forEach((button) => {
-      button.disabled = !hasOverflow;
-    });
-    if (hasOverflow) this.swiper.navigation.update();
-    this.updateNavigatorPosition(index);
-  }
+    const blockId = event.detail?.blockId;
+    if (blockId && !this.annotations.some((annotation) => annotation.dataset.blockId === blockId)) return;
+    if (!blockId && event.target instanceof Element && !this.contains(event.target)) return;
 
-  updatePagination(index) {
-    const total = this.products.length;
-    if (!total) return;
-    if (this.paginationCount) {
-      const currentLabel = String(index + 1).padStart(2, '0');
-      const totalLabel = String(total).padStart(2, '0');
-      this.paginationCount.textContent = `${currentLabel} / ${totalLabel}`;
-    }
-    if (this.paginationProgress) {
-      this.paginationProgress.style.setProperty('--featured-collection-progress', (index + 1) / total);
-    }
+    this.annotations.forEach((annotation) => annotation.classList.remove('is-editor-selected'));
+    this.classList.remove('has-active-product');
+    this.hotspots.forEach((hotspot) => hotspot.setAttribute('aria-pressed', 'false'));
+    this.products.forEach((product) => product.classList.remove('is-active'));
   }
 
   handleClick(event) {
     const hotspot = event.target.closest('[data-shop-the-look-hotspot]');
-    if (!hotspot || !this.contains(hotspot)) return;
-    this.selectIndex(this.hotspots.indexOf(hotspot));
+    if (hotspot && this.contains(hotspot)) {
+      event.preventDefault();
+      this.selectProduct(this.hotspots.indexOf(hotspot));
+      return;
+    }
+
+    const button = event.target.closest('[data-shop-the-look-bundle-add]');
+    if (!button || !this.contains(button)) return;
+
+    this.addBundle(button);
   }
 
   handleKeydown(event) {
@@ -145,19 +182,95 @@ class ShopTheLook extends HTMLElement {
 
     const currentIndex = this.hotspots.indexOf(hotspot);
     let nextIndex = currentIndex;
-    if (event.key === 'ArrowRight') nextIndex = currentIndex + 1;
-    if (event.key === 'ArrowLeft') nextIndex = currentIndex - 1;
+    if (event.key === 'ArrowRight' || event.key === 'ArrowDown') nextIndex = currentIndex + 1;
+    if (event.key === 'ArrowLeft' || event.key === 'ArrowUp') nextIndex = currentIndex - 1;
     if (event.key === 'Home') nextIndex = 0;
     if (event.key === 'End') nextIndex = this.hotspots.length - 1;
     if (nextIndex === currentIndex) return;
 
     event.preventDefault();
-    this.selectIndex(nextIndex, true);
+    this.selectProduct(nextIndex, true);
   }
 
-  handleBlockSelect(event) {
-    const index = this.products.findIndex((product) => product.dataset.blockId === event.detail?.blockId);
-    if (index >= 0) this.selectIndex(index);
+  parseBundleItems(button) {
+    try {
+      const items = JSON.parse(button.dataset.shopTheLookBundleItems || '[]');
+      return Array.isArray(items) ? items : [];
+    } catch (_) {
+      return [];
+    }
+  }
+
+  async addBundle(button) {
+    if (button.getAttribute('aria-disabled') === 'true' || button.classList.contains('is-loading')) return;
+
+    const items = this.parseBundleItems(button);
+    if (!items.length) return;
+
+    const label = button.querySelector('[data-shop-the-look-bundle-label]');
+    const initialLabel = button.dataset.shopTheLookBundleAddLabel || label?.textContent || '';
+    const addingLabel = button.dataset.shopTheLookBundleAddingLabel || initialLabel;
+    const addedLabel = button.dataset.shopTheLookBundleAddedLabel || initialLabel;
+    const errorLabel = button.dataset.shopTheLookBundleErrorLabel || 'Unable to add this set to your bag.';
+    const root = window.Shopify?.routes?.root || '/';
+    const cartAddUrl = window.routes?.cart_add_url || root + 'cart/add.js';
+
+    button.classList.add('is-loading');
+    button.setAttribute('aria-busy', 'true');
+    if (label) label.textContent = addingLabel;
+    if (this.bundleStatus) this.bundleStatus.textContent = addingLabel;
+
+    try {
+      const response = await fetch(cartAddUrl, {
+        method: 'POST',
+        headers: {
+          Accept: 'application/json',
+          'Content-Type': 'application/json',
+          'X-Requested-With': 'XMLHttpRequest',
+        },
+        body: JSON.stringify({ items }),
+      });
+      const payload = await response.json();
+      if (!response.ok) throw new Error(payload.description || payload.message || errorLabel);
+
+      let cart = null;
+      try {
+        const cartResponse = await fetch(root + 'cart.js', { headers: { Accept: 'application/json' } });
+        if (cartResponse.ok) cart = await cartResponse.json();
+      } catch (_) {
+        // The cart drawer refreshes independently when the add succeeds.
+      }
+
+      const addedItems = Array.isArray(payload.items) ? payload.items : [];
+      const firstItem = addedItems[0] || null;
+      if (label) label.textContent = addedLabel;
+      if (this.bundleStatus) this.bundleStatus.textContent = addedLabel;
+      button.classList.add('is-added');
+
+      document.dispatchEvent(new CustomEvent('cart:updated', {
+        bubbles: true,
+        detail: { item: firstItem, items: addedItems, cart, button },
+      }));
+      document.dispatchEvent(new CustomEvent('cart:add:success', {
+        bubbles: true,
+        detail: { item: firstItem, items: addedItems, cart, button },
+      }));
+
+      this.resetTimer = window.setTimeout(() => {
+        if (!button.isConnected) return;
+        button.classList.remove('is-added');
+        button.removeAttribute('aria-busy');
+        if (label) label.textContent = initialLabel;
+        if (this.bundleStatus) this.bundleStatus.textContent = '';
+      }, 1600);
+    } catch (error) {
+      console.error('[Spinel] Shop the look bundle add failed', error);
+      if (label) label.textContent = initialLabel;
+      if (this.bundleStatus) this.bundleStatus.textContent = error.message || errorLabel;
+      button.removeAttribute('aria-busy');
+    } finally {
+      button.classList.remove('is-loading');
+    }
   }
 }
 

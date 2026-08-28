@@ -1,121 +1,211 @@
 {% render 'section-stylesheet', asset: 'section-shop-the-look.css', defer_on_home: true %}
-{% render 'section-stylesheet', asset: 'component-carousel-navigator.css', defer_on_home: true %}
-{% render 'swiper-stylesheet', defer_on_home: true %}
 
 {% liquid
   assign product_block_count = 0
+  assign bundle_total = 0
+  assign bundle_available = true
+  assign bundle_price_label = section.settings.bundle_price_label
+  assign bundle_savings_text = section.settings.bundle_savings_text
+  assign bundle_add_label = section.settings.bundle_add_label
+  assign bundle_adding_label = section.settings.bundle_adding_label
+  assign bundle_added_label = section.settings.bundle_added_label
+  assign bundle_error_label = section.settings.bundle_error_label
+  assign total_value_label = section.settings.total_value_label
+  if bundle_price_label == blank
+    assign bundle_price_label = 'shop_the_look.set_price' | t
+  endif
+  if bundle_savings_text == blank
+    assign bundle_savings_text = 'shop_the_look.savings' | t
+  endif
+  if bundle_add_label == blank
+    assign bundle_add_label = 'shop_the_look.add_all' | t
+  endif
+  if bundle_adding_label == blank
+    assign bundle_adding_label = 'shop_the_look.adding' | t
+  endif
+  if bundle_added_label == blank
+    assign bundle_added_label = 'shop_the_look.added' | t
+  endif
+  if bundle_error_label == blank
+    assign bundle_error_label = 'shop_the_look.add_error' | t
+  endif
+  if total_value_label == blank
+    assign total_value_label = 'shop_the_look.total_value' | t
+  endif
   assign mobile_media_aspect_ratio = section.settings.mobile_image.aspect_ratio | default: section.settings.image.aspect_ratio | default: 1
+  assign shop_the_look_color_scheme_id = section.settings.color_scheme.id | default: 'scheme-4'
   assign shop_the_look_background = section.settings.background_color
   if shop_the_look_background == blank
     assign shop_the_look_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
   endif
+  if shop_the_look_background == blank
+    assign shop_the_look_background = 'var(--color-background)'
+  endif
+
   for block in section.blocks
     if block.type == 'product_hotspot'
       assign product_block_count = product_block_count | plus: 1
+      if block.settings.product != blank
+        assign product_variant = block.settings.product.selected_or_first_available_variant
+        if product_variant != blank
+          assign bundle_total = bundle_total | plus: product_variant.price
+          if product_variant.available == false or product_variant.requires_selling_plan
+            assign bundle_available = false
+          endif
+        else
+          assign bundle_available = false
+        endif
+      else
+        assign bundle_available = false
+      endif
     endif
   endfor
+
+  if product_block_count == 0
+    assign bundle_available = false
+  endif
 %}
 
-{% style %}
-  #shopify-section-{{ section.id }} {
-    background: {{ shop_the_look_background }};
-  }
-
-  #shopify-section-{{ section.id }} .shop-the-look {
-    background: transparent;
-  }
-{% endstyle %}
-
 {% if product_block_count > 0 %}
+  {% capture bundle_items %}
+    [
+      {% assign bundle_item_index = 0 %}
+      {% for block in section.blocks %}
+        {% if block.type == 'product_hotspot' and block.settings.product != blank %}
+          {% assign bundle_variant = block.settings.product.selected_or_first_available_variant %}
+          {% if bundle_variant != blank and bundle_variant.available %}
+            {% unless bundle_variant.requires_selling_plan %}
+              {% unless bundle_item_index == 0 %},{% endunless %}
+              {"id":{{ bundle_variant.id | json }},"quantity":1}
+              {% assign bundle_item_index = bundle_item_index | plus: 1 %}
+            {% endunless %}
+          {% endif %}
+        {% endif %}
+      {% endfor %}
+    ]
+  {% endcapture %}
+
   <shop-the-look
+    id="ShopTheLook-{{ section.id }}"
+    data-section-id="{{ section.id }}"
     data-deferred-module="{{ 'shop-the-look.js' | asset_url }}"
-    class="shop-the-look color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} shop-the-look--media-{{ section.settings.media_position }}"
-    style="--shop-the-look-height: {{ section.settings.height_desktop }}px; --shop-the-look-height-mobile: {{ section.settings.height_mobile }}px; --shop-the-look-content-padding: {{ section.settings.content_padding }}px; --shop-the-look-product-image-size: {{ section.settings.product_image_size }}px; --shop-the-look-mobile-media-ratio: {{ mobile_media_aspect_ratio }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+    data-editor-mode="{% if request.design_mode %}true{% else %}false{% endif %}"
+    class="shop-the-look color-scheme color-{{ shop_the_look_color_scheme_id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} shop-the-look--media-{{ section.settings.media_position | default: 'left' }}"
+    style="--shop-the-look-height: {{ section.settings.height_desktop }}px; --shop-the-look-height-mobile: {{ section.settings.height_mobile }}px; --shop-the-look-content-padding: {{ section.settings.content_padding }}px; --shop-the-look-product-image-size: {{ section.settings.product_image_size }}px; --shop-the-look-mobile-media-ratio: {{ mobile_media_aspect_ratio }}; --shop-the-look-background: {{ shop_the_look_background }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
   >
     <div class="shop-the-look__inner section-spacing">
       <div class="shop-the-look__layout">
-      <div class="shop-the-look__media-column">
-        <div class="shop-the-look__visual" data-reveal="fade-up" data-reveal-duration="650" data-reveal-delay="0">
-          {% liquid
-            assign editorial_image = section.settings.image | default: section.settings.mobile_image
-            assign editorial_image_alt = editorial_image.alt
-            assign mobile_focal_point = section.settings.mobile_focal_point
-            if section.settings.mobile_image == blank or mobile_focal_point == blank
-              assign mobile_focal_point = section.settings.focal_point
-            endif
-            capture editorial_image_style
-              echo '--shop-the-look-desktop-focal-point: ' | append: section.settings.focal_point | append: '; '
-              echo '--shop-the-look-mobile-focal-point: ' | append: mobile_focal_point | append: ';'
-            endcapture
-            if editorial_image_alt == blank
-              assign editorial_image_alt = 'shop_the_look.editorial_image' | t
-            endif
-          %}
-          <div class="shop-the-look__media">
-            {% render 'responsive-media',
-              image: editorial_image,
-              mobile_image: section.settings.mobile_image,
-              mobile_breakpoint: 989,
-              max_width: 1920,
-              mobile_max_width: 1200,
-              widths: '480, 720, 960, 1200, 1440, 1920',
-              mobile_widths: '360, 480, 640, 750, 960, 1200',
-              sizes: '(min-width: 1150px) 50vw, 100vw',
-              class: 'shop-the-look__editorial-image',
-              loading: 'lazy',
-              alt: editorial_image_alt,
-              style: editorial_image_style,
-              placeholder_asset: 'placeholder-image-default-2.svg',
-              placeholder_class: 'shop-the-look__placeholder'
+        <div class="shop-the-look__media-column">
+          <div class="shop-the-look__visual">
+            {% liquid
+              assign editorial_image = section.settings.image | default: section.settings.mobile_image
+              assign editorial_image_alt = editorial_image.alt
+              assign mobile_focal_point = section.settings.mobile_focal_point
+              if section.settings.mobile_image == blank or mobile_focal_point == blank
+                assign mobile_focal_point = section.settings.focal_point
+              endif
+              capture editorial_image_style
+                echo '--shop-the-look-desktop-focal-point: ' | append: section.settings.focal_point | append: '; '
+                echo '--shop-the-look-mobile-focal-point: ' | append: mobile_focal_point | append: ';'
+              endcapture
+              if editorial_image_alt == blank
+                assign editorial_image_alt = 'shop_the_look.editorial_image' | t
+              endif
             %}
-          </div>
+            <div class="shop-the-look__media">
+              {% render 'responsive-media',
+                image: editorial_image,
+                mobile_image: section.settings.mobile_image,
+                mobile_breakpoint: 992,
+                max_width: 1920,
+                mobile_max_width: 1200,
+                widths: '480, 720, 960, 1200, 1440, 1920',
+                mobile_widths: '360, 480, 640, 750, 960, 1200',
+                sizes: '(min-width: 993px) 50vw, 100vw',
+                class: 'shop-the-look__editorial-image',
+                loading: 'lazy',
+                alt: editorial_image_alt,
+                style: editorial_image_style,
+                placeholder_asset: 'placeholder-image-default-2.svg',
+                placeholder_class: 'shop-the-look__placeholder'
+              %}
+            </div>
 
-          <div class="shop-the-look__hotspots" role="tablist" aria-label="{{ 'shop_the_look.products' | t | escape }}">
-            {% assign hotspot_index = 0 %}
-            {% for block in section.blocks %}
-              {% if block.type == 'product_hotspot' %}
-                {% liquid
-                  assign hotspot_label = block.settings.product.title
-                  assign mobile_hotspot_x = block.settings.horizontal_position
-                  assign mobile_hotspot_y = block.settings.vertical_position
-                  if block.settings.enable_mobile_position
-                    assign mobile_hotspot_x = block.settings.mobile_horizontal_position
-                    assign mobile_hotspot_y = block.settings.mobile_vertical_position
-                  endif
-                  if hotspot_label == blank
-                    assign hotspot_label = 'shop_the_look.product' | t
-                  endif
-                %}
-                <button
-                  class="shop-the-look__hotspot"
-                  type="button"
-                  role="tab"
-                  id="ShopTheLookHotspot-{{ section.id }}-{{ block.id }}"
-                  aria-controls="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
-                  aria-label="{{ 'shop_the_look.select_product' | t: product: hotspot_label | escape }}"
-                  aria-selected="{% if hotspot_index == 0 %}true{% else %}false{% endif %}"
-                  tabindex="{% if hotspot_index == 0 %}0{% else %}-1{% endif %}"
-                  style="--hotspot-x: {{ block.settings.horizontal_position }}%; --hotspot-y: {{ block.settings.vertical_position }}%; --hotspot-mobile-x: {{ mobile_hotspot_x }}%; --hotspot-mobile-y: {{ mobile_hotspot_y }}%;"
-                  data-shop-the-look-hotspot
-                  data-block-id="{{ block.id }}"
-                >
-                  <span aria-hidden="true"></span>
-                </button>
-                {% assign hotspot_index = hotspot_index | plus: 1 %}
-              {% endif %}
-            {% endfor %}
+            <div class="shop-the-look__hotspots" role="group" aria-label="{{ 'shop_the_look.products' | t | escape }}">
+              {% assign hotspot_index = 0 %}
+              {% for block in section.blocks %}
+                {% if block.type == 'product_hotspot' %}
+                  {% liquid
+                    assign hotspot_label = block.settings.product.title
+                    assign desktop_hotspot_x = block.settings.horizontal_position | default: 60 | at_least: 0 | at_most: 100
+                    assign desktop_hotspot_y = block.settings.vertical_position | default: 58 | at_least: 0 | at_most: 100
+                    assign mobile_hotspot_x = desktop_hotspot_x
+                    assign mobile_hotspot_y = desktop_hotspot_y
+                    assign desktop_connector_x = block.settings.connector_horizontal_position | default: desktop_hotspot_x | at_least: 0 | at_most: 100
+                    assign desktop_connector_y = block.settings.connector_vertical_position | default: desktop_hotspot_y | at_least: 0 | at_most: 100
+                    assign mobile_connector_x = desktop_connector_x
+                    assign mobile_connector_y = desktop_connector_y
+                    assign show_connector = true
+                    if block.settings.show_connector == false
+                      assign show_connector = false
+                    endif
+                    if block.settings.enable_mobile_position
+                      assign mobile_hotspot_x = block.settings.mobile_horizontal_position | default: desktop_hotspot_x | at_least: 0 | at_most: 100
+                      assign mobile_hotspot_y = block.settings.mobile_vertical_position | default: desktop_hotspot_y | at_least: 0 | at_most: 100
+                      assign mobile_connector_x = block.settings.mobile_connector_horizontal_position | default: desktop_connector_x | at_least: 0 | at_most: 100
+                      assign mobile_connector_y = block.settings.mobile_connector_vertical_position | default: desktop_connector_y | at_least: 0 | at_most: 100
+                    endif
+                    if hotspot_label == blank
+                      assign hotspot_label = 'shop_the_look.product' | t
+                    endif
+                    assign hotspot_number = hotspot_index | plus: 1 | prepend: '0' | slice: -2, 2
+                  %}
+                  <div
+                    class="shop-the-look__hotspot-annotation"
+                    data-shop-the-look-hotspot-annotation
+                    data-block-id="{{ block.id }}"
+                    style="--hotspot-x: {{ desktop_hotspot_x }}%; --hotspot-y: {{ desktop_hotspot_y }}%; --hotspot-mobile-x: {{ mobile_hotspot_x }}%; --hotspot-mobile-y: {{ mobile_hotspot_y }}%; --hotspot-connector-x: {{ desktop_connector_x }}%; --hotspot-connector-y: {{ desktop_connector_y }}%; --hotspot-mobile-connector-x: {{ mobile_connector_x }}%; --hotspot-mobile-connector-y: {{ mobile_connector_y }}%;"
+                    {{ block.shopify_attributes }}
+                  >
+                    {% if show_connector %}
+                      <svg class="shop-the-look__hotspot-connector" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                        <line class="shop-the-look__hotspot-connector-line shop-the-look__hotspot-connector-line--desktop" x1="{{ desktop_hotspot_x }}" y1="{{ desktop_hotspot_y }}" x2="{{ desktop_connector_x }}" y2="{{ desktop_connector_y }}"></line>
+                        <line class="shop-the-look__hotspot-connector-line shop-the-look__hotspot-connector-line--mobile" x1="{{ mobile_hotspot_x }}" y1="{{ mobile_hotspot_y }}" x2="{{ mobile_connector_x }}" y2="{{ mobile_connector_y }}"></line>
+                      </svg>
+                    {% endif %}
+                    {% if request.design_mode %}
+                      <span class="shop-the-look__hotspot-guide" aria-hidden="true">
+                        <span class="shop-the-look__hotspot-guide-grid"></span>
+                        <span class="shop-the-look__hotspot-guide-marker"></span>
+                        {% if show_connector %}<span class="shop-the-look__hotspot-guide-target"></span>{% endif %}
+                        <span class="shop-the-look__hotspot-guide-label">Hotspot {{ hotspot_number }} · Marker {{ desktop_hotspot_x }}% / {{ desktop_hotspot_y }}%{% if show_connector %} · Target {{ desktop_connector_x }}% / {{ desktop_connector_y }}%{% endif %}{% if block.settings.enable_mobile_position %} · Mobile {{ mobile_hotspot_x }}% / {{ mobile_hotspot_y }}%{% endif %}</span>
+                      </span>
+                    {% endif %}
+                    <button
+                        class="shop-the-look__hotspot"
+                        type="button"
+                        aria-controls="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
+                        aria-pressed="false"
+                        aria-label="{{ 'shop_the_look.select_product' | t: product: hotspot_label | escape }}"
+                        data-shop-the-look-hotspot
+                        data-index="{{ hotspot_index }}"
+                      >
+                        <span class="shop-the-look__hotspot-number" aria-hidden="true">{{ hotspot_number }}</span>
+                    </button>
+                  </div>
+                  {% assign hotspot_index = hotspot_index | plus: 1 %}
+                {% endif %}
+              {% endfor %}
+            </div>
           </div>
         </div>
 
-      </div>
-
-      <div class="shop-the-look__content-column">
-        <header class="section-header shop-the-look__header">
-          <div class="shop-the-look__header-content">
-            {% for block in section.blocks %}
-              {% case block.type %}
-                {% when 'label' %}
-                  {% if block.settings.text != blank %}
+        <div class="shop-the-look__content-column">
+          <div class="shop-the-look__content">
+            <header class="section-header shop-the-look__header">
+              <div class="shop-the-look__header-content">
+                {% for block in section.blocks %}
+                  {% if block.type == 'label' and block.settings.text != blank %}
                     <div class="shop-the-look__label">
                       {% render 'content-block',
                         block: block,
@@ -127,8 +217,24 @@
                       %}
                     </div>
                   {% endif %}
-                {% when 'text' %}
-                  {% if block.settings.text != blank %}
+                {% endfor %}
+
+                {% for block in section.blocks %}
+                  {% if block.type == 'heading' and block.settings.heading != blank %}
+                    <div class="shop-the-look__heading" id="ShopTheLookHeading-{{ section.id }}">
+                      {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+                    </div>
+                  {% endif %}
+                {% endfor %}
+
+                <div class="shop-the-look__ornament" aria-hidden="true">
+                  <span class="shop-the-look__ornament-line"></span>
+                  <span class="shop-the-look__ornament-diamond"></span>
+                  <span class="shop-the-look__ornament-line"></span>
+                </div>
+
+                {% for block in section.blocks %}
+                  {% if block.type == 'text' and block.settings.text != blank %}
                     <div class="shop-the-look__text">
                       {% render 'content-block',
                         block: block,
@@ -139,92 +245,122 @@
                       %}
                     </div>
                   {% endif %}
-                {% when 'heading' %}
-                  {% if block.settings.heading != blank %}
-                    <div class="shop-the-look__heading">
-                      {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
-                    </div>
+                {% endfor %}
+              </div>
+            </header>
+
+            <div class="shop-the-look__summary">
+              <div class="shop-the-look__summary-price">
+                <span class="shop-the-look__summary-label">{{ bundle_price_label | escape }}</span>
+                <span class="shop-the-look__summary-value">
+                  {% if section.settings.bundle_price_override != blank %}
+                    {{ section.settings.bundle_price_override | escape }}
+                  {% elsif bundle_total > 0 %}
+                    {{ bundle_total | money }}
+                  {% else %}
+                    —
                   {% endif %}
-              {% endcase %}
-            {% endfor %}
-          </div>
-        </header>
+                </span>
+              </div>
+              <span class="shop-the-look__summary-divider" aria-hidden="true"></span>
+              <p class="shop-the-look__summary-savings">{{ bundle_savings_text | escape | newline_to_br }}</p>
+            </div>
 
-        <div class="shop-the-look__spotlight" data-reveal="fade-up" data-reveal-duration="650" data-reveal-delay="300">
-          {% if product_block_count > 1 %}
-            <button class="shop-the-look__arrow shop-the-look__arrow--previous featured-collection__carousel-button featured-collection__carousel-button--previous carousel-navigator__arrow carousel-navigator__arrow--previous" type="button" aria-label="{{ 'shop_the_look.previous_product' | t | escape }}" data-shop-the-look-previous>
-              {% render 'icon', name: 'chevron-left' %}
-            </button>
-          {% endif %}
-
-          <div class="shop-the-look__products swiper" data-shop-the-look-slider>
-            <div class="swiper-wrapper">
+            <ol class="shop-the-look__products">
               {% assign product_index = 0 %}
               {% for block in section.blocks %}
                 {% if block.type == 'product_hotspot' %}
-                  {% assign product_placeholder_index = product_index | plus: 1 %}
-                  <div
-                    class="shop-the-look__product-slide swiper-slide"
+                  {% liquid
+                    assign product = block.settings.product
+                    assign product_variant = product.selected_or_first_available_variant
+                    assign product_image = block.settings.cutout_image | default: product.featured_image
+                    assign product_title = block.settings.display_title | default: product.title
+                    assign product_subtitle = block.settings.display_subtitle | default: block.settings.subtitle
+                    if product_subtitle == blank and product != blank
+                      assign product_subtitle = product.type | default: product.vendor
+                    endif
+                    assign product_placeholder_index = product_index | modulo: 4 | plus: 1
+                    assign product_number = product_index | plus: 1 | prepend: '0' | slice: -2, 2
+                    if product_title == blank
+                      assign product_title = 'onboarding.product_title' | t
+                    endif
+                  %}
+                  <li
+                    class="shop-the-look__product"
                     id="ShopTheLookProduct-{{ section.id }}-{{ block.id }}"
-                    role="tabpanel"
-                    aria-labelledby="ShopTheLookHotspot-{{ section.id }}-{{ block.id }}"
                     data-shop-the-look-product
                     data-block-id="{{ block.id }}"
-                    {% unless product_index == 0 %}aria-hidden="true" inert{% endunless %}
-                    {{ block.shopify_attributes }}
                   >
-                    {% if block.settings.product != blank %}
-                      {% render 'product-card',
-                        product: block.settings.product,
-                        media_ratio: 'global',
-                        sizes: '(max-width: 767.98px) min(72vw, 320px), (min-width: 1150px) 360px, 44vw',
-                        show_badges: true,
-                        show_compare_at_price: true,
-                        show_variant_dots: false,
-                        show_media_actions: false,
-                        show_quick_add: true,
-                        enable_quick_view: true
-                      %}
+                    <span class="shop-the-look__product-number" aria-hidden="true">{{ product_number }}</span>
+
+                    {% if product != blank and product_image != blank %}
+                      <a class="shop-the-look__product-media" href="{{ product.url | escape }}" aria-label="{{ product_title | escape }}">
+                        {% render 'responsive-image',
+                          image: product_image,
+                          max_width: 320,
+                          widths: '96, 128, 192, 256, 320',
+                          sizes: '(max-width: 767.98px) 24vw, (max-width: 992px) 18vw, 140px',
+                          class: 'shop-the-look__product-image',
+                          loading: 'lazy',
+                          alt: product_title,
+                          style: 'width: 100%; height: 100%; object-fit: cover;'
+                        %}
+                      </a>
                     {% else %}
-                      {% render 'product-card',
-                        placeholder_index: product_placeholder_index,
-                        media_ratio: 'global',
-                        show_badges: true,
-                        show_variant_dots: false,
-                        show_media_actions: false,
-                        show_quick_add: false,
-                        enable_quick_view: false
-                      %}
+                      <span class="shop-the-look__product-media" aria-hidden="true">
+                        {{ 'product-' | append: product_placeholder_index | placeholder_svg_tag: 'shop-the-look__product-placeholder' }}
+                      </span>
                     {% endif %}
-                  </div>
+
+                    <div class="shop-the-look__product-details">
+                      {% if product != blank %}
+                        <a class="shop-the-look__product-title" href="{{ product.url | escape }}">{{ product_title | escape }}</a>
+                      {% else %}
+                        <span class="shop-the-look__product-title">{{ product_title | escape }}</span>
+                      {% endif %}
+                      {% if product_subtitle != blank %}
+                        <span class="shop-the-look__product-subtitle">{{ product_subtitle | escape }}</span>
+                      {% endif %}
+                    </div>
+
+                    <span class="shop-the-look__product-price">
+                      {% if block.settings.display_price != blank %}
+                        {{ block.settings.display_price | escape }}
+                      {% elsif product_variant != blank %}
+                        {{ product_variant.price | money }}
+                      {% else %}
+                        —
+                      {% endif %}
+                    </span>
+                  </li>
                   {% assign product_index = product_index | plus: 1 %}
                 {% endif %}
               {% endfor %}
+            </ol>
+
+            <div class="shop-the-look__actions">
+              <button
+                class="shop-the-look__bundle-button"
+                type="button"
+                data-shop-the-look-bundle-add
+                data-shop-the-look-bundle-items="{{ bundle_items | strip | escape }}"
+                data-shop-the-look-bundle-add-label="{{ bundle_add_label | escape }}"
+                data-shop-the-look-bundle-adding-label="{{ bundle_adding_label | escape }}"
+                data-shop-the-look-bundle-added-label="{{ bundle_added_label | escape }}"
+                data-shop-the-look-bundle-error-label="{{ bundle_error_label | escape }}"
+                {% unless bundle_available %}aria-disabled="true"{% endunless %}
+              >
+                <span data-shop-the-look-bundle-label>{{ bundle_add_label | escape }}</span>
+              </button>
+              <p class="shop-the-look__bundle-status visually-hidden" data-shop-the-look-bundle-status role="status" aria-live="polite" aria-atomic="true"></p>
+              <p class="shop-the-look__total">{{ total_value_label | escape }} <span>{% if section.settings.total_value_override != blank %}{{ section.settings.total_value_override | escape }}{% elsif bundle_total > 0 %}{{ bundle_total | money }}{% else %}—{% endif %}</span></p>
             </div>
           </div>
-
-          {% if product_block_count > 1 %}
-            <button class="shop-the-look__arrow shop-the-look__arrow--next featured-collection__carousel-button featured-collection__carousel-button--next carousel-navigator__arrow carousel-navigator__arrow--next" type="button" aria-label="{{ 'shop_the_look.next_product' | t | escape }}" data-shop-the-look-next>
-              {% render 'icon', name: 'chevron-right' %}
-            </button>
-          {% endif %}
         </div>
-
-        {% if product_block_count > 1 %}
-          <div class="shop-the-look__pagination" data-reveal="fade-up" data-reveal-duration="650" data-reveal-delay="450">
-            <span class="shop-the-look__pagination-count" data-shop-the-look-pagination-count aria-live="polite">01 / {{ product_block_count | prepend: '0' | slice: -2, 2 }}</span>
-            <div class="shop-the-look__pagination-progress featured-collection__progress" aria-hidden="true">
-              <span data-shop-the-look-pagination-progress style="--featured-collection-progress: {{ 1.0 | divided_by: product_block_count }};"></span>
-            </div>
-          </div>
-        {% endif %}
       </div>
-    </div>
     </div>
   </shop-the-look>
 {% endif %}
-
-
 
 {% schema %}
 {
@@ -352,6 +488,64 @@
       "id": "background_color",
       "label": "Background color",
       "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme."
+    },
+    {
+      "type": "header",
+      "content": "Bundle details"
+    },
+    {
+      "type": "text",
+      "id": "bundle_price_label",
+      "label": "Price label",
+      "default": "Set price"
+    },
+    {
+      "type": "text",
+      "id": "bundle_price_override",
+      "label": "Display set price",
+      "info": "Optional display text. This does not change the price charged in Shopify."
+    },
+    {
+      "type": "text",
+      "id": "bundle_savings_text",
+      "label": "Savings message",
+      "default": "Savings when bought as a set"
+    },
+    {
+      "type": "text",
+      "id": "bundle_add_label",
+      "label": "Add all label",
+      "default": "Add all to bag"
+    },
+    {
+      "type": "text",
+      "id": "bundle_adding_label",
+      "label": "Adding label",
+      "default": "Adding to bag"
+    },
+    {
+      "type": "text",
+      "id": "bundle_added_label",
+      "label": "Added label",
+      "default": "Added to bag"
+    },
+    {
+      "type": "text",
+      "id": "bundle_error_label",
+      "label": "Error message",
+      "default": "This set could not be added. Please try again."
+    },
+    {
+      "type": "text",
+      "id": "total_value_label",
+      "label": "Total value label",
+      "default": "Total value:"
+    },
+    {
+      "type": "text",
+      "id": "total_value_override",
+      "label": "Display total value",
+      "info": "Optional display text. This does not change the product prices or cart total."
     },
     {
       "type": "header",
@@ -990,53 +1184,130 @@
           "label": "Product"
         },
         {
-          "type": "range",
+          "type": "image_picker",
+          "id": "cutout_image",
+          "label": "Cutout image",
+          "info": "Optional transparent PNG or WebP for the dark product row. Uses the product featured image when left blank."
+        },
+        {
+          "type": "text",
+          "id": "subtitle",
+          "label": "Subtitle",
+          "info": "Optional text shown beneath the product title. Falls back to the product type."
+        },
+        {
+          "type": "header",
+          "content": "Display content overrides"
+        },
+        {
+          "type": "text",
+          "id": "display_title",
+          "label": "Display title",
+          "info": "Optional visual title override. Cart actions still use the selected product."
+        },
+        {
+          "type": "text",
+          "id": "display_subtitle",
+          "label": "Display subtitle",
+          "info": "Optional visual subtitle override. Falls back to Subtitle, product type, or vendor."
+        },
+        {
+          "type": "text",
+          "id": "display_price",
+          "label": "Display price",
+          "info": "Optional visual price override. This does not change the product price or cart total."
+        },
+        {
+          "type": "header",
+          "content": "Desktop marker position"
+        },
+        {
+          "type": "number",
           "id": "horizontal_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Horizontal position",
+          "label": "Marker X position (%)",
+          "info": "0% is left, 100% is right. Decimals are allowed.",
           "default": 60
         },
         {
-          "type": "range",
+          "type": "number",
           "id": "vertical_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Vertical position",
+          "label": "Marker Y position (%)",
+          "info": "0% is top, 100% is bottom. Decimals are allowed.",
           "default": 58
+        },
+        {
+          "type": "header",
+          "content": "Desktop connector target"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_connector",
+          "label": "Show connector line",
+          "info": "Turn off when the marker can sit directly on the product.",
+          "default": true
+        },
+        {
+          "type": "number",
+          "id": "connector_horizontal_position",
+          "label": "Target X position (%)",
+          "info": "0% is left, 100% is right. Decimals are allowed.",
+          "default": 60,
+          "visible_if": "{{ block.settings.show_connector }}"
+        },
+        {
+          "type": "number",
+          "id": "connector_vertical_position",
+          "label": "Target Y position (%)",
+          "info": "0% is top, 100% is bottom. Decimals are allowed.",
+          "default": 58,
+          "visible_if": "{{ block.settings.show_connector }}"
         },
         {
           "type": "checkbox",
           "id": "enable_mobile_position",
-          "label": "Custom mobile position",
-          "info": "Set a different hotspot position for mobile screens.",
+          "label": "Use separate mobile coordinates",
+          "info": "Desktop coordinates are used by default.",
           "default": false
         },
         {
-          "type": "range",
+          "type": "header",
+          "content": "Mobile marker position"
+        },
+        {
+          "type": "number",
           "id": "mobile_horizontal_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Mobile horizontal position",
+          "label": "Marker X position (%)",
+          "info": "0% is left, 100% is right. Decimals are allowed.",
           "default": 60,
           "visible_if": "{{ block.settings.enable_mobile_position }}"
         },
         {
-          "type": "range",
+          "type": "number",
           "id": "mobile_vertical_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Mobile vertical position",
+          "label": "Marker Y position (%)",
+          "info": "0% is top, 100% is bottom. Decimals are allowed.",
           "default": 58,
           "visible_if": "{{ block.settings.enable_mobile_position }}"
+        },
+        {
+          "type": "header",
+          "content": "Mobile connector target"
+        },
+        {
+          "type": "number",
+          "id": "mobile_connector_horizontal_position",
+          "label": "Target X position (%)",
+          "info": "0% is left, 100% is right. Decimals are allowed.",
+          "default": 60,
+          "visible_if": "{{ block.settings.enable_mobile_position and block.settings.show_connector }}"
+        },
+        {
+          "type": "number",
+          "id": "mobile_connector_vertical_position",
+          "label": "Target Y position (%)",
+          "info": "0% is top, 100% is bottom. Decimals are allowed.",
+          "default": 58,
+          "visible_if": "{{ block.settings.enable_mobile_position and block.settings.show_connector }}"
         }
       ]
     }
@@ -1047,6 +1318,10 @@
       "category": "Product discovery",
       "settings": {
         "section_width": "full",
+        "color_scheme": "scheme-7",
+        "bundle_price_override": "$5,480",
+        "bundle_savings_text": "Save $610\nwhen bought as a set",
+        "total_value_override": "$6,090",
         "padding_top": 0,
         "padding_bottom": 0
       },
@@ -1054,47 +1329,72 @@
         {
           "type": "label",
           "settings": {
-            "reveal_type": "fade-up",
-            "reveal_duration": 650,
-            "reveal_delay": 0
+            "text": "<p>Shop the look</p>",
+            "reveal_type": "none"
           }
         },
         {
           "type": "text",
           "settings": {
+            "text": "<p>A complete harmony of ruby red and delicate brilliance.<br>Four pieces, one unforgettable presence.</p>",
             "type_preset": "sm",
-            "reveal_type": "fade-up",
-            "reveal_duration": 650,
-            "reveal_delay": 150
+            "reveal_type": "none"
           }
         },
         {
           "type": "heading",
           "settings": {
-            "reveal_type": "fade-up",
-            "reveal_duration": 650,
-            "reveal_delay": 150
+            "heading": "<h2>The Rouge Set</h2>",
+            "type_preset": "h2",
+            "reveal_type": "none"
           }
         },
         {
           "type": "product_hotspot",
           "settings": {
+            "display_title": "Royal Bloom",
+            "display_subtitle": "Statement Pendant",
+            "display_price": "$2,280",
+            "horizontal_position": 70,
+            "vertical_position": 53,
+            "connector_horizontal_position": 62,
+            "connector_vertical_position": 56
+          }
+        },
+        {
+          "type": "product_hotspot",
+          "settings": {
+            "display_title": "Lumière",
+            "display_subtitle": "Floral Ring",
+            "display_price": "$1,480",
+            "horizontal_position": 38,
+            "vertical_position": 44,
+            "connector_horizontal_position": 47,
+            "connector_vertical_position": 40
+          }
+        },
+        {
+          "type": "product_hotspot",
+          "settings": {
+            "display_title": "Petal Stud",
+            "display_subtitle": "Studs",
+            "display_price": "$650",
             "horizontal_position": 60,
-            "vertical_position": 58
+            "vertical_position": 21,
+            "connector_horizontal_position": 53,
+            "connector_vertical_position": 19
           }
         },
         {
           "type": "product_hotspot",
           "settings": {
-            "horizontal_position": 49,
-            "vertical_position": 52
-          }
-        },
-        {
-          "type": "product_hotspot",
-          "settings": {
-            "horizontal_position": 72,
-            "vertical_position": 63
+            "display_title": "Tennis Line",
+            "display_subtitle": "Line Bracelet",
+            "display_price": "$1,680",
+            "horizontal_position": 29,
+            "vertical_position": 72,
+            "connector_horizontal_position": 36,
+            "connector_vertical_position": 73
           }
         }
       ]
