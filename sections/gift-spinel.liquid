@@ -13,12 +13,12 @@
   if section.settings.mobile_image == blank
     assign hero_image_class = hero_image_class | append: ' gift-spinel__hero-image--mobile-fallback'
   endif
-  assign assurance_1_heading = section.settings.assurance_1_heading | default: 'Wrong size?'
-  assign assurance_1_text = section.settings.assurance_1_text | default: '<p>Free exchange within 30 days.<br>No hassle.</p>'
-  assign assurance_2_heading = section.settings.assurance_2_heading | default: 'How does it arrive?'
-  assign assurance_2_text = section.settings.assurance_2_text | default: '<p>In the signature box,<br>with a handwritten card.</p>'
-  assign assurance_3_heading = section.settings.assurance_3_heading | default: 'Will it arrive in time?'
-  assign assurance_3_text = section.settings.assurance_3_text | default: '<p>Choose your delivery date at checkout.</p>'
+  assign gift_path_count = 0
+  for section_block in section.blocks
+    if section_block.type == 'gift-path'
+      assign gift_path_count = gift_path_count | plus: 1
+    endif
+  endfor
 %}
 
 {% style %}
@@ -79,13 +79,16 @@
             <div class="gift-spinel__hero-description rte">{{ hero_description }}</div>
           </div>
 
-          {% if section.blocks.size > 0 %}
+          {% if gift_path_count > 0 %}
             <div class="gift-spinel__choices" data-gift-spinel-choices role="tablist" aria-label="{{ 'gift_spinel.occasion_tabs' | t | escape }}">
+              {% assign gift_path_index = 0 %}
               {% for block in section.blocks %}
+                {% if block.type == 'gift-path' %}
+                {% assign gift_path_index = gift_path_index | plus: 1 %}
                 {% liquid
                   assign occasion_key = block.settings.occasion
                   if occasion_key == blank
-                    case forloop.index
+                    case gift_path_index
                       when 1
                         assign occasion_key = 'birthday'
                       when 2
@@ -114,7 +117,7 @@
                   assign panel_id = 'GiftSpinelPanel-' | append: section.id | append: '-' | append: block.id
                 %}
                 <button
-                  class="gift-spinel__choice{% if forloop.first %} is-selected{% endif %}"
+                  class="gift-spinel__choice{% if gift_path_index == 1 %} is-selected{% endif %}"
                   type="button"
                   role="tab"
                   id="GiftSpinelChoice-{{ section.id }}-{{ block.id }}"
@@ -122,27 +125,31 @@
                   data-gift-spinel-target="{{ panel_id }}"
                   data-occasion="{{ occasion_key | escape }}"
                   aria-controls="{{ panel_id }}"
-                  aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
-                  tabindex="{% if forloop.first %}0{% else %}-1{% endif %}"
+                  aria-selected="{% if gift_path_index == 1 %}true{% else %}false{% endif %}"
+                  tabindex="{% if gift_path_index == 1 %}0{% else %}-1{% endif %}"
                   {{ block.shopify_attributes }}
                 >
                   <span class="gift-spinel__choice-label">{{ occasion_label | escape }}</span>
                 </button>
+                {% endif %}
               {% endfor %}
             </div>
           {% endif %}
         </div>
       </section>
 
-      {% if section.blocks.size > 0 %}
+      {% if gift_path_count > 0 %}
         <section class="gift-spinel__product-band" aria-label="{{ 'gift_spinel.curated_edit' | t | escape }}">
           <p class="visually-hidden" data-gift-spinel-status role="status" aria-live="polite"></p>
           <div class="gift-spinel__product-panels">
+            {% assign gift_path_index = 0 %}
             {% for block in section.blocks %}
+              {% if block.type == 'gift-path' %}
+              {% assign gift_path_index = gift_path_index | plus: 1 %}
               {% liquid
                 assign occasion_key = block.settings.occasion
                 if occasion_key == blank
-                  case forloop.index
+                  case gift_path_index
                     when 1
                       assign occasion_key = 'birthday'
                     when 2
@@ -171,45 +178,24 @@
                 assign panel_id = 'GiftSpinelPanel-' | append: section.id | append: '-' | append: block.id
               %}
               <div
-                class="gift-spinel__product-panel{% if forloop.first %} is-active{% endif %}"
+                class="gift-spinel__product-panel{% if gift_path_index == 1 %} is-active{% endif %}"
                 id="{{ panel_id }}"
                 role="tabpanel"
                 aria-labelledby="GiftSpinelChoice-{{ section.id }}-{{ block.id }}"
                 data-gift-spinel-panel
                 data-block-id="{{ block.id }}"
                 data-occasion="{{ occasion_key | escape }}"
-                {% unless forloop.first %}hidden{% endunless %}
+                {% unless gift_path_index == 1 %}hidden{% endunless %}
               >
                 {% render block %}
               </div>
+              {% endif %}
             {% endfor %}
           </div>
         </section>
       {% endif %}
 
-      <section class="gift-spinel__assurances" aria-label="{{ 'gift_spinel.assurance_label' | t | escape }}">
-        <article class="gift-spinel__assurance gift-spinel__assurance--text">
-          <h3 class="gift-spinel__assurance-heading">{{ assurance_1_heading | escape }}</h3>
-          <div class="gift-spinel__assurance-text rte">{{ assurance_1_text }}</div>
-        </article>
-        <article class="gift-spinel__assurance gift-spinel__assurance--media">
-          <div class="gift-spinel__assurance-copy">
-            <h3 class="gift-spinel__assurance-heading">{{ assurance_2_heading | escape }}</h3>
-            <div class="gift-spinel__assurance-text rte">{{ assurance_2_text }}</div>
-          </div>
-          <div class="gift-spinel__assurance-media" aria-hidden="true">
-            {% if section.settings.assurance_image != blank %}
-              {% render 'responsive-image', image: section.settings.assurance_image, max_width: 720, widths: '240, 360, 480, 720', sizes: '(min-width: 993px) 20vw, 60vw', class: 'gift-spinel__assurance-image', loading: 'lazy', decorative: true %}
-            {% else %}
-              {{ 'image' | placeholder_svg_tag: 'gift-spinel__assurance-image gift-spinel__assurance-placeholder' }}
-            {% endif %}
-          </div>
-        </article>
-        <article class="gift-spinel__assurance gift-spinel__assurance--text">
-          <h3 class="gift-spinel__assurance-heading">{{ assurance_3_heading | escape }}</h3>
-          <div class="gift-spinel__assurance-text rte">{{ assurance_3_text }}</div>
-        </article>
-      </section>
+      {% content_for 'block', type: 'gift-assurance', id: 'gift-assurance' %}
     </div>
   </div>
 </gift-spinel>
@@ -230,17 +216,9 @@
     { "type": "richtext", "id": "hero_description", "label": "Description", "default": "<p>A token of love. A reason to celebrate.<br>Thoughtful gifts, ready to be cherished<br>by the one who matters most.</p>" },
     { "type": "header", "content": "Product tray" },
     { "type": "text", "id": "product_empty_title", "label": "Placeholder product title", "default": "Gift selection", "info": "Used when a gift path does not have a product selected." },
-    { "type": "header", "content": "Assurance strip" },
-    { "type": "text", "id": "assurance_1_heading", "label": "First heading", "default": "Wrong size?" },
-    { "type": "richtext", "id": "assurance_1_text", "label": "First text", "default": "<p>Free exchange within 30 days.<br>No hassle.</p>" },
-    { "type": "text", "id": "assurance_2_heading", "label": "Middle heading", "default": "How does it arrive?" },
-    { "type": "richtext", "id": "assurance_2_text", "label": "Middle text", "default": "<p>In the signature box,<br>with a handwritten card.</p>" },
-    { "type": "text", "id": "assurance_3_heading", "label": "Last heading", "default": "Will it arrive in time?" },
-    { "type": "richtext", "id": "assurance_3_text", "label": "Last text", "default": "<p>Choose your delivery date at checkout.</p>" },
     { "type": "header", "content": "Editorial image" },
     { "type": "image_picker", "id": "image", "label": "Hero image", "info": "Use a wide gift or campaign image. A placeholder is shown until an image is selected." },
     { "type": "image_picker", "id": "mobile_image", "label": "Mobile hero image", "info": "Optional image used below 768px." },
-    { "type": "image_picker", "id": "assurance_image", "label": "Assurance image", "info": "Optional packaging image for the middle assurance item." },
     { "type": "select", "id": "image_position", "label": "Image position", "options": [{ "value": "left", "label": "Focus left" }, { "value": "right", "label": "Focus right" }], "default": "right" },
     { "type": "header", "content": "Appearance" },
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-6" },
@@ -250,7 +228,8 @@
     { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 80 }
   ],
   "blocks": [
-    { "type": "gift-path" }
+    { "type": "gift-path" },
+    { "type": "gift-assurance" }
   ],
   "enabled_on": {
     "templates": ["index"]
@@ -264,15 +243,10 @@
         "hero_tagline": "For the moments that mean everything.",
         "hero_description": "<p>A token of love. A reason to celebrate.<br>Thoughtful gifts, ready to be cherished<br>by the one who matters most.</p>",
         "image_position": "right",
-        "color_scheme": "scheme-6",
-        "assurance_1_heading": "Wrong size?",
-        "assurance_1_text": "<p>Free exchange within 30 days.<br>No hassle.</p>",
-        "assurance_2_heading": "How does it arrive?",
-        "assurance_2_text": "<p>In the signature box,<br>with a handwritten card.</p>",
-        "assurance_3_heading": "Will it arrive in time?",
-        "assurance_3_text": "<p>Choose your delivery date at checkout.</p>"
+        "color_scheme": "scheme-6"
       },
       "blocks": [
+        { "type": "gift-assurance", "id": "gift-assurance", "static": true, "settings": { "first_heading": "Wrong size?", "first_text": "<p>Free exchange within 30 days.<br>No hassle.</p>", "middle_heading": "How does it arrive?", "middle_text": "<p>In the signature box,<br>with a handwritten card.</p>", "last_heading": "Will it arrive in time?", "last_text": "<p>Choose your delivery date at checkout.</p>" } },
         { "type": "gift-path", "settings": { "occasion": "birthday", "occasion_label": "Birthday" } },
         { "type": "gift-path", "settings": { "occasion": "anniversary", "occasion_label": "Anniversary" } },
         { "type": "gift-path", "settings": { "occasion": "engagement", "occasion_label": "Engagement" } }
