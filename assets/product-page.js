@@ -5,10 +5,24 @@ import './cart-feedback.js';
 if (!window.__spinelProductEditorScrollGuard) {
   window.__spinelProductEditorScrollGuard = true;
   const sectionScrollPositions = new Map();
+  const pendingScrollRestorations = new Map();
   const restoreScrollPosition = (scrollTop) => {
-    window.requestAnimationFrame(() => {
-      window.scrollTo({ top: scrollTop, behavior: 'auto' });
-    });
+    const restore = () => window.scrollTo({ top: scrollTop, behavior: 'auto' });
+    let frame = 0;
+    const restoreAfterLayout = () => {
+      restore();
+      if (frame++ < 3) window.requestAnimationFrame(restoreAfterLayout);
+    };
+    restoreAfterLayout();
+    window.setTimeout(restore, 100);
+    window.setTimeout(restore, 300);
+  };
+  const scheduleScrollRestoration = (sectionId, scrollTop) => {
+    pendingScrollRestorations.set(sectionId, scrollTop);
+    restoreScrollPosition(scrollTop);
+    window.setTimeout(() => {
+      if (pendingScrollRestorations.get(sectionId) === scrollTop) pendingScrollRestorations.delete(sectionId);
+    }, 1000);
   };
   const getProductPage = (target, sectionId) => {
     const matchesSection = (productPage) => (
@@ -42,7 +56,15 @@ if (!window.__spinelProductEditorScrollGuard) {
     const scrollTop = sectionId ? sectionScrollPositions.get(sectionId) : undefined;
     if (!Number.isFinite(scrollTop)) return;
     sectionScrollPositions.delete(sectionId);
-    restoreScrollPosition(scrollTop);
+    scheduleScrollRestoration(sectionId, scrollTop);
+  }, true);
+
+  document.addEventListener('shopify:block:select', (event) => {
+    if (!window.Shopify?.designMode) return;
+    const sectionId = event.detail?.sectionId;
+    const scrollTop = sectionId ? pendingScrollRestorations.get(sectionId) : undefined;
+    if (!Number.isFinite(scrollTop)) return;
+    window.requestAnimationFrame(() => restoreScrollPosition(scrollTop));
   }, true);
 
 }
