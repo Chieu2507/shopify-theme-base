@@ -1,3 +1,28 @@
+const editorInstances = new Set();
+
+const handleEditorBlockSelect = (event) => {
+  editorInstances.forEach((instance) => instance.handleBlockSelect(event));
+};
+
+const handleEditorBlockDeselect = (event) => {
+  editorInstances.forEach((instance) => instance.handleBlockDeselect(event));
+};
+
+const registerEditorInstance = (instance) => {
+  if (!editorInstances.size) {
+    document.addEventListener('shopify:block:select', handleEditorBlockSelect);
+    document.addEventListener('shopify:block:deselect', handleEditorBlockDeselect);
+  }
+  editorInstances.add(instance);
+};
+
+const unregisterEditorInstance = (instance) => {
+  editorInstances.delete(instance);
+  if (editorInstances.size) return;
+  document.removeEventListener('shopify:block:select', handleEditorBlockSelect);
+  document.removeEventListener('shopify:block:deselect', handleEditorBlockDeselect);
+};
+
 class ShopTheLook extends HTMLElement {
   connectedCallback() {
     if (this.initialized) return;
@@ -5,16 +30,20 @@ class ShopTheLook extends HTMLElement {
     this.initialized = true;
     this.hotspots = Array.from(this.querySelectorAll('[data-shop-the-look-hotspot]'));
     this.products = Array.from(this.querySelectorAll('[data-shop-the-look-product]'));
+    this.annotations = Array.from(this.querySelectorAll('[data-shop-the-look-hotspot-annotation]'));
+    this.editorMode = this.dataset.editorMode === 'true' || Boolean(window.Shopify?.designMode);
     this.bundleStatus = this.querySelector('[data-shop-the-look-bundle-status]');
     this.onClick = this.handleClick.bind(this);
     this.onKeydown = this.handleKeydown.bind(this);
     this.addEventListener('click', this.onClick);
     this.addEventListener('keydown', this.onKeydown);
+    if (this.editorMode) registerEditorInstance(this);
   }
 
   disconnectedCallback() {
     this.removeEventListener('click', this.onClick);
     this.removeEventListener('keydown', this.onKeydown);
+    if (this.editorMode) unregisterEditorInstance(this);
     window.clearTimeout(this.resetTimer);
     this.initialized = false;
   }
@@ -30,8 +59,34 @@ class ShopTheLook extends HTMLElement {
     this.products.forEach((product, productIndex) => {
       product.classList.toggle('is-active', productIndex === nextIndex);
     });
+    this.annotations.forEach((annotation, annotationIndex) => {
+      annotation.classList.toggle('is-editor-selected', this.editorMode && annotationIndex === nextIndex);
+    });
 
     if (moveFocus) this.hotspots[nextIndex]?.focus();
+  }
+
+  handleBlockSelect(event) {
+    if (!this.editorMode) return;
+
+    const blockId = event.detail?.blockId;
+    const index = this.annotations.findIndex((annotation) => annotation.dataset.blockId === blockId);
+    if (index < 0) return;
+
+    this.selectProduct(index);
+  }
+
+  handleBlockDeselect(event) {
+    if (!this.editorMode) return;
+
+    const blockId = event.detail?.blockId;
+    if (blockId && !this.annotations.some((annotation) => annotation.dataset.blockId === blockId)) return;
+    if (!blockId && event.target instanceof Element && !this.contains(event.target)) return;
+
+    this.annotations.forEach((annotation) => annotation.classList.remove('is-editor-selected'));
+    this.classList.remove('has-active-product');
+    this.hotspots.forEach((hotspot) => hotspot.setAttribute('aria-pressed', 'false'));
+    this.products.forEach((product) => product.classList.remove('is-active'));
   }
 
   handleClick(event) {

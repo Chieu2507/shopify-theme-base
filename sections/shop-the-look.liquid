@@ -88,6 +88,7 @@
   <shop-the-look
     id="ShopTheLook-{{ section.id }}"
     data-deferred-module="{{ 'shop-the-look.js' | asset_url }}"
+    data-editor-mode="{% if request.design_mode %}true{% else %}false{% endif %}"
     class="shop-the-look color-scheme color-{{ shop_the_look_color_scheme_id }}{% if section.settings.section_width == 'full' %} full-width{% endif %} shop-the-look--media-{{ section.settings.media_position | default: 'left' }}"
     style="--shop-the-look-height: {{ section.settings.height_desktop }}px; --shop-the-look-height-mobile: {{ section.settings.height_mobile }}px; --shop-the-look-content-padding: {{ section.settings.content_padding }}px; --shop-the-look-product-image-size: {{ section.settings.product_image_size }}px; --shop-the-look-mobile-media-ratio: {{ mobile_media_aspect_ratio }}; --shop-the-look-background: {{ shop_the_look_background }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
   >
@@ -135,17 +136,23 @@
                 {% if block.type == 'product_hotspot' %}
                   {% liquid
                     assign hotspot_label = block.settings.product.title
-                    assign mobile_hotspot_x = block.settings.horizontal_position
-                    assign mobile_hotspot_y = block.settings.vertical_position
-                    assign desktop_connector_x = block.settings.connector_horizontal_position | default: block.settings.horizontal_position
-                    assign desktop_connector_y = block.settings.connector_vertical_position | default: block.settings.vertical_position
-                    assign mobile_connector_x = block.settings.mobile_connector_horizontal_position | default: mobile_hotspot_x
-                    assign mobile_connector_y = block.settings.mobile_connector_vertical_position | default: mobile_hotspot_y
+                    assign desktop_hotspot_x = block.settings.horizontal_position | default: 60 | at_least: 0 | at_most: 100
+                    assign desktop_hotspot_y = block.settings.vertical_position | default: 58 | at_least: 0 | at_most: 100
+                    assign mobile_hotspot_x = desktop_hotspot_x
+                    assign mobile_hotspot_y = desktop_hotspot_y
+                    assign desktop_connector_x = block.settings.connector_horizontal_position | default: desktop_hotspot_x | at_least: 0 | at_most: 100
+                    assign desktop_connector_y = block.settings.connector_vertical_position | default: desktop_hotspot_y | at_least: 0 | at_most: 100
+                    assign mobile_connector_x = desktop_connector_x
+                    assign mobile_connector_y = desktop_connector_y
+                    assign show_connector = true
+                    if block.settings.show_connector == false
+                      assign show_connector = false
+                    endif
                     if block.settings.enable_mobile_position
-                      assign mobile_hotspot_x = block.settings.mobile_horizontal_position
-                      assign mobile_hotspot_y = block.settings.mobile_vertical_position
-                      assign mobile_connector_x = block.settings.mobile_connector_horizontal_position | default: mobile_hotspot_x
-                      assign mobile_connector_y = block.settings.mobile_connector_vertical_position | default: mobile_hotspot_y
+                      assign mobile_hotspot_x = block.settings.mobile_horizontal_position | default: desktop_hotspot_x | at_least: 0 | at_most: 100
+                      assign mobile_hotspot_y = block.settings.mobile_vertical_position | default: desktop_hotspot_y | at_least: 0 | at_most: 100
+                      assign mobile_connector_x = block.settings.mobile_connector_horizontal_position | default: desktop_connector_x | at_least: 0 | at_most: 100
+                      assign mobile_connector_y = block.settings.mobile_connector_vertical_position | default: desktop_connector_y | at_least: 0 | at_most: 100
                     endif
                     if hotspot_label == blank
                       assign hotspot_label = 'shop_the_look.product' | t
@@ -154,13 +161,25 @@
                   %}
                   <div
                     class="shop-the-look__hotspot-annotation"
-                    style="--hotspot-x: {{ block.settings.horizontal_position }}%; --hotspot-y: {{ block.settings.vertical_position }}%; --hotspot-mobile-x: {{ mobile_hotspot_x }}%; --hotspot-mobile-y: {{ mobile_hotspot_y }}%;"
+                    data-shop-the-look-hotspot-annotation
+                    data-block-id="{{ block.id }}"
+                    style="--hotspot-x: {{ desktop_hotspot_x }}%; --hotspot-y: {{ desktop_hotspot_y }}%; --hotspot-mobile-x: {{ mobile_hotspot_x }}%; --hotspot-mobile-y: {{ mobile_hotspot_y }}%; --hotspot-connector-x: {{ desktop_connector_x }}%; --hotspot-connector-y: {{ desktop_connector_y }}%; --hotspot-mobile-connector-x: {{ mobile_connector_x }}%; --hotspot-mobile-connector-y: {{ mobile_connector_y }}%;"
                     {{ block.shopify_attributes }}
                   >
-                    <svg class="shop-the-look__hotspot-connector" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
-                      <line class="shop-the-look__hotspot-connector-line shop-the-look__hotspot-connector-line--desktop" x1="{{ block.settings.horizontal_position }}" y1="{{ block.settings.vertical_position }}" x2="{{ desktop_connector_x }}" y2="{{ desktop_connector_y }}"></line>
-                      <line class="shop-the-look__hotspot-connector-line shop-the-look__hotspot-connector-line--mobile" x1="{{ mobile_hotspot_x }}" y1="{{ mobile_hotspot_y }}" x2="{{ mobile_connector_x }}" y2="{{ mobile_connector_y }}"></line>
-                    </svg>
+                    {% if show_connector %}
+                      <svg class="shop-the-look__hotspot-connector" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true" focusable="false">
+                        <line class="shop-the-look__hotspot-connector-line shop-the-look__hotspot-connector-line--desktop" x1="{{ desktop_hotspot_x }}" y1="{{ desktop_hotspot_y }}" x2="{{ desktop_connector_x }}" y2="{{ desktop_connector_y }}"></line>
+                        <line class="shop-the-look__hotspot-connector-line shop-the-look__hotspot-connector-line--mobile" x1="{{ mobile_hotspot_x }}" y1="{{ mobile_hotspot_y }}" x2="{{ mobile_connector_x }}" y2="{{ mobile_connector_y }}"></line>
+                      </svg>
+                    {% endif %}
+                    {% if request.design_mode %}
+                      <span class="shop-the-look__hotspot-guide" aria-hidden="true">
+                        <span class="shop-the-look__hotspot-guide-grid"></span>
+                        <span class="shop-the-look__hotspot-guide-marker"></span>
+                        {% if show_connector %}<span class="shop-the-look__hotspot-guide-target"></span>{% endif %}
+                        <span class="shop-the-look__hotspot-guide-label">Hotspot {{ hotspot_number }} · Marker {{ desktop_hotspot_x }}% / {{ desktop_hotspot_y }}%{% if show_connector %} · Target {{ desktop_connector_x }}% / {{ desktop_connector_y }}%{% endif %}{% if block.settings.enable_mobile_position %} · Mobile {{ mobile_hotspot_x }}% / {{ mobile_hotspot_y }}%{% endif %}</span>
+                      </span>
+                    {% endif %}
                     <button
                         class="shop-the-look__hotspot"
                         type="button"
@@ -1157,99 +1176,96 @@
           "info": "Optional text shown beneath the product title. Falls back to the product type."
         },
         {
-          "type": "range",
+          "type": "header",
+          "content": "Desktop marker position"
+        },
+        {
+          "type": "number",
           "id": "horizontal_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Horizontal position",
+          "label": "Marker X position (%)",
+          "info": "0% is left, 100% is right. Decimals are allowed.",
           "default": 60
         },
         {
-          "type": "range",
+          "type": "number",
           "id": "vertical_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Vertical position",
+          "label": "Marker Y position (%)",
+          "info": "0% is top, 100% is bottom. Decimals are allowed.",
           "default": 58
         },
         {
           "type": "header",
-          "content": "Marker connector"
+          "content": "Desktop connector target"
         },
         {
-          "type": "range",
+          "type": "checkbox",
+          "id": "show_connector",
+          "label": "Show connector line",
+          "info": "Turn off when the marker can sit directly on the product.",
+          "default": true
+        },
+        {
+          "type": "number",
           "id": "connector_horizontal_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Connector horizontal position",
-          "default": 60
+          "label": "Target X position (%)",
+          "info": "0% is left, 100% is right. Decimals are allowed.",
+          "default": 60,
+          "visible_if": "{{ block.settings.show_connector }}"
         },
         {
-          "type": "range",
+          "type": "number",
           "id": "connector_vertical_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Connector vertical position",
-          "default": 58
+          "label": "Target Y position (%)",
+          "info": "0% is top, 100% is bottom. Decimals are allowed.",
+          "default": 58,
+          "visible_if": "{{ block.settings.show_connector }}"
         },
         {
           "type": "checkbox",
           "id": "enable_mobile_position",
-          "label": "Custom mobile position",
-          "info": "Set a different hotspot position for mobile screens.",
+          "label": "Use separate mobile coordinates",
+          "info": "Desktop coordinates are used by default.",
           "default": false
         },
         {
-          "type": "range",
+          "type": "header",
+          "content": "Mobile marker position"
+        },
+        {
+          "type": "number",
           "id": "mobile_horizontal_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Mobile horizontal position",
+          "label": "Marker X position (%)",
+          "info": "0% is left, 100% is right. Decimals are allowed.",
           "default": 60,
           "visible_if": "{{ block.settings.enable_mobile_position }}"
         },
         {
-          "type": "range",
+          "type": "number",
           "id": "mobile_vertical_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Mobile vertical position",
+          "label": "Marker Y position (%)",
+          "info": "0% is top, 100% is bottom. Decimals are allowed.",
           "default": 58,
           "visible_if": "{{ block.settings.enable_mobile_position }}"
         },
         {
-          "type": "range",
+          "type": "header",
+          "content": "Mobile connector target"
+        },
+        {
+          "type": "number",
           "id": "mobile_connector_horizontal_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Mobile connector horizontal position",
+          "label": "Target X position (%)",
+          "info": "0% is left, 100% is right. Decimals are allowed.",
           "default": 60,
-          "visible_if": "{{ block.settings.enable_mobile_position }}"
+          "visible_if": "{{ block.settings.enable_mobile_position and block.settings.show_connector }}"
         },
         {
-          "type": "range",
+          "type": "number",
           "id": "mobile_connector_vertical_position",
-          "min": 0,
-          "max": 100,
-          "step": 1,
-          "unit": "%",
-          "label": "Mobile connector vertical position",
+          "label": "Target Y position (%)",
+          "info": "0% is top, 100% is bottom. Decimals are allowed.",
           "default": 58,
-          "visible_if": "{{ block.settings.enable_mobile_position }}"
+          "visible_if": "{{ block.settings.enable_mobile_position and block.settings.show_connector }}"
         }
       ]
     }
