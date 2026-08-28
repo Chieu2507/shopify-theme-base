@@ -85,8 +85,10 @@
     endif
     assign card_currency_code = cart.currency.iso_code | default: shop.currency
     assign card_price_text = card_price | money
+    assign card_compare_at_price_text = card_compare_at_price | money
     if card_show_currency_code
       assign card_price_text = card_price_text | append: ' ' | append: card_currency_code
+      assign card_compare_at_price_text = card_compare_at_price_text | append: ' ' | append: card_currency_code
     endif
     assign is_on_sale = false
 
@@ -234,7 +236,7 @@
         <div class="product-card__price{% if is_on_sale %} product-card__price--sale{% endif %}" data-product-card-price>
           <span data-product-card-current-price>{{ card_price_text }}</span>
           {% if show_compare_at_price %}
-            <s data-product-card-compare-price{% unless is_on_sale %} hidden{% endunless %}>{% if is_on_sale %}{% render 'money', amount: card_compare_at_price %}{% endif %}</s>
+            <s data-product-card-compare-price{% unless is_on_sale %} hidden{% endunless %}>{% if is_on_sale %}{{ card_compare_at_price_text }}{% endif %}</s>
           {% endif %}
           <small class="product-card__unit-price" data-product-card-unit-price{% if card_variant.unit_price_measurement == blank or card_unit_price == blank %} hidden{% endif %}>{% if card_variant.unit_price_measurement != blank and card_unit_price != blank %}{% render 'money', amount: card_unit_price %} / {{ card_variant.unit_price_measurement.reference_value }}{{ card_variant.unit_price_measurement.reference_unit }}{% endif %}</small>
         </div>
