@@ -77,8 +77,8 @@ class FeaturedCollection extends HTMLElement {
       },
       a11y: { enabled: true, slideRole: 'listitem' },
       breakpoints: {
-        750: { slidesPerView: slidesWithPreview(tabletColumns), spaceBetween: columnGap },
-        990: { slidesPerView: slidesWithPreview(desktopColumns), spaceBetween: columnGap },
+        768: { slidesPerView: slidesWithPreview(tabletColumns), spaceBetween: columnGap },
+        1150: { slidesPerView: slidesWithPreview(desktopColumns), spaceBetween: columnGap },
       },
     });
     swiper.on('update resize breakpoint slideChange transitionEnd', () => {

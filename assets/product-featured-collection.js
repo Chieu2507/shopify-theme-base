@@ -89,8 +89,8 @@ class ProductFeaturedCollection extends HTMLElement {
       },
       a11y: { enabled: true, slideRole: 'listitem' },
       breakpoints: {
-        750: { slidesPerView: slidesWithPreview(tabletColumns), spaceBetween: productGap },
-        990: { slidesPerView: slidesWithPreview(desktopColumns) },
+        768: { slidesPerView: slidesWithPreview(tabletColumns), spaceBetween: productGap },
+        1150: { slidesPerView: slidesWithPreview(desktopColumns), spaceBetween: productGap },
       },
     });
     this.swiper.on('update resize slideChange transitionEnd', () => this.updateProgress());
