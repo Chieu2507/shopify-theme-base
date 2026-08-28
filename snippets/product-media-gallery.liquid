@@ -1,4 +1,12 @@
 {% liquid
+  assign featured_video_enabled = block.settings.enable_featured_video
+  assign featured_video = block.settings.featured_video
+  assign featured_video_poster = block.settings.featured_video_poster | default: featured_video.preview_image
+  assign featured_video_alt = block.settings.featured_video_alt | default: featured_video_poster.alt | default: product.title
+  assign gallery_media_count = product.media.size
+  if featured_video_enabled
+    assign gallery_media_count = product.media.size | at_most: 2 | plus: 1
+  endif
   assign desktop_thumbnail_ratio = '4 / 5'
   assign mobile_thumbnail_ratio = '4 / 5'
 
@@ -20,11 +28,34 @@
       assign mobile_thumbnail_ratio = product.featured_media.preview_image.aspect_ratio | default: 1
   endcase
 %}
-<div class="product-gallery product-gallery--{{ block.settings.desktop_layout }} product-gallery--grid-{{ block.settings.grid_layout | default: 'editorial' }} product-gallery--zoom-{{ block.settings.image_zoom | default: 'open_lightbox' }}{% if block.settings.desktop_layout == 'carousel' %} product-gallery--thumbs-{{ block.settings.carousel_thumbnails }}{% endif %} product-gallery--mobile-thumbnails-{{ block.settings.show_mobile_thumbnails }} product-gallery--ratio-{{ block.settings.media_ratio }} product-gallery--mobile-ratio-{{ block.settings.mobile_media_ratio }}" data-image-zoom="{{ block.settings.image_zoom | default: 'open_lightbox' }}" style="--gallery-columns: {% if product.media.size == 1 %}1{% else %}{{ block.settings.grid_columns | default: 2 }}{% endif %}; --gallery-gap: {{ block.settings.gap }}px; --gallery-fit: {{ block.settings.media_fit }}; --gallery-thumbnail-size: {{ block.settings.thumbnail_size }}px; --gallery-thumbnail-gap: {{ block.settings.thumbnail_gap }}px; --gallery-thumbnail-desktop-ratio: {{ desktop_thumbnail_ratio }}; --gallery-thumbnail-mobile-ratio: {{ mobile_thumbnail_ratio }};" {{ block.shopify_attributes }} data-product-gallery>
+<div class="product-gallery product-gallery--{{ block.settings.desktop_layout }} product-gallery--grid-{{ block.settings.grid_layout | default: 'editorial' }} product-gallery--zoom-{{ block.settings.image_zoom | default: 'open_lightbox' }}{% if block.settings.desktop_layout == 'carousel' %} product-gallery--thumbs-{{ block.settings.carousel_thumbnails }}{% endif %}{% if featured_video_enabled %} product-gallery--featured-video{% endif %} product-gallery--mobile-thumbnails-{{ block.settings.show_mobile_thumbnails }} product-gallery--ratio-{{ block.settings.media_ratio }} product-gallery--mobile-ratio-{{ block.settings.mobile_media_ratio }}" data-image-zoom="{{ block.settings.image_zoom | default: 'open_lightbox' }}" style="--gallery-columns: {% if gallery_media_count == 1 %}1{% else %}{{ block.settings.grid_columns | default: 2 }}{% endif %}; --gallery-gap: {{ block.settings.gap }}px; --gallery-fit: {{ block.settings.media_fit }}; --gallery-thumbnail-size: {{ block.settings.thumbnail_size }}px; --gallery-thumbnail-gap: {{ block.settings.thumbnail_gap }}px; --gallery-thumbnail-desktop-ratio: {{ desktop_thumbnail_ratio }}; --gallery-thumbnail-mobile-ratio: {{ mobile_thumbnail_ratio }};" {{ block.shopify_attributes }} data-product-gallery>
   <div class="product-gallery__media">
     <div class="swiper product-gallery__main" aria-label="{{ 'product_gallery.label' | t: product: product.title | escape }}" data-product-main-gallery>
       <div class="swiper-wrapper">
-        {% for media in product.media %}
+        {% if featured_video_enabled %}
+          <div class="swiper-slide product-gallery__featured-video-slide" data-featured-video-slide>
+            <figure class="product-media product-media--video">
+              {% if featured_video != blank %}
+                {{
+                  featured_video
+                  | video_tag:
+                    class: 'product-gallery__featured-video',
+                    image_size: '1600x',
+                    controls: true,
+                    loop: false,
+                    muted: false,
+                    playsinline: true,
+                    preload: 'metadata'
+                }}
+              {% elsif featured_video_poster != blank %}
+                {% render 'responsive-image', image: featured_video_poster, max_width: 1600, widths: '480, 720, 960, 1200, 1600', sizes: '(min-width: 1150px) 40vw, 100vw', class: 'product-gallery__featured-video-poster', loading: 'eager', alt: featured_video_alt %}
+              {% else %}
+                {% render 'media-placeholder', class_name: 'product-gallery__featured-video-placeholder', placeholder_name: 'image' %}
+              {% endif %}
+            </figure>
+          </div>
+        {% endif %}
+        {% for media in product.media limit: featured_video_enabled | default: false %}
           <div class="swiper-slide" data-media-id="{{ media.id }}">
             {% if forloop.first and section.index == 1 %}
               {% render 'product-media', media: media, product: product, layout: 'slider', zoom_mode: block.settings.image_zoom, loading: 'eager', fetchpriority: 'high' %}
