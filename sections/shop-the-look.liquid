@@ -238,7 +238,7 @@
                   {% if section.settings.bundle_price_override != blank %}
                     {{ section.settings.bundle_price_override | escape }}
                   {% elsif bundle_total > 0 %}
-                    {% render 'money', amount: bundle_total %}
+                    {{ bundle_total | money_without_currency }}
                   {% else %}
                     —
                   {% endif %}
@@ -255,6 +255,7 @@
                   {% liquid
                     assign product = block.settings.product
                     assign product_variant = product.selected_or_first_available_variant
+                    assign product_image = block.settings.cutout_image | default: product.featured_image
                     assign product_placeholder_index = product_index | modulo: 4 | plus: 1
                     assign product_number = product_index | plus: 1 | prepend: '0' | slice: -2, 2
                     assign product_subtitle = block.settings.subtitle | default: product.type
@@ -268,10 +269,10 @@
                   <li class="shop-the-look__product" id="ShopTheLookProduct-{{ section.id }}-{{ block.id }}">
                     <span class="shop-the-look__product-number" aria-hidden="true">{{ product_number }}</span>
 
-                    {% if product != blank and product.featured_image != blank %}
+                    {% if product != blank and product_image != blank %}
                       <a class="shop-the-look__product-media" href="{{ product.url | escape }}" aria-label="{{ product.title | escape }}">
                         {% render 'responsive-image',
-                          image: product.featured_image,
+                          image: product_image,
                           max_width: 320,
                           widths: '96, 128, 192, 256, 320',
                           sizes: '(max-width: 767.98px) 24vw, (max-width: 992px) 18vw, 140px',
@@ -298,7 +299,7 @@
 
                     <span class="shop-the-look__product-price">
                       {% if product_variant != blank %}
-                        {% render 'money', amount: product_variant.price %}
+                        {{ product_variant.price | money_without_currency }}
                       {% else %}
                         —
                       {% endif %}
@@ -324,7 +325,7 @@
                 <span data-shop-the-look-bundle-label>{{ bundle_add_label | escape }}</span>
               </button>
               <p class="shop-the-look__bundle-status visually-hidden" data-shop-the-look-bundle-status role="status" aria-live="polite" aria-atomic="true"></p>
-              <p class="shop-the-look__total">{{ total_value_label | escape }} <span>{% if bundle_total > 0 %}{% render 'money', amount: bundle_total %}{% else %}—{% endif %}</span></p>
+              <p class="shop-the-look__total">{{ total_value_label | escape }} <span>{% if bundle_total > 0 %}{{ bundle_total | money_without_currency }}{% else %}—{% endif %}</span></p>
             </div>
           </div>
         </div>
@@ -1147,6 +1148,12 @@
           "type": "product",
           "id": "product",
           "label": "Product"
+        },
+        {
+          "type": "image_picker",
+          "id": "cutout_image",
+          "label": "Cutout image",
+          "info": "Optional transparent PNG or WebP for the dark product row. Uses the product featured image when left blank."
         },
         {
           "type": "text",
