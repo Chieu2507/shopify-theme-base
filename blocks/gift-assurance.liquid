@@ -4,29 +4,42 @@
   or hide it but cannot delete, duplicate, or reorder it.
 {% enddoc %}
 
-<section class="gift-spinel__assurances" aria-label="{{ 'gift_spinel.assurance_label' | t | escape }}" {{ block.shopify_attributes }}>
-  <article class="gift-spinel__assurance gift-spinel__assurance--text">
-    <h3 class="gift-spinel__assurance-heading">{{ block.settings.first_heading | escape }}</h3>
-    <div class="gift-spinel__assurance-text rte">{{ block.settings.first_text }}</div>
-  </article>
-  <article class="gift-spinel__assurance gift-spinel__assurance--media">
-    <div class="gift-spinel__assurance-copy">
-      <h3 class="gift-spinel__assurance-heading">{{ block.settings.middle_heading | escape }}</h3>
-      <div class="gift-spinel__assurance-text rte">{{ block.settings.middle_text }}</div>
-    </div>
-    <div class="gift-spinel__assurance-media" aria-hidden="true">
-      {% if block.settings.image != blank %}
-        {% render 'responsive-image', image: block.settings.image, max_width: 720, widths: '240, 360, 480, 720', sizes: '(min-width: 993px) 20vw, 60vw', class: 'gift-spinel__assurance-image', loading: 'lazy', decorative: true %}
-      {% else %}
-        {{ 'image' | placeholder_svg_tag: 'gift-spinel__assurance-image gift-spinel__assurance-placeholder' }}
-      {% endif %}
-    </div>
-  </article>
-  <article class="gift-spinel__assurance gift-spinel__assurance--text">
-    <h3 class="gift-spinel__assurance-heading">{{ block.settings.last_heading | escape }}</h3>
-    <div class="gift-spinel__assurance-text rte">{{ block.settings.last_text }}</div>
-  </article>
-</section>
+{% assign assurance_count = 0 %}
+{% if block.settings.first_enabled %}{% assign assurance_count = assurance_count | plus: 1 %}{% endif %}
+{% if block.settings.middle_enabled %}{% assign assurance_count = assurance_count | plus: 1 %}{% endif %}
+{% if block.settings.last_enabled %}{% assign assurance_count = assurance_count | plus: 1 %}{% endif %}
+
+{% if assurance_count > 0 %}
+  <section class="gift-spinel__assurances gift-spinel__assurances--count-{{ assurance_count }}" aria-label="{{ 'gift_spinel.assurance_label' | t | escape }}" {{ block.shopify_attributes }}>
+    {% if block.settings.first_enabled %}
+      <article class="gift-spinel__assurance gift-spinel__assurance--text">
+        <h3 class="gift-spinel__assurance-heading">{{ block.settings.first_heading | escape }}</h3>
+        <div class="gift-spinel__assurance-text rte">{{ block.settings.first_text }}</div>
+      </article>
+    {% endif %}
+    {% if block.settings.middle_enabled %}
+      <article class="gift-spinel__assurance gift-spinel__assurance--media">
+        <div class="gift-spinel__assurance-copy">
+          <h3 class="gift-spinel__assurance-heading">{{ block.settings.middle_heading | escape }}</h3>
+          <div class="gift-spinel__assurance-text rte">{{ block.settings.middle_text }}</div>
+        </div>
+        <div class="gift-spinel__assurance-media" aria-hidden="true">
+          {% if block.settings.image != blank %}
+            {% render 'responsive-image', image: block.settings.image, max_width: 720, widths: '240, 360, 480, 720', sizes: '(min-width: 993px) 20vw, 60vw', class: 'gift-spinel__assurance-image', loading: 'lazy', decorative: true %}
+          {% else %}
+            {{ 'image' | placeholder_svg_tag: 'gift-spinel__assurance-image gift-spinel__assurance-placeholder' }}
+          {% endif %}
+        </div>
+      </article>
+    {% endif %}
+    {% if block.settings.last_enabled %}
+      <article class="gift-spinel__assurance gift-spinel__assurance--text">
+        <h3 class="gift-spinel__assurance-heading">{{ block.settings.last_heading | escape }}</h3>
+        <div class="gift-spinel__assurance-text rte">{{ block.settings.last_text }}</div>
+      </article>
+    {% endif %}
+  </section>
+{% endif %}
 
 {% schema %}
 {
@@ -34,13 +47,16 @@
   "tag": null,
   "settings": [
     { "type": "header", "content": "First message" },
+    { "type": "checkbox", "id": "first_enabled", "label": "Show message", "default": true },
     { "type": "text", "id": "first_heading", "label": "Heading", "default": "Wrong size?" },
     { "type": "richtext", "id": "first_text", "label": "Text", "default": "<p>Free exchange within 30 days.<br>No hassle.</p>" },
     { "type": "header", "content": "Middle message" },
+    { "type": "checkbox", "id": "middle_enabled", "label": "Show message", "default": true },
     { "type": "text", "id": "middle_heading", "label": "Heading", "default": "How does it arrive?" },
     { "type": "richtext", "id": "middle_text", "label": "Text", "default": "<p>In the signature box,<br>with a handwritten card.</p>" },
     { "type": "image_picker", "id": "image", "label": "Image" },
     { "type": "header", "content": "Last message" },
+    { "type": "checkbox", "id": "last_enabled", "label": "Show message", "default": true },
     { "type": "text", "id": "last_heading", "label": "Heading", "default": "Will it arrive in time?" },
     { "type": "richtext", "id": "last_text", "label": "Text", "default": "<p>Choose your delivery date at checkout.</p>" }
   ],
