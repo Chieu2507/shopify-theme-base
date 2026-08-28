@@ -202,3 +202,15 @@ class ShopTheLook extends HTMLElement {
 }
 
 if (!customElements.get('shop-the-look')) customElements.define('shop-the-look', ShopTheLook);
+
+if (window.Shopify?.designMode && !window.__spinelEditorScrollTrace) {
+  window.__spinelEditorScrollTrace = true;
+  const scrollTo = window.scrollTo.bind(window);
+  window.scrollTo = (...args) => {
+    console.warn('[Spinel editor scrollTo]', { args, stack: new Error().stack });
+    scrollTo(...args);
+  };
+  window.addEventListener('scroll', () => {
+    console.warn('[Spinel editor scroll]', { top: window.scrollY, left: window.scrollX });
+  }, { passive: true });
+}
