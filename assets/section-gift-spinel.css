@@ -142,17 +142,32 @@
 .gift-spinel__choice.is-selected { border-color: var(--color-heading); background: var(--color-heading); color: var(--color-background); }
 .gift-spinel__choice:active { transform: scale(.98); }
 
-/* The middle band follows the existing Featured Collection product-card contract. */
+/* Product picker band: each Gift path supplies its own cards. */
 .gift-spinel__product-band {
+  --gift-spinel-product-band-background: #FCF5F1;
+  --gift-spinel-product-band-border: #E5D9D1;
   position: relative;
   z-index: 1;
   margin-inline: clamp(24px, 2.6vw, 50px);
-  border: 1px solid color-mix(in srgb, var(--color-heading) 12%, transparent);
+  box-sizing: border-box;
+  overflow: hidden;
+  border: 1px solid transparent;
   border-radius: clamp(16px, 1.3vw, 24px);
-  background: color-mix(in srgb, var(--color-background) 96%, #e7cfc5);
+  background: var(--gift-spinel-product-band-background);
+  isolation: isolate;
 }
 
-.gift-spinel__product-panels { min-width: 0; }
+.gift-spinel__product-band::after {
+  position: absolute;
+  z-index: 4;
+  inset: 0;
+  border: 1px solid var(--gift-spinel-product-band-border);
+  border-radius: inherit;
+  content: '';
+  pointer-events: none;
+}
+
+.gift-spinel__product-panels { position: relative; z-index: 1; min-width: 0; }
 .gift-spinel__product-panel { min-width: 0; animation: gift-spinel-panel-enter 240ms ease both; }
 
 .gift-spinel__product-cards {
@@ -197,7 +212,7 @@
   position: relative;
   min-height: inherit;
   overflow: hidden;
-  background: var(--color-background);
+  background: var(--gift-spinel-product-band-background);
 }
 
 .gift-spinel__product-card .product-card__content {
@@ -256,7 +271,7 @@
   margin: 0;
   aspect-ratio: auto;
   border-radius: 0;
-  background: var(--color-background);
+  background: var(--gift-spinel-product-band-background);
 }
 
 .gift-spinel__product-card .product-card__media-link,
