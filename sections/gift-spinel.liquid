@@ -85,18 +85,32 @@
                 {% liquid
                   assign occasion_key = block.settings.occasion
                   if occasion_key == blank
-                    case block.settings.recipient
-                      when 'mother'
+                    case forloop.index
+                      when 1
                         assign occasion_key = 'birthday'
-                      when 'partner'
+                      when 2
                         assign occasion_key = 'anniversary'
-                      when 'friend'
+                      when 3
                         assign occasion_key = 'engagement'
                       else
                         assign occasion_key = 'just-because'
                     endcase
                   endif
-                  assign occasion_label = block.settings.occasion_label | default: block.settings.recipient_label | default: occasion_key
+                  assign occasion_label = block.settings.occasion_label
+                  if occasion_label == blank
+                    case occasion_key
+                      when 'birthday'
+                        assign occasion_label = 'Birthday'
+                      when 'anniversary'
+                        assign occasion_label = 'Anniversary'
+                      when 'engagement'
+                        assign occasion_label = 'Engagement'
+                      when 'just-because'
+                        assign occasion_label = 'Just Because'
+                      else
+                        assign occasion_label = 'Gift path'
+                    endcase
+                  endif
                   assign panel_id = 'GiftSpinelPanel-' | append: section.id | append: '-' | append: block.id
                 %}
                 <button
@@ -128,18 +142,32 @@
               {% liquid
                 assign occasion_key = block.settings.occasion
                 if occasion_key == blank
-                  case block.settings.recipient
-                    when 'mother'
+                  case forloop.index
+                    when 1
                       assign occasion_key = 'birthday'
-                    when 'partner'
+                    when 2
                       assign occasion_key = 'anniversary'
-                    when 'friend'
+                    when 3
                       assign occasion_key = 'engagement'
                     else
                       assign occasion_key = 'just-because'
                   endcase
                 endif
-                assign occasion_label = block.settings.occasion_label | default: block.settings.recipient_label | default: occasion_key
+                assign occasion_label = block.settings.occasion_label
+                if occasion_label == blank
+                  case occasion_key
+                    when 'birthday'
+                      assign occasion_label = 'Birthday'
+                    when 'anniversary'
+                      assign occasion_label = 'Anniversary'
+                    when 'engagement'
+                      assign occasion_label = 'Engagement'
+                    when 'just-because'
+                      assign occasion_label = 'Just Because'
+                    else
+                      assign occasion_label = 'Gift path'
+                  endcase
+                endif
                 assign panel_id = 'GiftSpinelPanel-' | append: section.id | append: '-' | append: block.id
               %}
               <div
