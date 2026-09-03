@@ -860,20 +860,24 @@ if (!window.SpinelHeaderMenus) {
         hidden: false
       };
       let hidden = previousState.hidden;
+      let lastScrollY = previousState.lastScrollY;
 
       if (!isMobile || currentScrollY <= mobileStickyHeaderHideThreshold) {
         hidden = false;
+        lastScrollY = currentScrollY;
       } else if (currentScrollY > previousState.lastScrollY + mobileStickyHeaderDirectionThreshold) {
         hidden = true;
+        lastScrollY = currentScrollY;
       } else if (currentScrollY < previousState.lastScrollY - mobileStickyHeaderDirectionThreshold) {
         hidden = false;
+        lastScrollY = currentScrollY;
       }
 
       header.classList.toggle('header--mobile-hidden', hidden);
-      // Keep the scroll origin until the direction threshold is crossed.
-      // Resetting it on every event made a 0.5px movement toggle the header.
       mobileStickyHeaderStates.set(header, {
-        lastScrollY: hidden === previousState.hidden ? previousState.lastScrollY : currentScrollY,
+        // Keep the scroll origin until the direction threshold is crossed.
+        // Resetting it on every event made a 0.5px movement toggle the header.
+        lastScrollY,
         hidden
       });
     });
@@ -909,18 +913,22 @@ if (!window.SpinelHeaderMenus) {
       ));
       const hasPassedFirstSection = currentScrollY > getDesktopStickyHeaderTrigger();
       let hidden = previousState.hidden;
+      let lastScrollY = previousState.lastScrollY;
 
       if (!hasPassedFirstSection || hasOpenOverlay) {
         hidden = false;
+        lastScrollY = currentScrollY;
       } else if (currentScrollY > previousState.lastScrollY + desktopStickyHeaderDirectionThreshold) {
         hidden = true;
+        lastScrollY = currentScrollY;
       } else if (currentScrollY < previousState.lastScrollY - desktopStickyHeaderDirectionThreshold) {
         hidden = false;
+        lastScrollY = currentScrollY;
       }
 
       header.classList.toggle('header--desktop-hidden', hidden);
       desktopStickyHeaderStates.set(header, {
-        lastScrollY: hidden === previousState.hidden ? previousState.lastScrollY : currentScrollY,
+        lastScrollY,
         hidden
       });
     });
