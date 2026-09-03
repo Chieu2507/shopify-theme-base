@@ -204,8 +204,8 @@ class FeaturedCollection extends HTMLElement {
     const quickAddText = document.createElement('span');
     quickAddText.className = 'product-card__media-action-label';
     quickAddText.textContent = quickAddLabel;
-    quickAdd.append(quickAddText);
     quickAdd.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8.5h14l-1 11H6l-1-11Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><path d="M8.5 8.5V7a3.5 3.5 0 0 1 7 0v1.5" fill="none" stroke="currentColor" stroke-width="1.5"></path></svg>';
+    quickAdd.prepend(quickAddText);
     if (canQuickAdd) {
       quickAdd.dataset.productCardQuickAdd = '';
     } else {
