@@ -36,38 +36,13 @@
     </div>
 
     <div class="gift-banner__content" data-reveal-group>
-      {% if section.settings.eyebrow != blank %}
-        <p class="gift-banner__eyebrow" data-reveal-item style="--reveal-order: 0;">{{ section.settings.eyebrow | escape }}</p>
-      {% endif %}
-      {% if section.settings.heading != blank %}
-        <h2 class="gift-banner__heading" data-reveal-item style="--reveal-order: 1;">{{ section.settings.heading | escape }}</h2>
-      {% endif %}
-      <div class="gift-banner__ornament" aria-hidden="true"><span></span></div>
-      {% if section.settings.text != blank %}
-        <div class="gift-banner__text rte" data-reveal-item style="--reveal-order: 2;">{{ section.settings.text }}</div>
-      {% endif %}
-      <div class="gift-banner__cta" data-reveal-item style="--reveal-order: 3;">
-        {% render 'cta', label: section.settings.button_label, url: section.settings.button_link, style: 'secondary', class: 'gift-banner__button', icon: 'none' %}
+      <div class="gift-banner__header">
+        {% content_for 'block', type: '_section-header', id: 'gift_header' %}
       </div>
-
       <div class="gift-banner__details" data-reveal-group>
-        {% for index in (1..3) %}
-          {% liquid
-            assign detail_number_key = 'detail_' | append: index | append: '_number'
-            assign detail_heading_key = 'detail_' | append: index | append: '_heading'
-            assign detail_text_key = 'detail_' | append: index | append: '_text'
-            assign detail_number = section.settings[detail_number_key]
-            assign detail_heading = section.settings[detail_heading_key]
-            assign detail_text = section.settings[detail_text_key]
-          %}
-          {% if detail_heading != blank or detail_text != blank %}
-            <div class="gift-banner__detail" data-reveal-item style="--reveal-order: {{ index | minus: 1 }};">
-              {% if detail_number != blank %}<p class="gift-banner__detail-number">{{ detail_number | escape }}</p>{% endif %}
-              {% if detail_heading != blank %}<h3 class="gift-banner__detail-heading">{{ detail_heading | escape }}</h3>{% endif %}
-              {% if detail_text != blank %}<p class="gift-banner__detail-text">{{ detail_text | escape }}</p>{% endif %}
-            </div>
-          {% endif %}
-        {% endfor %}
+        {% content_for 'block', type: 'gift-banner-detail', id: 'gift_detail_1' %}
+        {% content_for 'block', type: 'gift-banner-detail', id: 'gift_detail_2' %}
+        {% content_for 'block', type: 'gift-banner-detail', id: 'gift_detail_3' %}
       </div>
     </div>
   </div>
@@ -80,26 +55,8 @@
   "class": "section-gift-banner",
   "enabled_on": { "templates": ["product"] },
   "settings": [
-    { "type": "header", "content": "Content" },
-    { "type": "text", "id": "eyebrow", "label": "Eyebrow", "default": "The art of giving" },
-    { "type": "text", "id": "heading", "label": "Heading", "default": "Every piece arrives as a gift" },
-    { "type": "richtext", "id": "text", "label": "Text", "default": "<p>Presentation considered to the final detail.</p>" },
-    { "type": "text", "id": "button_label", "label": "Button label", "default": "Discover gifting" },
-    { "type": "url", "id": "button_link", "label": "Button link" },
     { "type": "image_picker", "id": "image", "label": "Image" },
     { "type": "image_picker", "id": "mobile_image", "label": "Mobile image" },
-    { "type": "header", "content": "Detail 1" },
-    { "type": "text", "id": "detail_1_number", "label": "Number", "default": "01" },
-    { "type": "text", "id": "detail_1_heading", "label": "Heading", "default": "The case" },
-    { "type": "text", "id": "detail_1_text", "label": "Text", "default": "Espresso leather, oxblood velvet." },
-    { "type": "header", "content": "Detail 2" },
-    { "type": "text", "id": "detail_2_number", "label": "Number", "default": "02" },
-    { "type": "text", "id": "detail_2_heading", "label": "Heading", "default": "The ribbon" },
-    { "type": "text", "id": "detail_2_text", "label": "Text", "default": "Hand-tied in house rose." },
-    { "type": "header", "content": "Detail 3" },
-    { "type": "text", "id": "detail_3_number", "label": "Number", "default": "03" },
-    { "type": "text", "id": "detail_3_heading", "label": "Heading", "default": "The card" },
-    { "type": "text", "id": "detail_3_text", "label": "Text", "default": "Your words, set by the atelier." },
     { "type": "header", "content": "Layout" },
     { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "full" },
     { "type": "range", "id": "desktop_height", "label": "Desktop height", "min": 360, "max": 680, "step": 20, "unit": "px", "default": 480 },
@@ -110,8 +67,32 @@
     { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 0 },
     { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 0 }
   ],
+  "blocks": [
+    { "type": "_section-header" },
+    { "type": "gift-banner-detail" }
+  ],
   "presets": [
-    { "name": "Gift banner", "category": "Editorial content" }
+    {
+      "name": "Gift banner",
+      "category": "Editorial content",
+      "blocks": [
+        {
+          "type": "_section-header",
+          "id": "gift_header",
+          "static": true,
+          "settings": { "content_alignment": "center", "content_width": 560, "show_divider": true },
+          "blocks": [
+            { "type": "label", "settings": { "text": "<p>The art of giving</p>", "alignment": "center" } },
+            { "type": "heading", "settings": { "heading": "<h2>Every piece arrives as a gift</h2>", "type_preset": "h3", "alignment": "center" } },
+            { "type": "text", "settings": { "text": "<p>Presentation considered to the final detail.</p>", "type_preset": "sm", "alignment": "center" } },
+            { "type": "button", "settings": { "label": "Discover gifting", "style": "secondary", "icon": "none" } }
+          ]
+        },
+        { "type": "gift-banner-detail", "id": "gift_detail_1", "static": true, "settings": { "number": "01", "heading": "The case", "text": "<p>Espresso leather, oxblood velvet.</p>" } },
+        { "type": "gift-banner-detail", "id": "gift_detail_2", "static": true, "settings": { "number": "02", "heading": "The ribbon", "text": "<p>Hand-tied in house rose.</p>" } },
+        { "type": "gift-banner-detail", "id": "gift_detail_3", "static": true, "settings": { "number": "03", "heading": "The card", "text": "<p>Your words, set by the atelier.</p>" } }
+      ]
+    }
   ]
 }
 {% endschema %}
