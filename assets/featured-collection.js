@@ -164,8 +164,13 @@ class FeaturedCollection extends HTMLElement {
     reveal.className = 'featured-collection__product-reveal';
     reveal.dataset.revealItem = '';
     reveal.style.setProperty('--reveal-order', String(index));
+    const selectedVariant = product.variants?.find((variant) => variant.available) || product.variants?.[0];
+    const canQuickAdd = product.variants?.length === 1 && !selectedVariant?.requires_selling_plan;
     const card = document.createElement('article');
-    card.className = 'product-card product-card--recently-viewed';
+    card.className = 'product-card product-card--recently-viewed product-card--has-media-actions';
+    card.dataset.productCard = '';
+    card.dataset.productCardUrl = product.url || '';
+    card.dataset.selectedVariantId = String(selectedVariant?.id || '');
 
     const media = document.createElement('div');
     media.className = 'product-card__media product-card__media--portrait';
@@ -179,6 +184,34 @@ class FeaturedCollection extends HTMLElement {
     image.loading = 'lazy';
     mediaLink.append(image);
     media.append(mediaLink);
+
+    const actions = document.createElement('div');
+    actions.className = 'product-card__media-actions';
+    const quickView = document.createElement('button');
+    quickView.className = 'product-card__media-action product-card__media-action--quick-view';
+    quickView.type = 'button';
+    quickView.setAttribute('aria-label', window.theme?.strings?.quickView || 'Quick view');
+    quickView.setAttribute('aria-haspopup', 'dialog');
+    quickView.dataset.productCardQuickViewOpen = '';
+    quickView.dataset.productCardQuickViewUrl = product.url || '';
+    quickView.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><circle cx="12" cy="12" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"></circle></svg>';
+
+    const quickAdd = document.createElement('button');
+    quickAdd.className = 'product-card__media-action product-card__media-action--primary product-card__media-action--quick-add';
+    quickAdd.type = 'button';
+    quickAdd.setAttribute('aria-label', canQuickAdd ? (window.theme?.strings?.quickAdd || 'Add to cart') : (window.theme?.strings?.chooseOptions || 'Choose options'));
+    quickAdd.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8.5h14l-1 11H6l-1-11Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><path d="M8.5 8.5V7a3.5 3.5 0 0 1 7 0v1.5" fill="none" stroke="currentColor" stroke-width="1.5"></path></svg>';
+    if (canQuickAdd) {
+      quickAdd.dataset.productCardQuickAdd = '';
+    } else {
+      quickAdd.setAttribute('aria-haspopup', 'dialog');
+      quickAdd.dataset.productCardQuickViewOpen = '';
+      quickAdd.dataset.productCardQuickViewPrimary = '';
+      quickAdd.dataset.productCardQuickViewUrl = product.url || '';
+    }
+    if (!selectedVariant?.available) quickAdd.disabled = true;
+    actions.append(quickView, quickAdd);
+    media.append(actions);
 
     const content = document.createElement('div');
     content.className = 'product-card__content';
