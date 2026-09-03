@@ -1,0 +1,77 @@
+{% doc %}
+  Renders editable product and article breadcrumb navigation.
+
+  @param {object} block - The owning Theme Editor block.
+  @param {string} resource_type - `product` or `article`.
+  @param {string} default_color - CSS color fallback for the current surface.
+{% enddoc %}
+
+{% liquid
+  assign breadcrumb_product = closest.product | default: product
+  assign breadcrumb_article = closest.article | default: article
+  assign type_preset = block.settings.type_preset | default: 'label'
+  assign typography_class = 'label-text'
+  assign font_size = ''
+  assign font_size_mobile = ''
+
+  case type_preset
+    when 'lg'
+      assign typography_class = 'body-p0 body-text'
+    when 'md'
+      assign typography_class = 'body-p1 body-text'
+    when 'sm'
+      assign typography_class = 'body-p2 body-text'
+    when 'xs'
+      assign typography_class = 'body-p3 body-text'
+    when 'custom'
+      assign typography_class = 'body-text resource-breadcrumbs--custom'
+      assign font_size = block.settings.font_size | default: 14 | append: 'px'
+      assign font_size_mobile = block.settings.font_size_mobile | default: 12 | append: 'px'
+  endcase
+
+  assign text_color = block.settings.text_color | default: default_color | default: 'var(--color-text)'
+  assign text_alignment = block.settings.alignment | default: 'left'
+  assign show_parent_link = false
+  assign parent_url = ''
+  assign parent_label = ''
+
+  if resource_type == 'article'
+    if block.settings.show_blog and breadcrumb_article.blog != blank
+      assign show_parent_link = true
+      assign parent_url = breadcrumb_article.blog.url
+      assign parent_label = breadcrumb_article.blog.title
+    endif
+    assign current_label = breadcrumb_article.title
+  else
+    if block.settings.show_collection
+      assign show_parent_link = true
+      if collection != blank
+        assign parent_url = collection.url
+        assign parent_label = collection.title
+      else
+        assign parent_url = routes.all_products_collection_url
+        assign parent_label = 'product.breadcrumb_products' | t
+      endif
+    endif
+    assign current_label = breadcrumb_product.title
+  endif
+%}
+
+{% if current_label != blank %}
+  <nav
+    class="resource-breadcrumbs resource-breadcrumbs--{{ resource_type }} {{ typography_class }}"
+    aria-label="{{ 'accessibility.breadcrumb' | t | escape }}"
+    style="--resource-breadcrumbs-color: {{ text_color }}; --resource-breadcrumbs-alignment: {{ text_alignment }};{% if font_size != blank %} --resource-breadcrumbs-font-size: {{ font_size }}; --resource-breadcrumbs-font-size-mobile: {{ font_size_mobile }};{% endif %}"
+    {{ block.shopify_attributes }}
+  >
+    {% if block.settings.show_home %}
+      <a class="hover-underline" href="{{ routes.root_url | escape }}">{{ 'product.breadcrumb_home' | t }}</a>
+      <span class="resource-breadcrumbs__separator" aria-hidden="true">/</span>
+    {% endif %}
+    {% if show_parent_link %}
+      <a class="hover-underline" href="{{ parent_url | escape }}">{{ parent_label | escape }}</a>
+      <span class="resource-breadcrumbs__separator" aria-hidden="true">/</span>
+    {% endif %}
+    <span class="resource-breadcrumbs__current" aria-current="page">{{ current_label | escape }}</span>
+  </nav>
+{% endif %}

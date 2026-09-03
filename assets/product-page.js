@@ -81,6 +81,7 @@ class ProductPage extends HTMLElement {
     this.variants = this.readJson('[data-product-variants]');
     this.media = this.readJson('[data-product-media]');
     this.variant = this.variants.find((variant) => String(variant.id) === this.form?.querySelector('input[name="id"]')?.value) || this.variants[0];
+    this.bindStickyDetailsOffset();
     this.bind();
     this.bindSizeChart();
     this.bindStickyCart();
@@ -124,12 +125,27 @@ class ProductPage extends HTMLElement {
     this.stickyCartObserver?.disconnect();
     this.stickyCartFooterObserver?.disconnect();
     this.stickyCartResizeObserver?.disconnect();
+    this.stickyHeaderResizeObserver?.disconnect();
     this.updateBackToTopClearance?.();
     document.removeEventListener('shopify:section:load', this.onSectionLoad);
   }
 
   readJson(selector) {
     try { return JSON.parse(this.querySelector(selector)?.textContent || '[]'); } catch { return []; }
+  }
+
+  bindStickyDetailsOffset() {
+    this.updateStickyDetailsOffset = () => {
+      if (!this.stickyHeader?.isConnected) this.stickyHeader = document.querySelector('[data-header].header--sticky');
+      const headerHeight = this.stickyHeader?.getBoundingClientRect().height || 0;
+      this.style.setProperty('--product-header-offset', `${Math.ceil(headerHeight)}px`);
+    };
+    this.updateStickyDetailsOffset();
+    if (this.stickyHeader && 'ResizeObserver' in window) {
+      this.stickyHeaderResizeObserver = new ResizeObserver(this.updateStickyDetailsOffset);
+      this.stickyHeaderResizeObserver.observe(this.stickyHeader);
+    }
+    window.addEventListener('resize', this.updateStickyDetailsOffset, { signal: this.signal });
   }
 
   bind() {
