@@ -1,0 +1,109 @@
+{% render 'section-stylesheet', asset: 'section-featured-collection-critical.css', inline_on_home: true, inline_on_design_mode: true %}
+
+{% liquid
+  assign featured_collection_background = section.settings.background_color
+  if featured_collection_background == blank
+    assign featured_collection_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+
+  assign featured_collection = section.settings.collection
+  assign products_to_show = section.settings.products_to_show
+  assign rendered_product_count = featured_collection.products_count | default: 0
+  if rendered_product_count > products_to_show
+    assign rendered_product_count = products_to_show
+  endif
+  if featured_collection == blank or rendered_product_count == 0
+    assign rendered_product_count = products_to_show
+  endif
+%}
+
+{% style %}
+  #shopify-section-{{ section.id }} { background: {{ featured_collection_background }}; }
+{% endstyle %}
+
+<section
+  class="featured-collection featured-collection--grouped color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+  style="--section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --featured-collection-columns: {{ section.settings.columns_desktop }}; --featured-collection-mobile-columns: {{ section.settings.columns_mobile }}; --featured-collection-column-gap: {{ section.settings.column_gap }}px; --featured-collection-mobile-column-gap: {{ section.settings.mobile_column_gap }}px;"
+  aria-label="{{ featured_collection.title | default: 'Featured collection' | escape }}"
+>
+  <div class="featured-collection__inner section-spacing{% if section.settings.section_width == 'page' %} featured-collection__inner--page{% endif %}">
+    <header class="featured-collection__group-header">
+      {% content_for 'block', type: '_section-header', id: 'section_header' %}
+    </header>
+
+    <ul class="featured-collection__products featured-collection__products--grid" role="list" data-reveal-group>
+      {% if featured_collection != blank and featured_collection.products_count > 0 %}
+        {% for product in featured_collection.products limit: products_to_show %}
+          <li class="featured-collection__product" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+            {% render 'product-card', product: product, show_media_actions: true, enable_quick_view: true, loading: 'lazy' %}
+          </li>
+        {% endfor %}
+      {% else %}
+        {% for placeholder_index in (1..products_to_show) %}
+          <li class="featured-collection__product" data-reveal-item style="--reveal-order: {{ forloop.index0 }};">
+            {% render 'product-card', placeholder_index: placeholder_index, show_media_actions: false, enable_quick_view: false %}
+          </li>
+        {% endfor %}
+      {% endif %}
+    </ul>
+
+    {% if featured_collection != blank and section.settings.view_all_label != blank %}
+      <footer class="featured-collection__footer">
+        <a class="btn-tertiary" href="{{ featured_collection.url }}">
+          <span>{{ section.settings.view_all_label | escape }}</span>
+          <span class="button__icon" aria-hidden="true">{% render 'icon', name: 'button-arrow' %}</span>
+        </a>
+      </footer>
+    {% endif %}
+  </div>
+</section>
+
+{% schema %}
+{
+  "name": "Featured collection",
+  "tag": "section",
+  "class": "section-featured-collection",
+  "enabled_on": { "templates": ["index", "product", "page"] },
+  "settings": [
+    { "type": "collection", "id": "collection", "label": "Collection" },
+    { "type": "header", "content": "Layout" },
+    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
+    { "type": "range", "id": "products_to_show", "label": "Product count", "min": 3, "max": 12, "step": 1, "default": 4 },
+    { "type": "range", "id": "columns_desktop", "label": "Desktop columns", "min": 2, "max": 5, "step": 1, "default": 4 },
+    { "type": "select", "id": "columns_mobile", "label": "Mobile columns", "options": [{ "value": "1", "label": "1 column" }, { "value": "2", "label": "2 columns" }], "default": "2" },
+    { "type": "range", "id": "column_gap", "label": "Desktop column gap", "min": 0, "max": 48, "step": 2, "unit": "px", "default": 20 },
+    { "type": "range", "id": "mobile_column_gap", "label": "Mobile column gap", "min": 0, "max": 32, "step": 2, "unit": "px", "default": 12 },
+    { "type": "text", "id": "view_all_label", "label": "View all label", "default": "View all collection" },
+    { "type": "header", "content": "Appearance" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme." },
+    { "type": "header", "content": "Section padding" },
+    { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 80 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 80 }
+  ],
+  "blocks": [
+    { "type": "_section-header" }
+  ],
+  "presets": [
+    {
+      "name": "Featured collection",
+      "category": "Product discovery",
+      "blocks": [
+        {
+          "type": "_section-header",
+          "id": "section_header",
+          "static": true,
+          "settings": { "content_alignment": "center", "content_width": 760 },
+          "blocks": [
+            { "type": "label", "settings": { "text": "<p>The signatures</p>", "alignment": "center" } },
+            { "type": "heading", "settings": { "heading": "<h2>Pieces to be remembered</h2>", "type_preset": "h3", "alignment": "center" } },
+            { "type": "section-header-divider", "settings": { "height": 28 } },
+            { "type": "text", "settings": { "text": "<p>Curated gemstones. Timeless forms. Made to be yours.</p>", "type_preset": "sm", "alignment": "center" } },
+            { "type": "button", "settings": { "label": "Explore the collection", "style": "tertiary", "icon": "button-arrow" } }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
