@@ -1,0 +1,71 @@
+{% doc %}
+  Renders the Spinel signature divider for use inside a section-header group.
+  The divider is a Theme Block so merchants can place it between any header
+  content blocks and configure its icon, colour and height.
+{% enddoc %}
+
+{% render 'section-stylesheet', asset: 'component-section-header-divider.css' %}
+
+<div
+  class="section-header-divider"
+  style="--section-header-divider-color: {{ block.settings.color | default: 'currentColor' }}; --section-header-divider-height: {{ block.settings.height }}px; --section-header-divider-line-thickness: {{ block.settings.line_thickness }}px;"
+  aria-hidden="true"
+  {{ block.shopify_attributes }}
+>
+  <span class="section-header-divider__line"></span>
+  <span class="section-header-divider__mark">
+    {% if block.settings.icon != blank %}
+      {{ block.settings.icon | image_url: width: 160 | image_tag: class: 'section-header-divider__icon', widths: '40, 80, 120, 160', sizes: '80px', loading: 'lazy', alt: '' }}
+    {% else %}
+      <svg class="section-header-divider__icon" viewBox="0 0 34 36" fill="none" focusable="false" aria-hidden="true">
+        <path d="M17 1V35M1 18H33M4.5 5.5L29.5 30.5M29.5 5.5L4.5 30.5M17 7L19.5 15.5L28 18L19.5 20.5L17 29L14.5 20.5L6 18L14.5 15.5L17 7Z" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    {% endif %}
+  </span>
+  <span class="section-header-divider__line"></span>
+</div>
+
+{% schema %}
+{
+  "name": "Section header divider",
+  "settings": [
+    {
+      "type": "image_picker",
+      "id": "icon",
+      "label": "Signature icon",
+      "info": "Optional. Uses the Spinel signature by default."
+    },
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Color",
+      "info": "Applies to the lines and default signature icon. Uploaded icons retain their own colors."
+    },
+    {
+      "type": "range",
+      "id": "height",
+      "label": "Icon height",
+      "min": 16,
+      "max": 80,
+      "step": 2,
+      "unit": "px",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "line_thickness",
+      "label": "Line thickness",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    }
+  ],
+  "presets": [
+    {
+      "name": "Section header divider"
+    }
+  ]
+}
+{% endschema %}
