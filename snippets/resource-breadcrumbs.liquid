@@ -31,6 +31,10 @@
 
   assign text_color = block.settings.text_color | default: default_color | default: 'var(--color-text)'
   assign text_alignment = block.settings.alignment | default: 'left'
+  assign resource_class = 'resource-breadcrumbs--article'
+  if resource_type == 'product'
+    assign resource_class = 'resource-breadcrumbs--product product-breadcrumbs'
+  endif
   assign show_parent_link = false
   assign parent_url = ''
   assign parent_label = ''
@@ -59,7 +63,7 @@
 
 {% if current_label != blank %}
   <nav
-    class="resource-breadcrumbs resource-breadcrumbs--{{ resource_type }} {{ typography_class }}"
+    class="resource-breadcrumbs {{ resource_class }} {{ typography_class }}"
     aria-label="{{ 'accessibility.breadcrumb' | t | escape }}"
     style="--resource-breadcrumbs-color: {{ text_color }}; --resource-breadcrumbs-alignment: {{ text_alignment }};{% if font_size != blank %} --resource-breadcrumbs-font-size: {{ font_size }}; --resource-breadcrumbs-font-size-mobile: {{ font_size_mobile }};{% endif %}"
     {{ block.shopify_attributes }}
