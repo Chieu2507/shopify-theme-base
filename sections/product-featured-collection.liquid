@@ -1,12 +1,11 @@
 <script type="module" src="{{ 'product-featured-collection.js' | asset_url }}"></script>
 {% render 'swiper-stylesheet', defer_on_home: true %}
-{% content_for 'block', type: 'product-featured-collection-source', id: 'product_source' %}
 
 {% liquid
-  capture section_header_content
-    content_for 'block', type: '_section-header', id: 'section_header'
+  capture product_featured_collection_blocks
+    content_for 'blocks'
   endcapture
-  assign section_header_content = section_header_content | strip
+  assign product_featured_collection_blocks = product_featured_collection_blocks | strip
 
   assign collection_block = blank
   for block in section.blocks
@@ -24,7 +23,7 @@
   assign show_editor_skeleton = false
   assign should_render = false
 
-  if section_header_content != blank
+  if product_featured_collection_blocks != blank
     assign has_header_content = true
   endif
 
@@ -87,7 +86,7 @@
     <div class="product-featured-collection__inner section-spacing{% if section.settings.section_width == 'page' %} product-featured-collection__inner--page{% endif %}">
       {% if has_header_content %}
         <div class="product-featured-collection__header">
-          {{ section_header_content }}
+          {{ product_featured_collection_blocks }}
         </div>
       {% endif %}
 
@@ -646,8 +645,6 @@
       "blocks": [
         {
           "type": "_section-header",
-          "id": "section_header",
-          "static": true,
           "settings": { "content_alignment": "center", "content_width": 760 },
           "blocks": [
             {
@@ -662,8 +659,6 @@
         },
         {
           "type": "product-featured-collection-source",
-          "id": "product_source",
-          "static": true,
           "settings": { "source": "collection" }
         }
       ]
