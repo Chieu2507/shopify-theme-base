@@ -1,37 +1,65 @@
 <div class="collapsible-content color-scheme color-{{ section.settings.color_scheme.id }} full-width{% if section.settings.section_width == 'full' %} collapsible-content--full{% endif %}" style="--collapsible-padding-top: {{ section.settings.padding_top }}px; --collapsible-padding-bottom: {{ section.settings.padding_bottom }}px;">
   <div class="collapsible-content__inner">
-    {% for block in section.blocks %}
-      {% if block.type == 'heading' and block.settings.heading != blank %}
-        <div class="collapsible-content__header collapsible-content__heading">
-          {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
-        </div>
+    <div class="collapsible-content__header">
+      {% if section.settings.eyebrow != blank %}
+        <p class="collapsible-content__eyebrow">{{ section.settings.eyebrow | escape }}</p>
       {% endif %}
-    {% endfor %}
-    <div class="collapsible-content__items" data-reveal-group>
-      {% assign collapsible_reveal_index = 0 %}
       {% for block in section.blocks %}
-        {% if block.type == 'item' %}
-          <details class="collapsible-content__item" data-animated-details data-reveal-item style="--reveal-order: {{ collapsible_reveal_index }};" {% if block.settings.open_by_default %}open{% endif %} {{ block.shopify_attributes }}>
-            <summary><{{ block.settings.heading_tag | default: 'h3' }} class="collapsible-content__item-heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'h4' %}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}><span class="collapsible-content__icon" aria-hidden="true">{% render 'icon', name: 'chevron-up' %}</span></summary>
-            <div class="collapsible-content__body content-text spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }} rte" data-accordion-content>{{ block.settings.content }}</div>
-          </details>
-          {% assign collapsible_reveal_index = collapsible_reveal_index | plus: 1 %}
+        {% if block.type == 'heading' and block.settings.heading != blank %}
+          <div class="collapsible-content__heading">
+          {% render 'content-block', block: block, content: block.settings.heading, kind: 'heading', default_preset: 'h2', default_font: 'heading' %}
+          </div>
         {% endif %}
       {% endfor %}
+      {% if section.settings.intro != blank %}
+        <div class="collapsible-content__intro rte">{{ section.settings.intro }}</div>
+      {% endif %}
     </div>
-    {% if section.settings.button_label != blank and section.settings.button_link != blank %}
-      <a class="collapsible-content__button" href="{{ section.settings.button_link | escape }}">
-        {{ section.settings.button_label | escape }}
-        <span aria-hidden="true">›</span>
-      </a>
-    {% endif %}
+
+    <div class="collapsible-content__layout">
+      <div class="collapsible-content__faq-column">
+        <div class="collapsible-content__items" data-reveal-group>
+          {% assign collapsible_reveal_index = 0 %}
+          {% for block in section.blocks %}
+            {% if block.type == 'item' %}
+              <details class="collapsible-content__item" data-animated-details data-reveal-item style="--reveal-order: {{ collapsible_reveal_index }};" {% if block.settings.open_by_default %}open{% endif %} {{ block.shopify_attributes }}>
+                <summary><{{ block.settings.heading_tag | default: 'h3' }} class="collapsible-content__item-heading {% render 'typography-class', preset: block.settings.heading_size, fallback: 'h4' %}">{{ block.settings.heading | escape }}</{{ block.settings.heading_tag | default: 'h3' }}><span class="collapsible-content__icon" aria-hidden="true">{% render 'icon', name: 'chevron-up' %}</span></summary>
+                <div class="collapsible-content__body content-text spinel-text--{{ block.settings.text_size | default: 'medium' }} content-text--{{ block.settings.text_size | default: 'medium' }} rte" data-accordion-content>{{ block.settings.content }}</div>
+              </details>
+              {% assign collapsible_reveal_index = collapsible_reveal_index | plus: 1 %}
+            {% endif %}
+          {% endfor %}
+        </div>
+        {% if section.settings.button_label != blank and section.settings.button_link != blank %}
+          <div class="collapsible-content__faq-cta">{% render 'cta', label: section.settings.button_label, url: section.settings.button_link, style: 'tertiary', icon: 'button-arrow' %}</div>
+        {% endif %}
+      </div>
+
+      {% if section.settings.show_contact_panel %}
+        <aside class="collapsible-content__contact" aria-label="{{ section.settings.contact_heading | escape }}">
+          {% if section.settings.contact_heading != blank %}<h3 class="collapsible-content__contact-heading">{{ section.settings.contact_heading | escape }}</h3>{% endif %}
+          {% if section.settings.contact_text != blank %}<div class="collapsible-content__contact-text rte">{{ section.settings.contact_text }}</div>{% endif %}
+          <div class="collapsible-content__contact-details">
+            {% if section.settings.contact_phone != blank %}<a href="tel:{{ section.settings.contact_phone | remove: ' ' | escape }}">{{ section.settings.contact_phone | escape }}</a>{% endif %}
+            {% if section.settings.contact_email != blank %}<a href="mailto:{{ section.settings.contact_email | escape }}">{{ section.settings.contact_email | escape }}</a>{% endif %}
+            {% if section.settings.contact_address != blank %}<p>{{ section.settings.contact_address | escape }}</p>{% endif %}
+          </div>
+          {% render 'cta', label: section.settings.contact_button_label, url: section.settings.contact_button_link, style: 'primary', class: 'collapsible-content__contact-button', icon: 'none' %}
+        </aside>
+      {% endif %}
+    </div>
   </div>
 </div>
 {% stylesheet %}
   .collapsible-content { padding: var(--collapsible-padding-top) var(--page-margin) var(--collapsible-padding-bottom); }
-  .collapsible-content__inner { display: flex; width: min(100%, 880px); flex-direction: column; gap: 48px; margin-inline: auto; }
+  .collapsible-content__inner { display: flex; width: min(100%, 880px); flex-direction: column; gap: 42px; margin-inline: auto; }
   .collapsible-content--full .collapsible-content__inner { width: min(100%, var(--page-width)); }
-  .collapsible-content__heading { margin: 0; text-align: center; font-weight: 400; }
+  .collapsible-content__header { display: flex; flex-direction: column; align-items: center; text-align: center; }
+  .collapsible-content__eyebrow { margin: 0 0 12px; color: var(--color-text); font-size: 10px; letter-spacing: .2em; text-transform: uppercase; }
+  .collapsible-content__heading { margin: 0; font-weight: 400; }
+  .collapsible-content__intro { max-width: 52ch; margin-top: 18px; color: var(--color-text); font-size: 14px; }
+  .collapsible-content__intro > :first-child, .collapsible-content__intro > :last-child, .collapsible-content__contact-text > :first-child, .collapsible-content__contact-text > :last-child { margin-block: 0; }
+  .collapsible-content__layout { display: grid; gap: 44px; grid-template-columns: minmax(0, 1fr); align-items: start; }
   .collapsible-content__items { border-block-start: 1px solid var(--product-border, #dedbd7); }
   .collapsible-content__item { border-block-end: 1px solid var(--product-border, #dedbd7); }
   .collapsible-content__item summary { display: flex; justify-content: space-between; gap: 16px; padding: 20px 0; cursor: pointer; list-style: none; }
@@ -41,11 +69,17 @@
   .collapsible-content__icon svg { display: block; width: 20px; height: 20px; }
   .collapsible-content__item[open] .collapsible-content__icon { transform: rotate(360deg); }
   .collapsible-content__item.is-closing .collapsible-content__icon { transform: rotate(180deg); }
-  .collapsible-content__button { display: inline-flex; align-items: center; justify-content: center; gap: 6px; align-self: center; border-bottom: 1px solid currentColor; padding-bottom: 3px; color: var(--color-text); font-size: var(--label-size); letter-spacing: .04em; text-decoration: none; text-transform: uppercase; }
-  .collapsible-content__button span { font-size: 18px; line-height: .8; }
+  .collapsible-content__faq-cta { margin-top: 24px; }
   .collapsible-content__body { padding: 0 32px 20px 0; color: var(--color-text, #686560); }
-  @media (max-width: 1149.98px) { .collapsible-content { padding-inline: 16px; } .collapsible-content__inner { gap: 24px; } }
-  @media (max-width: 767.98px) { .collapsible-content { padding-block: calc(var(--collapsible-padding-top) * 0.5) calc(var(--collapsible-padding-bottom) * 0.5); } }
+  .collapsible-content__contact { display: flex; min-height: 100%; flex-direction: column; padding: 34px; background: var(--color-variant-component-background); color: var(--color-text); }
+  .collapsible-content__contact-heading { margin: 0; color: var(--color-heading); font-family: var(--heading-font-family); font-size: 24px; font-weight: var(--heading-font-weight); letter-spacing: .05em; line-height: 1.2; text-transform: uppercase; }
+  .collapsible-content__contact-text { margin-top: 16px; font-size: 14px; line-height: 1.55; }
+  .collapsible-content__contact-details { display: grid; gap: 10px; margin-top: 22px; color: var(--color-text); font-size: 12px; line-height: 1.45; }
+  .collapsible-content__contact-details :is(a, p) { margin: 0; color: inherit; text-decoration: none; }
+  .collapsible-content__contact-button { width: 100%; margin-top: 24px; }
+  @media (min-width: 1150px) { .collapsible-content__inner { width: min(100%, var(--page-width)); } .collapsible-content__layout { grid-template-columns: minmax(0, 1.45fr) minmax(320px, .8fr); gap: clamp(44px, 5vw, 96px); } }
+  @media (max-width: 1149.98px) { .collapsible-content { padding-inline: 16px; } .collapsible-content__inner { gap: 32px; } }
+  @media (max-width: 767.98px) { .collapsible-content { padding-block: calc(var(--collapsible-padding-top) * 0.5) calc(var(--collapsible-padding-bottom) * 0.5); } .collapsible-content__contact { padding: 26px 22px; } }
 {% endstylesheet %}
 {% schema %}
 {
@@ -368,6 +402,84 @@
   "settings": [
     {
       "type": "header",
+      "content": "Content"
+    },
+    {
+      "type": "text",
+      "id": "eyebrow",
+      "label": "Eyebrow",
+      "default": "At your service"
+    },
+    {
+      "type": "richtext",
+      "id": "intro",
+      "label": "Intro text",
+      "default": "<p>Answers from the house, before you ask.</p>"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "Button label",
+      "default": "View all FAQs"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "header",
+      "content": "Contact panel"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_contact_panel",
+      "label": "Show contact panel",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "contact_heading",
+      "label": "Heading",
+      "default": "Speak with the house"
+    },
+    {
+      "type": "richtext",
+      "id": "contact_text",
+      "label": "Text",
+      "default": "<p>A house adviser guides you through sizing, sourcing and gifting — Monday to Saturday, 9 a.m. to 7 p.m.</p>"
+    },
+    {
+      "type": "text",
+      "id": "contact_phone",
+      "label": "Phone number",
+      "default": "+1 212 555 0128"
+    },
+    {
+      "type": "text",
+      "id": "contact_email",
+      "label": "Email address",
+      "default": "concierge@spinelhouse.com"
+    },
+    {
+      "type": "text",
+      "id": "contact_address",
+      "label": "Address",
+      "default": "By appointment · 34 Rue Cambon, Paris"
+    },
+    {
+      "type": "text",
+      "id": "contact_button_label",
+      "label": "Button label",
+      "default": "Book an appointment"
+    },
+    {
+      "type": "url",
+      "id": "contact_button_link",
+      "label": "Button link"
+    },
+    {
+      "type": "header",
       "content": "Layout"
     },
     {
@@ -385,6 +497,16 @@
         }
       ],
       "default": "page"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "Color scheme",
+      "default": "scheme-1"
     },
     {
       "type": "header",
@@ -409,31 +531,6 @@
       "step": 8,
       "unit": "px",
       "default": 64
-    },
-    {
-      "type": "header",
-      "content": "Content"
-    },
-    {
-      "type": "text",
-      "id": "button_label",
-      "label": "Button label",
-      "default": "View all FAQs"
-    },
-    {
-      "type": "url",
-      "id": "button_link",
-      "label": "Button link"
-    },
-    {
-      "type": "header",
-      "content": "Appearance"
-    },
-    {
-      "type": "color_scheme",
-      "id": "color_scheme",
-      "label": "Color scheme",
-      "default": "scheme-1"
     }
   ],
   "presets": [
