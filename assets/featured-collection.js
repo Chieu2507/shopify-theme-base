@@ -196,9 +196,10 @@ class FeaturedCollection extends HTMLElement {
     quickView.dataset.productCardQuickViewUrl = product.url || '';
     quickView.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><circle cx="12" cy="12" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"></circle></svg>';
 
-    const quickAdd = document.createElement('button');
+    const quickAdd = document.createElement(canQuickAdd ? 'button' : 'a');
     quickAdd.className = 'product-card__media-action product-card__media-action--primary product-card__media-action--quick-add';
-    quickAdd.type = 'button';
+    if (canQuickAdd) quickAdd.type = 'button';
+    else quickAdd.href = product.url || '';
     const quickAddLabel = canQuickAdd ? (window.theme?.strings?.quickAdd || 'Add to cart') : (window.theme?.strings?.chooseOptions || 'Choose options');
     quickAdd.setAttribute('aria-label', quickAddLabel);
     const quickAddText = document.createElement('span');
@@ -208,11 +209,6 @@ class FeaturedCollection extends HTMLElement {
     quickAdd.prepend(quickAddText);
     if (canQuickAdd) {
       quickAdd.dataset.productCardQuickAdd = '';
-    } else {
-      quickAdd.setAttribute('aria-haspopup', 'dialog');
-      quickAdd.dataset.productCardQuickViewOpen = '';
-      quickAdd.dataset.productCardQuickViewPrimary = '';
-      quickAdd.dataset.productCardQuickViewUrl = product.url || '';
     }
     if (!selectedVariant?.available) quickAdd.disabled = true;
     actions.append(quickView, quickAdd);
