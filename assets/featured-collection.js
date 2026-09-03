@@ -199,7 +199,12 @@ class FeaturedCollection extends HTMLElement {
     const quickAdd = document.createElement('button');
     quickAdd.className = 'product-card__media-action product-card__media-action--primary product-card__media-action--quick-add';
     quickAdd.type = 'button';
-    quickAdd.setAttribute('aria-label', canQuickAdd ? (window.theme?.strings?.quickAdd || 'Add to cart') : (window.theme?.strings?.chooseOptions || 'Choose options'));
+    const quickAddLabel = canQuickAdd ? (window.theme?.strings?.quickAdd || 'Add to cart') : (window.theme?.strings?.chooseOptions || 'Choose options');
+    quickAdd.setAttribute('aria-label', quickAddLabel);
+    const quickAddText = document.createElement('span');
+    quickAddText.className = 'product-card__media-action-label';
+    quickAddText.textContent = quickAddLabel;
+    quickAdd.append(quickAddText);
     quickAdd.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M5 8.5h14l-1 11H6l-1-11Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><path d="M8.5 8.5V7a3.5 3.5 0 0 1 7 0v1.5" fill="none" stroke="currentColor" stroke-width="1.5"></path></svg>';
     if (canQuickAdd) {
       quickAdd.dataset.productCardQuickAdd = '';
