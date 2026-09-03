@@ -133,15 +133,24 @@ html.header-menu-scroll-locked {
     transition: none;
   }
 @media (min-width: 1024px) {
+  .shopify-section:has(> .header--sticky) {
+    will-change: transform;
+    transition: transform 420ms cubic-bezier(.4, 0, .2, 1);
+  }
+
   .header--sticky {
     will-change: transform;
     transition: transform 420ms cubic-bezier(.4, 0, .2, 1);
   }
 
   .shopify-section:has(> .header--sticky.header--desktop-hidden) {
-    position: static;
-    z-index: auto;
-    top: auto;
+    transform: translate3d(0, -100%, 0);
+  }
+
+  /* Regular headers move with their section shell; transparent headers remain
+     fixed and keep their own transform because the shell has zero height. */
+  .shopify-section:has(> .header--sticky.header--desktop-hidden) > .header--sticky:not(.header--transparent) {
+    transform: none;
   }
 
   .header--sticky.header--desktop-hidden {
