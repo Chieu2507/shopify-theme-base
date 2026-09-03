@@ -456,15 +456,11 @@ class ProductPage extends HTMLElement {
     this.galleryMode = null;
   }
 
-  updateQuickViewGalleryPagination() {
-    if (!this.classList.contains('quick-view-product') || !this.mainGallery) return;
-    const current = this.querySelector('[data-quick-view-gallery-current]');
-    const total = this.querySelector('[data-quick-view-gallery-total]');
-    if (!current || !total) return;
-
-    const slideCount = this.mainGallery.slides.length;
+  updateGalleryPagination() {
+    if (!this.mainGallery) return;
+    const current = this.querySelector('[data-product-gallery-current]');
+    if (!current) return;
     current.textContent = String(this.mainGallery.realIndex + 1).padStart(2, '0');
-    total.textContent = String(slideCount).padStart(2, '0');
   }
 
   initializeShopifyMedia() {
@@ -525,7 +521,8 @@ class ProductPage extends HTMLElement {
     const thumbnail = this.querySelector('[data-product-thumbnail-gallery]');
     const thumbnailGap = Number.parseInt(getComputedStyle(this).getPropertyValue('--gallery-thumbnail-gap'), 10) || 8;
     const shouldLoop = main.querySelectorAll('.swiper-slide').length > 1;
-    const showPagination = isMobile || gallery.classList.contains('product-gallery--quick-view');
+    const pagination = this.querySelector('[data-product-gallery-pagination]');
+    const showPagination = Boolean(pagination) && (isMobile || gallery.classList.contains('product-gallery--quick-view'));
 
     // Follow Swiper's Thumbs Gallery pattern: create the thumbnail instance first,
     // then pass that live instance into the main gallery.
@@ -549,7 +546,7 @@ class ProductPage extends HTMLElement {
       simulateTouch: true,
       allowTouchMove: true,
       loop: shouldLoop,
-      ...(showPagination ? { pagination: { el: this.querySelector('[data-product-gallery-pagination]'), clickable: true } } : {}),
+      ...(showPagination ? { pagination: { el: pagination, clickable: true } } : {}),
       ...(this.thumbnailGallery ? { thumbs: { swiper: this.thumbnailGallery, autoScrollOffset: 1 } } : {}),
       a11y: { enabled: true },
     });
@@ -557,9 +554,9 @@ class ProductPage extends HTMLElement {
       const slide = this.mainGallery.slides[this.mainGallery.activeIndex];
       const mediaId = slide?.dataset.mediaId;
       this.dispatch('product:media-change', { mediaId });
-      this.updateQuickViewGalleryPagination();
+      this.updateGalleryPagination();
     });
-    this.updateQuickViewGalleryPagination();
+    this.updateGalleryPagination();
     if (preferredMediaId) this.showMedia(preferredMediaId, true);
   }
 
