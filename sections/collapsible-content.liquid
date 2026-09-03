@@ -1,0 +1,104 @@
+<div class="collapsible-content color-scheme color-{{ section.settings.color_scheme.id }} full-width{% if section.settings.section_width == 'full' %} collapsible-content--full{% endif %}" style="--collapsible-padding-top: {{ section.settings.padding_top }}px; --collapsible-padding-bottom: {{ section.settings.padding_bottom }}px;">
+  <div class="collapsible-content__inner">
+    <header class="collapsible-content__header">
+      {% content_for 'block', type: '_section-header', id: 'section_header' %}
+    </header>
+
+    <div class="collapsible-content__layout">
+      <div class="collapsible-content__faq-column">
+        <div class="collapsible-content__items" data-reveal-group>
+          {% content_for 'blocks' %}
+        </div>
+        {% if section.settings.button_label != blank and section.settings.button_link != blank %}
+          <div class="collapsible-content__faq-cta">{% render 'cta', label: section.settings.button_label, url: section.settings.button_link, style: 'tertiary', icon: 'button-arrow' %}</div>
+        {% endif %}
+      </div>
+
+      {% if section.settings.show_contact_panel %}
+        <aside class="collapsible-content__contact" aria-label="{{ section.settings.contact_heading | escape }}">
+          {% if section.settings.contact_heading != blank %}<h3 class="collapsible-content__contact-heading">{{ section.settings.contact_heading | escape }}</h3>{% endif %}
+          {% if section.settings.contact_text != blank %}<div class="collapsible-content__contact-text rte">{{ section.settings.contact_text }}</div>{% endif %}
+          <div class="collapsible-content__contact-details">
+            {% if section.settings.contact_phone != blank %}<a href="tel:{{ section.settings.contact_phone | remove: ' ' | escape }}">{{ section.settings.contact_phone | escape }}</a>{% endif %}
+            {% if section.settings.contact_email != blank %}<a href="mailto:{{ section.settings.contact_email | escape }}">{{ section.settings.contact_email | escape }}</a>{% endif %}
+            {% if section.settings.contact_address != blank %}<p>{{ section.settings.contact_address | escape }}</p>{% endif %}
+          </div>
+          {% render 'cta', label: section.settings.contact_button_label, url: section.settings.contact_button_link, style: 'primary', class: 'collapsible-content__contact-button', icon: 'none' %}
+        </aside>
+      {% endif %}
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .collapsible-content { padding: var(--collapsible-padding-top) var(--page-margin) var(--collapsible-padding-bottom); }
+  .collapsible-content__inner { display: flex; width: min(100%, 880px); flex-direction: column; gap: 42px; margin-inline: auto; }
+  .collapsible-content--full .collapsible-content__inner { width: min(100%, var(--page-width)); }
+  .collapsible-content__header { width: 100%; }
+  .collapsible-content__layout { display: grid; gap: 44px; grid-template-columns: minmax(0, 1fr); align-items: start; }
+  .collapsible-content__items { border-block-start: 1px solid var(--product-border, #dedbd7); }
+  .collapsible-content__faq-cta { margin-top: 24px; }
+  .collapsible-content__contact { display: flex; min-height: 100%; flex-direction: column; padding: 34px; background: var(--color-variant-component-background); color: var(--color-text); }
+  .collapsible-content__contact-heading { margin: 0; color: var(--color-heading); font-family: var(--heading-font-family); font-size: 24px; font-weight: var(--heading-font-weight); letter-spacing: .05em; line-height: 1.2; text-transform: uppercase; }
+  .collapsible-content__contact-text { margin-top: 16px; font-size: 14px; line-height: 1.55; }
+  .collapsible-content__contact-text > :first-child, .collapsible-content__contact-text > :last-child { margin-block: 0; }
+  .collapsible-content__contact-details { display: grid; gap: 10px; margin-top: 22px; color: var(--color-text); font-size: 12px; line-height: 1.45; }
+  .collapsible-content__contact-details :is(a, p) { margin: 0; color: inherit; text-decoration: none; }
+  .collapsible-content__contact-button { width: 100%; margin-top: 24px; }
+  @media (min-width: 1150px) { .collapsible-content__inner { width: min(100%, var(--page-width)); } .collapsible-content__layout { grid-template-columns: minmax(0, 1.45fr) minmax(320px, .8fr); gap: clamp(44px, 5vw, 96px); } }
+  @media (max-width: 1149.98px) { .collapsible-content { padding-inline: 16px; } .collapsible-content__inner { gap: 32px; } }
+  @media (max-width: 767.98px) { .collapsible-content { padding-block: calc(var(--collapsible-padding-top) * .5) calc(var(--collapsible-padding-bottom) * .5); } .collapsible-content__contact { padding: 26px 22px; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Collapsible content",
+  "enabled_on": { "templates": ["index", "product", "page"] },
+  "settings": [
+    { "type": "header", "content": "Layout" },
+    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
+    { "type": "header", "content": "Contact panel" },
+    { "type": "checkbox", "id": "show_contact_panel", "label": "Show contact panel", "default": true },
+    { "type": "text", "id": "contact_heading", "label": "Heading", "default": "Speak with the house", "visible_if": "{{ section.settings.show_contact_panel }}" },
+    { "type": "richtext", "id": "contact_text", "label": "Text", "default": "<p>A house adviser guides you through sizing, sourcing and gifting.</p>", "visible_if": "{{ section.settings.show_contact_panel }}" },
+    { "type": "text", "id": "contact_phone", "label": "Phone", "visible_if": "{{ section.settings.show_contact_panel }}" },
+    { "type": "text", "id": "contact_email", "label": "Email", "visible_if": "{{ section.settings.show_contact_panel }}" },
+    { "type": "text", "id": "contact_address", "label": "Address", "visible_if": "{{ section.settings.show_contact_panel }}" },
+    { "type": "text", "id": "contact_button_label", "label": "Button label", "default": "Book an appointment", "visible_if": "{{ section.settings.show_contact_panel }}" },
+    { "type": "url", "id": "contact_button_link", "label": "Button link", "visible_if": "{{ section.settings.show_contact_panel }}" },
+    { "type": "text", "id": "button_label", "label": "View all label" },
+    { "type": "url", "id": "button_link", "label": "View all link" },
+    { "type": "header", "content": "Appearance" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" },
+    { "type": "header", "content": "Section padding" },
+    { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 64 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 160, "step": 8, "unit": "px", "default": 64 }
+  ],
+  "blocks": [
+    { "type": "collapsible-content-item" }
+  ],
+  "presets": [
+    {
+      "name": "Collapsible content",
+      "category": "Brand trust",
+      "blocks": [
+        {
+          "type": "_section-header",
+          "id": "section_header",
+          "static": true,
+          "settings": { "content_alignment": "center", "content_width": 760 },
+          "blocks": [
+            { "type": "label", "settings": { "text": "<p>At your service</p>", "alignment": "center" } },
+            { "type": "heading", "settings": { "heading": "<h2>Frequently asked questions</h2>", "type_preset": "h3", "alignment": "center" } },
+            { "type": "section-header-divider", "settings": { "height": 28 } },
+            { "type": "text", "settings": { "text": "<p>Answers from the house, before you ask.</p>", "type_preset": "sm", "alignment": "center" } }
+          ]
+        },
+        { "type": "collapsible-content-item" },
+        { "type": "collapsible-content-item" },
+        { "type": "collapsible-content-item" }
+      ]
+    }
+  ]
+}
+{% endschema %}
