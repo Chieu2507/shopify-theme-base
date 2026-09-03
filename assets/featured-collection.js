@@ -188,7 +188,7 @@ class FeaturedCollection extends HTMLElement {
     const actions = document.createElement('div');
     actions.className = 'product-card__media-actions';
     const quickView = document.createElement('button');
-    quickView.className = 'product-card__media-action product-card__media-action--quick-view';
+    quickView.className = 'product-card__media-action product-card__media-action--quick-view btn-secondary';
     quickView.type = 'button';
     quickView.setAttribute('aria-label', window.theme?.strings?.quickView || 'Quick view');
     quickView.setAttribute('aria-haspopup', 'dialog');
@@ -197,7 +197,7 @@ class FeaturedCollection extends HTMLElement {
     quickView.innerHTML = '<svg viewBox="0 0 24 24" aria-hidden="true" focusable="false"><path d="M2.5 12s3.4-6 9.5-6 9.5 6 9.5 6-3.4 6-9.5 6-9.5-6-9.5-6Z" fill="none" stroke="currentColor" stroke-width="1.5"></path><circle cx="12" cy="12" r="2.7" fill="none" stroke="currentColor" stroke-width="1.5"></circle></svg>';
 
     const quickAdd = document.createElement(canQuickAdd ? 'button' : 'a');
-    quickAdd.className = 'product-card__media-action product-card__media-action--primary product-card__media-action--quick-add';
+    quickAdd.className = 'product-card__media-action product-card__media-action--primary product-card__media-action--quick-add btn-primary';
     if (canQuickAdd) quickAdd.type = 'button';
     else quickAdd.href = product.url || '';
     const quickAddLabel = canQuickAdd ? (window.theme?.strings?.quickAdd || 'Add to cart') : (window.theme?.strings?.chooseOptions || 'Choose options');
