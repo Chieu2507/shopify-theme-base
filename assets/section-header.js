@@ -30,6 +30,11 @@ if (!window.SpinelHeaderMenus) {
   // Let non-sticky transparent headers clear the announcement bar before changing palette.
   const desktopTransparentHeaderSurfaceThreshold = 20;
   const mobileStickyHeaderHideThreshold = 40;
+  // Require deliberate scroll travel before changing sticky-header direction.
+  // This prevents tiny wheel / trackpad movements from repeatedly reversing the
+  // transform while the header is in-flight.
+  const mobileStickyHeaderDirectionThreshold = 10;
+  const desktopStickyHeaderDirectionThreshold = 14;
   // Desktop top-level menus use the CSS motion below; keep the legacy Web Animations fallback disabled.
   const disableLegacyMegaMenuWebAnimations = true;
   let transparentHeaderFrame = 0;
@@ -858,14 +863,19 @@ if (!window.SpinelHeaderMenus) {
 
       if (!isMobile || currentScrollY <= mobileStickyHeaderHideThreshold) {
         hidden = false;
-      } else if (currentScrollY > previousState.lastScrollY + 0.5) {
+      } else if (currentScrollY > previousState.lastScrollY + mobileStickyHeaderDirectionThreshold) {
         hidden = true;
-      } else if (currentScrollY < previousState.lastScrollY - 0.5) {
+      } else if (currentScrollY < previousState.lastScrollY - mobileStickyHeaderDirectionThreshold) {
         hidden = false;
       }
 
       header.classList.toggle('header--mobile-hidden', hidden);
-      mobileStickyHeaderStates.set(header, { lastScrollY: currentScrollY, hidden });
+      // Keep the scroll origin until the direction threshold is crossed.
+      // Resetting it on every event made a 0.5px movement toggle the header.
+      mobileStickyHeaderStates.set(header, {
+        lastScrollY: hidden === previousState.hidden ? previousState.lastScrollY : currentScrollY,
+        hidden
+      });
     });
   };
 
@@ -902,14 +912,17 @@ if (!window.SpinelHeaderMenus) {
 
       if (!hasPassedFirstSection || hasOpenOverlay) {
         hidden = false;
-      } else if (currentScrollY > previousState.lastScrollY + 0.5) {
+      } else if (currentScrollY > previousState.lastScrollY + desktopStickyHeaderDirectionThreshold) {
         hidden = true;
-      } else if (currentScrollY < previousState.lastScrollY - 0.5) {
+      } else if (currentScrollY < previousState.lastScrollY - desktopStickyHeaderDirectionThreshold) {
         hidden = false;
       }
 
       header.classList.toggle('header--desktop-hidden', hidden);
-      desktopStickyHeaderStates.set(header, { lastScrollY: currentScrollY, hidden });
+      desktopStickyHeaderStates.set(header, {
+        lastScrollY: hidden === previousState.hidden ? previousState.lastScrollY : currentScrollY,
+        hidden
+      });
     });
   };
 
