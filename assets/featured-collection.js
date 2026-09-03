@@ -222,6 +222,12 @@ class FeaturedCollection extends HTMLElement {
     content.className = 'product-card__content';
     const details = document.createElement('div');
     details.className = 'product-card__details';
+    if (product.type) {
+      const type = document.createElement('p');
+      type.className = 'product-card__type';
+      type.textContent = product.type;
+      details.append(type);
+    }
     const heading = document.createElement('h3');
     heading.className = 'product-card__title heading-h3 heading-text';
     const title = document.createElement('a');
