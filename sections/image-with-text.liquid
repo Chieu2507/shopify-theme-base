@@ -15,6 +15,9 @@
 {% capture image_with_text_portrait_block %}
   {% content_for 'block', type: 'media', id: 'portrait_image' %}
 {% endcapture %}
+{% capture image_with_text_sketch_block %}
+  {% content_for 'block', type: 'media', id: 'sketch_image' %}
+{% endcapture %}
 
 {% style %}
   #shopify-section-{{ section.id }} { background: {{ image_with_text_background }}; }
@@ -26,7 +29,45 @@
   style="--image-with-text-column-gap: {{ section.settings.column_gap }}px; --image-with-text-story-height: {{ section.settings.story_collage_height | default: 580 }}px; --image-with-text-collage-border: {{ image_with_text_collage_border }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
   <div class="image-with-text__inner section-spacing">
-    {% if section.settings.layout == 'story-collage' %}
+    {% if section.settings.layout == 'atelier-grid' %}
+      <header class="image-with-text__atelier-header" data-reveal-group>
+        <div class="image-with-text__atelier-eyebrow" data-reveal-item style="--reveal-order: 0;">
+          {% content_for 'block', type: 'label', id: 'eyebrow' %}
+        </div>
+        <div class="image-with-text__atelier-heading" data-reveal-item style="--reveal-order: 1;">
+          {% content_for 'block', type: 'heading', id: 'heading' %}
+        </div>
+      </header>
+
+      <div class="image-with-text__atelier-grid" data-reveal-group>
+        <div class="image-with-text__atelier-media image-with-text__atelier-media--hero" data-reveal-item style="--reveal-order: 0;">
+          {{ image_with_text_hero_block }}
+        </div>
+        <div class="image-with-text__atelier-meta" data-reveal-item style="--reveal-order: 1;">
+          {% content_for 'block', type: 'label', id: 'location_label' %}
+        </div>
+        <div class="image-with-text__atelier-media image-with-text__atelier-media--sketch" data-reveal-item style="--reveal-order: 2;">
+          {{ image_with_text_sketch_block }}
+        </div>
+        <div class="image-with-text__atelier-media image-with-text__atelier-media--detail" data-reveal-item style="--reveal-order: 3;">
+          {% content_for 'block', type: 'media', id: 'detail_image' %}
+        </div>
+        <div class="image-with-text__atelier-copy" data-reveal-item style="--reveal-order: 4;">
+          <div class="image-with-text__atelier-copy-heading">
+            {% content_for 'block', type: 'heading', id: 'highlight_heading' %}
+          </div>
+          <div class="image-with-text__atelier-copy-text">
+            {% content_for 'block', type: 'text', id: 'text' %}
+          </div>
+          <div class="image-with-text__atelier-copy-button">
+            {% content_for 'block', type: 'button', id: 'button' %}
+          </div>
+        </div>
+        <div class="image-with-text__atelier-media image-with-text__atelier-media--portrait" data-reveal-item style="--reveal-order: 5;">
+          {{ image_with_text_portrait_block }}
+        </div>
+      </div>
+    {% elsif section.settings.layout == 'story-collage' %}
       <div class="image-with-text__story-collage" data-reveal-group>
         <div class="image-with-text__story-media image-with-text__story-media--main" data-reveal-item style="--reveal-order: 0;">
           {{ image_with_text_hero_block }}
@@ -49,6 +90,7 @@
       </div>
     {% endif %}
 
+    {% unless section.settings.layout == 'atelier-grid' %}
     <div class="image-with-text__content image-with-text__content--{{ section.settings.content_alignment }}">
       {% unless section.settings.layout == 'story-collage' %}
         <div class="image-with-text__heading-block image-with-text__heading">
@@ -70,6 +112,7 @@
         {% content_for 'block', type: 'button', id: 'button' %}
       </div>
     </div>
+    {% endunless %}
 
   </div>
 </div>
@@ -81,7 +124,7 @@
   "class": "image-with-text-section",
   "settings": [
     { "type": "header", "content": "Layout" },
-    { "type": "select", "id": "layout", "label": "Layout", "options": [{ "value": "standard", "label": "Image and text" }, { "value": "story-collage", "label": "Story collage" }], "default": "standard" },
+    { "type": "select", "id": "layout", "label": "Layout", "options": [{ "value": "standard", "label": "Image and text" }, { "value": "story-collage", "label": "Story collage" }, { "value": "atelier-grid", "label": "Atelier grid" }], "default": "standard" },
     { "type": "select", "id": "media_position", "label": "Media position", "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }], "default": "left" },
     { "type": "text_alignment", "id": "content_alignment", "label": "Content alignment", "default": "left" },
     { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
@@ -97,6 +140,7 @@
   "blocks": [
     { "type": "@theme" }
   ],
+  "enabled_on": { "templates": ["index", "product", "page"] },
   "presets": [
     {
       "name": "Image with text — Story collage",
@@ -116,6 +160,7 @@
         { "type": "media", "id": "hero_image", "static": true, "settings": { "ratio": "portrait" } },
         { "type": "media", "id": "detail_image", "static": true, "settings": { "ratio": "landscape" } },
         { "type": "media", "id": "portrait_image", "static": true, "settings": { "ratio": "portrait" } },
+        { "type": "media", "id": "sketch_image", "static": true, "settings": { "ratio": "portrait" } },
         { "type": "label", "id": "location_label", "static": true, "settings": { "text": "<p>PARIS 8E · EST. 2012</p>", "reveal_type": "fade-up", "reveal_delay": 300 } },
         { "type": "heading", "id": "heading", "static": true, "settings": { "heading": "<h2>Crafted for the<br>Quiet Hours</h2>", "type_preset": "h3", "reveal_type": "fade-up", "reveal_delay": 0 } },
         { "type": "text", "id": "text", "static": true, "settings": { "text": "<p>Spinel was born from a belief that the finest jewelry doesn’t announce itself loudly — it whispers. Each piece is handcrafted in our Parisian atelier by artisans who have spent decades perfecting their craft.</p><p>We work exclusively with ethically sourced metals and stones, and we produce in limited quantities. Because the things worth owning are never mass-produced.</p>", "type_preset": "sm", "width": "100%", "reveal_type": "fade-up", "reveal_delay": 150 } },
