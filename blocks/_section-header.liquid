@@ -1,13 +1,14 @@
 {% doc %}
-  Renders a reusable static section header.
+  Renders a reusable section-header group. Its children are intentionally
+  limited to label, heading, text and button Theme Blocks.
 
   @example
   {% content_for 'block', type: '_section-header', id: 'section_header' %}
 {% enddoc %}
 
 <header
-  class="section-header section-header-block"
-  style="--section-header-padding-bottom-desktop: {{ block.settings.padding_bottom_desktop | default: 0 }}px; --section-header-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile | default: 0 }}px;"
+  class="section-header section-header-block section-header-block--{{ block.settings.content_alignment }}{% if block.settings.show_divider %} section-header-block--with-divider{% endif %}"
+  style="--section-header-content-width: {{ block.settings.content_width }}px; --section-header-padding-top: {{ block.settings.padding_top }}px; --section-header-padding-bottom: {{ block.settings.padding_bottom }}px;"
   {{ block.shopify_attributes }}
 >
   <div class="section-header-block__content">
@@ -15,100 +16,117 @@
   </div>
 </header>
 
-{% stylesheet %}
-  .section-header-block {
-    padding-bottom: var(--section-header-padding-bottom-desktop, 0px);
-  }
-
-  .section-header-block__content {
-    display: flex;
-    flex-direction: column;
-    align-items: center;
-    gap: 10px;
-  }
-
-  @media screen and (max-width: 1149.98px) {
-    .section-header-block {
-      padding-bottom: var(--section-header-padding-bottom-mobile, 0px);
-    }
-  }
-{% endstylesheet %}
-
 {% schema %}
 {
-  "name": "Section header",
+  "name": "Section header group",
   "blocks": [
     {
-      "type": "text"
+      "type": "label"
     },
     {
       "type": "heading"
     },
     {
-      "type": "spacer"
+      "type": "text"
+    },
+    {
+      "type": "button"
     }
   ],
   "settings": [
     {
       "type": "header",
-      "content": "Padding"
+      "content": "Layout"
     },
     {
       "type": "select",
-      "id": "padding_device",
-      "label": "Devices",
+      "id": "content_alignment",
+      "label": "Alignment",
       "options": [
         {
-          "value": "desktop",
-          "label": "Desktop"
+          "value": "left",
+          "label": "Left"
         },
         {
-          "value": "mobile",
-          "label": "Mobile"
+          "value": "center",
+          "label": "Center"
+        },
+        {
+          "value": "right",
+          "label": "Right"
         }
       ],
-      "default": "desktop"
+      "default": "center"
     },
     {
       "type": "range",
-      "id": "padding_bottom_desktop",
-      "label": "Bottom",
-      "min": 0,
-      "max": 100,
-      "step": 1,
+      "id": "content_width",
+      "label": "Content width",
+      "min": 280,
+      "max": 1280,
+      "step": 20,
       "unit": "px",
-      "default": 0,
-      "visible_if": "{{ block.settings.padding_device == 'desktop' }}"
+      "default": 760
+    },
+    {
+      "type": "checkbox",
+      "id": "show_divider",
+      "label": "Show divider below heading",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Padding"
     },
     {
       "type": "range",
-      "id": "padding_bottom_mobile",
+      "id": "padding_top",
+      "label": "Top",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
       "label": "Bottom",
       "min": 0,
-      "max": 100,
-      "step": 1,
+      "max": 160,
+      "step": 4,
       "unit": "px",
-      "default": 0,
-      "visible_if": "{{ block.settings.padding_device == 'mobile' }}"
+      "default": 0
     }
   ],
   "presets": [
     {
-      "name": "Section header",
+      "name": "Section header group",
+      "settings": {
+        "content_alignment": "center",
+        "content_width": 840,
+        "show_divider": true
+      },
       "blocks": [
         {
-          "type": "heading",
+          "type": "label",
           "settings": {
-            "heading": "<p>What customers say</p>",
-            "type_preset": "h7",
+            "text": "<p>Savoir-faire</p>",
             "alignment": "center"
           }
         },
         {
           "type": "heading",
           "settings": {
-            "heading": "<h2>Over 500 Happy Reviews</h2>",
+            "heading": "<h2>The house know-how</h2>",
             "type_preset": "h1",
+            "alignment": "center"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>From carbon line to articulated curve.</p>",
             "alignment": "center"
           }
         }
