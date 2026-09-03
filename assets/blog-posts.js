@@ -10,7 +10,7 @@ class BlogPostsCarousel extends HTMLElement {
     this.previous = this.querySelector('[data-blog-posts-previous]');
     this.next = this.querySelector('[data-blog-posts-next]');
     this.reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    this.desktopQuery = window.matchMedia('(min-width: 1150px)');
+    this.desktopQuery = window.matchMedia('(min-width: 1024px)');
     this.mobileQuery = window.matchMedia('(max-width: 767.98px)');
     this.header = document.querySelector('.header');
     this.updateStickyOffset = this.updateStickyOffset.bind(this);

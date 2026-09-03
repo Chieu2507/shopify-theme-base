@@ -230,7 +230,7 @@ class ProductPage extends HTMLElement {
       isOpen: () => dialog.classList.contains('is-open'),
     });
     this.productPanelDialogs.push({ dialog, backdropInteraction });
-    const mobileSizeChart = window.matchMedia('(max-width: 1149.98px)');
+    const mobileSizeChart = window.matchMedia('(max-width: 1023.98px)');
     let handleDrag = null;
     let handleDragTimer = null;
     let restoreTarget = null;
@@ -439,7 +439,7 @@ class ProductPage extends HTMLElement {
   getGalleryMode() {
     const gallery = this.querySelector('[data-product-gallery]');
     if (!gallery) return null;
-    if (this.galleryMediaQuery?.matches ?? window.matchMedia('(max-width: 1149.98px)').matches) return 'mobile';
+    if (this.galleryMediaQuery?.matches ?? window.matchMedia('(max-width: 1023.98px)').matches) return 'mobile';
     if (gallery.classList.contains('product-gallery--featured-video')) return null;
     return gallery.classList.contains('product-gallery--carousel') ? 'desktop' : null;
   }
@@ -897,7 +897,7 @@ changeLightboxSlide(delta) {
 }
 
   bindGalleryResponsiveness() {
-    this.galleryMediaQuery = window.matchMedia('(max-width: 1149.98px)');
+    this.galleryMediaQuery = window.matchMedia('(max-width: 1023.98px)');
     this.galleryMediaChange = () => this.refreshGallery(true);
     if (this.galleryMediaQuery.addEventListener) this.galleryMediaQuery.addEventListener('change', this.galleryMediaChange, { signal: this.signal });
     else this.galleryMediaQuery.addListener(this.galleryMediaChange);
