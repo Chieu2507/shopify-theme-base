@@ -524,7 +524,9 @@ class ProductPage extends HTMLElement {
     }, { rootMargin: '-30% 0px -40% 0px', threshold: [0, .1, .5] });
     slides.forEach((slide) => this.gridPaginationObserver.observe(slide));
     this.setGridPaginationActive(buttons, 0);
-    this.galleryMode = 'grid';
+    // A static grid has no Swiper instance; retain the neutral mode so resize
+    // observers do not continuously reinitialize the gallery at desktop width.
+    this.galleryMode = null;
     return true;
   }
 
