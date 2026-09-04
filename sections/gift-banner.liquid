@@ -1,0 +1,96 @@
+{% render 'section-stylesheet', asset: 'section-gift-banner.css' %}
+
+{% liquid
+  assign gift_banner_background = section.settings.background_color
+  if gift_banner_background == blank
+    assign gift_banner_background = section.settings.color_scheme.settings.background_gradient | default: section.settings.color_scheme.settings.background
+  endif
+
+  assign gift_banner_image = section.settings.image
+  if request.page_type == 'product' and section.settings.mobile_image != blank
+    assign gift_banner_mobile_image = section.settings.mobile_image
+  else
+    assign gift_banner_mobile_image = gift_banner_image
+  endif
+%}
+
+{% style %}
+  #shopify-section-{{ section.id }} { background: {{ gift_banner_background }}; }
+{% endstyle %}
+
+<div
+  class="gift-banner color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} gift-banner--full full-width{% endif %}"
+  style="--gift-banner-height: {{ section.settings.desktop_height }}px; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
+>
+  <div class="gift-banner__inner section-spacing">
+    <div class="gift-banner__media" aria-hidden="true">
+      {% if gift_banner_image != blank %}
+        {{ gift_banner_image | image_url: width: 2400 | image_tag: class: 'gift-banner__image gift-banner__image--desktop', widths: '750, 1100, 1500, 2000, 2400', sizes: '100vw', loading: 'lazy' }}
+        {% if gift_banner_mobile_image != blank %}
+          {{ gift_banner_mobile_image | image_url: width: 1200 | image_tag: class: 'gift-banner__image gift-banner__image--mobile', widths: '500, 750, 1000, 1200', sizes: '100vw', loading: 'lazy' }}
+        {% endif %}
+      {% else %}
+        {% render 'media-placeholder', class_name: 'gift-banner__placeholder', placeholder_name: 'image' %}
+      {% endif %}
+    </div>
+
+    <div class="gift-banner__content" data-reveal-group>
+      <div class="gift-banner__header">
+        {% content_for 'block', type: '_section-header', id: 'gift_header' %}
+      </div>
+      <div class="gift-banner__details" data-reveal-group>
+        {% content_for 'blocks' %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% schema %}
+{
+  "name": "Gift banner",
+  "tag": "section",
+  "class": "section-gift-banner",
+  "enabled_on": { "templates": ["product"] },
+  "settings": [
+    { "type": "image_picker", "id": "image", "label": "Image" },
+    { "type": "image_picker", "id": "mobile_image", "label": "Mobile image" },
+    { "type": "header", "content": "Layout" },
+    { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "full" },
+    { "type": "range", "id": "desktop_height", "label": "Desktop height", "min": 360, "max": 680, "step": 20, "unit": "px", "default": 480 },
+    { "type": "header", "content": "Appearance" },
+    { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-5" },
+    { "type": "color", "id": "background_color", "label": "Background color", "info": "Optional. Overrides the color scheme background. Clear it to use the color scheme." },
+    { "type": "header", "content": "Section padding" },
+    { "type": "range", "id": "padding_top", "label": "Top padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom padding", "min": 0, "max": 160, "step": 4, "unit": "px", "default": 0 }
+  ],
+  "blocks": [
+    { "type": "_section-header" },
+    { "type": "gift-banner-detail" }
+  ],
+  "presets": [
+    {
+      "name": "Gift banner",
+      "category": "Editorial content",
+      "blocks": [
+        {
+          "type": "_section-header",
+          "id": "gift_header",
+          "static": true,
+          "settings": { "content_alignment": "center", "content_width": 560 },
+          "blocks": [
+            { "type": "label", "settings": { "text": "<p>The art of giving</p>", "alignment": "center" } },
+            { "type": "heading", "settings": { "heading": "<h2>Every piece arrives as a gift</h2>", "type_preset": "h3", "alignment": "center" } },
+            { "type": "section-header-divider", "settings": { "height": 30 } },
+            { "type": "text", "settings": { "text": "<p>Presentation considered to the final detail.</p>", "type_preset": "sm", "alignment": "center" } },
+            { "type": "button", "settings": { "label": "Discover gifting", "style": "secondary", "icon": "none" } }
+          ]
+        },
+        { "type": "gift-banner-detail", "settings": { "number": "01", "heading": "The case", "text": "<p>Espresso leather, oxblood velvet.</p>" } },
+        { "type": "gift-banner-detail", "settings": { "number": "02", "heading": "The ribbon", "text": "<p>Hand-tied in house rose.</p>" } },
+        { "type": "gift-banner-detail", "settings": { "number": "03", "heading": "The card", "text": "<p>Your words, set by the atelier.</p>" } }
+      ]
+    }
+  ]
+}
+{% endschema %}

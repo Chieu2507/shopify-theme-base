@@ -11,12 +11,17 @@
     {% if section.blocks.size > 0 %}
       {% for block in section.blocks %}
         {% case block.type %}
+          {% when 'article_breadcrumbs' %}
+            <div class="article__breadcrumbs">
+              {% render 'resource-breadcrumbs', block: block, resource_type: 'article', default_color: 'var(--color-text)' %}
+            </div>
+
           {% when 'article_header' %}
             <header class="article__hero" {{ block.shopify_attributes }}>
               {% if block.settings.show_image %}
                 <div class="article__hero-media">
                   {% assign article_image_alt = article.image.alt | default: article.title %}
-                  {% render 'responsive-media', image: article.image, max_width: 1800, widths: '640, 960, 1200, 1600, 1800', sizes: '(min-width: 1150px) 56vw, 100vw', class: 'article__hero-image media-cover', loading: 'eager', fetchpriority: 'high', alt: article_image_alt, placeholder_asset: 'placeholder-image-default-2.svg', placeholder_class: 'article__hero-image media-cover' %}
+                  {% render 'responsive-media', image: article.image, max_width: 1800, widths: '640, 960, 1200, 1600, 1800', sizes: '(min-width: 1024px) 56vw, 100vw', class: 'article__hero-image media-cover', loading: 'eager', fetchpriority: 'high', alt: article_image_alt, placeholder_asset: 'placeholder-image-default-2.svg', placeholder_class: 'article__hero-image media-cover' %}
                 </div>
               {% endif %}
               <div class="article__hero-copy{% unless block.settings.show_image %} article__hero-copy--wide{% endunless %}">
@@ -56,7 +61,7 @@
                       <article class="article__related-card" data-reveal-item style="--reveal-order: {{ related_count | minus: 1 }};">
                         <a class="article__related-media" href="{{ related.url | escape }}">
                           {% assign related_image_alt = related.image.alt | default: related.title %}
-                          {% render 'responsive-media', image: related.image, max_width: 700, widths: '320, 480, 700', sizes: '(min-width: 1150px) 33vw, (min-width: 768px) 50vw, 100vw', class: 'article__related-image media-cover', loading: 'lazy', alt: related_image_alt, placeholder_asset: 'placeholder-image-product-1.svg', placeholder_class: 'article__related-image media-cover' %}
+                          {% render 'responsive-media', image: related.image, max_width: 700, widths: '320, 480, 700', sizes: '(min-width: 1024px) 33vw, (min-width: 768px) 50vw, 100vw', class: 'article__related-image media-cover', loading: 'lazy', alt: related_image_alt, placeholder_asset: 'placeholder-image-product-1.svg', placeholder_class: 'article__related-image media-cover' %}
                         </a>
                         <h3 class="heading-h3 heading-text"><a href="{{ related.url | escape }}">{{ related.title | escape }}</a></h3>
                         {% if block.settings.show_date %}<p class="article__meta">{{ related.published_at | time_tag: format: 'date' }}</p>{% endif %}
@@ -118,6 +123,7 @@
   .article { display: block; background: var(--gradient-background, var(--color-background)); color: var(--color-text); }
   .article__inner { width: 100%; max-width: var(--page-width); margin-inline: auto; }
   .article.full-width .article__inner { max-width: none; padding-inline: var(--page-margin); }
+  .article__breadcrumbs { margin-bottom: 20px; }
   .article__hero { display: grid; min-height: var(--article-hero-height); grid-template-columns: minmax(0, 1.15fr) minmax(0, .85fr); }
   .article__hero-media { min-height: var(--article-hero-height); overflow: hidden; background: var(--color-variant-component-background); }
   .article__hero-image { width: 100%; height: 100%; object-fit: cover; }
@@ -156,7 +162,7 @@
   .article__comment-form .button { justify-self: center; }
   .article__form-status { text-align: center; color: #246b3e; }
   .article__empty { margin: 32px auto; text-align: center; }
-  @media screen and (max-width: 767.98px) { .article__inner, .article.full-width .article__inner { padding-inline: var(--page-margin); } .article__hero { display: block; } .article__hero-media { min-height: 0; aspect-ratio: var(--article-hero-mobile-ratio); } .article__hero-copy { min-height: 0; padding: 42px 28px; } .article__body { margin-top: 56px; } .article__related-grid { grid-template-columns: 1fr; } .article__comment-fields { grid-template-columns: 1fr; } .article__comment-fields textarea { grid-column: auto; } }
+  @media screen and (max-width: 767.98px) { .article__inner, .article.full-width .article__inner { padding-inline: var(--page-margin); } .article__breadcrumbs { margin-bottom: 14px; } .article__hero { display: block; } .article__hero-media { min-height: 0; aspect-ratio: var(--article-hero-mobile-ratio); } .article__hero-copy { min-height: 0; padding: 42px 28px; } .article__body { margin-top: 56px; } .article__related-grid { grid-template-columns: 1fr; } .article__comment-fields { grid-template-columns: 1fr; } .article__comment-fields textarea { grid-column: auto; } }
 {% endstylesheet %}
 
 {% schema %}
@@ -189,6 +195,80 @@
     { "type": "color_scheme", "id": "color_scheme", "label": "Color scheme", "default": "scheme-1" }
   ],
   "blocks": [
+    {
+      "type": "article_breadcrumbs",
+      "name": "Breadcrumbs",
+      "limit": 1,
+      "settings": [
+        {
+          "type": "header",
+          "content": "Breadcrumb content"
+        },
+        {
+          "type": "checkbox",
+          "id": "show_home",
+          "label": "Show home link",
+          "default": true
+        },
+        {
+          "type": "checkbox",
+          "id": "show_blog",
+          "label": "Show blog link",
+          "default": true
+        },
+        {
+          "type": "header",
+          "content": "Typography"
+        },
+        {
+          "type": "select",
+          "id": "type_preset",
+          "label": "Text size",
+          "options": [
+            { "value": "lg", "label": "Large" },
+            { "value": "md", "label": "Medium" },
+            { "value": "sm", "label": "Small" },
+            { "value": "xs", "label": "Extra small" },
+            { "value": "label", "label": "Label" },
+            { "value": "custom", "label": "Custom" }
+          ],
+          "default": "label"
+        },
+        {
+          "type": "range",
+          "id": "font_size",
+          "label": "Size",
+          "min": 8,
+          "max": 40,
+          "step": 1,
+          "unit": "px",
+          "default": 14,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "range",
+          "id": "font_size_mobile",
+          "label": "Mobile size",
+          "min": 8,
+          "max": 40,
+          "step": 1,
+          "unit": "px",
+          "default": 12,
+          "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+        },
+        {
+          "type": "color",
+          "id": "text_color",
+          "label": "Text color"
+        },
+        {
+          "type": "text_alignment",
+          "id": "alignment",
+          "label": "Content alignment",
+          "default": "left"
+        }
+      ]
+    },
     {
       "type": "article_header",
       "name": "Article header",

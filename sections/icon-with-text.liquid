@@ -9,6 +9,10 @@
   endif
 
   assign item_alignment = section.settings.content_alignment | default: 'center'
+  assign show_icons = section.settings.show_icons
+  if show_icons == nil
+    assign show_icons = true
+  endif
   assign item_flex_alignment = 'center'
   if item_alignment == 'left'
     assign item_flex_alignment = 'flex-start'
@@ -25,7 +29,7 @@
 
 {% if item_count > 0 or header_count > 0 %}
   <div
-    class="icon-with-text icon-with-text--icon-{{ section.settings.icon_size | default: 'small' }} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
+    class="icon-with-text icon-with-text--icon-{{ section.settings.icon_size | default: 'small' }}{% unless show_icons %} icon-with-text--without-icons{% endunless %} color-scheme color-{{ section.settings.color_scheme.id }}{% if section.settings.section_width == 'full' %} full-width{% endif %}"
     style="--section-padding-top: {{ section.settings.padding_top | default: 10 }}px; --section-padding-bottom: {{ section.settings.padding_bottom | default: 64 }}px; --icon-with-text-column-gap: {{ section.settings.column_gap | default: 20 }}px; --icon-with-text-mobile-column-gap: {{ section.settings.mobile_column_gap | default: 12 }}px; --icon-with-text-row-gap: {{ section.settings.row_gap | default: 40 }}px; --icon-with-text-content-gap: {{ section.settings.content_gap | default: 24 }}px; --icon-with-text-item-alignment: {{ item_flex_alignment }}; --icon-with-text-item-text-alignment: {{ item_alignment }}; --icon-with-text-columns-desktop: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-tablet: {{ section.settings.columns_desktop | default: 1 }}; --icon-with-text-columns-mobile: {{ section.settings.columns_mobile | default: 1 }};"
   >
     <div class="icon-with-text__inner section-spacing">
@@ -59,25 +63,29 @@
               {% if block.type == 'item' %}
                 {% assign item_heading = block.settings.title | default: block.settings.heading %}
                 {% assign item_anchor = block.settings.anchor_id | handleize %}
-                {% if item_anchor != blank %}
+                {% assign item_button_label = block.settings.button_label %}
+                {% assign item_button_link = block.settings.button_link %}
+                {% if item_anchor != blank and item_button_link == blank %}
                   <a class="icon-with-text__item-link" href="#{{ item_anchor }}">
                 {% endif %}
                 <div class="icon-with-text__item icon-with-text__item--{{ section.settings.item_style | default: 'default' }}" role="listitem" data-reveal-item style="--reveal-order: {{ icon_with_text_reveal_index }};" {{ block.shopify_attributes }}>
-                  <div class="icon-with-text__icon" aria-hidden="true">
-                    {% if block.settings.icon != blank %}
-                      {% render 'responsive-image',
-                        image: block.settings.icon,
-                        max_width: 96,
-                        widths: '32, 48, 64, 96',
-                        sizes: '32px',
-                        class: 'icon-with-text__icon-image',
-                        loading: 'lazy',
-                        decorative: true
-                      %}
-                    {% else %}
-                      {{ 'image' | placeholder_svg_tag: 'icon-with-text__icon-placeholder' }}
-                    {% endif %}
-                  </div>
+                  {% if show_icons %}
+                    <div class="icon-with-text__icon" aria-hidden="true">
+                      {% if block.settings.icon != blank %}
+                        {% render 'responsive-image',
+                          image: block.settings.icon,
+                          max_width: 96,
+                          widths: '32, 48, 64, 96',
+                          sizes: '32px',
+                          class: 'icon-with-text__icon-image',
+                          loading: 'lazy',
+                          decorative: true
+                        %}
+                      {% else %}
+                        {{ 'image' | placeholder_svg_tag: 'icon-with-text__icon-placeholder' }}
+                      {% endif %}
+                    </div>
+                  {% endif %}
 
                   <div class="icon-with-text__content">
                     {% if item_heading != blank %}
@@ -91,9 +99,10 @@
                         {{ block.settings.text }}
                       </div>
                     {% endif %}
+                    {% render 'cta', label: item_button_label, url: item_button_link, style: 'tertiary', class: 'icon-with-text__button', icon: 'button-arrow' %}
                   </div>
                 </div>
-                {% if item_anchor != blank %}
+                {% if item_anchor != blank and item_button_link == blank %}
                   </a>
                 {% endif %}
                 {% assign icon_with_text_reveal_index = icon_with_text_reveal_index | plus: 1 %}
@@ -112,7 +121,7 @@
   "name": "Icon with text",
   "tag": "section",
   "class": "section-icon-with-text",
-  "enabled_on": { "groups": ["footer"] },
+  "enabled_on": { "templates": ["product"], "groups": ["footer"] },
   "max_blocks": 7,
   "settings": [
     {
@@ -219,6 +228,12 @@
       "id": "content_alignment",
       "label": "Content alignment",
       "default": "center"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_icons",
+      "label": "Show icons",
+      "default": true
     },
     {
       "type": "select",
@@ -527,6 +542,16 @@
           "id": "text",
           "label": "Text",
           "default": "<p>For extra peace of mind, every piece is covered by our two-year warranty.</p>"
+        },
+        {
+          "type": "text",
+          "id": "button_label",
+          "label": "Button label"
+        },
+        {
+          "type": "url",
+          "id": "button_link",
+          "label": "Button link"
         }
       ]
     }
