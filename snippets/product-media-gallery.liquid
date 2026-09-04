@@ -30,7 +30,7 @@
       assign mobile_thumbnail_ratio = product.featured_media.preview_image.aspect_ratio | default: 1
   endcase
 %}
-<div class="product-gallery product-gallery--{{ block.settings.desktop_layout }} product-gallery--grid-{{ block.settings.grid_layout | default: 'editorial' }} product-gallery--zoom-{{ block.settings.image_zoom | default: 'open_lightbox' }}{% if block.settings.desktop_layout == 'carousel' %} product-gallery--thumbs-{{ block.settings.carousel_thumbnails }}{% endif %}{% if featured_video_enabled %} product-gallery--featured-video{% endif %} product-gallery--mobile-thumbnails-{{ block.settings.show_mobile_thumbnails }} product-gallery--ratio-{{ block.settings.media_ratio }} product-gallery--mobile-ratio-{{ block.settings.mobile_media_ratio }}" data-image-zoom="{{ block.settings.image_zoom | default: 'open_lightbox' }}" style="--gallery-columns: {% if gallery_media_count == 1 %}1{% else %}{{ block.settings.grid_columns | default: 2 }}{% endif %}; --gallery-gap: {{ block.settings.gap }}px; --gallery-fit: {{ block.settings.media_fit }}; --gallery-thumbnail-size: {{ block.settings.thumbnail_size }}px; --gallery-thumbnail-gap: {{ block.settings.thumbnail_gap }}px; --gallery-thumbnail-desktop-ratio: {{ desktop_thumbnail_ratio }}; --gallery-thumbnail-mobile-ratio: {{ mobile_thumbnail_ratio }};" {{ block.shopify_attributes }} data-product-gallery>
+<div class="product-gallery product-gallery--{{ block.settings.desktop_layout }} product-gallery--grid-{{ block.settings.grid_layout | default: 'editorial' }}{% if block.settings.desktop_layout == 'grid' and block.settings.grid_columns == '1' and gallery_media_count > 1 %} product-gallery--grid-single{% endif %} product-gallery--zoom-{{ block.settings.image_zoom | default: 'open_lightbox' }}{% if block.settings.desktop_layout == 'carousel' %} product-gallery--thumbs-{{ block.settings.carousel_thumbnails }}{% endif %}{% if featured_video_enabled %} product-gallery--featured-video{% endif %} product-gallery--mobile-thumbnails-{{ block.settings.show_mobile_thumbnails }} product-gallery--ratio-{{ block.settings.media_ratio }} product-gallery--mobile-ratio-{{ block.settings.mobile_media_ratio }}" data-image-zoom="{{ block.settings.image_zoom | default: 'open_lightbox' }}" style="--gallery-columns: {% if gallery_media_count == 1 %}1{% else %}{{ block.settings.grid_columns | default: 2 }}{% endif %}; --gallery-gap: {{ block.settings.gap }}px; --gallery-fit: {{ block.settings.media_fit }}; --gallery-thumbnail-size: {{ block.settings.thumbnail_size }}px; --gallery-thumbnail-gap: {{ block.settings.thumbnail_gap }}px; --gallery-thumbnail-desktop-ratio: {{ desktop_thumbnail_ratio }}; --gallery-thumbnail-mobile-ratio: {{ mobile_thumbnail_ratio }};" {{ block.shopify_attributes }} data-product-gallery>
   <div class="product-gallery__media">
     <div class="swiper product-gallery__main" aria-label="{{ 'product_gallery.label' | t: product: product.title | escape }}" data-product-main-gallery>
       <div class="swiper-wrapper">
@@ -50,7 +50,7 @@
                     preload: 'metadata'
                 }}
               {% elsif featured_video_poster != blank %}
-                {% render 'responsive-image', image: featured_video_poster, max_width: 1600, widths: '480, 720, 960, 1200, 1600', sizes: '(min-width: 1150px) 40vw, 100vw', class: 'product-gallery__featured-video-poster', loading: 'eager', alt: featured_video_alt %}
+                {% render 'responsive-image', image: featured_video_poster, max_width: 1600, widths: '480, 720, 960, 1200, 1600', sizes: '(min-width: 1024px) 40vw, 100vw', class: 'product-gallery__featured-video-poster', loading: 'eager', alt: featured_video_alt %}
               {% else %}
                 {% render 'media-placeholder', class_name: 'product-gallery__featured-video-placeholder', placeholder_name: 'image' %}
               {% endif %}
@@ -67,13 +67,8 @@
           </div>
         {% endfor %}
       </div>
-      {% if gallery_media_count > 1 and block.settings.show_mobile_pagination %}
-        <span class="product-gallery__count" aria-hidden="true">
-          <span data-product-gallery-current>01</span>
-          <span>/</span>
-          <span data-product-gallery-total>{{ gallery_media_count | prepend: '0' | slice: -2, 2 }}</span>
-        </span>
-        <div class="swiper-pagination" data-product-gallery-pagination></div>
+      {% if gallery_media_count > 1 and block.settings.desktop_layout == 'grid' and block.settings.grid_columns == '1' and block.settings.show_grid_pagination %}
+        <div class="swiper-pagination product-gallery__desktop-pagination" data-product-gallery-pagination></div>
       {% endif %}
     </div>
     {% if product.media.size > 1 and featured_video_enabled == false %}

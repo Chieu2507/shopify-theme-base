@@ -441,7 +441,7 @@ class ProductPage extends HTMLElement {
     if (!gallery) return null;
     if (this.galleryMediaQuery?.matches ?? window.matchMedia('(max-width: 1023.98px)').matches) return 'mobile';
     if (gallery.classList.contains('product-gallery--featured-video')) return null;
-    return gallery.classList.contains('product-gallery--carousel') ? 'desktop' : null;
+    return gallery.classList.contains('product-gallery--carousel') || gallery.classList.contains('product-gallery--grid-single') ? 'desktop' : null;
   }
 
   getActiveMediaId() {
@@ -522,7 +522,7 @@ class ProductPage extends HTMLElement {
     const thumbnailGap = Number.parseInt(getComputedStyle(this).getPropertyValue('--gallery-thumbnail-gap'), 10) || 8;
     const shouldLoop = main.querySelectorAll('.swiper-slide').length > 1;
     const pagination = this.querySelector('[data-product-gallery-pagination]');
-    const showPagination = Boolean(pagination) && (isMobile || gallery.classList.contains('product-gallery--quick-view'));
+    const showPagination = Boolean(pagination) && (isMobile || gallery.classList.contains('product-gallery--quick-view') || gallery.classList.contains('product-gallery--grid-single'));
 
     // Follow Swiper's Thumbs Gallery pattern: create the thumbnail instance first,
     // then pass that live instance into the main gallery.
