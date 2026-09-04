@@ -596,7 +596,7 @@ class ProductPage extends HTMLElement {
     const thumbnailGap = Number.parseInt(getComputedStyle(this).getPropertyValue('--gallery-thumbnail-gap'), 10) || 8;
     const shouldLoop = main.querySelectorAll('.swiper-slide').length > 1;
     const pagination = this.querySelector('[data-product-gallery-pagination]');
-    const showPagination = Boolean(pagination) && (isMobile || gallery.classList.contains('product-gallery--quick-view') || gallery.classList.contains('product-gallery--grid-single'));
+    const showPagination = Boolean(pagination) && (isMobile || gallery.classList.contains('product-gallery--quick-view'));
 
     // Follow Swiper's Thumbs Gallery pattern: create the thumbnail instance first,
     // then pass that live instance into the main gallery.
