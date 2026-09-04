@@ -1,4 +1,3 @@
-{% render 'section-stylesheet', asset: 'section-footer.css', defer_on_home: true %}
 {% render 'section-stylesheet', asset: 'section-footer-redesign.css', defer_on_home: true %}
 
 {% liquid
@@ -30,75 +29,54 @@
       --footer-padding-bottom: {{ section.settings.padding_bottom }}px;
     "
   >
-    <div class="footer__divider footer__divider--top" aria-hidden="true"><span class="footer__divider-mark">✦</span></div>
     <div class="footer__inner">
-      <div class="footer__top">
+      <div class="footer__newsletter-row">
         {% content_for 'block', type: '_footer-newsletter', id: 'newsletter' %}
-        <div class="footer__divider footer__divider--section" aria-hidden="true"><span class="footer__divider-mark">✦</span></div>
       </div>
 
-      <div class="footer__bottom">
-        <div class="footer__bottom-main">
-          <div class="footer__menus">
-            {% content_for 'blocks' %}
+      <div class="footer__divider" aria-hidden="true"></div>
+
+      <div class="footer__menus">
+        {% content_for 'blocks' %}
+      </div>
+
+      <div class="footer__divider" aria-hidden="true"></div>
+
+      <div class="footer__utility">
+        {% if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 %}
+          <div class="footer__payments" aria-label="{{ 'footer.payment_methods' | t | escape }}">
+            {% for type in shop.enabled_payment_types %}
+              {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
+            {% endfor %}
           </div>
+        {% endif %}
 
-          {% content_for 'block', type: '_footer-signature', id: 'signature' %}
+        {% if section.settings.show_country_selector or section.settings.show_language_selector %}
+          <div class="footer__localization-wrap">
+            <footer-localization class="footer__localization">
+              {% form 'localization', id: localization_form_id %}
+                <div class="footer__region">
+                  {% if section.settings.show_country_selector %}
+                    {% if localization.available_countries.size > 1 %}
+                      <label class="visually-hidden" for="FooterCountry-{{ section.id }}">{{ 'footer.country_region' | t }}</label>
+                      <span class="footer__localization-select"><select id="FooterCountry-{{ section.id }}" name="country_code" data-footer-localization-select>{% for country in localization.available_countries %}<option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.currency.iso_code | escape }} $ | {{ country.name | escape }}</option>{% endfor %}</select><span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span></span>
+                    {% else %}
+                      <span>{{ localization.country.currency.iso_code | escape }} $ | {{ localization.country.name | escape }}</span>
+                    {% endif %}
+                  {% endif %}
+                  {% if section.settings.show_language_selector and localization.available_languages.size > 1 %}
+                    {% if section.settings.show_country_selector %}<span class="footer__utility-divider" aria-hidden="true">/</span>{% endif %}
+                    <label class="visually-hidden" for="FooterLanguage-{{ section.id }}">{{ 'footer.language' | t }}</label>
+                    <span class="footer__localization-select"><select id="FooterLanguage-{{ section.id }}" name="locale_code" data-footer-localization-select>{% for language in localization.available_languages %}<option value="{{ language.iso_code }}" lang="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | capitalize | escape }}</option>{% endfor %}</select><span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span></span>
+                  {% endif %}
+                </div>
+                <noscript><button type="submit">{{ 'footer.apply' | t }}</button></noscript>
+              {% endform %}
+            </footer-localization>
+          </div>
+        {% endif %}
 
-          <aside class="footer__connect" aria-label="{{ 'footer.social_links' | t | escape }}">
-            {% if settings.instagram_url != blank or settings.pinterest_url != blank %}
-              <nav class="footer__social" aria-label="{{ 'footer.social_links' | t | escape }}">
-                <ul class="footer__social-list" role="list">
-                  {% if settings.instagram_url != blank %}<li><a class="footer__social-link" href="{{ settings.instagram_url | escape }}" target="_blank" rel="noopener noreferrer"><span>{% render 'social-icon', name: 'instagram' %}</span><span>Instagram</span></a></li>{% endif %}
-                  {% if settings.pinterest_url != blank %}<li><a class="footer__social-link" href="{{ settings.pinterest_url | escape }}" target="_blank" rel="noopener noreferrer"><span>{% render 'social-icon', name: 'pinterest' %}</span><span>Pinterest</span></a></li>{% endif %}
-                </ul>
-              </nav>
-            {% endif %}
-
-            {% if section.settings.show_country_selector or section.settings.show_language_selector %}
-              <div class="footer__connect-divider" aria-hidden="true"><span>✦</span></div>
-              <div class="footer__utility-start footer__utility-start--connect">
-                <footer-localization class="footer__localization">
-                  {% form 'localization', id: localization_form_id %}
-                    <div class="footer__region">
-                      {% if section.settings.show_country_selector %}
-                        {% if localization.available_countries.size > 1 %}
-                          <label class="visually-hidden" for="FooterCountry-{{ section.id }}">{{ 'footer.country_region' | t }}</label>
-                          <span class="footer__localization-select">
-                            <select id="FooterCountry-{{ section.id }}" name="country_code" data-footer-localization-select>
-                              {% for country in localization.available_countries %}
-                                <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>{{ country.currency.iso_code | escape }} $ | {{ country.name | escape }}</option>
-                              {% endfor %}
-                            </select>
-                            <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                          </span>
-                        {% else %}
-                          <span>{{ localization.country.currency.iso_code | escape }} $ | {{ localization.country.name | escape }}</span>
-                        {% endif %}
-                      {% endif %}
-
-                      {% if section.settings.show_language_selector and localization.available_languages.size > 1 %}
-                        {% if section.settings.show_country_selector %}<span class="footer__utility-divider" aria-hidden="true">/</span>{% endif %}
-                        <label class="visually-hidden" for="FooterLanguage-{{ section.id }}">{{ 'footer.language' | t }}</label>
-                        <span class="footer__localization-select">
-                          <select id="FooterLanguage-{{ section.id }}" name="locale_code" data-footer-localization-select>
-                            {% for language in localization.available_languages %}
-                              <option value="{{ language.iso_code }}" lang="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>{{ language.endonym_name | capitalize | escape }}</option>
-                            {% endfor %}
-                          </select>
-                          <span class="footer__localization-select-icon" aria-hidden="true">{% render 'icon', name: 'chevron-down' %}</span>
-                        </span>
-                      {% endif %}
-                    </div>
-                    <noscript><button type="submit">{{ 'footer.apply' | t }}</button></noscript>
-                  {% endform %}
-                </footer-localization>
-              </div>
-            {% endif %}
-          </aside>
-        </div>
-
-        <div class="footer__utility">
+        <div class="footer__meta">
           <div class="footer__copyright">
             <span>&copy; {{ copyright_name | escape }} {{ 'now' | date: '%Y' }}</span>
             <a class="hover-underline" href="https://www.shopify.com/?utm_campaign=poweredby&amp;utm_medium=shopify&amp;utm_source=onlinestore">Powered by Shopify</a>
@@ -121,22 +99,14 @@
               </nav>
             {% endif %}
           </div>
-
-          {% if section.settings.show_payment_icons and shop.enabled_payment_types.size > 0 %}
-            <div class="footer__payments" aria-label="{{ 'footer.payment_methods' | t | escape }}">
-              {% for type in shop.enabled_payment_types %}
-                {{ type | payment_type_svg_tag: class: 'footer__payment-icon' }}
-              {% endfor %}
-            </div>
-          {% endif %}
         </div>
 
-        {% if section.settings.show_follow_on_shop %}
-          <div class="footer__follow-on-shop">
-            {{ shop | login_button: action: 'follow' }}
-          </div>
-        {% endif %}
+        <div class="footer__brand">{% content_for 'block', type: '_footer-signature', id: 'signature' %}</div>
       </div>
+
+      {% if section.settings.show_follow_on_shop %}
+        <div class="footer__follow-on-shop">{{ shop | login_button: action: 'follow' }}</div>
+      {% endif %}
     </div>
   </footer>
 </footer-house>
@@ -271,7 +241,7 @@
               "id": "newsletter_eyebrow",
               "static": true,
               "settings": {
-                "text": "<p>PRIVATE NOTES / OCCASIONAL LETTERS</p>"
+                "text": "<p>LETTERS FROM THE HOUSE</p>"
               }
             },
             {
@@ -279,7 +249,7 @@
               "id": "newsletter_heading",
               "static": true,
               "settings": {
-                "heading": "<h2>Keep close to<br>what endures.</h2>",
+                "heading": "<h2>A quieter way to stay close.</h2>",
                 "type_preset": "h1"
               }
             },
@@ -288,7 +258,7 @@
               "id": "newsletter_text",
               "static": true,
               "settings": {
-                "text": "<p>Notes on rare stones and atelier work.<br>Objects made to endure.</p>",
+                "text": "<p>New chapters, atelier notes and private appointments—sent with restraint.</p>",
                 "type_preset": "md"
               }
             },
@@ -301,7 +271,7 @@
                 "email_placeholder": "YOUR EMAIL ADDRESS",
                 "hide_label": true,
                 "show_required_marker": false,
-                "button_label": "JOIN THE LIST",
+                "button_label": "JOIN THE HOUSE",
                 "button_style": "primary",
                 "icon": "arrow-right",
                 "form_layout": "inline",
@@ -321,7 +291,7 @@
         {
           "type": "footer-menu",
           "settings": {
-            "heading": "<h3>SHOP</h3>",
+            "heading": "<h3>THE HOUSE</h3>",
             "type_preset": "h7",
             "font": "body",
             "menu": "footer-shop",
@@ -331,7 +301,7 @@
         {
           "type": "footer-menu",
           "settings": {
-            "heading": "<h3>THE HOUSE</h3>",
+            "heading": "<h3>DISCOVER</h3>",
             "type_preset": "h7",
             "font": "body",
             "menu": "footer-about",
@@ -341,7 +311,7 @@
         {
           "type": "footer-menu",
           "settings": {
-            "heading": "<h3>CLIENT CARE</h3>",
+            "heading": "<h3>CLIENT SERVICES</h3>",
             "type_preset": "h7",
             "font": "body",
             "menu": "footer-help",
@@ -351,7 +321,7 @@
         {
           "type": "footer-menu",
           "settings": {
-            "heading": "<h3>CONNECT</h3>",
+            "heading": "<h3>FOLLOW THE STORY</h3>",
             "type_preset": "h7",
             "font": "body",
             "menu": "footer",

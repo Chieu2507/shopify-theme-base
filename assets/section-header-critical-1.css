@@ -133,8 +133,24 @@ html.header-menu-scroll-locked {
     transition: none;
   }
 @media (min-width: 1024px) {
+  .shopify-section:has(> .header--sticky):not(:has(> .header--transparent)) {
+    will-change: transform;
+    transition: transform 420ms cubic-bezier(.4, 0, .2, 1);
+  }
+
   .header--sticky {
-    transition: transform 240ms cubic-bezier(.22, 1, .36, 1);
+    will-change: transform;
+    transition: transform 420ms cubic-bezier(.4, 0, .2, 1);
+  }
+
+  .shopify-section:has(> .header--sticky.header--desktop-hidden):not(:has(> .header--transparent)) {
+    transform: translate3d(0, -100%, 0);
+  }
+
+  /* Regular headers move with their section shell; transparent headers remain
+     fixed and keep their own transform because the shell has zero height. */
+  .shopify-section:has(> .header--sticky.header--desktop-hidden) > .header--sticky:not(.header--transparent) {
+    transform: none;
   }
 
   .header--sticky.header--desktop-hidden {
@@ -1123,7 +1139,7 @@ html[scroll-lock] .header__menu-overlay {
     }
   }
 
-  @media (min-width: 1400px) {
+  @media (min-width: 1440px) {
     .header--logo-left .header__navigation {
       grid-column: 1 / -1;
       justify-content: center;

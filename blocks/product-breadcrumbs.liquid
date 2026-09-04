@@ -1,20 +1,75 @@
-{% doc %}
-  Renders product breadcrumb navigation.
-{% enddoc %}
-{% assign product = closest.product | default: product %}
-<nav class="product-breadcrumbs" aria-label="{{ 'accessibility.breadcrumb' | t | escape }}" {{ block.shopify_attributes }}>
-  <a class="hover-underline" href="{{ routes.root_url | escape }}">{{ 'product.breadcrumb_home' | t }}</a>
-  <span aria-hidden="true">/</span>
-  {% if collection != blank %}
-    <a class="hover-underline" href="{{ collection.url | escape }}">{{ collection.title | escape }}</a>
-  {% else %}
-    <a class="hover-underline" href="{{ routes.all_products_collection_url | escape }}">{{ 'product.breadcrumb_products' | t }}</a>
-  {% endif %}
-  <span aria-hidden="true">/</span><span aria-current="page">{{ product.title | escape }}</span>
-</nav>
+{% render 'resource-breadcrumbs', block: block, resource_type: 'product', default_color: 'var(--product-muted)' %}
 {% schema %}
 {
   "name": "Product breadcrumbs",
-  "settings": []
+  "settings": [
+    {
+      "type": "header",
+      "content": "Breadcrumb content"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_home",
+      "label": "Show home link",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_collection",
+      "label": "Show collection link",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "type_preset",
+      "label": "Text size",
+      "options": [
+        { "value": "lg", "label": "Large" },
+        { "value": "md", "label": "Medium" },
+        { "value": "sm", "label": "Small" },
+        { "value": "xs", "label": "Extra small" },
+        { "value": "label", "label": "Label" },
+        { "value": "custom", "label": "Custom" }
+      ],
+      "default": "label"
+    },
+    {
+      "type": "range",
+      "id": "font_size",
+      "label": "Size",
+      "min": 8,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 14,
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "range",
+      "id": "font_size_mobile",
+      "label": "Mobile size",
+      "min": 8,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 12,
+      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
+    },
+    {
+      "type": "color",
+      "id": "text_color",
+      "label": "Text color"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "Content alignment",
+      "default": "left"
+    }
+  ]
 }
 {% endschema %}

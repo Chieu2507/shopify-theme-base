@@ -93,7 +93,7 @@ if (!customElements.get('footer-house')) {
 
       const viewportHeight = window.visualViewport?.height || window.innerHeight;
       const footerHeight = this.section.getBoundingClientRect().height;
-      const isDesktop = window.matchMedia('(min-width: 1150px)').matches;
+      const isDesktop = window.matchMedia('(min-width: 1024px)').matches;
       const isTall = footerHeight > viewportHeight - 1;
 
       this.section.classList.toggle('section-footer--sticky-ready', isDesktop);

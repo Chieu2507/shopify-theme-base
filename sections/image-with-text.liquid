@@ -15,6 +15,34 @@
 {% capture image_with_text_portrait_block %}
   {% content_for 'block', type: 'media', id: 'portrait_image' %}
 {% endcapture %}
+{% capture image_with_text_sketch_block %}
+  {% content_for 'block', type: 'media', id: 'sketch_image' %}
+{% endcapture %}
+{% capture image_with_text_detail_block %}
+  {% content_for 'block', type: 'media', id: 'detail_image' %}
+{% endcapture %}
+{% capture image_with_text_location_label %}
+  {% content_for 'block', type: 'label', id: 'location_label' %}
+{% endcapture %}
+{% capture image_with_text_eyebrow %}
+  {% content_for 'block', type: 'label', id: 'eyebrow' %}
+{% endcapture %}
+{% capture image_with_text_heading %}
+  {% content_for 'block', type: 'heading', id: 'heading' %}
+{% endcapture %}
+{% capture image_with_text_highlight_heading %}
+  {% content_for 'block', type: 'heading', id: 'highlight_heading' %}
+{% endcapture %}
+{% capture image_with_text_text %}
+  {% content_for 'block', type: 'text', id: 'text' %}
+{% endcapture %}
+{% capture image_with_text_button %}
+  {% content_for 'block', type: 'button', id: 'button' %}
+{% endcapture %}
+{% capture image_with_text_section_header %}
+  {% content_for 'block', type: '_section-header', id: 'section_header' %}
+{% endcapture %}
+{% assign image_with_text_has_section_header = image_with_text_section_header | strip %}
 
 {% style %}
   #shopify-section-{{ section.id }} { background: {{ image_with_text_background }}; }
@@ -26,19 +54,63 @@
   style="--image-with-text-column-gap: {{ section.settings.column_gap }}px; --image-with-text-story-height: {{ section.settings.story_collage_height | default: 580 }}px; --image-with-text-collage-border: {{ image_with_text_collage_border }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px;"
 >
   <div class="image-with-text__inner section-spacing">
-    {% if section.settings.layout == 'story-collage' %}
+    {% if section.settings.layout == 'atelier-grid' %}
+      <header class="image-with-text__atelier-header" data-reveal-group>
+        {% if image_with_text_has_section_header != blank %}
+          <div class="image-with-text__section-header" data-reveal-item style="--reveal-order: 0;">
+            {{ image_with_text_section_header }}
+          </div>
+        {% else %}
+          <div class="image-with-text__atelier-eyebrow" data-reveal-item style="--reveal-order: 0;">
+            {{ image_with_text_eyebrow }}
+          </div>
+          <div class="image-with-text__atelier-heading" data-reveal-item style="--reveal-order: 1;">
+            {{ image_with_text_heading }}
+          </div>
+        {% endif %}
+      </header>
+
+      <div class="image-with-text__atelier-grid" data-reveal-group>
+        <div class="image-with-text__atelier-media image-with-text__atelier-media--hero" data-reveal-item style="--reveal-order: 0;">
+          {{ image_with_text_hero_block }}
+        </div>
+        <div class="image-with-text__atelier-meta" data-reveal-item style="--reveal-order: 1;">
+          {{ image_with_text_location_label }}
+        </div>
+        <div class="image-with-text__atelier-media image-with-text__atelier-media--sketch" data-reveal-item style="--reveal-order: 2;">
+          {{ image_with_text_sketch_block }}
+        </div>
+        <div class="image-with-text__atelier-media image-with-text__atelier-media--detail" data-reveal-item style="--reveal-order: 3;">
+          {{ image_with_text_detail_block }}
+        </div>
+        <div class="image-with-text__atelier-copy" data-reveal-item style="--reveal-order: 4;">
+          <div class="image-with-text__atelier-copy-heading">
+            {{ image_with_text_highlight_heading }}
+          </div>
+          <div class="image-with-text__atelier-copy-text">
+            {{ image_with_text_text }}
+          </div>
+          <div class="image-with-text__atelier-copy-button">
+            {{ image_with_text_button }}
+          </div>
+        </div>
+        <div class="image-with-text__atelier-media image-with-text__atelier-media--portrait" data-reveal-item style="--reveal-order: 5;">
+          {{ image_with_text_portrait_block }}
+        </div>
+      </div>
+    {% elsif section.settings.layout == 'story-collage' %}
       <div class="image-with-text__story-collage" data-reveal-group>
         <div class="image-with-text__story-media image-with-text__story-media--main" data-reveal-item style="--reveal-order: 0;">
           {{ image_with_text_hero_block }}
         </div>
         <div class="image-with-text__story-media image-with-text__story-media--detail" data-reveal-item style="--reveal-order: 1;">
-          {% content_for 'block', type: 'media', id: 'detail_image' %}
+          {{ image_with_text_detail_block }}
         </div>
         <div class="image-with-text__story-media image-with-text__story-media--portrait" data-reveal-item style="--reveal-order: 2;">
           {{ image_with_text_portrait_block }}
         </div>
         <div class="image-with-text__story-location" data-reveal-item style="--reveal-order: 3;">
-          {% content_for 'block', type: 'label', id: 'location_label' %}
+          {{ image_with_text_location_label }}
         </div>
       </div>
     {% else %}
@@ -49,27 +121,35 @@
       </div>
     {% endif %}
 
+    {% unless section.settings.layout == 'atelier-grid' %}
     <div class="image-with-text__content image-with-text__content--{{ section.settings.content_alignment }}">
-      {% unless section.settings.layout == 'story-collage' %}
-        <div class="image-with-text__heading-block image-with-text__heading">
-          {% content_for 'block', type: 'label', id: 'eyebrow' %}
+      {% if image_with_text_has_section_header != blank %}
+        <div class="image-with-text__section-header">
+          {{ image_with_text_section_header }}
         </div>
-      {% endunless %}
-      <div class="image-with-text__heading-block image-with-text__heading">
-        {% content_for 'block', type: 'heading', id: 'heading' %}
-      </div>
-      {% unless section.settings.layout == 'story-collage' %}
+      {% else %}
+        {% unless section.settings.layout == 'story-collage' %}
+          <div class="image-with-text__heading-block image-with-text__heading">
+            {{ image_with_text_eyebrow }}
+          </div>
+        {% endunless %}
         <div class="image-with-text__heading-block image-with-text__heading">
-          {% content_for 'block', type: 'heading', id: 'highlight_heading' %}
+          {{ image_with_text_heading }}
         </div>
-      {% endunless %}
-      <div class="image-with-text__text">
-        {% content_for 'block', type: 'text', id: 'text' %}
-      </div>
-      <div class="image-with-text__button-block">
-        {% content_for 'block', type: 'button', id: 'button' %}
-      </div>
+        {% unless section.settings.layout == 'story-collage' %}
+          <div class="image-with-text__heading-block image-with-text__heading">
+            {{ image_with_text_highlight_heading }}
+          </div>
+        {% endunless %}
+        <div class="image-with-text__text">
+          {{ image_with_text_text }}
+        </div>
+        <div class="image-with-text__button-block">
+          {{ image_with_text_button }}
+        </div>
+      {% endif %}
     </div>
+    {% endunless %}
 
   </div>
 </div>
@@ -81,7 +161,7 @@
   "class": "image-with-text-section",
   "settings": [
     { "type": "header", "content": "Layout" },
-    { "type": "select", "id": "layout", "label": "Layout", "options": [{ "value": "standard", "label": "Image and text" }, { "value": "story-collage", "label": "Story collage" }], "default": "standard" },
+    { "type": "select", "id": "layout", "label": "Layout", "options": [{ "value": "standard", "label": "Image and text" }, { "value": "story-collage", "label": "Story collage" }, { "value": "atelier-grid", "label": "Atelier grid" }], "default": "standard" },
     { "type": "select", "id": "media_position", "label": "Media position", "options": [{ "value": "left", "label": "Left" }, { "value": "right", "label": "Right" }], "default": "left" },
     { "type": "text_alignment", "id": "content_alignment", "label": "Content alignment", "default": "left" },
     { "type": "select", "id": "section_width", "label": "Section width", "options": [{ "value": "page", "label": "Page width" }, { "value": "full", "label": "Full width" }], "default": "page" },
@@ -95,9 +175,41 @@
     { "type": "range", "id": "padding_bottom", "min": 0, "max": 160, "step": 8, "unit": "px", "label": "Bottom padding", "default": 96 }
   ],
   "blocks": [
-    { "type": "@theme" }
+    { "type": "@theme" },
+    { "type": "_section-header" }
   ],
+  "enabled_on": { "templates": ["index", "product", "page"] },
   "presets": [
+    {
+      "name": "Image with text",
+      "category": "Editorial content",
+      "settings": {
+        "layout": "standard",
+        "media_position": "left",
+        "content_alignment": "left",
+        "section_width": "page",
+        "column_gap": 64,
+        "padding_top": 96,
+        "padding_bottom": 96,
+        "color_scheme": "scheme-1"
+      },
+      "blocks": [
+        { "type": "media", "id": "hero_image", "static": true, "settings": { "ratio": "portrait" } },
+        {
+          "type": "_section-header",
+          "id": "section_header",
+          "static": true,
+          "settings": { "content_alignment": "left", "content_width": 560 },
+          "blocks": [
+            { "type": "label", "settings": { "text": "<p>Savoir-faire</p>", "alignment": "left" } },
+            { "type": "heading", "settings": { "heading": "<h2>The house know-how</h2>", "type_preset": "h3", "alignment": "left" } },
+            { "type": "section-header-divider", "settings": { "height": 28 } },
+            { "type": "text", "settings": { "text": "<p>From carbon line to articulated curve.</p>", "type_preset": "sm", "alignment": "left" } },
+            { "type": "button", "settings": { "label": "Discover the story", "style": "tertiary", "icon": "button-arrow" } }
+          ]
+        }
+      ]
+    },
     {
       "name": "Image with text — Story collage",
       "category": "Editorial content",
@@ -116,8 +228,20 @@
         { "type": "media", "id": "hero_image", "static": true, "settings": { "ratio": "portrait" } },
         { "type": "media", "id": "detail_image", "static": true, "settings": { "ratio": "landscape" } },
         { "type": "media", "id": "portrait_image", "static": true, "settings": { "ratio": "portrait" } },
+        { "type": "media", "id": "sketch_image", "static": true, "settings": { "ratio": "portrait" } },
         { "type": "label", "id": "location_label", "static": true, "settings": { "text": "<p>PARIS 8E · EST. 2012</p>", "reveal_type": "fade-up", "reveal_delay": 300 } },
-        { "type": "heading", "id": "heading", "static": true, "settings": { "heading": "<h2>Crafted for the<br>Quiet Hours</h2>", "type_preset": "h3", "reveal_type": "fade-up", "reveal_delay": 0 } },
+        {
+          "type": "_section-header",
+          "id": "section_header",
+          "static": true,
+          "settings": { "content_alignment": "left", "content_width": 560 },
+          "blocks": [
+            { "type": "label", "settings": { "text": "<p>Savoir-faire</p>", "alignment": "left" } },
+            { "type": "heading", "settings": { "heading": "<h2>Crafted for the<br>Quiet Hours</h2>", "type_preset": "h3", "alignment": "left" } },
+            { "type": "section-header-divider", "settings": { "height": 28 } },
+            { "type": "text", "settings": { "text": "<p>From carbon line to articulated curve.</p>", "type_preset": "sm", "alignment": "left" } }
+          ]
+        },
         { "type": "text", "id": "text", "static": true, "settings": { "text": "<p>Spinel was born from a belief that the finest jewelry doesn’t announce itself loudly — it whispers. Each piece is handcrafted in our Parisian atelier by artisans who have spent decades perfecting their craft.</p><p>We work exclusively with ethically sourced metals and stones, and we produce in limited quantities. Because the things worth owning are never mass-produced.</p>", "type_preset": "sm", "width": "100%", "reveal_type": "fade-up", "reveal_delay": 150 } },
         { "type": "button", "id": "button", "static": true, "settings": { "label": "Our story", "style": "secondary", "icon": "arrow-right", "reveal_type": "fade-up", "reveal_delay": 300 } }
       ]

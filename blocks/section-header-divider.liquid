@@ -1,0 +1,122 @@
+{% doc %}
+  Renders the Spinel signature divider for use inside a section-header group.
+  The divider is a Theme Block so merchants can place it between any header
+  content blocks and configure its colour, width and height. Its signature icon
+  is managed globally in Theme settings → Brand.
+{% enddoc %}
+
+{% liquid
+  assign divider_max_width = block.settings.max_width_percent | default: 100 | append: '%'
+  case block.settings.max_width_unit
+    when 'rem'
+      assign divider_max_width = block.settings.max_width_rem | default: 50 | append: 'rem'
+    when 'px'
+      assign divider_max_width = block.settings.max_width_px | default: 800 | append: 'px'
+  endcase
+  assign signature_icon = settings.section_header_signature_icon
+%}
+
+{% render 'section-stylesheet', asset: 'component-section-header-divider.css' %}
+
+<div
+  class="section-header-divider"
+  style="--section-header-divider-color: {{ block.settings.color | default: 'currentColor' }}; --section-header-divider-max-width: {{ divider_max_width }}; --section-header-divider-height: {{ block.settings.height }}px; --section-header-divider-line-thickness: {{ block.settings.line_thickness }}px;"
+  aria-hidden="true"
+  {{ block.shopify_attributes }}
+>
+  <span class="section-header-divider__line"></span>
+  <span class="section-header-divider__mark">
+    {% if signature_icon != blank %}
+      {{ signature_icon | image_url: width: 160 | image_tag: class: 'section-header-divider__icon', widths: '40, 80, 120, 160', sizes: '80px', loading: 'lazy', alt: '' }}
+    {% else %}
+      <svg class="section-header-divider__icon" viewBox="0 0 34 36" fill="none" focusable="false" aria-hidden="true">
+        <path d="M17 1V35M1 18H33M4.5 5.5L29.5 30.5M29.5 5.5L4.5 30.5M17 7L19.5 15.5L28 18L19.5 20.5L17 29L14.5 20.5L6 18L14.5 15.5L17 7Z" stroke="currentColor" stroke-width="1.15" stroke-linecap="round" stroke-linejoin="round" />
+      </svg>
+    {% endif %}
+  </span>
+  <span class="section-header-divider__line"></span>
+</div>
+
+{% schema %}
+{
+  "name": "Section header divider",
+  "settings": [
+    {
+      "type": "color",
+      "id": "color",
+      "label": "Color",
+      "info": "Applies to the lines and default signature icon. Uploaded icons retain their own colors."
+    },
+    {
+      "type": "select",
+      "id": "max_width_unit",
+      "label": "Max width unit",
+      "options": [
+        { "value": "percent", "label": "%" },
+        { "value": "rem", "label": "rem" },
+        { "value": "px", "label": "px" }
+      ],
+      "default": "percent"
+    },
+    {
+      "type": "range",
+      "id": "max_width_percent",
+      "label": "Max width",
+      "min": 25,
+      "max": 100,
+      "step": 5,
+      "unit": "%",
+      "default": 100,
+      "info": "The divider remains centered within the section header.",
+      "visible_if": "{{ block.settings.max_width_unit == 'percent' }}"
+    },
+    {
+      "type": "range",
+      "id": "max_width_rem",
+      "label": "Max width",
+      "min": 10,
+      "max": 80,
+      "step": 1,
+      "unit": "rem",
+      "default": 50,
+      "visible_if": "{{ block.settings.max_width_unit == 'rem' }}"
+    },
+    {
+      "type": "range",
+      "id": "max_width_px",
+      "label": "Max width",
+      "min": 100,
+      "max": 1600,
+      "step": 25,
+      "unit": "px",
+      "default": 800,
+      "visible_if": "{{ block.settings.max_width_unit == 'px' }}"
+    },
+    {
+      "type": "range",
+      "id": "height",
+      "label": "Icon height",
+      "min": 16,
+      "max": 80,
+      "step": 2,
+      "unit": "px",
+      "default": 36
+    },
+    {
+      "type": "range",
+      "id": "line_thickness",
+      "label": "Line thickness",
+      "min": 1,
+      "max": 4,
+      "step": 1,
+      "unit": "px",
+      "default": 1
+    }
+  ],
+  "presets": [
+    {
+      "name": "Section header divider"
+    }
+  ]
+}
+{% endschema %}

@@ -12,7 +12,7 @@ if (!customElements.get('horizontal-scrolling-banners')) {
       this.updateVideoPlayback();
       if (!this.scene || !this.sticky || !this.track || this.panels.length < 2) return;
 
-      this.desktopQuery = window.matchMedia('(min-width: 1150px)');
+      this.desktopQuery = window.matchMedia('(min-width: 1024px)');
       this.handleScroll = this.handleScroll.bind(this);
       this.handleResize = this.measure.bind(this);
       this.handleModeChange = this.setup.bind(this);
