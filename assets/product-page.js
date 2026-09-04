@@ -441,7 +441,13 @@ class ProductPage extends HTMLElement {
     if (!gallery) return null;
     if (this.galleryMediaQuery?.matches ?? window.matchMedia('(max-width: 1023.98px)').matches) return 'mobile';
     if (gallery.classList.contains('product-gallery--featured-video')) return null;
-    return gallery.classList.contains('product-gallery--carousel') || gallery.classList.contains('product-gallery--grid-single') ? 'desktop' : null;
+    return gallery.classList.contains('product-gallery--carousel') ? 'desktop' : null;
+  }
+
+  getGridPaginationMode() {
+    const gallery = this.querySelector('[data-product-gallery]');
+    const isMobile = this.galleryMediaQuery?.matches ?? window.matchMedia('(max-width: 1023.98px)').matches;
+    return Boolean(gallery?.classList.contains('product-gallery--grid-scroll-pagination') && !isMobile);
   }
 
   getActiveMediaId() {
@@ -449,6 +455,13 @@ class ProductPage extends HTMLElement {
   }
 
   destroyGallery() {
+    this.gridPaginationObserver?.disconnect();
+    this.gridPaginationObserver = null;
+    if (this.gridPagination && this.gridPaginationClick) {
+      this.gridPagination.removeEventListener('click', this.gridPaginationClick);
+    }
+    this.gridPagination = null;
+    this.gridPaginationClick = null;
     this.mainGallery?.destroy(true, true);
     this.thumbnailGallery?.destroy(true, true);
     this.mainGallery = null;
@@ -461,6 +474,58 @@ class ProductPage extends HTMLElement {
     const current = this.querySelector('[data-product-gallery-current]');
     if (!current) return;
     current.textContent = String(this.mainGallery.realIndex + 1).padStart(2, '0');
+  }
+
+  setGridPaginationActive(buttons, index) {
+    buttons.forEach((button, buttonIndex) => {
+      const isActive = buttonIndex === index;
+      button.classList.toggle('swiper-pagination-bullet-active', isActive);
+      button.setAttribute('aria-current', isActive ? 'true' : 'false');
+    });
+  }
+
+  initializeGridPagination() {
+    const gallery = this.querySelector('[data-product-gallery]');
+    const main = this.querySelector('[data-product-main-gallery]');
+    const pagination = this.querySelector('[data-product-gallery-pagination]');
+    if (!gallery || !main || !pagination || !this.getGridPaginationMode()) return false;
+
+    const slides = [...main.querySelectorAll('.swiper-slide[data-media-id]')];
+    if (slides.length < 2) return false;
+
+    pagination.replaceChildren();
+    const buttons = slides.map((slide, index) => {
+      const button = document.createElement('button');
+      button.type = 'button';
+      button.className = 'swiper-pagination-bullet';
+      button.dataset.mediaId = slide.dataset.mediaId;
+      button.setAttribute('aria-label', `View media ${index + 1}`);
+      button.setAttribute('aria-current', index === 0 ? 'true' : 'false');
+      pagination.append(button);
+      return button;
+    });
+
+    this.gridPagination = pagination;
+    this.gridPaginationClick = (event) => {
+      const button = event.target.closest('.swiper-pagination-bullet[data-media-id]');
+      if (!button) return;
+      const slide = slides.find((item) => item.dataset.mediaId === button.dataset.mediaId);
+      if (!slide) return;
+      slide.scrollIntoView({ behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+    };
+    pagination.addEventListener('click', this.gridPaginationClick);
+
+    this.gridPaginationObserver = new IntersectionObserver((entries) => {
+      const activeEntry = entries
+        .filter((entry) => entry.isIntersecting)
+        .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
+      if (!activeEntry) return;
+      this.setGridPaginationActive(buttons, slides.indexOf(activeEntry.target));
+    }, { rootMargin: '-30% 0px -40% 0px', threshold: [0, .1, .5] });
+    slides.forEach((slide) => this.gridPaginationObserver.observe(slide));
+    this.setGridPaginationActive(buttons, 0);
+    this.galleryMode = 'grid';
+    return true;
   }
 
   initializeShopifyMedia() {
@@ -509,7 +574,14 @@ class ProductPage extends HTMLElement {
     const isMobile = mode === 'mobile';
     const gallery = this.querySelector('[data-product-gallery]');
     const main = this.querySelector('[data-product-main-gallery]');
-    if (!main || !mode) return;
+    if (!main) return;
+    if (this.getGridPaginationMode()) {
+      this.destroyGallery();
+      this.initializeGridPagination();
+      if (preferredMediaId) this.showMedia(preferredMediaId, true);
+      return;
+    }
+    if (!mode) return;
     if (this.mainGallery && this.galleryMode === mode) {
       this.thumbnailGallery?.update();
       this.mainGallery.update();
@@ -1347,7 +1419,15 @@ changeLightboxSlide(delta) {
   }
 
   showMedia(mediaId, instant = false) {
-    if (!this.mainGallery) return;
+    if (!this.mainGallery) {
+      const gridSlide = [...this.querySelectorAll('[data-product-main-gallery] .swiper-slide[data-media-id]')]
+        .find((candidate) => String(candidate.dataset.mediaId) === String(mediaId));
+      if (!gridSlide || !this.getGridPaginationMode()) return;
+      gridSlide.scrollIntoView({ behavior: instant || window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth', block: 'center' });
+      const buttons = [...(this.gridPagination?.querySelectorAll('.swiper-pagination-bullet') || [])];
+      this.setGridPaginationActive(buttons, [...this.querySelectorAll('[data-product-main-gallery] .swiper-slide[data-media-id]')].indexOf(gridSlide));
+      return;
+    }
     const slide = Array.from(this.mainGallery.slides || []).find((candidate) => String(candidate.dataset.mediaId) === String(mediaId));
     const realIndex = Number.parseInt(slide?.dataset.swiperSlideIndex, 10);
     if (Number.isFinite(realIndex) && typeof this.mainGallery.slideToLoop === 'function') {
