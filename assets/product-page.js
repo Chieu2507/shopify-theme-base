@@ -457,6 +457,14 @@ class ProductPage extends HTMLElement {
   destroyGallery() {
     this.gridPaginationObserver?.disconnect();
     this.gridPaginationObserver = null;
+    if (this.gridPaginationScroll) {
+      window.removeEventListener('scroll', this.gridPaginationScroll);
+      window.removeEventListener('resize', this.gridPaginationScroll);
+    }
+    if (this.gridPaginationFrame) cancelAnimationFrame(this.gridPaginationFrame);
+    this.gridPaginationScroll = null;
+    this.gridPaginationUpdate = null;
+    this.gridPaginationFrame = null;
     if (this.gridPagination && this.gridPaginationClick) {
       this.gridPagination.removeEventListener('click', this.gridPaginationClick);
     }
@@ -515,15 +523,44 @@ class ProductPage extends HTMLElement {
     };
     pagination.addEventListener('click', this.gridPaginationClick);
 
-    this.gridPaginationObserver = new IntersectionObserver((entries) => {
-      const activeEntry = entries
-        .filter((entry) => entry.isIntersecting)
-        .sort((first, second) => second.intersectionRatio - first.intersectionRatio)[0];
-      if (!activeEntry) return;
-      this.setGridPaginationActive(buttons, slides.indexOf(activeEntry.target));
-    }, { rootMargin: '-30% 0px -40% 0px', threshold: [0, .1, .5] });
+    // The pagination is pinned at the viewport's vertical midpoint. Using the
+    // most recent IntersectionObserver entries makes the active state stale:
+    // a callback only contains slides whose visibility just changed, not every
+    // currently visible media. Resolve the active media from that same focal
+    // point across all slides instead.
+    this.gridPaginationUpdate = () => {
+      const focalPoint = window.innerHeight / 2;
+      const activeIndex = slides.reduce((closestIndex, slide, index) => {
+        const rect = slide.getBoundingClientRect();
+        const distance = focalPoint < rect.top
+          ? rect.top - focalPoint
+          : focalPoint > rect.bottom
+            ? focalPoint - rect.bottom
+            : 0;
+        const closestRect = slides[closestIndex].getBoundingClientRect();
+        const closestDistance = focalPoint < closestRect.top
+          ? closestRect.top - focalPoint
+          : focalPoint > closestRect.bottom
+            ? focalPoint - closestRect.bottom
+            : 0;
+        return distance < closestDistance ? index : closestIndex;
+      }, 0);
+      this.setGridPaginationActive(buttons, activeIndex);
+    };
+    this.gridPaginationScroll = () => {
+      if (this.gridPaginationFrame) return;
+      this.gridPaginationFrame = requestAnimationFrame(() => {
+        this.gridPaginationFrame = null;
+        this.gridPaginationUpdate?.();
+      });
+    };
+    window.addEventListener('scroll', this.gridPaginationScroll, { passive: true });
+    window.addEventListener('resize', this.gridPaginationScroll, { passive: true });
+    this.gridPaginationObserver = new IntersectionObserver(() => {
+      this.gridPaginationScroll?.();
+    }, { rootMargin: '0px', threshold: [0, .01, .5, 1] });
     slides.forEach((slide) => this.gridPaginationObserver.observe(slide));
-    this.setGridPaginationActive(buttons, 0);
+    this.gridPaginationUpdate();
     // A static grid has no Swiper instance; retain the neutral mode so resize
     // observers do not continuously reinitialize the gallery at desktop width.
     this.galleryMode = null;
