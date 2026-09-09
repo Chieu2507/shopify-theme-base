@@ -1,0 +1,89 @@
+{% doc %}
+  Renders a theme button or link using the global Button settings.
+
+  The snippet controls visual treatment only. The caller remains responsible for
+  choosing the correct semantic element and for supplying an accessible label.
+
+  @param {string} label - Visible button label
+  @param {string} [url] - Link destination. Omit for a button element
+  @param {string} [type] - Button type when url is omitted
+  @param {string} [class] - Additional classes
+  @param {boolean} [disabled] - Whether the button is disabled
+  @param {boolean} [loading] - Whether the button is busy while preserving its width
+  @param {string} [variant] - Optional visual variant: primary, secondary, or tertiary
+  @param {string} [icon] - Optional inline icon name
+
+  @example
+  {% render 'theme-button', label: 'Shop now', url: routes.all_products_collection_url %}
+  {% render 'theme-button', label: 'Add to cart', type: 'submit' %}
+{% enddoc %}
+
+{% liquid
+  assign button_variant = variant | default: 'primary'
+  case button_variant
+    when 'solid'
+      assign button_variant = 'primary'
+    when 'outline'
+      assign button_variant = 'secondary'
+    when 'text'
+      assign button_variant = 'tertiary'
+  endcase
+  unless button_variant == 'primary' or button_variant == 'secondary' or button_variant == 'tertiary'
+    assign button_variant = 'primary'
+  endunless
+
+  assign button_class = 'btn btn--' | append: button_variant
+  if loading
+    assign button_class = button_class | append: ' btn--loading'
+  endif
+  if class != blank
+    assign button_class = button_class | append: ' ' | append: class
+  endif
+%}
+
+{% if url != blank %}
+  <a
+    class="{{ button_class | strip }}"
+    href="{{ url }}"
+    {% if loading %}
+      aria-busy="true"
+    {% endif %}
+    {% if disabled %}
+      aria-disabled="true"
+      tabindex="-1"
+    {% endif %}
+  >
+    <span class="btn__label{% if icon != blank %} btn__label--icon{% endif %}">
+      {% if icon == 'cart' %}
+        {{ 'icon-cart.svg' | inline_asset_content }}
+      {% endif %}
+      <span{% if icon != blank %} class="visually-hidden"{% endif %}>{{ label | escape }}</span>
+    </span>
+    {% if loading %}
+      <span class="btn__spinner" aria-hidden="true"></span>
+      <span class="visually-hidden">{{ 'accessibility.loading' | t }}</span>
+    {% endif %}
+  </a>
+{% else %}
+  <button
+    class="{{ button_class | strip }}"
+    type="{{ type | default: 'button' }}"
+    {% if disabled or loading %}
+      disabled
+    {% endif %}
+    {% if loading %}
+      aria-busy="true"
+    {% endif %}
+  >
+    <span class="btn__label{% if icon != blank %} btn__label--icon{% endif %}">
+      {% if icon == 'cart' %}
+        {{ 'icon-cart.svg' | inline_asset_content }}
+      {% endif %}
+      <span{% if icon != blank %} class="visually-hidden"{% endif %}>{{ label | escape }}</span>
+    </span>
+    {% if loading %}
+      <span class="btn__spinner" aria-hidden="true"></span>
+      <span class="visually-hidden">{{ 'accessibility.loading' | t }}</span>
+    {% endif %}
+  </button>
+{% endif %}

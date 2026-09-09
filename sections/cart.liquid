@@ -5,33 +5,85 @@
   https://shopify.dev/docs/storefronts/themes/architecture/templates/cart
 {% endcomment %}
 
-<h1>{{ 'cart.title' | t }}</h1>
+<div class="section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}">
+  <h1>{{ 'cart.title' | t }}</h1>
 
-<form action="{{ routes.cart_url }}" method="post">
-  <table>
-    {% for item in cart.items %}
-      <tr>
-        <td>
-          {% render 'image', image: item.image, url: item.url %}
-        </td>
-        <td>
-          <p>{{ item.product.title }}</p>
-          {{ 'cart.remove' | t | link_to: item.url_to_remove }}
-        </td>
-        <td>
-          <input type="text" name="updates[]" value="{{ item.quantity }}">
-          <input type="submit" value="{{ 'cart.update' | t }}">
-        </td>
-      </tr>
-    {% endfor %}
-  </table>
+  <form class="form__wrapper cart-form" action="{{ routes.cart_url }}" method="post">
+    <div class="form__fields">
+      <table class="cart-table">
+        {% for item in cart.items %}
+          <tr>
+            <td>
+              {% render 'image', image: item.image, url: item.url %}
+            </td>
+            <td>
+              <p class="cart-item__title">{{ item.product.title | escape }}</p>
+              {% if item.final_line_price != blank or item.final_price != blank %}
+                {% render 'price', item: item, context: 'cart', class: 'cart-item__price' %}
+              {% endif %}
+              {{ 'cart.remove' | t | link_to: item.url_to_remove }}
+            </td>
+            <td>
+              <label class="visually-hidden" for="quantity-{{ item.key }}">{{ 'accessibility.quantity' | t }}</label>
+              <input class="form__control form__control--input" id="quantity-{{ item.key }}" type="number" name="updates[]" min="0" value="{{ item.quantity }}">
+              <input class="btn btn--tertiary" type="submit" value="{{ 'cart.update' | t }}">
+            </td>
+          </tr>
+        {% endfor %}
+      </table>
 
-  <input type="submit" name="checkout" value="{{ 'cart.checkout' | t }}">
-</form>
+      {% if cart.total_price != blank %}
+        <div class="cart-summary">
+          <span>{{ 'cart.total' | t }}</span>
+          {% render 'price', amount: cart.total_price, context: 'cart', class: 'cart-total__price' %}
+        </div>
+      {% endif %}
+
+      <button class="btn btn--primary" type="submit" name="checkout">{{ 'cart.checkout' | t }}</button>
+    </div>
+  </form>
+</div>
+
+{% stylesheet %}
+  .cart-form .form__fields {
+    gap: 1.5rem;
+  }
+  .cart-table {
+    width: 100%;
+    border-collapse: collapse;
+  }
+  .cart-table th,
+  .cart-table td {
+    padding: 0.75rem;
+    border-bottom: var(--shape-border-width) solid var(--border-color);
+    text-align: start;
+    vertical-align: middle;
+  }
+  .cart-table img {
+    width: 5rem;
+  }
+  .cart-form .btn {
+    justify-self: start;
+  }
+  .cart-summary {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 0.75rem;
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
   "name": "t:general.cart",
-  "settings": []
+  "settings": [
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "default": "scheme-1"
+    }
+  ]
 }
 {% endschema %}

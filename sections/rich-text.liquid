@@ -1,20 +1,20 @@
 {% liquid
-  assign custom_section_alignment = 'start'
+  assign rich_text_alignment = 'start'
   case section.settings.alignment
     when 'center'
-      assign custom_section_alignment = 'center'
+      assign rich_text_alignment = 'center'
     when 'right'
-      assign custom_section_alignment = 'end'
+      assign rich_text_alignment = 'end'
   endcase
 
-  assign custom_section_alignment_mobile = custom_section_alignment
+  assign rich_text_alignment_mobile = rich_text_alignment
   if section.settings.customize_mobile_alignment
-    assign custom_section_alignment_mobile = 'start'
+    assign rich_text_alignment_mobile = 'start'
     case section.settings.alignment_mobile
       when 'center'
-        assign custom_section_alignment_mobile = 'center'
+        assign rich_text_alignment_mobile = 'center'
       when 'right'
-        assign custom_section_alignment_mobile = 'end'
+        assign rich_text_alignment_mobile = 'end'
     endcase
   endif
 
@@ -23,103 +23,118 @@
   assign padding_top_mobile = section.settings.padding_top_mobile | default: 0 | plus: 0
   assign padding_bottom_mobile = section.settings.padding_bottom_mobile | default: 0 | plus: 0
 
-  assign custom_section_width = 'page-width'
-  assign custom_section_container_width = 'page-width'
+  assign rich_text_container_width = 'page-width'
   case section.settings.section_width
     when 'full_width'
-      assign custom_section_width = 'full-width'
-      assign custom_section_container_width = 'full-width'
+      assign rich_text_container_width = 'full-width'
   endcase
 
-  assign custom_section_scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign rich_text_scheme = section.settings.color_scheme | default: 'scheme-1'
   if section.settings.color_scheme.id != blank
-    assign custom_section_scheme = section.settings.color_scheme.id
+    assign rich_text_scheme = section.settings.color_scheme.id
   endif
-  assign custom_section_scheme = custom_section_scheme | default: 'scheme-1' | handleize
+  assign rich_text_scheme = rich_text_scheme | default: 'scheme-1' | handleize
 %}
 
-{% capture custom_section_style %}
-  {% if custom_section_alignment != 'start' %}--flex-align: {{ custom_section_alignment }};{% endif %}
-  {% if section.settings.customize_mobile_alignment and custom_section_alignment_mobile != custom_section_alignment %}--flex-align-mobile: {{ custom_section_alignment_mobile }};{% endif %}
-  {% if section.settings.background_color != blank %}--custom-section-background-color: {{ section.settings.background_color | escape }};{% endif %}
-  {% if padding_top != 0 %}--custom-section-padding-top: {{ padding_top }}px;{% endif %}
-  {% if padding_bottom != 0 %}--custom-section-padding-bottom: {{ padding_bottom }}px;{% endif %}
+{% capture rich_text_style %}
+  {% if rich_text_alignment != 'start' %}--flex-align: {{ rich_text_alignment }};{% endif %}
+  {% if section.settings.customize_mobile_alignment and rich_text_alignment_mobile != rich_text_alignment %}--flex-align-mobile: {{ rich_text_alignment_mobile }};{% endif %}
+  {% if section.settings.background_color != blank %}--rich-text-background-color: {{ section.settings.background_color | escape }};{% endif %}
+  {% if padding_top != 0 %}--rich-text-padding-top: {{ padding_top }}px;{% endif %}
+  {% if padding_bottom != 0 %}--rich-text-padding-bottom: {{ padding_bottom }}px;{% endif %}
   {% if section.settings.customize_mobile_padding %}
-    {% if padding_top_mobile != padding_top %}--custom-section-padding-top-mobile: {{ padding_top_mobile }}px;{% endif %}
-    {% if padding_bottom_mobile != padding_bottom %}--custom-section-padding-bottom-mobile: {{ padding_bottom_mobile }}px;{% endif %}
+    {% if padding_top_mobile != padding_top %}--rich-text-padding-top-mobile: {{ padding_top_mobile }}px;{% endif %}
+    {% if padding_bottom_mobile != padding_bottom %}--rich-text-padding-bottom-mobile: {{ padding_bottom_mobile }}px;{% endif %}
   {% endif %}
 {% endcapture %}
-{% assign custom_section_style = custom_section_style | strip %}
+{% assign rich_text_style = rich_text_style | strip %}
 
 <div
-  class="custom-section custom-section--{{ custom_section_width }}"
+  class="section-spacing rich-text__spacing color-scheme section-color-scope {{ rich_text_scheme }}"
+  {% if rich_text_style != blank %}style="{{ rich_text_style }}"{% endif %}
 >
-  <div
-    class="section-spacing custom-section__spacing color-scheme section-color-scope {{ custom_section_scheme }}"
-    {% if custom_section_style != blank %}style="{{ custom_section_style }}"{% endif %}
-  >
-    {% if section.settings.background_image != blank %}
-      <div class="custom-section__background" aria-hidden="true">
-        {{ section.settings.background_image | image_url: width: 2000 | image_tag }}
-      </div>
-    {% endif %}
+  {% if section.settings.background_image != blank %}
+    <div class="rich-text__background" aria-hidden="true">
+      {{ section.settings.background_image | image_url: width: 2000 | image_tag }}
+    </div>
+  {% endif %}
 
-    <div class="container {{ custom_section_container_width }} custom-section__container">
-      <div class="custom-section__content align-content">
-        {% content_for 'blocks' %}
-      </div>
+  <div class="container {{ rich_text_container_width }} rich-text__container">
+    <div class="rich-text__content align-content">
+      {% content_for "block", type: "eyebrow", id: "eyebrow" %}
+      {% content_for "block", type: "heading", id: "heading" %}
+      {% content_for "block", type: "text", id: "text" %}
     </div>
   </div>
 </div>
 
 {% stylesheet %}
-  .custom-section {
-    width: 100%;
-    min-width: 0;
-  }
-  .custom-section__spacing {
+  .rich-text__spacing {
     position: relative;
     overflow: hidden;
     width: 100%;
-    padding-top: var(--custom-section-padding-top, 0px);
-    padding-bottom: var(--custom-section-padding-bottom, 0px);
-    background-color: var(--custom-section-background-color, var(--background-color));
+    padding-top: var(--rich-text-padding-top, 0px);
+    padding-bottom: var(--rich-text-padding-bottom, 0px);
+    background-color: var(--rich-text-background-color, var(--background-color));
   }
-  .custom-section__container {
-    position: relative;
-    z-index: 1;
-  }
-  .custom-section__background {
+
+  .rich-text__background {
     position: absolute;
     inset: 0;
     z-index: 0;
     overflow: hidden;
     pointer-events: none;
   }
-  .custom-section__background img {
+
+  .rich-text__background img {
     display: block;
     width: 100%;
     height: 100%;
     object-fit: cover;
   }
-  .custom-section__content {
+
+  .rich-text__container {
+    position: relative;
+    z-index: 1;
+  }
+
+  .rich-text__content {
+    gap: var(--layout-grid-gap, 1rem);
     min-width: 0;
+    color: var(--body-color);
+    overflow-wrap: anywhere;
+  }
+
+  .rich-text__content :where(ul, ol) {
+    padding-inline-start: 1.5em;
+  }
+
+  .rich-text__content :where(img, video, iframe) {
+    max-width: 100%;
+  }
+
+  .rich-text__content a {
+    color: inherit;
   }
 
   @media (max-width: 767.98px) {
-    .custom-section__spacing {
-      padding-top: var(--custom-section-padding-top-mobile, var(--custom-section-padding-top, 0px));
-      padding-bottom: var(--custom-section-padding-bottom-mobile, var(--custom-section-padding-bottom, 0px));
+    .rich-text__spacing {
+      padding-top: var(--rich-text-padding-top-mobile, var(--rich-text-padding-top, 0px));
+      padding-bottom: var(--rich-text-padding-bottom-mobile, var(--rich-text-padding-bottom, 0px));
     }
   }
 {% endstylesheet %}
 
 {% schema %}
 {
-  "name": "t:general.custom_section",
-  "class": "section-kernel",
+  "name": "t:general.rich_text",
+  "class": "section-rich--text",
   "enabled_on": { "templates": ["*"] },
-  "blocks": [{ "type": "@theme" }],
+  "blocks": [
+    { "type": "eyebrow" },
+    { "type": "heading" },
+    { "type": "text" }
+  ],
   "settings": [
     {
       "type": "header",
@@ -235,7 +250,7 @@
   ],
   "presets": [
     {
-      "name": "t:general.custom_section",
+      "name": "t:general.rich_text",
       "settings": {
         "section_width": "page_width",
         "alignment": "left",
@@ -243,7 +258,35 @@
         "alignment_mobile": "left",
         "color_scheme": "scheme-1",
         "customize_mobile_padding": false
-      }
+      },
+      "blocks": [
+        {
+          "type": "eyebrow",
+          "id": "eyebrow",
+          "static": true,
+          "settings": {
+            "text": "<p>New arrivals</p>"
+          }
+        },
+        {
+          "type": "heading",
+          "id": "heading",
+          "static": true,
+          "settings": {
+            "text": "<p>Build your base theme</p>",
+            "heading_size": "lg",
+            "html_tag": "h2"
+          }
+        },
+        {
+          "type": "text",
+          "id": "text",
+          "static": true,
+          "settings": {
+            "text": "<p>Use this section to test the shared Section Kernel, global layout width, color scheme, background and responsive padding.</p>"
+          }
+        }
+      ]
     }
   ]
 }

@@ -1,0 +1,185 @@
+{% doc %}
+  Renders the product variant picker using the global Variant picker and
+  Swatches settings. Both presentations submit one resolved variant id.
+
+  @param {product} product - Product whose options and variants should be rendered
+  @param {variant} current_variant - Selected or first available variant
+  @param {string} [section_id] - Section identifier used to namespace controls
+  @param {string} [media_gallery_id] - Id of the related product media gallery
+
+  @example
+  {% render 'variant-picker', product: product, current_variant: current_variant, section_id: section.id %}
+{% enddoc %}
+
+{% liquid
+  assign picker_type = 'dropdown'
+  if settings.variant_picker_style == 'button' or settings.variant_picker_style == 'buttons'
+    assign picker_type = 'button'
+  endif
+
+  assign swatch_style = 'color'
+  if settings.swatch_style == 'variant_image'
+    assign swatch_style = 'variant_image'
+  endif
+  assign swatch_selected_style = 'underline'
+  if settings.swatch_selected_style == 'border'
+    assign swatch_selected_style = 'border'
+  endif
+
+  assign picker_scope = section_id | default: product.id
+  assign picker_id = 'VariantPicker-' | append: picker_scope
+  assign gallery_id = 'ProductMedia-' | append: picker_scope
+  if media_gallery_id != blank
+    assign gallery_id = media_gallery_id
+  endif
+  assign sold_out_label = 'products.sold_out' | t
+  assign unavailable_label = 'products.unavailable' | t
+  assign current_variant_id = current_variant.id | default: ''
+  assign only_selected_media = false
+  if settings.variant_picker_only_selected_media
+    assign only_selected_media = true
+  endif
+%}
+
+<variant-picker
+  id="{{ picker_id }}"
+  class="variant-picker variant-picker--{{ picker_type }}"
+  data-product-variant-picker
+  data-section-id="{{ picker_scope }}"
+  data-media-gallery-id="{{ gallery_id }}"
+  data-only-selected-media="{{ only_selected_media }}"
+  data-current-variant-id="{{ current_variant_id }}"
+  data-sold-out-label="{{ sold_out_label | escape }}"
+  data-unavailable-label="{{ unavailable_label | escape }}"
+>
+  <input type="hidden" name="id" value="{{ current_variant_id }}" data-variant-id>
+  <script type="application/json" data-variant-data>{{ product.variants | json }}</script>
+
+  {% for product_option in product.options_with_values %}
+    {% liquid
+      assign option_index = forloop.index0
+      assign option_id = picker_id | append: '-option-' | append: option_index
+      assign option_uses_swatches = false
+      for option_value in product_option.values
+        if option_value.swatch != blank
+          assign option_uses_swatches = true
+          break
+        endif
+      endfor
+      if option_uses_swatches == false and product_option.name == 'Color'
+        assign option_uses_swatches = true
+      endif
+    %}
+
+    <fieldset class="variant-picker__option{% if option_uses_swatches %} variant-picker__option--swatches{% endif %}" data-option-index="{{ option_index }}">
+      <legend id="{{ option_id }}-label" class="variant-picker__label">
+        {{ product_option.name | escape }}
+      </legend>
+
+      {% if picker_type == 'dropdown' %}
+        <select
+          class="variant-picker__control variant-picker__control--select form__control"
+          id="{{ option_id }}"
+          data-option-control
+          data-option-index="{{ option_index }}"
+          aria-labelledby="{{ option_id }}-label"
+        >
+          {% for option_value in product_option.values %}
+            {% liquid
+              assign value_state = 'available'
+              unless option_value.available
+                assign value_state = 'unavailable'
+                if option_value.variant != blank
+                  assign value_state = 'sold-out'
+                endif
+              endunless
+            %}
+            <option
+              value="{{ option_value.name | escape }}"
+              data-label="{{ option_value.name | escape }}"
+              data-option-control
+              data-option-index="{{ option_index }}"
+              data-variant-state="{{ value_state }}"
+              {% if option_value.selected %}
+                selected
+              {% endif %}
+              {% unless option_value.available or option_value.selected %}
+                disabled
+              {% endunless %}
+            >
+              {{ option_value.name | escape }}{% if value_state == 'unavailable' %} - {{ unavailable_label | escape }}{% elsif value_state == 'sold-out' %} - {{ sold_out_label | escape }}{% endif %}
+            </option>
+          {% endfor %}
+        </select>
+      {% else %}
+        <div
+          class="variant-picker__controls{% if option_uses_swatches %} swatches swatches--selected-{{ swatch_selected_style }}{% endif %}"
+          role="radiogroup"
+          aria-labelledby="{{ option_id }}-label"
+        >
+          {% for option_value in product_option.values %}
+            {% liquid
+              assign value_state = 'available'
+              unless option_value.available
+                assign value_state = 'unavailable'
+                if option_value.variant != blank
+                  assign value_state = 'sold-out'
+                endif
+              endunless
+              assign value_input_id = option_id | append: '-' | append: forloop.index0
+            %}
+            <div
+              class="variant-picker__choice{% if option_uses_swatches %} swatches__item{% endif %}{% if value_state == 'unavailable' %} variant-picker__choice--unavailable{% elsif value_state == 'sold-out' %} variant-picker__choice--sold-out{% endif %}"
+              data-option-value="{{ option_value.name | escape }}"
+              data-variant-state="{{ value_state }}"
+            >
+              <input
+                id="{{ value_input_id }}"
+                class="variant-picker__control variant-picker__control--radio{% if option_uses_swatches %} swatch__input{% endif %}"
+                type="radio"
+                name="{{ option_id }}"
+                value="{{ option_value.name | escape }}"
+                data-option-control
+                data-option-index="{{ option_index }}"
+                {% if option_value.selected %}
+                  checked
+                {% endif %}
+                {% unless option_value.available or option_value.selected %}
+                  disabled
+                {% endunless %}
+              >
+              <label
+                class="variant-picker__button{% if option_uses_swatches %} swatch__label{% endif %}{% if value_state == 'unavailable' %} variant-picker__button--unavailable{% elsif value_state == 'sold-out' %} variant-picker__button--sold-out{% endif %}"
+                for="{{ value_input_id }}"
+                {% if value_state == 'unavailable' %}
+                  aria-disabled="true"
+                {% endif %}
+              >
+                {% if option_uses_swatches %}
+                  {% render 'swatch',
+                    value: option_value.name,
+                    swatch: option_value.swatch,
+                    image: option_value.variant.featured_image,
+                    style: swatch_style,
+                    class: 'variant-picker__swatch',
+                    decorative: true
+                  %}
+                {% endif %}
+                <span class="variant-picker__label{% if option_uses_swatches %} visually-hidden{% endif %}">{{ option_value.name | escape }}</span>
+                <span
+                  class="variant-picker__status{% if option_uses_swatches %} visually-hidden{% endif %}"
+                  data-variant-status
+                  {% if value_state == 'available' %}
+                    hidden
+                  {% endif %}
+                >
+                  {% if value_state == 'sold-out' %}{{ sold_out_label | escape }}{% elsif value_state == 'unavailable' %}{{ unavailable_label | escape }}{% endif %}
+                </span>
+              </label>
+            </div>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </fieldset>
+  {% endfor %}
+</variant-picker>

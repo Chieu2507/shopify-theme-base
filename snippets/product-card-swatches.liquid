@@ -1,0 +1,80 @@
+{% doc %}
+  Renders product option swatches for the Product cards surface.
+
+  The standard Shopify option-value swatch object determines the option when
+  available. A legacy `Color` option name remains a data fallback only, so a
+  merchant never loses a useful variant link while migrating product data.
+
+  @param {product} product - Product whose option values should be rendered
+
+  @example
+  {% render 'product-card-swatches', product: product %}
+{% enddoc %}
+
+{% liquid
+  assign swatch_option = blank
+  for option in product.options_with_values
+    for option_value in option.values
+      if option_value.swatch != blank
+        assign swatch_option = option
+        break
+      endif
+    endfor
+    if swatch_option != blank
+      break
+    endif
+  endfor
+
+  if swatch_option == blank
+    for option in product.options_with_values
+      if option.name == 'Color'
+        assign swatch_option = option
+        break
+      endif
+    endfor
+  endif
+
+  assign swatch_limit = settings.product_card_swatch_limit | default: 4
+  assign swatch_type = settings.product_card_swatch_type | default: settings.swatch_style | default: 'color'
+  unless swatch_type == 'variant_image'
+    assign swatch_type = 'color'
+  endunless
+  assign selected_style = settings.product_card_swatch_selected_style | default: 'border'
+  unless selected_style == 'underline'
+    assign selected_style = 'border'
+  endunless
+%}
+
+{% if swatch_option != blank and swatch_option.values != blank %}
+  <div class="swatches swatches--selected-{{ selected_style }} product-card__swatches" data-product-card-swatches>
+    {% for option_value in swatch_option.values limit: swatch_limit %}
+      {% liquid
+        assign swatch_variant = option_value.variant
+        assign swatch_selected = option_value.selected
+        assign swatch_url = option_value.product_url | default: product.url
+        if option_value.product_url == blank and swatch_variant != blank
+          assign swatch_url = product.url | append: '?variant=' | append: swatch_variant.id
+        endif
+      %}
+      <a
+        class="product-card__swatch-link{% if swatch_selected %} product-card__swatch-link--selected{% endif %}"
+        href="{{ swatch_url }}"
+        aria-label="{{ product.title | escape }}: {{ option_value.name | escape }}"
+        {% if swatch_selected %}
+          aria-current="true"
+          data-swatch-selected
+        {% endif %}
+        data-product-card-swatch
+      >
+        {% render 'swatch',
+          value: option_value.name,
+          swatch: option_value.swatch,
+          image: swatch_variant.featured_image,
+          style: swatch_type,
+          class: 'product-card__swatch',
+          decorative: true
+        %}
+      </a>
+    {% endfor %}
+  </div>
+{% endif %}

@@ -1,0 +1,129 @@
+{% doc %}
+  Renders an accessible form field using the global Form settings.
+
+  @param {string} id - Unique field id
+  @param {string} name - Form field name
+  @param {string} label - Visible label
+  @param {string} [type] - Input type, defaults to text
+  @param {string} [control] - Control type: input, textarea, or select
+  @param [options] - Select options with value and label properties
+  @param {string} [selected] - Selected value for a select control
+  @param {string} [value] - Current value
+  @param {string} [placeholder] - Optional placeholder
+  @param {string} [helper_text] - Optional helper text
+  @param {string} [error_text] - Optional error text
+  @param {string} [autocomplete] - Optional autocomplete value
+  @param {boolean} [required] - Whether the field is required
+  @param {boolean} [disabled] - Whether the field is disabled
+
+  @example
+  {% render 'form-field', id: 'search-q', name: 'q', label: 'Search', type: 'search' %}
+{% enddoc %}
+
+{% liquid
+  assign control_type = control | default: 'input'
+  assign input_type = type | default: 'text'
+  assign field_classes = 'form__field'
+  if error_text != blank
+    assign field_classes = field_classes | append: ' form__field--has-error'
+  endif
+
+  assign describedby = ''
+  if helper_text != blank
+    assign describedby = id | append: '-help'
+  endif
+  if error_text != blank
+    if describedby != blank
+      assign describedby = describedby | append: ' '
+    endif
+    assign describedby = describedby | append: id | append: '-error'
+  endif
+%}
+
+<div class="{{ field_classes }}">
+  <label class="form__label" for="{{ id }}">{{ label | escape }}</label>
+
+  {% case control_type %}
+    {% when 'textarea' %}
+      <textarea
+        class="form__control form__control--textarea{% if error_text != blank %} form__control--error{% endif %}"
+        id="{{ id }}"
+        name="{{ name }}"
+        {% if placeholder != blank %}
+          placeholder="{{ placeholder | escape }}"
+        {% endif %}
+        {% if autocomplete != blank %}
+          autocomplete="{{ autocomplete | escape }}"
+        {% endif %}
+        {% if describedby != blank %}
+          aria-describedby="{{ describedby }}"
+        {% endif %}
+        {% if error_text != blank %}
+          aria-invalid="true"
+        {% endif %}
+        {% if required %}
+          required
+        {% endif %}
+        {% if disabled %}
+          disabled
+        {% endif %}
+      >{{ value | escape }}</textarea>
+    {% when 'select' %}
+      <select
+        class="form__control form__control--select{% if error_text != blank %} form__control--error{% endif %}"
+        id="{{ id }}"
+        name="{{ name }}"
+        {% if describedby != blank %}
+          aria-describedby="{{ describedby }}"
+        {% endif %}
+        {% if error_text != blank %}
+          aria-invalid="true"
+        {% endif %}
+        {% if required %}
+          required
+        {% endif %}
+        {% if disabled %}
+          disabled
+        {% endif %}
+      >
+        {% for option in options %}
+          <option value="{{ option.value | escape }}"{% if option.value == selected %} selected{% endif %}>
+            {{ option.label | escape }}
+          </option>
+        {% endfor %}
+      </select>
+    {% else %}
+      <input
+        class="form__control form__control--input{% if error_text != blank %} form__control--error{% endif %}"
+        id="{{ id }}"
+        name="{{ name }}"
+        type="{{ input_type | escape }}"
+        value="{{ value | escape }}"
+        {% if placeholder != blank %}
+          placeholder="{{ placeholder | escape }}"
+        {% endif %}
+        {% if autocomplete != blank %}
+          autocomplete="{{ autocomplete | escape }}"
+        {% endif %}
+        {% if describedby != blank %}
+          aria-describedby="{{ describedby }}"
+        {% endif %}
+        {% if error_text != blank %}
+          aria-invalid="true"
+        {% endif %}
+        {% if required %}
+          required
+        {% endif %}
+        {% if disabled %}
+          disabled
+        {% endif %}
+      >
+  {% endcase %}
+
+  {% if helper_text != blank %}
+    <p class="form__helper" id="{{ id }}-help">{{ helper_text | escape }}</p>
+  {% endif %}
+  {% if error_text != blank %}
+    <p class="form__error" id="{{ id }}-error" role="alert">{{ error_text | escape }}</p>
+  {% endif %}
+</div>

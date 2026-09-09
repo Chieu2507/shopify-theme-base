@@ -1,0 +1,57 @@
+{% doc %}
+  Resolves and renders the product status badges for a product card.
+
+  Sold-out status takes precedence over sale status. Empty labels and disabled
+  badge states are omitted.
+
+  @param {product} product - Product represented by the card
+  @param {boolean} [show_sale_badge] - Whether sale status may be displayed
+  @param {boolean} [show_sold_out_badge] - Whether sold-out status may be displayed
+
+  @example
+  {% render 'product-badges', product: product, show_sale_badge: true, show_sold_out_badge: true %}
+{% enddoc %}
+
+{% liquid
+  assign sold_out_label = 'products.sold_out' | t
+  assign sale_label = blank
+  assign sale_status = false
+  if product.compare_at_price_max > product.price
+    assign sale_status = true
+    assign sale_discount = product.compare_at_price_max | minus: product.price
+    assign sale_percentage = sale_discount | times: 100.0 | divided_by: product.compare_at_price_max | round
+    case settings.badge_sale_type
+      when 'percentage'
+        assign sale_label = 'products.sale_percentage' | t: percentage: sale_percentage
+      when 'percentage_only'
+        assign sale_label = 'products.sale_percentage_only' | t: percentage: sale_percentage
+      when 'amount_saved'
+        assign sale_amount = sale_discount | money
+        assign sale_label = 'products.sale_amount_saved' | t: amount: sale_amount
+      else
+        assign sale_label = 'products.sale' | t
+    endcase
+  endif
+
+  assign sold_out_status = false
+  if product.available == false
+    assign sold_out_status = true
+  endif
+
+  assign has_visible_badge = false
+  if sold_out_status and show_sold_out_badge != false
+    assign has_visible_badge = true
+  elsif sale_status and show_sale_badge != false
+    assign has_visible_badge = true
+  endif
+%}
+
+{% if has_visible_badge %}
+  <div class="product-card__badges">
+    {% if sold_out_status and show_sold_out_badge != false %}
+      {% render 'badge', text: sold_out_label, tone: 'sold-out' %}
+    {% elsif sale_status and show_sale_badge != false %}
+      {% render 'badge', text: sale_label, tone: 'sale' %}
+    {% endif %}
+  </div>
+{% endif %}

@@ -1,0 +1,235 @@
+{% doc %}
+  Renders a reusable product card for collection, search and recommendation
+  surfaces using the global Product cards settings.
+
+  @param {product} product - Product to render
+  @param {string} [class] - Additional classes
+
+  @example
+  {% render 'product-card', product: product %}
+{% enddoc %}
+
+{% liquid
+  assign card_style = settings.product_card_style | default: 'standard'
+  unless card_style == 'card'
+    assign card_style = 'standard'
+  endunless
+
+  assign card_ratio = settings.product_card_ratio | default: 'natural'
+  unless card_ratio == 'natural' or card_ratio == 'square' or card_ratio == 'portrait' or card_ratio == 'landscape'
+    assign card_ratio = 'natural'
+  endunless
+
+  assign card_alignment = settings.product_card_alignment | default: 'left'
+  unless card_alignment == 'left' or card_alignment == 'center' or card_alignment == 'right'
+    assign card_alignment = 'left'
+  endunless
+
+  assign title_line_limit = settings.product_card_title_line_limit | default: 'none'
+  unless title_line_limit == 'none' or title_line_limit == '1' or title_line_limit == '2' or title_line_limit == '3'
+    assign title_line_limit = 'none'
+  endunless
+
+  assign card_color_scheme = settings.product_card_color_scheme
+  if settings.product_card_color_scheme.id != blank
+    assign card_color_scheme = settings.product_card_color_scheme.id
+  endif
+  assign card_color_scheme = card_color_scheme | default: 'scheme-1'
+
+  assign quick_add_color_scheme = settings.product_card_quick_add_color_scheme
+  if settings.product_card_quick_add_color_scheme.id != blank
+    assign quick_add_color_scheme = settings.product_card_quick_add_color_scheme.id
+  endif
+  assign quick_add_color_scheme = quick_add_color_scheme | default: card_color_scheme
+
+  assign quick_add_enabled = true
+  if settings.product_card_quick_add_enabled == false
+    assign quick_add_enabled = false
+  endif
+  assign quick_add_mobile = true
+  if settings.product_card_quick_add_mobile == false
+    assign quick_add_mobile = false
+  endif
+  assign quick_add_style = settings.product_card_quick_add_style | default: 'text'
+  unless quick_add_style == 'icon'
+    assign quick_add_style = 'text'
+  endunless
+  assign quick_add_full_width = true
+  if settings.product_card_quick_add_full_width == false
+    assign quick_add_full_width = false
+  endif
+
+  assign quick_view_enabled = true
+  if settings.product_card_quick_view_enabled == false
+    assign quick_view_enabled = false
+  endif
+  assign quick_view_mobile = false
+  if settings.product_card_quick_view_mobile
+    assign quick_view_mobile = true
+  endif
+
+  assign secondary_image_enabled = true
+  if settings.product_card_secondary == false
+    assign secondary_image_enabled = false
+  endif
+  assign show_sale_badge = true
+  if settings.product_card_show_sale_badge == false
+    assign show_sale_badge = false
+  endif
+  assign show_sold_out_badge = true
+  if settings.product_card_show_sold_out_badge == false
+    assign show_sold_out_badge = false
+  endif
+  assign show_vendor = false
+  if settings.product_card_vendor
+    assign show_vendor = true
+  endif
+  assign show_type = false
+  if settings.product_card_type
+    assign show_type = true
+  endif
+  assign swatches_enabled = true
+  if settings.product_card_swatches_enabled == false
+    assign swatches_enabled = false
+  endif
+  assign swatch_position = settings.product_card_swatch_position | default: 'bottom'
+  unless swatch_position == 'top'
+    assign swatch_position = 'bottom'
+  endunless
+  assign swatch_selected_style = settings.product_card_swatch_selected_style | default: 'border'
+  unless swatch_selected_style == 'underline'
+    assign swatch_selected_style = 'border'
+  endunless
+
+  assign image_width = 800
+  assign image_height = blank
+  case card_ratio
+    when 'square'
+      assign image_height = 800
+    when 'portrait'
+      assign image_height = 1000
+    when 'landscape'
+      assign image_height = 600
+  endcase
+
+  assign card_class = 'product-card product-card--' | append: card_style
+  assign card_class = card_class | append: ' product-card--ratio-' | append: card_ratio
+  assign card_class = card_class | append: ' product-card--align-' | append: card_alignment
+  assign card_class = card_class | append: ' product-card--swatches-' | append: swatch_position
+  assign card_class = card_class | append: ' product-card--swatches-selected-' | append: swatch_selected_style
+  if title_line_limit != 'none'
+    assign card_class = card_class | append: ' product-card--title-limit-' | append: title_line_limit
+  endif
+  if quick_add_mobile
+    assign card_class = card_class | append: ' product-card--quick-add-mobile'
+  endif
+  if quick_view_mobile
+    assign card_class = card_class | append: ' product-card--quick-view-mobile'
+  endif
+  assign card_class = card_class | append: ' ' | append: card_color_scheme
+  if class != blank
+    assign card_class = card_class | append: ' ' | append: class
+  endif
+  assign secondary_image = product.images[1]
+  assign current_variant = product.selected_or_first_available_variant
+  assign quick_add_label = 'products.quick_add' | t
+  assign quick_view_label = 'products.quick_view' | t
+%}
+
+<article class="{{ card_class | strip }}" data-product-card>
+  <div class="product-card__media">
+    <a class="product-card__image-link" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+      {% if product.featured_image %}
+        {% render 'image',
+          image: product.featured_image,
+          class: 'product-card__image',
+          width: image_width,
+          height: image_height,
+          crop: 'center'
+        %}
+        {% if secondary_image_enabled and secondary_image %}
+          {% render 'image',
+            image: secondary_image,
+            class: 'product-card__secondary-image',
+            width: image_width,
+            height: image_height,
+            crop: 'center'
+          %}
+        {% endif %}
+      {% else %}
+        {{ 'product-1' | placeholder_svg_tag: 'product-card__placeholder' }}
+      {% endif %}
+    </a>
+
+    {% render 'product-badges',
+      product: product,
+      show_sale_badge: show_sale_badge,
+      show_sold_out_badge: show_sold_out_badge
+    %}
+
+    {% if quick_add_enabled and product.available and current_variant != blank %}
+      <div
+        class="product-card__quick-add{% if quick_add_full_width %} product-card__quick-add--full{% endif %} {{ quick_add_color_scheme }}"
+        data-product-card-quick-add-wrapper
+      >
+        <form action="{{ routes.cart_add_url }}" method="post" data-product-card-quick-add>
+          <input type="hidden" name="id" value="{{ current_variant.id }}">
+          {% if quick_add_style == 'icon' %}
+            {% render 'theme-button',
+              label: quick_add_label,
+              type: 'submit',
+              variant: 'primary',
+              icon: 'cart',
+              class: 'product-card__quick-add-button btn--icon'
+            %}
+          {% else %}
+            {% render 'theme-button',
+              label: quick_add_label,
+              type: 'submit',
+              variant: 'primary',
+              class: 'product-card__quick-add-button'
+            %}
+          {% endif %}
+        </form>
+      </div>
+    {% endif %}
+
+    {% if quick_view_enabled %}
+      <a
+        class="product-card__quick-view btn btn--tertiary"
+        href="{{ product.url }}"
+        aria-label="{{ quick_view_label }}: {{ product.title | escape }}"
+        data-product-card-quick-view
+      >
+        {{ quick_view_label | escape }}
+      </a>
+    {% endif %}
+  </div>
+
+  <div class="product-card__content">
+    {% if swatches_enabled and swatch_position == 'top' %}
+      {% render 'product-card-swatches', product: product %}
+    {% endif %}
+
+    <div class="product-card__details">
+      {% if show_vendor and product.vendor != blank %}
+        <p class="product-card__vendor body-sm">{{ product.vendor | escape }}</p>
+      {% endif %}
+      {% if show_type and product.type != blank %}
+        <p class="product-card__type body-sm">{{ product.type | escape }}</p>
+      {% endif %}
+      <h2 class="product-card__title">
+        <a class="product-card__title-link" href="{{ product.url }}">
+          {{ product.title | escape }}
+        </a>
+      </h2>
+      {% if product.price != blank %}
+        {% render 'price', item: product, context: 'product-card', class: 'product-card__price' %}
+      {% endif %}
+    </div>
+
+    {% if swatches_enabled and swatch_position == 'bottom' %}
+      {% render 'product-card-swatches', product: product %}
+    {% endif %}
+  </div>
+</article>
