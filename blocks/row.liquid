@@ -1,0 +1,482 @@
+{% doc %}
+  Renders a responsive row that manages nested column blocks.
+
+  The row owns column count, horizontal distribution, gap, and
+  padding. Column blocks own their width mode and the content inside them.
+
+  @example
+  {% content_for 'block', type: 'row', id: 'row' %}
+{% enddoc %}
+
+{% liquid
+  assign row_columns_desktop = block.settings.columns_desktop | default: '3'
+  case row_columns_desktop
+    when '2'
+      assign row_columns_desktop = 2
+    when '3'
+      assign row_columns_desktop = 3
+    when '4'
+      assign row_columns_desktop = 4
+    when 'custom'
+      assign row_columns_desktop = block.settings.columns_desktop_custom | default: 3 | plus: 0
+    else
+      assign row_columns_desktop = 3
+  endcase
+  if row_columns_desktop < 1 or row_columns_desktop > 6
+    assign row_columns_desktop = 3
+  endif
+
+  assign row_columns_tablet = block.settings.columns_tablet | default: '2'
+  case row_columns_tablet
+    when '1'
+      assign row_columns_tablet = 1
+    when '2'
+      assign row_columns_tablet = 2
+    when '3'
+      assign row_columns_tablet = 3
+    when '4'
+      assign row_columns_tablet = 4
+    when 'custom'
+      assign row_columns_tablet = block.settings.columns_tablet_custom | default: 2 | plus: 0
+    else
+      assign row_columns_tablet = 2
+  endcase
+  if row_columns_tablet < 1 or row_columns_tablet > 6
+    assign row_columns_tablet = 2
+  endif
+
+  assign row_columns_mobile = block.settings.columns_mobile | default: '1'
+  case row_columns_mobile
+    when '1'
+      assign row_columns_mobile = 1
+    when '2'
+      assign row_columns_mobile = 2
+    when '3'
+      assign row_columns_mobile = 3
+    when 'custom'
+      assign row_columns_mobile = block.settings.columns_mobile_custom | default: 1 | plus: 0
+    else
+      assign row_columns_mobile = 1
+  endcase
+  if row_columns_mobile < 1 or row_columns_mobile > 6
+    assign row_columns_mobile = 1
+  endif
+
+  assign row_gap_desktop = block.settings.gap_desktop | default: 24 | plus: 0
+  if row_gap_desktop < 0 or row_gap_desktop > 100
+    assign row_gap_desktop = 24
+  endif
+  assign row_gap_mobile = block.settings.gap_mobile | default: 16 | plus: 0
+  if row_gap_mobile < 0 or row_gap_mobile > 100
+    assign row_gap_mobile = 16
+  endif
+
+  assign row_alignment = 'flex-start'
+  case block.settings.alignment
+    when 'middle'
+      assign row_alignment = 'center'
+    when 'bottom'
+      assign row_alignment = 'flex-end'
+  endcase
+
+  assign row_alignment_mobile = row_alignment
+  if block.settings.customize_mobile_alignment
+    case block.settings.alignment_mobile
+      when 'middle'
+        assign row_alignment_mobile = 'center'
+      when 'bottom'
+        assign row_alignment_mobile = 'flex-end'
+      when 'top'
+        assign row_alignment_mobile = 'flex-start'
+    endcase
+  endif
+
+  assign padding_top = block.settings.padding_top | default: 0 | plus: 0
+  assign padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
+  assign padding_left = block.settings.padding_left | default: 0 | plus: 0
+  assign padding_right = block.settings.padding_right | default: 0 | plus: 0
+  assign padding_top_mobile = block.settings.padding_top_mobile | default: 0 | plus: 0
+  assign padding_bottom_mobile = block.settings.padding_bottom_mobile | default: 0 | plus: 0
+  assign padding_left_mobile = block.settings.padding_left_mobile | default: 0 | plus: 0
+  assign padding_right_mobile = block.settings.padding_right_mobile | default: 0 | plus: 0
+
+  if padding_top < 0 or padding_top > 100
+    assign padding_top = 0
+  endif
+  if padding_bottom < 0 or padding_bottom > 100
+    assign padding_bottom = 0
+  endif
+  if padding_left < 0 or padding_left > 100
+    assign padding_left = 0
+  endif
+  if padding_right < 0 or padding_right > 100
+    assign padding_right = 0
+  endif
+  if padding_top_mobile < 0 or padding_top_mobile > 100
+    assign padding_top_mobile = 0
+  endif
+  if padding_bottom_mobile < 0 or padding_bottom_mobile > 100
+    assign padding_bottom_mobile = 0
+  endif
+  if padding_left_mobile < 0 or padding_left_mobile > 100
+    assign padding_left_mobile = 0
+  endif
+  if padding_right_mobile < 0 or padding_right_mobile > 100
+    assign padding_right_mobile = 0
+  endif
+
+  assign row_class = 'block-row block-row--desktop-columns-' | append: row_columns_desktop
+  assign row_class = row_class | append: ' block-row--tablet-columns-' | append: row_columns_tablet
+  assign row_class = row_class | append: ' block-row--mobile-columns-' | append: row_columns_mobile
+%}
+
+{% capture row_style %}
+  {% if row_columns_desktop != 3 %}--row-columns-desktop: {{ row_columns_desktop }};{% endif %}
+  {% if row_columns_tablet != 2 %}--row-columns-tablet: {{ row_columns_tablet }};{% endif %}
+  {% if row_columns_mobile != 1 %}--row-columns-mobile: {{ row_columns_mobile }};{% endif %}
+  {% if row_gap_desktop != 24 %}--row-gap-desktop: {{ row_gap_desktop }}px;{% endif %}
+  {% if row_gap_mobile != 16 %}--row-gap-mobile: {{ row_gap_mobile }}px;{% endif %}
+  {% if row_alignment != 'flex-start' %}--row-align-items: {{ row_alignment }};{% endif %}
+  {% if block.settings.customize_mobile_alignment and row_alignment_mobile != row_alignment %}--row-align-items-mobile: {{ row_alignment_mobile }};{% endif %}
+  {% if padding_top != 0 %}--row-padding-top: {{ padding_top }}px;{% endif %}
+  {% if padding_bottom != 0 %}--row-padding-bottom: {{ padding_bottom }}px;{% endif %}
+  {% if padding_left != 0 %}--row-padding-left: {{ padding_left }}px;{% endif %}
+  {% if padding_right != 0 %}--row-padding-right: {{ padding_right }}px;{% endif %}
+  {% if block.settings.customize_mobile_padding %}
+    {% if padding_top_mobile != padding_top %}--row-padding-top-mobile: {{ padding_top_mobile }}px;{% endif %}
+    {% if padding_bottom_mobile != padding_bottom %}--row-padding-bottom-mobile: {{ padding_bottom_mobile }}px;{% endif %}
+    {% if padding_left_mobile != padding_left %}--row-padding-left-mobile: {{ padding_left_mobile }}px;{% endif %}
+    {% if padding_right_mobile != padding_right %}--row-padding-right-mobile: {{ padding_right_mobile }}px;{% endif %}
+  {% endif %}
+{% endcapture %}
+{% assign row_style = row_style | strip %}
+
+<div
+  class="{{ row_class }}"
+  {% if row_style != blank %}style="{{ row_style }}"{% endif %}
+  {{ block.shopify_attributes }}
+>
+  {% content_for 'blocks' %}
+</div>
+
+{% stylesheet %}
+  .block-row {
+    --row-columns: var(--row-columns-desktop, 3);
+    --row-gap: var(--row-gap-desktop, 24px);
+    display: flex;
+    flex-direction: row;
+    flex-wrap: nowrap;
+    align-items: var(--row-align-items, flex-start);
+    justify-content: flex-start;
+    gap: var(--row-gap);
+    width: 100%;
+    min-width: 0;
+    padding-top: var(--row-padding-top, 0px);
+    padding-right: var(--row-padding-right, 0px);
+    padding-bottom: var(--row-padding-bottom, 0px);
+    padding-left: var(--row-padding-left, 0px);
+  }
+
+  .block-row > * {
+    min-width: min-content;
+    max-width: 100%;
+  }
+
+  .block-row > .block-column--width-custom {
+    min-width: 0;
+  }
+
+  @media (min-width: 768px) and (max-width: 1149.98px) {
+    .block-row {
+      --row-columns: var(--row-columns-tablet, 2);
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .block-row {
+      --row-columns: var(--row-columns-mobile, 1);
+      --row-gap: var(--row-gap-mobile, 16px);
+      align-items: var(--row-align-items-mobile, var(--row-align-items, flex-start));
+      padding-top: var(--row-padding-top-mobile, var(--row-padding-top, 0px));
+      padding-right: var(--row-padding-right-mobile, var(--row-padding-right, 0px));
+      padding-bottom: var(--row-padding-bottom-mobile, var(--row-padding-bottom, 0px));
+      padding-left: var(--row-padding-left-mobile, var(--row-padding-left, 0px));
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.row",
+  "tag": null,
+  "blocks": [{ "type": "_column" }],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "columns_desktop",
+      "label": "t:labels.desktop_columns",
+      "options": [
+        { "value": "2", "label": "t:options.row_columns.two" },
+        { "value": "3", "label": "t:options.row_columns.three" },
+        { "value": "4", "label": "t:options.row_columns.four" },
+        { "value": "custom", "label": "t:options.row_columns.custom" }
+      ],
+      "default": "3"
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop_custom",
+      "label": "t:labels.custom_columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 3,
+      "visible_if": "{{ block.settings.columns_desktop == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "columns_tablet",
+      "label": "t:labels.tablet_columns",
+      "options": [
+        { "value": "1", "label": "t:options.row_columns.one" },
+        { "value": "2", "label": "t:options.row_columns.two" },
+        { "value": "3", "label": "t:options.row_columns.three" },
+        { "value": "4", "label": "t:options.row_columns.four" },
+        { "value": "custom", "label": "t:options.row_columns.custom" }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "range",
+      "id": "columns_tablet_custom",
+      "label": "t:labels.custom_columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 2,
+      "visible_if": "{{ block.settings.columns_tablet == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:labels.mobile_columns",
+      "options": [
+        { "value": "1", "label": "t:options.row_columns.one" },
+        { "value": "2", "label": "t:options.row_columns.two" },
+        { "value": "3", "label": "t:options.row_columns.three" },
+        { "value": "custom", "label": "t:options.row_columns.custom" }
+      ],
+      "default": "1"
+    },
+    {
+      "type": "range",
+      "id": "columns_mobile_custom",
+      "label": "t:labels.custom_columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 1,
+      "visible_if": "{{ block.settings.columns_mobile == 'custom' }}"
+    },
+    {
+      "type": "range",
+      "id": "gap_desktop",
+      "label": "t:labels.desktop_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "gap_mobile",
+      "label": "t:labels.mobile_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "select",
+      "id": "alignment",
+      "label": "t:labels.alignment",
+      "options": [
+        { "value": "top", "label": "t:options.vertical_alignment.top" },
+        { "value": "middle", "label": "t:options.vertical_alignment.middle" },
+        { "value": "bottom", "label": "t:options.vertical_alignment.bottom" }
+      ],
+      "default": "top"
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_alignment",
+      "label": "t:labels.customize_mobile_alignment",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "alignment_mobile",
+      "label": "t:labels.mobile_alignment",
+      "options": [
+        { "value": "top", "label": "t:options.vertical_alignment.top" },
+        { "value": "middle", "label": "t:options.vertical_alignment.middle" },
+        { "value": "bottom", "label": "t:options.vertical_alignment.bottom" }
+      ],
+      "default": "top",
+      "visible_if": "{{ block.settings.customize_mobile_alignment }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:labels.top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:labels.bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_left",
+      "label": "t:labels.left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_right",
+      "label": "t:labels.right_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_padding",
+      "label": "t:labels.customize_mobile_padding",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "padding_top_mobile",
+      "label": "t:labels.mobile_top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "label": "t:labels.mobile_bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_left_mobile",
+      "label": "t:labels.mobile_left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_right_mobile",
+      "label": "t:labels.mobile_right_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.row",
+      "category": "t:general.layout",
+      "settings": {
+        "columns_desktop": "3",
+        "columns_tablet": "2",
+        "columns_mobile": "1",
+        "gap_desktop": 24,
+        "gap_mobile": 16,
+        "alignment": "top",
+        "customize_mobile_alignment": false,
+        "alignment_mobile": "top",
+        "customize_mobile_padding": false
+      },
+      "blocks": [
+        {
+          "type": "_column",
+          "blocks": [
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Column one</p>"
+              }
+            }
+          ]
+        },
+        {
+          "type": "_column",
+          "blocks": [
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Column two</p>"
+              }
+            }
+          ]
+        },
+        {
+          "type": "_column",
+          "blocks": [
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Column three</p>"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

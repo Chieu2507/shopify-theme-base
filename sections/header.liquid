@@ -1,174 +1,267 @@
 {% liquid
-  assign logo_width = settings.logo_width
-  if logo_width == blank
-    assign logo_width = 180
+  assign header_scheme = section.settings.color_scheme | default: 'scheme-1'
+  if section.settings.color_scheme.id != blank
+    assign header_scheme = section.settings.color_scheme.id
   endif
-  assign logo_width_mobile = settings.logo_width_mobile
-  if logo_width_mobile == blank
-    assign logo_width_mobile = 140
+  assign header_scheme = header_scheme | default: 'scheme-1' | handleize
+
+  assign header_container_width = 'page-width'
+  assign header_root_class = 'header section-color-scope ' | append: header_scheme
+  if section.settings.section_width == 'full_width'
+    assign header_container_width = 'full-width'
   endif
-  assign logo_sizes = '(min-width: 768px) ' | append: logo_width | append: 'px, ' | append: logo_width_mobile | append: 'px'
-  assign logo_image = settings.logo
-  assign logo_class = 'site-logo'
 
   if section.settings.header_overlay
-    assign logo_class = logo_class | append: ' site-logo--transparent'
-    if settings.logo_transparent != blank
-      assign logo_image = settings.logo_transparent
+    assign header_root_class = header_root_class | append: ' header--overlay'
+
+    assign header_overlay_scheme = header_scheme
+    if settings.overlay_color_scheme.id != blank
+      assign header_overlay_scheme = settings.overlay_color_scheme.id
+    elsif settings.overlay_color_scheme != blank
+      assign header_overlay_scheme = settings.overlay_color_scheme
     endif
+    if section.settings.transparent_color_scheme.id != blank
+      assign header_overlay_scheme = section.settings.transparent_color_scheme.id
+    elsif section.settings.transparent_color_scheme != blank
+      assign header_overlay_scheme = section.settings.transparent_color_scheme
+    endif
+    assign header_overlay_scheme = header_overlay_scheme | default: header_scheme | handleize
+    assign header_root_class = header_root_class | append: ' ' | append: header_overlay_scheme
+  endif
+
+  assign header_sticky_type = section.settings.sticky_type | default: 'none'
+  unless header_sticky_type == 'always' or header_sticky_type == 'scroll_up' or header_sticky_type == 'top_header_only' or header_sticky_type == 'bottom_header_only' or header_sticky_type == 'none'
+    assign header_sticky_type = 'none'
+  endunless
+
+  assign header_icon_size = section.settings.icon_size | default: 24 | plus: 0
+  if header_icon_size < 16 or header_icon_size > 40
+    assign header_icon_size = 24
   endif
 %}
 
-<header class="section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}">
-  <div class="header__title">
-    <a class="{{ logo_class }}" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
-      {% if logo_image != blank %}
-        {{
-          logo_image
-          | image_url: width: logo_width
-          | image_tag:
-            widths: '80, 120, 140, 180, 240, 320, 400',
-            sizes: logo_sizes,
-            class: 'site-logo__image',
-            alt: shop.name
-        }}
-      {% else %}
-        <span class="site-logo__fallback">{{ shop.name | escape }}</span>
-      {% endif %}
-    </a>
-  </div>
+{% capture header_style %}
+  {% if header_icon_size != 24 %}--header-icon-size: {{ header_icon_size }}px;{% endif %}
+{% endcapture %}
+{% assign header_style = header_style | strip %}
 
-  <div class="header__menu">
-    {% for link in section.settings.menu.links %}
-      {{ link.title | link_to: link.url }}
-    {% endfor %}
-  </div>
-
-  <div class="header__icons">
-    {% if shop.customer_accounts_enabled %}
-      <shopify-account class="icon" menu="{{ section.settings.customer_account_menu }}">
-        <span class="visually-hidden">{{ 'accessibility.account' | t }}</span>
-        {{ 'icon-account.svg' | inline_asset_content }}
-      </shopify-account>
-    {% endif %}
-
-    <a class="icon" href="{{ routes.cart_url }}" aria-label="{{ 'accessibility.cart' | t }}">
-      {% if cart.item_count > 0 %}
-        <sup>{{ cart.item_count }}</sup>
-      {% endif %}
-
-      <span class="visually-hidden">{{ 'accessibility.cart' | t }}</span>
-      {{ 'icon-cart.svg' | inline_asset_content }}
-    </a>
+<header
+  class="{{ header_root_class }}"
+  data-sticky-type="{{ header_sticky_type }}"
+  data-section-width="{{ section.settings.section_width | default: 'page_width' }}"
+  data-header-sticky
+  {% if header_style != blank %}style="{{ header_style }}"{% endif %}
+>
+  <div class="container {{ header_container_width }} header__container">
+    <div class="header__region header__region--top" data-header-region="top">
+      {% content_for "block", type: "_header-top", id: "header-top" %}
+    </div>
   </div>
 </header>
 
 {% stylesheet %}
-  header {
-    min-height: 5rem;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1.5rem;
+  .shopify-section.section-header {
+    padding-block: 0;
   }
-  header a {
+
+  .header {
     position: relative;
-    text-decoration: none;
+    width: 100%;
     color: var(--body-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
+    background-color: var(--background-color);
   }
-  header .header__title .site-logo {
-    justify-content: flex-start;
-    width: var(--logo-width);
-    max-width: min(var(--logo-width), 45vw);
+
+  .shopify-section.section-header > .header[data-section-width='full_width'] {
+    grid-column: 1 / -1;
+  }
+
+  .header--overlay {
+    background-color: transparent;
+  }
+
+  .header--overlay.header--is-scrolled {
+    background-color: var(--background-color);
+  }
+
+  .header[data-sticky-type='always'],
+  .header[data-sticky-type='scroll_up'] {
+    position: fixed;
+    top: 0;
+    inset-inline: 0;
+    z-index: var(--z-drawer);
+  }
+
+  .header[data-sticky-type='scroll_up'] {
+    transition: transform var(--motion-duration-standard) var(--motion-ease-standard);
+    will-change: transform;
+  }
+
+  .header[data-sticky-type='scroll_up'].header--is-hidden {
+    transform: translateY(-100%);
+  }
+
+  .header[data-sticky-type='top_header_only'] .header__region--top,
+  .header[data-sticky-type='bottom_header_only'] .header__region--top,
+  .header[data-sticky-type='top_header_only'] [data-header-sticky-target],
+  .header[data-sticky-type='bottom_header_only'] [data-header-sticky-target] {
+    position: fixed;
+    top: 0;
+    inset-inline: 0;
+    width: 100%;
+    z-index: var(--z-drawer);
+  }
+
+  .header__region {
     min-width: 0;
   }
-  .site-logo__image {
-    display: block;
-    width: 100%;
-    height: auto;
-    max-height: 3.5rem;
-    object-fit: contain;
-  }
-  .site-logo__fallback {
-    overflow-wrap: anywhere;
-  }
-  header a sup {
-    position: absolute;
-    left: 100%;
-    overflow: hidden;
-    max-width: var(--page-margin);
-  }
-  header svg {
-    display: block;
-    width: var(--icon-size-large);
-    height: var(--icon-size-large);
-    stroke-width: var(--icon-stroke-width);
-  }
-  header .header__menu,
-  header .header__icons {
-    display: flex;
-    gap: 1rem;
-  }
-  header .header__menu a {
-    border-radius: var(--navigation-radius);
-  }
-  header .icon {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: var(--button-height);
-    min-height: var(--button-height);
-    color: inherit;
-    line-height: 1;
-  }
-  @media (max-width: 767.98px) {
-    header {
-      gap: 0.75rem;
+
+  @media (prefers-reduced-motion: reduce) {
+    .header[data-sticky-type='scroll_up'] {
+      transition-duration: 0.01ms;
     }
-    header .header__menu {
-      display: none;
-    }
-    header .icon {
-      min-width: var(--button-height-mobile);
-      min-height: var(--button-height-mobile);
-    }
-    header .header__title .site-logo {
-      width: min(var(--logo-width-mobile), 52vw);
-      max-width: min(var(--logo-width-mobile), 52vw);
-    }
+  }
+
+  .header__container {
+    min-width: 0;
   }
 {% endstylesheet %}
 
 {% schema %}
 {
   "name": "t:general.header",
+  "class": "section-header",
+  "blocks": [{ "type": "_header-top" }],
   "settings": [
     {
-      "type": "link_list",
-      "id": "menu",
-      "label": "t:labels.menu"
+      "type": "header",
+      "content": "t:general.layout"
     },
     {
-      "type": "checkbox",
-      "id": "header_overlay",
-      "label": "t:labels.use_transparent_logo",
-      "info": "t:info.header_overlay",
-      "default": false
+      "type": "select",
+      "id": "section_width",
+      "label": "t:labels.section_width",
+      "options": [
+        { "value": "page_width", "label": "t:options.section_width.page_width" },
+        { "value": "full_width", "label": "t:options.section_width.full_width" }
+      ],
+      "default": "page_width"
     },
     {
-      "type": "link_list",
-      "id": "customer_account_menu",
-      "label": "t:labels.customer_account_menu",
-      "default": "customer-account-main-menu"
+      "type": "range",
+      "id": "icon_size",
+      "label": "t:labels.icon_size",
+      "min": 16,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "t:general.sticky"
+    },
+    {
+      "type": "select",
+      "id": "sticky_type",
+      "label": "t:labels.type",
+      "options": [
+        { "value": "always", "label": "t:options.sticky_type.always" },
+        { "value": "scroll_up", "label": "t:options.sticky_type.scroll_up" },
+        { "value": "top_header_only", "label": "t:options.sticky_type.top_header_only" },
+        { "value": "bottom_header_only", "label": "t:options.sticky_type.bottom_header_only" },
+        { "value": "none", "label": "t:options.sticky_type.none" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "header",
+      "content": "t:general.appearance"
     },
     {
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "t:labels.color_scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "checkbox",
+      "id": "header_overlay",
+      "label": "t:labels.transparent_header_section",
+      "info": "t:info.header_overlay",
+      "default": false
+    },
+    {
+      "type": "color_scheme",
+      "id": "transparent_color_scheme",
+      "label": "Transparent color scheme",
+      "default": "scheme-1",
+      "visible_if": "{{ section.settings.header_overlay }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.header",
+      "category": "t:general.header",
+      "settings": {
+        "section_width": "page_width",
+        "icon_size": 24,
+        "sticky_type": "none",
+        "color_scheme": "scheme-1",
+        "header_overlay": false,
+        "transparent_color_scheme": "scheme-1"
+      },
+      "blocks": [
+        {
+          "type": "_header-top",
+          "id": "header-top",
+          "static": true,
+          "settings": {
+            "bottom_separator": "line",
+            "gap": 20,
+            "padding_top": 24,
+            "padding_bottom": 24
+          },
+          "blocks": [
+            {
+              "type": "_header-menu",
+              "settings": {
+                "menu": "main-menu",
+                "position": "left",
+                "gap": 26,
+                "show_dropdown_icon": true,
+                "dropdown_trigger": "hover",
+                "font": "accent",
+                "font_size": "xs",
+                "letter_spacing": "normal",
+                "text_case": "original",
+                "text_color": "body"
+              }
+            },
+            {
+              "type": "_header-logo",
+              "settings": { "position": "center" }
+            },
+            {
+              "type": "_header-menu-toggle"
+            },
+            {
+              "type": "_header-localization"
+            },
+            {
+              "type": "_header-divider"
+            },
+            {
+              "type": "_header-search"
+            },
+            {
+              "type": "_header-account"
+            },
+            {
+              "type": "_header-cart"
+            }
+          ]
+        }
+      ]
     }
   ]
 }

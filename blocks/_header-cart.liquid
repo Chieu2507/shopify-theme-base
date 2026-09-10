@@ -1,0 +1,179 @@
+{% liquid
+  assign cart_position = block.settings.position | default: 'right'
+  unless cart_position == 'left' or cart_position == 'center' or cart_position == 'right'
+    assign cart_position = 'right'
+  endunless
+
+  assign cart_type = block.settings.type | default: 'icon'
+  unless cart_type == 'icon' or cart_type == 'text' or cart_type == 'icon_with_text'
+    assign cart_type = 'icon'
+  endunless
+
+  assign cart_label = block.settings.label | default: 'Cart'
+  assign cart_badge_type = block.settings.badge_type | default: 'primary'
+  unless cart_badge_type == 'primary' or cart_badge_type == 'secondary' or cart_badge_type == 'tertiary'
+    assign cart_badge_type = 'primary'
+  endunless
+
+  assign cart_aria_label = cart_label
+  if cart.item_count > 0
+    assign cart_aria_label = cart_label | append: ', ' | append: cart.item_count
+  endif
+
+  assign cart_class = 'header-cart header-action--position-' | append: cart_position | append: ' header-cart--type-' | append: cart_type | append: ' header-cart--badge-' | append: cart_badge_type
+  if cart_type == 'icon'
+    assign cart_class = cart_class | append: ' header-action--type-icon'
+  endif
+%}
+
+<a
+  class="{{ cart_class }}"
+  href="{{ routes.cart_url }}"
+  aria-label="{{ cart_aria_label | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <span class="icon" aria-hidden="true">
+    {{ 'icon-cart.svg' | inline_asset_content }}
+  </span>
+  {% unless cart_type == 'icon' %}<span class="header-action__label">{{ cart_label | escape }}</span>{% endunless %}
+  {% if cart.item_count > 0 %}
+    <span class="header-cart__count" aria-label="{{ cart.item_count }}">{{ cart.item_count }}</span>
+  {% endif %}
+</a>
+
+{% stylesheet %}
+  .header-cart {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 0;
+    min-height: var(--button-height);
+    color: var(--body-color);
+    line-height: 1;
+    text-decoration: none;
+  }
+
+  .header-action--position-left {
+    margin-inline-end: auto;
+  }
+
+  .header-action--position-center {
+    margin-inline: auto;
+  }
+
+  .header-action--position-right {
+    margin-inline-start: 0;
+  }
+
+  .header-cart .icon {
+    display: inline-flex;
+    width: var(--header-icon-size, var(--icon-size-large));
+    height: var(--header-icon-size, var(--icon-size-large));
+    flex: 0 0 auto;
+  }
+
+  .header-cart .icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .header-cart__count {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.25em;
+    min-height: 1.25em;
+    padding-inline: 0.25em;
+    border-radius: var(--badge-radius);
+    font-size: var(--font-body-xs);
+    line-height: 1;
+    text-align: center;
+  }
+
+  .header-cart--badge-primary .header-cart__count {
+    background: var(--button-primary-background);
+    color: var(--button-primary-text);
+  }
+
+  .header-cart--badge-secondary .header-cart__count {
+    background: var(--button-secondary-background);
+    color: var(--button-secondary-text);
+  }
+
+  .header-cart--badge-tertiary .header-cart__count {
+    border: 1px solid var(--button-tertiary-text);
+    background: var(--button-tertiary-background);
+    color: var(--button-tertiary-text);
+  }
+
+  @media (max-width: 767.98px) {
+    .header-cart {
+      min-height: var(--button-height-mobile);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.header_cart",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "right"
+    },
+    {
+      "type": "select",
+      "id": "type",
+      "label": "Type",
+      "options": [
+        { "value": "icon", "label": "Icon" },
+        { "value": "text", "label": "Text" },
+        { "value": "icon_with_text", "label": "Icon with text" }
+      ],
+      "default": "icon"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "Cart"
+    },
+    {
+      "type": "header",
+      "content": "Appearance"
+    },
+    {
+      "type": "select",
+      "id": "badge_type",
+      "label": "Badge type",
+      "options": [
+        { "value": "primary", "label": "Primary" },
+        { "value": "secondary", "label": "Secondary" },
+        { "value": "tertiary", "label": "Tertiary" }
+      ],
+      "default": "primary"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.header_cart",
+      "category": "t:general.header"
+    }
+  ]
+}
+{% endschema %}

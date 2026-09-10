@@ -1,0 +1,296 @@
+{% liquid
+  assign search_position = block.settings.position | default: 'right'
+  unless search_position == 'left' or search_position == 'center' or search_position == 'right'
+    assign search_position = 'right'
+  endunless
+
+  assign search_type = block.settings.type | default: 'text'
+  unless search_type == 'icon' or search_type == 'text' or search_type == 'icon_with_text' or search_type == 'search_bar'
+    assign search_type = 'text'
+  endunless
+
+  assign search_label = block.settings.label | default: 'Search'
+
+  assign search_font = block.settings.font | default: 'accent'
+  unless search_font == 'body' or search_font == 'heading' or search_font == 'accent'
+    assign search_font = 'accent'
+  endunless
+
+  assign search_font_size = block.settings.font_size | default: 'md'
+  unless search_font_size == 'sm' or search_font_size == 'md' or search_font_size == 'lg' or search_font_size == 'xl' or search_font_size == 'xxl'
+    assign search_font_size = 'md'
+  endunless
+
+  assign search_letter_spacing = block.settings.letter_spacing | default: 'relaxed'
+  unless search_letter_spacing == 'tighter' or search_letter_spacing == 'tight' or search_letter_spacing == 'normal' or search_letter_spacing == 'relaxed' or search_letter_spacing == 'loose' or search_letter_spacing == 'extra_loose' or search_letter_spacing == 'ultra_loose' or search_letter_spacing == 'mega_loose'
+    assign search_letter_spacing = 'relaxed'
+  endunless
+
+  assign search_class = 'header-search header-action--position-' | append: search_position | append: ' header-search--type-' | append: search_type | append: ' header-search--font-' | append: search_font | append: ' header-search--size-' | append: search_font_size | append: ' header-search--tracking-' | append: search_letter_spacing
+  if search_type == 'icon'
+    assign search_class = search_class | append: ' header-action--type-icon'
+  endif
+%}
+
+{% if search_type == 'search_bar' %}
+  <form
+    class="{{ search_class }}"
+    action="{{ routes.search_url }}"
+    method="get"
+    role="search"
+    {{ block.shopify_attributes }}
+  >
+    <label class="visually-hidden" for="HeaderSearch-{{ section.id }}-{{ block.id }}">{{ search_label | escape }}</label>
+    <input
+      id="HeaderSearch-{{ section.id }}-{{ block.id }}"
+      class="header-search__input"
+      type="search"
+      name="q"
+      value="{{ search.terms | escape }}"
+      placeholder="{{ search_label | escape }}"
+      autocomplete="off"
+    >
+    <button class="btn btn--unstyled header-search__submit" type="submit" aria-label="{{ search_label | escape }}">
+      <span class="icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24" fill="none" focusable="false">
+          <circle cx="10.75" cy="10.75" r="6.25" stroke="currentColor" stroke-width="var(--icon-stroke-width)" />
+          <path d="m15.5 15.5 4.25 4.25" stroke="currentColor" stroke-linecap="round" stroke-width="var(--icon-stroke-width)" />
+        </svg>
+      </span>
+    </button>
+  </form>
+{% else %}
+  <a
+    class="{{ search_class }}"
+    href="{{ routes.search_url }}"
+    aria-label="{{ search_label | escape }}"
+    {{ block.shopify_attributes }}
+  >
+    <span class="icon" aria-hidden="true">
+      <svg viewBox="0 0 24 24" fill="none" focusable="false">
+        <circle cx="10.75" cy="10.75" r="6.25" stroke="currentColor" stroke-width="var(--icon-stroke-width)" />
+        <path d="m15.5 15.5 4.25 4.25" stroke="currentColor" stroke-linecap="round" stroke-width="var(--icon-stroke-width)" />
+      </svg>
+    </span>
+    {% unless search_type == 'icon' %}<span class="header-action__label">{{ search_label | escape }}</span>{% endunless %}
+  </a>
+{% endif %}
+
+{% stylesheet %}
+  .header-search {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 0;
+    min-height: var(--button-height);
+    color: var(--body-color);
+    font-family: var(--header-search-font-family, var(--font-accent-family));
+    font-size: var(--header-search-font-size, var(--font-body-md));
+    font-style: var(--header-search-font-style, var(--font-accent-style));
+    font-weight: var(--header-search-font-weight, var(--font-accent-weight));
+    letter-spacing: var(--header-search-letter-spacing, var(--font-body-letter-spacing));
+    line-height: 1;
+    text-decoration: none;
+    text-transform: none;
+  }
+
+  .header-action--position-left {
+    margin-inline-end: auto;
+  }
+
+  .header-action--position-center {
+    margin-inline: auto;
+  }
+
+  .header-action--position-right {
+    margin-inline-start: 0;
+  }
+
+  .header-search--font-body {
+    --header-search-font-family: var(--font-body-family);
+    --header-search-font-style: var(--font-body-style);
+    --header-search-font-weight: var(--font-body-weight);
+  }
+
+  .header-search--font-heading {
+    --header-search-font-family: var(--font-heading-family);
+    --header-search-font-style: var(--font-heading-style);
+    --header-search-font-weight: var(--font-heading-weight);
+  }
+
+  .header-search--font-accent {
+    --header-search-font-family: var(--font-accent-family);
+    --header-search-font-style: var(--font-accent-style);
+    --header-search-font-weight: var(--font-accent-weight);
+  }
+
+  .header-search--size-sm { --header-search-font-size: var(--font-body-sm); }
+  .header-search--size-md { --header-search-font-size: var(--font-body-md); }
+  .header-search--size-lg { --header-search-font-size: var(--font-body-lg); }
+  .header-search--size-xl { --header-search-font-size: var(--font-body-xl); }
+  .header-search--size-xxl { --header-search-font-size: var(--font-body-xxl); }
+
+  .header-search--tracking-tighter { --header-search-letter-spacing: -0.04em; }
+  .header-search--tracking-tight { --header-search-letter-spacing: -0.02em; }
+  .header-search--tracking-normal { --header-search-letter-spacing: 0em; }
+  .header-search--tracking-relaxed { --header-search-letter-spacing: 0.02em; }
+  .header-search--tracking-loose { --header-search-letter-spacing: 0.04em; }
+  .header-search--tracking-extra_loose { --header-search-letter-spacing: 0.08em; }
+  .header-search--tracking-ultra_loose { --header-search-letter-spacing: 0.12em; }
+  .header-search--tracking-mega_loose { --header-search-letter-spacing: 0.16em; }
+
+  .header-search .icon {
+    display: inline-flex;
+    width: var(--header-icon-size, var(--icon-size-large));
+    height: var(--header-icon-size, var(--icon-size-large));
+    flex: 0 0 auto;
+  }
+
+  .header-search .icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .header-search__input {
+    flex: 1 1 auto;
+    min-width: 0;
+    min-height: var(--button-height);
+    padding: 0 0.75rem;
+    border: 0;
+    outline: 0;
+    background: transparent;
+    color: inherit;
+    font: inherit;
+    letter-spacing: inherit;
+  }
+
+  .header-search__input::placeholder {
+    color: currentColor;
+    opacity: 0.65;
+  }
+
+  .header-search--type-search_bar {
+    width: min(100%, 22rem);
+    justify-content: stretch;
+    border: var(--input-border-width) solid var(--input-border-color);
+    border-radius: var(--input-radius);
+    background: var(--input-background-color);
+  }
+
+  .header-search__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--button-height);
+    min-width: var(--button-height);
+    min-height: var(--button-height);
+  }
+
+  @media (max-width: 767.98px) {
+    .header-search,
+    .header-search__input,
+    .header-search__submit {
+      min-height: var(--button-height-mobile);
+    }
+
+    .header-search__submit {
+      width: var(--button-height-mobile);
+      min-width: var(--button-height-mobile);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.header_search",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "right"
+    },
+    {
+      "type": "select",
+      "id": "type",
+      "label": "Type",
+      "options": [
+        { "value": "icon", "label": "Icon" },
+        { "value": "text", "label": "Text" },
+        { "value": "icon_with_text", "label": "Icon with text" },
+        { "value": "search_bar", "label": "Search bar" }
+      ],
+      "default": "text"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "Search"
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "font",
+      "label": "Font",
+      "options": [
+        { "value": "body", "label": "Body" },
+        { "value": "heading", "label": "Heading" },
+        { "value": "accent", "label": "Accent" }
+      ],
+      "default": "accent"
+    },
+    {
+      "type": "select",
+      "id": "font_size",
+      "label": "Font size",
+      "options": [
+        { "value": "sm", "label": "Small" },
+        { "value": "md", "label": "Medium" },
+        { "value": "lg", "label": "Large" },
+        { "value": "xl", "label": "Extra large" },
+        { "value": "xxl", "label": "Double extra large" }
+      ],
+      "default": "md"
+    },
+    {
+      "type": "select",
+      "id": "letter_spacing",
+      "label": "Letter spacing",
+      "options": [
+        { "value": "tighter", "label": "Tighter" },
+        { "value": "tight", "label": "Tight" },
+        { "value": "normal", "label": "Normal" },
+        { "value": "relaxed", "label": "Relaxed" },
+        { "value": "loose", "label": "Loose" },
+        { "value": "extra_loose", "label": "Extra loose" },
+        { "value": "ultra_loose", "label": "Ultra loose" },
+        { "value": "mega_loose", "label": "Mega loose" }
+      ],
+      "default": "relaxed"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.header_search",
+      "category": "t:general.header"
+    }
+  ]
+}
+{% endschema %}

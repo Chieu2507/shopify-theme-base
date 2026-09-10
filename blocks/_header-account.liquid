@@ -1,0 +1,220 @@
+{% liquid
+  assign account_position = block.settings.position | default: 'right'
+  unless account_position == 'left' or account_position == 'center' or account_position == 'right'
+    assign account_position = 'right'
+  endunless
+
+  assign account_type = block.settings.type | default: 'icon_with_text'
+  unless account_type == 'icon' or account_type == 'text' or account_type == 'icon_with_text'
+    assign account_type = 'icon_with_text'
+  endunless
+
+  assign account_label = block.settings.label | default: 'Account'
+  assign account_font = block.settings.font | default: 'accent'
+  unless account_font == 'body' or account_font == 'heading' or account_font == 'accent'
+    assign account_font = 'accent'
+  endunless
+
+  assign account_font_size = block.settings.font_size | default: 'md'
+  unless account_font_size == 'sm' or account_font_size == 'md' or account_font_size == 'lg' or account_font_size == 'xl' or account_font_size == 'xxl'
+    assign account_font_size = 'md'
+  endunless
+
+  assign account_letter_spacing = block.settings.letter_spacing | default: 'relaxed'
+  unless account_letter_spacing == 'tighter' or account_letter_spacing == 'tight' or account_letter_spacing == 'normal' or account_letter_spacing == 'relaxed' or account_letter_spacing == 'loose' or account_letter_spacing == 'extra_loose' or account_letter_spacing == 'ultra_loose' or account_letter_spacing == 'mega_loose'
+    assign account_letter_spacing = 'relaxed'
+  endunless
+
+  assign account_class = 'header-account header-action--position-' | append: account_position | append: ' header-account--type-' | append: account_type | append: ' header-account--font-' | append: account_font | append: ' header-account--size-' | append: account_font_size | append: ' header-account--tracking-' | append: account_letter_spacing
+  if account_type == 'icon'
+    assign account_class = account_class | append: ' header-action--type-icon'
+  endif
+%}
+
+<a
+  class="{{ account_class }}"
+  href="{{ routes.account_url }}"
+  aria-label="{{ account_label | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <span class="icon" aria-hidden="true">
+    {{ 'icon-account.svg' | inline_asset_content }}
+  </span>
+  {% unless account_type == 'icon' %}<span class="header-action__label">{{ account_label | escape }}</span>{% endunless %}
+</a>
+
+{% stylesheet %}
+  .header-account {
+    display: inline-flex;
+    flex: 0 1 auto;
+    align-items: center;
+    justify-content: center;
+    gap: 0.35rem;
+    min-width: 0;
+    min-height: var(--button-height);
+    color: var(--body-color);
+    font-family: var(--header-account-font-family, var(--font-accent-family));
+    font-size: var(--header-account-font-size, var(--font-body-md));
+    font-style: var(--header-account-font-style, var(--font-accent-style));
+    font-weight: var(--header-account-font-weight, var(--font-accent-weight));
+    letter-spacing: var(--header-account-letter-spacing, var(--font-body-letter-spacing));
+    line-height: 1;
+    text-decoration: none;
+    text-transform: none;
+  }
+
+  .header-action--position-left {
+    margin-inline-end: auto;
+  }
+
+  .header-action--position-center {
+    margin-inline: auto;
+  }
+
+  .header-action--position-right {
+    margin-inline-start: 0;
+  }
+
+  .header-account--font-body {
+    --header-account-font-family: var(--font-body-family);
+    --header-account-font-style: var(--font-body-style);
+    --header-account-font-weight: var(--font-body-weight);
+  }
+
+  .header-account--font-heading {
+    --header-account-font-family: var(--font-heading-family);
+    --header-account-font-style: var(--font-heading-style);
+    --header-account-font-weight: var(--font-heading-weight);
+  }
+
+  .header-account--font-accent {
+    --header-account-font-family: var(--font-accent-family);
+    --header-account-font-style: var(--font-accent-style);
+    --header-account-font-weight: var(--font-accent-weight);
+  }
+
+  .header-account--size-sm { --header-account-font-size: var(--font-body-sm); }
+  .header-account--size-md { --header-account-font-size: var(--font-body-md); }
+  .header-account--size-lg { --header-account-font-size: var(--font-body-lg); }
+  .header-account--size-xl { --header-account-font-size: var(--font-body-xl); }
+  .header-account--size-xxl { --header-account-font-size: var(--font-body-xxl); }
+
+  .header-account--tracking-tighter { --header-account-letter-spacing: -0.04em; }
+  .header-account--tracking-tight { --header-account-letter-spacing: -0.02em; }
+  .header-account--tracking-normal { --header-account-letter-spacing: 0em; }
+  .header-account--tracking-relaxed { --header-account-letter-spacing: 0.02em; }
+  .header-account--tracking-loose { --header-account-letter-spacing: 0.04em; }
+  .header-account--tracking-extra_loose { --header-account-letter-spacing: 0.08em; }
+  .header-account--tracking-ultra_loose { --header-account-letter-spacing: 0.12em; }
+  .header-account--tracking-mega_loose { --header-account-letter-spacing: 0.16em; }
+
+  .header-account .icon {
+    display: inline-flex;
+    width: var(--header-icon-size, var(--icon-size-large));
+    height: var(--header-icon-size, var(--icon-size-large));
+    flex: 0 0 auto;
+  }
+
+  .header-account .icon svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  @media (max-width: 767.98px) {
+    .header-account {
+      min-height: var(--button-height-mobile);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.header_account",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "right"
+    },
+    {
+      "type": "select",
+      "id": "type",
+      "label": "Type",
+      "options": [
+        { "value": "icon", "label": "Icon" },
+        { "value": "text", "label": "Text" },
+        { "value": "icon_with_text", "label": "Icon with text" }
+      ],
+      "default": "icon_with_text"
+    },
+    {
+      "type": "text",
+      "id": "label",
+      "label": "Label",
+      "default": "Account"
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "font",
+      "label": "Font",
+      "options": [
+        { "value": "body", "label": "Body" },
+        { "value": "heading", "label": "Heading" },
+        { "value": "accent", "label": "Accent" }
+      ],
+      "default": "accent"
+    },
+    {
+      "type": "select",
+      "id": "font_size",
+      "label": "Font size",
+      "options": [
+        { "value": "sm", "label": "Small" },
+        { "value": "md", "label": "Medium" },
+        { "value": "lg", "label": "Large" },
+        { "value": "xl", "label": "Extra large" },
+        { "value": "xxl", "label": "Double extra large" }
+      ],
+      "default": "md"
+    },
+    {
+      "type": "select",
+      "id": "letter_spacing",
+      "label": "Letter spacing",
+      "options": [
+        { "value": "tighter", "label": "Tighter" },
+        { "value": "tight", "label": "Tight" },
+        { "value": "normal", "label": "Normal" },
+        { "value": "relaxed", "label": "Relaxed" },
+        { "value": "loose", "label": "Loose" },
+        { "value": "extra_loose", "label": "Extra loose" },
+        { "value": "ultra_loose", "label": "Ultra loose" },
+        { "value": "mega_loose", "label": "Mega loose" }
+      ],
+      "default": "relaxed"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.header_account",
+      "category": "t:general.header"
+    }
+  ]
+}
+{% endschema %}

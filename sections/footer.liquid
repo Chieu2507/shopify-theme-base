@@ -1,59 +1,344 @@
-<footer class="section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}">
-  <div class="footer__copyright">
-    &copy;
-    {{ 'now' | date: '%Y' }}
-    {{ shop.name | link_to: routes.root_url }}, {{ powered_by_link }}
-  </div>
+{% liquid
+  assign footer_alignment = 'start'
+  case section.settings.alignment
+    when 'center'
+      assign footer_alignment = 'center'
+    when 'right'
+      assign footer_alignment = 'end'
+  endcase
 
-  <div class="footer__links">
-    {% for link in section.settings.menu.links %}
-      {{ link.title | link_to: link.url }}
-    {% endfor %}
-  </div>
+  assign footer_alignment_mobile = footer_alignment
+  if section.settings.customize_mobile_alignment
+    assign footer_alignment_mobile = 'start'
+    case section.settings.alignment_mobile
+      when 'center'
+        assign footer_alignment_mobile = 'center'
+      when 'right'
+        assign footer_alignment_mobile = 'end'
+    endcase
+  endif
 
-  <div class="footer__payment">
-    {% if section.settings.show_payment_icons %}
-      {% for type in shop.enabled_payment_types %}
-        {{ type | payment_type_svg_tag }}
-      {% endfor %}
-    {% endif %}
-  </div>
+  assign footer_container_width = 'page-width'
+  if section.settings.section_width == 'full_width'
+    assign footer_container_width = 'full-width'
+  endif
 
-  {% render 'social-links' %}
+  assign footer_scheme = section.settings.color_scheme | default: 'scheme-1'
+  if section.settings.color_scheme.id != blank
+    assign footer_scheme = section.settings.color_scheme.id
+  endif
+  assign footer_scheme = footer_scheme | default: 'scheme-1' | handleize
+
+  assign footer_logo = settings.logo
+  assign footer_logo_width = settings.logo_width | default: 180 | plus: 0
+  assign footer_logo_width_mobile = settings.logo_width_mobile | default: 140 | plus: 0
+  assign footer_logo_sizes = '(min-width: 768px) ' | append: footer_logo_width | append: 'px, ' | append: footer_logo_width_mobile | append: 'px'
+
+  assign footer_has_menu = false
+  if section.settings.menu != blank and section.settings.menu.links != blank
+    assign footer_has_menu = true
+  endif
+
+  assign footer_has_payment = false
+  if section.settings.show_payment_icons
+    for payment_type in shop.enabled_payment_types
+      assign footer_has_payment = true
+      break
+    endfor
+  endif
+
+  assign footer_show_social_links = true
+  if section.settings.show_social_links == false
+    assign footer_show_social_links = false
+  endif
+
+  assign footer_padding_top = section.settings.padding_top | default: 48 | plus: 0
+  assign footer_padding_bottom = section.settings.padding_bottom | default: 48 | plus: 0
+  assign footer_padding_top_mobile = section.settings.padding_top_mobile | default: 32 | plus: 0
+  assign footer_padding_bottom_mobile = section.settings.padding_bottom_mobile | default: 32 | plus: 0
+
+  if footer_padding_top < 0 or footer_padding_top > 100
+    assign footer_padding_top = 48
+  endif
+  if footer_padding_bottom < 0 or footer_padding_bottom > 100
+    assign footer_padding_bottom = 48
+  endif
+  if footer_padding_top_mobile < 0 or footer_padding_top_mobile > 100
+    assign footer_padding_top_mobile = 32
+  endif
+  if footer_padding_bottom_mobile < 0 or footer_padding_bottom_mobile > 100
+    assign footer_padding_bottom_mobile = 32
+  endif
+%}
+
+{% capture footer_style %}
+  {% if footer_alignment != 'start' %}--flex-align: {{ footer_alignment }};{% endif %}
+  {% if section.settings.customize_mobile_alignment and footer_alignment_mobile != footer_alignment %}--flex-align-mobile: {{ footer_alignment_mobile }};{% endif %}
+  {% if footer_padding_top != 48 %}--footer-padding-top: {{ footer_padding_top }}px;{% endif %}
+  {% if footer_padding_bottom != 48 %}--footer-padding-bottom: {{ footer_padding_bottom }}px;{% endif %}
+  {% if section.settings.customize_mobile_padding %}
+    {% if footer_padding_top_mobile != footer_padding_top %}--footer-padding-top-mobile: {{ footer_padding_top_mobile }}px;{% endif %}
+    {% if footer_padding_bottom_mobile != footer_padding_bottom %}--footer-padding-bottom-mobile: {{ footer_padding_bottom_mobile }}px;{% endif %}
+  {% endif %}
+{% endcapture %}
+{% assign footer_style = footer_style | strip %}
+
+<footer
+  class="section-spacing footer color-scheme section-color-scope {{ footer_scheme }}"
+  {% if footer_style != blank %}style="{{ footer_style }}"{% endif %}
+>
+  <div class="container {{ footer_container_width }} footer__container">
+    <div class="footer__content align-content">
+      <div
+        class="footer__primary{% if section.blocks != blank %} footer__primary--with-blocks{% endif %}{% if footer_has_menu %} footer__primary--with-menu{% endif %}"
+      >
+        <div class="footer__brand">
+          <a class="site-logo footer__logo" href="{{ routes.root_url }}" aria-label="{{ shop.name | escape }}">
+            {% if footer_logo != blank %}
+              {{
+                footer_logo
+                | image_url: width: footer_logo_width
+                | image_tag:
+                  widths: '80, 120, 140, 180, 240, 320, 400',
+                  sizes: footer_logo_sizes,
+                  class: 'footer__logo-image',
+                  alt: shop.name
+              }}
+            {% else %}
+              <span class="footer__logo-fallback">{{ shop.name | escape }}</span>
+            {% endif %}
+          </a>
+        </div>
+
+        {% if section.blocks != blank %}
+          <div class="footer__blocks">
+            {% content_for 'blocks' %}
+          </div>
+        {% endif %}
+
+        {% if footer_has_menu %}
+          <nav class="footer__menu" aria-label="{{ 'accessibility.footer_menu' | t }}">
+            <ul class="footer__menu-list" role="list">
+              {% for link in section.settings.menu.links %}
+                <li class="footer__menu-item">
+                  <a href="{{ link.url }}">{{ link.title | escape }}</a>
+                </li>
+              {% endfor %}
+            </ul>
+          </nav>
+        {% endif %}
+      </div>
+
+      <div class="footer__bottom">
+        <p class="footer__copyright">
+          <span>&copy; {{ 'now' | date: '%Y' }} {{ shop.name | link_to: routes.root_url }}</span>
+          <span>{{ powered_by_link }}</span>
+        </p>
+
+        {% if footer_show_social_links %}
+          {% render 'social-links' %}
+        {% endif %}
+
+        {% if footer_has_payment %}
+          <div class="footer__payment" aria-label="{{ 'accessibility.payment_methods' | t }}">
+            {% for payment_type in shop.enabled_payment_types %}
+              {{ payment_type | payment_type_svg_tag }}
+            {% endfor %}
+          </div>
+        {% endif %}
+      </div>
+    </div>
+  </div>
 </footer>
 
 {% stylesheet %}
-  footer {
+  .shopify-section.section-footer {
+    padding-block: 0;
+  }
+
+  .shopify-section.section-footer > .footer {
+    grid-column: 1 / -1;
+  }
+
+  .footer {
+    width: 100%;
+    padding-top: var(--footer-padding-top, 3rem);
+    padding-bottom: var(--footer-padding-bottom, 3rem);
+  }
+
+  .footer__container,
+  .footer__content,
+  .footer__primary,
+  .footer__bottom {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .footer__content {
+    gap: var(--layout-section-gap, 3rem);
+  }
+
+  .footer__primary {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    align-items: start;
+    gap: var(--layout-grid-gap, 1.5rem);
+  }
+
+  .footer__primary--with-blocks {
+    grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 2fr);
+  }
+
+  .footer__primary--with-blocks.footer__primary--with-menu {
+    grid-template-columns: minmax(12rem, 0.8fr) minmax(0, 1.7fr) minmax(10rem, 1fr);
+  }
+
+  .footer__primary:not(.footer__primary--with-blocks).footer__primary--with-menu {
+    grid-template-columns: minmax(12rem, 1fr) minmax(10rem, 1fr);
+  }
+
+  .footer__brand,
+  .footer__blocks,
+  .footer__menu {
+    min-width: 0;
+  }
+
+  .footer__brand {
+    text-align: inherit;
+  }
+
+  .footer__logo.site-logo {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--logo-width);
+    max-width: min(var(--logo-width), 100%);
+    min-width: 0;
+    color: var(--body-color);
+    line-height: 1.2;
+    text-decoration: none;
+  }
+
+  .footer__logo-image {
+    display: block;
+    width: 100%;
+    height: auto;
+    max-height: 4rem;
+    object-fit: contain;
+  }
+
+  .footer__logo-fallback {
+    overflow-wrap: anywhere;
+  }
+
+  .footer__blocks {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(min(100%, 13rem), 1fr));
+    align-items: start;
+    gap: var(--layout-grid-gap, 1.5rem);
+  }
+
+  .footer__blocks > * {
+    min-width: 0;
+  }
+
+  .footer__menu-list {
+    display: flex;
+    flex-direction: column;
+    align-items: var(--flex-align, flex-start);
+    gap: 0.65rem;
+    padding: 0;
+    list-style: none;
+  }
+
+  .footer__menu-item {
+    min-width: 0;
+    max-width: 100%;
+  }
+
+  .footer__menu-item a {
+    display: inline-flex;
+    max-width: 100%;
+    color: var(--body-color);
+    overflow-wrap: anywhere;
+    text-decoration: none;
+  }
+
+  .footer__bottom {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
     justify-content: space-between;
     gap: 1rem;
-    margin-top: 2rem;
+    padding-top: 1.25rem;
+    border-top: var(--shape-border-width, 1px) solid var(--border-color);
   }
-  footer a {
-    text-decoration: none;
-    color: var(--body-color);
-  }
-  footer .footer__links,
-  footer .footer__payment {
+
+  .footer__copyright {
     display: flex;
     flex-wrap: wrap;
-    gap: 1rem;
+    gap: 0.35rem 1rem;
+    color: var(--body-color);
   }
-  footer .footer__links a {
+
+  .footer__copyright a {
+    color: inherit;
+  }
+
+  .footer__payment {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+  }
+
+  .footer__payment svg {
+    display: block;
+    width: 2.25rem;
+    height: auto;
+  }
+
+  .footer .social-links {
+    margin: 0;
+  }
+
+  .footer .social-links a {
     border-radius: var(--navigation-radius);
   }
-  footer .social-links {
-    margin-inline-start: auto;
-  }
+
   @media (max-width: 767.98px) {
-    footer {
-      align-items: flex-start;
+    .footer {
+      padding-top: var(--footer-padding-top-mobile, var(--footer-padding-top, 2rem));
+      padding-bottom: var(--footer-padding-bottom-mobile, var(--footer-padding-bottom, 2rem));
+    }
+
+    .footer__content {
+      gap: 2rem;
+    }
+
+    .footer__primary,
+    .footer__primary--with-blocks,
+    .footer__primary--with-blocks.footer__primary--with-menu,
+    .footer__primary:not(.footer__primary--with-blocks).footer__primary--with-menu {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .footer__logo.site-logo {
+      width: var(--logo-width-mobile);
+      max-width: min(var(--logo-width-mobile), 100%);
+    }
+
+    .footer__blocks {
+      grid-template-columns: minmax(0, 1fr);
+    }
+
+    .footer__bottom {
+      align-items: var(--flex-align-mobile, var(--flex-align, flex-start));
       flex-direction: column;
     }
-    footer .social-links {
-      margin-inline-start: 0;
+
+    .footer__copyright {
+      justify-content: var(--flex-align-mobile, var(--flex-align, flex-start));
     }
   }
 {% endstylesheet %}
@@ -61,11 +346,61 @@
 {% schema %}
 {
   "name": "t:general.footer",
+  "class": "section-footer",
+  "blocks": [
+    { "type": "header" },
+    { "type": "group" },
+    { "type": "heading" },
+    { "type": "text" }
+  ],
   "settings": [
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:labels.section_width",
+      "options": [
+        { "value": "page_width", "label": "t:options.section_width.page_width" },
+        { "value": "full_width", "label": "t:options.section_width.full_width" }
+      ],
+      "default": "page_width"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:labels.alignment",
+      "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_alignment",
+      "label": "t:labels.customize_mobile_alignment",
+      "default": false
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment_mobile",
+      "label": "t:labels.mobile_alignment",
+      "default": "left",
+      "visible_if": "{{ section.settings.customize_mobile_alignment }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.content"
+    },
     {
       "type": "link_list",
       "id": "menu",
       "label": "t:labels.menu"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_social_links",
+      "label": "t:labels.show_social_links",
+      "default": true
     },
     {
       "type": "checkbox",
@@ -74,10 +409,112 @@
       "default": true
     },
     {
+      "type": "header",
+      "content": "t:general.appearance"
+    },
+    {
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "t:labels.color_scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:general.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:labels.top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:labels.bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_padding",
+      "label": "t:labels.customize_mobile_padding",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "padding_top_mobile",
+      "label": "t:labels.mobile_top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 32,
+      "visible_if": "{{ section.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "label": "t:labels.mobile_bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 32,
+      "visible_if": "{{ section.settings.customize_mobile_padding }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.footer",
+      "settings": {
+        "section_width": "page_width",
+        "alignment": "left",
+        "customize_mobile_alignment": false,
+        "alignment_mobile": "left",
+        "show_social_links": true,
+        "show_payment_icons": true,
+        "color_scheme": "scheme-1",
+        "padding_top": 48,
+        "padding_bottom": 48,
+        "customize_mobile_padding": false
+      },
+      "blocks": [
+        {
+          "type": "header",
+          "settings": {
+            "width": "fit",
+            "customize_mobile_size": false,
+            "width_mobile": "fit",
+            "gap_desktop": 12,
+            "gap_mobile": 8,
+            "customize_mobile_padding": false
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "settings": {
+                "text": "<p>Build your base</p>",
+                "heading_size": "md",
+                "html_tag": "h2"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>A flexible footer composition built from the Basic kernel blocks.</p>"
+              }
+            }
+          ]
+        }
+      ]
     }
   ]
 }
