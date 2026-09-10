@@ -22,46 +22,102 @@
     assign external_video = block.settings.external_video_url
   endif
 
+  assign has_video_media = false
+  if uploaded_video != blank or external_video != blank
+    assign has_video_media = true
+  endif
+
   assign has_external_video = false
   if external_video != blank
     assign has_external_video = true
   endif
 
-  assign aspect_ratio_setting = block.settings.aspect_ratio | default: 'original'
-  assign aspect_ratio = 'auto'
-  case aspect_ratio_setting
+  assign uploaded_video_aspect_ratio = 1.7778
+  assign uploaded_video_width = 1600
+  if uploaded_video != blank
+    assign uploaded_video_aspect_ratio = uploaded_video.aspect_ratio | default: uploaded_video.preview_image.aspect_ratio | default: 1.7778 | plus: 0
+    if uploaded_video_aspect_ratio <= 0
+      assign uploaded_video_aspect_ratio = 1.7778
+    endif
+    assign uploaded_video_width = uploaded_video.preview_image.width | default: 1600 | plus: 0
+    if uploaded_video_width <= 0
+      assign uploaded_video_width = 1600
+    endif
+  endif
+
+  assign aspect_ratio_desktop_setting = block.settings.aspect_ratio_desktop | default: block.settings.aspect_ratio | default: 'original'
+  assign aspect_ratio_desktop = 'auto'
+  case aspect_ratio_desktop_setting
     when 'square'
-      assign aspect_ratio = '1'
+      assign aspect_ratio_desktop = '1'
     when 'portrait'
-      assign aspect_ratio = '0.8'
+      assign aspect_ratio_desktop = '0.8'
     when 'landscape'
-      assign aspect_ratio = '1.3333'
+      assign aspect_ratio_desktop = '1.3333'
     when 'wide'
-      assign aspect_ratio = '1.7778'
+      assign aspect_ratio_desktop = '1.7778'
     when 'custom'
-      assign aspect_ratio = block.settings.custom_aspect_ratio | default: 1 | plus: 0
-      if aspect_ratio < 0.3 or aspect_ratio > 3
-        assign aspect_ratio = 1
+      assign aspect_ratio_desktop = block.settings.custom_aspect_ratio_desktop | default: block.settings.custom_aspect_ratio | default: 1 | plus: 0
+      if aspect_ratio_desktop < 0.3 or aspect_ratio_desktop > 3
+        assign aspect_ratio_desktop = 1
       endif
     when 'original'
     else
-      assign aspect_ratio = 'auto'
+      assign aspect_ratio_desktop = 'auto'
   endcase
 
-  if has_external_video and aspect_ratio_setting == 'original'
-    assign aspect_ratio = '1.7778'
+  if aspect_ratio_desktop_setting == 'original'
+    if uploaded_video != blank
+      assign aspect_ratio_desktop = uploaded_video_aspect_ratio
+    elsif has_external_video or has_video_media == false
+      assign aspect_ratio_desktop = '1.7778'
+    endif
   endif
 
-  assign video_height = 'auto'
-  unless aspect_ratio == 'auto'
-    assign video_height = '100%'
+  assign video_height_desktop = 'auto'
+  unless aspect_ratio_desktop == 'auto'
+    assign video_height_desktop = '100%'
+  endunless
+
+  assign aspect_ratio_mobile_setting = block.settings.aspect_ratio_mobile | default: aspect_ratio_desktop_setting | default: 'original'
+  assign aspect_ratio_mobile = 'auto'
+  case aspect_ratio_mobile_setting
+    when 'square'
+      assign aspect_ratio_mobile = '1'
+    when 'portrait'
+      assign aspect_ratio_mobile = '0.8'
+    when 'landscape'
+      assign aspect_ratio_mobile = '1.3333'
+    when 'wide'
+      assign aspect_ratio_mobile = '1.7778'
+    when 'custom'
+      assign aspect_ratio_mobile = block.settings.custom_aspect_ratio_mobile | default: block.settings.custom_aspect_ratio_desktop | default: block.settings.custom_aspect_ratio | default: 1 | plus: 0
+      if aspect_ratio_mobile < 0.3 or aspect_ratio_mobile > 3
+        assign aspect_ratio_mobile = 1
+      endif
+    when 'original'
+    else
+      assign aspect_ratio_mobile = 'auto'
+  endcase
+
+  if aspect_ratio_mobile_setting == 'original'
+    if uploaded_video != blank
+      assign aspect_ratio_mobile = uploaded_video_aspect_ratio
+    elsif has_external_video or has_video_media == false
+      assign aspect_ratio_mobile = '1.7778'
+    endif
+  endif
+
+  assign video_height_mobile = 'auto'
+  unless aspect_ratio_mobile == 'auto'
+    assign video_height_mobile = '100%'
   endunless
 
   assign width_desktop = block.settings.width_desktop | default: 'fit'
   unless width_desktop == 'fit' or width_desktop == 'fill' or width_desktop == 'custom'
     assign width_desktop = 'fit'
   endunless
-  assign video_width_desktop = 'fit-content'
+  assign video_width_desktop = uploaded_video_width | append: 'px'
   if width_desktop == 'fill'
     assign video_width_desktop = '100%'
   elsif width_desktop == 'custom'
@@ -71,7 +127,7 @@
     endif
     assign video_width_desktop = width_custom_desktop | append: '%'
   endif
-  if has_external_video and width_desktop == 'fit'
+  if width_desktop == 'fit' and uploaded_video == blank
     assign video_width_desktop = '100%'
   endif
 
@@ -79,7 +135,7 @@
   unless width_mobile == 'fit' or width_mobile == 'fill' or width_mobile == 'custom'
     assign width_mobile = 'fit'
   endunless
-  assign video_width_mobile = 'fit-content'
+  assign video_width_mobile = uploaded_video_width | append: 'px'
   if width_mobile == 'fill'
     assign video_width_mobile = '100%'
   elsif width_mobile == 'custom'
@@ -89,7 +145,7 @@
     endif
     assign video_width_mobile = width_custom_mobile | append: '%'
   endif
-  if has_external_video and width_mobile == 'fit'
+  if width_mobile == 'fit' and uploaded_video == blank
     assign video_width_mobile = '100%'
   endif
 
@@ -155,8 +211,10 @@
   --video-block-max-width: {{ video_max_width_desktop }};
   --video-block-width-mobile: {{ video_width_mobile }};
   --video-block-max-width-mobile: {{ video_max_width_mobile }};
-  --video-block-ratio: {{ aspect_ratio }};
-  --video-block-height: {{ video_height }};
+  --video-block-ratio: {{ aspect_ratio_desktop }};
+  --video-block-height: {{ video_height_desktop }};
+  --video-block-ratio-mobile: {{ aspect_ratio_mobile }};
+  --video-block-height-mobile: {{ video_height_mobile }};
   --video-block-radius: {{ video_radius }};
   --video-play-button-size: {{ play_button_size_desktop }}px;
   --video-play-button-size-mobile: {{ play_button_size_mobile }}px;
@@ -206,6 +264,12 @@
     border-radius: var(--video-block-radius, var(--media-radius, 0px));
   }
 
+  .video-block .video-block__media > video,
+  .video-block .video-block__media > iframe,
+  .video-block .video-block__media .video__placeholder {
+    height: var(--video-block-height, auto);
+  }
+
   .video-block--first-mobile {
     order: -1;
   }
@@ -221,7 +285,13 @@
     }
 
     .video-block__media {
-      aspect-ratio: var(--video-block-ratio, auto);
+      aspect-ratio: var(--video-block-ratio-mobile, var(--video-block-ratio, auto));
+    }
+
+    .video-block .video-block__media > video,
+    .video-block .video-block__media > iframe,
+    .video-block .video-block__media .video__placeholder {
+      height: var(--video-block-height-mobile, var(--video-block-height, auto));
     }
   }
 {% endstylesheet %}
@@ -276,9 +346,60 @@
       "label": "t:labels.cover_image"
     },
     {
+      "type": "checkbox",
+      "id": "show_video_first_mobile",
+      "label": "t:labels.show_video_first_mobile",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:general.play_button",
+      "visible_if": "{{ block.settings.video_source == 'uploaded' }}"
+    },
+    {
+      "type": "range",
+      "id": "play_button_size_desktop",
+      "label": "t:labels.play_button_size_desktop",
+      "min": 24,
+      "max": 96,
+      "step": 1,
+      "unit": "px",
+      "default": 50,
+      "visible_if": "{{ block.settings.video_source == 'uploaded' }}"
+    },
+    {
+      "type": "range",
+      "id": "play_button_size_mobile",
+      "label": "t:labels.play_button_size_mobile",
+      "min": 24,
+      "max": 96,
+      "step": 1,
+      "unit": "px",
+      "default": 40,
+      "visible_if": "{{ block.settings.video_source == 'uploaded' }}"
+    },
+    {
+      "type": "color",
+      "id": "play_button_background_color",
+      "label": "t:labels.play_button_background_color",
+      "default": "#FFFFFF",
+      "visible_if": "{{ block.settings.video_source == 'uploaded' }}"
+    },
+    {
+      "type": "color",
+      "id": "play_button_icon_color",
+      "label": "t:labels.play_button_icon_color",
+      "default": "#1C1C1C",
+      "visible_if": "{{ block.settings.video_source == 'uploaded' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.size"
+    },
+    {
       "type": "select",
-      "id": "aspect_ratio",
-      "label": "t:labels.aspect_ratio",
+      "id": "aspect_ratio_desktop",
+      "label": "t:labels.desktop_aspect_ratio",
       "options": [
         { "value": "original", "label": "t:options.aspect_ratio.original" },
         { "value": "square", "label": "t:options.aspect_ratio.square" },
@@ -291,64 +412,18 @@
     },
     {
       "type": "range",
-      "id": "custom_aspect_ratio",
-      "label": "t:labels.custom_aspect_ratio",
+      "id": "custom_aspect_ratio_desktop",
+      "label": "t:labels.desktop_custom_aspect_ratio",
       "min": 0.3,
       "max": 3,
       "step": 0.1,
       "default": 1,
-      "visible_if": "{{ block.settings.aspect_ratio == 'custom' }}"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_video_first_mobile",
-      "label": "t:labels.show_video_first_mobile",
-      "default": false
-    },
-    {
-      "type": "header",
-      "content": "t:general.play_button"
-    },
-    {
-      "type": "range",
-      "id": "play_button_size_desktop",
-      "label": "t:labels.play_button_size_desktop",
-      "min": 24,
-      "max": 96,
-      "step": 1,
-      "unit": "px",
-      "default": 50
-    },
-    {
-      "type": "range",
-      "id": "play_button_size_mobile",
-      "label": "t:labels.play_button_size_mobile",
-      "min": 24,
-      "max": 96,
-      "step": 1,
-      "unit": "px",
-      "default": 40
-    },
-    {
-      "type": "color",
-      "id": "play_button_background_color",
-      "label": "t:labels.play_button_background_color",
-      "default": "#FFFFFF"
-    },
-    {
-      "type": "color",
-      "id": "play_button_icon_color",
-      "label": "t:labels.play_button_icon_color",
-      "default": "#1C1C1C"
-    },
-    {
-      "type": "header",
-      "content": "t:options.device.desktop"
+      "visible_if": "{{ block.settings.aspect_ratio_desktop == 'custom' }}"
     },
     {
       "type": "select",
       "id": "width_desktop",
-      "label": "t:labels.width",
+      "label": "t:labels.desktop_width",
       "options": [
         { "value": "fit", "label": "t:options.width.fit" },
         { "value": "fill", "label": "t:options.width.fill" },
@@ -359,7 +434,7 @@
     {
       "type": "range",
       "id": "width_custom_desktop",
-      "label": "t:labels.custom_width",
+      "label": "t:labels.desktop_custom_width",
       "min": 1,
       "max": 100,
       "step": 1,
@@ -370,13 +445,13 @@
     {
       "type": "checkbox",
       "id": "limit_width_desktop",
-      "label": "t:labels.limit_width",
+      "label": "t:labels.desktop_limit_width",
       "default": false
     },
     {
       "type": "range",
       "id": "max_width_desktop",
-      "label": "t:labels.max_width",
+      "label": "t:labels.desktop_max_width",
       "min": 0,
       "max": 1600,
       "step": 16,
@@ -385,13 +460,33 @@
       "visible_if": "{{ block.settings.limit_width_desktop }}"
     },
     {
-      "type": "header",
-      "content": "t:options.device.mobile"
+      "type": "select",
+      "id": "aspect_ratio_mobile",
+      "label": "t:labels.mobile_aspect_ratio",
+      "options": [
+        { "value": "original", "label": "t:options.aspect_ratio.original" },
+        { "value": "square", "label": "t:options.aspect_ratio.square" },
+        { "value": "portrait", "label": "t:options.aspect_ratio.portrait" },
+        { "value": "landscape", "label": "t:options.aspect_ratio.landscape" },
+        { "value": "wide", "label": "t:options.aspect_ratio.wide" },
+        { "value": "custom", "label": "t:options.aspect_ratio.custom" }
+      ],
+      "default": "original"
+    },
+    {
+      "type": "range",
+      "id": "custom_aspect_ratio_mobile",
+      "label": "t:labels.mobile_custom_aspect_ratio",
+      "min": 0.3,
+      "max": 3,
+      "step": 0.1,
+      "default": 1,
+      "visible_if": "{{ block.settings.aspect_ratio_mobile == 'custom' }}"
     },
     {
       "type": "select",
       "id": "width_mobile",
-      "label": "t:labels.width",
+      "label": "t:labels.mobile_width",
       "options": [
         { "value": "fit", "label": "t:options.width.fit" },
         { "value": "fill", "label": "t:options.width.fill" },
@@ -402,7 +497,7 @@
     {
       "type": "range",
       "id": "width_custom_mobile",
-      "label": "t:labels.custom_width",
+      "label": "t:labels.mobile_custom_width",
       "min": 1,
       "max": 100,
       "step": 1,
@@ -413,13 +508,13 @@
     {
       "type": "checkbox",
       "id": "limit_width_mobile",
-      "label": "t:labels.limit_width",
+      "label": "t:labels.mobile_limit_width",
       "default": false
     },
     {
       "type": "range",
       "id": "max_width_mobile",
-      "label": "t:labels.max_width",
+      "label": "t:labels.mobile_max_width",
       "min": 0,
       "max": 1600,
       "step": 16,
@@ -548,8 +643,10 @@
         "video_source": "uploaded",
         "autoplay": false,
         "loop_video": false,
-        "aspect_ratio": "original",
-        "custom_aspect_ratio": 1,
+        "aspect_ratio_desktop": "original",
+        "custom_aspect_ratio_desktop": 1,
+        "aspect_ratio_mobile": "original",
+        "custom_aspect_ratio_mobile": 1,
         "show_video_first_mobile": false,
         "play_button_size_desktop": 50,
         "play_button_size_mobile": 40,

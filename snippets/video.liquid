@@ -17,23 +17,35 @@
   assign video_loop = loop | default: false
   assign video_muted = false
   assign video_play_label = play_label | default: 'video.play' | t
+  assign video_pause_label = 'video.pause' | t
+  assign video_width = video.preview_image.width | default: 1600
+  assign video_height = video.preview_image.height
   if video_autoplay
     assign video_muted = true
   endif
 %}
 
-<div class="video {{ class }}" data-video-media>
+<theme-video class="video {{ class }}" data-video-media>
   {% if video != blank %}
-    {{ video | video_tag: image_size: '1600x', autoplay: video_autoplay, loop: video_loop, muted: video_muted, controls: true, loading: 'lazy' }}
+    {{ video | video_tag: image_size: '1600x', autoplay: video_autoplay, loop: video_loop, muted: video_muted, controls: true, loading: 'lazy', width: video_width, height: video_height }}
     {% if poster != blank and video_autoplay == false %}
       <div class="video__cover" data-video-cover aria-hidden="true">
         {{ poster | image_url: width: 1600 | image_tag: alt: '' }}
       </div>
     {% endif %}
     {% if video_autoplay == false %}
-      <button class="video__play" type="button" data-video-play aria-label="{{ video_play_label | escape }}">
+      <button
+        class="video__play"
+        type="button"
+        data-video-play
+        data-play-label="{{ video_play_label | escape }}"
+        data-pause-label="{{ video_pause_label | escape }}"
+        aria-label="{{ video_play_label | escape }}"
+        aria-pressed="false"
+      >
         <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
-          <path d="m9 6 9 6-9 6V6Z" fill="currentColor" />
+          <path class="video__play-icon" d="m9 6 9 6-9 6V6Z" fill="currentColor" />
+          <path class="video__pause-icon" d="M8 6h3v12H8zM13 6h3v12h-3z" fill="currentColor" />
         </svg>
       </button>
     {% endif %}
@@ -75,7 +87,7 @@
   {% else %}
     {{ 'product-1' | placeholder_svg_tag: 'video__placeholder' }}
   {% endif %}
-</div>
+</theme-video>
 
 {% stylesheet %}
   .video {
@@ -128,7 +140,17 @@
     color: var(--video-play-button-icon, #1c1c1c);
     background: var(--video-play-button-background, #fff);
     transform: translate(-50%, -50%);
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
     cursor: pointer;
+    transition: opacity 180ms ease, visibility 180ms ease;
+  }
+
+  .video[data-video-ready] .video__play {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
   }
 
   .video__play svg {
@@ -143,10 +165,48 @@
     outline-offset: 4px;
   }
 
-  .video.is-playing .video__play,
-  .video.is-playing .video__cover {
+  .video.has-started .video__cover {
     opacity: 0;
     pointer-events: none;
+  }
+
+  .video__pause-icon {
+    display: none;
+  }
+
+  .video.is-playing .video__play-icon {
+    display: none;
+  }
+
+  .video.is-playing .video__pause-icon {
+    display: block;
+  }
+
+  .video[data-video-ready].is-playing .video__play {
+    visibility: hidden;
+    opacity: 0;
+    pointer-events: none;
+  }
+
+  .video[data-video-ready].is-playing:hover .video__play,
+  .video[data-video-ready].is-playing .video__play:focus-visible {
+    visibility: visible;
+    opacity: 1;
+    pointer-events: auto;
+  }
+
+  @media (hover: none) {
+    .video[data-video-ready].is-playing .video__play {
+      visibility: visible;
+      opacity: 1;
+      pointer-events: auto;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .video__play {
+      transition: none;
+    }
   }
 
   .video__placeholder {
@@ -164,32 +224,74 @@
 
 {% javascript %}
   (() => {
-    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+    if (customElements.get('theme-video')) return;
 
-    const initializeVideos = () => {
-      document.querySelectorAll('[data-video-media]:not([data-video-initialized])').forEach((media) => {
-        const video = media.querySelector('video');
-        const playButton = media.querySelector('[data-video-play]');
+    class ThemeVideo extends HTMLElement {
+      connectedCallback() {
+        if (this.abortController) return;
 
-        media.dataset.videoInitialized = 'true';
-
+        const video = this.querySelector('video');
         if (!video) return;
 
-        if (reducedMotion.matches && video.autoplay) {
+        if (window.matchMedia('(prefers-reduced-motion: reduce)').matches && video.autoplay) {
           video.autoplay = false;
           video.removeAttribute('autoplay');
           video.pause();
         }
 
-        playButton?.addEventListener('click', () => {
-          video.play();
-        });
-        video.addEventListener('play', () => media.classList.add('is-playing'));
-        video.addEventListener('ended', () => media.classList.remove('is-playing'));
-      });
-    };
+        const playButton = this.querySelector('[data-video-play]');
+        if (!playButton) return;
 
-    initializeVideos();
-    document.addEventListener('shopify:section:load', initializeVideos);
+        this.abortController = new AbortController();
+        const eventOptions = { signal: this.abortController.signal };
+
+        const hideNativeControls = () => {
+          video.controls = false;
+          video.removeAttribute('controls');
+        };
+
+        const updateButtonState = () => {
+          const isPlaying = !video.paused && !video.ended;
+          this.classList.toggle('is-playing', isPlaying);
+          playButton.setAttribute(
+            'aria-label',
+            isPlaying
+              ? playButton.dataset.pauseLabel || playButton.getAttribute('aria-label') || ''
+              : playButton.dataset.playLabel || playButton.getAttribute('aria-label') || ''
+          );
+          playButton.setAttribute('aria-pressed', isPlaying ? 'true' : 'false');
+        };
+
+        hideNativeControls();
+        this.dataset.videoReady = '';
+        updateButtonState();
+
+        playButton.addEventListener('click', () => {
+          if (video.paused || video.ended) {
+            const playPromise = video.play();
+            playPromise?.catch(() => {});
+          } else {
+            video.pause();
+          }
+        }, eventOptions);
+
+        video.addEventListener('play', () => {
+          this.classList.add('has-started');
+          updateButtonState();
+        }, eventOptions);
+        video.addEventListener('pause', () => {
+          hideNativeControls();
+          updateButtonState();
+        }, eventOptions);
+        video.addEventListener('ended', updateButtonState, eventOptions);
+      }
+
+      disconnectedCallback() {
+        this.abortController?.abort();
+        this.abortController = null;
+      }
+    }
+
+    customElements.define('theme-video', ThemeVideo);
   })();
 {% endjavascript %}
