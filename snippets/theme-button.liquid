@@ -11,7 +11,12 @@
   @param {boolean} [disabled] - Whether the button is disabled
   @param {boolean} [loading] - Whether the button is busy while preserving its width
   @param {string} [variant] - Optional visual variant: primary, secondary, or tertiary
-  @param {string} [icon] - Optional inline icon name
+  @param {string} [icon] - Optional inline icon name: arrow or cart
+  @param {string} [icon_position] - Icon position: before or after
+  @param {string} [icon_size] - Icon size: inherit or custom
+  @param {number} [icon_width] - Custom icon width in pixels
+  @param {boolean} [icon_only] - Hide the visible label when the icon is the control
+  @param {boolean} [open_in_new_tab] - Whether links should open in a new tab
 
   @example
   {% render 'theme-button', label: 'Shop now', url: routes.all_products_collection_url %}
@@ -32,33 +37,75 @@
     assign button_variant = 'primary'
   endunless
 
-  assign button_class = 'btn btn--' | append: button_variant
+  assign button_icon_position = icon_position | default: 'after'
+  unless button_icon_position == 'before' or button_icon_position == 'after'
+    assign button_icon_position = 'after'
+  endunless
+
+  assign button_icon_size = icon_size | default: 'inherit'
+  unless button_icon_size == 'inherit' or button_icon_size == 'custom'
+    assign button_icon_size = 'inherit'
+  endunless
+
+  assign button_icon_width = icon_width | default: 20 | plus: 0
+  if button_icon_width < 12 or button_icon_width > 32
+    assign button_icon_width = 20
+  endif
+
+  assign button_icon_name = icon
+  unless button_icon_name == blank or button_icon_name == 'arrow' or button_icon_name == 'cart'
+    assign button_icon_name = blank
+  endunless
+
+  assign button_class = 'btn btn-' | append: button_variant | append: ' btn--' | append: button_variant
   if loading
     assign button_class = button_class | append: ' btn--loading'
   endif
   if class != blank
     assign button_class = button_class | append: ' ' | append: class
   endif
+
 %}
+
+{% capture button_icon_markup %}
+  {% if button_icon_name == 'arrow' %}
+    <span
+      class="btn__icon{% if button_icon_size == 'custom' %} btn__icon--custom{% endif %}"
+      {% if button_icon_size == 'custom' %}style="--button-icon-width: {{ button_icon_width }}px;"{% endif %}
+      aria-hidden="true"
+    >
+      <svg viewBox="0 0 24 24" fill="none" focusable="false">
+        <path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-thickness)" />
+      </svg>
+    </span>
+  {% elsif button_icon_name == 'cart' %}
+    <span
+      class="btn__icon{% if button_icon_size == 'custom' %} btn__icon--custom{% endif %}"
+      {% if button_icon_size == 'custom' %}style="--button-icon-width: {{ button_icon_width }}px;"{% endif %}
+      aria-hidden="true"
+    >
+      {{ 'icon-cart.svg' | inline_asset_content }}
+    </span>
+  {% endif %}
+{% endcapture %}
+
+{% capture button_content %}
+  <span class="btn__label{% if button_icon_name != blank %} btn__label--icon{% endif %}">
+    {% if button_icon_name != blank and button_icon_position == 'before' %}{{ button_icon_markup }}{% endif %}
+    <span{% if icon_only %} class="visually-hidden"{% endif %}>{{ label | escape }}</span>
+    {% if button_icon_name != blank and button_icon_position == 'after' %}{{ button_icon_markup }}{% endif %}
+  </span>
+{% endcapture %}
 
 {% if url != blank %}
   <a
     class="{{ button_class | strip }}"
     href="{{ url }}"
-    {% if loading %}
-      aria-busy="true"
-    {% endif %}
-    {% if disabled %}
-      aria-disabled="true"
-      tabindex="-1"
-    {% endif %}
+    {% if loading %}aria-busy="true"{% endif %}
+    {% if open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+    {% if disabled %}aria-disabled="true" tabindex="-1"{% endif %}
   >
-    <span class="btn__label{% if icon != blank %} btn__label--icon{% endif %}">
-      {% if icon == 'cart' %}
-        {{ 'icon-cart.svg' | inline_asset_content }}
-      {% endif %}
-      <span{% if icon != blank %} class="visually-hidden"{% endif %}>{{ label | escape }}</span>
-    </span>
+    {{ button_content }}
     {% if loading %}
       <span class="btn__spinner" aria-hidden="true"></span>
       <span class="visually-hidden">{{ 'accessibility.loading' | t }}</span>
@@ -68,19 +115,10 @@
   <button
     class="{{ button_class | strip }}"
     type="{{ type | default: 'button' }}"
-    {% if disabled or loading %}
-      disabled
-    {% endif %}
-    {% if loading %}
-      aria-busy="true"
-    {% endif %}
+    {% if disabled or loading %}disabled{% endif %}
+    {% if loading %}aria-busy="true"{% endif %}
   >
-    <span class="btn__label{% if icon != blank %} btn__label--icon{% endif %}">
-      {% if icon == 'cart' %}
-        {{ 'icon-cart.svg' | inline_asset_content }}
-      {% endif %}
-      <span{% if icon != blank %} class="visually-hidden"{% endif %}>{{ label | escape }}</span>
-    </span>
+    {{ button_content }}
     {% if loading %}
       <span class="btn__spinner" aria-hidden="true"></span>
       <span class="visually-hidden">{{ 'accessibility.loading' | t }}</span>

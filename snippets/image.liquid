@@ -9,10 +9,15 @@
 
   @param {image} image - The image to be rendered
   @param {string} [url] - An optional destination URL for the image
+  @param {image} [mobile_image] - An optional mobile-specific image source
   @param {string} [class] - Optional class to be added to the image wrapper
+  @param {string} [alt] - Optional alternative text; falls back to the image alt
+  @param {boolean} [open_in_new_tab] - Whether a link should open in a new tab
   @param {number} [width] - The highest resolution width of the image to be rendered
   @param {number} [height] - The highest resolution height of the image to be rendered
   @param {string} [crop] - The crop position of the image
+  @param {string} [widths] - Optional responsive image widths
+  @param {string} [sizes] - Optional responsive image sizes
 
   @example
   {% render 'image', image: product.featured_image %}
@@ -28,11 +33,21 @@
 {% enddoc %}
 
 {% liquid
-  unless height
-    assign width = width | default: image.width
-  endunless
+  if image != blank
+    unless height
+      assign width = width | default: image.width
+    endunless
 
-  if url
+    assign image_alt = alt
+    if image_alt == blank
+      assign image_alt = image.alt
+    endif
+
+    assign image_widths = widths | default: blank
+    assign image_sizes = sizes | default: blank
+  endif
+
+  if url != blank
     assign wrapper = 'a'
   else
     assign wrapper = 'div'
@@ -41,11 +56,38 @@
 
 <{{ wrapper }}
   class="image {{ class }}"
-  {% if url %}
-    href="{{ url }}"
+  {% if url != blank %}
+    href="{{ url | escape }}"
+    {% if open_in_new_tab %}
+      target="_blank"
+      rel="noopener noreferrer"
+    {% endif %}
   {% endif %}
 >
-  {{ image | image_url: width: width, height: height, crop: crop | image_tag }}
+  {% if image != blank %}
+    {% if mobile_image != blank %}
+      {% capture mobile_srcset %}
+        {% assign responsive_widths = image_widths | default: '400, 600, 800, 1200, 1600, 2400' | split: ', ' %}
+        {% for responsive_width in responsive_widths %}
+          {{ mobile_image | image_url: width: responsive_width }}{% unless forloop.last %}, {% endunless %}
+        {% endfor %}
+      {% endcapture %}
+      <picture>
+        <source media="(max-width: 767.98px)" srcset="{{ mobile_srcset | strip }}">
+        {% if image_widths != blank or image_sizes != blank %}
+          {{ image | image_url: width: width, height: height, crop: crop | image_tag: widths: image_widths, sizes: image_sizes, alt: image_alt }}
+        {% else %}
+          {{ image | image_url: width: width, height: height, crop: crop | image_tag: alt: image_alt }}
+        {% endif %}
+      </picture>
+    {% elsif image_widths != blank or image_sizes != blank %}
+      {{ image | image_url: width: width, height: height, crop: crop | image_tag: widths: image_widths, sizes: image_sizes, alt: image_alt }}
+    {% else %}
+      {{ image | image_url: width: width, height: height, crop: crop | image_tag: alt: image_alt }}
+    {% endif %}
+  {% else %}
+    {{ 'product-1' | placeholder_svg_tag: 'image__placeholder' }}
+  {% endif %}
 </{{ wrapper }}>
 
 {% stylesheet %}
@@ -57,8 +99,23 @@
     height: auto;
   }
 
-  .image > img {
+  .image > picture {
+    display: block;
     width: 100%;
     height: auto;
+  }
+
+  .image > img,
+  .image > picture > img {
+    display: block;
+    width: 100%;
+    height: auto;
+  }
+
+  .image__placeholder {
+    display: block;
+    width: 100%;
+    height: auto;
+    background-color: var(--surface-color, var(--background-color));
   }
 {% endstylesheet %}
