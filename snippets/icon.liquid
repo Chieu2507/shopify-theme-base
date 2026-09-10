@@ -1,0 +1,142 @@
+{% doc %}
+  Renders a registered icon or a defensively checked custom SVG, optionally as a link.
+
+  The caller owns the accessible name. A link is only rendered when a label is
+  provided; decorative output is hidden from assistive technology.
+
+  @param {string} [icon] - Registered icon key
+  @param {string} [source] - Icon source: library or custom
+  @param {string} [custom_icon] - Custom SVG markup from the Theme Editor
+  @param {string} [url] - Optional link destination
+  @param {string} [label] - Accessible name for a linked icon
+  @param {boolean} [open_in_new_tab] - Whether the link opens in a new tab
+  @param {number} [width] - Icon width in pixels
+  @param {number} [padding] - Icon padding in pixels
+  @param {string} [class] - Additional wrapper classes
+
+  @example
+  {% render 'icon', icon: 'arrow', width: 24 %}
+{% enddoc %}
+
+{% liquid
+  assign icon_source = source | default: 'library'
+  unless icon_source == 'library' or icon_source == 'custom'
+    assign icon_source = 'library'
+  endunless
+
+  assign icon_name = icon | default: 'arrow'
+  unless icon_name == 'arrow' or icon_name == 'cart' or icon_name == 'account' or icon_name == 'circle' or icon_name == 'square' or icon_name == 'triangle' or icon_name == 'diamond'
+    assign icon_name = 'arrow'
+  endunless
+
+  assign icon_width = width | default: 24 | plus: 0
+  if icon_width < 8 or icon_width > 100
+    assign icon_width = 24
+  endif
+
+  assign icon_padding = padding | default: 0 | plus: 0
+  if icon_padding < 0 or icon_padding > 100
+    assign icon_padding = 0
+  endif
+
+  assign custom_icon_markup = custom_icon | default: '' | strip
+  assign custom_icon_valid = false
+  if custom_icon_markup != blank
+    assign custom_icon_lower = custom_icon_markup | downcase
+    if custom_icon_lower contains '<svg' and custom_icon_lower contains '</svg>'
+      assign custom_icon_valid = true
+      if custom_icon_lower contains '<script' or custom_icon_lower contains '<foreignobject' or custom_icon_lower contains '<iframe' or custom_icon_lower contains '<object' or custom_icon_lower contains '<embed' or custom_icon_lower contains '<form' or custom_icon_lower contains '<input' or custom_icon_lower contains '<button' or custom_icon_lower contains '<a' or custom_icon_lower contains '<img' or custom_icon_lower contains '<video' or custom_icon_lower contains '<audio' or custom_icon_lower contains 'javascript:' or custom_icon_lower contains 'data:' or custom_icon_lower contains 'onload=' or custom_icon_lower contains 'onclick=' or custom_icon_lower contains 'onerror=' or custom_icon_lower contains 'onmouseover=' or custom_icon_lower contains 'style=' or custom_icon_lower contains 'href=' or custom_icon_lower contains 'xlink:href' or custom_icon_lower contains '{{' or custom_icon_lower contains '{%'
+        assign custom_icon_valid = false
+      endif
+    endif
+  endif
+
+  assign icon_body = blank
+  if icon_source == 'custom'
+    if custom_icon_valid
+      assign icon_body = custom_icon_markup
+    endif
+  else
+    capture icon_body
+      case icon_name
+        when 'arrow'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-thickness)" /></svg>'
+        when 'cart'
+          echo 'icon-cart.svg' | inline_asset_content
+        when 'account'
+          echo 'icon-account.svg' | inline_asset_content
+        when 'circle'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="var(--icon-thickness)" /></svg>'
+        when 'square'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-linejoin="round" stroke-width="var(--icon-thickness)" /></svg>'
+        when 'triangle'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m12 4 8 16H4L12 4Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-thickness)" /></svg>'
+        when 'diamond'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m12 3 9 9-9 9-9-9 9-9Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-thickness)" /></svg>'
+      endcase
+    endcapture
+    assign icon_body = icon_body | strip
+  endif
+
+  assign icon_wrapper = 'span'
+  if url != blank and label != blank
+    assign icon_wrapper = 'a'
+  endif
+  assign icon_class = 'icon icon-renderer'
+  if class != blank
+    assign icon_class = icon_class | append: ' ' | append: class
+  endif
+
+  assign icon_style = blank
+%}
+
+{% if width != blank or padding != blank %}
+  {% capture icon_style %}
+    --icon-width: {{ icon_width }}px;
+    --icon-padding: {{ icon_padding }}px;
+  {% endcapture %}
+  {% assign icon_style = icon_style | strip %}
+{% endif %}
+
+{% if icon_body != blank %}
+  <{{ icon_wrapper }}
+    class="{{ icon_class | strip }}"
+    {% if icon_style != blank %}style="{{ icon_style }}"{% endif %}
+    {% if icon_wrapper == 'a' %}
+      href="{{ url | escape }}"
+      aria-label="{{ label | escape }}"
+      {% if open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+    {% else %}
+      aria-hidden="true"
+    {% endif %}
+  >{{ icon_body }}</{{ icon_wrapper }}>
+{% endif %}
+
+{% stylesheet %}
+  .icon-renderer {
+    box-sizing: content-box;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: var(--icon-width, 24px);
+    height: var(--icon-width, 24px);
+    max-width: 100%;
+    padding: var(--icon-padding, 0px);
+    color: inherit;
+    line-height: 0;
+    overflow: hidden;
+  }
+
+  .icon-renderer > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+
+  .icon-renderer:is(a) {
+    color: inherit;
+    text-decoration: none;
+  }
+{% endstylesheet %}
