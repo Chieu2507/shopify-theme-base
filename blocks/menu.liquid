@@ -140,6 +140,24 @@
 {% endcapture %}
 {% assign menu_markup = menu_markup | strip %}
 
+{% capture menu_summary %}
+  {{ heading_markup }}
+  <span class="menu-block__toggle-icon menu-block__toggle-icon--{{ menu_icon }}" aria-hidden="true">
+    {% if menu_icon == 'plus' %}
+      <svg viewBox="0 0 24 24" fill="none" focusable="false">
+        <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-linecap="round" stroke-width="var(--icon-thickness)" />
+      </svg>
+    {% else %}
+      <svg viewBox="0 0 24 24" fill="none" focusable="false">
+        <path d="m5 9 7 7 7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-thickness)" />
+      </svg>
+    {% endif %}
+  </span>
+{% endcapture %}
+{% assign menu_summary = menu_summary | strip %}
+
+{% assign menu_content_id = 'MenuContent-' | append: section.id | append: '-' | append: block.id %}
+
 {% if has_menu or request.design_mode %}
   <nav
     class="{{ menu_class }}"
@@ -149,25 +167,16 @@
     {{ block.shopify_attributes }}
   >
     {% if collapse_menu_on_mobile %}
-      <details class="menu-block__details">
-        <summary class="menu-block__summary">
-          {{ heading_markup }}
-          <span class="menu-block__toggle-icon menu-block__toggle-icon--{{ menu_icon }}" aria-hidden="true">
-            {% if menu_icon == 'plus' %}
-              <svg viewBox="0 0 24 24" fill="none" focusable="false">
-                <path d="M12 5v14M5 12h14" stroke="currentColor" stroke-linecap="round" stroke-width="var(--icon-thickness)" />
-              </svg>
-            {% else %}
-              <svg viewBox="0 0 24 24" fill="none" focusable="false">
-                <path d="m5 9 7 7 7-7" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-thickness)" />
-              </svg>
-            {% endif %}
-          </span>
-        </summary>
-        <div class="menu-block__content">
-          <div class="menu-block__content-inner">{{ menu_markup }}</div>
-        </div>
-      </details>
+      {% render 'accordion-details',
+        class: 'menu-block__details',
+        summary: menu_summary,
+        content: menu_markup,
+        content_id: menu_content_id,
+        summary_class: 'menu-block__summary',
+        content_class: 'menu-block__content',
+        content_inner_class: 'menu-block__content-inner',
+        mobile_only: true
+      %}
     {% else %}
       {{ heading_markup }}
       <div class="menu-block__content">
@@ -176,350 +185,6 @@
     {% endif %}
   </nav>
 {% endif %}
-
-{% stylesheet %}
-  .menu-block {
-    display: block;
-    width: 100%;
-    min-width: 0;
-    color: var(--body-color);
-  }
-
-  .menu-block__details,
-  .menu-block__content {
-    min-width: 0;
-  }
-
-  .menu-block__content-inner {
-    min-width: 0;
-    padding-block-end: 20px;
-  }
-
-  .menu-block__heading {
-    display: block;
-    min-width: 0;
-    margin: 0;
-    padding-block: 20px;
-    overflow-wrap: anywhere;
-    color: var(--menu-block-heading-color, var(--heading-color));
-  }
-
-  .menu-block__summary {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    gap: 1rem;
-    width: 100%;
-    min-width: 0;
-    list-style: none;
-    cursor: default;
-  }
-
-  .menu-block__summary::-webkit-details-marker {
-    display: none;
-  }
-
-  .menu-block__summary > .menu-block__heading {
-    flex: 1 1 auto;
-  }
-
-  .menu-block__summary:focus-visible {
-    outline: 2px solid var(--input-focus-color);
-    outline-offset: 3px;
-  }
-
-  .menu-block__content {
-    margin-block-start: var(--menu-block-heading-gap, 16px);
-  }
-
-  .menu-block__details > .menu-block__content {
-    display: block;
-  }
-
-  .menu-block__list,
-  .menu-block__submenu {
-    display: grid;
-    min-width: 0;
-    margin: 0;
-    padding: 0;
-    list-style: none;
-  }
-
-  .menu-block__list {
-    gap: var(--menu-block-menu-gap, 8px);
-    color: var(--menu-block-menu-color, var(--body-color));
-  }
-
-  .menu-block__submenu {
-    gap: var(--menu-block-menu-gap, 8px);
-    margin-block-start: var(--menu-block-menu-gap, 8px);
-    padding-inline-start: 1rem;
-  }
-
-  .menu-block__link {
-    display: inline-block;
-    max-width: 100%;
-    color: inherit;
-    overflow-wrap: anywhere;
-    text-decoration: none;
-  }
-
-  .menu-block__link:hover,
-  .menu-block__link[aria-current='page'],
-  .menu-block__item--active > .menu-block__link {
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
-  }
-
-  .menu-block__empty {
-    color: var(--body-color);
-  }
-
-  .menu-block__toggle-icon {
-    display: none;
-    flex: 0 0 auto;
-    align-items: center;
-    justify-content: center;
-    width: 1rem;
-    height: 1rem;
-    color: inherit;
-    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
-  }
-
-  .menu-block__toggle-icon svg {
-    display: block;
-    width: 100%;
-    height: 100%;
-  }
-
-  @media (min-width: 768px) {
-    .menu-block[data-collapse-mobile='true'] .menu-block__summary {
-      pointer-events: none;
-    }
-
-    .menu-block[data-collapse-mobile='true'] .menu-block__details > .menu-block__content {
-      display: block !important;
-    }
-  }
-
-  @media (max-width: 767.98px) {
-    .menu-block[data-collapse-mobile='true'] .menu-block__details {
-      border-block-end: 1px solid var(--border-color);
-    }
-
-    .menu-block[data-collapse-mobile='true'] .menu-block__summary {
-      display: flex;
-      cursor: pointer;
-      pointer-events: auto;
-      padding-block: 0;
-    }
-
-    .menu-block[data-collapse-mobile='true'] .menu-block__toggle-icon {
-      display: inline-flex;
-    }
-
-    .menu-block[data-collapse-mobile='true'] .menu-block__details > .menu-block__content {
-      display: block !important;
-      box-sizing: border-box;
-      height: 0;
-      margin-block-start: 0;
-      padding-block-start: 0;
-      overflow: hidden;
-      opacity: 0;
-      visibility: hidden;
-      transform: translateY(-0.25rem);
-      transition:
-        height var(--motion-duration-standard) var(--motion-ease-standard),
-        padding-block-start var(--motion-duration-standard) var(--motion-ease-standard),
-        opacity var(--motion-duration-fast) var(--motion-ease-standard),
-        transform var(--motion-duration-fast) var(--motion-ease-standard),
-        visibility 0s linear var(--motion-duration-standard);
-    }
-
-    .menu-block[data-collapse-mobile='true'] .menu-block__content-inner {
-      min-height: 0;
-      overflow: hidden;
-    }
-
-    .menu-block[data-collapse-mobile='true'] .menu-block__details[open] > .menu-block__content {
-      height: auto;
-      overflow-y: hidden;
-      padding-block-start: var(--menu-block-heading-gap, 16px);
-      opacity: 1;
-      visibility: visible;
-      transform: translateY(0);
-      transition-delay: 0s;
-    }
-
-    .menu-block[data-collapse-mobile='true'] .menu-block__details[open] .menu-block__toggle-icon--chevron {
-      transform: rotate(180deg);
-    }
-
-    .menu-block[data-collapse-mobile='true'] .menu-block__details[open] .menu-block__toggle-icon--plus {
-      transform: rotate(45deg);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .menu-block__content,
-    .menu-block__toggle-icon {
-      transition: none;
-    }
-  }
-{% endstylesheet %}
-
-{% javascript %}
-  (() => {
-    const menuSelector = ".menu-block[data-collapse-mobile='true']";
-    const desktopQuery = window.matchMedia('(min-width: 768px)');
-    const reducedMotionQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-    const menuStates = new WeakMap();
-
-    const cancelAnimation = (state) => {
-      state.animationId += 1;
-      if (state.animationFrame) {
-        cancelAnimationFrame(state.animationFrame);
-        state.animationFrame = 0;
-      }
-      if (state.transitionEnd) {
-        state.content.removeEventListener('transitionend', state.transitionEnd);
-        state.content.removeEventListener('transitioncancel', state.transitionEnd);
-        state.transitionEnd = null;
-      }
-    };
-
-    const setStaticState = (state) => {
-      cancelAnimation(state);
-      state.content.style.removeProperty('height');
-    };
-
-    const animateContent = (state) => {
-      const { content, details } = state;
-      cancelAnimation(state);
-
-      if (desktopQuery.matches || reducedMotionQuery.matches) {
-        content.style.removeProperty('height');
-        return;
-      }
-
-      const startHeight = content.getBoundingClientRect().height;
-      const endHeight = details.open ? content.scrollHeight : 0;
-      const animationId = state.animationId;
-
-      content.style.height = `${startHeight}px`;
-      content.getBoundingClientRect();
-
-      if (Math.abs(startHeight - endHeight) < 0.5) {
-        if (details.open) content.style.removeProperty('height');
-        else content.style.height = '0px';
-        return;
-      }
-
-      const transitionEnd = (event) => {
-        if (event.target !== content || event.propertyName !== 'height' || state.animationId !== animationId) return;
-
-        state.transitionEnd = null;
-        content.removeEventListener('transitionend', transitionEnd);
-        content.removeEventListener('transitioncancel', transitionEnd);
-        content.style.removeProperty('height');
-      };
-
-      state.transitionEnd = transitionEnd;
-      content.addEventListener('transitionend', transitionEnd);
-      content.addEventListener('transitioncancel', transitionEnd);
-      state.animationFrame = requestAnimationFrame(() => {
-        state.animationFrame = 0;
-        if (state.animationId !== animationId) return;
-        content.style.height = `${endHeight}px`;
-      });
-    };
-
-    const prepareToggle = (state) => {
-      if (desktopQuery.matches || reducedMotionQuery.matches) return;
-
-      cancelAnimation(state);
-      const currentHeight = state.content.getBoundingClientRect().height;
-      state.content.style.height = `${currentHeight}px`;
-      state.content.getBoundingClientRect();
-    };
-
-    const initializeMenu = (menu) => {
-      const details = menu.querySelector('.menu-block__details');
-      if (!details || menuStates.has(details)) return;
-
-      const controller = new AbortController();
-      const content = details.querySelector('.menu-block__content');
-      const summary = details.querySelector('.menu-block__summary');
-      if (!content || !summary) return;
-
-      const state = {
-        animationFrame: 0,
-        animationId: 0,
-        content,
-        controller,
-        details,
-        transitionEnd: null
-      };
-
-      const syncOpenState = () => {
-        details.open = desktopQuery.matches;
-        if (desktopQuery.matches || reducedMotionQuery.matches) {
-          setStaticState(state);
-        } else {
-          cancelAnimation(state);
-          content.style.height = '0px';
-        }
-      };
-      const syncMotionState = () => {
-        if (reducedMotionQuery.matches) setStaticState(state);
-      };
-      const handleToggle = () => {
-        if (desktopQuery.matches) {
-          details.open = true;
-          setStaticState(state);
-          return;
-        }
-
-        animateContent(state);
-      };
-
-      desktopQuery.addEventListener('change', syncOpenState, { signal: controller.signal });
-      reducedMotionQuery.addEventListener('change', syncMotionState, { signal: controller.signal });
-      summary.addEventListener('click', () => prepareToggle(state), { signal: controller.signal });
-      details.addEventListener('toggle', handleToggle, { signal: controller.signal });
-      menuStates.set(details, state);
-      syncOpenState();
-    };
-
-    const initializeMenus = (root = document) => {
-      if (root.matches?.(menuSelector)) initializeMenu(root);
-      root.querySelectorAll?.(menuSelector).forEach(initializeMenu);
-    };
-
-    const removeMenus = (root) => {
-      const menus = [];
-      if (root.matches?.(menuSelector)) menus.push(root);
-      root.querySelectorAll?.(menuSelector).forEach((menu) => menus.push(menu));
-
-      menus.forEach((menu) => {
-        const details = menu.querySelector('.menu-block__details');
-        const state = details && menuStates.get(details);
-        state?.controller.abort();
-        if (state) cancelAnimation(state);
-        if (details) menuStates.delete(details);
-      });
-    };
-
-    document.addEventListener('shopify:section:load', (event) => initializeMenus(event.target));
-    document.addEventListener('shopify:section:unload', (event) => removeMenus(event.target));
-
-    if (document.readyState === 'loading') {
-      document.addEventListener('DOMContentLoaded', () => initializeMenus(), { once: true });
-    } else {
-      initializeMenus();
-    }
-  })();
-{% endjavascript %}
 
 {% schema %}
 {
