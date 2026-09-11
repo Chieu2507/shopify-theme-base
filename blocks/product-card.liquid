@@ -1,0 +1,111 @@
+{% doc %}
+  Renders a Product Card from the product context supplied by its parent
+  Product List, section, grid, or recommendation surface.
+
+  The card's baseline presentation is managed by Theme Settings → Product
+  cards. This block only exposes instance-level controls defined by the
+  Commerce Block contract.
+
+  @param {product} [product] - Product resource supplied by the parent list
+  @param {boolean} [placeholder] - Whether to render the shared empty card state
+
+  A parent may pass `placeholder: true` while a product resource is not
+  available so the card can preserve the parent layout in the Theme Editor.
+
+  @example
+  {% content_for 'block', type: 'product-card', id: 'product-card' %}
+{% enddoc %}
+
+{% liquid
+  assign card_product = product
+%}
+
+{% if card_product != blank %}
+  {% render 'product-card',
+    product: card_product,
+    show_ranking: block.settings.show_ranking,
+    color_type: block.settings.color_type,
+    color_scheme: block.settings.color_scheme,
+    attributes: block.shopify_attributes
+  %}
+{% elsif placeholder %}
+  {% render 'product-card',
+    product: blank,
+    placeholder: true,
+    show_ranking: block.settings.show_ranking,
+    color_type: block.settings.color_type,
+    color_scheme: block.settings.color_scheme,
+    attributes: block.shopify_attributes
+  %}
+{% else %}
+  <div class="product-card product-card--empty" {{ block.shopify_attributes }}>
+    <p class="product-card__empty-message body-sm">{{ 'products.no_product' | t }}</p>
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .product-card--empty:not(.product-card--placeholder) {
+    display: grid;
+    min-height: 8rem;
+    place-items: center;
+    padding: 1rem;
+  }
+
+  .product-card__empty-message {
+    color: color-mix(in srgb, var(--body-color) 70%, transparent);
+    text-align: center;
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.product_card",
+  "tag": null,
+  "settings": [
+    {
+      "type": "paragraph",
+      "content": "t:info.product_card_settings"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_ranking",
+      "label": "t:labels.show_ranking",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:general.color",
+      "visible_if": "{{ settings.product_card_style == 'card' }}"
+    },
+    {
+      "type": "select",
+      "id": "color_type",
+      "label": "t:labels.type",
+      "options": [
+        { "value": "inherit", "label": "t:options.color_type.inherit" },
+        { "value": "color_scheme", "label": "t:options.color_type.color_scheme" }
+      ],
+      "default": "inherit",
+      "visible_if": "{{ settings.product_card_style == 'card' }}"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "default": "scheme-1",
+      "visible_if": "{{ settings.product_card_style == 'card' and block.settings.color_type == 'color_scheme' }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.product_card",
+      "category": "t:general.product",
+      "settings": {
+        "show_ranking": false,
+        "color_type": "inherit",
+        "color_scheme": "scheme-1"
+      }
+    }
+  ]
+}
+{% endschema %}

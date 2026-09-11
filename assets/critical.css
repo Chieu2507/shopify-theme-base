@@ -511,10 +511,14 @@ input[type='submit'].btn {
   text-decoration: none;
   text-transform: var(--button-text-case);
   transition:
-    background-color var(--motion-duration-standard) var(--motion-ease-standard),
-    border-color var(--motion-duration-standard) var(--motion-ease-standard),
-    color var(--motion-duration-standard) var(--motion-ease-standard),
-    transform var(--motion-duration-standard) var(--motion-ease-standard);
+    background-color var(--button-motion-duration, var(--motion-duration-standard))
+      var(--button-motion-ease, var(--motion-ease-standard)),
+    border-color var(--button-motion-duration, var(--motion-duration-standard))
+      var(--button-motion-ease, var(--motion-ease-standard)),
+    color var(--button-motion-duration, var(--motion-duration-standard))
+      var(--button-motion-ease, var(--motion-ease-standard)),
+    transform var(--button-motion-duration, var(--motion-duration-standard))
+      var(--button-motion-ease, var(--motion-ease-standard));
 }
 
 .btn:hover,
@@ -621,7 +625,9 @@ input.btn.btn-tertiary:is(:hover, :focus-visible)::after,
 input.btn.btn--tertiary:is(:hover, :focus-visible)::after,
 input[type='submit'].btn.btn-tertiary:is(:hover, :focus-visible)::after,
 input[type='submit'].btn.btn--tertiary:is(:hover, :focus-visible)::after {
-  animation: button-tertiary-underline-hover calc(var(--motion-duration-standard) * 1.5) var(--motion-ease-standard) both;
+  animation: button-tertiary-underline-hover
+    calc(var(--button-motion-duration, var(--motion-duration-standard)) * 1.5)
+    var(--button-motion-ease, var(--motion-ease-standard)) both;
 }
 
 .btn--icon {
@@ -795,8 +801,10 @@ legend {
 
 /** Commerce primitives. */
 .product-card {
+  --product-card-action-duration: var(--motion-duration-standard);
+  --product-card-action-ease: var(--motion-ease-standard);
   display: grid;
-  gap: var(--pcard-content-spacing);
+  gap: 0;
   min-width: 0;
   color: var(--body-color);
   text-align: var(--pcard-alignment);
@@ -810,8 +818,20 @@ legend {
   background: var(--background-color);
 }
 
+.product-card--card .product-card__content {
+  padding: var(--pcard-content-spacing, 20px);
+}
+
+.product-card--standard .product-card__content {
+  padding-block-start: var(--pcard-content-spacing, 20px);
+}
+
 .product-card--standard .product-card__media {
   border-radius: var(--media-radius);
+}
+
+.product-card--placeholder .product-card__media {
+  aspect-ratio: var(--pcard-image-ratio);
 }
 
 .product-card__media {
@@ -827,9 +847,13 @@ legend {
 
 .product-card__image-link {
   display: block;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
   height: 100%;
   color: inherit;
   text-decoration: none;
+  isolation: isolate;
 }
 
 .product-card__media .image,
@@ -844,12 +868,31 @@ legend {
 }
 
 .product-card__media .product-card__image > img {
-  transition: transform var(--motion-duration-standard) var(--motion-ease-standard);
+  transition: transform var(--product-card-action-duration) var(--product-card-action-ease);
+}
+
+.product-card__image {
+  position: relative;
+  z-index: 0;
+}
+
+.product-card__image > img,
+.product-card__secondary-image > img {
+  object-fit: cover;
+  object-position: center;
 }
 
 .product-card__placeholder {
   background: color-mix(in srgb, var(--background-color) 88%, var(--body-color));
   fill: var(--body-color);
+}
+
+.product-card--placeholder .product-card__title {
+  color: color-mix(in srgb, var(--heading-color) 72%, transparent);
+}
+
+.product-card--placeholder .product-card__price {
+  color: color-mix(in srgb, var(--body-color) 64%, transparent);
 }
 
 .product-card__badges {
@@ -863,11 +906,51 @@ legend {
   gap: 0.35rem;
 }
 
-.product-card__secondary-image {
+.product-card__media .product-card__secondary-image {
+  display: block;
   position: absolute;
   inset: 0;
+  z-index: 1;
+  width: 100%;
+  height: 100%;
+  max-width: none;
   opacity: 0;
-  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
+  pointer-events: none;
+  transition: opacity var(--product-card-action-duration) var(--product-card-action-ease);
+}
+
+.product-card__action {
+  --product-card-action-distance: 0.5rem;
+  opacity: 1;
+  transform: translateY(0);
+  transition:
+    opacity var(--product-card-action-duration) var(--product-card-action-ease),
+    transform var(--product-card-action-duration) var(--product-card-action-ease);
+}
+
+.product-card__action--motion-fast {
+  --product-card-action-duration: var(--motion-duration-fast);
+}
+
+.product-card__action--motion-slow {
+  --product-card-action-duration: var(--motion-duration-slow);
+}
+
+.product-card--ratio-natural .product-card__media {
+  aspect-ratio: auto;
+}
+
+.product-card--ratio-natural.product-card--placeholder .product-card__media {
+  aspect-ratio: 1 / 1;
+}
+
+.product-card--ratio-natural .product-card__image-link,
+.product-card--ratio-natural .product-card__image-link .product-card__image {
+  height: auto;
+}
+
+.product-card--ratio-natural .product-card__image > img {
+  height: auto;
 }
 
 @media (hover: hover) and (pointer: fine) {
@@ -909,6 +992,24 @@ legend {
   right: 0.75rem;
   z-index: var(--z-base);
   padding-inline: 0.75rem;
+}
+
+.product-card__quick-view-button {
+  max-width: 100%;
+}
+
+@media (hover: hover) and (pointer: fine) {
+  .product-card__media .product-card__action {
+    opacity: 0;
+    pointer-events: none;
+    transform: translateY(var(--product-card-action-distance));
+  }
+
+  .product-card__media:is(:hover, :focus-within) .product-card__action {
+    opacity: 1;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
 }
 
 .product-card__content {
@@ -964,6 +1065,22 @@ legend {
 
 .product-card__price {
   justify-self: var(--pcard-alignment);
+}
+
+.product-card__rating {
+  display: inline-flex;
+  align-items: baseline;
+  justify-self: var(--pcard-alignment);
+  gap: 0.25rem;
+  color: var(--body-color);
+}
+
+.product-card__rating-star {
+  color: var(--accent-color);
+}
+
+.product-card__rating-count {
+  color: color-mix(in srgb, var(--body-color) 70%, transparent);
 }
 
 .product-card__swatches {
@@ -1378,12 +1495,16 @@ legend {
     padding-inline: 0;
   }
 
-  .product-card__secondary-image {
+  .product-card__media .product-card__secondary-image {
     display: none;
   }
 
-  .product-card {
-    gap: var(--pcard-content-spacing-mobile);
+  .product-card--card .product-card__content {
+    padding: var(--pcard-content-spacing-mobile, 16px);
+  }
+
+  .product-card--standard .product-card__content {
+    padding-block-start: var(--pcard-content-spacing-mobile, 16px);
   }
 
   .product-card__content {

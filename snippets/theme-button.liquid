@@ -17,6 +17,9 @@
   @param {number} [icon_width] - Custom icon width in pixels
   @param {boolean} [icon_only] - Hide the visible label when the icon is the control
   @param {boolean} [open_in_new_tab] - Whether links should open in a new tab
+  @param {string} [aria_label] - Optional accessible name when it differs from the visible label
+  @param {string} [attributes] - Optional HTML attributes owned by the caller
+  @param {string} [motion_speed] - Motion token: fast, standard, or slow
 
   @example
   {% render 'theme-button', label: 'Shop now', url: routes.all_products_collection_url %}
@@ -56,6 +59,21 @@
   unless button_icon_name == blank or button_icon_name == 'arrow' or button_icon_name == 'arrow-right' or button_icon_name == 'cart' or button_icon_name == 'shopping-bag'
     assign button_icon_name = blank
   endunless
+
+  assign button_motion_speed = motion_speed | default: 'standard'
+  case button_motion_speed
+    when 'fast', 'slow'
+    when 'standard'
+    else
+      assign button_motion_speed = 'standard'
+  endcase
+  assign button_motion_duration = 'var(--motion-duration-standard)'
+  if button_motion_speed == 'fast'
+    assign button_motion_duration = 'var(--motion-duration-fast)'
+  elsif button_motion_speed == 'slow'
+    assign button_motion_duration = 'var(--motion-duration-slow)'
+  endif
+  assign button_motion_style = '--button-motion-duration: ' | append: button_motion_duration | append: ';'
 
   assign button_class = 'btn btn-' | append: button_variant | append: ' btn--' | append: button_variant
   if loading
@@ -98,7 +116,10 @@
 {% if url != blank %}
   <a
     class="{{ button_class | strip }}"
-    href="{{ url }}"
+    href="{{ url | escape }}"
+    style="{{ button_motion_style }}"
+    {% if aria_label != blank %}aria-label="{{ aria_label | escape }}"{% endif %}
+    {% if attributes != blank %}{{ attributes }}{% endif %}
     {% if loading %}aria-busy="true"{% endif %}
     {% if open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
     {% if disabled %}aria-disabled="true" tabindex="-1"{% endif %}
@@ -113,6 +134,9 @@
   <button
     class="{{ button_class | strip }}"
     type="{{ type | default: 'button' }}"
+    style="{{ button_motion_style }}"
+    {% if aria_label != blank %}aria-label="{{ aria_label | escape }}"{% endif %}
+    {% if attributes != blank %}{{ attributes }}{% endif %}
     {% if disabled or loading %}disabled{% endif %}
     {% if loading %}aria-busy="true"{% endif %}
   >
