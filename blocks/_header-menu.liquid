@@ -58,10 +58,10 @@
     assign menu_gap = 24
   endif
 
-  assign menu_class = 'header-menu header-menu--trigger-' | append: dropdown_trigger | append: ' header-menu--font-' | append: menu_font | append: ' header-menu--size-' | append: menu_font_size | append: ' header-menu--tracking-' | append: menu_letter_spacing
-  assign menu_class = menu_class | append: ' header-menu--text-' | append: menu_text_case | append: ' header-menu--submenu-font-' | append: submenu_font | append: ' header-menu--submenu-size-' | append: submenu_font_size | append: ' header-menu--submenu-case-' | append: submenu_text_case
-  assign mobile_drawer_class = 'header__mobile-drawer header-menu--font-' | append: menu_font | append: ' header-menu--size-' | append: menu_font_size | append: ' header-menu--tracking-' | append: menu_letter_spacing
-  assign mobile_drawer_class = mobile_drawer_class | append: ' header-menu--text-' | append: menu_text_case | append: ' header-menu--submenu-font-' | append: submenu_font | append: ' header-menu--submenu-size-' | append: submenu_font_size | append: ' header-menu--submenu-case-' | append: submenu_text_case
+  assign menu_typography_class = 'body-text body-' | append: menu_font_size | append: ' font-' | append: menu_font | append: ' tracking-' | append: menu_letter_spacing | append: ' text-case-' | append: menu_text_case
+  assign submenu_typography_class = 'body-text body-' | append: submenu_font_size | append: ' font-' | append: submenu_font | append: ' tracking-' | append: menu_letter_spacing | append: ' text-case-' | append: submenu_text_case
+  assign menu_class = 'header-menu header-menu--trigger-' | append: dropdown_trigger
+  assign mobile_drawer_class = 'header__mobile-drawer'
   assign header_menu = block.settings.menu
   assign has_header_menu = false
   if block.settings.menu != blank and block.settings.menu.links != blank
@@ -78,7 +78,7 @@
 
 {% if has_header_menu or request.design_mode %}
   <nav
-    class="{{ menu_class }}"
+    class="{{ menu_class }} {{ menu_typography_class }}"
     id="HeaderMenu-{{ section.id }}"
     aria-label="{{ 'accessibility.menu' | t }}"
     data-dropdown-trigger="{{ dropdown_trigger }}"
@@ -104,12 +104,12 @@
                       {% render 'icon', icon: 'chevron-down', class: 'header-menu__dropdown-icon' %}
                     {% endif %}
                   </summary>
-                  <ul class="header-menu__submenu" role="list">
+                  <ul class="header-menu__submenu {{ submenu_typography_class }}" role="list">
                     {% for child_link in link.links %}
                       <li class="header-menu__submenu-item">
                         <a class="header-menu__link{% if child_link.links != blank %} header-menu__link--has-tertiary{% endif %}" href="{{ child_link.url }}"><span class="header-menu__link-label">{{ child_link.title | escape }}</span>{% if child_link.links != blank %}{% render 'icon', icon: 'chevron-right', class: 'header-menu__tertiary-arrow' %}{% endif %}</a>
                         {% if child_link.links != blank %}
-                          <ul class="header-menu__tertiary" role="list">
+                          <ul class="header-menu__tertiary {{ submenu_typography_class }}" role="list">
                             {% for grandchild_link in child_link.links %}
                               <li><a class="header-menu__tertiary-link" href="{{ grandchild_link.url }}"><span class="header-menu__tertiary-link-label">{{ grandchild_link.title | escape }}</span></a></li>
                             {% endfor %}
@@ -131,13 +131,13 @@
     {% endif %}
   </nav>
 
-  <aside class="{{ mobile_drawer_class }}" id="HeaderMobileDrawer-{{ section.id }}" aria-label="{{ 'accessibility.menu' | t }}" aria-hidden="true" data-header-mobile-drawer{% if menu_style != blank %} style="{{ menu_style | strip }}"{% endif %}>
+  <aside class="{{ mobile_drawer_class }} {{ menu_typography_class }}" id="HeaderMobileDrawer-{{ section.id }}" aria-label="{{ 'accessibility.menu' | t }}" aria-hidden="true" data-header-mobile-drawer{% if menu_style != blank %} style="{{ menu_style | strip }}"{% endif %}>
     <button class="header__mobile-drawer-backdrop" type="button" aria-label="Close menu" data-header-menu-backdrop></button>
     <div class="header__mobile-drawer-surface">
       <header class="header__mobile-drawer-header">
-        <span class="header__mobile-drawer-title">{{ shop.name | escape }}</span>
+        <span class="header__mobile-drawer-title heading-text heading-sm">{{ shop.name | escape }}</span>
         <button class="overlay-close header__mobile-drawer-close" type="button" aria-label="Close menu" aria-controls="HeaderMobileDrawer-{{ section.id }}" data-header-menu-toggle></button>
-        <button class="header__mobile-drawer-back" type="button" hidden data-header-menu-back>
+        <button class="header__mobile-drawer-back {{ menu_typography_class }}" type="button" hidden data-header-menu-back>
           {% render 'icon', icon: 'chevron-left', class: 'header__mobile-drawer-back-icon' %}<span data-header-menu-back-label data-header-menu-back-default-label="{{ 'accessibility.menu' | t }}">{{ 'accessibility.menu' | t }}</span>
         </button>
       </header>
@@ -145,11 +145,11 @@
         {% if has_header_menu %}
           <ul class="header__mobile-drawer-list" role="list">
             {% for link in header_menu.links %}
-              <li class="header__mobile-drawer-item{% if link.links != blank %} header__mobile-drawer-item--has-children{% endif %}" data-menu-title="{{ link.title | handleize }}">
+              <li class="header__mobile-drawer-item {{ menu_typography_class }}{% if link.links != blank %} header__mobile-drawer-item--has-children{% endif %}" data-menu-title="{{ link.title | handleize }}">
                 {% if link.links != blank %}
                   <details class="header__mobile-drawer-details" data-mobile-drawer-details>
                     <summary><span>{{ link.title | escape }}</span>{% render 'icon', icon: 'chevron-right', class: 'header__mobile-drawer-chevron' %}</summary>
-                    <div class="header__mobile-drawer-submenu">
+                    <div class="header__mobile-drawer-submenu {{ submenu_typography_class }}">
                       <ul role="list">
                         {% for child_link in link.links %}
                           <li>
@@ -179,13 +179,13 @@
       </div>
       <footer class="header__mobile-drawer-footer">
         {% if shop.customer_accounts_enabled %}
-          <shopify-account class="header__mobile-drawer-account" menu="customer-account-main-menu">
+          <shopify-account class="header__mobile-drawer-account btn btn--primary body-text" menu="customer-account-main-menu">
             <span slot="signed-out-avatar" class="header__mobile-drawer-account-avatar">
               <span>{{ 'customers.login.submit' | t }}</span>
             </span>
           </shopify-account>
         {% else %}
-          <a class="header__mobile-drawer-account" href="{{ routes.account_login_url }}">{{ 'customers.login.submit' | t }}</a>
+          <a class="header__mobile-drawer-account btn btn--primary body-text" href="{{ routes.account_login_url }}">{{ 'customers.login.submit' | t }}</a>
         {% endif %}
 
         {% if localization.available_countries.size > 1 or localization.available_languages.size > 0 %}
@@ -244,156 +244,6 @@
     min-width: 0;
     margin-inline-end: auto;
     color: var(--header-menu-color, var(--body-color));
-    font-family: var(--header-menu-font-family, var(--font-accent-family));
-    font-size: var(--header-menu-font-size, var(--font-body-md));
-    font-style: var(--header-menu-font-style, var(--font-accent-style));
-    font-weight: var(--header-menu-font-weight, var(--font-accent-weight));
-    letter-spacing: var(--header-menu-letter-spacing, var(--font-body-letter-spacing));
-    text-transform: var(--header-menu-text-case, none);
-  }
-
-  .header-menu--font-body {
-    --header-menu-font-family: var(--font-body-family);
-    --header-menu-font-style: var(--font-body-style);
-    --header-menu-font-weight: var(--font-body-weight);
-  }
-
-  .header-menu--font-heading {
-    --header-menu-font-family: var(--font-heading-family);
-    --header-menu-font-style: var(--font-heading-style);
-    --header-menu-font-weight: var(--font-heading-weight);
-  }
-
-  .header-menu--font-accent {
-    --header-menu-font-family: var(--font-accent-family);
-    --header-menu-font-style: var(--font-accent-style);
-    --header-menu-font-weight: var(--font-accent-weight);
-  }
-
-  .header-menu--size-xs {
-    --header-menu-font-size: var(--font-body-xs);
-  }
-
-  .header-menu--size-sm {
-    --header-menu-font-size: var(--font-body-sm);
-  }
-
-  .header-menu--size-md {
-    --header-menu-font-size: var(--font-body-md);
-  }
-
-  .header-menu--size-lg {
-    --header-menu-font-size: var(--font-body-lg);
-  }
-
-  .header-menu--size-xl {
-    --header-menu-font-size: var(--font-body-xl);
-  }
-
-  .header-menu--size-xxl {
-    --header-menu-font-size: var(--font-body-xxl);
-  }
-
-  .header-menu--tracking-tighter {
-    --header-menu-letter-spacing: -0.04em;
-  }
-
-  .header-menu--tracking-tight {
-    --header-menu-letter-spacing: -0.02em;
-  }
-
-  .header-menu--tracking-normal {
-    --header-menu-letter-spacing: 0em;
-  }
-
-  .header-menu--tracking-relaxed {
-    --header-menu-letter-spacing: 0.02em;
-  }
-
-  .header-menu--tracking-loose {
-    --header-menu-letter-spacing: 0.04em;
-  }
-
-  .header-menu--tracking-extra_loose {
-    --header-menu-letter-spacing: 0.08em;
-  }
-
-  .header-menu--tracking-ultra_loose {
-    --header-menu-letter-spacing: 0.12em;
-  }
-
-  .header-menu--tracking-mega_loose {
-    --header-menu-letter-spacing: 0.16em;
-  }
-
-  .header-menu--text-uppercase {
-    --header-menu-text-case: uppercase;
-  }
-
-  .header-menu--text-original {
-    --header-menu-text-case: none;
-  }
-
-  .header-menu--color-heading {
-    --header-menu-color: var(--heading-color);
-  }
-
-  .header-menu--color-body {
-    --header-menu-color: var(--body-color);
-  }
-
-  .header-menu--submenu-font-body {
-    --header-submenu-font-family: var(--font-body-family);
-    --header-submenu-font-style: var(--font-body-style);
-    --header-submenu-font-weight: var(--font-body-weight);
-  }
-
-  .header-menu--submenu-font-heading {
-    --header-submenu-font-family: var(--font-heading-family);
-    --header-submenu-font-style: var(--font-heading-style);
-    --header-submenu-font-weight: var(--font-heading-weight);
-  }
-
-  .header-menu--submenu-font-accent {
-    --header-submenu-font-family: var(--font-accent-family);
-    --header-submenu-font-style: var(--font-accent-style);
-    --header-submenu-font-weight: var(--font-accent-weight);
-  }
-
-  .header-menu--submenu-size-sm {
-    --header-submenu-font-size: var(--font-body-sm);
-  }
-
-  .header-menu--submenu-size-md {
-    --header-submenu-font-size: var(--font-body-md);
-  }
-
-  .header-menu--submenu-size-lg {
-    --header-submenu-font-size: var(--font-body-lg);
-  }
-
-  .header-menu--submenu-size-xl {
-    --header-submenu-font-size: var(--font-body-xl);
-  }
-
-  .header-menu--submenu-size-xxl {
-    --header-submenu-font-size: var(--font-body-xxl);
-  }
-
-  .header-menu--submenu-case-original {
-    --header-submenu-text-case: none;
-  }
-
-  .header-menu--submenu-case-uppercase {
-    --header-submenu-text-case: uppercase;
-  }
-
-  .header-menu--submenu-color-heading {
-    --header-submenu-color: var(--heading-color);
-  }
-
-  .header-menu--submenu-color-body {
-    --header-submenu-color: var(--body-color);
   }
 
   .header-menu__list,
@@ -489,12 +339,6 @@
     background: var(--background-color);
     box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.10), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
     color: var(--header-submenu-color, var(--header-menu-color, var(--body-color)));
-    font-family: var(--header-submenu-font-family, var(--font-body-family));
-    font-size: var(--header-submenu-font-size, var(--font-body-sm));
-    font-style: var(--header-submenu-font-style, var(--font-body-style));
-    font-weight: var(--header-submenu-font-weight, var(--font-body-weight));
-    letter-spacing: var(--header-menu-letter-spacing, var(--font-body-letter-spacing));
-    text-transform: var(--header-submenu-text-case, none);
     opacity: 0;
     visibility: hidden;
     pointer-events: none;
@@ -565,9 +409,9 @@
 
   .header-mega-menu--vertical .header-mega-menu__layout { grid-template-columns: 1fr; }
 
-  .header-mega-menu__content { min-width: 0; font-family: var(--mega-menu-font-family, inherit); font-size: var(--mega-menu-font-size, inherit); letter-spacing: var(--mega-menu-letter-spacing, inherit); }
+  .header-mega-menu__content { min-width: 0; }
   .header-mega-menu__content--with-featured { display: grid; grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 1fr); gap: 2rem; }
-  .header-mega-menu__featured { display: grid; align-content: start; gap: 0.65rem; margin: 0; padding: 0; list-style: none; font-family: var(--mega-menu-font-family, inherit); font-size: var(--mega-menu-featured-font-size, var(--font-body-lg)); letter-spacing: var(--mega-menu-letter-spacing, inherit); }
+  .header-mega-menu__featured { display: grid; align-content: start; gap: 0.65rem; margin: 0; padding: 0; list-style: none; }
   .header-mega-menu__featured a { color: inherit; text-decoration: none; }
   .header-mega-menu__featured a:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 0.2em; }
 
@@ -621,8 +465,8 @@
   .header-mega-menu__banner { color: inherit; text-decoration: none; }
   .header-mega-menu__banner-image { display: block; width: 100%; aspect-ratio: 1 / 1.1; object-fit: cover; }
   .header-mega-menu__banner-title { display: block; margin-block-start: 0.75rem; }
-  .header-mega-menu__banner-text { display: block; margin-block-start: 0.35rem; font-size: var(--font-body-xs); }
-  .header-mega-menu__banner-label { display: inline-block; margin-block-start: 0.65rem; font-size: var(--font-body-xs); text-decoration: underline; text-underline-offset: 0.2em; }
+  .header-mega-menu__banner-text { display: block; margin-block-start: 0.35rem; }
+  .header-mega-menu__banner-label { display: inline-block; margin-block-start: 0.65rem; text-decoration: underline; text-underline-offset: 0.2em; }
 
   .header-menu__submenu .header-menu__link {
     width: 100%;
@@ -782,12 +626,6 @@
   .header__mobile-drawer {
     display: none;
     color: var(--header-menu-color, var(--body-color));
-    font-family: var(--header-menu-font-family, var(--font-accent-family));
-    font-size: var(--header-menu-font-size, var(--font-body-xs));
-    font-style: var(--header-menu-font-style, var(--font-accent-style));
-    font-weight: var(--header-menu-font-weight, var(--font-accent-weight));
-    letter-spacing: var(--header-menu-letter-spacing, var(--font-body-letter-spacing));
-    text-transform: var(--header-menu-text-case, none);
   }
 
   .header-menu__drawer,
@@ -993,12 +831,6 @@
 
   .header__mobile-drawer-title {
       overflow: hidden;
-      color: var(--heading-color);
-      font-family: var(--font-heading-family);
-      font-size: var(--font-heading-sm);
-      line-height: var(--font-heading-sm-line-height);
-      font-style: var(--font-heading-style);
-      font-weight: var(--font-heading-weight);
       text-overflow: ellipsis;
       white-space: nowrap;
     }
@@ -1019,12 +851,6 @@
       border: 0;
       background: transparent;
       color: var(--header-menu-color);
-      font-family: var(--header-menu-font-family);
-      font-size: var(--header-menu-font-size);
-      font-style: var(--header-menu-font-style);
-      font-weight: var(--header-menu-font-weight);
-      letter-spacing: var(--header-menu-letter-spacing);
-      text-transform: var(--header-menu-text-case);
     }
 
     .header__mobile-drawer-back[hidden],
@@ -1069,16 +895,6 @@
       border-bottom: 1px solid var(--border-color);
     }
 
-    .header__mobile-drawer-item {
-      color: var(--header-menu-color);
-      font-family: var(--header-menu-font-family);
-      font-size: var(--header-menu-font-size);
-      font-style: var(--header-menu-font-style);
-      font-weight: var(--header-menu-font-weight);
-      letter-spacing: var(--header-menu-letter-spacing);
-      text-transform: var(--header-menu-text-case);
-    }
-
     .header__mobile-drawer-link,
     .header__mobile-drawer-details > summary {
       display: flex;
@@ -1108,11 +924,6 @@
       padding: 1rem var(--page-margin-mobile);
       background: var(--background-color);
       color: var(--header-submenu-color);
-      font-family: var(--header-submenu-font-family);
-      font-size: var(--header-submenu-font-size);
-      font-style: var(--header-submenu-font-style);
-      font-weight: var(--header-submenu-font-weight);
-      text-transform: var(--header-submenu-text-case);
       opacity: 0;
       pointer-events: none;
       transform: translateX(100%);
@@ -1230,14 +1041,14 @@
       border-radius: var(--button-radius);
       background: var(--button-primary-background);
       color: var(--button-primary-text);
-      font-family: var(--button-primary-font-family);
-      font-size: var(--button-font-size, inherit);
-      font-weight: var(--button-primary-font-weight, inherit);
-      letter-spacing: var(--button-primary-letter-spacing, inherit);
-      line-height: 1;
       text-align: center;
       text-decoration: none;
-      text-transform: var(--button-primary-text-case);
+    }
+
+    shopify-account.header__mobile-drawer-account::part(signed-out-avatar) {
+      font: inherit;
+      letter-spacing: inherit;
+      text-transform: inherit;
     }
 
     shopify-account.header__mobile-drawer-account {
@@ -1375,12 +1186,6 @@
       border: 0;
       background: transparent;
       color: var(--header-menu-color);
-      font-family: var(--header-menu-font-family);
-      font-size: var(--header-menu-font-size);
-      font-style: var(--header-menu-font-style);
-      font-weight: var(--header-menu-font-weight);
-      letter-spacing: var(--header-menu-letter-spacing);
-      text-transform: var(--header-menu-text-case);
       cursor: pointer;
     }
 
@@ -1416,16 +1221,6 @@
     .header-menu__summary {
       min-height: 2.3rem;
       padding-block: 0.35rem;
-    }
-
-    .header-menu,
-    .header__mobile-drawer {
-      font-size: var(--header-menu-font-size);
-    }
-
-    .header-menu__submenu,
-    .header__mobile-drawer-submenu {
-      font-size: var(--header-submenu-font-size);
     }
 
     .header-menu__summary {

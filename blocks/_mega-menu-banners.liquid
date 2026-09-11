@@ -8,40 +8,26 @@
   if section.settings.section_width == 'full_width'
     assign mega_container_width = 'full-width'
   endif
-  assign mega_font_family = 'var(--font-accent-family)'
-  if block.settings.font == 'body'
-    assign mega_font_family = 'var(--font-body-family)'
-  elsif block.settings.font == 'heading'
-    assign mega_font_family = 'var(--font-heading-family)'
-  endif
-  assign mega_font_size = 'var(--font-body-xl)'
-  case block.settings.font_size
-    when 'xs'
-      assign mega_font_size = 'var(--font-body-xs)'
-    when 'sm'
-      assign mega_font_size = 'var(--font-body-sm)'
-    when 'md'
-      assign mega_font_size = 'var(--font-body-md)'
-    when 'lg'
-      assign mega_font_size = 'var(--font-body-lg)'
-    when 'xxl'
-      assign mega_font_size = 'var(--font-body-xxl)'
-  endcase
-  assign mega_featured_font_size = mega_font_size
-  assign mega_letter_spacing = 'normal'
-  case block.settings.letter_spacing
-    when 'tight'
-      assign mega_letter_spacing = '-0.01em'
-    when 'relaxed'
-      assign mega_letter_spacing = '0.02em'
-  endcase
+  assign mega_font = block.settings.font | default: 'accent'
+  unless mega_font == 'body' or mega_font == 'heading' or mega_font == 'accent'
+    assign mega_font = 'accent'
+  endunless
+  assign mega_font_size = block.settings.font_size | default: 'xl'
+  unless mega_font_size == 'xs' or mega_font_size == 'sm' or mega_font_size == 'md' or mega_font_size == 'lg' or mega_font_size == 'xl' or mega_font_size == 'xxl'
+    assign mega_font_size = 'xl'
+  endunless
+  assign mega_letter_spacing = block.settings.letter_spacing | default: 'normal'
+  unless mega_letter_spacing == 'tight' or mega_letter_spacing == 'normal' or mega_letter_spacing == 'relaxed'
+    assign mega_letter_spacing = 'normal'
+  endunless
+  assign mega_typography_class = 'body-text body-' | append: mega_font_size | append: ' font-' | append: mega_font | append: ' tracking-' | append: mega_letter_spacing
 %}
-<div class="header-mega-menu header-mega-menu--{{ block.settings.layout | default: 'horizontal' }}{% if block.settings.highlight_menu_item %} header-mega-menu--highlight{% endif %}{% if block.settings.limit_width %} header-mega-menu--submenu-limited{% endif %}" data-header-mega-menu data-mega-menu-trigger="{{ mega_menu_trigger }}" hidden style="--mega-menu-columns: {{ mega_columns }}; --mega-menu-gap: {{ mega_gap }}px; --mega-menu-max-width: {{ mega_max_width }}px; --mega-banner-width: {{ mega_banner_width }}%; --mega-menu-font-family: {{ mega_font_family }}; --mega-menu-font-size: {{ mega_font_size }}; --mega-menu-featured-font-size: {{ mega_featured_font_size }}; --mega-menu-letter-spacing: {{ mega_letter_spacing }}; --mega-menu-highlight-color: {{ block.settings.highlight_color | default: '#000000' }};" {{ block.shopify_attributes }}>
+<div class="header-mega-menu header-mega-menu--{{ block.settings.layout | default: 'horizontal' }}{% if block.settings.highlight_menu_item %} header-mega-menu--highlight{% endif %}{% if block.settings.limit_width %} header-mega-menu--submenu-limited{% endif %}" data-header-mega-menu data-mega-menu-trigger="{{ mega_menu_trigger }}" hidden style="--mega-menu-columns: {{ mega_columns }}; --mega-menu-gap: {{ mega_gap }}px; --mega-menu-max-width: {{ mega_max_width }}px; --mega-banner-width: {{ mega_banner_width }}%; --mega-menu-highlight-color: {{ block.settings.highlight_color | default: '#000000' }};" {{ block.shopify_attributes }}>
   <div class="container {{ mega_container_width }} header-mega-menu__container">
     <div class="header-mega-menu__layout">
-      <div class="header-mega-menu__content{% if block.settings.collections != blank %} header-mega-menu__content--with-featured{% endif %}">
+      <div class="header-mega-menu__content {{ mega_typography_class }}{% if block.settings.collections != blank %} header-mega-menu__content--with-featured{% endif %}">
         {% if block.settings.collections != blank %}
-          <ul class="header-mega-menu__featured" role="list">
+          <ul class="header-mega-menu__featured {{ mega_typography_class }}" role="list">
             {% for collection in block.settings.collections %}
               <li><a href="{{ collection.url }}">{{ collection.title | escape }}</a></li>
             {% endfor %}
