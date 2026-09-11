@@ -34,7 +34,15 @@
 
 {% liquid
   if image != blank
-    unless height
+    assign image_height_value = height | plus: 0
+    assign has_image_height = false
+    if image_height_value >= 1 and image_height_value <= 5760
+      assign has_image_height = true
+    else
+      assign image_height_value = blank
+    endif
+
+    unless has_image_height
       assign width = width | default: image.width
     endunless
 
@@ -75,15 +83,31 @@
       <picture>
         <source media="(max-width: 767.98px)" srcset="{{ mobile_srcset | strip }}">
         {% if image_widths != blank or image_sizes != blank %}
-          {{ image | image_url: width: width, height: height, crop: crop | image_tag: widths: image_widths, sizes: image_sizes, alt: image_alt }}
+          {% if has_image_height %}
+            {{ image | image_url: width: width, height: image_height_value, crop: crop | image_tag: widths: image_widths, sizes: image_sizes, alt: image_alt }}
+          {% else %}
+            {{ image | image_url: width: width | image_tag: widths: image_widths, sizes: image_sizes, alt: image_alt }}
+          {% endif %}
         {% else %}
-          {{ image | image_url: width: width, height: height, crop: crop | image_tag: alt: image_alt }}
+          {% if has_image_height %}
+            {{ image | image_url: width: width, height: image_height_value, crop: crop | image_tag: alt: image_alt }}
+          {% else %}
+            {{ image | image_url: width: width | image_tag: alt: image_alt }}
+          {% endif %}
         {% endif %}
       </picture>
     {% elsif image_widths != blank or image_sizes != blank %}
-      {{ image | image_url: width: width, height: height, crop: crop | image_tag: widths: image_widths, sizes: image_sizes, alt: image_alt }}
+      {% if has_image_height %}
+        {{ image | image_url: width: width, height: image_height_value, crop: crop | image_tag: widths: image_widths, sizes: image_sizes, alt: image_alt }}
+      {% else %}
+        {{ image | image_url: width: width | image_tag: widths: image_widths, sizes: image_sizes, alt: image_alt }}
+      {% endif %}
     {% else %}
-      {{ image | image_url: width: width, height: height, crop: crop | image_tag: alt: image_alt }}
+      {% if has_image_height %}
+        {{ image | image_url: width: width, height: image_height_value, crop: crop | image_tag: alt: image_alt }}
+      {% else %}
+        {{ image | image_url: width: width | image_tag: alt: image_alt }}
+      {% endif %}
     {% endif %}
   {% else %}
     {{ 'product-1' | placeholder_svg_tag: 'image__placeholder' }}

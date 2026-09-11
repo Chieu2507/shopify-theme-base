@@ -1,0 +1,362 @@
+{% doc %}
+  Renders a responsive product collection using one controlled Product Card
+  child for every product. The block owns the collection query, item count,
+  grid/carousel layout, columns, and gaps; Product Card owns presentation.
+
+  @example
+  {% content_for 'block', type: 'product-list', id: 'product-list' %}
+{% enddoc %}
+
+{% liquid
+  assign product_list_collection = block.settings.collection
+  assign product_list_max_products = block.settings.max_products | default: 6 | plus: 0
+  if product_list_max_products < 1 or product_list_max_products > 24
+    assign product_list_max_products = 6
+  endif
+
+  assign product_list_layout = block.settings.layout_type | default: 'grid'
+  unless product_list_layout == 'grid' or product_list_layout == 'carousel'
+    assign product_list_layout = 'grid'
+  endunless
+
+  assign product_list_columns_desktop = block.settings.columns_desktop | default: '3'
+  case product_list_columns_desktop
+    when '2'
+      assign product_list_columns_desktop = 2
+    when '3'
+      assign product_list_columns_desktop = 3
+    when '4'
+      assign product_list_columns_desktop = 4
+    when '5'
+      assign product_list_columns_desktop = 5
+    when '6'
+      assign product_list_columns_desktop = 6
+    else
+      assign product_list_columns_desktop = 3
+  endcase
+
+  assign product_list_columns_mobile = block.settings.columns_mobile | default: '1'
+  case product_list_columns_mobile
+    when '1'
+      assign product_list_columns_mobile = 1
+    when '2'
+      assign product_list_columns_mobile = 2
+    else
+      assign product_list_columns_mobile = 1
+  endcase
+
+  if block.settings.custom_columns
+    assign product_list_columns_desktop = block.settings.custom_columns_desktop | default: product_list_columns_desktop | plus: 0
+    assign product_list_columns_mobile = block.settings.custom_columns_mobile | default: product_list_columns_mobile | plus: 0
+  endif
+  if product_list_columns_desktop < 1 or product_list_columns_desktop > 6
+    assign product_list_columns_desktop = 3
+  endif
+  if product_list_columns_mobile < 1 or product_list_columns_mobile > 6
+    assign product_list_columns_mobile = 1
+  endif
+
+  assign product_list_gap_horizontal = block.settings.gap_horizontal | default: 4 | plus: 0
+  assign product_list_gap_vertical = block.settings.gap_vertical | default: 4 | plus: 0
+  assign product_list_gap_horizontal_mobile = block.settings.gap_horizontal_mobile | default: 4 | plus: 0
+  assign product_list_gap_vertical_mobile = block.settings.gap_vertical_mobile | default: 4 | plus: 0
+
+  if product_list_gap_horizontal < 0 or product_list_gap_horizontal > 40
+    assign product_list_gap_horizontal = 4
+  endif
+  if product_list_gap_vertical < 0 or product_list_gap_vertical > 40
+    assign product_list_gap_vertical = 4
+  endif
+  if product_list_gap_horizontal_mobile < 0 or product_list_gap_horizontal_mobile > 40
+    assign product_list_gap_horizontal_mobile = 4
+  endif
+  if product_list_gap_vertical_mobile < 0 or product_list_gap_vertical_mobile > 40
+    assign product_list_gap_vertical_mobile = 4
+  endif
+
+  assign product_list_desktop_gap_count = product_list_columns_desktop | minus: 1
+  assign product_list_desktop_gap_total = product_list_gap_horizontal | times: product_list_desktop_gap_count
+  assign product_list_mobile_gap_count = product_list_columns_mobile | minus: 1
+  assign product_list_mobile_gap_total = product_list_gap_horizontal_mobile | times: product_list_mobile_gap_count
+
+  assign product_list_class = 'product-list product-list--' | append: product_list_layout
+  if block.settings.enable_swipe_mobile
+    assign product_list_class = product_list_class | append: ' product-list--swipe-mobile'
+  endif
+
+  assign product_list_has_products = false
+  assign product_list_items = (1..8)
+  assign product_list_item_limit = 8
+  if product_list_collection != blank and product_list_collection.products != blank
+    assign product_list_has_products = true
+    assign product_list_items = product_list_collection.products
+    assign product_list_item_limit = product_list_max_products
+  endif
+%}
+
+{% capture product_list_style %}
+  --product-list-columns-desktop: {{ product_list_columns_desktop }};
+  --product-list-columns-mobile: {{ product_list_columns_mobile }};
+  --product-list-gap-horizontal: {{ product_list_gap_horizontal }}px;
+  --product-list-gap-vertical: {{ product_list_gap_vertical }}px;
+  --product-list-gap-horizontal-mobile: {{ product_list_gap_horizontal_mobile }}px;
+  --product-list-gap-vertical-mobile: {{ product_list_gap_vertical_mobile }}px;
+  --product-list-carousel-item-width-desktop: calc((100% - {{ product_list_desktop_gap_total }}px) / {{ product_list_columns_desktop }});
+  --product-list-carousel-item-width-mobile: calc((100% - {{ product_list_mobile_gap_total }}px) / {{ product_list_columns_mobile }});
+{% endcapture %}
+{% assign product_list_style = product_list_style | strip %}
+
+<div
+  class="{{ product_list_class }}"
+  data-product-list
+  data-layout="{{ product_list_layout }}"
+  style="{{ product_list_style }}"
+  {{ block.shopify_attributes }}
+>
+  <div class="product-list__items{% unless product_list_has_products %} product-list__items--placeholder{% endunless %}" data-product-list-items>
+    {% for product_list_item in product_list_items limit: product_list_item_limit %}
+      {% liquid
+        assign product_list_card_product = product_list_item
+        assign product_list_card_placeholder = false
+        unless product_list_has_products
+          assign product_list_card_product = blank
+          assign product_list_card_placeholder = true
+        endunless
+      %}
+      <div class="product-list__item">
+        {% content_for 'block', type: 'product-card', id: 'product-card', product: product_list_card_product, closest.product: product_list_card_product, placeholder: product_list_card_placeholder %}
+      </div>
+    {% endfor %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .product-list {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .product-list__items {
+    display: grid;
+    grid-template-columns: repeat(var(--product-list-columns-desktop, 3), minmax(0, 1fr));
+    column-gap: var(--product-list-gap-horizontal, 4px);
+    row-gap: var(--product-list-gap-vertical, 4px);
+    min-width: 0;
+  }
+
+  .product-list__item {
+    min-width: 0;
+  }
+
+  .product-list--carousel .product-list__items,
+  .product-list--swipe-mobile .product-list__items {
+    grid-auto-flow: column;
+    grid-auto-columns: var(--product-list-carousel-item-width-desktop);
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: thin;
+  }
+
+  .product-list--carousel .product-list__item,
+  .product-list--swipe-mobile .product-list__item {
+    scroll-snap-align: start;
+  }
+
+  @media (max-width: 767.98px) {
+    .product-list__items {
+      grid-template-columns: repeat(var(--product-list-columns-mobile, 1), minmax(0, 1fr));
+      column-gap: var(--product-list-gap-horizontal-mobile, 4px);
+      row-gap: var(--product-list-gap-vertical-mobile, 4px);
+    }
+
+    .product-list--carousel .product-list__items,
+    .product-list--swipe-mobile .product-list__items {
+      grid-auto-columns: var(--product-list-carousel-item-width-mobile);
+      column-gap: var(--product-list-gap-horizontal-mobile, 4px);
+      row-gap: var(--product-list-gap-vertical-mobile, 4px);
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-list__items {
+      scroll-behavior: auto;
+      scroll-snap-type: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.product_list",
+  "tag": null,
+  "blocks": [
+    { "type": "product-card" }
+  ],
+  "settings": [
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:labels.collection"
+    },
+    {
+      "type": "range",
+      "id": "max_products",
+      "label": "t:labels.max_products",
+      "min": 1,
+      "max": 24,
+      "step": 1,
+      "default": 6
+    },
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "layout_type",
+      "label": "t:labels.type",
+      "options": [
+        { "value": "grid", "label": "t:options.product_list_layout.grid" },
+        { "value": "carousel", "label": "t:options.product_list_layout.carousel" }
+      ],
+      "default": "grid"
+    },
+    {
+      "type": "select",
+      "id": "columns_desktop",
+      "label": "t:labels.desktop_columns",
+      "options": [
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" },
+        { "value": "5", "label": "5" },
+        { "value": "6", "label": "6" }
+      ],
+      "default": "3",
+      "visible_if": "{{ block.settings.custom_columns == false }}"
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:labels.mobile_columns",
+      "options": [
+        { "value": "1", "label": "1" },
+        { "value": "2", "label": "2" }
+      ],
+      "default": "1",
+      "visible_if": "{{ block.settings.custom_columns == false }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_swipe_mobile",
+      "label": "t:labels.enable_swipe_mobile",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "custom_columns",
+      "label": "t:labels.custom_columns",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "custom_columns_desktop",
+      "label": "t:labels.desktop_columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 3,
+      "visible_if": "{{ block.settings.custom_columns }}"
+    },
+    {
+      "type": "range",
+      "id": "custom_columns_mobile",
+      "label": "t:labels.mobile_columns",
+      "min": 1,
+      "max": 6,
+      "step": 1,
+      "default": 1,
+      "visible_if": "{{ block.settings.custom_columns }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.gap"
+    },
+    {
+      "type": "range",
+      "id": "gap_horizontal",
+      "label": "t:labels.horizontal_gap",
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "gap_vertical",
+      "label": "t:labels.vertical_gap",
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "gap_horizontal_mobile",
+      "label": "t:labels.horizontal_gap_mobile",
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 4
+    },
+    {
+      "type": "range",
+      "id": "gap_vertical_mobile",
+      "label": "t:labels.vertical_gap_mobile",
+      "min": 0,
+      "max": 40,
+      "step": 1,
+      "unit": "px",
+      "default": 4
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.product_list",
+      "category": "t:general.product",
+      "settings": {
+        "collection": "",
+        "max_products": 6,
+        "layout_type": "grid",
+        "columns_desktop": "3",
+        "columns_mobile": "1",
+        "enable_swipe_mobile": false,
+        "custom_columns": false,
+        "custom_columns_desktop": 3,
+        "custom_columns_mobile": 1,
+        "gap_horizontal": 4,
+        "gap_vertical": 4,
+        "gap_horizontal_mobile": 4,
+        "gap_vertical_mobile": 4
+      },
+      "blocks": [
+        {
+          "type": "product-card",
+          "id": "product-card",
+          "static": true,
+          "settings": {
+            "show_ranking": false,
+            "color_type": "inherit",
+            "color_scheme": "scheme-1"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

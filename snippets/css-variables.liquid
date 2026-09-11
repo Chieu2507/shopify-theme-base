@@ -504,14 +504,20 @@
   if settings.product_card_style == 'card'
     assign product_card_style = 'card'
   endif
-  assign product_card_border_width = settings.product_card_border_width | default: 0
+  assign product_card_border_width = 0
   assign product_card_shadow = 'none'
-  case settings.product_card_shadow
-    when 'soft'
-      assign product_card_shadow = '0 0.75rem 1.5rem color-mix(in srgb, var(--shadow-color) 14%, transparent)'
-    when 'strong'
-      assign product_card_shadow = '0 1rem 2rem color-mix(in srgb, var(--shadow-color) 22%, transparent)'
-  endcase
+  if product_card_style == 'card'
+    assign product_card_border_width = settings.product_card_border_width | default: 0
+    if product_card_border_width < 0 or product_card_border_width > 3
+      assign product_card_border_width = 0
+    endif
+    case settings.product_card_shadow
+      when 'soft'
+        assign product_card_shadow = '0 0.75rem 1.5rem color-mix(in srgb, var(--shadow-color) 14%, transparent)'
+      when 'strong'
+        assign product_card_shadow = '0 1rem 2rem color-mix(in srgb, var(--shadow-color) 22%, transparent)'
+    endcase
+  endif
   assign product_card_title_font_family = 'var(--font-heading-family)'
   if settings.product_card_title_font == 'body'
     assign product_card_title_font_family = 'var(--font-body-family)'
