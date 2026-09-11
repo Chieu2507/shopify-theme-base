@@ -1,0 +1,192 @@
+{% doc %}
+  Renders footer country and language selectors with shared selector controls.
+  The block owns the available controls and typography setting while the shared
+  snippet owns each selector's popover and localization form.
+
+  @example
+  {% content_for 'block', type: 'localization', id: 'localization' %}
+{% enddoc %}
+
+{% liquid
+  assign localization_trigger = block.settings.dropdown_trigger | default: 'click'
+  unless localization_trigger == 'click' or localization_trigger == 'hover'
+    assign localization_trigger = 'click'
+  endunless
+
+  assign localization_font_size = block.settings.font_size | default: 'md'
+  unless localization_font_size == 'xs' or localization_font_size == 'sm' or localization_font_size == 'md' or localization_font_size == 'lg' or localization_font_size == 'xl' or localization_font_size == 'xxl'
+    assign localization_font_size = 'md'
+  endunless
+
+  assign show_country_selector = true
+  if block.settings.show_country_selector == false
+    assign show_country_selector = false
+  endif
+
+  assign show_country_name = false
+  if block.settings.show_country_name
+    assign show_country_name = true
+  endif
+
+  assign show_country_flag = true
+  if block.settings.show_country_flag == false
+    assign show_country_flag = false
+  endif
+
+  assign show_language_selector = true
+  if block.settings.show_language_selector == false
+    assign show_language_selector = false
+  endif
+
+  assign has_country_selector = false
+  if show_country_selector and localization.available_countries.size > 1
+    assign has_country_selector = true
+  endif
+
+  assign has_language_selector = false
+  if show_language_selector and localization.available_languages.size > 1
+    assign has_language_selector = true
+  endif
+
+  assign render_country_selector = false
+  if show_country_selector
+    if has_country_selector or request.design_mode
+      assign render_country_selector = true
+    endif
+  endif
+
+  assign render_language_selector = false
+  if show_language_selector
+    if has_language_selector or request.design_mode
+      assign render_language_selector = true
+    endif
+  endif
+
+  assign localization_class = 'localization-block body-' | append: localization_font_size
+  assign country_form_id = 'FooterCountry-' | append: section.id | append: '-' | append: block.id
+  assign language_form_id = 'FooterLanguage-' | append: section.id | append: '-' | append: block.id
+%}
+
+{% if render_country_selector or render_language_selector %}
+  <div class="{{ localization_class }}" {{ block.shopify_attributes }}>
+    {% if render_country_selector %}
+      {% render 'localization-selector',
+        selector: 'country',
+        form_id: country_form_id,
+        trigger: localization_trigger,
+        show_country_name: show_country_name,
+        show_country_flag: show_country_flag
+      %}
+    {% endif %}
+
+    {% if render_language_selector %}
+      {% render 'localization-selector',
+        selector: 'language',
+        form_id: language_form_id,
+        trigger: localization_trigger
+      %}
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .localization-block {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    color: var(--body-color);
+  }
+
+  @media (max-width: 767.98px) {
+    .localization-block {
+      gap: 0.375rem;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.localization",
+  "tag": null,
+  "settings": [
+    {
+      "type": "select",
+      "id": "dropdown_trigger",
+      "label": "t:labels.dropdown_trigger",
+      "options": [
+        { "value": "click", "label": "t:options.dropdown_trigger.click" },
+        { "value": "hover", "label": "t:options.dropdown_trigger.hover" }
+      ],
+      "default": "click"
+    },
+    {
+      "type": "header",
+      "content": "t:general.country_region"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country_selector",
+      "label": "t:labels.show_country_selector",
+      "info": "t:info.localization_manage_countries",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country_name",
+      "label": "t:labels.show_country_name",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country_flag",
+      "label": "t:labels.show_country_flag",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:general.language"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_language_selector",
+      "label": "t:labels.show_language_selector",
+      "info": "t:info.localization_manage_languages",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:general.typography"
+    },
+    {
+      "type": "select",
+      "id": "font_size",
+      "label": "t:labels.font_size",
+      "options": [
+        { "value": "xs", "label": "t:options.text_size.xs" },
+        { "value": "sm", "label": "t:options.text_size.sm" },
+        { "value": "md", "label": "t:options.text_size.md" },
+        { "value": "lg", "label": "t:options.text_size.lg" },
+        { "value": "xl", "label": "t:options.text_size.xl" },
+        { "value": "xxl", "label": "t:options.text_size.xxl" }
+      ],
+      "default": "md"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.localization",
+      "category": "t:general.footer",
+      "settings": {
+        "dropdown_trigger": "click",
+        "show_country_selector": true,
+        "show_country_name": false,
+        "show_country_flag": true,
+        "show_language_selector": true,
+        "font_size": "md"
+      }
+    }
+  ]
+}
+{% endschema %}
