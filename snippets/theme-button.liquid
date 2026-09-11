@@ -11,7 +11,7 @@
   @param {boolean} [disabled] - Whether the button is disabled
   @param {boolean} [loading] - Whether the button is busy while preserving its width
   @param {string} [variant] - Optional visual variant: primary, secondary, or tertiary
-  @param {string} [icon] - Optional inline icon name: arrow or cart
+  @param {string} [icon] - Optional inline Heroicons key or legacy alias: arrow-right/arrow or shopping-bag/cart
   @param {string} [icon_position] - Icon position: before or after
   @param {string} [icon_size] - Icon size: inherit or custom
   @param {number} [icon_width] - Custom icon width in pixels
@@ -53,7 +53,7 @@
   endif
 
   assign button_icon_name = icon
-  unless button_icon_name == blank or button_icon_name == 'arrow' or button_icon_name == 'cart'
+  unless button_icon_name == blank or button_icon_name == 'arrow' or button_icon_name == 'arrow-right' or button_icon_name == 'cart' or button_icon_name == 'shopping-bag'
     assign button_icon_name = blank
   endunless
 
@@ -68,23 +68,21 @@
 %}
 
 {% capture button_icon_markup %}
-  {% if button_icon_name == 'arrow' %}
+  {% if button_icon_name == 'arrow' or button_icon_name == 'arrow-right' %}
     <span
       class="btn__icon{% if button_icon_size == 'custom' %} btn__icon--custom{% endif %}"
       {% if button_icon_size == 'custom' %}style="--button-icon-width: {{ button_icon_width }}px;"{% endif %}
       aria-hidden="true"
     >
-      <svg viewBox="0 0 24 24" fill="none" focusable="false">
-        <path d="M4 12h15m-6-6 6 6-6 6" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-thickness)" />
-      </svg>
+      {% render 'icon', icon: 'arrow-right', bare: true %}
     </span>
-  {% elsif button_icon_name == 'cart' %}
+  {% elsif button_icon_name == 'cart' or button_icon_name == 'shopping-bag' %}
     <span
       class="btn__icon{% if button_icon_size == 'custom' %} btn__icon--custom{% endif %}"
       {% if button_icon_size == 'custom' %}style="--button-icon-width: {{ button_icon_width }}px;"{% endif %}
       aria-hidden="true"
     >
-      {{ 'icon-cart.svg' | inline_asset_content }}
+      {% render 'icon', icon: 'shopping-bag', bare: true %}
     </span>
   {% endif %}
 {% endcapture %}

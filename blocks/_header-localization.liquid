@@ -1,9 +1,4 @@
 {% liquid
-  assign localization_position = block.settings.position | default: 'right'
-  unless localization_position == 'left' or localization_position == 'center' or localization_position == 'right'
-    assign localization_position = 'right'
-  endunless
-
   assign localization_trigger = block.settings.dropdown_trigger | default: 'click'
   unless localization_trigger == 'click' or localization_trigger == 'hover'
     assign localization_trigger = 'click'
@@ -29,9 +24,14 @@
     assign show_country_flag = false
   endif
 
-  assign show_language_selector = false
+  assign show_language_selector_desktop = false
   if block.settings.show_language_selector
-    assign show_language_selector = true
+    assign show_language_selector_desktop = true
+  endif
+
+  assign show_current_language = false
+  if localization.language != blank
+    assign show_current_language = true
   endif
 
   assign has_country_selector = false
@@ -40,7 +40,7 @@
   endif
 
   assign has_language_selector = false
-  if show_language_selector and localization.available_languages.size > 1
+  if show_current_language and localization.available_languages.size > 0
     assign has_language_selector = true
   endif
 
@@ -49,61 +49,97 @@
     assign has_localization = true
   endif
 
-  assign localization_class = 'header-localization header-action--position-' | append: localization_position | append: ' header-localization--trigger-' | append: localization_trigger | append: ' header-localization--size-' | append: localization_font_size
+  assign localization_class = 'header-localization header-localization--trigger-' | append: localization_trigger | append: ' header-localization--size-' | append: localization_font_size
+  unless show_language_selector_desktop
+    assign localization_class = localization_class | append: ' header-localization--hide-language-desktop'
+    if has_country_selector == false and has_language_selector
+      assign localization_class = localization_class | append: ' header-localization--mobile-language-only'
+    endif
+  endunless
 %}
 
 {% if has_localization or request.design_mode %}
   <div class="{{ localization_class }}" {{ block.shopify_attributes }}>
     {% if has_localization %}
-      <details class="header-localization__details">
-        <summary class="header-localization__summary">
-          {% if has_country_selector %}
-            <span class="header-localization__country"{% if show_country_flag %} data-country-code="{{ localization.country.iso_code }}"{% endif %}>
-              {% if show_country_flag %}<span class="header-localization__country-code" aria-hidden="true">{{ localization.country.iso_code }}</span>{% endif %}
+      {% if has_country_selector %}
+        <details class="header-localization__details" data-header-submenu-trigger="{{ localization_trigger }}">
+          <summary class="header-localization__summary">
+            <span class="header-localization__country">
+              {% if show_country_flag %}
+                {{ localization.country | image_url: width: 24 | image_tag: class: 'header-localization__flag', alt: '' }}
+              {% endif %}
               {% if show_country_name %}
                 <span>{{ localization.country.name }}</span>
               {% else %}
-                <span>{{ localization.country.currency.iso_code }}</span>
+                <span>{{ localization.country.currency.iso_code }} {{ localization.country.currency.symbol }}</span>
               {% endif %}
             </span>
-          {% endif %}
-          {% if has_country_selector and has_language_selector %}<span aria-hidden="true">·</span>{% endif %}
-          {% if has_language_selector %}<span>{{ localization.language.endonym_name }}</span>{% endif %}
-          <svg class="header-localization__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
-            <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" />
-          </svg>
-        </summary>
+            {% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}
+          </summary>
 
-        <div class="header-localization__panel">
-          {% form 'localization', class: 'header-localization__form' %}
-            <input type="hidden" name="return_to" value="{{ request.path }}">
-
-            {% if has_country_selector %}
-              <label class="visually-hidden" for="HeaderCountry-{{ section.id }}-{{ block.id }}">Country</label>
-              <select id="HeaderCountry-{{ section.id }}-{{ block.id }}" name="country_code" aria-label="Country" onchange="this.form.submit()">
+          <button class="header-localization__sheet-backdrop" type="button" aria-label="Close country selector" data-header-localization-close></button>
+          <div class="header-localization__panel">
+            <header class="header-localization__sheet-header">
+              <span class="header-localization__sheet-handle" aria-hidden="true"></span>
+              <h2>Country</h2>
+              <button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close country selector" data-header-localization-close></button>
+            </header>
+            {% form 'localization', class: 'header-localization__form' %}
+              <input type="hidden" name="return_to" value="{{ request.path }}">
+              <div class="header-localization__country-list">
                 {% for country in localization.available_countries %}
-                  <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>
-                    {% if show_country_name %}{{ country.name }}{% else %}{{ country.currency.iso_code }}{% endif %}
-                  </option>
+                    <button
+                      class="header-localization__country-option{% if country.iso_code == localization.country.iso_code %} is-selected{% endif %}"
+                      type="submit"
+                      name="country_code"
+                      value="{{ country.iso_code }}"
+                    >
+                      {% if show_country_flag %}
+                        {{ country | image_url: width: 24 | image_tag: class: 'header-localization__flag', alt: '' }}
+                      {% endif %}
+                      <span class="header-localization__country-name">{{ country.name }}</span>
+                      <span class="header-localization__country-currency">{{ country.currency.iso_code }} {{ country.currency.symbol }}</span>
+                    </button>
                 {% endfor %}
-              </select>
-            {% endif %}
+              </div>
+            {% endform %}
+          </div>
+        </details>
+      {% endif %}
 
-            {% if has_language_selector %}
-              <label class="visually-hidden" for="HeaderLanguage-{{ section.id }}-{{ block.id }}">Language</label>
-              <select id="HeaderLanguage-{{ section.id }}-{{ block.id }}" name="language_code" aria-label="Language" onchange="this.form.submit()">
+      {% if has_language_selector %}
+        <details class="header-localization__details header-localization__details--language" data-header-submenu-trigger="{{ localization_trigger }}">
+          <summary class="header-localization__summary">
+            <span class="header-localization__language">{{ localization.language.endonym_name }}</span>
+            {% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}
+          </summary>
+          <button class="header-localization__sheet-backdrop" type="button" aria-label="Close language selector" data-header-localization-close></button>
+          <div class="header-localization__panel">
+            <header class="header-localization__sheet-header">
+              <span class="header-localization__sheet-handle" aria-hidden="true"></span>
+              <h2>Language</h2>
+              <button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close language selector" data-header-localization-close></button>
+            </header>
+            {% form 'localization', class: 'header-localization__form' %}
+              <input type="hidden" name="return_to" value="{{ request.path }}">
+              <div class="header-localization__language-list">
                 {% for language in localization.available_languages %}
-                  <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>
-                    {{ language.endonym_name }}
-                  </option>
+                  <button
+                    class="header-localization__language-option{% if language.iso_code == localization.language.iso_code %} is-selected{% endif %}"
+                    type="submit"
+                    name="language_code"
+                    value="{{ language.iso_code }}"
+                  >{{ language.endonym_name }}</button>
                 {% endfor %}
-              </select>
-            {% endif %}
-          {% endform %}
-        </div>
-      </details>
+              </div>
+            {% endform %}
+          </div>
+        </details>
+      {% endif %}
     {% else %}
-      <span class="header-localization__placeholder">{{ cart.currency.iso_code | default: 'USD' }}</span>
+      <span class="header-localization__placeholder">
+        {% if show_current_language %}{{ localization.language.endonym_name }}{% else %}{{ cart.currency.iso_code | default: 'USD' }}{% endif %}
+      </span>
     {% endif %}
   </div>
 {% endif %}
@@ -113,21 +149,10 @@
     display: inline-flex;
     flex: 0 0 auto;
     align-items: center;
+    gap: 10px;
     min-width: 0;
     color: var(--body-color);
     font-size: var(--header-localization-font-size, var(--font-body-md));
-  }
-
-  .header-action--position-left {
-    margin-inline-end: auto;
-  }
-
-  .header-action--position-center {
-    margin-inline: auto;
-  }
-
-  .header-action--position-right {
-    margin-inline-start: 0;
   }
 
   .header-localization--size-xs {
@@ -144,6 +169,17 @@
 
   .header-localization__details {
     position: relative;
+  }
+
+  /* The panel is visually aligned to the header's lower edge. This bridge keeps
+     the complete path from its trigger to that edge inside the hover boundary. */
+  .header-localization__details:is([open], .is-submenu-closing)::after {
+    position: absolute;
+    inset-block-start: 100%;
+    inset-inline-start: 0;
+    width: 250px;
+    height: var(--header-submenu-offset, 0px);
+    content: '';
   }
 
   .header-localization__summary {
@@ -168,33 +204,37 @@
     white-space: nowrap;
   }
 
-  .header-localization__country-code {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.8em;
-    padding: 0.1em 0.25em;
-    border: 1px solid currentColor;
-    border-radius: var(--radius-square);
-    font-size: 0.72em;
-    line-height: 1.1;
+  .header-localization__flag {
+    display: block;
+    width: 1.25rem;
+    height: 1.25rem;
+    object-fit: cover;
+    border-radius: 50%;
+    box-shadow: 0 0 0 1px color-mix(in srgb, currentColor 12%, transparent);
   }
 
   .header-localization__icon {
-    width: 0.9em;
-    height: 0.9em;
+    --icon-width: calc(var(--icon-size-small) - 2px);
+    width: var(--icon-width);
+    height: var(--icon-width);
     flex: 0 0 auto;
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .header-localization__details:is([open], .is-submenu-closing) .header-localization__icon,
+  .header-localization--trigger-hover .header-localization__details:hover .header-localization__icon,
+  .header-localization--trigger-hover .header-localization__details:focus-within .header-localization__icon {
+    transform: rotate(180deg);
   }
 
   .header-localization__panel {
     position: absolute;
     z-index: var(--z-drawer);
-    inset-block-start: calc(100% + 0.25rem);
-    inset-inline-end: 0;
-    min-width: 12rem;
+    inset-block-start: calc(100% + var(--header-submenu-offset, var(--header-top-padding-bottom, 24px)));
+    inset-inline-start: 0;
+    min-width: 250px;
     padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--overlay-radius);
+    border-radius: var(--drawer-radius);
     background: var(--background-color);
     box-shadow: 0 0.75rem 1.5rem color-mix(in srgb, var(--shadow-color) 15%, transparent);
     opacity: 0;
@@ -204,10 +244,15 @@
     transition:
       opacity var(--motion-duration-fast) var(--motion-ease-standard),
       transform var(--motion-duration-fast) var(--motion-ease-standard),
-      visibility var(--motion-duration-fast) var(--motion-ease-standard);
+      visibility var(--motion-duration-fast) var(--motion-ease-standard),
+      background-color var(--motion-duration-standard) var(--motion-ease-standard),
+      border-color var(--motion-duration-standard) var(--motion-ease-standard),
+      color var(--motion-duration-standard) var(--motion-ease-standard),
+      box-shadow var(--motion-duration-standard) var(--motion-ease-standard);
   }
 
   .header-localization__details[open] > .header-localization__panel,
+  .header-localization__details.is-submenu-closing > .header-localization__panel,
   .header-localization--trigger-hover .header-localization__details:hover > .header-localization__panel,
   .header-localization--trigger-hover .header-localization__details:focus-within > .header-localization__panel {
     opacity: 1;
@@ -217,21 +262,47 @@
   }
 
   .header-localization__form {
-    display: grid;
-    gap: 0.5rem;
     margin: 0;
   }
 
-  .header-localization select {
+  .header-localization__country-list,
+  .header-localization__language-list {
+    display: grid;
+    gap: 0.25rem;
+  }
+
+  .header-localization__country-option,
+  .header-localization__language-option {
     width: 100%;
-    min-height: var(--button-height);
-    padding: 0 1.75rem 0 0.5rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--input-radius);
-    background-color: var(--background-color);
-    color: var(--body-color);
+    min-height: 2.5rem;
+    padding: 0.5rem;
+    border: 0;
+    border-radius: var(--radius-square);
+    background: transparent;
+    color: inherit;
     font: inherit;
+    text-align: start;
     cursor: pointer;
+  }
+
+  .header-localization__country-option {
+    display: grid;
+    grid-template-columns: auto minmax(0, 1fr) auto;
+    align-items: center;
+    gap: 0.65rem;
+  }
+
+  .header-localization__language-option {
+    display: block;
+  }
+
+  .header-localization :where(.header-localization__country-option, .header-localization__language-option):is(:hover, :focus-visible, .is-selected) {
+    background-color: color-mix(in srgb, var(--body-color) 8%, transparent);
+  }
+
+  .header-localization__country-name,
+  .header-localization__country-currency {
+    white-space: nowrap;
   }
 
   .header-localization__placeholder {
@@ -240,21 +311,139 @@
     min-height: var(--button-height);
   }
 
-  @media (max-width: 767.98px) {
-    .header-localization__summary,
-    .header-localization__placeholder,
-    .header-localization select {
-      min-height: var(--button-height-mobile);
-    }
+  .header-localization__sheet-backdrop,
+  .header-localization__sheet-header {
+    display: none;
+  }
 
+  @media (max-width: 1149.98px) {
     .header-localization__panel {
-      inset-inline-end: auto;
-      inset-inline-start: 0;
+      inset-inline-start: auto;
+      inset-inline-end: 0;
+      width: min(250px, calc(100vw - (var(--page-margin-current) * 2)));
+      min-width: 0;
     }
   }
 
-  @media (prefers-reduced-motion: reduce) {
+  @media (min-width: 768px) {
+    .header-localization--hide-language-desktop .header-localization__details--language,
+    .header-localization--mobile-language-only {
+      display: none;
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .header-localization__summary,
+    .header-localization__placeholder {
+      min-height: var(--button-height-mobile);
+    }
+
+    .header-top--menu-open .header-localization:has(.header-localization__details[open]) {
+      z-index: calc(var(--z-modal) + 2);
+    }
+
+    .header-localization__details {
+      position: static;
+    }
+
+    .header-localization__details:is([open], .is-submenu-closing)::after {
+      display: none;
+    }
+
+    .header-localization__sheet-backdrop {
+      position: fixed;
+      z-index: 0;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: var(--overlay-color);
+      -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
+      backdrop-filter: blur(var(--overlay-backdrop-blur));
+      cursor: pointer;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
+    }
+
     .header-localization__panel {
+      position: fixed;
+      z-index: 1;
+      inset-block-start: auto;
+      inset-inline: 0;
+      inset-block-end: 0;
+      width: 100%;
+      max-height: min(70dvh, 32rem);
+      min-width: 0;
+      padding: 0 var(--page-margin-mobile) 1.25rem;
+      overflow-y: auto;
+      border-radius: var(--bottom-sheet-radius) var(--bottom-sheet-radius) 0 0;
+      box-shadow: none;
+      opacity: 1;
+      visibility: visible;
+      transform: translateY(100%);
+      transition: transform var(--motion-duration-standard) var(--motion-ease-standard);
+    }
+
+    .header-localization__details[open] > .header-localization__sheet-backdrop {
+      opacity: var(--overlay-opacity);
+      pointer-events: auto;
+    }
+
+    .header-localization__details[open] > .header-localization__panel {
+      pointer-events: auto;
+      transform: translateY(0);
+    }
+
+    .header-localization__sheet-header {
+      position: relative;
+      display: flex;
+      min-height: 4.75rem;
+      align-items: center;
+      justify-content: space-between;
+      gap: 1rem;
+      border-bottom: 1px solid var(--border-color);
+      cursor: grab;
+      touch-action: none;
+      user-select: none;
+    }
+
+    .header-localization__sheet-header h2 {
+      margin: 0;
+      color: var(--heading-color);
+      font-family: var(--font-heading-family);
+      font-size: var(--font-heading-sm);
+      font-style: var(--font-heading-style);
+      font-weight: var(--font-heading-weight);
+    }
+
+    .header-localization__sheet-handle {
+      position: absolute;
+      inset-block-start: 0.625rem;
+      inset-inline-start: 50%;
+      width: 2.25rem;
+      height: 0.25rem;
+      border-radius: 999px;
+      background: color-mix(in srgb, var(--body-color) 22%, transparent);
+      transform: translateX(-50%);
+    }
+
+    .header-localization__sheet-close {
+      --overlay-close-size: 2.5rem;
+      color: var(--heading-color);
+    }
+
+    .header-localization__form {
+      padding-block-start: 1rem;
+    }
+
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .header-localization__panel,
+    .header-localization__icon {
       transition-duration: 0.01ms;
     }
   }
@@ -271,22 +460,11 @@
     },
     {
       "type": "select",
-      "id": "position",
-      "label": "Position",
-      "options": [
-        { "value": "left", "label": "Left" },
-        { "value": "center", "label": "Center" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "right"
-    },
-    {
-      "type": "select",
       "id": "dropdown_trigger",
-      "label": "Dropdown trigger",
+      "label": "t:labels.dropdown_trigger",
       "options": [
-        { "value": "click", "label": "Click" },
-        { "value": "hover", "label": "Hover" }
+        { "value": "click", "label": "t:options.dropdown_trigger.click" },
+        { "value": "hover", "label": "t:options.dropdown_trigger.hover" }
       ],
       "default": "click"
     },
@@ -320,7 +498,8 @@
     {
       "type": "checkbox",
       "id": "show_language_selector",
-      "label": "Show language selector",
+      "label": "Show language selector (desktop)",
+      "info": "Always shown on mobile. [Manage languages](/settings/languages)",
       "default": false
     },
     {

@@ -1,9 +1,4 @@
 {% liquid
-  assign account_position = block.settings.position | default: 'right'
-  unless account_position == 'left' or account_position == 'center' or account_position == 'right'
-    assign account_position = 'right'
-  endunless
-
   assign account_type = block.settings.type | default: 'icon_with_text'
   unless account_type == 'icon' or account_type == 'text' or account_type == 'icon_with_text'
     assign account_type = 'icon_with_text'
@@ -21,29 +16,45 @@
   endunless
 
   assign account_letter_spacing = block.settings.letter_spacing | default: 'relaxed'
-  unless account_letter_spacing == 'tighter' or account_letter_spacing == 'tight' or account_letter_spacing == 'normal' or account_letter_spacing == 'relaxed' or account_letter_spacing == 'loose' or account_letter_spacing == 'extra_loose' or account_letter_spacing == 'ultra_loose' or account_letter_spacing == 'mega_loose'
+  unless account_letter_spacing == 'tight' or account_letter_spacing == 'normal' or account_letter_spacing == 'relaxed'
     assign account_letter_spacing = 'relaxed'
   endunless
 
-  assign account_class = 'header-account header-action--position-' | append: account_position | append: ' header-account--type-' | append: account_type | append: ' header-account--font-' | append: account_font | append: ' header-account--size-' | append: account_font_size | append: ' header-account--tracking-' | append: account_letter_spacing
+  assign account_class = 'header-account header-account--type-' | append: account_type | append: ' header-account--font-' | append: account_font | append: ' header-account--size-' | append: account_font_size | append: ' header-account--tracking-' | append: account_letter_spacing
   if account_type == 'icon'
     assign account_class = account_class | append: ' header-action--type-icon'
   endif
 %}
 
-<a
-  class="{{ account_class }}"
-  href="{{ routes.account_url }}"
-  aria-label="{{ account_label | escape }}"
-  {{ block.shopify_attributes }}
->
-  <span class="icon" aria-hidden="true">
-    {{ 'icon-account.svg' | inline_asset_content }}
-  </span>
-  {% unless account_type == 'icon' %}<span class="header-action__label">{{ account_label | escape }}</span>{% endunless %}
-</a>
+{% if shop.customer_accounts_enabled %}
+  <shopify-account class="{{ account_class }}" menu="customer-account-main-menu" {{ block.shopify_attributes }}>
+    <span slot="signed-out-avatar" class="header-account__avatar" aria-label="{{ account_label | escape }}">
+      <span class="icon" aria-hidden="true">
+        {% render 'icon', icon: 'user', bare: true %}
+      </span>
+      {% unless account_type == 'icon' %}<span class="header-action__label">{{ account_label | escape }}</span>{% endunless %}
+      <span class="header-account__mobile-label">{{ 'customers.login.submit' | t }}</span>
+    </span>
+  </shopify-account>
+{% else %}
+  <a class="{{ account_class }}" href="{{ routes.account_login_url }}" aria-label="{{ account_label | escape }}" {{ block.shopify_attributes }}>
+    <span class="icon" aria-hidden="true">
+      {% render 'icon', icon: 'user', bare: true %}
+    </span>
+    {% unless account_type == 'icon' %}<span class="header-action__label">{{ account_label | escape }}</span>{% endunless %}
+    <span class="header-account__mobile-label">{{ 'customers.login.submit' | t }}</span>
+  </a>
+{% endif %}
 
 {% stylesheet %}
+  shopify-account.header-account {
+    --shopify-account-radius-base: var(--drawer-radius);
+    --shopify-account-radius-dialog: var(--drawer-radius);
+    --shopify-account-radius-button: var(--button-radius);
+    --shopify-account-radius-button-small: var(--overlay-close-radius);
+    --shopify-account-radius-input: var(--input-radius);
+  }
+
   .header-account {
     display: inline-flex;
     flex: 0 1 auto;
@@ -63,16 +74,17 @@
     text-transform: none;
   }
 
-  .header-action--position-left {
-    margin-inline-end: auto;
+  .header-account__avatar {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: var(--button-height);
+    color: inherit;
+    cursor: pointer;
   }
 
-  .header-action--position-center {
-    margin-inline: auto;
-  }
-
-  .header-action--position-right {
-    margin-inline-start: 0;
+  .header-account__mobile-label {
+    display: none;
   }
 
   .header-account--font-body {
@@ -110,8 +122,8 @@
 
   .header-account .icon {
     display: inline-flex;
-    width: var(--header-icon-size, var(--icon-size-large));
-    height: var(--header-icon-size, var(--icon-size-large));
+    width: var(--header-icon-size, var(--icon-size-medium));
+    height: var(--header-icon-size, var(--icon-size-medium));
     flex: 0 0 auto;
   }
 
@@ -136,17 +148,6 @@
     {
       "type": "header",
       "content": "Layout"
-    },
-    {
-      "type": "select",
-      "id": "position",
-      "label": "Position",
-      "options": [
-        { "value": "left", "label": "Left" },
-        { "value": "center", "label": "Center" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "right"
     },
     {
       "type": "select",
@@ -196,16 +197,11 @@
     {
       "type": "select",
       "id": "letter_spacing",
-      "label": "Letter spacing",
+      "label": "t:labels.letter_spacing",
       "options": [
-        { "value": "tighter", "label": "Tighter" },
-        { "value": "tight", "label": "Tight" },
-        { "value": "normal", "label": "Normal" },
-        { "value": "relaxed", "label": "Relaxed" },
-        { "value": "loose", "label": "Loose" },
-        { "value": "extra_loose", "label": "Extra loose" },
-        { "value": "ultra_loose", "label": "Ultra loose" },
-        { "value": "mega_loose", "label": "Mega loose" }
+        { "value": "tight", "label": "t:options.letter_spacing.tight" },
+        { "value": "normal", "label": "t:options.letter_spacing.normal" },
+        { "value": "relaxed", "label": "t:options.letter_spacing.relaxed" }
       ],
       "default": "relaxed"
     }

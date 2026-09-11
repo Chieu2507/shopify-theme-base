@@ -1,6 +1,6 @@
 {% liquid
   assign logo_position = block.settings.position | default: 'center'
-  unless logo_position == 'left' or logo_position == 'center' or logo_position == 'right'
+  unless logo_position == 'left' or logo_position == 'center'
     assign logo_position = 'center'
   endunless
 
@@ -66,8 +66,12 @@
   }
 
   .site-logo__fallback {
-    overflow-wrap: anywhere;
+    font-size: 24px;
+    overflow-wrap: normal;
+    white-space: nowrap;
   }
+
+  .site-logo:has(.site-logo__fallback) { width: max-content; }
 
   .header-logo--left {
     margin-inline-end: auto;
@@ -76,11 +80,8 @@
   .header-logo--center {
     position: absolute;
     inset-inline-start: 50%;
+    justify-content: center;
     transform: translateX(-50%);
-  }
-
-  .header-logo--right {
-    margin-inline-start: auto;
   }
 
   @media (max-width: 767.98px) {
@@ -91,6 +92,12 @@
 
     .site-logo__image {
       max-height: 3rem;
+    }
+
+    .site-logo__fallback {
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
     }
   }
 {% endstylesheet %}
@@ -110,8 +117,7 @@
       "label": "t:labels.position",
       "options": [
         { "value": "left", "label": "t:options.alignment.left" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" }
+        { "value": "center", "label": "t:options.alignment.center" }
       ],
       "default": "center"
     }

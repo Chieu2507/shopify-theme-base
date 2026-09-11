@@ -1,96 +1,470 @@
 {% comment %}
-  This section is used in the search template to render search results for
-  products, articles, and pages.
+  Search results page for products, collections, pages, and articles.
 
   https://shopify.dev/docs/storefronts/themes/architecture/templates/search
 {% endcomment %}
 
-<div class="section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}">
-  <h1>{{ 'search.title' | t }}</h1>
+{% liquid
+  assign search_scheme = section.settings.color_scheme | default: 'scheme-1'
+  if section.settings.color_scheme.id != blank
+    assign search_scheme = section.settings.color_scheme.id
+  endif
+  assign search_scheme = search_scheme | default: 'scheme-1' | handleize
+  assign search_page_label = 'search.title' | t
+  assign search_page_placeholder = 'search.placeholder' | t
 
-{% assign search_label = 'search.submit' | t %}
-{% assign search_placeholder = 'search.placeholder' | t %}
-<form class="form__wrapper search-form" action="{{ routes.search_url }}" method="get" role="search">
-  <div class="form__fields">
-    {% render 'form-field',
-      id: 'search-q',
-      name: 'q',
-      label: search_label,
-      type: 'search',
-      value: search.terms,
-      placeholder: search_placeholder
-    %}
-    {% render 'theme-button', label: search_label, type: 'submit' %}
-  </div>
-</form>
+  assign product_count = 0
+  assign collection_count = 0
+  assign page_count = 0
+  assign article_count = 0
 
-  {% if search.performed %}
-  {% if search.results_count == 0 %}
-    <p>{{ 'search.no_results_html' | t: terms: search.terms }}</p>
-  {% else %}
-    <p>{{ 'search.results_for_html' | t: terms: search.terms, count: search.results_count }}</p>
+  if search.performed
+    for result in search.results
+      case result.object_type
+        when 'product'
+          assign product_count = product_count | plus: 1
+        when 'collection'
+          assign collection_count = collection_count | plus: 1
+        when 'page'
+          assign page_count = page_count | plus: 1
+        when 'article'
+          assign article_count = article_count | plus: 1
+      endcase
+    endfor
+  endif
 
-    <div class="search-results">
-      {% paginate search.results by 20 %}
-        {% # Search result items may be an article, a page, or a product. %}
-        {% for result in search.results %}
-          {% if result.object_type == 'product' %}
-            {% render 'product-card', product: result, class: 'search-result-product' %}
-          {% else %}
-            <div class="search-result">
-              {% assign featured_image = result.featured_image | default: result.image %}
-              {% if featured_image %}
-                {% render 'image', class: 'search-result__image', image: featured_image, url: result.url, width: 400 %}
-              {% endif %}
-              <div class="search-result__content">
-                <p>
-                  {{ result.title | link_to: result.url }}
-                  {% if result.price != blank %}
-                    {% render 'price', item: result, context: 'product-card', class: 'search-result__price' %}
-                  {% endif %}
-                </p>
-              </div>
-            </div>
-          {% endif %}
-        {% endfor %}
+  assign active_result_type = 'products'
+  if product_count == 0
+    if collection_count > 0
+      assign active_result_type = 'collections'
+    elsif page_count > 0 or article_count > 0
+      assign active_result_type = 'pages'
+    endif
+  endif
+%}
 
-        {{ paginate | default_pagination }}
-      {% endpaginate %}
+<div
+  class="section-spacing search-page__spacing color-scheme section-color-scope {{ search_scheme }}"
+  data-search-page
+  {{ section.shopify_attributes }}
+>
+  <div class="container page-width search-page__container">
+    <div class="search-page__header">
+      <h1 class="search-page__title">{{ 'search.title' | t }}</h1>
+
+      <form class="search-page__form" action="{{ routes.search_url }}" method="get" role="search">
+        <button class="search-page__submit" type="submit" aria-label="{{ 'search.submit' | t | escape }}">
+          {% render 'icon', icon: 'magnifying-glass', bare: true %}
+        </button>
+        {% render 'form-field',
+          id: 'SearchPageInput',
+          name: 'q',
+          label: search_page_label,
+          type: 'search',
+          value: search.terms,
+          placeholder: search_page_placeholder,
+          class: 'search-page__field'
+        %}
+      </form>
     </div>
-  {% endif %}
-  {% endif %}
+
+    {% if search.performed %}
+      {% if search.results_count == 0 %}
+        <p class="search-page__empty">{{ 'search.no_results_html' | t: terms: search.terms }}</p>
+      {% else %}
+        <p class="search-page__summary" role="status">
+          {{ 'search.results_for_html' | t: terms: search.terms, count: search.results_count }}
+        </p>
+
+        <div class="search-page__results">
+          <div class="search-page__tabs" role="tablist" aria-label="{{ 'search.title' | t | escape }}">
+            {% if product_count > 0 %}
+              <button
+                id="SearchPageTabProducts"
+                class="search-page__tab"
+                type="button"
+                role="tab"
+                aria-selected="{% if active_result_type == 'products' %}true{% else %}false{% endif %}"
+                aria-controls="SearchPagePanelProducts"
+                data-search-page-tab="products"
+              >
+                {{ 'search.products' | t }}
+              </button>
+            {% endif %}
+            {% if collection_count > 0 %}
+              <button
+                id="SearchPageTabCollections"
+                class="search-page__tab"
+                type="button"
+                role="tab"
+                aria-selected="{% if active_result_type == 'collections' %}true{% else %}false{% endif %}"
+                aria-controls="SearchPagePanelCollections"
+                data-search-page-tab="collections"
+              >
+                {{ 'search.collections' | t }}
+              </button>
+            {% endif %}
+            {% if page_count > 0 or article_count > 0 %}
+              <button
+                id="SearchPageTabPages"
+                class="search-page__tab"
+                type="button"
+                role="tab"
+                aria-selected="{% if active_result_type == 'pages' %}true{% else %}false{% endif %}"
+                aria-controls="SearchPagePanelPages"
+                data-search-page-tab="pages"
+              >
+                {{ 'search.pages' | t }}
+              </button>
+            {% endif %}
+          </div>
+
+          {% paginate search.results by 20 %}
+            {% if product_count > 0 %}
+              <div
+                id="SearchPagePanelProducts"
+                class="search-page__panel"
+                role="tabpanel"
+                aria-labelledby="SearchPageTabProducts"
+                data-search-page-panel="products"
+                {% unless active_result_type == 'products' %}hidden{% endunless %}
+              >
+                <div class="search-page__product-grid">
+                  {% for result in search.results %}
+                    {% if result.object_type == 'product' %}
+                      {% render 'product-card', product: result, class: 'search-page__product-card' %}
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            {% if collection_count > 0 %}
+              <div
+                id="SearchPagePanelCollections"
+                class="search-page__panel"
+                role="tabpanel"
+                aria-labelledby="SearchPageTabCollections"
+                data-search-page-panel="collections"
+                {% unless active_result_type == 'collections' %}hidden{% endunless %}
+              >
+                <div class="search-page__collection-grid">
+                  {% for result in search.results %}
+                    {% if result.object_type == 'collection' %}
+                      {% assign collection_image = result.featured_image | default: result.image %}
+                      <a class="search-page__collection-card" href="{{ result.url }}">
+                        {% if collection_image != blank %}
+                          {% render 'image', image: collection_image, width: 800, height: 800, crop: 'center', class: 'search-page__collection-image' %}
+                        {% else %}
+                          {{ 'collection-1' | placeholder_svg_tag: 'search-page__collection-image search-page__collection-placeholder' }}
+                        {% endif %}
+                        <span class="search-page__collection-title">{{ result.title | escape }}</span>
+                      </a>
+                    {% endif %}
+                  {% endfor %}
+                </div>
+              </div>
+            {% endif %}
+
+            {% if page_count > 0 or article_count > 0 %}
+              <div
+                id="SearchPagePanelPages"
+                class="search-page__panel"
+                role="tabpanel"
+                aria-labelledby="SearchPageTabPages"
+                data-search-page-panel="pages"
+                {% unless active_result_type == 'pages' %}hidden{% endunless %}
+              >
+                <ul class="search-page__page-list">
+                  {% for result in search.results %}
+                    {% if result.object_type == 'page' or result.object_type == 'article' %}
+                      <li>
+                        <a href="{{ result.url }}">
+                          <span class="search-page__page-title">{{ result.title | escape }}</span>
+                          {% if result.object_type == 'article' %}
+                            <span class="search-page__page-type">{{ result.blog.title | default: 'Article' | escape }}</span>
+                          {% endif %}
+                        </a>
+                      </li>
+                    {% endif %}
+                  {% endfor %}
+                </ul>
+              </div>
+            {% endif %}
+
+            {% if paginate.pages > 1 %}
+              <nav class="search-page__pagination" aria-label="{{ 'accessibility.pagination' | t | escape }}">
+                {{ paginate | default_pagination }}
+              </nav>
+            {% endif %}
+          {% endpaginate %}
+        </div>
+      {% endif %}
+    {% endif %}
+  </div>
 </div>
 
 {% stylesheet %}
-  .search-results {
+  .search-page__spacing {
+    min-height: 50vh;
+    padding-block: clamp(3rem, 7vw, 7rem);
+    background-color: var(--background-color);
+  }
+
+  .search-page__container {
+    min-width: 0;
+  }
+
+  .search-page__header {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 2.5rem;
+    max-width: 62rem;
+    margin-inline: auto;
+  }
+
+  .search-page__title {
+    font-size: var(--font-heading-xl);
+    line-height: 1.1;
+    text-align: center;
+  }
+
+  .search-page__form {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    min-height: 4.75rem;
+    padding-inline: 0;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .search-page__submit {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: 1.5rem;
+    height: 1.5rem;
+    flex: 0 0 auto;
+    padding: 0;
+    border: 0;
+    background: transparent;
+    color: inherit;
+  }
+
+  .search-page__submit svg {
+    width: 100%;
+    height: 100%;
+  }
+
+  .search-page__field {
+    min-width: 0;
+    flex: 1 1 auto;
+  }
+
+  .search-page__field .form__label {
+    position: absolute;
+    overflow: hidden;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    border: 0;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+  }
+
+  .search-page__field .form__control {
+    width: auto !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    padding: 0 !important;
+    border: 0 !important;
+    border-radius: 0 !important;
+    outline: 0;
+    background: transparent !important;
+    color: inherit;
+    font: inherit;
+    font-size: var(--font-body-xl);
+  }
+
+  .search-page__field .form__control::-webkit-search-cancel-button,
+  .search-page__field .form__control::-webkit-search-decoration,
+  .search-page__field .form__control::-webkit-search-results-button,
+  .search-page__field .form__control::-webkit-search-results-decoration {
+    display: none;
+    appearance: none;
+    -webkit-appearance: none;
+  }
+
+  .search-page__field .form__control::-ms-clear {
+    display: none;
+    width: 0;
+    height: 0;
+  }
+
+  .search-page__summary,
+  .search-page__empty {
+    margin-block-start: 3rem;
+    color: color-mix(in srgb, currentColor 70%, transparent);
+    font-size: var(--font-body-sm);
+    text-align: center;
+  }
+
+  .search-page__results {
+    margin-block-start: 3rem;
+  }
+
+  .search-page__tabs {
+    display: flex;
+    gap: 2.5rem;
+    overflow-x: auto;
+    border-bottom: 1px solid var(--border-color);
+  }
+
+  .search-page__tab {
+    position: relative;
+    padding: 0 0 1rem;
+    border: 0;
+    background: transparent;
+    color: color-mix(in srgb, currentColor 55%, transparent);
+    font-size: var(--font-body-xs);
+    letter-spacing: 0.18em;
+    text-transform: uppercase;
+    white-space: nowrap;
+  }
+
+  .search-page__tab[aria-selected='true'] {
+    color: inherit;
+  }
+
+  .search-page__tab[aria-selected='true']::after {
+    position: absolute;
+    inset-inline: 0;
+    inset-block-end: -1px;
+    height: 1px;
+    background: currentColor;
+    content: '';
+  }
+
+  .search-page__panel {
+    padding-block-start: 2.5rem;
+  }
+
+  .search-page__panel[hidden] {
+    display: none;
+  }
+
+  .search-page__product-grid,
+  .search-page__collection-grid {
+    display: grid;
+    grid-template-columns: repeat(4, minmax(0, 1fr));
     gap: var(--layout-grid-gap);
   }
-  .search-form .form__fields {
-    display: flex;
-    align-items: end;
+
+  .search-page__collection-card {
+    display: grid;
     gap: 1rem;
-    margin-block: 1.5rem;
+    color: inherit;
+    text-decoration: none;
   }
-  .search-form .form__field {
-    flex: 1;
+
+  .search-page__collection-image {
+    aspect-ratio: 1;
+    object-fit: cover;
   }
-  @media (max-width: 767px) {
-    .search-form .form__fields {
-      display: grid;
+
+  .search-page__collection-placeholder {
+    background: color-mix(in srgb, var(--background-color) 90%, var(--body-color));
+  }
+
+  .search-page__collection-title {
+    font-size: var(--font-body-sm);
+    letter-spacing: 0.16em;
+    text-transform: uppercase;
+  }
+
+  .search-page__page-list {
+    display: grid;
+    max-width: 44rem;
+    gap: 1.25rem;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+
+  .search-page__page-list a {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+    padding-block: 0.75rem;
+    border-bottom: 1px solid var(--border-color);
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .search-page__page-title {
+    font-size: var(--font-body-md);
+  }
+
+  .search-page__page-type {
+    color: color-mix(in srgb, currentColor 60%, transparent);
+    font-size: var(--font-body-xs);
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+
+  .search-page__pagination {
+    grid-column: 1 / -1;
+    margin-block-start: 3rem;
+  }
+
+  @media (max-width: 767.98px) {
+    .search-page__spacing {
+      padding-block: 3rem;
+    }
+
+    .search-page__title {
+      font-size: var(--font-heading-lg);
+    }
+
+    .search-page__form {
+      min-height: 4rem;
+    }
+
+    .search-page__product-grid,
+    .search-page__collection-grid {
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 1rem;
+    }
+
+    .search-page__page-list a {
+      align-items: flex-start;
+      flex-direction: column;
+      gap: 0.4rem;
     }
   }
-  .search-results .prev,
-  .search-results .page,
-  .search-results .next {
-    grid-column: 1 / -1;
-  }
 {% endstylesheet %}
+
+{% javascript %}
+(() => {
+  document.querySelectorAll('[data-search-page]').forEach((searchPage) => {
+    if (searchPage.dataset.searchPageReady === 'true') return;
+    searchPage.dataset.searchPageReady = 'true';
+
+    const tabs = searchPage.querySelectorAll('[data-search-page-tab]');
+    const panels = searchPage.querySelectorAll('[data-search-page-panel]');
+    tabs.forEach((tab) => tab.addEventListener('click', () => {
+      const selectedType = tab.dataset.searchPageTab;
+      tabs.forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
+      panels.forEach((panel) => { panel.hidden = panel.dataset.searchPagePanel !== selectedType; });
+    }));
+  });
+})();
+{% endjavascript %}
 
 {% schema %}
 {
   "name": "t:general.search",
+  "class": "section-search",
   "settings": [
     {
       "type": "color_scheme",

@@ -1,9 +1,4 @@
 {% liquid
-  assign cart_position = block.settings.position | default: 'right'
-  unless cart_position == 'left' or cart_position == 'center' or cart_position == 'right'
-    assign cart_position = 'right'
-  endunless
-
   assign cart_type = block.settings.type | default: 'icon'
   unless cart_type == 'icon' or cart_type == 'text' or cart_type == 'icon_with_text'
     assign cart_type = 'icon'
@@ -20,7 +15,7 @@
     assign cart_aria_label = cart_label | append: ', ' | append: cart.item_count
   endif
 
-  assign cart_class = 'header-cart header-action--position-' | append: cart_position | append: ' header-cart--type-' | append: cart_type | append: ' header-cart--badge-' | append: cart_badge_type
+  assign cart_class = 'header-cart header-cart--type-' | append: cart_type | append: ' header-cart--badge-' | append: cart_badge_type
   if cart_type == 'icon'
     assign cart_class = cart_class | append: ' header-action--type-icon'
   endif
@@ -30,15 +25,18 @@
   class="{{ cart_class }}"
   href="{{ routes.cart_url }}"
   aria-label="{{ cart_aria_label | escape }}"
+  aria-haspopup="dialog"
+  aria-controls="CartDrawer"
+  aria-expanded="false"
+  data-cart-label="{{ cart_label | escape }}"
+  data-cart-drawer-open
   {{ block.shopify_attributes }}
 >
   <span class="icon" aria-hidden="true">
-    {{ 'icon-cart.svg' | inline_asset_content }}
+    {% render 'icon', icon: 'shopping-bag', bare: true %}
+    <span class="header-cart__count" data-cart-count aria-label="{{ cart.item_count }}"{% if cart.item_count == 0 %} hidden{% endif %}>{% if cart.item_count > 99 %}99+{% else %}{{ cart.item_count }}{% endif %}</span>
   </span>
   {% unless cart_type == 'icon' %}<span class="header-action__label">{{ cart_label | escape }}</span>{% endunless %}
-  {% if cart.item_count > 0 %}
-    <span class="header-cart__count" aria-label="{{ cart.item_count }}">{{ cart.item_count }}</span>
-  {% endif %}
 </a>
 
 {% stylesheet %}
@@ -55,22 +53,11 @@
     text-decoration: none;
   }
 
-  .header-action--position-left {
-    margin-inline-end: auto;
-  }
-
-  .header-action--position-center {
-    margin-inline: auto;
-  }
-
-  .header-action--position-right {
-    margin-inline-start: 0;
-  }
-
   .header-cart .icon {
+    position: relative;
     display: inline-flex;
-    width: var(--header-icon-size, var(--icon-size-large));
-    height: var(--header-icon-size, var(--icon-size-large));
+    width: var(--header-icon-size, var(--icon-size-medium));
+    height: var(--header-icon-size, var(--icon-size-medium));
     flex: 0 0 auto;
   }
 
@@ -81,14 +68,17 @@
   }
 
   .header-cart__count {
-    display: inline-flex;
-    align-items: center;
-    justify-content: center;
-    min-width: 1.25em;
-    min-height: 1.25em;
-    padding-inline: 0.25em;
-    border-radius: var(--badge-radius);
-    font-size: var(--font-body-xs);
+    position: absolute;
+    z-index: 1;
+    top: -5px;
+    right: -7px;
+    display: grid;
+    min-width: 14px;
+    min-height: 14px;
+    padding-inline: 3px;
+    place-items: center;
+    border-radius: 9999px;
+    font-size: 9px;
     line-height: 1;
     text-align: center;
   }
@@ -124,17 +114,6 @@
     {
       "type": "header",
       "content": "Layout"
-    },
-    {
-      "type": "select",
-      "id": "position",
-      "label": "Position",
-      "options": [
-        { "value": "left", "label": "Left" },
-        { "value": "center", "label": "Center" },
-        { "value": "right", "label": "Right" }
-      ],
-      "default": "right"
     },
     {
       "type": "select",
