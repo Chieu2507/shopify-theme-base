@@ -1,0 +1,367 @@
+{% doc %}
+  Renders the country and language selectors for reusable surfaces such as the
+  Footer. The block owns localization form behavior while its parent owns flow
+  and alignment.
+
+  @example
+  {% content_for 'block', type: 'localization', id: 'localization' %}
+{% enddoc %}
+
+{% liquid
+  assign localization_position = block.settings.position | default: 'right'
+  unless localization_position == 'left' or localization_position == 'center' or localization_position == 'right'
+    assign localization_position = 'right'
+  endunless
+
+  assign localization_trigger = block.settings.dropdown_trigger | default: 'click'
+  unless localization_trigger == 'click' or localization_trigger == 'hover'
+    assign localization_trigger = 'click'
+  endunless
+
+  assign localization_font_size = block.settings.font_size | default: 'md'
+  unless localization_font_size == 'xs' or localization_font_size == 'sm' or localization_font_size == 'md'
+    assign localization_font_size = 'md'
+  endunless
+
+  assign show_country_selector = true
+  if block.settings.show_country_selector == false
+    assign show_country_selector = false
+  endif
+
+  assign show_country_name = false
+  if block.settings.show_country_name
+    assign show_country_name = true
+  endif
+
+  assign show_country_code = true
+  if block.settings.show_country_code == false
+    assign show_country_code = false
+  endif
+
+  assign show_language_selector = false
+  if block.settings.show_language_selector
+    assign show_language_selector = true
+  endif
+
+  assign has_country_selector = false
+  if show_country_selector and localization.available_countries.size > 1
+    assign has_country_selector = true
+  endif
+
+  assign has_language_selector = false
+  if show_language_selector and localization.available_languages.size > 1
+    assign has_language_selector = true
+  endif
+
+  assign has_localization = false
+  if has_country_selector or has_language_selector
+    assign has_localization = true
+  endif
+
+  assign localization_class = 'localization-block localization-block--position-' | append: localization_position | append: ' localization-block--trigger-' | append: localization_trigger | append: ' localization-block--size-' | append: localization_font_size
+%}
+
+{% if has_localization or request.design_mode %}
+  <div class="{{ localization_class }}" {{ block.shopify_attributes }}>
+    {% if has_localization %}
+      <details class="localization-block__details">
+        <summary class="localization-block__summary">
+          {% if has_country_selector %}
+            <span class="localization-block__country">
+              {% if show_country_code %}<span class="localization-block__country-code" aria-hidden="true">{{ localization.country.iso_code }}</span>{% endif %}
+              {% if show_country_name %}
+                <span>{{ localization.country.name }}</span>
+              {% else %}
+                <span>{{ localization.country.currency.iso_code }}</span>
+              {% endif %}
+            </span>
+          {% endif %}
+          {% if has_country_selector and has_language_selector %}<span aria-hidden="true">·</span>{% endif %}
+          {% if has_language_selector %}<span>{{ localization.language.endonym_name }}</span>{% endif %}
+          <svg class="localization-block__icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
+            <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" />
+          </svg>
+        </summary>
+
+        <div class="localization-block__panel">
+          {% form 'localization', class: 'localization-block__form' %}
+            <input type="hidden" name="return_to" value="{{ request.path }}">
+
+            {% if has_country_selector %}
+              <label class="visually-hidden" for="LocalizationCountry-{{ section.id }}-{{ block.id }}">Country</label>
+              <select id="LocalizationCountry-{{ section.id }}-{{ block.id }}" name="country_code" aria-label="Country" onchange="this.form.submit()">
+                {% for country in localization.available_countries %}
+                  <option value="{{ country.iso_code }}"{% if country.iso_code == localization.country.iso_code %} selected{% endif %}>
+                    {% if show_country_name %}{{ country.name }}{% else %}{{ country.currency.iso_code }}{% endif %}
+                  </option>
+                {% endfor %}
+              </select>
+            {% endif %}
+
+            {% if has_language_selector %}
+              <label class="visually-hidden" for="LocalizationLanguage-{{ section.id }}-{{ block.id }}">Language</label>
+              <select id="LocalizationLanguage-{{ section.id }}-{{ block.id }}" name="language_code" aria-label="Language" onchange="this.form.submit()">
+                {% for language in localization.available_languages %}
+                  <option value="{{ language.iso_code }}"{% if language.iso_code == localization.language.iso_code %} selected{% endif %}>
+                    {{ language.endonym_name }}
+                  </option>
+                {% endfor %}
+              </select>
+            {% endif %}
+          {% endform %}
+        </div>
+      </details>
+    {% else %}
+      <span class="localization-block__placeholder">{{ localization.country.currency.iso_code | default: cart.currency.iso_code | default: 'USD' }}</span>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .localization-block {
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    min-width: 0;
+    color: var(--body-color);
+    font-size: var(--localization-block-font-size, var(--font-body-md));
+  }
+
+  .localization-block--position-left {
+    margin-inline-end: auto;
+  }
+
+  .localization-block--position-center {
+    margin-inline: auto;
+  }
+
+  .localization-block--position-right {
+    margin-inline-start: 0;
+  }
+
+  .localization-block--size-xs {
+    --localization-block-font-size: var(--font-body-xs);
+  }
+
+  .localization-block--size-sm {
+    --localization-block-font-size: var(--font-body-sm);
+  }
+
+  .localization-block--size-md {
+    --localization-block-font-size: var(--font-body-md);
+  }
+
+  .localization-block__details {
+    position: relative;
+  }
+
+  .localization-block__summary {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.35rem;
+    min-height: var(--button-height);
+    color: inherit;
+    cursor: pointer;
+    list-style: none;
+  }
+
+  .localization-block__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .localization-block__country,
+  .localization-block__summary > span {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.25rem;
+    white-space: nowrap;
+  }
+
+  .localization-block__country-code {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    min-width: 1.8em;
+    padding: 0.1em 0.25em;
+    border: 1px solid currentColor;
+    border-radius: var(--radius-square);
+    font-size: 0.72em;
+    line-height: 1.1;
+  }
+
+  .localization-block__icon {
+    width: 0.9em;
+    height: 0.9em;
+    flex: 0 0 auto;
+  }
+
+  .localization-block__panel {
+    position: absolute;
+    z-index: var(--z-drawer);
+    inset-block-start: calc(100% + 0.25rem);
+    inset-inline-end: 0;
+    min-width: 12rem;
+    padding: 0.75rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--overlay-radius);
+    background: var(--background-color);
+    box-shadow: 0 0.75rem 1.5rem color-mix(in srgb, var(--shadow-color) 15%, transparent);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(0.25rem);
+    transition:
+      opacity var(--motion-duration-fast) var(--motion-ease-standard),
+      transform var(--motion-duration-fast) var(--motion-ease-standard),
+      visibility var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .localization-block__details[open] > .localization-block__panel,
+  .localization-block--trigger-hover .localization-block__details:hover > .localization-block__panel,
+  .localization-block--trigger-hover .localization-block__details:focus-within > .localization-block__panel {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .localization-block__form {
+    display: grid;
+    gap: 0.5rem;
+    margin: 0;
+  }
+
+  .localization-block select {
+    width: 100%;
+    min-height: var(--button-height);
+    padding: 0 1.75rem 0 0.5rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--input-radius);
+    background-color: var(--background-color);
+    color: var(--body-color);
+    font: inherit;
+    cursor: pointer;
+  }
+
+  .localization-block__placeholder {
+    display: inline-flex;
+    align-items: center;
+    min-height: var(--button-height);
+  }
+
+  @media (max-width: 767.98px) {
+    .localization-block__summary,
+    .localization-block__placeholder,
+    .localization-block select {
+      min-height: var(--button-height-mobile);
+    }
+
+    .localization-block__panel {
+      inset-inline-end: auto;
+      inset-inline-start: 0;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .localization-block__panel {
+      transition-duration: 0.01ms;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.localization",
+  "tag": null,
+  "settings": [
+    {
+      "type": "header",
+      "content": "Layout"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "Position",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
+      "default": "right"
+    },
+    {
+      "type": "select",
+      "id": "dropdown_trigger",
+      "label": "Dropdown trigger",
+      "options": [
+        { "value": "click", "label": "Click" },
+        { "value": "hover", "label": "Hover" }
+      ],
+      "default": "click"
+    },
+    {
+      "type": "header",
+      "content": "Country selector"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country_selector",
+      "label": "Show country selector",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country_name",
+      "label": "Show country name",
+      "default": false
+    },
+    {
+      "type": "checkbox",
+      "id": "show_country_code",
+      "label": "Show country code",
+      "info": "Uses the country ISO code as a compact fallback.",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "Language selector"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_language_selector",
+      "label": "Show language selector",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "font_size",
+      "label": "Font size",
+      "options": [
+        { "value": "xs", "label": "Extra small" },
+        { "value": "sm", "label": "Small" },
+        { "value": "md", "label": "Medium" }
+      ],
+      "default": "xs"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.localization",
+      "category": "t:general.footer",
+      "settings": {
+        "position": "right",
+        "dropdown_trigger": "click",
+        "show_country_selector": true,
+        "show_country_name": false,
+        "show_country_code": false,
+        "show_language_selector": true,
+        "font_size": "xs"
+      }
+    }
+  ]
+}
+{% endschema %}

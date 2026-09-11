@@ -192,12 +192,14 @@
 
   .menu-block__content-inner {
     min-width: 0;
+    padding-block-end: 20px;
   }
 
   .menu-block__heading {
     display: block;
     min-width: 0;
     margin: 0;
+    padding-block: 20px;
     overflow-wrap: anywhere;
     color: var(--menu-block-heading-color, var(--heading-color));
   }
@@ -301,12 +303,15 @@
   }
 
   @media (max-width: 767.98px) {
+    .menu-block[data-collapse-mobile='true'] .menu-block__details {
+      border-block-end: 1px solid var(--border-color);
+    }
+
     .menu-block[data-collapse-mobile='true'] .menu-block__summary {
       display: flex;
       cursor: pointer;
       pointer-events: auto;
-      padding-block: 0.75rem;
-      border-block-end: 1px solid var(--border-color);
+      padding-block: 0;
     }
 
     .menu-block[data-collapse-mobile='true'] .menu-block__toggle-icon {
@@ -338,6 +343,7 @@
 
     .menu-block[data-collapse-mobile='true'] .menu-block__details[open] > .menu-block__content {
       height: auto;
+      overflow-y: hidden;
       padding-block-start: var(--menu-block-heading-gap, 16px);
       opacity: 1;
       visibility: visible;
@@ -377,6 +383,7 @@
       }
       if (state.transitionEnd) {
         state.content.removeEventListener('transitionend', state.transitionEnd);
+        state.content.removeEventListener('transitioncancel', state.transitionEnd);
         state.transitionEnd = null;
       }
     };
@@ -413,11 +420,13 @@
 
         state.transitionEnd = null;
         content.removeEventListener('transitionend', transitionEnd);
-        if (details.open) content.style.removeProperty('height');
+        content.removeEventListener('transitioncancel', transitionEnd);
+        content.style.removeProperty('height');
       };
 
       state.transitionEnd = transitionEnd;
       content.addEventListener('transitionend', transitionEnd);
+      content.addEventListener('transitioncancel', transitionEnd);
       state.animationFrame = requestAnimationFrame(() => {
         state.animationFrame = 0;
         if (state.animationId !== animationId) return;
