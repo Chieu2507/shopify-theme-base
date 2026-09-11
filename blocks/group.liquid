@@ -195,6 +195,7 @@
   assign group_class = 'group motion-block group--' | append: group_direction
   assign group_class = group_class | append: ' group--align-' | append: group_alignment
   assign group_class = group_class | append: ' group--position-' | append: group_position_name
+  assign group_class = group_class | append: ' group--width-' | append: group_width_mode
   assign group_class = group_class | append: ' group--height-' | append: group_height_mode
   assign group_class = group_class | append: ' group--radius-' | append: group_radius
   assign group_class = group_class | append: ' group--shadow-' | append: group_shadow
@@ -257,6 +258,27 @@
 
 {% stylesheet %}
   .group {
+    /* Keep layout overrides local when groups are nested inside other groups. */
+    --group-width: initial;
+    --group-max-width: initial;
+    --group-width-mobile: initial;
+    --group-max-width-mobile: initial;
+    --group-height: initial;
+    --group-gap-desktop: initial;
+    --group-gap-mobile: initial;
+    --group-padding-top: initial;
+    --group-padding-right: initial;
+    --group-padding-bottom: initial;
+    --group-padding-left: initial;
+    --group-padding-top-mobile: initial;
+    --group-padding-right-mobile: initial;
+    --group-padding-bottom-mobile: initial;
+    --group-padding-left-mobile: initial;
+    --group-background-color: initial;
+    --group-background-image: initial;
+    --group-overlay-color: initial;
+    --group-overlay-opacity: initial;
+    --group-backdrop-blur: initial;
     --group-align: start;
     --group-align-mobile: var(--group-align);
     --group-justify: flex-start;
@@ -296,6 +318,10 @@
     flex-direction: row;
     align-items: var(--group-position);
     justify-content: var(--group-justify);
+  }
+
+  .group--horizontal > .group--width-fill {
+    flex: 1 1 0%;
   }
 
   .group--align-start {
@@ -427,7 +453,7 @@
     .group--horizontal.group--mobile-vertical {
       flex-direction: column;
       align-items: var(--group-align-mobile, var(--group-align));
-      justify-content: flex-start;
+      justify-content: var(--group-justify-mobile, flex-start);
       text-align: var(--group-align-mobile, var(--group-align));
     }
   }
@@ -437,7 +463,27 @@
 {
   "name": "t:general.group",
   "tag": null,
-  "blocks": [{ "type": "@theme" }, { "type": "localization" }],
+  "blocks": [
+    { "type": "button" },
+    { "type": "buttons" },
+    { "type": "divider" },
+    { "type": "eyebrow" },
+    { "type": "header" },
+    { "type": "heading" },
+    { "type": "icon" },
+    { "type": "image" },
+    { "type": "spacer" },
+    { "type": "text" },
+    { "type": "video" },
+    { "type": "group" },
+    { "type": "grid" },
+    { "type": "row" },
+    { "type": "email-signup" },
+    { "type": "localization" },
+    { "type": "logo" },
+    { "type": "menu" },
+    { "type": "payment-icons" }
+  ],
   "settings": [
     {
       "type": "header",
@@ -472,7 +518,8 @@
       "options": [
         { "value": "left", "label": "t:options.alignment.left" },
         { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" }
+        { "value": "right", "label": "t:options.alignment.right" },
+        { "value": "space-between", "label": "t:options.alignment.space_between" }
       ],
       "default": "left",
       "visible_if": "{{ block.settings.direction == 'horizontal' }}"
@@ -491,7 +538,8 @@
       "options": [
         { "value": "left", "label": "t:options.alignment.left" },
         { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" }
+        { "value": "right", "label": "t:options.alignment.right" },
+        { "value": "space-between", "label": "t:options.alignment.space_between" }
       ],
       "default": "left",
       "visible_if": "{{ block.settings.direction == 'horizontal' and block.settings.customize_mobile_alignment }}"
