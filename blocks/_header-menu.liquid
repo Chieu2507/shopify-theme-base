@@ -1,9 +1,4 @@
 {% liquid
-  assign menu_position = block.settings.position | default: 'left'
-  unless menu_position == 'left' or menu_position == 'center' or menu_position == 'right'
-    assign menu_position = 'left'
-  endunless
-
   assign dropdown_trigger = block.settings.dropdown_trigger | default: 'hover'
   unless dropdown_trigger == 'hover' or dropdown_trigger == 'click'
     assign dropdown_trigger = 'hover'
@@ -14,13 +9,13 @@
     assign menu_font = 'accent'
   endunless
 
-  assign menu_font_size = block.settings.font_size | default: 'xs'
+  assign menu_font_size = block.settings.font_size | default: 'md'
   unless menu_font_size == 'xs' or menu_font_size == 'sm' or menu_font_size == 'md' or menu_font_size == 'lg' or menu_font_size == 'xl' or menu_font_size == 'xxl'
-    assign menu_font_size = 'xs'
+    assign menu_font_size = 'md'
   endunless
 
   assign menu_letter_spacing = block.settings.letter_spacing | default: 'normal'
-  unless menu_letter_spacing == 'tighter' or menu_letter_spacing == 'tight' or menu_letter_spacing == 'normal' or menu_letter_spacing == 'relaxed' or menu_letter_spacing == 'loose' or menu_letter_spacing == 'extra_loose' or menu_letter_spacing == 'ultra_loose' or menu_letter_spacing == 'mega_loose'
+  unless menu_letter_spacing == 'tight' or menu_letter_spacing == 'normal' or menu_letter_spacing == 'relaxed'
     assign menu_letter_spacing = 'normal'
   endunless
 
@@ -34,9 +29,9 @@
     assign submenu_font = 'body'
   endunless
 
-  assign submenu_font_size = block.settings.submenu_font_size | default: 'sm'
+  assign submenu_font_size = block.settings.submenu_font_size | default: 'md'
   unless submenu_font_size == 'sm' or submenu_font_size == 'md' or submenu_font_size == 'lg' or submenu_font_size == 'xl' or submenu_font_size == 'xxl'
-    assign submenu_font_size = 'sm'
+    assign submenu_font_size = 'md'
   endunless
 
   assign submenu_text_case = block.settings.submenu_text_case | default: 'original'
@@ -44,23 +39,29 @@
     assign submenu_text_case = 'original'
   endunless
 
-  assign submenu_text_color = block.settings.submenu_text_color | default: 'body'
-  unless submenu_text_color == 'heading' or submenu_text_color == 'body'
-    assign submenu_text_color = 'body'
-  endunless
-
-  assign menu_text_color = block.settings.text_color | default: 'body'
-  unless menu_text_color == 'heading' or menu_text_color == 'body'
-    assign menu_text_color = 'body'
-  endunless
-
-  assign menu_gap = block.settings.gap | default: 26 | plus: 0
-  if menu_gap < 0 or menu_gap > 80
-    assign menu_gap = 26
+  assign submenu_text_color = block.settings.submenu_text_color | default: 'var(--body-color)'
+  if submenu_text_color == 'heading'
+    assign submenu_text_color = 'var(--heading-color)'
+  elsif submenu_text_color == 'body'
+    assign submenu_text_color = 'var(--body-color)'
   endif
 
-  assign menu_class = 'header-menu header-menu--position-' | append: menu_position | append: ' header-menu--trigger-' | append: dropdown_trigger | append: ' header-menu--font-' | append: menu_font | append: ' header-menu--size-' | append: menu_font_size | append: ' header-menu--tracking-' | append: menu_letter_spacing | append: ' header-menu--color-' | append: menu_text_color
-  assign menu_class = menu_class | append: ' header-menu--text-' | append: menu_text_case | append: ' header-menu--submenu-font-' | append: submenu_font | append: ' header-menu--submenu-size-' | append: submenu_font_size | append: ' header-menu--submenu-case-' | append: submenu_text_case | append: ' header-menu--submenu-color-' | append: submenu_text_color
+  assign menu_text_color = block.settings.text_color | default: 'var(--body-color)'
+  if menu_text_color == 'heading'
+    assign menu_text_color = 'var(--heading-color)'
+  elsif menu_text_color == 'body'
+    assign menu_text_color = 'var(--body-color)'
+  endif
+
+  assign menu_gap = block.settings.gap | default: 24 | plus: 0
+  if menu_gap < 0 or menu_gap > 80
+    assign menu_gap = 24
+  endif
+
+  assign menu_class = 'header-menu header-menu--trigger-' | append: dropdown_trigger | append: ' header-menu--font-' | append: menu_font | append: ' header-menu--size-' | append: menu_font_size | append: ' header-menu--tracking-' | append: menu_letter_spacing
+  assign menu_class = menu_class | append: ' header-menu--text-' | append: menu_text_case | append: ' header-menu--submenu-font-' | append: submenu_font | append: ' header-menu--submenu-size-' | append: submenu_font_size | append: ' header-menu--submenu-case-' | append: submenu_text_case
+  assign mobile_drawer_class = 'header__mobile-drawer header-menu--font-' | append: menu_font | append: ' header-menu--size-' | append: menu_font_size | append: ' header-menu--tracking-' | append: menu_letter_spacing
+  assign mobile_drawer_class = mobile_drawer_class | append: ' header-menu--text-' | append: menu_text_case | append: ' header-menu--submenu-font-' | append: submenu_font | append: ' header-menu--submenu-size-' | append: submenu_font_size | append: ' header-menu--submenu-case-' | append: submenu_text_case
   assign header_menu = block.settings.menu
   assign has_header_menu = false
   if block.settings.menu != blank and block.settings.menu.links != blank
@@ -69,7 +70,9 @@
 %}
 
 {% capture menu_style %}
-  {% if menu_gap != 26 %}--header-menu-gap: {{ menu_gap }}px;{% endif %}
+  {% if menu_gap != 24 %}--header-menu-gap: {{ menu_gap }}px;{% endif %}
+  --header-menu-color: {{ menu_text_color }};
+  --header-submenu-color: {{ submenu_text_color }};
 {% endcapture %}
 {% assign menu_style = menu_style | strip %}
 
@@ -82,38 +85,155 @@
     {% if menu_style != blank %}style="{{ menu_style }}"{% endif %}
     {{ block.shopify_attributes }}
   >
+    <button
+      class="header-menu__backdrop"
+      type="button"
+      aria-label="Close menu"
+      aria-hidden="true"
+      data-header-mega-menu-backdrop
+    ></button>
     {% if has_header_menu %}
       <ul class="header-menu__list" role="list">
-        {% for link in header_menu.links %}
-          <li class="header-menu__item{% if link.links != blank %} header-menu__item--has-children{% endif %}">
-            {% if link.links != blank %}
-              <details class="header-menu__details">
-                <summary class="header-menu__summary" aria-haspopup="true">
-                  <span>{{ link.title | escape }}</span>
-                  {% if block.settings.show_dropdown_icon %}
-                    <svg class="header-menu__dropdown-icon" viewBox="0 0 20 20" fill="none" aria-hidden="true" focusable="false">
-                      <path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" />
-                    </svg>
-                  {% endif %}
-                </summary>
-                <ul class="header-menu__submenu" role="list">
-                  {% for child_link in link.links %}
-                    <li class="header-menu__submenu-item">
-                      <a class="header-menu__link" href="{{ child_link.url }}">{{ child_link.title | escape }}</a>
-                    </li>
-                  {% endfor %}
-                </ul>
-              </details>
-            {% else %}
-              <a class="header-menu__link" href="{{ link.url }}">{{ link.title | escape }}</a>
-            {% endif %}
-          </li>
-        {% endfor %}
+          {% for link in header_menu.links %}
+            <li class="header-menu__item{% if link.links != blank %} header-menu__item--has-children{% endif %}" data-menu-title="{{ link.title | handleize }}">
+              {% if link.links != blank %}
+                <details class="header-menu__details" data-header-submenu-trigger="{{ dropdown_trigger }}">
+                  <summary class="header-menu__summary" aria-haspopup="true">
+                    <span class="header-menu__top-link-label">{{ link.title | escape }}</span>
+                    {% if block.settings.show_dropdown_icon %}
+                      {% render 'icon', icon: 'chevron-down', class: 'header-menu__dropdown-icon' %}
+                    {% endif %}
+                  </summary>
+                  <ul class="header-menu__submenu" role="list">
+                    {% for child_link in link.links %}
+                      <li class="header-menu__submenu-item">
+                        <a class="header-menu__link{% if child_link.links != blank %} header-menu__link--has-tertiary{% endif %}" href="{{ child_link.url }}"><span class="header-menu__link-label">{{ child_link.title | escape }}</span>{% if child_link.links != blank %}{% render 'icon', icon: 'chevron-right', class: 'header-menu__tertiary-arrow' %}{% endif %}</a>
+                        {% if child_link.links != blank %}
+                          <ul class="header-menu__tertiary" role="list">
+                            {% for grandchild_link in child_link.links %}
+                              <li><a class="header-menu__tertiary-link" href="{{ grandchild_link.url }}"><span class="header-menu__tertiary-link-label">{{ grandchild_link.title | escape }}</span></a></li>
+                            {% endfor %}
+                          </ul>
+                        {% endif %}
+                      </li>
+                    {% endfor %}
+                  </ul>
+                </details>
+              {% else %}
+                <a class="header-menu__link" href="{{ link.url }}"><span class="header-menu__top-link-label">{{ link.title | escape }}</span></a>
+              {% endif %}
+            </li>
+          {% endfor %}
       </ul>
+      <div class="header-menu__mega-config" aria-hidden="true">{% content_for 'blocks' %}</div>
     {% elsif request.design_mode %}
       <span class="header-menu__placeholder">{{ 'accessibility.menu' | t }}</span>
     {% endif %}
   </nav>
+
+  <aside class="{{ mobile_drawer_class }}" id="HeaderMobileDrawer-{{ section.id }}" aria-label="{{ 'accessibility.menu' | t }}" aria-hidden="true" data-header-mobile-drawer{% if menu_style != blank %} style="{{ menu_style | strip }}"{% endif %}>
+    <button class="header__mobile-drawer-backdrop" type="button" aria-label="Close menu" data-header-menu-backdrop></button>
+    <div class="header__mobile-drawer-surface">
+      <header class="header__mobile-drawer-header">
+        <span class="header__mobile-drawer-title">{{ shop.name | escape }}</span>
+        <button class="overlay-close header__mobile-drawer-close" type="button" aria-label="Close menu" aria-controls="HeaderMobileDrawer-{{ section.id }}" data-header-menu-toggle></button>
+        <button class="header__mobile-drawer-back" type="button" hidden data-header-menu-back>
+          {% render 'icon', icon: 'chevron-left', class: 'header__mobile-drawer-back-icon' %}<span data-header-menu-back-label data-header-menu-back-default-label="{{ 'accessibility.menu' | t }}">{{ 'accessibility.menu' | t }}</span>
+        </button>
+      </header>
+      <div class="header__mobile-drawer-scroll">
+        {% if has_header_menu %}
+          <ul class="header__mobile-drawer-list" role="list">
+            {% for link in header_menu.links %}
+              <li class="header__mobile-drawer-item{% if link.links != blank %} header__mobile-drawer-item--has-children{% endif %}" data-menu-title="{{ link.title | handleize }}">
+                {% if link.links != blank %}
+                  <details class="header__mobile-drawer-details" data-mobile-drawer-details>
+                    <summary><span>{{ link.title | escape }}</span>{% render 'icon', icon: 'chevron-right', class: 'header__mobile-drawer-chevron' %}</summary>
+                    <div class="header__mobile-drawer-submenu">
+                      <ul role="list">
+                        {% for child_link in link.links %}
+                          <li>
+                            <a href="{{ child_link.url }}">{{ child_link.title | escape }}</a>
+                            {% if child_link.links != blank %}
+                              <ul class="header__mobile-drawer-tertiary" role="list">
+                                {% for grandchild_link in child_link.links %}
+                                  <li><a href="{{ grandchild_link.url }}">{{ grandchild_link.title | escape }}</a></li>
+                                {% endfor %}
+                              </ul>
+                            {% endif %}
+                          </li>
+                        {% endfor %}
+                      </ul>
+                      <div class="header__mobile-drawer-mega-slot" data-mobile-mega-slot="{{ link.title | handleize }}"></div>
+                    </div>
+                  </details>
+                {% else %}
+                  <a class="header__mobile-drawer-link" href="{{ link.url }}">{{ link.title | escape }}</a>
+                {% endif %}
+              </li>
+            {% endfor %}
+          </ul>
+        {% elsif request.design_mode %}
+          <span class="header__mobile-drawer-placeholder">{{ 'accessibility.menu' | t }}</span>
+        {% endif %}
+      </div>
+      <footer class="header__mobile-drawer-footer">
+        {% if shop.customer_accounts_enabled %}
+          <shopify-account class="header__mobile-drawer-account" menu="customer-account-main-menu">
+            <span slot="signed-out-avatar" class="header__mobile-drawer-account-avatar">
+              <span>{{ 'customers.login.submit' | t }}</span>
+            </span>
+          </shopify-account>
+        {% else %}
+          <a class="header__mobile-drawer-account" href="{{ routes.account_login_url }}">{{ 'customers.login.submit' | t }}</a>
+        {% endif %}
+
+        {% if localization.available_countries.size > 1 or localization.available_languages.size > 0 %}
+          <div class="header__mobile-drawer-localization header-localization">
+            {% if localization.available_countries.size > 1 %}
+              <details class="header-localization__details" data-header-submenu-trigger="click">
+                <summary class="header-localization__summary">
+                  <span class="header-localization__country">
+                    {{ localization.country | image_url: width: 24 | image_tag: class: 'header-localization__flag', alt: '' }}
+                    <span>{{ localization.country.currency.iso_code }} {{ localization.country.currency.symbol }}</span>
+                  </span>
+                  {% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}
+                </summary>
+                <button class="header-localization__sheet-backdrop" type="button" aria-label="Close country selector" data-header-localization-close></button>
+                <div class="header-localization__panel">
+                  <header class="header-localization__sheet-header"><span class="header-localization__sheet-handle" aria-hidden="true"></span><h2>Country</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close country selector" data-header-localization-close></button></header>
+                  {% form 'localization', class: 'header-localization__form' %}
+                    <input type="hidden" name="return_to" value="{{ request.path }}">
+                    <div class="header-localization__country-list">
+                      {% for country in localization.available_countries %}
+                        <button class="header-localization__country-option{% if country.iso_code == localization.country.iso_code %} is-selected{% endif %}" type="submit" name="country_code" value="{{ country.iso_code }}">
+                          {{ country | image_url: width: 24 | image_tag: class: 'header-localization__flag', alt: '' }}
+                          <span class="header-localization__country-name">{{ country.name }}</span><span class="header-localization__country-currency">{{ country.currency.iso_code }} {{ country.currency.symbol }}</span>
+                        </button>
+                      {% endfor %}
+                    </div>
+                  {% endform %}
+                </div>
+              </details>
+            {% endif %}
+            {% if localization.language != blank %}
+              <details class="header-localization__details header-localization__details--language" data-header-submenu-trigger="click">
+                <summary class="header-localization__summary"><span class="header-localization__language">{{ localization.language.endonym_name }}</span>{% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}</summary>
+                <button class="header-localization__sheet-backdrop" type="button" aria-label="Close language selector" data-header-localization-close></button>
+                <div class="header-localization__panel">
+                  <header class="header-localization__sheet-header"><span class="header-localization__sheet-handle" aria-hidden="true"></span><h2>Language</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close language selector" data-header-localization-close></button></header>
+                  {% form 'localization', class: 'header-localization__form' %}
+                    <input type="hidden" name="return_to" value="{{ request.path }}">
+                    <div class="header-localization__language-list">{% for language in localization.available_languages %}<button class="header-localization__language-option{% if language.iso_code == localization.language.iso_code %} is-selected{% endif %}" type="submit" name="language_code" value="{{ language.iso_code }}">{{ language.endonym_name }}</button>{% endfor %}</div>
+                  {% endform %}
+                </div>
+              </details>
+            {% endif %}
+          </div>
+        {% endif %}
+      </footer>
+    </div>
+  </aside>
 {% endif %}
 
 {% stylesheet %}
@@ -125,20 +245,11 @@
     margin-inline-end: auto;
     color: var(--header-menu-color, var(--body-color));
     font-family: var(--header-menu-font-family, var(--font-accent-family));
-    font-size: var(--header-menu-font-size, var(--font-body-xs));
+    font-size: var(--header-menu-font-size, var(--font-body-md));
     font-style: var(--header-menu-font-style, var(--font-accent-style));
     font-weight: var(--header-menu-font-weight, var(--font-accent-weight));
     letter-spacing: var(--header-menu-letter-spacing, var(--font-body-letter-spacing));
     text-transform: var(--header-menu-text-case, none);
-  }
-
-  .header-menu--position-center {
-    margin-inline: auto;
-  }
-
-  .header-menu--position-right {
-    margin-inline-start: auto;
-    margin-inline-end: 0;
   }
 
   .header-menu--font-body {
@@ -322,25 +433,60 @@
     display: none;
   }
 
+  .header-menu__top-link-label {
+    position: relative;
+  }
+
+  .header-menu__top-link-label::after {
+    position: absolute;
+    inset-block-end: -0.25em;
+    inset-inline-start: 0;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    content: '';
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .header-menu__item > .header-menu__link:is(:hover, :focus-visible) .header-menu__top-link-label::after,
+  .header-menu__item > .header-menu__details > .header-menu__summary:is(:hover, :focus-visible) .header-menu__top-link-label::after {
+    transform: scaleX(1);
+  }
+
+  .header-menu__item--highlight > .header-menu__details > .header-menu__summary {
+    color: var(--header-menu-highlight-color, currentColor);
+    font-weight: 600;
+  }
+
   .header-menu__dropdown-icon {
-    width: 0.9em;
-    height: 0.9em;
+    width: var(--icon-size-small);
+    height: var(--icon-size-small);
     flex: 0 0 auto;
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .header-menu__details:is([open], .is-submenu-closing) > .header-menu__summary .header-menu__dropdown-icon,
+  .header-menu--trigger-hover .header-menu__details:hover .header-menu__dropdown-icon,
+  .header-menu--trigger-hover .header-menu__details:focus-within .header-menu__dropdown-icon {
+    transform: rotate(180deg);
   }
 
   .header-menu__submenu {
     position: absolute;
     z-index: var(--z-drawer);
-    inset-block-start: calc(100% + 0.25rem);
+    inset-block-start: calc(100% + var(--header-submenu-offset, 0px));
     inset-inline-start: 0;
-    display: grid;
-    gap: 0.15rem;
-    min-width: 12rem;
-    padding: 0.75rem;
-    border: 1px solid var(--border-color);
-    border-radius: var(--overlay-radius, var(--navigation-radius));
+    display: flex;
+    width: 150px;
+    padding: 10px 8px;
+    flex-direction: column;
+    align-items: flex-start;
+    border: 0;
+    border-radius: var(--drawer-radius);
     background: var(--background-color);
-    box-shadow: 0 0.75rem 1.5rem color-mix(in srgb, var(--shadow-color) 15%, transparent);
+    box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.10), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
     color: var(--header-submenu-color, var(--header-menu-color, var(--body-color)));
     font-family: var(--header-submenu-font-family, var(--font-body-family));
     font-size: var(--header-submenu-font-size, var(--font-body-sm));
@@ -355,10 +501,15 @@
     transition:
       opacity var(--motion-duration-fast) var(--motion-ease-standard),
       transform var(--motion-duration-fast) var(--motion-ease-standard),
-      visibility var(--motion-duration-fast) var(--motion-ease-standard);
+      visibility var(--motion-duration-fast) var(--motion-ease-standard),
+      background-color var(--motion-duration-standard) var(--motion-ease-standard),
+      border-color var(--motion-duration-standard) var(--motion-ease-standard),
+      color var(--motion-duration-standard) var(--motion-ease-standard),
+      box-shadow var(--motion-duration-standard) var(--motion-ease-standard);
   }
 
   .header-menu__details[open] > .header-menu__submenu,
+  .header-menu__details.is-submenu-closing > .header-menu__submenu,
   .header-menu--trigger-hover .header-menu__item:hover > .header-menu__details > .header-menu__submenu,
   .header-menu--trigger-hover .header-menu__item:focus-within > .header-menu__details > .header-menu__submenu {
     opacity: 1;
@@ -367,10 +518,215 @@
     transform: translateY(0);
   }
 
+  .header-menu__details:is([open], .is-submenu-closing)::after {
+    position: absolute;
+    inset-block-start: 100%;
+    inset-inline-start: 0;
+    width: 150px;
+    height: var(--header-submenu-offset, 0px);
+    content: '';
+  }
+
+  .header-mega-menu {
+    position: absolute;
+    z-index: var(--z-drawer);
+    inset-block-start: calc(100% + var(--header-submenu-offset, 0px));
+    inset-inline-start: calc(var(--header-mega-inline-offset, 0px) * -1);
+    width: 100vw;
+    padding-block: 1.5rem;
+    padding-inline: 0;
+    border-radius: var(--drawer-radius);
+    background: var(--background-color);
+    box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.10), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    color: var(--body-color);
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateY(0.25rem);
+  }
+
+  .header-menu__details--mega:is([open], .is-submenu-closing) > .header-mega-menu,
+  .header-menu--trigger-hover .header-menu__item:hover > .header-menu__details--mega > .header-mega-menu {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateY(0);
+  }
+
+  .header-menu__details--mega > .header-menu__submenu { display: none; }
+
+  .header-mega-menu__layout {
+    display: grid;
+    grid-template-columns: minmax(0, calc(100% - var(--mega-banner-width, 40%) - var(--mega-menu-gap, 1.5rem))) minmax(0, var(--mega-banner-width, 40%));
+    gap: var(--mega-menu-gap, 1.5rem);
+    align-items: start;
+  }
+
+  .header-mega-menu--vertical .header-mega-menu__layout { grid-template-columns: 1fr; }
+
+  .header-mega-menu__content { min-width: 0; font-family: var(--mega-menu-font-family, inherit); font-size: var(--mega-menu-font-size, inherit); letter-spacing: var(--mega-menu-letter-spacing, inherit); }
+  .header-mega-menu__content--with-featured { display: grid; grid-template-columns: minmax(10rem, 0.35fr) minmax(0, 1fr); gap: 2rem; }
+  .header-mega-menu__featured { display: grid; align-content: start; gap: 0.65rem; margin: 0; padding: 0; list-style: none; font-family: var(--mega-menu-font-family, inherit); font-size: var(--mega-menu-featured-font-size, var(--font-body-lg)); letter-spacing: var(--mega-menu-letter-spacing, inherit); }
+  .header-mega-menu__featured a { color: inherit; text-decoration: none; }
+  .header-mega-menu__featured a:is(:hover, :focus-visible) { text-decoration: underline; text-underline-offset: 0.2em; }
+
+  .header-mega-menu__navigation .header-menu__submenu {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(var(--mega-menu-columns, 2), minmax(0, 1fr));
+    gap: 0.25rem 2rem;
+    width: auto;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+  }
+
+  .header-mega-menu--submenu-limited .header-mega-menu__navigation .header-menu__submenu { max-width: var(--mega-menu-max-width); }
+
+  .header-mega-menu__navigation .header-menu__submenu-item > .header-menu__link {
+    min-height: 1.5rem;
+    padding-inline: 0;
+    font-weight: 600;
+    line-height: 1.25;
+  }
+
+  .header-mega-menu__navigation .header-menu__submenu-item > .header-menu__link .header-menu__link-label::after {
+    display: none;
+  }
+
+  .header-mega-menu__navigation .header-menu__tertiary {
+    position: static;
+    width: auto;
+    padding: 0;
+    background: transparent;
+    box-shadow: none;
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: none;
+    margin-block-start: 0.5rem;
+  }
+
+  .header-mega-menu__navigation .header-menu__tertiary-link {
+    padding-inline: 0;
+  }
+
+  .header-mega-menu__banners { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1.25rem; align-items: start; }
+  .header-mega-menu__banners--single { grid-template-columns: minmax(0, 1fr); }
+  .header-mega-menu__banner { color: inherit; text-decoration: none; }
+  .header-mega-menu__banner-image { display: block; width: 100%; aspect-ratio: 1 / 1.1; object-fit: cover; }
+  .header-mega-menu__banner-title { display: block; margin-block-start: 0.75rem; }
+  .header-mega-menu__banner-text { display: block; margin-block-start: 0.35rem; font-size: var(--font-body-xs); }
+  .header-mega-menu__banner-label { display: inline-block; margin-block-start: 0.65rem; font-size: var(--font-body-xs); text-decoration: underline; text-underline-offset: 0.2em; }
+
   .header-menu__submenu .header-menu__link {
     width: 100%;
     min-height: 2.5rem;
     padding-inline: 0.5rem;
+  }
+
+  .header-menu__submenu .header-menu__link-label {
+    position: relative;
+  }
+
+  .header-menu__submenu .header-menu__link-label::after {
+    position: absolute;
+    inset-block-end: -0.2em;
+    inset-inline-start: 0;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    content: '';
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .header-menu__submenu .header-menu__link:is(:hover, :focus-visible) .header-menu__link-label::after {
+    transform: scaleX(1);
+  }
+
+  .header-menu__tertiary {
+    position: absolute;
+    z-index: 1;
+    inset-block-start: 0;
+    inset-inline-start: 100%;
+    display: grid;
+    gap: 0.35rem;
+    width: 250px;
+    margin: 0;
+    padding: 0.75rem;
+    border: 0;
+    background: var(--background-color);
+    box-shadow: 0 4px 8px -2px rgba(0, 0, 0, 0.10), 0 2px 4px -2px rgba(0, 0, 0, 0.06);
+    list-style: none;
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+    transform: translateX(-0.25rem);
+    transition:
+      opacity var(--motion-duration-fast) var(--motion-ease-standard),
+      transform var(--motion-duration-fast) var(--motion-ease-standard),
+      visibility var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .header-menu__details:not(.header-menu__details--mega) .header-menu__submenu-item {
+    position: relative;
+    width: 100%;
+  }
+
+  .header-menu__details:not(.header-menu__details--mega) .header-menu__submenu-item:is(:hover, :focus-within) > .header-menu__tertiary {
+    opacity: 1;
+    visibility: visible;
+    pointer-events: auto;
+    transform: translateX(0);
+  }
+
+  .header-menu__link--has-tertiary {
+    justify-content: space-between;
+  }
+
+  .header-menu__tertiary-arrow {
+    width: 1.1em;
+    height: 1.1em;
+    flex: 0 0 auto;
+  }
+
+  .header-mega-menu__navigation .header-menu__tertiary-arrow {
+    display: none;
+  }
+
+  .header-menu__tertiary-link {
+    display: block;
+    width: 100%;
+    padding: 0.45rem 0.5rem;
+    color: inherit;
+    text-decoration: none;
+  }
+
+  .header-menu__tertiary-link-label {
+    position: relative;
+  }
+
+  .header-menu__tertiary-link-label::after {
+    position: absolute;
+    inset-block-end: -0.2em;
+    inset-inline-start: 0;
+    width: 100%;
+    height: 1px;
+    background: currentColor;
+    content: '';
+    transform: scaleX(0);
+    transform-origin: left center;
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .header-menu__tertiary-link:is(:hover, :focus-visible) .header-menu__tertiary-link-label::after {
+    transform: scaleX(1);
   }
 
   .header-menu__placeholder {
@@ -380,23 +736,89 @@
     color: var(--body-color);
   }
 
-  @media (max-width: 767.98px) {
+  .header-menu__mobile-header,
+  .header-menu__mobile-back {
+    display: none;
+  }
+
+  .header-menu__backdrop {
+    display: none;
+  }
+
+  @media (min-width: 1150px) {
+    .header-menu__backdrop {
+      position: absolute;
+      z-index: calc(var(--z-drawer) - 1);
+      inset-block-start: 100%;
+      inset-inline-start: 50%;
+      display: block;
+      width: 100vw;
+      height: 100vh;
+      padding: 0;
+      border: 0;
+      background: var(--overlay-color);
+      cursor: pointer;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      transform: translateX(-50%);
+      -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
+      backdrop-filter: blur(var(--overlay-backdrop-blur));
+      transition:
+        opacity var(--motion-duration-standard) var(--motion-ease-standard),
+        visibility 0s linear var(--motion-duration-standard);
+    }
+
+    .header--mega-menu-open .header-menu__backdrop {
+      opacity: var(--overlay-opacity);
+      visibility: visible;
+      pointer-events: auto;
+      transition-delay: 0s;
+    }
+  }
+
+  .header__mobile-drawer {
+    display: none;
+    color: var(--header-menu-color, var(--body-color));
+    font-family: var(--header-menu-font-family, var(--font-accent-family));
+    font-size: var(--header-menu-font-size, var(--font-body-xs));
+    font-style: var(--header-menu-font-style, var(--font-accent-style));
+    font-weight: var(--header-menu-font-weight, var(--font-accent-weight));
+    letter-spacing: var(--header-menu-letter-spacing, var(--font-body-letter-spacing));
+    text-transform: var(--header-menu-text-case, none);
+  }
+
+  .header-menu__drawer,
+  .header-menu__mobile-scroll {
+    display: contents;
+  }
+
+  @media (max-width: 1149.98px) {
     .header-menu {
-      order: 10;
-      flex: 1 1 100%;
-      width: 100%;
-      margin: 0;
+      position: absolute;
+      z-index: var(--z-drawer);
+      inset-block-start: 100%;
+      inset-inline: 0;
       display: none;
-      overflow-x: auto;
+      width: 100%;
+      max-height: min(70vh, 32rem);
+      margin: 0;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 0.5rem var(--page-margin-current);
+      border-top: 1px solid var(--border-color);
+      background: var(--background-color);
+      box-shadow: 0 0.75rem 1.5rem color-mix(in srgb, var(--shadow-color) 15%, transparent);
+      flex: none;
       scrollbar-width: none;
     }
 
     .header-top--menu-open .header-menu {
       display: flex;
-      max-height: min(70vh, 32rem);
-      overflow-y: auto;
-      padding-block: 0.5rem;
-      border-top: 1px solid var(--border-color);
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+      transform: none;
     }
 
     .header-top--menu-open .header-menu__list {
@@ -418,6 +840,7 @@
 
     .header-top--menu-open .header-menu__submenu {
       position: static;
+      width: 100%;
       min-width: 0;
       padding: 0 0 0 0.75rem;
       border: 0;
@@ -437,6 +860,51 @@
       pointer-events: auto;
     }
 
+    .header-top--menu-open .header-menu__details--mega > .header-mega-menu {
+      position: static;
+      width: 100%;
+      max-width: none;
+      padding: 0.75rem 0 0 0.75rem;
+      background: transparent;
+      box-shadow: none;
+      color: inherit;
+      transform: none;
+    }
+
+    .header-top--menu-open .header-menu__details--mega:not([open]) > .header-mega-menu {
+      display: none;
+    }
+
+    .header-top--menu-open .header-menu__details--mega[open] > .header-mega-menu {
+      display: block;
+      opacity: 1;
+      visibility: visible;
+      pointer-events: auto;
+    }
+
+    .header-top--menu-open .header-mega-menu__layout,
+    .header-top--menu-open .header-mega-menu__content--with-featured {
+      display: block;
+    }
+
+    .header-top--menu-open .header-mega-menu__featured {
+      margin-block-end: 0.75rem;
+    }
+
+    .header-top--menu-open .header-mega-menu__navigation .header-menu__submenu {
+      grid-template-columns: minmax(0, 1fr);
+      gap: 0.25rem;
+    }
+
+    .header-top--menu-open .header-mega-menu__banners {
+      grid-template-columns: minmax(0, 1fr);
+      margin-block-start: 1rem;
+    }
+
+    .header-top--menu-open .header-menu__details--mega > .header-menu__submenu {
+      display: none;
+    }
+
     .header-menu::-webkit-scrollbar {
       display: none;
     }
@@ -446,11 +914,359 @@
       flex-wrap: nowrap;
       padding-bottom: 0.125rem;
     }
+  }
 
+  @media (max-width: 767.98px) {
+    /* The mobile navigation is deliberately a separate drawer. The desktop
+       navigation above remains untouched so its dropdown and mega-menu states
+       never leak into the mobile interaction model. */
+    .header-menu {
+      display: none !important;
+    }
+
+    .header__mobile-drawer {
+      position: fixed;
+      z-index: var(--z-modal);
+      inset: 0;
+      display: block;
+      visibility: hidden;
+      pointer-events: none;
+      transition: visibility 0s linear var(--motion-duration-standard);
+    }
+
+    .header-top--menu-open .header__mobile-drawer {
+      visibility: visible;
+      pointer-events: auto;
+      transition-delay: 0s;
+    }
+
+    .header__mobile-drawer-backdrop {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: var(--overlay-color);
+      opacity: 0;
+      -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
+      backdrop-filter: blur(var(--overlay-backdrop-blur));
+      transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
+    }
+
+    .header-top--menu-open .header__mobile-drawer-backdrop {
+      opacity: var(--overlay-opacity);
+    }
+
+    .header__mobile-drawer-surface {
+      position: relative;
+      inset-inline-start: -100%;
+      display: flex;
+      width: 100%;
+      height: 100dvh;
+      min-height: 100dvh;
+      overflow: hidden;
+      border-radius: var(--drawer-radius);
+      background: var(--background-color);
+      flex-direction: column;
+      transition: inset-inline-start var(--motion-duration-standard) var(--motion-ease-standard);
+    }
+
+    .header-top--menu-open .header__mobile-drawer-surface {
+      inset-inline-start: 0;
+    }
+
+    .header__mobile-drawer-header {
+      position: sticky;
+      z-index: 2;
+      top: 0;
+      display: flex;
+      min-height: 3.75rem;
+      align-items: center;
+      justify-content: space-between;
+      padding-inline: var(--page-margin-mobile);
+      border-bottom: 1px solid var(--border-color);
+      background: var(--background-color);
+    }
+
+  .header__mobile-drawer-title {
+      overflow: hidden;
+      color: var(--heading-color);
+      font-family: var(--font-heading-family);
+      font-size: var(--font-heading-sm);
+      line-height: var(--font-heading-sm-line-height);
+      font-style: var(--font-heading-style);
+      font-weight: var(--font-heading-weight);
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+
+    .header__mobile-drawer-close {
+      --overlay-close-size: 2.5rem;
+      flex: 0 0 auto;
+    }
+
+    .header__mobile-drawer-back {
+      position: absolute;
+      inset-inline-start: var(--page-margin-mobile);
+      display: inline-flex;
+      min-height: 2.5rem;
+      align-items: center;
+      gap: 0.55rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--header-menu-color);
+      font-family: var(--header-menu-font-family);
+      font-size: var(--header-menu-font-size);
+      font-style: var(--header-menu-font-style);
+      font-weight: var(--header-menu-font-weight);
+      letter-spacing: var(--header-menu-letter-spacing);
+      text-transform: var(--header-menu-text-case);
+    }
+
+    .header__mobile-drawer-back[hidden],
+    .header__mobile-drawer--submenu-active .header__mobile-drawer-close,
+    .header__mobile-drawer--submenu-active .header__mobile-drawer-title {
+      display: none;
+    }
+
+    .header__mobile-drawer-back-icon,
+    .header__mobile-drawer-chevron {
+      width: var(--icon-size-small);
+      height: var(--icon-size-small);
+      flex: 0 0 auto;
+    }
+
+    .header__mobile-drawer-scroll {
+      position: relative;
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding: 1rem var(--page-margin-mobile) 8rem;
+      scrollbar-width: none;
+    }
+
+    .header__mobile-drawer--submenu-active .header__mobile-drawer-scroll {
+      padding-bottom: 1rem;
+    }
+
+    .header__mobile-drawer-list,
+    .header__mobile-drawer-submenu > ul,
+    .header__mobile-drawer-tertiary {
+      display: grid;
+      gap: 0;
+      padding: 0;
+      margin: 0;
+      list-style: none;
+    }
+
+    .header__mobile-drawer-list > .header__mobile-drawer-item {
+      border-bottom: 1px solid var(--border-color);
+    }
+
+    .header__mobile-drawer-item {
+      color: var(--header-menu-color);
+      font-family: var(--header-menu-font-family);
+      font-size: var(--header-menu-font-size);
+      font-style: var(--header-menu-font-style);
+      font-weight: var(--header-menu-font-weight);
+      letter-spacing: var(--header-menu-letter-spacing);
+      text-transform: var(--header-menu-text-case);
+    }
+
+    .header__mobile-drawer-link,
+    .header__mobile-drawer-details > summary {
+      display: flex;
+      min-height: 2.75rem;
+      align-items: center;
+      justify-content: space-between;
+      color: inherit;
+      text-decoration: none;
+      text-transform: inherit;
+    }
+
+    .header__mobile-drawer-details > summary {
+      cursor: pointer;
+      list-style: none;
+    }
+
+    .header__mobile-drawer-details > summary::-webkit-details-marker {
+      display: none;
+    }
+
+    .header__mobile-drawer-submenu {
+      position: absolute;
+      z-index: 1;
+      inset: 0;
+      display: block;
+      overflow-y: auto;
+      padding: 1rem var(--page-margin-mobile);
+      background: var(--background-color);
+      color: var(--header-submenu-color);
+      font-family: var(--header-submenu-font-family);
+      font-size: var(--header-submenu-font-size);
+      font-style: var(--header-submenu-font-style);
+      font-weight: var(--header-submenu-font-weight);
+      text-transform: var(--header-submenu-text-case);
+      opacity: 0;
+      pointer-events: none;
+      transform: translateX(100%);
+      transition:
+        transform var(--motion-duration-standard) var(--motion-ease-standard),
+        opacity var(--motion-duration-fast) var(--motion-ease-standard);
+    }
+
+    .header__mobile-drawer--submenu-active .header__mobile-drawer-item.is-mobile-submenu-active > .header__mobile-drawer-details > .header__mobile-drawer-submenu {
+      opacity: 1;
+      pointer-events: auto;
+      transform: translateX(0);
+    }
+
+    .header__mobile-drawer-submenu a:not(.btn) {
+      color: inherit;
+      text-transform: inherit;
+    }
+
+    .header__mobile-drawer-item.has-mobile-mega .header__mobile-drawer-submenu > ul {
+      display: none;
+    }
+
+    .header__mobile-drawer-tertiary {
+      padding-inline-start: 1rem;
+    }
+
+    .header__mobile-drawer-mega-slot:empty {
+      display: none;
+    }
+
+    .header__mobile-drawer-mega-slot .header-mega-menu {
+      position: static;
+      display: block;
+      width: 100%;
+      padding: 0;
+      margin: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      color: inherit;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+      visibility: visible;
+    }
+
+    .header__mobile-drawer-mega-slot .header-mega-menu__container {
+      padding-inline: 0;
+    }
+
+    .header__mobile-drawer-mega-slot .header-mega-menu__layout,
+    .header__mobile-drawer-mega-slot .header-mega-menu__content,
+    .header__mobile-drawer-mega-slot .header-mega-menu__navigation {
+      display: block;
+    }
+
+    .header__mobile-drawer-mega-slot .header-mega-menu__navigation .header-menu__submenu-item > .header-menu__link {
+      min-height: 1.5rem;
+      padding-inline: 0;
+      font-weight: 600;
+      line-height: 1.25;
+    }
+
+    .header__mobile-drawer-mega-slot .header-mega-menu__banners {
+      display: grid;
+      grid-auto-columns: calc((100% - 1.25rem) / 1.2);
+      grid-auto-flow: column;
+      grid-template-columns: none;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+    }
+
+    .header__mobile-drawer-mega-slot .header-mega-menu__banner {
+      scroll-snap-align: start;
+    }
+
+    .header__mobile-drawer-placeholder {
+      display: inline-flex;
+      min-height: var(--button-height-mobile);
+      align-items: center;
+    }
+
+    .header__mobile-drawer-footer {
+      display: grid;
+      gap: 0.75rem;
+      padding: 0.75rem var(--page-margin-mobile) max(0.75rem, env(safe-area-inset-bottom));
+      border-top: 1px solid var(--border-color);
+      background: var(--background-color);
+    }
+
+    .header__mobile-drawer-account,
+    shopify-account.header__mobile-drawer-account::part(signed-out-avatar) {
+      display: flex;
+      width: 100%;
+      min-height: 3.125rem;
+      box-sizing: border-box;
+      align-items: center;
+      justify-content: center;
+      padding: 0 1rem;
+      border: var(--button-primary-border-width) solid var(--button-primary-border);
+      border-radius: var(--button-radius);
+      background: var(--button-primary-background);
+      color: var(--button-primary-text);
+      font-family: var(--button-primary-font-family);
+      font-size: var(--button-font-size, inherit);
+      font-weight: var(--button-primary-font-weight, inherit);
+      letter-spacing: var(--button-primary-letter-spacing, inherit);
+      line-height: 1;
+      text-align: center;
+      text-decoration: none;
+      text-transform: var(--button-primary-text-case);
+    }
+
+    shopify-account.header__mobile-drawer-account {
+      --shopify-account-radius-base: var(--drawer-radius);
+      --shopify-account-radius-dialog: var(--drawer-radius);
+      --shopify-account-radius-button: var(--button-radius);
+      --shopify-account-radius-button-small: var(--overlay-close-radius);
+      --shopify-account-radius-input: var(--input-radius);
+      display: block;
+      color: var(--button-primary-text);
+    }
+
+    .header__mobile-drawer-account-avatar {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .header__mobile-drawer-localization {
+      display: flex;
+      min-height: 3rem;
+      align-items: center;
+      justify-content: center;
+      gap: 1rem;
+      color: var(--body-color);
+    }
+
+    .header__mobile-drawer-localization .header-localization__summary {
+      min-height: 3rem;
+    }
+
+    .header__mobile-drawer--submenu-active .header__mobile-drawer-footer {
+      display: none;
+    }
+  }
+
+  @media (max-width: 767.98px) {
     .header-menu__link,
     .header-menu__summary,
     .header-menu__placeholder {
       min-height: var(--button-height-mobile);
+    }
+
+    .header-menu {
+      padding-inline: var(--page-margin-current);
     }
   }
 
@@ -459,12 +1275,222 @@
       transition-duration: 0.01ms;
     }
   }
+
+  @media (max-width: 767.98px) {
+    .header-menu {
+      position: fixed;
+      z-index: var(--z-modal);
+      inset: 0;
+      display: none;
+      width: 100%;
+      max-height: none;
+      min-height: 100dvh;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+    }
+
+    .header-top--menu-open .header-menu {
+      display: block;
+    }
+
+    .header-menu__backdrop {
+      position: absolute;
+      z-index: 0;
+      inset: 0;
+      display: block;
+      width: 100%;
+      height: 100%;
+      padding: 0;
+      border: 0;
+      background: var(--overlay-color);
+      cursor: pointer;
+      opacity: var(--overlay-opacity);
+      -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
+      backdrop-filter: blur(var(--overlay-backdrop-blur));
+    }
+
+    .header-menu__drawer {
+      position: relative;
+      z-index: 1;
+      display: flex;
+      width: min(90vw, 30rem);
+      height: 100dvh;
+      min-height: 100dvh;
+      box-sizing: border-box;
+      overflow: hidden;
+      padding-inline: var(--page-margin-current);
+      border-radius: 0 var(--drawer-radius) var(--drawer-radius) 0;
+      background: var(--background-color);
+      flex-direction: column;
+      transform: translateX(-100%);
+      transition: transform var(--motion-duration-standard) var(--motion-ease-standard);
+    }
+
+    .header-top--menu-open .header-menu__drawer {
+      transform: translateX(0);
+    }
+
+    .header-menu__mobile-header {
+      position: sticky;
+      z-index: 2;
+      top: 0;
+      display: flex;
+      min-height: 3.75rem;
+      flex: 0 0 3.75rem;
+      align-items: center;
+      border-bottom: 1px solid var(--border-color);
+      background: var(--background-color);
+    }
+
+    .header-menu__mobile-close {
+      --overlay-close-size: 2.5rem;
+      color: var(--heading-color);
+    }
+
+    .header-menu__mobile-back {
+      display: inline-flex;
+      min-height: 2.5rem;
+      align-items: center;
+      gap: 0.45rem;
+      padding: 0;
+      border: 0;
+      background: transparent;
+      color: var(--header-menu-color);
+      font-family: var(--header-menu-font-family);
+      font-size: var(--header-menu-font-size);
+      font-style: var(--header-menu-font-style);
+      font-weight: var(--header-menu-font-weight);
+      letter-spacing: var(--header-menu-letter-spacing);
+      text-transform: var(--header-menu-text-case);
+      cursor: pointer;
+    }
+
+    .header-menu__mobile-back[hidden],
+    .header-menu--mobile-submenu-active .header-menu__mobile-close {
+      display: none;
+    }
+
+    .header-menu__mobile-scroll {
+      display: block;
+      width: 100%;
+      min-height: 0;
+      flex: 1 1 auto;
+      overflow-x: hidden;
+      overflow-y: auto;
+      padding-block: 1rem 8rem;
+      scrollbar-width: none;
+    }
+
+    .header-menu--mobile-submenu-active .header-menu__mobile-scroll {
+      padding-bottom: 1rem;
+    }
+
+    .header-menu__list {
+      gap: 0;
+    }
+
+    .header-top--menu-open .header-menu__submenu {
+      padding: 0;
+    }
+
+    .header-menu__link,
+    .header-menu__summary {
+      min-height: 2.3rem;
+      padding-block: 0.35rem;
+    }
+
+    .header-menu,
+    .header__mobile-drawer {
+      font-size: var(--header-menu-font-size);
+    }
+
+    .header-menu__submenu,
+    .header__mobile-drawer-submenu {
+      font-size: var(--header-submenu-font-size);
+    }
+
+    .header-menu__summary {
+      position: relative;
+    }
+
+    .header-menu__details > .header-menu__summary::after {
+      margin-inline-start: auto;
+      content: none;
+      font-size: 1.5em;
+      line-height: 1;
+    }
+
+    .header-menu__tertiary-arrow {
+      width: 1.25em;
+      height: 1.25em;
+    }
+
+    .header-menu__details > .header-menu__summary .header-menu__dropdown-icon {
+      display: none;
+    }
+
+    .header-menu--mobile-submenu-active .header-menu__list > .header-menu__item {
+      display: none;
+    }
+
+    .header-menu--mobile-submenu-active .header-menu__list > .header-menu__item.is-mobile-submenu-active {
+      display: block;
+    }
+
+    .header-menu--mobile-submenu-active .header-menu__details.is-mobile-submenu-active {
+      display: block;
+    }
+
+    .header-menu--mobile-submenu-active .header-menu__details.is-mobile-submenu-active > .header-menu__summary {
+      display: none;
+    }
+
+    .header-menu--mobile-submenu-active .header-menu__details.is-mobile-submenu-active > .header-menu__submenu,
+    .header-menu--mobile-submenu-active .header-menu__details.is-mobile-submenu-active > .header-mega-menu {
+      display: grid;
+      width: 100%;
+      padding: 0;
+      border: 0;
+      border-radius: 0;
+      background: transparent;
+      box-shadow: none;
+      opacity: 1;
+      pointer-events: auto;
+      transform: none;
+      visibility: visible;
+    }
+
+    .header-menu--mobile-submenu-active .header-menu__details.is-mobile-submenu-active > .header-mega-menu {
+      display: block;
+    }
+
+    .header-menu--mobile-submenu-active .header-menu__submenu-item > .header-menu__link {
+      min-height: 2.5rem;
+      padding-inline: 0;
+    }
+
+    .header-menu--mobile-submenu-active .header-mega-menu__banners {
+      grid-template-columns: none;
+      grid-auto-columns: calc((100% - 1.25rem) / 1.2);
+      grid-auto-flow: column;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+    }
+
+    .header-menu--mobile-submenu-active .header-mega-menu__banner {
+      scroll-snap-align: start;
+    }
+  }
 {% endstylesheet %}
 
 {% schema %}
 {
   "name": "t:general.header_menu",
   "tag": null,
+  "blocks": [{ "type": "_mega-menu-banners" }],
   "settings": [
     {
       "type": "header",
@@ -477,17 +1503,6 @@
       "default": "main-menu"
     },
     {
-      "type": "select",
-      "id": "position",
-      "label": "t:labels.position",
-      "options": [
-        { "value": "left", "label": "t:options.alignment.left" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" }
-      ],
-      "default": "left"
-    },
-    {
       "type": "range",
       "id": "gap",
       "label": "t:labels.gap",
@@ -495,7 +1510,7 @@
       "max": 48,
       "step": 1,
       "unit": "px",
-      "default": 26
+      "default": 24
     },
     {
       "type": "checkbox",
@@ -508,8 +1523,8 @@
       "id": "dropdown_trigger",
       "label": "t:labels.dropdown_trigger",
       "options": [
-        { "value": "hover", "label": "t:options.dropdown_trigger.hover" },
-        { "value": "click", "label": "t:options.dropdown_trigger.click" }
+        { "value": "click", "label": "t:options.dropdown_trigger.click" },
+        { "value": "hover", "label": "t:options.dropdown_trigger.hover" }
       ],
       "default": "hover"
     },
@@ -540,21 +1555,16 @@
         { "value": "xl", "label": "t:options.menu_font_size.extra_large" },
         { "value": "xxl", "label": "t:options.menu_font_size.double_extra_large" }
       ],
-      "default": "xs"
+      "default": "md"
     },
     {
       "type": "select",
       "id": "letter_spacing",
       "label": "t:labels.letter_spacing",
       "options": [
-        { "value": "tighter", "label": "Tighter" },
-        { "value": "tight", "label": "Tight" },
-        { "value": "normal", "label": "Normal" },
-        { "value": "relaxed", "label": "Relaxed" },
-        { "value": "loose", "label": "Loose" },
-        { "value": "extra_loose", "label": "Extra loose" },
-        { "value": "ultra_loose", "label": "Ultra loose" },
-        { "value": "mega_loose", "label": "Mega loose" }
+        { "value": "tight", "label": "t:options.letter_spacing.tight" },
+        { "value": "normal", "label": "t:options.letter_spacing.normal" },
+        { "value": "relaxed", "label": "t:options.letter_spacing.relaxed" }
       ],
       "default": "normal"
     },
@@ -569,14 +1579,9 @@
       "default": "original"
     },
     {
-      "type": "select",
+      "type": "color",
       "id": "text_color",
-      "label": "t:labels.text_color",
-      "options": [
-        { "value": "heading", "label": "t:options.menu_text_color.heading" },
-        { "value": "body", "label": "t:options.menu_text_color.body" }
-      ],
-      "default": "body"
+      "label": "t:labels.text_color"
     },
     {
       "type": "header",
@@ -604,7 +1609,7 @@
         { "value": "xl", "label": "Extra large" },
         { "value": "xxl", "label": "Double extra large" }
       ],
-      "default": "sm"
+      "default": "md"
     },
     {
       "type": "select",
@@ -617,14 +1622,9 @@
       "default": "original"
     },
     {
-      "type": "select",
+      "type": "color",
       "id": "submenu_text_color",
-      "label": "Text color",
-      "options": [
-        { "value": "heading", "label": "Heading" },
-        { "value": "body", "label": "Body" }
-      ],
-      "default": "body"
+      "label": "t:labels.text_color"
     }
   ],
   "presets": [

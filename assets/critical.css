@@ -9,6 +9,8 @@
 }
 
 html {
+  /* Keep rem calculations predictable: 1rem = 10px (62.5% of 16px). */
+  font-size: 62.5%;
   scroll-behavior: smooth;
 }
 
@@ -28,6 +30,10 @@ body {
 }
 
 html:has(dialog[scroll-lock][open], details[scroll-lock][open]) {
+  overflow: hidden;
+}
+
+body.header-menu-open {
   overflow: hidden;
 }
 
@@ -136,18 +142,60 @@ textarea:disabled {
 dialog {
   z-index: var(--z-modal);
   border: 0;
-  border-radius: var(--media-radius);
+  border-radius: var(--drawer-radius);
   background-color: var(--overlay-background-color);
   color: var(--overlay-text-color);
   box-shadow: var(--overlay-popover-shadow);
 }
 
 [popover] {
-  border-radius: var(--media-radius);
+  border-radius: var(--drawer-radius);
   border: var(--overlay-popover-border-width) solid var(--overlay-border-color);
   background-color: var(--overlay-background-color);
   color: var(--overlay-text-color);
   box-shadow: var(--overlay-popover-shadow);
+}
+
+.overlay-close {
+  --overlay-close-size: 2.5rem;
+  --overlay-close-stroke: 1px;
+  position: relative;
+  display: grid;
+  width: var(--overlay-close-size);
+  min-width: var(--overlay-close-size);
+  height: var(--overlay-close-size);
+  min-height: var(--overlay-close-size);
+  place-items: center;
+  padding: 0;
+  border: 0;
+  border-radius: var(--overlay-close-radius);
+  background: transparent;
+  color: inherit;
+  cursor: pointer;
+  transition: background-color var(--motion-duration-standard) var(--motion-ease-standard);
+}
+
+.overlay-close:is(:hover, :focus-visible) {
+  background: color-mix(in srgb, currentColor 8%, transparent);
+}
+
+.overlay-close::before,
+.overlay-close::after {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: calc(var(--overlay-close-size) * 0.5);
+  height: var(--overlay-close-stroke);
+  border-radius: 999px;
+  background: currentColor;
+  content: '';
+}
+
+.overlay-close::before { transform: translate(-50%, -50%) rotate(45deg); }
+.overlay-close::after { transform: translate(-50%, -50%) rotate(-45deg); }
+
+.icon-button {
+  border-radius: var(--icon-button-radius);
 }
 
 .drawer,
@@ -404,6 +452,25 @@ p:empty {
   }
 }
 
+@keyframes button-tertiary-underline-hover {
+  0% {
+    transform: scaleX(1);
+    transform-origin: right center;
+  }
+  45% {
+    transform: scaleX(0);
+    transform-origin: right center;
+  }
+  46% {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  100% {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
 .motion-block {
   animation: var(--motion-block-animation);
 }
@@ -478,8 +545,14 @@ input[type='submit'].btn:hover {
   --button-hover-foreground: var(--button-secondary-hover-text);
 }
 
-.btn-tertiary,
-.btn--tertiary {
+.btn.btn-tertiary,
+.btn.btn--tertiary,
+button.btn.btn-tertiary,
+button.btn.btn--tertiary,
+input.btn.btn-tertiary,
+input.btn.btn--tertiary,
+input[type='submit'].btn.btn-tertiary,
+input[type='submit'].btn.btn--tertiary {
   --button-border-width: var(--button-tertiary-border-width);
   --button-font-family: var(--button-tertiary-font-family);
   --button-text-case: var(--button-tertiary-text-case);
@@ -489,8 +562,56 @@ input[type='submit'].btn:hover {
   --button-hover-border: var(--button-tertiary-hover-border);
   --button-hover-background: var(--button-tertiary-hover-background);
   --button-hover-foreground: var(--button-tertiary-hover-text);
-  text-decoration-line: var(--button-tertiary-text-decoration);
-  text-underline-offset: var(--button-tertiary-underline-offset);
+  min-height: auto;
+  padding: 0;
+  border-width: 0;
+  border-radius: 0;
+  background: transparent;
+  text-decoration: none;
+  transform: none;
+}
+
+.btn.btn-tertiary::after,
+.btn.btn--tertiary::after,
+button.btn.btn-tertiary::after,
+button.btn.btn--tertiary::after,
+input.btn.btn-tertiary::after,
+input.btn.btn--tertiary::after,
+input[type='submit'].btn.btn-tertiary::after,
+input[type='submit'].btn.btn--tertiary::after {
+  position: absolute;
+  inset-inline: 0;
+  inset-block-end: calc(var(--button-tertiary-underline-offset) * -1);
+  height: 1px;
+  background: currentColor;
+  content: '';
+  transform: scaleX(1);
+  transform-origin: left center;
+}
+
+.btn.btn-tertiary:hover,
+.btn.btn--tertiary:hover,
+button.btn.btn-tertiary:hover,
+button.btn.btn--tertiary:hover,
+input.btn.btn-tertiary:hover,
+input.btn.btn--tertiary:hover,
+input[type='submit'].btn.btn-tertiary:hover,
+input[type='submit'].btn.btn--tertiary:hover {
+  border-color: transparent;
+  background: transparent;
+  color: var(--button-hover-foreground);
+  transform: none;
+}
+
+.btn.btn-tertiary:is(:hover, :focus-visible)::after,
+.btn.btn--tertiary:is(:hover, :focus-visible)::after,
+button.btn.btn-tertiary:is(:hover, :focus-visible)::after,
+button.btn.btn--tertiary:is(:hover, :focus-visible)::after,
+input.btn.btn-tertiary:is(:hover, :focus-visible)::after,
+input.btn.btn--tertiary:is(:hover, :focus-visible)::after,
+input[type='submit'].btn.btn-tertiary:is(:hover, :focus-visible)::after,
+input[type='submit'].btn.btn--tertiary:is(:hover, :focus-visible)::after {
+  animation: button-tertiary-underline-hover calc(var(--motion-duration-standard) * 1.5) var(--motion-ease-standard) both;
 }
 
 .btn--icon {
@@ -1188,6 +1309,7 @@ legend {
 }
 
 .container {
+  --page-margin-current: var(--page-margin-desktop);
   width: 100%;
   min-width: 0;
   margin-inline: auto;
@@ -1216,55 +1338,15 @@ legend {
   margin-inline: auto;
 }
 
-.shopify-section.section-kernel,
-.shopify-section.section-rich--text {
-  display: block;
-  min-width: 0;
-  padding-block: 0;
-}
-
-.shopify-section {
-  --page-margin-current: var(--page-margin-desktop);
-  --content-width: min(
-    calc(var(--page-width) - var(--page-margin-current) * 2),
-    calc(100% - var(--page-margin-current) * 2)
-  );
-  --content-margin: minmax(var(--page-margin-current), 1fr);
-  --content-grid: var(--content-margin) var(--content-width) var(--content-margin);
-
-  /* This is required to make <img> elements work as background images. */
-  position: relative;
-  grid-template-columns: var(--content-grid);
-  display: grid;
-  width: 100%;
-  padding-block: var(--layout-section-gap);
-}
-
-.shopify-section > * {
-  grid-column: 2;
-}
-
-.shopify-section > .full-width {
-  grid-column: 1 / -1;
-}
-
-@media (min-width: 1150px) {
-  .shopify-section {
-    --page-margin-current: var(--page-margin-desktop);
-  }
-}
-
 @media (min-width: 768px) and (max-width: 1149.98px) {
-  .shopify-section {
+  .container {
     --page-margin-current: var(--page-margin-tablet);
-    padding-block: calc(var(--layout-section-gap) * 0.875);
   }
 }
 
 @media (max-width: 767.98px) {
-  .shopify-section {
+  .container {
     --page-margin-current: var(--page-margin-mobile);
-    padding-block: calc(var(--layout-section-gap) * 0.75);
   }
 
   .btn,

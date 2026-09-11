@@ -18,6 +18,8 @@
   {% endfor %}
 {% endif %}
 
+<div class="product container page-width">
+
 <div
   id="{{ product_media_gallery_id }}"
   class="product-images section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}"
@@ -111,9 +113,17 @@
   {% endform %}
 </div>
 
+</div>
+
 <script src="{{ 'variant-picker.js' | asset_url }}" defer></script>
 
 {% stylesheet %}
+  .product {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr);
+    gap: var(--layout-grid-gap);
+  }
+
   .product-images {
     display: grid;
     gap: var(--layout-grid-gap);
@@ -142,17 +152,18 @@
     margin-block-start: 0.5rem;
   }
   @media (min-width: 768px) {
+    .product {
+      grid-template-columns: minmax(0, 1.2fr) minmax(18rem, 0.8fr);
+      align-items: start;
+    }
+
     .product-images {
-      grid-column: 2;
-      grid-row: span 3;
+      grid-column: 1;
+      grid-row: 1 / span 2;
     }
     .product-info,
     .product-form {
-      grid-column: 3;
-    }
-    .shopify-section:has(.product-images) {
-      grid-template-columns: var(--content-margin) minmax(0, 1.2fr) minmax(18rem, 0.8fr) var(--content-margin);
-      column-gap: var(--layout-grid-gap);
+      grid-column: 2;
     }
   }
 {% endstylesheet %}
