@@ -5,16 +5,18 @@
   https://shopify.dev/docs/storefronts/themes/architecture/templates/collection
 {% endcomment %}
 
-<h1 class="{{ section.settings.color_scheme | default: 'scheme-1' }} section-color-scope">{{ collection.title }}</h1>
+<div class="container page-width section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}">
+  <h1 class="heading-text heading-xl">{{ collection.title }}</h1>
 
-<div class="collection-products {{ section.settings.color_scheme | default: 'scheme-1' }} section-color-scope">
-  {% paginate collection.products by 20 %}
-    {% for product in collection.products %}
-      {% render 'product-card', product: product, class: 'collection-product' %}
-    {% endfor %}
+  <div class="collection-products">
+    {% paginate collection.products by 20 %}
+      {% for product in collection.products %}
+        {% render 'product-card', product: product, class: 'collection-product' %}
+      {% endfor %}
 
-    {{ paginate | default_pagination }}
-  {% endpaginate %}
+      {{ paginate | default_pagination }}
+    {% endpaginate %}
+  </div>
 </div>
 
 {% stylesheet %}
@@ -28,6 +30,7 @@
 {% schema %}
 {
   "name": "t:general.collection",
+  "enabled_on": { "templates": ["collection"] },
   "settings": [
     {
       "type": "color_scheme",

@@ -150,17 +150,17 @@
   const renderCartLine = (item, lineIndex, currency) => {
     const title = item.product_title || item.title || '';
     const variantTitle = item.variant_title && item.variant_title !== 'Default Title'
-      ? `<p class="cart-drawer__item-options">${escapeHtml(item.variant_title)}</p>`
+      ? `<p class="cart-drawer__item-options body-text body-sm">${escapeHtml(item.variant_title)}</p>`
       : '';
     const properties = Object.entries(item.properties || {})
       .filter(([, value]) => value != null && String(value) !== '')
       .map(([name, value]) => `<div><dt>${escapeHtml(name)}</dt><dd>${escapeHtml(value)}</dd></div>`)
       .join('');
-    const propertiesMarkup = properties ? `<dl class="cart-drawer__item-properties">${properties}</dl>` : '';
+    const propertiesMarkup = properties ? `<dl class="cart-drawer__item-properties body-text body-sm">${properties}</dl>` : '';
     const currentPrice = productUnitPrice(item);
     const originalPrice = originalUnitPrice(item);
     const isSale = originalPrice > currentPrice;
-    const comparePrice = isSale ? `<s class="cart-drawer__item-price-compare">${formatMoney(originalPrice, currency)}</s>` : '';
+    const comparePrice = isSale ? `<s class="cart-drawer__item-price-compare body-sm">${formatMoney(originalPrice, currency)}</s>` : '';
     const showSaleFirst = state.drawer?.dataset.showSalePriceFirst !== 'false';
     const imageMarkup = item.image
       ? `<img class="cart-drawer__image" src="${escapeHtml(item.image)}" alt="${escapeHtml(title)}" loading="lazy" width="240" height="240">`
@@ -176,9 +176,9 @@
     return `<article class="cart-drawer__item${isSale ? ' is-sale' : ''}" data-cart-line data-line-key="${key}" data-variant-id="${escapeHtml(item.variant_id || '')}" data-compare-price="${originalPrice}">
       <a class="cart-drawer__item-media" href="${url}" aria-label="${escapeHtml(title)}">${imageMarkup}</a>
       <div class="cart-drawer__item-info">
-        <h3 class="cart-drawer__item-title"><a href="${url}">${escapeHtml(title)}</a></h3>
+        <h3 class="cart-drawer__item-title card-title-text"><a href="${url}">${escapeHtml(title)}</a></h3>
         ${variantTitle}${propertiesMarkup}
-        <p class="cart-drawer__item-price${isSale ? ' is-sale' : ''}">
+        <p class="cart-drawer__item-price card-price-text body-md${isSale ? ' is-sale' : ''}">
           ${isSale && !showSaleFirst ? comparePrice : ''}
           <span class="cart-drawer__item-price-current">${formatMoney(currentPrice, currency)}</span>
           ${isSale && showSaleFirst ? comparePrice : ''}
@@ -187,9 +187,9 @@
       <div class="cart-drawer__item-actions">
         <button class="cart-drawer__remove" type="button" data-cart-remove data-line-key="${key}" data-line-index="${lineIndex}" aria-label="${escapeHtml(state.drawer?.dataset.removeLabel || 'Remove')}">${removeIcon}</button>
         <div class="cart-drawer__quantity" data-cart-quantity>
-          <button type="button" data-cart-quantity-action="decrease" data-line-key="${key}" data-line-index="${lineIndex}" aria-label="${escapeHtml(state.drawer?.dataset.decreaseLabel || 'Decrease quantity')}">${decreaseIcon}</button>
+          <button type="button" data-cart-quantity-action="decrease" data-line-key="${key}" data-line-index="${lineIndex}" aria-label="${escapeHtml(state.drawer?.dataset.decreaseLabel || 'Decrease quantity')}"><span class="cart-drawer__quantity-icon" aria-hidden="true">${decreaseIcon}</span></button>
           <input id="CartDrawerQuantity-${safeId}" type="number" min="0" value="${quantity}" inputmode="numeric" aria-label="${escapeHtml(state.drawer?.dataset.quantityLabel || 'Quantity')}" data-cart-quantity-input data-line-key="${key}" data-line-index="${lineIndex}">
-          <button type="button" data-cart-quantity-action="increase" data-line-key="${key}" data-line-index="${lineIndex}" aria-label="${escapeHtml(state.drawer?.dataset.increaseLabel || 'Increase quantity')}">${increaseIcon}</button>
+          <button type="button" data-cart-quantity-action="increase" data-line-key="${key}" data-line-index="${lineIndex}" aria-label="${escapeHtml(state.drawer?.dataset.increaseLabel || 'Increase quantity')}"><span class="cart-drawer__quantity-icon" aria-hidden="true">${increaseIcon}</span></button>
         </div>
       </div>
     </article>`;
@@ -318,7 +318,7 @@
     if (!list) return;
     const codes = getStoredDiscountCodes(cart);
     const discountIcon = state.drawer?.dataset.discountIcon || '';
-    list.innerHTML = codes.map((code) => `<li><span class="cart-drawer__discount-code">${discountIcon}<span>${escapeHtml(code)}</span></span><button class="cart-drawer__discount-remove" type="button" data-cart-drawer-discount-remove data-discount-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}">Remove</button></li>`).join('');
+    list.innerHTML = codes.map((code) => `<li><span class="cart-drawer__discount-code">${discountIcon}<span>${escapeHtml(code)}</span></span><button class="cart-drawer__discount-remove body-text body-xs" type="button" data-cart-drawer-discount-remove data-discount-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}">Remove</button></li>`).join('');
     list.hidden = codes.length === 0;
   };
 
@@ -426,8 +426,8 @@
       return `<article class="cart-drawer__recommendation">
         <a class="cart-drawer__recommendation-media" href="${escapeHtml(product.url)}" aria-label="${escapeHtml(product.title)}">${imageMarkup}</a>
         <div class="cart-drawer__recommendation-info">
-          <a class="cart-drawer__recommendation-title" href="${escapeHtml(product.url)}">${escapeHtml(product.title)}</a>
-          <span class="cart-drawer__recommendation-price">${formatMoney(product.price, currency)}</span>
+          <a class="cart-drawer__recommendation-title card-title-text" href="${escapeHtml(product.url)}">${escapeHtml(product.title)}</a>
+          <span class="cart-drawer__recommendation-price card-price-text body-sm">${formatMoney(product.price, currency)}</span>
         </div>
         <button class="icon-button cart-drawer__recommendation-add" type="button" data-cart-related-add data-variant-id="${escapeHtml(variantId)}" aria-label="Add ${escapeHtml(product.title)} to cart">${recommendationIcon}</button>
       </article>`;

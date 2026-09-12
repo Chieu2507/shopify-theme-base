@@ -136,7 +136,7 @@
     <div class="header__mobile-drawer-surface">
       <header class="header__mobile-drawer-header">
         <span class="header__mobile-drawer-title heading-text heading-sm">{{ shop.name | escape }}</span>
-        <button class="overlay-close header__mobile-drawer-close" type="button" aria-label="Close menu" aria-controls="HeaderMobileDrawer-{{ section.id }}" data-header-menu-toggle></button>
+        <button class="overlay-close header__mobile-drawer-close" type="button" aria-label="Close menu" aria-controls="HeaderMobileDrawer-{{ section.id }}" data-header-menu-toggle>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button>
         <button class="header__mobile-drawer-back" type="button" hidden data-header-menu-back>
           {% render 'icon', icon: 'chevron-left', class: 'header__mobile-drawer-back-icon' %}<span data-header-menu-back-label data-header-menu-back-default-label="{{ 'accessibility.menu' | t }}">{{ 'accessibility.menu' | t }}</span>
         </button>
@@ -201,7 +201,7 @@
                 </summary>
                 <button class="header-localization__sheet-backdrop" type="button" aria-label="Close country selector" data-header-localization-close></button>
                 <div class="header-localization__panel">
-                  <header class="header-localization__sheet-header"><span class="header-localization__sheet-handle" aria-hidden="true"></span><h2>Country</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close country selector" data-header-localization-close></button></header>
+                  <header class="header-localization__sheet-header"><span class="bottom-sheet__handle header-localization__sheet-handle" aria-hidden="true"></span><h2 class="heading-text heading-sm">Country</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close country selector" data-header-localization-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button></header>
                   {% form 'localization', class: 'header-localization__form' %}
                     <input type="hidden" name="return_to" value="{{ request.path }}">
                     <div class="header-localization__country-list">
@@ -221,7 +221,7 @@
                 <summary class="header-localization__summary"><span class="header-localization__language">{{ localization.language.endonym_name }}</span>{% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}</summary>
                 <button class="header-localization__sheet-backdrop" type="button" aria-label="Close language selector" data-header-localization-close></button>
                 <div class="header-localization__panel">
-                  <header class="header-localization__sheet-header"><span class="header-localization__sheet-handle" aria-hidden="true"></span><h2>Language</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close language selector" data-header-localization-close></button></header>
+                  <header class="header-localization__sheet-header"><span class="bottom-sheet__handle header-localization__sheet-handle" aria-hidden="true"></span><h2 class="heading-text heading-sm">Language</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close language selector" data-header-localization-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button></header>
                   {% form 'localization', class: 'header-localization__form' %}
                     <input type="hidden" name="return_to" value="{{ request.path }}">
                     <div class="header-localization__language-list">{% for language in localization.available_languages %}<button class="header-localization__language-option{% if language.iso_code == localization.language.iso_code %} is-selected{% endif %}" type="submit" name="language_code" value="{{ language.iso_code }}">{{ language.endonym_name }}</button>{% endfor %}</div>
@@ -522,6 +522,7 @@
   .header-menu__details:not(.header-menu__details--mega) .header-menu__submenu-item {
     position: relative;
     width: 100%;
+    padding: 0.45rem 0.5rem;
   }
 
   .header-menu__details:not(.header-menu__details--mega) .header-menu__submenu-item:is(:hover, :focus-within) > .header-menu__tertiary {
@@ -837,7 +838,6 @@
     }
 
     .header__mobile-drawer-close {
-      --overlay-close-size: 2.5rem;
       flex: 0 0 auto;
     }
 
@@ -1031,15 +1031,19 @@
       background: var(--background-color);
     }
 
-    .header__mobile-drawer-account,
+    .header__mobile-drawer-account {
+      width: 100%;
+      box-sizing: border-box;
+    }
+
     shopify-account.header__mobile-drawer-account::part(signed-out-avatar) {
       display: flex;
       width: 100%;
-      min-height: 3.125rem;
+      min-height: var(--button-height);
       box-sizing: border-box;
       align-items: center;
       justify-content: center;
-      padding: 0 1rem;
+      padding: 0 var(--button-padding-inline-mobile);
       border: var(--button-primary-border-width) solid var(--button-primary-border);
       border-radius: var(--button-radius);
       background: var(--button-primary-background);
@@ -1176,7 +1180,6 @@
     }
 
     .header-menu__mobile-close {
-      --overlay-close-size: 2.5rem;
       color: var(--heading-color);
     }
 
