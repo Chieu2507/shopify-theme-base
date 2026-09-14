@@ -1,0 +1,264 @@
+{% liquid
+  assign collection_tabs_container_width = 'page-width'
+  if section.settings.section_width == 'full_width'
+    assign collection_tabs_container_width = 'full-width'
+  endif
+
+  assign collection_tabs_scheme = section.settings.color_scheme | default: 'scheme-1'
+  if section.settings.color_scheme.id != blank
+    assign collection_tabs_scheme = section.settings.color_scheme.id
+  endif
+  assign collection_tabs_scheme = collection_tabs_scheme | default: 'scheme-1' | handleize
+
+  assign collection_tabs_padding_top = section.settings.padding_top | default: 16 | plus: 0
+  assign collection_tabs_padding_bottom = section.settings.padding_bottom | default: 32 | plus: 0
+  assign collection_tabs_padding_top_mobile = section.settings.padding_top_mobile | default: 8 | plus: 0
+  assign collection_tabs_padding_bottom_mobile = section.settings.padding_bottom_mobile | default: 24 | plus: 0
+%}
+
+{% capture collection_tabs_style %}
+  {% if collection_tabs_padding_top != 16 %}--collection-tabs-padding-top: {{ collection_tabs_padding_top }}px;{% endif %}
+  {% if collection_tabs_padding_bottom != 32 %}--collection-tabs-padding-bottom: {{ collection_tabs_padding_bottom }}px;{% endif %}
+  {% if section.settings.customize_mobile_padding %}
+    {% if collection_tabs_padding_top_mobile != 8 %}--collection-tabs-padding-top-mobile: {{ collection_tabs_padding_top_mobile }}px;{% endif %}
+    {% if collection_tabs_padding_bottom_mobile != 24 %}--collection-tabs-padding-bottom-mobile: {{ collection_tabs_padding_bottom_mobile }}px;{% endif %}
+  {% endif %}
+{% endcapture %}
+{% assign collection_tabs_style = collection_tabs_style | strip %}
+
+<div
+  class="section-spacing collection-tabs__spacing section-color-scope {{ collection_tabs_scheme }}"
+  {% if collection_tabs_style != blank %}style="{{ collection_tabs_style }}"{% endif %}
+>
+  <div class="container {{ collection_tabs_container_width }} collection-tabs__container">
+    {% content_for 'block', type: 'tab-layout', id: 'tab-layout' %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .collection-tabs__spacing {
+    width: 100%;
+    min-width: 0;
+    padding-top: var(--collection-tabs-padding-top, 16px);
+    padding-bottom: var(--collection-tabs-padding-bottom, 32px);
+    background-color: var(--background-color);
+  }
+
+  .collection-tabs__container {
+    min-width: 0;
+  }
+
+  @media (max-width: 767.98px) {
+    .collection-tabs__spacing {
+      padding-top: var(--collection-tabs-padding-top-mobile, var(--collection-tabs-padding-top, 16px));
+      padding-bottom: var(--collection-tabs-padding-bottom-mobile, var(--collection-tabs-padding-bottom, 32px));
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.collection_tabs",
+  "class": "section-collection-tabs",
+  "enabled_on": { "templates": ["index"] },
+  "max_blocks": 1,
+  "blocks": [
+    { "type": "tab-layout" }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:labels.section_width",
+      "options": [
+        { "value": "page_width", "label": "t:options.section_width.page_width" },
+        { "value": "full_width", "label": "t:options.section_width.full_width" }
+      ],
+      "default": "full_width"
+    },
+    {
+      "type": "header",
+      "content": "t:general.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:general.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:options.position.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:options.position.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 32
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_padding",
+      "label": "t:labels.customize_mobile_padding",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "padding_top_mobile",
+      "label": "t:labels.mobile_top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 8,
+      "visible_if": "{{ section.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "label": "t:labels.mobile_bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ section.settings.customize_mobile_padding }}"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.collection_tabs",
+      "category": "t:general.collection",
+      "settings": {
+        "section_width": "full_width",
+        "color_scheme": "scheme-1",
+        "padding_top": 16,
+        "padding_bottom": 32,
+        "customize_mobile_padding": true,
+        "padding_top_mobile": 8,
+        "padding_bottom_mobile": 24
+      },
+      "blocks": [
+        {
+          "type": "tab-layout",
+          "id": "tab-layout",
+          "static": true,
+          "settings": {
+            "style": "underline",
+            "gap_desktop": 16,
+            "gap_mobile": 16,
+            "font": "body"
+          },
+          "blocks": [
+            {
+              "type": "collection-tab",
+              "settings": {
+                "label": "Best sellers",
+                "collection": "",
+                "max_products": 4,
+                "columns_desktop": 4,
+                "columns_tablet": 3,
+                "columns_mobile": "2",
+                "enable_swipe_mobile": true,
+                "gap_horizontal": 10,
+                "gap_vertical": 10,
+                "gap_horizontal_mobile": 4,
+                "gap_vertical_mobile": 4
+              },
+              "blocks": [
+                {
+                  "type": "product-card",
+                  "id": "product-card",
+                  "static": true,
+                  "settings": {
+                    "show_ranking": false,
+                    "show_vendor": true,
+                    "color_type": "inherit",
+                    "color_scheme": "scheme-1"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "collection-tab",
+              "settings": {
+                "label": "Work-Casual",
+                "collection": "",
+                "max_products": 4,
+                "columns_desktop": 4,
+                "columns_tablet": 3,
+                "columns_mobile": "2",
+                "enable_swipe_mobile": true,
+                "gap_horizontal": 10,
+                "gap_vertical": 10,
+                "gap_horizontal_mobile": 4,
+                "gap_vertical_mobile": 4
+              },
+              "blocks": [
+                {
+                  "type": "product-card",
+                  "id": "product-card",
+                  "static": true,
+                  "settings": {
+                    "show_ranking": false,
+                    "show_vendor": true,
+                    "color_type": "inherit",
+                    "color_scheme": "scheme-1"
+                  }
+                }
+              ]
+            },
+            {
+              "type": "collection-tab",
+              "settings": {
+                "label": "Weekend basics",
+                "collection": "",
+                "max_products": 4,
+                "columns_desktop": 4,
+                "columns_tablet": 3,
+                "columns_mobile": "2",
+                "enable_swipe_mobile": true,
+                "gap_horizontal": 10,
+                "gap_vertical": 10,
+                "gap_horizontal_mobile": 4,
+                "gap_vertical_mobile": 4
+              },
+              "blocks": [
+                {
+                  "type": "product-card",
+                  "id": "product-card",
+                  "static": true,
+                  "settings": {
+                    "show_ranking": false,
+                    "show_vendor": true,
+                    "color_type": "inherit",
+                    "color_scheme": "scheme-1"
+                  }
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
