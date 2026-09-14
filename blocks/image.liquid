@@ -118,6 +118,14 @@
     assign image_max_width_mobile = max_width_mobile | append: 'px'
   endif
 
+  unless block.settings.customize_mobile_size
+    assign image_ratio_mobile = image_ratio_desktop
+    assign image_height_mobile = image_height_desktop
+    assign image_width_mobile = image_width_desktop
+    assign image_size_mobile = image_size_desktop
+    assign image_max_width_mobile = image_max_width_desktop
+  endunless
+
   assign image_corner_radius = block.settings.corner_radius | default: 0 | plus: 0
   if image_corner_radius < 0 or image_corner_radius > 100
     assign image_corner_radius = 0
@@ -345,6 +353,12 @@
       "visible_if": "{{ block.settings.limit_width_desktop }}"
     },
     {
+      "type": "checkbox",
+      "id": "customize_mobile_size",
+      "label": "t:labels.customize_mobile_size",
+      "default": false
+    },
+    {
       "type": "select",
       "id": "image_ratio_mobile",
       "label": "t:labels.mobile_image_ratio",
@@ -356,7 +370,8 @@
         { "value": "wide", "label": "t:options.image_ratio.wide" },
         { "value": "custom", "label": "t:options.image_ratio.custom" }
       ],
-      "default": "auto"
+      "default": "auto",
+      "visible_if": "{{ block.settings.customize_mobile_size }}"
     },
     {
       "type": "range",
@@ -366,7 +381,7 @@
       "max": 3,
       "step": 0.1,
       "default": 1,
-      "visible_if": "{{ block.settings.image_ratio_mobile == 'custom' }}"
+      "visible_if": "{{ block.settings.customize_mobile_size and block.settings.image_ratio_mobile == 'custom' }}"
     },
     {
       "type": "select",
@@ -377,7 +392,8 @@
         { "value": "fill", "label": "t:options.width.fill" },
         { "value": "custom", "label": "t:options.width.custom" }
       ],
-      "default": "fit"
+      "default": "fit",
+      "visible_if": "{{ block.settings.customize_mobile_size }}"
     },
     {
       "type": "range",
@@ -388,13 +404,14 @@
       "step": 1,
       "unit": "%",
       "default": 100,
-      "visible_if": "{{ block.settings.width_mobile == 'custom' }}"
+      "visible_if": "{{ block.settings.customize_mobile_size and block.settings.width_mobile == 'custom' }}"
     },
     {
       "type": "checkbox",
       "id": "limit_width_mobile",
       "label": "t:labels.mobile_limit_width",
-      "default": false
+      "default": false,
+      "visible_if": "{{ block.settings.customize_mobile_size }}"
     },
     {
       "type": "range",
@@ -405,7 +422,7 @@
       "step": 16,
       "unit": "px",
       "default": 1600,
-      "visible_if": "{{ block.settings.limit_width_mobile }}"
+      "visible_if": "{{ block.settings.customize_mobile_size and block.settings.limit_width_mobile }}"
     },
     {
       "type": "header",
@@ -523,6 +540,7 @@
       "settings": {
         "image_ratio_desktop": "auto",
         "image_ratio_mobile": "auto",
+        "customize_mobile_size": false,
         "width_desktop": "fit",
         "width_mobile": "fit",
         "limit_width_desktop": false,
