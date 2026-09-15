@@ -7,9 +7,8 @@
 {% assign blog_card_shadow = 'none' %}
 {% if block.settings.shadow == 'small' %}{% assign blog_card_shadow = '0 2px 8px rgb(0 0 0 / 0.12)' %}{% endif %}
 {% assign blog_source = section.settings.blog | default: blog %}
-<div class="blog-cards">
 {% for article in blog_source.articles offset: 1 %}
-    <article class="blog-card {{ block.settings.color_scheme | default: 'scheme-1' }}" {{ block.shopify_attributes }} style="--blog-card-ratio: {% if block.settings.ratio == 'standard' %}4 / 3{% elsif block.settings.ratio == 'square' %}1 / 1{% elsif block.settings.ratio == 'portrait' %}2 / 3{% elsif block.settings.ratio == 'landscape' %}3 / 2{% else %}auto{% endif %}; --blog-card-gap: {{ block.settings.desktop_gap }}px; --blog-card-gap-mobile: {{ block.settings.mobile_gap }}px; --blog-card-radius: {{ blog_card_radius }}; --blog-card-shadow: {{ blog_card_shadow }}; --text-align-default: {{ block.settings.alignment }};">
+    <article class="blog-card {{ block.settings.color_scheme | default: 'scheme-1' }}" style="--blog-card-ratio: {% if block.settings.ratio == 'standard' %}4 / 3{% elsif block.settings.ratio == 'square' %}1 / 1{% elsif block.settings.ratio == 'portrait' %}2 / 3{% elsif block.settings.ratio == 'landscape' %}3 / 2{% else %}auto{% endif %}; --blog-card-gap: {{ block.settings.desktop_gap }}px; --blog-card-gap-mobile: {{ block.settings.mobile_gap }}px; --blog-card-radius: {{ blog_card_radius }}; --blog-card-shadow: {{ blog_card_shadow }}; --text-align-default: {{ block.settings.alignment }};" {{ block.shopify_attributes }}>
       {% if article.image %}
         <a class="blog-card__media" href="{{ article.url }}" aria-label="{{ article.title | escape }}">
           {{ article.image | image_url: width: 1000 | image_tag: loading: 'lazy' }}
@@ -24,10 +23,8 @@
       </div>
     </article>
 {% endfor %}
-</div>
 
 {% stylesheet %}
-  .blog-cards { display: grid; grid-template-columns: repeat(var(--blog-list-columns, 3), minmax(0, 1fr)); gap: var(--blog-list-gap-vertical, 48px) var(--blog-list-gap-horizontal, 24px); align-items: start; grid-column: 1 / -1; }
   .blog-card { min-width: 0; overflow: hidden; border: 0; border-radius: var(--blog-card-radius, var(--radius-square)); box-shadow: var(--blog-card-shadow, none); }
   .blog-card__media { display: block; aspect-ratio: var(--blog-card-ratio, 4 / 3); overflow: hidden; }
   .blog-card__media img { width: 100%; height: 100%; object-fit: cover; }
@@ -37,10 +34,7 @@
   .blog-card-item__title a { color: inherit; text-decoration: none; }
   .blog-card-item__meta { font-size: 14px; line-height: 1.5; color: #999; }
   .blog-card-item__description { max-width: 36ch; font-size: var(--font-body-sm); }
-  @media (max-width: 767.98px) {
-    .blog-cards { grid-template-columns: minmax(0, 1fr); gap: var(--blog-list-gap-mobile, 30px); }
-    .blog-card__content { gap: var(--blog-card-gap-mobile, 8px); }
-  }
+  @media (max-width: 767.98px) { .blog-card__content { gap: var(--blog-card-gap-mobile, 8px); } }
 {% endstylesheet %}
 
 {% schema %}
