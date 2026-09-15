@@ -30,6 +30,30 @@
     assign collection_tab_layout = 'carousel'
   endunless
 
+  assign collection_tab_columns_desktop = section.settings.columns_desktop | default: 4 | plus: 0
+  assign collection_tab_columns_mobile = section.settings.columns_mobile | default: 1 | plus: 0
+  if section.settings.custom_columns
+    assign collection_tab_columns_desktop = section.settings.custom_columns_desktop | default: collection_tab_columns_desktop | plus: 0
+    assign collection_tab_columns_mobile = section.settings.custom_columns_mobile | default: collection_tab_columns_mobile | plus: 0
+  endif
+  if collection_tab_columns_desktop < 1 or collection_tab_columns_desktop > 6
+    assign collection_tab_columns_desktop = 4
+  endif
+  if collection_tab_columns_mobile < 1 or collection_tab_columns_mobile > 6
+    assign collection_tab_columns_mobile = 1
+  endif
+
+  assign collection_tab_product_gap_desktop = section.settings.product_gap_desktop | default: 4 | plus: 0
+  assign collection_tab_product_gap_mobile = section.settings.product_gap_mobile | default: 4 | plus: 0
+  if collection_tab_product_gap_desktop < 0 or collection_tab_product_gap_desktop > 40
+    assign collection_tab_product_gap_desktop = 4
+  endif
+  if collection_tab_product_gap_mobile < 0 or collection_tab_product_gap_mobile > 40
+    assign collection_tab_product_gap_mobile = 4
+  endif
+  assign collection_tab_desktop_gap_total = collection_tab_product_gap_desktop | times: collection_tab_columns_desktop | minus: collection_tab_product_gap_desktop
+  assign collection_tab_mobile_gap_total = collection_tab_product_gap_mobile | times: collection_tab_columns_mobile | minus: collection_tab_product_gap_mobile
+
   assign collection_tab_items = blank
   assign collection_tab_item_limit = collection_tab_max_products
   assign collection_tab_is_placeholder = false
@@ -101,6 +125,18 @@
   endif
 %}
 
+{% capture collection_tab_grid_style %}
+  --product-collection-grid-columns-desktop: {{ collection_tab_columns_desktop }};
+  --product-collection-grid-columns-mobile: {{ collection_tab_columns_mobile }};
+  --product-collection-grid-gap-horizontal: {{ collection_tab_product_gap_desktop }}px;
+  --product-collection-grid-gap-vertical: {{ collection_tab_product_gap_desktop }}px;
+  --product-collection-grid-gap-horizontal-mobile: {{ collection_tab_product_gap_mobile }}px;
+  --product-collection-grid-gap-vertical-mobile: {{ collection_tab_product_gap_mobile }}px;
+  --product-collection-grid-item-width-desktop: calc((100% - {{ collection_tab_desktop_gap_total }}px) / {{ collection_tab_columns_desktop }});
+  --product-collection-grid-item-width-mobile: calc((100% - {{ collection_tab_mobile_gap_total }}px) / {{ collection_tab_columns_mobile }});
+{% endcapture %}
+{% assign collection_tab_grid_style = collection_tab_grid_style | strip %}
+
 {% capture collection_tab_pagination_style %}
   --collection-tab-pagination-top-padding: {{ collection_tab_pagination_top_padding }}px;
   {% if section.settings.pagination_limit_width %}--collection-tab-pagination-max-width: {{ collection_tab_pagination_max_width }}px;{% endif %}
@@ -149,8 +185,11 @@
           data-product-collection-grid
           data-product-carousel
           data-layout="{{ collection_tab_layout }}"
+          data-columns-desktop="{{ collection_tab_columns_desktop }}"
+          data-columns-mobile="{{ collection_tab_columns_mobile }}"
           data-next-slide-preview="{{ section.settings.show_next_slide_preview_on_desktop }}"
           data-collection-tab-products
+          style="{{ collection_tab_grid_style }}"
         >
           {% for collection_tab_item in collection_tab_items limit: collection_tab_item_limit %}
             {% liquid
