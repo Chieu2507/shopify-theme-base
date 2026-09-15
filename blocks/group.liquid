@@ -228,6 +228,7 @@
   {% if group_vertical_on_mobile and group_justify_mobile != group_justify %}--group-justify-mobile: {{ group_justify_mobile }};{% endif %}
   {% if group_gap_desktop != 16 %}--group-gap-desktop: {{ group_gap_desktop }}px;{% endif %}
   {% if group_gap_mobile != 12 %}--group-gap-mobile: {{ group_gap_mobile }}px;{% endif %}
+  {% if block.settings.border_color != blank %}--group-border-color: {{ block.settings.border_color | escape }};{% endif %}
   {% if padding_top != 0 %}--group-padding-top: {{ padding_top }}px;{% endif %}
   {% if padding_bottom != 0 %}--group-padding-bottom: {{ padding_bottom }}px;{% endif %}
   {% if padding_left != 0 %}--group-padding-left: {{ padding_left }}px;{% endif %}
@@ -276,6 +277,7 @@
     --group-padding-left-mobile: initial;
     --group-background-color: initial;
     --group-background-image: initial;
+    --group-border-color: var(--border-color);
     --group-overlay-color: initial;
     --group-overlay-opacity: initial;
     --group-backdrop-blur: initial;
@@ -300,7 +302,7 @@
     padding-right: var(--group-padding-right, 0px);
     padding-bottom: var(--group-padding-bottom, 0px);
     padding-left: var(--group-padding-left, 0px);
-    border: 0 solid var(--border-color);
+    border: 0 solid var(--group-border-color, var(--border-color));
     border-radius: var(--group-radius, var(--radius-square));
     background-color: var(--group-background-color, var(--background-color));
     background-image: var(--group-background-image, none);
@@ -645,7 +647,7 @@
         { "value": "fit", "label": "t:options.width.fit" },
         { "value": "fill", "label": "t:options.width.fill" }
       ],
-      "default": "fit"
+      "default": "fill"
     },
     {
       "type": "header",
@@ -696,6 +698,12 @@
         { "value": "double", "label": "t:options.border_type.double" }
       ],
       "default": "none"
+    },
+    {
+      "type": "color",
+      "id": "border_color",
+      "label": "t:labels.border_color_picker",
+      "visible_if": "{{ block.settings.border_type != 'none' }}"
     },
     {
       "type": "select",
@@ -861,7 +869,7 @@
         "width": "fit",
         "customize_mobile_size": false,
         "width_mobile": "fit",
-        "height": "fit",
+        "height": "fill",
         "appearance_type": "inherit",
         "color_scheme": "scheme-1",
         "border_type": "none",
