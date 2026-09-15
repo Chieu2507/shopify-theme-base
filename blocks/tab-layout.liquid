@@ -14,6 +14,11 @@
     assign tab_layout_style = 'underline'
   endunless
 
+  assign tab_layout_active_style = block.settings.active_style | default: 'primary'
+  unless tab_layout_active_style == 'primary' or tab_layout_active_style == 'outline'
+    assign tab_layout_active_style = 'primary'
+  endunless
+
   assign tab_layout_vertical_layout = block.settings.vertical_layout
 
   assign tab_layout_gap_desktop = block.settings.gap_desktop | default: 16 | plus: 0
@@ -145,7 +150,7 @@
 {% assign tab_layout_style_attribute = tab_layout_style_attribute | strip %}
 
 <div
-  class="tab-layout tab-layout--{{ tab_layout_style }}"
+  class="tab-layout tab-layout--{{ tab_layout_style }} tab-layout--active-{{ tab_layout_active_style }}"
   data-tab-layout
   data-tab-layout-ready="false"
   data-vertical-layout="{{ tab_layout_vertical_layout }}"
@@ -261,16 +266,33 @@
     color: var(--button-secondary-hover-text);
   }
 
-  .tab-layout--button .tab-layout__tab[aria-selected='true'] {
+  .tab-layout--button.tab-layout--active-primary .tab-layout__tab[aria-selected='true'] {
     border-color: var(--button-primary-border);
     background-color: var(--button-primary-background);
     color: var(--button-primary-text);
   }
 
-  .tab-layout--button .tab-layout__tab[aria-selected='true']:hover {
+  .tab-layout--button.tab-layout--active-primary .tab-layout__tab[aria-selected='true']:hover {
     border-color: var(--button-primary-hover-border);
     background-color: var(--button-primary-hover-background);
     color: var(--button-primary-hover-text);
+  }
+
+  .tab-layout--button.tab-layout--active-outline .tab-layout__tab:not([aria-selected='true']) {
+    border-color: color-mix(in srgb, var(--button-primary-border) 35%, transparent);
+    color: color-mix(in srgb, var(--button-primary-border) 35%, transparent);
+  }
+
+  .tab-layout--button.tab-layout--active-outline .tab-layout__tab[aria-selected='true'] {
+    border-color: var(--button-primary-border);
+    background-color: transparent;
+    color: var(--button-primary-border);
+  }
+
+  .tab-layout--button.tab-layout--active-outline .tab-layout__tab[aria-selected='true']:hover {
+    border-color: var(--button-primary-hover-border);
+    background-color: transparent;
+    color: var(--button-primary-hover-border);
   }
 
   @media (max-width: 767.98px) {
@@ -730,6 +752,17 @@
       "default": "underline"
     },
     {
+      "type": "select",
+      "id": "active_style",
+      "label": "t:labels.active_style",
+      "options": [
+        { "value": "primary", "label": "t:options.tab_active_style.primary" },
+        { "value": "outline", "label": "t:options.tab_active_style.outline" }
+      ],
+      "default": "primary",
+      "visible_if": "{{ block.settings.style == 'button' }}"
+    },
+    {
       "type": "header",
       "content": "t:general.gap"
     },
@@ -791,6 +824,7 @@
       "settings": {
         "vertical_layout": false,
         "style": "underline",
+        "active_style": "primary",
         "gap_desktop": 16,
         "gap_mobile": 16,
         "font": "body",
