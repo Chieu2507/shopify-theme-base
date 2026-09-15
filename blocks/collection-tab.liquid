@@ -1,8 +1,10 @@
 {% doc %}
-  Renders one collection tab inside a Tab Layout. The block owns the
-  collection resource, tab label and product count. Layout and gap settings
-  are supplied by the Collection Tabs section so every tab stays in sync.
-  Product rendering is delegated to the shared product collection grid.
+  Renders one collection tab in a Collection Cards section. The block owns
+  the collection resource and tab label. Product Card is the only fixed direct
+  child, rendered once per product in the selected collection; section settings
+  own the shared product-list presentation. Collection Tab intentionally has no
+  dynamic child-block slot, so Product Card cannot be added, duplicated, or
+  reordered and remains the final child in the composition.
 
   @example
   {% content_for 'block', type: 'collection-tab', id: 'collection-tab' %}
@@ -18,9 +20,70 @@
     assign collection_tab_label = 'collection_tabs.default_tab' | t
   endif
 
-  assign collection_tab_max_products = block.settings.max_products | default: 4 | plus: 0
+  assign collection_tab_max_products = section.settings.max_products | default: 8 | plus: 0
   if collection_tab_max_products < 1 or collection_tab_max_products > 24
-    assign collection_tab_max_products = 4
+    assign collection_tab_max_products = 8
+  endif
+
+  assign collection_tab_layout = section.settings.layout_type | default: 'carousel'
+  unless collection_tab_layout == 'grid' or collection_tab_layout == 'carousel'
+    assign collection_tab_layout = 'carousel'
+  endunless
+
+  assign collection_tab_items = blank
+  assign collection_tab_item_limit = collection_tab_max_products
+  assign collection_tab_is_placeholder = false
+  if collection_tab_collection != blank and collection_tab_collection.products != blank
+    assign collection_tab_items = collection_tab_collection.products
+  elsif collection_tab_collection == blank and request.design_mode
+    assign collection_tab_placeholder_count = collection_tab_max_products
+    assign collection_tab_items = (1..collection_tab_placeholder_count)
+    assign collection_tab_is_placeholder = true
+  endif
+
+  assign collection_tab_navigation_position = section.settings.navigation_position | default: 'inside'
+  unless collection_tab_navigation_position == 'inside' or collection_tab_navigation_position == 'outside'
+    assign collection_tab_navigation_position = 'inside'
+  endunless
+
+  assign collection_tab_navigation_style = section.settings.navigation_style | default: 'secondary'
+  unless collection_tab_navigation_style == 'primary' or collection_tab_navigation_style == 'secondary' or collection_tab_navigation_style == 'tertiary'
+    assign collection_tab_navigation_style = 'secondary'
+  endunless
+
+  assign collection_tab_navigation_icon = section.settings.navigation_icon | default: 'chevron'
+  unless collection_tab_navigation_icon == 'chevron' or collection_tab_navigation_icon == 'arrow'
+    assign collection_tab_navigation_icon = 'chevron'
+  endunless
+
+  assign collection_tab_navigation_behavior = section.settings.navigation_behavior | default: 'show_on_hover'
+  unless collection_tab_navigation_behavior == 'show_on_hover' or collection_tab_navigation_behavior == 'always'
+    assign collection_tab_navigation_behavior = 'show_on_hover'
+  endunless
+
+  assign collection_tab_pagination_type = section.settings.pagination_type | default: 'progress_bar'
+  unless collection_tab_pagination_type == 'progress_bar' or collection_tab_pagination_type == 'bullets'
+    assign collection_tab_pagination_type = 'progress_bar'
+  endunless
+
+  assign collection_tab_pagination_top_padding = section.settings.pagination_top_padding | default: 50 | plus: 0
+  if collection_tab_pagination_top_padding < 0 or collection_tab_pagination_top_padding > 100
+    assign collection_tab_pagination_top_padding = 50
+  endif
+
+  assign collection_tab_pagination_max_width = section.settings.pagination_max_width | default: 260 | plus: 0
+  if collection_tab_pagination_max_width < 100 or collection_tab_pagination_max_width > 600
+    assign collection_tab_pagination_max_width = 260
+  endif
+
+  assign collection_tab_show_navigation = false
+  if collection_tab_layout == 'carousel' and section.settings.show_navigation_on_desktop
+    assign collection_tab_show_navigation = true
+  endif
+
+  assign collection_tab_show_pagination = false
+  if collection_tab_layout == 'carousel' and section.settings.show_pagination_on_desktop
+    assign collection_tab_show_pagination = true
   endif
 
   assign collection_tab_id = block.id | default: 'collection-tab'
@@ -28,25 +91,21 @@
   assign collection_tab_panel_id = 'CollectionTabPanel-' | append: collection_tab_id
 
   assign collection_tab_has_products = false
-  assign collection_tab_show_placeholders = false
   if collection_tab_collection != blank and collection_tab_collection.products != blank
     assign collection_tab_has_products = true
-  elsif collection_tab_collection == blank and request.design_mode
-    assign collection_tab_show_placeholders = true
   endif
 
-  assign collection_tab_legacy_product_card_present = false
-  for collection_tab_child_block in block.blocks
-    if collection_tab_child_block.type == 'product-card'
-      assign collection_tab_legacy_product_card_present = true
-      assign collection_tab_legacy_product_card_show_ranking = collection_tab_child_block.settings.show_ranking
-      assign collection_tab_legacy_product_card_color_type = collection_tab_child_block.settings.color_type
-      assign collection_tab_legacy_product_card_color_scheme = collection_tab_child_block.settings.color_scheme
-      assign collection_tab_legacy_product_card_editor_attributes = collection_tab_child_block.shopify_attributes
-      break
-    endif
-  endfor
+  assign collection_tab_grid_class = 'product-collection-grid product-collection-grid--' | append: collection_tab_layout | append: ' collection-tab__products'
+  if collection_tab_is_placeholder
+    assign collection_tab_grid_class = collection_tab_grid_class | append: ' product-collection-grid--placeholder'
+  endif
 %}
+
+{% capture collection_tab_pagination_style %}
+  --collection-tab-pagination-top-padding: {{ collection_tab_pagination_top_padding }}px;
+  {% if section.settings.pagination_limit_width %}--collection-tab-pagination-max-width: {{ collection_tab_pagination_max_width }}px;{% endif %}
+{% endcapture %}
+{% assign collection_tab_pagination_style = collection_tab_pagination_style | strip %}
 
 <div
   class="collection-tab"
@@ -78,7 +137,104 @@
     data-collection-tab-panel
     data-tab-id="{{ collection_tab_id | escape }}"
   >
-    {% content_for 'block', type: '_product-collection-grid', id: 'collection-tab-grid', collection: collection_tab_collection, max_products: collection_tab_max_products, layout_type: section.settings.layout_type, columns_desktop: section.settings.columns_desktop, columns_mobile: section.settings.columns_mobile, enable_swipe_mobile: section.settings.enable_swipe_mobile, custom_columns: section.settings.custom_columns, custom_columns_desktop: section.settings.custom_columns_desktop, custom_columns_mobile: section.settings.custom_columns_mobile, gap_horizontal: section.settings.gap_horizontal, gap_vertical: section.settings.gap_vertical, gap_horizontal_mobile: section.settings.gap_horizontal_mobile, gap_vertical_mobile: section.settings.gap_vertical_mobile, show_placeholders: collection_tab_show_placeholders, placeholder_count: 4, grid_class: 'collection-tab__products', item_class: 'collection-tab__product', items_data_attributes: 'data-collection-tab-products', product_card_override_enabled: collection_tab_legacy_product_card_present, product_card_show_ranking_override: collection_tab_legacy_product_card_show_ranking, product_card_color_type_override: collection_tab_legacy_product_card_color_type, product_card_color_scheme_override: collection_tab_legacy_product_card_color_scheme, product_card_editor_attributes_override: collection_tab_legacy_product_card_editor_attributes %}
+    {% if collection_tab_items != blank %}
+      <div
+        class="collection-tab__carousel"
+        data-collection-tab-carousel
+        data-tab-id="{{ collection_tab_id | escape }}"
+        data-autoplay="{{ section.settings.autoplay }}"
+      >
+        <div
+          class="{{ collection_tab_grid_class }}"
+          data-product-collection-grid
+          data-product-carousel
+          data-layout="{{ collection_tab_layout }}"
+          data-next-slide-preview="{{ section.settings.show_next_slide_preview_on_desktop }}"
+          data-collection-tab-products
+        >
+          {% for collection_tab_item in collection_tab_items limit: collection_tab_item_limit %}
+            {% liquid
+              assign collection_tab_card_product = collection_tab_item
+              assign collection_tab_card_placeholder = false
+              if collection_tab_is_placeholder
+                assign collection_tab_card_product = blank
+                assign collection_tab_card_placeholder = true
+              endif
+            %}
+            <div class="product-collection-grid__item product-card-layout__item collection-tab__product">
+              {% content_for 'block', type: 'product-card', id: 'product-card', product: collection_tab_card_product, closest.product: collection_tab_card_product, placeholder: collection_tab_card_placeholder %}
+            </div>
+          {% endfor %}
+        </div>
+
+        {% if collection_tab_show_navigation %}
+          <div
+            class="collection-tab__carousel-navigation collection-tab__carousel-navigation--{{ collection_tab_navigation_position }} collection-tab__carousel-navigation--{{ collection_tab_navigation_behavior }}"
+            data-collection-carousel-navigation
+          >
+            <button
+              class="btn btn-{{ collection_tab_navigation_style }} btn--{{ collection_tab_navigation_style }} btn--icon collection-tab__carousel-button"
+              type="button"
+              data-collection-carousel-previous
+              aria-label="{{ 'collection_tabs.previous' | t | escape }}"
+            >
+              {% if collection_tab_navigation_icon == 'arrow' %}
+                {% render 'icon', icon: 'arrow-left', bare: true %}
+              {% else %}
+                {% render 'icon', icon: 'chevron-left', bare: true %}
+              {% endif %}
+            </button>
+            <button
+              class="btn btn-{{ collection_tab_navigation_style }} btn--{{ collection_tab_navigation_style }} btn--icon collection-tab__carousel-button"
+              type="button"
+              data-collection-carousel-next
+              aria-label="{{ 'collection_tabs.next' | t | escape }}"
+            >
+              {% if collection_tab_navigation_icon == 'arrow' %}
+                {% render 'icon', icon: 'arrow-right', bare: true %}
+              {% else %}
+                {% render 'icon', icon: 'chevron-right', bare: true %}
+              {% endif %}
+            </button>
+          </div>
+        {% endif %}
+
+        {% if collection_tab_show_pagination %}
+          <div
+            class="collection-tab__pagination collection-tab__pagination--{{ collection_tab_pagination_type }}"
+            data-collection-carousel-pagination
+            style="{{ collection_tab_pagination_style }}"
+          >
+            {% if collection_tab_pagination_type == 'progress_bar' %}
+              <span
+                class="collection-tab__pagination-track"
+                role="progressbar"
+                aria-label="{{ 'accessibility.pagination' | t | escape }}"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                data-collection-carousel-progress
+              >
+                <span class="collection-tab__pagination-fill" data-collection-carousel-progress-fill></span>
+              </span>
+            {% else %}
+              <div class="collection-tab__pagination-bullets" role="tablist" aria-label="{{ 'accessibility.pagination' | t | escape }}">
+                {% for collection_tab_item in collection_tab_items limit: collection_tab_item_limit %}
+                  <button
+                    class="collection-tab__pagination-bullet"
+                    type="button"
+                    role="tab"
+                    aria-label="{{ 'accessibility.pagination' | t | escape }} {{ forloop.index }}"
+                    aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                    data-collection-carousel-page="{{ forloop.index0 }}"
+                  ></button>
+                {% endfor %}
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
 
     {% if collection_tab_collection != blank and collection_tab_has_products == false %}
       <p class="collection-tab__empty body-text body-sm">{{ 'collection_tabs.empty_collection' | t }}</p>
@@ -87,13 +243,197 @@
 </div>
 
 {% stylesheet %}
+  .collection-tab {
+    min-width: 0;
+  }
+
   .collection-tab__panel {
     min-width: 0;
+  }
+
+  .collection-tab__panel[hidden] {
+    display: none !important;
+  }
+
+  .collection-tab__carousel {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
+
+  .product-collection-grid {
+    display: grid;
+    grid-template-columns: repeat(var(--product-collection-grid-columns-desktop, 4), minmax(0, 1fr));
+    column-gap: var(--product-collection-grid-gap-horizontal, 4px);
+    row-gap: var(--product-collection-grid-gap-vertical, 4px);
+    width: 100%;
+    min-width: 0;
+  }
+
+  .collection-tab__products {
+    grid-template-columns: repeat(var(--product-collection-grid-columns-desktop, 4), minmax(0, 1fr));
+  }
+
+  .collection-tab__products.product-collection-grid--grid {
+    grid-template-columns: repeat(var(--product-collection-grid-columns-desktop, 4), minmax(0, 1fr));
+  }
+
+  .collection-tab__products.product-collection-grid--carousel {
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(0, var(--product-collection-grid-item-width-desktop, 100%));
+    grid-template-columns: none;
+    overflow-x: auto;
+    overscroll-behavior-inline: contain;
+    scroll-snap-type: inline mandatory;
+    scrollbar-width: thin;
+  }
+
+  .product-collection-grid--carousel .product-collection-grid__item {
+    scroll-snap-align: start;
+  }
+
+  @media (min-width: 768px) {
+    .product-collection-grid--carousel[data-next-slide-preview='true'] {
+      grid-auto-columns: calc(var(--product-collection-grid-item-width-desktop) * 0.9);
+    }
+  }
+
+  .product-collection-grid--grid .product-collection-grid__item {
+    min-width: 0;
+  }
+
+  .collection-tab__carousel-navigation {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 0.5rem;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .collection-tab__carousel-navigation--outside {
+    right: -0.5rem;
+    left: -0.5rem;
+  }
+
+  .collection-tab__carousel-navigation--show_on_hover {
+    opacity: 0;
+    transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
+  }
+
+  .collection-tab__carousel:hover .collection-tab__carousel-navigation--show_on_hover,
+  .collection-tab__carousel:focus-within .collection-tab__carousel-navigation--show_on_hover {
+    opacity: 1;
+  }
+
+  .collection-tab__carousel-button {
+    pointer-events: auto;
+  }
+
+  .collection-tab__pagination {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding-top: var(--collection-tab-pagination-top-padding, 50px);
+  }
+
+  .collection-tab__pagination-track {
+    display: block;
+    width: min(100%, var(--collection-tab-pagination-max-width, 100%));
+    height: 2px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--body-color) 20%, transparent);
+  }
+
+  .collection-tab__pagination-fill {
+    display: block;
+    width: var(--collection-tab-pagination-progress, 0%);
+    height: 100%;
+    background: var(--body-color);
+    transition: width var(--motion-duration-standard) var(--motion-ease-standard);
+  }
+
+  .collection-tab__pagination-bullets {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: min(100%, var(--collection-tab-pagination-max-width, 100%));
+  }
+
+  .collection-tab__pagination-bullet {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--body-color) 30%, transparent);
+    cursor: pointer;
+  }
+
+  .collection-tab__pagination-bullet[aria-selected='true'] {
+    background: var(--body-color);
   }
 
   .collection-tab__empty {
     margin-block-start: 1rem;
     color: color-mix(in srgb, var(--body-color) 72%, transparent);
+  }
+
+  @media (max-width: 767.98px) {
+    .product-collection-grid {
+      grid-template-columns: repeat(var(--product-collection-grid-columns-mobile, 1), minmax(0, 1fr));
+      column-gap: var(--product-collection-grid-gap-horizontal-mobile, 4px);
+      row-gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
+    }
+
+    .collection-tab__products {
+      grid-template-columns: repeat(var(--product-collection-grid-columns-mobile, 1), minmax(0, 1fr));
+    }
+
+    .collection-tab__products.product-collection-grid--grid {
+      grid-template-columns: repeat(var(--product-collection-grid-columns-mobile, 1), minmax(0, 1fr));
+    }
+
+    .collection-tab__products.product-collection-grid--carousel {
+      grid-auto-columns: minmax(0, var(--product-collection-grid-item-width-mobile, 100%));
+      column-gap: var(--product-collection-grid-gap-horizontal-mobile, 4px);
+      row-gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
+    }
+
+    .collection-tab__products > .product-collection-grid__item.product-card-layout__item.collection-tab__product {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .collection-tab__products > .product-collection-grid__item.product-card-layout__item.collection-tab__product > .product-card {
+      width: 100%;
+      max-width: 100%;
+      min-width: 0;
+    }
+
+    .collection-tab__carousel-navigation,
+    .collection-tab__pagination {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .collection-tab__carousel-navigation--show_on_hover,
+    .collection-tab__pagination-fill {
+      transition: none;
+    }
+
+    .product-collection-grid--carousel {
+      scroll-behavior: auto;
+      scroll-snap-type: none;
+    }
   }
 {% endstylesheet %}
 
@@ -101,9 +441,6 @@
 {
   "name": "t:general.collection_tab",
   "tag": null,
-  "blocks": [
-    { "type": "_product-collection-grid" }
-  ],
   "settings": [
     {
       "type": "text",
@@ -114,15 +451,6 @@
       "type": "collection",
       "id": "collection",
       "label": "t:labels.collection"
-    },
-    {
-      "type": "range",
-      "id": "max_products",
-      "label": "t:labels.max_products",
-      "min": 1,
-      "max": 24,
-      "step": 1,
-      "default": 4
     }
   ],
   "presets": [
@@ -131,26 +459,18 @@
       "category": "t:general.collection",
       "settings": {
         "label": "",
-        "collection": "",
-        "max_products": 4
+        "collection": ""
       },
       "blocks": [
         {
-          "type": "_product-collection-grid",
-          "id": "collection-tab-grid",
+          "type": "product-card",
+          "id": "product-card",
           "static": true,
-          "blocks": [
-            {
-              "type": "product-card",
-              "id": "product-card",
-              "static": true,
-              "settings": {
-                "show_ranking": false,
-                "color_type": "inherit",
-                "color_scheme": "scheme-1"
-              }
-            }
-          ]
+          "settings": {
+            "show_ranking": false,
+            "color_type": "inherit",
+            "color_scheme": "scheme-1"
+          }
         }
       ]
     }
