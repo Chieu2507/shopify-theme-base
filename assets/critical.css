@@ -537,6 +537,116 @@ p:empty {
   color: var(--body-color);
 }
 
+.link-underline,
+.link-underline-trigger .link-underline {
+  position: relative;
+  text-decoration: none;
+}
+
+.link-underline::after {
+  position: absolute;
+  inset-block-end: var(--link-underline-offset, -0.25em);
+  inset-inline-start: 0;
+  display: var(--link-underline-display, block);
+  width: 100%;
+  height: var(--link-underline-thickness, 1px);
+  background: currentColor;
+  content: '';
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--link-underline-duration, var(--motion-duration-fast)) var(--link-underline-ease, var(--motion-ease-standard));
+}
+
+.link-underline[data-underline='persistent']::after {
+  transform: scaleX(1);
+  transform-origin: right center;
+}
+
+.link-underline[data-underline='persistent'] {
+  --link-underline-hover-duration: var(--motion-duration-slow);
+}
+
+.link-underline--active::after,
+.link-underline:not([data-underline='active']):is(:hover, :focus-visible)::after,
+.link-underline-trigger:is(:hover, :focus-visible, :focus-within) .link-underline:not([data-underline='active'])::after {
+  transform: scaleX(1);
+}
+
+@keyframes link-underline-active {
+  from {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+.link-underline[data-underline='active']::after {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.link-underline[data-underline='active']:is(:hover, :focus-visible)::after {
+  transform: scaleX(0);
+}
+
+.link-underline[data-underline='active']:is([aria-selected='true'], .link-underline--active)::after {
+  animation: link-underline-active var(--link-underline-active-duration, var(--motion-duration-slow)) var(--link-underline-ease, var(--motion-ease-standard)) both;
+}
+
+@keyframes link-underline-hover {
+  0% {
+    transform: scaleX(1);
+    transform-origin: right center;
+  }
+  50% {
+    transform: scaleX(0);
+    transform-origin: right center;
+  }
+  51% {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  100% {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+.link-underline[data-underline='persistent']:is(:hover, :focus-visible)::after {
+  animation: link-underline-hover var(--link-underline-hover-duration, var(--motion-duration-fast)) var(--link-underline-ease, var(--motion-ease-standard)) both;
+}
+
+.link-underline[data-underline='persistent'][data-underline-target='text']::after {
+  display: none;
+}
+
+.link-underline[data-underline='persistent'][data-underline-target='text'] .btn__text {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.link-underline[data-underline='persistent'][data-underline-target='text'] .btn__text::after {
+  position: absolute;
+  inset-block-end: var(--link-underline-offset, -0.25em);
+  inset-inline-start: 0;
+  display: var(--link-underline-display, block);
+  width: 100%;
+  height: var(--link-underline-thickness, 1px);
+  background: currentColor;
+  content: '';
+  transform: scaleX(1);
+  transform-origin: right center;
+  transition: transform var(--link-underline-duration, var(--motion-duration-fast)) var(--link-underline-ease, var(--motion-ease-standard));
+}
+
+.link-underline[data-underline='persistent'][data-underline-target='text']:is(:hover, :focus-visible) .btn__text::after {
+  animation: link-underline-hover var(--link-underline-hover-duration, var(--motion-duration-fast)) var(--link-underline-ease, var(--motion-ease-standard)) both;
+}
+
 @keyframes motion-block-enter {
   from {
     opacity: 0;
@@ -545,25 +655,6 @@ p:empty {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes button-tertiary-underline-hover {
-  0% {
-    transform: scaleX(1);
-    transform-origin: right center;
-  }
-  45% {
-    transform: scaleX(0);
-    transform-origin: right center;
-  }
-  46% {
-    transform: scaleX(0);
-    transform-origin: left center;
-  }
-  100% {
-    transform: scaleX(1);
-    transform-origin: left center;
   }
 }
 
@@ -671,24 +762,10 @@ input[type='submit'].btn.btn--tertiary {
   background: transparent;
   text-decoration: none;
   transform: none;
-}
-
-.btn.btn-tertiary::after,
-.btn.btn--tertiary::after,
-button.btn.btn-tertiary::after,
-button.btn.btn--tertiary::after,
-input.btn.btn-tertiary::after,
-input.btn.btn--tertiary::after,
-input[type='submit'].btn.btn-tertiary::after,
-input[type='submit'].btn.btn--tertiary::after {
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: calc(var(--button-tertiary-underline-offset) * -1);
-  height: 1px;
-  background: currentColor;
-  content: '';
-  transform: scaleX(1);
-  transform-origin: left center;
+  --link-underline-offset: calc(var(--button-tertiary-underline-offset) * -1);
+  --link-underline-display: var(--button-tertiary-underline-display, block);
+  --link-underline-duration: var(--motion-duration-fast);
+  --link-underline-hover-duration: calc(var(--button-motion-duration, var(--motion-duration-standard)) * 1.5);
 }
 
 .btn.btn-tertiary:hover,
@@ -703,19 +780,6 @@ input[type='submit'].btn.btn--tertiary:hover {
   background: transparent;
   color: var(--button-hover-foreground);
   transform: none;
-}
-
-.btn.btn-tertiary:is(:hover, :focus-visible)::after,
-.btn.btn--tertiary:is(:hover, :focus-visible)::after,
-button.btn.btn-tertiary:is(:hover, :focus-visible)::after,
-button.btn.btn--tertiary:is(:hover, :focus-visible)::after,
-input.btn.btn-tertiary:is(:hover, :focus-visible)::after,
-input.btn.btn--tertiary:is(:hover, :focus-visible)::after,
-input[type='submit'].btn.btn-tertiary:is(:hover, :focus-visible)::after,
-input[type='submit'].btn.btn--tertiary:is(:hover, :focus-visible)::after {
-  animation: button-tertiary-underline-hover
-    calc(var(--button-motion-duration, var(--motion-duration-standard)) * 1.5)
-    var(--button-motion-ease, var(--motion-ease-standard)) both;
 }
 
 .btn--icon {
@@ -799,6 +863,10 @@ input[type='submit'].btn.btn--tertiary:is(:hover, :focus-visible)::after {
   opacity: var(--button-disabled-opacity);
   pointer-events: none;
   transform: none;
+}
+
+.btn.link-underline[data-underline='persistent']:is(:disabled, [aria-disabled='true']) {
+  pointer-events: auto;
 }
 
 @keyframes btn-spinner {
