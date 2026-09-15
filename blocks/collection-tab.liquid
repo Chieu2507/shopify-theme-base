@@ -30,39 +30,9 @@
     assign collection_tab_layout = 'carousel'
   endunless
 
-  assign collection_tab_columns_desktop = section.settings.columns_desktop | default: 4 | plus: 0
-  assign collection_tab_columns_mobile = section.settings.columns_mobile | default: 1 | plus: 0
-  if section.settings.custom_columns
-    assign collection_tab_columns_desktop = section.settings.custom_columns_desktop | default: collection_tab_columns_desktop | plus: 0
-    assign collection_tab_columns_mobile = section.settings.custom_columns_mobile | default: collection_tab_columns_mobile | plus: 0
-  endif
-  if collection_tab_columns_desktop < 1 or collection_tab_columns_desktop > 6
-    assign collection_tab_columns_desktop = 4
-  endif
-  if collection_tab_columns_mobile < 1 or collection_tab_columns_mobile > 6
-    assign collection_tab_columns_mobile = 1
-  endif
-
-  assign collection_tab_product_gap_desktop = section.settings.product_gap_desktop | default: 4 | plus: 0
-  assign collection_tab_product_gap_mobile = section.settings.product_gap_mobile | default: 4 | plus: 0
-  if collection_tab_product_gap_desktop < 0 or collection_tab_product_gap_desktop > 40
-    assign collection_tab_product_gap_desktop = 4
-  endif
-  if collection_tab_product_gap_mobile < 0 or collection_tab_product_gap_mobile > 40
-    assign collection_tab_product_gap_mobile = 4
-  endif
-  assign collection_tab_desktop_gap_total = collection_tab_product_gap_desktop | times: collection_tab_columns_desktop | minus: collection_tab_product_gap_desktop
-  assign collection_tab_mobile_gap_total = collection_tab_product_gap_mobile | times: collection_tab_columns_mobile | minus: collection_tab_product_gap_mobile
-
-  assign collection_tab_items = blank
-  assign collection_tab_item_limit = collection_tab_max_products
-  assign collection_tab_is_placeholder = false
-  if collection_tab_collection != blank and collection_tab_collection.products != blank
-    assign collection_tab_items = collection_tab_collection.products
-  elsif collection_tab_collection == blank and request.design_mode
-    assign collection_tab_placeholder_count = collection_tab_max_products
-    assign collection_tab_items = (1..collection_tab_placeholder_count)
-    assign collection_tab_is_placeholder = true
+  assign collection_tab_product_card_block = block.blocks | first
+  if collection_tab_product_card_block != blank and collection_tab_product_card_block.blocks != blank
+    assign collection_tab_product_card_block = collection_tab_product_card_block.blocks | first
   endif
 
   assign collection_tab_navigation_position = section.settings.navigation_position | default: 'inside'
@@ -119,23 +89,13 @@
     assign collection_tab_has_products = true
   endif
 
-  assign collection_tab_grid_class = 'product-collection-grid product-collection-grid--' | append: collection_tab_layout | append: ' collection-tab__products'
-  if collection_tab_is_placeholder
-    assign collection_tab_grid_class = collection_tab_grid_class | append: ' product-collection-grid--placeholder'
+  assign collection_tab_show_grid = false
+  if collection_tab_has_products
+    assign collection_tab_show_grid = true
+  elsif collection_tab_collection == blank and request.design_mode
+    assign collection_tab_show_grid = true
   endif
 %}
-
-{% capture collection_tab_grid_style %}
-  --product-collection-grid-columns-desktop: {{ collection_tab_columns_desktop }};
-  --product-collection-grid-columns-mobile: {{ collection_tab_columns_mobile }};
-  --product-collection-grid-gap-horizontal: {{ collection_tab_product_gap_desktop }}px;
-  --product-collection-grid-gap-vertical: {{ collection_tab_product_gap_desktop }}px;
-  --product-collection-grid-gap-horizontal-mobile: {{ collection_tab_product_gap_mobile }}px;
-  --product-collection-grid-gap-vertical-mobile: {{ collection_tab_product_gap_mobile }}px;
-  --product-collection-grid-item-width-desktop: calc((100% - {{ collection_tab_desktop_gap_total }}px) / {{ collection_tab_columns_desktop }});
-  --product-collection-grid-item-width-mobile: calc((100% - {{ collection_tab_mobile_gap_total }}px) / {{ collection_tab_columns_mobile }});
-{% endcapture %}
-{% assign collection_tab_grid_style = collection_tab_grid_style | strip %}
 
 {% capture collection_tab_pagination_style %}
   --collection-tab-pagination-top-padding: {{ collection_tab_pagination_top_padding }}px;
@@ -173,38 +133,35 @@
     data-collection-tab-panel
     data-tab-id="{{ collection_tab_id | escape }}"
   >
-    {% if collection_tab_items != blank %}
+    {% if collection_tab_show_grid %}
       <div
         class="collection-tab__carousel"
         data-collection-tab-carousel
         data-tab-id="{{ collection_tab_id | escape }}"
         data-autoplay="{{ section.settings.autoplay }}"
       >
-        <div
-          class="{{ collection_tab_grid_class }}"
-          data-product-collection-grid
-          data-product-carousel
-          data-layout="{{ collection_tab_layout }}"
-          data-columns-desktop="{{ collection_tab_columns_desktop }}"
-          data-columns-mobile="{{ collection_tab_columns_mobile }}"
-          data-next-slide-preview="{{ section.settings.show_next_slide_preview_on_desktop }}"
-          data-collection-tab-products
-          style="{{ collection_tab_grid_style }}"
-        >
-          {% for collection_tab_item in collection_tab_items limit: collection_tab_item_limit %}
-            {% liquid
-              assign collection_tab_card_product = collection_tab_item
-              assign collection_tab_card_placeholder = false
-              if collection_tab_is_placeholder
-                assign collection_tab_card_product = blank
-                assign collection_tab_card_placeholder = true
-              endif
-            %}
-            <div class="product-collection-grid__item product-card-layout__item collection-tab__product">
-              {% content_for 'block', type: 'product-card', id: 'product-card', product: collection_tab_card_product, closest.product: collection_tab_card_product, placeholder: collection_tab_card_placeholder %}
-            </div>
-          {% endfor %}
-        </div>
+        {% render 'product-collection-grid',
+          collection: collection_tab_collection,
+          max_products: collection_tab_max_products,
+          layout_type: collection_tab_layout,
+          columns_desktop: section.settings.columns_desktop,
+          columns_mobile: section.settings.columns_mobile,
+          custom_columns: section.settings.custom_columns,
+          custom_columns_desktop: section.settings.custom_columns_desktop,
+          custom_columns_mobile: section.settings.custom_columns_mobile,
+          gap_horizontal: section.settings.product_gap_desktop,
+          gap_vertical: section.settings.product_gap_desktop,
+          gap_horizontal_mobile: section.settings.product_gap_mobile,
+          gap_vertical_mobile: section.settings.product_gap_mobile,
+          show_placeholders: request.design_mode,
+          placeholder_count: collection_tab_max_products,
+          grid_class: 'collection-tab__products',
+          item_class: 'collection-tab__product',
+          items_data_attributes: 'data-collection-tab-products',
+          product_carousel: true,
+          next_slide_preview: section.settings.show_next_slide_preview_on_desktop,
+          product_card_block: collection_tab_product_card_block
+        %}
 
         {% if collection_tab_show_navigation %}
           <div
@@ -258,7 +215,19 @@
               </span>
             {% else %}
               <div class="collection-tab__pagination-bullets" role="tablist" aria-label="{{ 'accessibility.pagination' | t | escape }}">
-                {% for collection_tab_item in collection_tab_items limit: collection_tab_item_limit %}
+                {% if collection_tab_collection != blank and collection_tab_collection.products != blank %}
+                  {% for collection_tab_item in collection_tab_collection.products limit: collection_tab_max_products %}
+                    <button
+                      class="collection-tab__pagination-bullet"
+                      type="button"
+                      role="tab"
+                      aria-label="{{ 'accessibility.pagination' | t | escape }} {{ forloop.index }}"
+                      aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                      data-collection-carousel-page="{{ forloop.index0 }}"
+                    ></button>
+                  {% endfor %}
+                {% elsif collection_tab_collection == blank and request.design_mode %}
+                  {% for collection_tab_placeholder_index in (1..collection_tab_max_products) %}
                   <button
                     class="collection-tab__pagination-bullet"
                     type="button"
@@ -267,7 +236,8 @@
                     aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
                     data-collection-carousel-page="{{ forloop.index0 }}"
                   ></button>
-                {% endfor %}
+                  {% endfor %}
+                {% endif %}
               </div>
             {% endif %}
           </div>
@@ -300,45 +270,10 @@
     min-width: 0;
   }
 
-  .product-collection-grid {
-    display: grid;
-    grid-template-columns: repeat(var(--product-collection-grid-columns-desktop, 4), minmax(0, 1fr));
-    column-gap: var(--product-collection-grid-gap-horizontal, 4px);
-    row-gap: var(--product-collection-grid-gap-vertical, 4px);
-    width: 100%;
-    min-width: 0;
-  }
-
-  .collection-tab__products {
-    grid-template-columns: repeat(var(--product-collection-grid-columns-desktop, 4), minmax(0, 1fr));
-  }
-
-  .collection-tab__products.product-collection-grid--grid {
-    grid-template-columns: repeat(var(--product-collection-grid-columns-desktop, 4), minmax(0, 1fr));
-  }
-
-  .collection-tab__products.product-collection-grid--carousel {
-    grid-auto-flow: column;
-    grid-auto-columns: minmax(0, var(--product-collection-grid-item-width-desktop, 100%));
-    grid-template-columns: none;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: inline mandatory;
-    scrollbar-width: thin;
-  }
-
-  .product-collection-grid--carousel .product-collection-grid__item {
-    scroll-snap-align: start;
-  }
-
   @media (min-width: 768px) {
     .product-collection-grid--carousel[data-next-slide-preview='true'] {
       grid-auto-columns: calc(var(--product-collection-grid-item-width-desktop) * 0.9);
     }
-  }
-
-  .product-collection-grid--grid .product-collection-grid__item {
-    min-width: 0;
   }
 
   .collection-tab__carousel-navigation {
@@ -425,38 +360,6 @@
   }
 
   @media (max-width: 767.98px) {
-    .product-collection-grid {
-      grid-template-columns: repeat(var(--product-collection-grid-columns-mobile, 1), minmax(0, 1fr));
-      column-gap: var(--product-collection-grid-gap-horizontal-mobile, 4px);
-      row-gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
-    }
-
-    .collection-tab__products {
-      grid-template-columns: repeat(var(--product-collection-grid-columns-mobile, 1), minmax(0, 1fr));
-    }
-
-    .collection-tab__products.product-collection-grid--grid {
-      grid-template-columns: repeat(var(--product-collection-grid-columns-mobile, 1), minmax(0, 1fr));
-    }
-
-    .collection-tab__products.product-collection-grid--carousel {
-      grid-auto-columns: minmax(0, var(--product-collection-grid-item-width-mobile, 100%));
-      column-gap: var(--product-collection-grid-gap-horizontal-mobile, 4px);
-      row-gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
-    }
-
-    .collection-tab__products > .product-collection-grid__item.product-card-layout__item.collection-tab__product {
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-    }
-
-    .collection-tab__products > .product-collection-grid__item.product-card-layout__item.collection-tab__product > .product-card {
-      width: 100%;
-      max-width: 100%;
-      min-width: 0;
-    }
-
     .collection-tab__carousel-navigation,
     .collection-tab__pagination {
       display: none;
@@ -475,6 +378,15 @@
     }
   }
 {% endstylesheet %}
+
+{% comment %}
+  Keep the static Product Card target discoverable to Theme Check and the
+  Theme Editor. The shared renderer uses the direct child settings for every
+  item because content_for is not available inside snippets.
+{% endcomment %}
+{% if false %}
+  {% content_for 'block', type: 'product-card', id: 'product-card' %}
+{% endif %}
 
 {% schema %}
 {

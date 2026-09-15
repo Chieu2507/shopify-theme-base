@@ -1,7 +1,7 @@
 {% doc %}
-  Renders the shared product collection grid used by Product List and
-  Collection Tab. The parent supplies the collection and presentation
-  settings; the Product Card remains a fixed child of this composition.
+  Compatibility wrapper for the legacy nested product collection grid.
+  Product List and Collection Tab use the shared product-collection-grid
+  snippet directly so Product Card stays a direct child of their parent.
 
   @param {object} [collection] - Collection resource to render
   @param {number} [max_products] - Maximum number of products to render
@@ -27,183 +27,43 @@
   @param {object} [product_card_color_scheme_override] - Legacy card color scheme override
   @param {string} [product_card_editor_attributes_override] - Legacy card editor attributes
 
-  @example
-  {% content_for 'block', type: '_product-collection-grid', id: 'product-grid' %}
+  This block remains only for compatibility with saved content that still has
+  the old nested block tree. New Product List and Collection Tab instances do
+  not render this wrapper.
 {% enddoc %}
 
 {% liquid
-  assign product_collection_grid_collection = collection
-  assign product_collection_grid_max_products = max_products | default: 6 | plus: 0
-  if product_collection_grid_max_products < 1 or product_collection_grid_max_products > 24
-    assign product_collection_grid_max_products = 6
-  endif
-
-  assign product_collection_grid_layout = layout_type | default: 'grid'
-  unless product_collection_grid_layout == 'grid' or product_collection_grid_layout == 'carousel'
-    assign product_collection_grid_layout = 'grid'
-  endunless
-
-  assign product_collection_grid_columns_desktop = columns_desktop | default: 3 | plus: 0
-  if product_collection_grid_columns_desktop < 1 or product_collection_grid_columns_desktop > 6
-    assign product_collection_grid_columns_desktop = 3
-  endif
-
-  assign product_collection_grid_columns_mobile = columns_mobile | default: 1 | plus: 0
-  if product_collection_grid_columns_mobile < 1 or product_collection_grid_columns_mobile > 6
-    assign product_collection_grid_columns_mobile = 1
-  endif
-
-  if custom_columns
-    assign product_collection_grid_columns_desktop = custom_columns_desktop | default: product_collection_grid_columns_desktop | plus: 0
-    assign product_collection_grid_columns_mobile = custom_columns_mobile | default: product_collection_grid_columns_mobile | plus: 0
-  endif
-  if product_collection_grid_columns_desktop < 1 or product_collection_grid_columns_desktop > 6
-    assign product_collection_grid_columns_desktop = 3
-  endif
-  if product_collection_grid_columns_mobile < 1 or product_collection_grid_columns_mobile > 6
-    assign product_collection_grid_columns_mobile = 1
-  endif
-
-  assign product_collection_grid_gap_horizontal = gap_horizontal | default: 4 | plus: 0
-  assign product_collection_grid_gap_vertical = gap_vertical | default: 4 | plus: 0
-  assign product_collection_grid_gap_horizontal_mobile = gap_horizontal_mobile | default: 4 | plus: 0
-  assign product_collection_grid_gap_vertical_mobile = gap_vertical_mobile | default: 4 | plus: 0
-
-  if product_collection_grid_gap_horizontal < 0 or product_collection_grid_gap_horizontal > 40
-    assign product_collection_grid_gap_horizontal = 4
-  endif
-  if product_collection_grid_gap_vertical < 0 or product_collection_grid_gap_vertical > 40
-    assign product_collection_grid_gap_vertical = 4
-  endif
-  if product_collection_grid_gap_horizontal_mobile < 0 or product_collection_grid_gap_horizontal_mobile > 40
-    assign product_collection_grid_gap_horizontal_mobile = 4
-  endif
-  if product_collection_grid_gap_vertical_mobile < 0 or product_collection_grid_gap_vertical_mobile > 40
-    assign product_collection_grid_gap_vertical_mobile = 4
-  endif
-
-  assign product_collection_grid_desktop_gap_count = product_collection_grid_columns_desktop | minus: 1
-  assign product_collection_grid_desktop_gap_total = product_collection_grid_gap_horizontal | times: product_collection_grid_desktop_gap_count
-  assign product_collection_grid_mobile_gap_count = product_collection_grid_columns_mobile | minus: 1
-  assign product_collection_grid_mobile_gap_total = product_collection_grid_gap_horizontal_mobile | times: product_collection_grid_mobile_gap_count
-
-  assign product_collection_grid_items = blank
-  assign product_collection_grid_item_limit = product_collection_grid_max_products
-  assign product_collection_grid_is_placeholder = false
-  if product_collection_grid_collection != blank and product_collection_grid_collection.products != blank
-    assign product_collection_grid_items = product_collection_grid_collection.products
-  elsif show_placeholders
-    assign product_collection_grid_placeholder_count = placeholder_count | default: 4 | plus: 0
-    if product_collection_grid_placeholder_count < 1 or product_collection_grid_placeholder_count > 24
-      assign product_collection_grid_placeholder_count = 4
-    endif
-    assign product_collection_grid_items = (1..product_collection_grid_placeholder_count)
-    assign product_collection_grid_item_limit = product_collection_grid_placeholder_count
-    assign product_collection_grid_is_placeholder = true
-  endif
-
-  assign product_collection_grid_class = 'product-collection-grid product-collection-grid--' | append: product_collection_grid_layout
-  if enable_swipe_mobile
-    assign product_collection_grid_class = product_collection_grid_class | append: ' product-collection-grid--swipe-mobile'
-  endif
-  if product_collection_grid_is_placeholder
-    assign product_collection_grid_class = product_collection_grid_class | append: ' product-collection-grid--placeholder'
-  endif
-  if grid_class != blank
-    assign product_collection_grid_class = product_collection_grid_class | append: ' ' | append: grid_class
-  endif
+  assign product_collection_grid_card_block = block.blocks | first
 %}
 
-{% capture product_collection_grid_style %}
-  --product-collection-grid-columns-desktop: {{ product_collection_grid_columns_desktop }};
-  --product-collection-grid-columns-mobile: {{ product_collection_grid_columns_mobile }};
-  --product-collection-grid-gap-horizontal: {{ product_collection_grid_gap_horizontal }}px;
-  --product-collection-grid-gap-vertical: {{ product_collection_grid_gap_vertical }}px;
-  --product-collection-grid-gap-horizontal-mobile: {{ product_collection_grid_gap_horizontal_mobile }}px;
-  --product-collection-grid-gap-vertical-mobile: {{ product_collection_grid_gap_vertical_mobile }}px;
-  --product-collection-grid-item-width-desktop: calc((100% - {{ product_collection_grid_desktop_gap_total }}px) / {{ product_collection_grid_columns_desktop }});
-  --product-collection-grid-item-width-mobile: calc((100% - {{ product_collection_grid_mobile_gap_total }}px) / {{ product_collection_grid_columns_mobile }});
-{% endcapture %}
-{% assign product_collection_grid_style = product_collection_grid_style | strip %}
-
-{% if product_collection_grid_items != blank %}
-  <div
-    class="{{ product_collection_grid_class }}"
-    data-product-collection-grid
-    data-layout="{{ product_collection_grid_layout }}"
-    {% if items_data_attributes != blank %}{{ items_data_attributes }}{% endif %}
-    style="{{ product_collection_grid_style }}"
-    {{ block.shopify_attributes }}
-  >
-    {% for product_collection_grid_item in product_collection_grid_items limit: product_collection_grid_item_limit %}
-      {% liquid
-        assign product_collection_grid_card_product = product_collection_grid_item
-        assign product_collection_grid_card_placeholder = false
-        if product_collection_grid_is_placeholder
-          assign product_collection_grid_card_product = blank
-          assign product_collection_grid_card_placeholder = true
-        endif
-      %}
-      <div class="product-collection-grid__item product-card-layout__item{% if item_class != blank %} {{ item_class }}{% endif %}">
-        {% if product_card_override_enabled %}
-          {% content_for 'block', type: 'product-card', id: 'product-card', product: product_collection_grid_card_product, closest.product: product_collection_grid_card_product, placeholder: product_collection_grid_card_placeholder, show_ranking_override: product_card_show_ranking_override, color_type_override: product_card_color_type_override, color_scheme_override: product_card_color_scheme_override, editor_attributes_override: product_card_editor_attributes_override %}
-        {% else %}
-          {% content_for 'block', type: 'product-card', id: 'product-card', product: product_collection_grid_card_product, closest.product: product_collection_grid_card_product, placeholder: product_collection_grid_card_placeholder %}
-        {% endif %}
-      </div>
-    {% endfor %}
-  </div>
-{% endif %}
-
-{% stylesheet %}
-  .product-collection-grid {
-    display: grid;
-    grid-template-columns: repeat(var(--product-collection-grid-columns-desktop, 3), minmax(0, 1fr));
-    column-gap: var(--product-collection-grid-gap-horizontal, 4px);
-    row-gap: var(--product-collection-grid-gap-vertical, 4px);
-    width: 100%;
-    min-width: 0;
-  }
-
-  .product-collection-grid--carousel,
-  .product-collection-grid--swipe-mobile {
-    grid-auto-flow: column;
-    grid-auto-columns: var(--product-collection-grid-item-width-desktop);
-    grid-template-columns: none;
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scroll-snap-type: inline mandatory;
-    scrollbar-width: thin;
-  }
-
-  .product-collection-grid--carousel .product-collection-grid__item,
-  .product-collection-grid--swipe-mobile .product-collection-grid__item {
-    scroll-snap-align: start;
-  }
-
-  @media (max-width: 767.98px) {
-    .product-collection-grid {
-      grid-template-columns: repeat(var(--product-collection-grid-columns-mobile, 1), minmax(0, 1fr));
-      column-gap: var(--product-collection-grid-gap-horizontal-mobile, 4px);
-      row-gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
-    }
-
-    .product-collection-grid--carousel,
-    .product-collection-grid--swipe-mobile {
-      grid-auto-columns: var(--product-collection-grid-item-width-mobile);
-      column-gap: var(--product-collection-grid-gap-horizontal-mobile, 4px);
-      row-gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .product-collection-grid--carousel,
-    .product-collection-grid--swipe-mobile {
-      scroll-behavior: auto;
-      scroll-snap-type: none;
-    }
-  }
-{% endstylesheet %}
+{% render 'product-collection-grid',
+  collection: collection,
+  max_products: max_products,
+  layout_type: layout_type,
+  columns_desktop: columns_desktop,
+  columns_mobile: columns_mobile,
+  enable_swipe_mobile: enable_swipe_mobile,
+  custom_columns: custom_columns,
+  custom_columns_desktop: custom_columns_desktop,
+  custom_columns_mobile: custom_columns_mobile,
+  gap_horizontal: gap_horizontal,
+  gap_vertical: gap_vertical,
+  gap_horizontal_mobile: gap_horizontal_mobile,
+  gap_vertical_mobile: gap_vertical_mobile,
+  show_placeholders: show_placeholders,
+  show_placeholders_for_empty_collection: show_placeholders,
+  placeholder_count: placeholder_count,
+  grid_class: grid_class,
+  item_class: item_class,
+  items_data_attributes: items_data_attributes,
+  product_card_block: product_collection_grid_card_block,
+  product_card_override_enabled: product_card_override_enabled,
+  product_card_show_ranking_override: product_card_show_ranking_override,
+  product_card_color_type_override: product_card_color_type_override,
+  product_card_color_scheme_override: product_card_color_scheme_override,
+  product_card_editor_attributes_override: product_card_editor_attributes_override,
+  grid_attributes: block.shopify_attributes
+%}
 
 {% schema %}
 {

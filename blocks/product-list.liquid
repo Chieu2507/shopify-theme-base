@@ -9,83 +9,16 @@
 
 {% liquid
   assign product_list_collection = block.settings.collection
-  assign product_list_max_products = block.settings.max_products | default: 6 | plus: 0
-  if product_list_max_products < 1 or product_list_max_products > 24
-    assign product_list_max_products = 6
-  endif
-
   assign product_list_layout = block.settings.layout_type | default: 'grid'
   unless product_list_layout == 'grid' or product_list_layout == 'carousel'
     assign product_list_layout = 'grid'
   endunless
 
-  assign product_list_columns_desktop = block.settings.columns_desktop | default: 3 | plus: 0
-  assign product_list_columns_mobile = block.settings.columns_mobile | default: 1 | plus: 0
-  if block.settings.custom_columns
-    assign product_list_columns_desktop = block.settings.custom_columns_desktop | default: product_list_columns_desktop | plus: 0
-    assign product_list_columns_mobile = block.settings.custom_columns_mobile | default: product_list_columns_mobile | plus: 0
-  endif
-  if product_list_columns_desktop < 1 or product_list_columns_desktop > 6
-    assign product_list_columns_desktop = 3
-  endif
-  if product_list_columns_mobile < 1 or product_list_columns_mobile > 6
-    assign product_list_columns_mobile = 1
-  endif
-
-  assign product_list_gap_horizontal = block.settings.gap_horizontal | default: 4 | plus: 0
-  assign product_list_gap_vertical = block.settings.gap_vertical | default: 4 | plus: 0
-  assign product_list_gap_horizontal_mobile = block.settings.gap_horizontal_mobile | default: 4 | plus: 0
-  assign product_list_gap_vertical_mobile = block.settings.gap_vertical_mobile | default: 4 | plus: 0
-  if product_list_gap_horizontal < 0 or product_list_gap_horizontal > 40
-    assign product_list_gap_horizontal = 4
-  endif
-  if product_list_gap_vertical < 0 or product_list_gap_vertical > 40
-    assign product_list_gap_vertical = 4
-  endif
-  if product_list_gap_horizontal_mobile < 0 or product_list_gap_horizontal_mobile > 40
-    assign product_list_gap_horizontal_mobile = 4
-  endif
-  if product_list_gap_vertical_mobile < 0 or product_list_gap_vertical_mobile > 40
-    assign product_list_gap_vertical_mobile = 4
-  endif
-
-  assign product_list_desktop_gap_count = product_list_columns_desktop | minus: 1
-  assign product_list_desktop_gap_total = product_list_gap_horizontal | times: product_list_desktop_gap_count
-  assign product_list_mobile_gap_count = product_list_columns_mobile | minus: 1
-  assign product_list_mobile_gap_total = product_list_gap_horizontal_mobile | times: product_list_mobile_gap_count
-
-  assign product_list_items = blank
-  assign product_list_item_limit = product_list_max_products
-  assign product_list_is_placeholder = false
-  if product_list_collection != blank and product_list_collection.products != blank
-    assign product_list_items = product_list_collection.products
-  else
-    assign product_list_placeholder_count = 8
-    assign product_list_items = (1..product_list_placeholder_count)
-    assign product_list_item_limit = product_list_placeholder_count
-    assign product_list_is_placeholder = true
-  endif
-
-  assign product_list_grid_class = 'product-collection-grid product-collection-grid--' | append: product_list_layout | append: ' product-list__items'
-  if block.settings.enable_swipe_mobile
-    assign product_list_grid_class = product_list_grid_class | append: ' product-collection-grid--swipe-mobile'
-  endif
-  if product_list_is_placeholder
-    assign product_list_grid_class = product_list_grid_class | append: ' product-collection-grid--placeholder'
+  assign product_list_product_card_block = block.blocks | first
+  if product_list_product_card_block != blank and product_list_product_card_block.blocks != blank
+    assign product_list_product_card_block = product_list_product_card_block.blocks | first
   endif
 %}
-
-{% capture product_list_grid_style %}
-  --product-collection-grid-columns-desktop: {{ product_list_columns_desktop }};
-  --product-collection-grid-columns-mobile: {{ product_list_columns_mobile }};
-  --product-collection-grid-gap-horizontal: {{ product_list_gap_horizontal }}px;
-  --product-collection-grid-gap-vertical: {{ product_list_gap_vertical }}px;
-  --product-collection-grid-gap-horizontal-mobile: {{ product_list_gap_horizontal_mobile }}px;
-  --product-collection-grid-gap-vertical-mobile: {{ product_list_gap_vertical_mobile }}px;
-  --product-collection-grid-item-width-desktop: calc((100% - {{ product_list_desktop_gap_total }}px) / {{ product_list_columns_desktop }});
-  --product-collection-grid-item-width-mobile: calc((100% - {{ product_list_mobile_gap_total }}px) / {{ product_list_columns_mobile }});
-{% endcapture %}
-{% assign product_list_grid_style = product_list_grid_style | strip %}
 
 <div
   class="product-list"
@@ -93,30 +26,38 @@
   data-layout="{{ product_list_layout }}"
   {{ block.shopify_attributes }}
 >
-  {% if product_list_items != blank %}
-    <div
-      class="{{ product_list_grid_class }}"
-      data-product-collection-grid
-      data-product-list-items
-      data-layout="{{ product_list_layout }}"
-      style="{{ product_list_grid_style }}"
-    >
-      {% for product_list_item in product_list_items limit: product_list_item_limit %}
-        {% liquid
-          assign product_list_card_product = product_list_item
-          assign product_list_card_placeholder = false
-          if product_list_is_placeholder
-            assign product_list_card_product = blank
-            assign product_list_card_placeholder = true
-          endif
-        %}
-        <div class="product-collection-grid__item product-card-layout__item product-list__item">
-          {% content_for 'block', type: 'product-card', id: 'product-card', product: product_list_card_product, closest.product: product_list_card_product, placeholder: product_list_card_placeholder %}
-        </div>
-      {% endfor %}
-    </div>
-  {% endif %}
+  {% render 'product-collection-grid',
+    collection: product_list_collection,
+    max_products: block.settings.max_products,
+    layout_type: product_list_layout,
+    columns_desktop: block.settings.columns_desktop,
+    columns_mobile: block.settings.columns_mobile,
+    enable_swipe_mobile: block.settings.enable_swipe_mobile,
+    custom_columns: block.settings.custom_columns,
+    custom_columns_desktop: block.settings.custom_columns_desktop,
+    custom_columns_mobile: block.settings.custom_columns_mobile,
+    gap_horizontal: block.settings.gap_horizontal,
+    gap_vertical: block.settings.gap_vertical,
+    gap_horizontal_mobile: block.settings.gap_horizontal_mobile,
+    gap_vertical_mobile: block.settings.gap_vertical_mobile,
+    show_placeholders: true,
+    show_placeholders_for_empty_collection: true,
+    placeholder_count: 8,
+    grid_class: 'product-list__items',
+    item_class: 'product-list__item',
+    items_data_attributes: 'data-product-list-items',
+    product_card_block: product_list_product_card_block
+  %}
 </div>
+
+{% comment %}
+  Keep the static Product Card target discoverable to Theme Check and the
+  Theme Editor. The shared renderer uses the direct child settings for every
+  item because content_for is not available inside snippets.
+{% endcomment %}
+{% if false %}
+  {% content_for 'block', type: 'product-card', id: 'product-card' %}
+{% endif %}
 
 {% stylesheet %}
   .product-list {
