@@ -221,24 +221,15 @@
       border-color var(--motion-duration-standard) var(--motion-ease-standard);
   }
 
-  .tab-layout--underline .tab-layout__tab::after {
-    position: absolute;
-    inset-inline: 0;
-    inset-block-end: 0;
-    height: 1px;
-    background-color: var(--heading-color);
-    content: '';
-    transform: scaleX(0);
-    transition: transform var(--motion-duration-standard) var(--motion-ease-standard);
+  .tab-layout--underline .tab-layout__tab {
+    --link-underline-offset: 0;
+    --link-underline-display: block;
+    --link-underline-thickness: 1px;
   }
 
   .tab-layout__tab:hover,
   .tab-layout__tab[aria-selected='true'] {
     color: var(--heading-color);
-  }
-
-  .tab-layout--underline .tab-layout__tab[aria-selected='true']::after {
-    transform: scaleX(1);
   }
 
   .tab-layout--button .tab-layout__navigation {
@@ -255,6 +246,7 @@
     border-radius: var(--button-radius);
     background-color: var(--button-secondary-background);
     color: var(--button-secondary-text);
+    --link-underline-display: none;
   }
 
   .tab-layout--button .tab-layout__tab:hover {
@@ -307,8 +299,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .tab-layout__tab,
-    .tab-layout__tab::after {
+    .tab-layout__tab {
       transition: none;
     }
   }
@@ -409,6 +400,25 @@
       .catch(() => {});
   };
 
+  const updateViewAll = (state, trigger) => {
+    const section = state.layout.closest('[data-collection-tabs]');
+    const viewAll = section?.querySelector('[data-collection-tabs-view-all]') || (state.viewAll?.isConnected ? state.viewAll : null);
+    state.viewAll = viewAll || null;
+    if (!viewAll) return;
+
+    const url = trigger?.dataset.collectionUrl?.trim() || '';
+    if (url) {
+      viewAll.setAttribute('href', url);
+      viewAll.removeAttribute('aria-disabled');
+      viewAll.removeAttribute('tabindex');
+      return;
+    }
+
+    viewAll.removeAttribute('href');
+    viewAll.setAttribute('aria-disabled', 'true');
+    viewAll.setAttribute('tabindex', '-1');
+  };
+
   const setActiveTab = (state, selectedId, shouldFocus, shouldAnimate) => {
     synchronizeEntries(state);
     const selectedEntry = state.entries.find((entry) => entry.trigger.dataset.tabId === selectedId) || state.entries[0];
@@ -425,6 +435,7 @@
 
     state.activeEntry = selectedEntry;
     state.layout.dataset.tabLayoutActive = selectedEntry.trigger.dataset.tabId;
+    updateViewAll(state, selectedEntry.trigger);
     if (shouldFocus) selectedEntry.trigger.focus();
 
     if (shouldAnimate && previousEntry && previousEntry !== selectedEntry) {
@@ -456,6 +467,7 @@
       navigation,
       entries: [],
       activeEntry: null,
+      viewAll: layout.closest('[data-collection-tabs]')?.querySelector('[data-collection-tabs-view-all]') || null,
       controller,
       observer: null,
       panelAnimation: null,
@@ -526,6 +538,7 @@
         entry.panel.hidden = false;
         entry.panel.removeAttribute('aria-hidden');
       });
+      updateViewAll(state, null);
       state.navigation.hidden = true;
       layout.dataset.tabLayoutReady = 'false';
       delete layout.dataset.tabLayoutActive;
@@ -649,27 +662,25 @@
           "settings": {
             "label": "",
             "collection": "",
-            "max_products": 4,
-            "columns_desktop": 4,
-            "columns_tablet": 3,
-            "columns_mobile": "2",
-            "enable_swipe_mobile": true,
-            "gap_horizontal": 10,
-            "gap_vertical": 10,
-            "gap_horizontal_mobile": 4,
-            "gap_vertical_mobile": 4
+            "max_products": 4
           },
           "blocks": [
             {
-              "type": "product-card",
-              "id": "product-card",
+              "type": "_product-collection-grid",
+              "id": "collection-tab-grid",
               "static": true,
-              "settings": {
-                "show_ranking": false,
-                "show_vendor": true,
-                "color_type": "inherit",
-                "color_scheme": "scheme-1"
-              }
+              "blocks": [
+                {
+                  "type": "product-card",
+                  "id": "product-card",
+                  "static": true,
+                  "settings": {
+                    "show_ranking": false,
+                    "color_type": "inherit",
+                    "color_scheme": "scheme-1"
+                  }
+                }
+              ]
             }
           ]
         }

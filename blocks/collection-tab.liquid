@@ -1,8 +1,8 @@
 {% doc %}
   Renders one collection tab inside a Tab Layout. The block owns the
-  collection resource, tab label, product count and responsive product grid.
-  Its Product Card child is a fixed controlled child and receives each product
-  through the parent collection loop.
+  collection resource, tab label and product count. Layout and gap settings
+  are supplied by the Collection Tabs section so every tab stays in sync.
+  Product rendering is delegated to the shared product collection grid.
 
   @example
   {% content_for 'block', type: 'collection-tab', id: 'collection-tab' %}
@@ -23,95 +23,49 @@
     assign collection_tab_max_products = 4
   endif
 
-  assign collection_tab_columns_desktop = block.settings.columns_desktop | default: 4 | plus: 0
-  if collection_tab_columns_desktop < 2 or collection_tab_columns_desktop > 6
-    assign collection_tab_columns_desktop = 4
-  endif
-  assign collection_tab_columns_tablet = block.settings.columns_tablet | default: 3 | plus: 0
-  if collection_tab_columns_tablet < 2 or collection_tab_columns_tablet > 4
-    assign collection_tab_columns_tablet = 3
-  endif
-  assign collection_tab_columns_mobile = block.settings.columns_mobile | default: 2 | plus: 0
-  if collection_tab_columns_mobile < 1 or collection_tab_columns_mobile > 2
-    assign collection_tab_columns_mobile = 2
-  endif
-
-  assign collection_tab_gap_horizontal = block.settings.gap_horizontal | default: 10 | plus: 0
-  assign collection_tab_gap_vertical = block.settings.gap_vertical | default: 10 | plus: 0
-  assign collection_tab_gap_horizontal_mobile = block.settings.gap_horizontal_mobile | default: 4 | plus: 0
-  assign collection_tab_gap_vertical_mobile = block.settings.gap_vertical_mobile | default: 4 | plus: 0
-  if collection_tab_gap_horizontal < 0 or collection_tab_gap_horizontal > 40
-    assign collection_tab_gap_horizontal = 10
-  endif
-  if collection_tab_gap_vertical < 0 or collection_tab_gap_vertical > 40
-    assign collection_tab_gap_vertical = 10
-  endif
-  if collection_tab_gap_horizontal_mobile < 0 or collection_tab_gap_horizontal_mobile > 40
-    assign collection_tab_gap_horizontal_mobile = 4
-  endif
-  if collection_tab_gap_vertical_mobile < 0 or collection_tab_gap_vertical_mobile > 40
-    assign collection_tab_gap_vertical_mobile = 4
-  endif
-
   assign collection_tab_id = block.id | default: 'collection-tab'
   assign collection_tab_trigger_id = 'CollectionTabTrigger-' | append: collection_tab_id
   assign collection_tab_panel_id = 'CollectionTabPanel-' | append: collection_tab_id
 
   assign collection_tab_has_products = false
   assign collection_tab_show_placeholders = false
-  assign collection_tab_items = blank
-  assign collection_tab_item_limit = 0
   if collection_tab_collection != blank and collection_tab_collection.products != blank
     assign collection_tab_has_products = true
-    assign collection_tab_items = collection_tab_collection.products
-    assign collection_tab_item_limit = collection_tab_max_products
   elsif collection_tab_collection == blank and request.design_mode
     assign collection_tab_show_placeholders = true
-    assign collection_tab_items = (1..4)
-    assign collection_tab_item_limit = 4
   endif
 
-  assign collection_tab_product_gap_count_mobile = collection_tab_columns_mobile | minus: 1
-  assign collection_tab_product_gap_total_mobile = collection_tab_gap_horizontal_mobile | times: collection_tab_product_gap_count_mobile
-
-  assign collection_tab_products_class = 'collection-tab__products'
-  if collection_tab_show_placeholders
-    assign collection_tab_products_class = collection_tab_products_class | append: ' collection-tab__products--placeholder'
-  endif
-  if block.settings.enable_swipe_mobile
-    assign collection_tab_products_class = collection_tab_products_class | append: ' collection-tab__products--swipe-mobile'
-  endif
+  assign collection_tab_legacy_product_card_present = false
+  for collection_tab_child_block in block.blocks
+    if collection_tab_child_block.type == 'product-card'
+      assign collection_tab_legacy_product_card_present = true
+      assign collection_tab_legacy_product_card_show_ranking = collection_tab_child_block.settings.show_ranking
+      assign collection_tab_legacy_product_card_color_type = collection_tab_child_block.settings.color_type
+      assign collection_tab_legacy_product_card_color_scheme = collection_tab_child_block.settings.color_scheme
+      assign collection_tab_legacy_product_card_editor_attributes = collection_tab_child_block.shopify_attributes
+      break
+    endif
+  endfor
 %}
-
-{% capture collection_tab_style %}
-  --collection-tab-columns-desktop: {{ collection_tab_columns_desktop }};
-  --collection-tab-columns-tablet: {{ collection_tab_columns_tablet }};
-  --collection-tab-columns-mobile: {{ collection_tab_columns_mobile }};
-  --collection-tab-gap-horizontal: {{ collection_tab_gap_horizontal }}px;
-  --collection-tab-gap-vertical: {{ collection_tab_gap_vertical }}px;
-  --collection-tab-gap-horizontal-mobile: {{ collection_tab_gap_horizontal_mobile }}px;
-  --collection-tab-gap-vertical-mobile: {{ collection_tab_gap_vertical_mobile }}px;
-  --collection-tab-item-width-mobile: calc((100% - {{ collection_tab_product_gap_total_mobile }}px) / {{ collection_tab_columns_mobile }});
-{% endcapture %}
-{% assign collection_tab_style = collection_tab_style | strip %}
 
 <div
   class="collection-tab"
   data-collection-tab
   data-tab-id="{{ collection_tab_id | escape }}"
-  {% if collection_tab_style != blank %}style="{{ collection_tab_style }}"{% endif %}
   {{ block.shopify_attributes }}
 >
   <button
     id="{{ collection_tab_trigger_id | escape }}"
-    class="tab-layout__tab collection-tab__trigger"
+    class="tab-layout__tab collection-tab__trigger link-underline"
     type="button"
     role="tab"
     aria-selected="false"
     aria-controls="{{ collection_tab_panel_id | escape }}"
     tabindex="-1"
     data-collection-tab-trigger
+    data-underline="active"
     data-tab-id="{{ collection_tab_id | escape }}"
+    {% if collection_tab_collection != blank %}data-collection-url="{{ collection_tab_collection.url | escape }}"{% endif %}
   >
     {{ collection_tab_label | escape }}
   </button>
@@ -124,29 +78,7 @@
     data-collection-tab-panel
     data-tab-id="{{ collection_tab_id | escape }}"
   >
-    {% if collection_tab_items != blank %}
-      <div class="{{ collection_tab_products_class }}" data-collection-tab-products>
-        {% for collection_tab_item in collection_tab_items limit: collection_tab_item_limit %}
-          {% liquid
-            assign collection_tab_card_product = collection_tab_item
-            assign collection_tab_card_placeholder = false
-            if collection_tab_show_placeholders
-              assign collection_tab_card_product = blank
-              assign collection_tab_card_placeholder = true
-            endif
-          %}
-          <div class="collection-tab__product">
-            {% content_for 'block', type: 'product-card', id: 'product-card', product: collection_tab_card_product, closest.product: collection_tab_card_product, placeholder: collection_tab_card_placeholder %}
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-
-    {% if collection_tab_collection != blank %}
-      <a class="collection-tab__view-all body-xs" href="{{ collection_tab_collection.url | escape }}">
-        {{ 'collection_tabs.view_all' | t | escape }}
-      </a>
-    {% endif %}
+    {% content_for 'block', type: '_product-collection-grid', id: 'collection-tab-grid', collection: collection_tab_collection, max_products: collection_tab_max_products, layout_type: section.settings.layout_type, columns_desktop: section.settings.columns_desktop, columns_mobile: section.settings.columns_mobile, enable_swipe_mobile: section.settings.enable_swipe_mobile, custom_columns: section.settings.custom_columns, custom_columns_desktop: section.settings.custom_columns_desktop, custom_columns_mobile: section.settings.custom_columns_mobile, gap_horizontal: section.settings.gap_horizontal, gap_vertical: section.settings.gap_vertical, gap_horizontal_mobile: section.settings.gap_horizontal_mobile, gap_vertical_mobile: section.settings.gap_vertical_mobile, show_placeholders: collection_tab_show_placeholders, placeholder_count: 4, grid_class: 'collection-tab__products', item_class: 'collection-tab__product', items_data_attributes: 'data-collection-tab-products', product_card_override_enabled: collection_tab_legacy_product_card_present, product_card_show_ranking_override: collection_tab_legacy_product_card_show_ranking, product_card_color_type_override: collection_tab_legacy_product_card_color_type, product_card_color_scheme_override: collection_tab_legacy_product_card_color_scheme, product_card_editor_attributes_override: collection_tab_legacy_product_card_editor_attributes %}
 
     {% if collection_tab_collection != blank and collection_tab_has_products == false %}
       <p class="collection-tab__empty body-text body-sm">{{ 'collection_tabs.empty_collection' | t }}</p>
@@ -159,171 +91,9 @@
     min-width: 0;
   }
 
-  .collection-tab__products {
-    display: grid;
-    grid-template-columns: repeat(var(--collection-tab-columns-desktop, 4), minmax(0, 1fr));
-    column-gap: var(--collection-tab-gap-horizontal, 10px);
-    row-gap: var(--collection-tab-gap-vertical, 10px);
-    min-width: 0;
-  }
-
-  .collection-tab__product {
-    display: flex;
-    flex-direction: column;
-    min-width: 0;
-  }
-
-  .collection-tab__product > .product-card {
-    --collection-tab-card-inset: calc(var(--layout-grid-gap, 24px) / 3);
-    --pcard-title-font-family: var(--font-body-family);
-    --pcard-title-size: var(--font-body-xs);
-    --pcard-title-size-mobile: var(--font-body-xs);
-    --pcard-content-spacing: 0.375rem;
-    --pcard-content-spacing-mobile: 0.375rem;
-    --pcard-content-gap: 0.25rem;
-    --pcard-content-gap-mobile: 0.25rem;
-    --pcard-product-info-gap: 0.125rem;
-    --pcard-product-info-gap-mobile: 0.125rem;
-    --price-font-size: var(--font-body-xs);
-    --price-line-height: 1.2;
-    display: flex;
-    flex-direction: column;
-    width: 100%;
-    height: 100%;
-  }
-
-  .collection-tab__product > .product-card .product-card__media {
-    aspect-ratio: 4 / 5;
-  }
-
-  .collection-tab__product > .product-card.product-card--ratio-natural .product-card__image-link,
-  .collection-tab__product > .product-card.product-card--ratio-natural .product-card__image,
-  .collection-tab__product > .product-card.product-card--ratio-natural .product-card__image > img {
-    height: 100%;
-  }
-
-  .collection-tab__product > .product-card .product-card__title {
-    display: -webkit-box;
-    overflow: hidden;
-    -webkit-box-orient: vertical;
-    -webkit-line-clamp: 1;
-    line-clamp: 1;
-    line-height: 1.25;
-    order: 1;
-  }
-
-  .collection-tab__product > .product-card .product-card__price {
-    order: 2;
-  }
-
-  .collection-tab__product > .product-card .product-card__vendor,
-  .collection-tab__product > .product-card .product-card__type {
-    font-family: var(--font-body-family);
-    font-size: var(--font-body-xs);
-    line-height: 1.2;
-    order: 3;
-  }
-
-  .collection-tab__product > .product-card .product-card__details {
-    display: flex;
-    flex-direction: column;
-  }
-
-  .collection-tab__product > .product-card .product-card__badges {
-    top: var(--collection-tab-card-inset);
-    left: var(--collection-tab-card-inset);
-  }
-
-  .collection-tab__product > .product-card .product-badge {
-    min-height: 0;
-    padding: 0.2rem 0.35rem;
-    font-size: var(--font-body-xs);
-  }
-
-  .collection-tab__product > .product-card .product-card__quick-add,
-  .collection-tab__product > .product-card .product-card__quick-view {
-    display: none;
-  }
-
-  .collection-tab__product > .product-card .product-card__content {
-    flex: 1;
-    min-width: 0;
-  }
-
-  .collection-tab__products--swipe-mobile {
-    overflow-x: auto;
-    overscroll-behavior-inline: contain;
-    scrollbar-color: var(--heading-color) color-mix(in srgb, var(--body-color) 16%, transparent);
-    scrollbar-width: thin;
-    scroll-snap-type: inline mandatory;
-  }
-
-  .collection-tab__products--swipe-mobile::-webkit-scrollbar {
-    height: 1px;
-  }
-
-  .collection-tab__products--swipe-mobile::-webkit-scrollbar-track {
-    background: color-mix(in srgb, var(--body-color) 16%, transparent);
-  }
-
-  .collection-tab__products--swipe-mobile::-webkit-scrollbar-thumb {
-    background: var(--heading-color);
-  }
-
-  .collection-tab__products--swipe-mobile .collection-tab__product {
-    scroll-snap-align: start;
-  }
-
   .collection-tab__empty {
     margin-block-start: 1rem;
     color: color-mix(in srgb, var(--body-color) 72%, transparent);
-  }
-
-  .collection-tab__view-all {
-    display: flex;
-    justify-content: center;
-    width: max-content;
-    margin: 1.25rem auto 0;
-    color: var(--body-color);
-    font-family: var(--font-body-family);
-    font-style: var(--font-body-style);
-    font-weight: var(--font-body-weight);
-    letter-spacing: 0.08em;
-    line-height: 1.2;
-    text-decoration: underline;
-    text-decoration-thickness: 1px;
-    text-underline-offset: 0.25rem;
-    text-transform: uppercase;
-  }
-
-  .collection-tab__view-all:hover {
-    color: var(--heading-color);
-  }
-
-  @media (min-width: 768px) and (max-width: 1149.98px) {
-    .collection-tab__products {
-      grid-template-columns: repeat(var(--collection-tab-columns-tablet, 3), minmax(0, 1fr));
-    }
-  }
-
-  @media (max-width: 767.98px) {
-    .collection-tab__products {
-      grid-template-columns: repeat(var(--collection-tab-columns-mobile, 2), minmax(0, 1fr));
-      column-gap: var(--collection-tab-gap-horizontal-mobile, 4px);
-      row-gap: var(--collection-tab-gap-vertical-mobile, 4px);
-    }
-
-    .collection-tab__products--swipe-mobile {
-      grid-auto-flow: column;
-      grid-auto-columns: var(--collection-tab-item-width-mobile, 100%);
-      grid-template-columns: none;
-    }
-  }
-
-  @media (prefers-reduced-motion: reduce) {
-    .collection-tab__products--swipe-mobile {
-      scroll-snap-type: none;
-    }
   }
 {% endstylesheet %}
 
@@ -332,7 +102,7 @@
   "name": "t:general.collection_tab",
   "tag": null,
   "blocks": [
-    { "type": "product-card" }
+    { "type": "_product-collection-grid" }
   ],
   "settings": [
     {
@@ -353,88 +123,6 @@
       "max": 24,
       "step": 1,
       "default": 4
-    },
-    {
-      "type": "header",
-      "content": "t:general.layout"
-    },
-    {
-      "type": "range",
-      "id": "columns_desktop",
-      "label": "t:labels.desktop_columns",
-      "min": 2,
-      "max": 6,
-      "step": 1,
-      "default": 4
-    },
-    {
-      "type": "range",
-      "id": "columns_tablet",
-      "label": "t:labels.tablet_columns",
-      "min": 2,
-      "max": 4,
-      "step": 1,
-      "default": 3
-    },
-    {
-      "type": "select",
-      "id": "columns_mobile",
-      "label": "t:labels.mobile_columns",
-      "options": [
-        { "value": "1", "label": "1" },
-        { "value": "2", "label": "2" }
-      ],
-      "default": "2"
-    },
-    {
-      "type": "checkbox",
-      "id": "enable_swipe_mobile",
-      "label": "t:labels.enable_swipe_mobile",
-      "default": true
-    },
-    {
-      "type": "header",
-      "content": "t:general.gap"
-    },
-    {
-      "type": "range",
-      "id": "gap_horizontal",
-      "label": "t:labels.horizontal_gap",
-      "min": 0,
-      "max": 40,
-      "step": 1,
-      "unit": "px",
-      "default": 10
-    },
-    {
-      "type": "range",
-      "id": "gap_vertical",
-      "label": "t:labels.vertical_gap",
-      "min": 0,
-      "max": 40,
-      "step": 1,
-      "unit": "px",
-      "default": 10
-    },
-    {
-      "type": "range",
-      "id": "gap_horizontal_mobile",
-      "label": "t:labels.horizontal_gap_mobile",
-      "min": 0,
-      "max": 40,
-      "step": 1,
-      "unit": "px",
-      "default": 4
-    },
-    {
-      "type": "range",
-      "id": "gap_vertical_mobile",
-      "label": "t:labels.vertical_gap_mobile",
-      "min": 0,
-      "max": 40,
-      "step": 1,
-      "unit": "px",
-      "default": 4
     }
   ],
   "presets": [
@@ -444,27 +132,25 @@
       "settings": {
         "label": "",
         "collection": "",
-        "max_products": 4,
-        "columns_desktop": 4,
-        "columns_tablet": 3,
-        "columns_mobile": "2",
-        "enable_swipe_mobile": true,
-        "gap_horizontal": 10,
-        "gap_vertical": 10,
-        "gap_horizontal_mobile": 4,
-        "gap_vertical_mobile": 4
+        "max_products": 4
       },
       "blocks": [
         {
-          "type": "product-card",
-          "id": "product-card",
+          "type": "_product-collection-grid",
+          "id": "collection-tab-grid",
           "static": true,
-          "settings": {
-            "show_ranking": false,
-            "show_vendor": true,
-            "color_type": "inherit",
-            "color_scheme": "scheme-1"
-          }
+          "blocks": [
+            {
+              "type": "product-card",
+              "id": "product-card",
+              "static": true,
+              "settings": {
+                "show_ranking": false,
+                "color_type": "inherit",
+                "color_scheme": "scheme-1"
+              }
+            }
+          ]
         }
       ]
     }
