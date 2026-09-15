@@ -8,6 +8,9 @@
   assign cart_drawer_title_size = section.settings.title_size | default: 'md'
   assign cart_drawer_title_limit = section.settings.title_line_limit | default: 'none'
   assign cart_drawer_show_count = section.settings.show_cart_count
+  assign cart_drawer_share_label = 'cart_drawer.share_cart' | t
+  assign cart_drawer_share_copied_label = 'cart_drawer.cart_link_copied' | t
+  assign cart_drawer_share_error_label = 'cart_drawer.share_error' | t
   assign cart_drawer_threshold = section.settings.free_shipping_threshold | default: 100 | times: 100
   assign cart_drawer_shipping_total = cart.items_subtotal_price | default: cart.total_price
   assign cart_drawer_remaining = cart_drawer_threshold | minus: cart_drawer_shipping_total
@@ -98,7 +101,6 @@
   data-cart-drawer
   data-section-id="{{ section.id }}"
   style="--cart-drawer-width: {{ section.settings.desktop_width | default: 550 }}px; --cart-drawer-padding-desktop: {{ cart_drawer_padding_desktop }}; --cart-drawer-padding-mobile: {{ cart_drawer_padding_mobile }}; --cart-drawer-shipping-progress-color: {{ section.settings.progress_bar_color | default: 'var(--sale-price-color)' }}; --cart-drawer-shipping-success-color: {{ section.settings.free_shipping_success_color | default: '#5d874f' }}; --cart-drawer-custom-font-size: {{ section.settings.custom_title_size | default: 24 }}px;"
-  data-cart-url="{{ routes.cart_url }}"
   data-cart-add-url="{{ routes.cart_add_url }}"
   data-cart-change-url="{{ routes.cart_change_url }}"
   data-cart-update-url="{{ routes.cart_update_url }}"
@@ -109,15 +111,12 @@
   data-cart-note-error="{{ 'cart_drawer.note_error' | t | escape }}"
   data-cart-discount-applied="{{ 'cart_drawer.discount_applied' | t | escape }}"
   data-cart-discount-error="{{ 'cart_drawer.discount_error' | t | escape }}"
-  data-cart-share-copied="{{ 'cart_drawer.cart_link_copied' | t | escape }}"
-  data-cart-share-error="{{ 'cart_drawer.share_error' | t | escape }}"
   data-cart-shipping-calculating="{{ 'cart_drawer.shipping_calculating' | t | escape }}"
   data-cart-shipping-unavailable="{{ 'cart_drawer.shipping_unavailable' | t | escape }}"
   data-cart-shipping-no-rates="{{ 'cart_drawer.shipping_no_rates' | t | escape }}"
   data-recommendations-enabled="{{ section.settings.show_recommendations }}"
   data-recommendations-limit="{{ section.settings.recommendations_limit | default: 4 }}"
   data-show-cart-count="{{ cart_drawer_show_count }}"
-  data-enable-share-cart="{{ section.settings.enable_share_cart }}"
   data-enable-back-in-stock-alert="{{ section.settings.enable_back_in_stock_alert }}"
   data-shipping-threshold="{{ cart_drawer_threshold }}"
   data-show-amount-range="{{ section.settings.show_amount_range }}"
@@ -153,9 +152,14 @@
         </h2>
         <div class="cart-drawer__header-actions">
           {% if section.settings.enable_share_cart %}
-            <button class="icon-button cart-drawer__share" type="button" aria-label="{{ 'cart_drawer.share_cart' | t | escape }}" data-cart-share>
-              {% render 'icon', icon: 'share', bare: true %}
-            </button>
+            {% render 'share-button',
+              label: cart_drawer_share_label,
+              url: routes.cart_url,
+              title: cart_drawer_title,
+              copied_label: cart_drawer_share_copied_label,
+              error_label: cart_drawer_share_error_label,
+              class: 'icon-button cart-drawer__share'
+            %}
           {% endif %}
           <button class="overlay-close cart-drawer__close" type="button" aria-label="{{ 'cart.close' | t | escape }}" data-cart-drawer-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button>
         </div>
@@ -189,7 +193,7 @@
               {{ cart_drawer_promotion_message | escape }}
             </span>
             {% if section.settings.promotion_code != blank %}
-              <button class="cart-drawer__promotion-action body-text body-sm" type="button" data-cart-drawer-promotion-apply>{{ section.settings.promotion_action_label | default: 'Use coupon' | escape }}</button>
+              <button class="cart-drawer__promotion-action body-text body-sm link-underline" type="button" data-cart-drawer-promotion-apply>{{ section.settings.promotion_action_label | default: 'Use coupon' | escape }}</button>
             {% endif %}
           </div>
         {% endif %}
@@ -533,8 +537,6 @@
     border: 0;
     background: transparent;
     color: inherit;
-    text-decoration: underline;
-    text-underline-offset: 0.2em;
     cursor: pointer;
   }
 
@@ -652,7 +654,6 @@
     display: inline-block;
     padding: 0;
     border: 0;
-    border-block-end: 1px solid currentColor;
     background: transparent;
     color: inherit;
     font: inherit;
@@ -709,7 +710,7 @@
   .cart-drawer__discounts li { display: flex; min-height: 2.75rem; align-items: center; justify-content: space-between; gap: 1rem; padding: 0.65rem 0.8rem; background: color-mix(in srgb, var(--body-color) 6%, var(--background-color)); }
   .cart-drawer__discount-code { display: inline-flex; min-width: 0; align-items: center; gap: 0.55rem; color: var(--heading-color); }
   .cart-drawer__discount-code svg { width: var(--icon-size-medium); height: var(--icon-size-medium); flex: 0 0 auto; }
-  .cart-drawer__discount-remove { flex: 0 0 auto; padding: 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--heading-color); cursor: pointer; font: inherit; }
+  .cart-drawer__discount-remove { flex: 0 0 auto; padding: 0; border: 0; background: transparent; color: var(--heading-color); cursor: pointer; font: inherit; }
 
   .cart-drawer__discount .cart-drawer__text-button {
     align-self: center;
@@ -980,7 +981,7 @@
   .cart-drawer__accordion textarea { min-height: 7rem; resize: vertical; }
   .cart-drawer__shipping-estimator { display: grid; gap: 0.75rem; }
   .cart-drawer__shipping-estimator label { display: grid; gap: 0.35rem; color: var(--body-color); }
-  .cart-drawer__text-button { width: fit-content; padding: 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: inherit; cursor: pointer; font: inherit; }
+  .cart-drawer__text-button { width: fit-content; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; font: inherit; }
 
   .cart-drawer__summary { display: flex; align-items: baseline; justify-content: space-between; gap: 1rem; padding-top: 1.5rem; color: var(--heading-color); }
   .cart-drawer__tax-note { margin: 0.5rem 0 1.25rem; color: color-mix(in srgb, var(--body-color) 68%, transparent); }
@@ -1118,7 +1119,7 @@
 
   .cart-drawer__promotion-copy { display: inline-flex; min-width: 0; flex: 1 1 auto; align-items: center; gap: 0.7rem; color: var(--body-color); }
   .cart-drawer__promotion-copy svg { width: var(--icon-size-medium); height: var(--icon-size-medium); flex: 0 0 auto; }
-  .cart-drawer__promotion-action { flex: 0 0 auto; padding: 0; border: 0; border-bottom: 1px solid currentColor; background: transparent; color: var(--heading-color); cursor: pointer; text-underline-offset: 0.25rem; }
+  .cart-drawer__promotion-action { flex: 0 0 auto; padding: 0; border: 0; background: transparent; color: var(--heading-color); cursor: pointer; }
 
   .cart-drawer__footer {
     display: grid;

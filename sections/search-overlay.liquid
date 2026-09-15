@@ -142,13 +142,9 @@
   .search-overlay__eyebrow, .search-overlay__tab { margin: 0; }
   .search-overlay__eyebrow { padding-bottom: 1rem; border-bottom: 1px solid var(--border-color); }
   .search-overlay__suggestion-list, .search-overlay__page-list { display: grid; gap: 0.85rem; margin: 1.5rem 0 0; padding: 0; list-style: none; }
-  .search-overlay__suggestion-list a, .search-overlay__page-list a { color: inherit; text-decoration: none; }
-  .search-overlay__page-list a { position: relative; display: inline-block; }
-  .search-overlay__page-list a::after { position: absolute; inset-block-end: -0.2em; inset-inline-start: 0; width: 100%; height: 1px; background: currentColor; content: ''; transform: scaleX(0); transform-origin: left center; transition: transform var(--motion-duration-fast) var(--motion-ease-standard); }
-  .search-overlay__page-list a:is(:hover, :focus-visible)::after { transform: scaleX(1); }
-  .search-overlay__suggestion-list button { position: relative; display: inline-block; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
-  .search-overlay__suggestion-list button::after { position: absolute; inset-block-end: -0.2em; inset-inline-start: 0; width: 100%; height: 1px; background: currentColor; content: ''; transform: scaleX(0); transform-origin: left center; transition: transform var(--motion-duration-fast) var(--motion-ease-standard); }
-  .search-overlay__suggestion-list button:is(:hover, :focus-visible)::after { transform: scaleX(1); }
+  .search-overlay__suggestion-list a, .search-overlay__page-list a { color: inherit; }
+  .search-overlay__page-list a { display: inline-block; }
+  .search-overlay__suggestion-list button { display: inline-block; padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-align: start; cursor: pointer; }
   .search-overlay__content { min-width: 0; }
   .search-overlay__tabs { display: flex; gap: 2.5rem; border-bottom: 1px solid var(--border-color); }
   .search-overlay__tab { position: relative; padding: 0 0 1rem; border: 0; background: transparent; color: color-mix(in srgb, currentColor 55%, transparent); cursor: pointer; }
@@ -319,7 +315,8 @@
   const viewAllStyle = (overlay) => ['primary', 'secondary', 'tertiary'].includes(overlay.dataset.viewAllStyle) ? overlay.dataset.viewAllStyle : 'primary';
   const viewAllMarkup = (overlay, query, label, shouldShow) => {
     if (!shouldShow) return '';
-    return `<div class="search-overlay__view-all"><a class="btn btn--${viewAllStyle(overlay)}" href="${escapeHtml(overlay.dataset.searchUrl)}?q=${encodeURIComponent(query)}">${escapeHtml(label)}</a></div>`;
+    const style = viewAllStyle(overlay);
+    return `<div class="search-overlay__view-all"><a class="btn btn--${style}${style === 'tertiary' ? ' link-underline' : ''}"${style === 'tertiary' ? ' data-underline="persistent" data-underline-target="text"' : ''} href="${escapeHtml(overlay.dataset.searchUrl)}?q=${encodeURIComponent(query)}"><span class="btn__text">${escapeHtml(label)}</span></a></div>`;
   };
 
   const render = (resourceResults, query, targetOverlay = state.overlay, targetResults = state.results, targetInput = state.input) => {
@@ -351,7 +348,7 @@
     const viewAllPanelIndex = productPanelIndex >= 0 ? productPanelIndex : 0;
     if (viewAll) panels[viewAllPanelIndex][2] += viewAll;
     const hasSuggestions = queries.length > 0;
-    const suggestions = hasSuggestions ? `<aside class="search-overlay__suggestions"><p class="search-overlay__eyebrow eyebrow-text">${escapeHtml(labels.suggestionsLabel)}</p><ul class="search-overlay__suggestion-list body-text body-sm">${queries.map((item) => `<li><button type="button" data-search-suggestion="${escapeHtml(item.text || item.styled_text || '')}">${escapeHtml(item.text || item.styled_text || '')}</button></li>`).join('')}</ul></aside>` : '';
+    const suggestions = hasSuggestions ? `<aside class="search-overlay__suggestions"><p class="search-overlay__eyebrow eyebrow-text">${escapeHtml(labels.suggestionsLabel)}</p><ul class="search-overlay__suggestion-list body-text body-sm">${queries.map((item) => `<li><button class="link-underline" type="button" data-search-suggestion="${escapeHtml(item.text || item.styled_text || '')}">${escapeHtml(item.text || item.styled_text || '')}</button></li>`).join('')}</ul></aside>` : '';
     targetResults.classList.toggle('search-overlay__results--has-suggestions', hasSuggestions);
     targetResults.innerHTML = `${suggestions}<div class="search-overlay__content"><div class="search-overlay__tabs" role="tablist">${panels.map(([key, label], index) => `<button class="search-overlay__tab eyebrow-text" type="button" role="tab" aria-selected="${index === 0}" data-search-tab="${key}">${escapeHtml(label)}</button>`).join('')}</div>${panels.map(([key, , content], index) => `<div class="search-overlay__result-panel" role="tabpanel" data-search-panel="${key}"${index ? ' hidden' : ''}>${content}</div>`).join('')}</div>`;
     targetResults.hidden = false;
