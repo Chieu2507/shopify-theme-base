@@ -6,6 +6,7 @@ const selector = '[data-slideshow]';
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const isVisible = (element) => element.getClientRects().length > 0;
 const slideSelector = '[data-slideshow-slide]';
+const controlSchemeEvents = ['activeIndexChange', 'slideChangeTransitionEnd', 'update', 'resize'];
 
 const createSlideClone = (slide, sourceIndex, position) => {
   const clone = slide.cloneNode(true);
@@ -178,6 +179,24 @@ const bindNavigation = (root, swiper) => {
 
 const carouselId = (swiper) => swiper.el.id || '';
 
+const updateControlScheme = (root, swiper) => {
+  if (swiper.destroyed) return;
+
+  const activeSlide = swiper.slides?.[swiper.activeIndex] || root.querySelector('.swiper-wrapper > .swiper-slide-active');
+  const scheme = activeSlide?.dataset.slideshowColorScheme?.trim() || '';
+  root.querySelectorAll('[data-slideshow-control-scope]').forEach((control) => {
+    const previousScheme = control.dataset.slideshowControlScheme;
+    if (previousScheme && previousScheme !== scheme) control.classList.remove(previousScheme);
+
+    if (scheme) {
+      control.classList.add(scheme);
+      control.dataset.slideshowControlScheme = scheme;
+    } else {
+      delete control.dataset.slideshowControlScheme;
+    }
+  });
+};
+
 const init = (root) => {
   if (!(root instanceof HTMLElement) || states.has(root)) return;
   const carousel = root.querySelector('[data-slideshow-swiper]');
@@ -217,6 +236,9 @@ const init = (root) => {
     swiper.on('slideChangeTransitionEnd', twoSlideLoop.restore);
     swiper.on('slideChangeTransitionStart', twoSlideLoop.clearReset);
   }
+  const syncControlScheme = () => updateControlScheme(root, swiper);
+  controlSchemeEvents.forEach((eventName) => swiper.on(eventName, syncControlScheme));
+  syncControlScheme();
   const navigationController = bindNavigation(root, swiper);
   const interval = autoplay ? startAutoplay(root, swiper) : null;
   let frame = 0;
@@ -230,7 +252,7 @@ const init = (root) => {
   const updateLockedState = () => root.classList.toggle('slideshow--single-slide', Boolean(swiper.isLocked));
   swiper.on('lock unlock update resize', updateLockedState);
   updateLockedState();
-  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, twoSlideLoop, twoSlidePagination });
+  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, twoSlideLoop, twoSlidePagination, syncControlScheme });
 };
 
 const destroy = (root) => {
@@ -246,6 +268,7 @@ const destroy = (root) => {
     state.twoSlidePagination?.destroy();
     state.twoSlideLoop.destroy();
   }
+  controlSchemeEvents.forEach((eventName) => state.swiper.off(eventName, state.syncControlScheme));
   state.swiper.off('lock unlock update resize', state.updateLockedState);
   destroySwiperCarousel(state.swiper);
   states.delete(root);
