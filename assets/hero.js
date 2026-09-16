@@ -27,7 +27,10 @@
         const progress = Math.max(-1, Math.min(1, (viewportCenter - (bounds.top + (bounds.height / 2))) / Math.max(bounds.height, 1)));
         let transform = 'translate3d(0, 0, 0) scale(1.08)';
         if (effect === 'fixed') {
-          const fixedOffset = Math.max(0, Math.min(-bounds.top, Math.max(0, bounds.height - window.innerHeight)));
+          // Keep the media aligned with the viewport while its hero scrolls past it.
+          // Limiting this to `surface height - viewport height` made the value zero
+          // for normal (viewport-height-or-shorter) heroes, so Fixed appeared inert.
+          const fixedOffset = Math.max(0, -bounds.top);
           transform = `translate3d(0, ${fixedOffset.toFixed(2)}px, 0)`;
         }
         if (effect === 'vertical') transform = `translate3d(0, ${(progress * 80).toFixed(2)}px, 0) scale(1.08)`;
