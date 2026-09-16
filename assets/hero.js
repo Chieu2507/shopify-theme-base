@@ -26,8 +26,16 @@
         const viewportCenter = window.innerHeight / 2;
         const progress = Math.max(-1, Math.min(1, (viewportCenter - (bounds.top + (bounds.height / 2))) / Math.max(bounds.height, 1)));
         let transform = 'translate3d(0, 0, 0) scale(1.08)';
-        if (effect === 'vertical') transform = `translate3d(0, ${(progress * 80).toFixed(2)}px, 0) scale(1.08)`;
-        if (effect === 'horizontal') transform = `translate3d(${(progress * 80).toFixed(2)}px, 0) scale(1.08)`;
+        if (effect === 'vertical') {
+          const distance = Math.min(80, Math.max(32, bounds.height * 0.1));
+          const scale = 1 + ((distance * 2) / Math.max(bounds.height, 1));
+          transform = `translate3d(0, ${(progress * distance).toFixed(2)}px, 0) scale(${scale.toFixed(3)})`;
+        }
+        if (effect === 'horizontal') {
+          const distance = Math.min(80, Math.max(32, bounds.width * 0.1));
+          const scale = 1 + ((distance * 2) / Math.max(bounds.width, 1));
+          transform = `translate3d(${(progress * distance).toFixed(2)}px, 0, 0) scale(${scale.toFixed(3)})`;
+        }
         if (effect === 'zoom') transform = `translate3d(0, 0, 0) scale(${(1.04 + (Math.abs(progress) * 0.12)).toFixed(3)})`;
         media.style.transform = transform;
       }
