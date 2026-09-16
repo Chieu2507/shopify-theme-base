@@ -198,7 +198,12 @@ document.addEventListener('shopify:block:select', (event) => {
   const root = event.target.closest?.(selector);
   const state = root && states.get(root);
   const slide = event.target.closest?.('[data-slideshow-slide]');
-  if (state && slide) state.swiper.slideTo([...state.carousel.querySelectorAll('[data-slideshow-slide]')].indexOf(slide));
+  // The two-slide page fallback adds aria-hidden visual peeks outside the
+  // Swiper wrapper. Keep editor selection mapped to the logical slide list,
+  // not to those decorative clones.
+  const slides = state?.carousel.querySelectorAll('.swiper-wrapper > [data-slideshow-slide]');
+  const index = slides ? [...slides].indexOf(slide) : -1;
+  if (state && slide && index >= 0) state.swiper.slideTo(index);
 });
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => initWithin(), { once: true });
