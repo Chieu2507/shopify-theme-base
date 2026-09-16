@@ -76,8 +76,8 @@
   {% if section.settings.overlay != blank %}<div class="hero__overlay" aria-hidden="true"></div>{% endif %}
   {% if section.settings.link != blank %}<a class="hero__link" href="{{ section.settings.link }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="{{ 'general.hero' | t | escape }}"></a>{% endif %}
 
-  <div class="container {{ hero_container_class }} hero__container">
-    <div class="hero__content hero__content--desktop-{{ hero_desktop_position }} hero__content--mobile-{{ hero_mobile_position }}{% if section.settings.content_full_width %} hero__content--full-width{% endif %}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content">
+  <div class="container {{ hero_container_class }} hero__container hero__container--desktop-{{ hero_desktop_position }} hero__container--mobile-{{ hero_mobile_position }}">
+    <div class="hero__content{% if section.settings.content_full_width %} hero__content--full-width{% endif %}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content">
       {% content_for 'blocks' %}
     </div>
   </div>
@@ -137,7 +137,9 @@
   .hero__container {
     position: relative;
     z-index: 3;
-    display: grid;
+    display: flex;
+    align-items: var(--hero-content-y, center);
+    justify-content: var(--hero-content-x, center);
     min-height: inherit;
   }
 
@@ -165,7 +167,6 @@
   .hero__content {
     gap: var(--hero-content-gap, 1.2rem);
     width: min(100%, 48rem);
-    min-height: inherit;
     padding: clamp(4rem, 8vw, 9rem);
     color: var(--body-color);
   }
@@ -175,20 +176,19 @@
     max-width: none;
   }
 
-  .hero__content--desktop-top_left { --flex-align: start; place-self: start; }
-  .hero__content--desktop-top_center { --flex-align: center; place-self: start center; }
-  .hero__content--desktop-top_right { --flex-align: end; place-self: start end; }
-  .hero__content--desktop-center_left { --flex-align: start; place-self: center start; }
-  .hero__content--desktop-center_center { --flex-align: center; place-self: center; }
-  .hero__content--desktop-center_right { --flex-align: end; place-self: center end; }
-  .hero__content--desktop-bottom_left { --flex-align: start; place-self: end start; }
-  .hero__content--desktop-bottom_center { --flex-align: center; place-self: end center; }
-  .hero__content--desktop-bottom_right { --flex-align: end; place-self: end; }
+  .hero__container--desktop-top_left { --hero-content-y: start; --hero-content-x: start; --flex-align: start; }
+  .hero__container--desktop-top_center { --hero-content-y: start; --hero-content-x: center; --flex-align: center; }
+  .hero__container--desktop-top_right { --hero-content-y: start; --hero-content-x: end; --flex-align: end; }
+  .hero__container--desktop-center_left { --hero-content-y: center; --hero-content-x: start; --flex-align: start; }
+  .hero__container--desktop-center_center { --hero-content-y: center; --hero-content-x: center; --flex-align: center; }
+  .hero__container--desktop-center_right { --hero-content-y: center; --hero-content-x: end; --flex-align: end; }
+  .hero__container--desktop-bottom_left { --hero-content-y: end; --hero-content-x: start; --flex-align: start; }
+  .hero__container--desktop-bottom_center { --hero-content-y: end; --hero-content-x: center; --flex-align: center; }
+  .hero__container--desktop-bottom_right { --hero-content-y: end; --hero-content-x: end; --flex-align: end; }
 
   .hero__content--sticky {
     position: sticky;
     top: calc(var(--header-height, 0px) + 2rem);
-    align-self: start;
   }
 
   .hero--split {
@@ -230,19 +230,18 @@
 
     .hero__content {
       gap: var(--hero-content-gap-mobile, var(--hero-content-gap, 1.2rem));
-      min-height: var(--hero-min-height, auto);
       padding: 4rem;
     }
 
-    .hero__content--mobile-top_left { --flex-align-mobile: start; place-self: start; }
-    .hero__content--mobile-top_center { --flex-align-mobile: center; place-self: start center; }
-    .hero__content--mobile-top_right { --flex-align-mobile: end; place-self: start end; }
-    .hero__content--mobile-center_left { --flex-align-mobile: start; place-self: center start; }
-    .hero__content--mobile-center_center { --flex-align-mobile: center; place-self: center; }
-    .hero__content--mobile-center_right { --flex-align-mobile: end; place-self: center end; }
-    .hero__content--mobile-bottom_left { --flex-align-mobile: start; place-self: end start; }
-    .hero__content--mobile-bottom_center { --flex-align-mobile: center; place-self: end center; }
-    .hero__content--mobile-bottom_right { --flex-align-mobile: end; place-self: end; }
+    .hero__container--mobile-top_left { --hero-content-y: start; --hero-content-x: start; --flex-align-mobile: start; }
+    .hero__container--mobile-top_center { --hero-content-y: start; --hero-content-x: center; --flex-align-mobile: center; }
+    .hero__container--mobile-top_right { --hero-content-y: start; --hero-content-x: end; --flex-align-mobile: end; }
+    .hero__container--mobile-center_left { --hero-content-y: center; --hero-content-x: start; --flex-align-mobile: start; }
+    .hero__container--mobile-center_center { --hero-content-y: center; --hero-content-x: center; --flex-align-mobile: center; }
+    .hero__container--mobile-center_right { --hero-content-y: center; --hero-content-x: end; --flex-align-mobile: end; }
+    .hero__container--mobile-bottom_left { --hero-content-y: end; --hero-content-x: start; --flex-align-mobile: start; }
+    .hero__container--mobile-bottom_center { --hero-content-y: end; --hero-content-x: center; --flex-align-mobile: center; }
+    .hero__container--mobile-bottom_right { --hero-content-y: end; --hero-content-x: end; --flex-align-mobile: end; }
 
     .hero__content--sticky {
       position: relative;
@@ -326,7 +325,7 @@
     {
       "type": "select",
       "id": "layout",
-      "label": "t:labels.layout",
+      "label": "t:general.layout",
       "options": [
         { "value": "classic", "label": "t:options.hero_layout.classic" },
         { "value": "split", "label": "t:options.hero_layout.split" }
@@ -386,7 +385,7 @@
       "type": "color",
       "id": "overlay",
       "label": "t:labels.overlay",
-      "default": "#0000001a"
+      "default": "#0000001A"
     },
     {
       "type": "select",
