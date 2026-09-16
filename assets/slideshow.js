@@ -7,59 +7,57 @@ const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce
 const isVisible = (element) => element.getClientRects().length > 0;
 const slideSelector = '[data-slideshow-slide]';
 
-const createPeekSlide = (slide, side) => {
-  const peek = slide.cloneNode(true);
-  peek.removeAttribute('id');
-  peek.setAttribute('aria-hidden', 'true');
-  peek.setAttribute('data-slideshow-clone', side);
-  peek.classList.remove('swiper-slide-active', 'swiper-slide-next', 'swiper-slide-prev', 'swiper-slide-visible', 'swiper-slide-fully-visible');
-  peek.classList.add('slideshow__peek', `slideshow__peek--${side}`);
-  peek.querySelectorAll('[id], [data-shopify-editor-block], [data-shopify-editor-block-id], [data-shopify-editor-block-type]').forEach((element) => {
+const createSlideClone = (slide, sourceIndex, position) => {
+  const clone = slide.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.removeAttribute('data-slideshow-slide');
+  clone.setAttribute('aria-hidden', 'true');
+  clone.setAttribute('data-slideshow-clone', position);
+  clone.setAttribute('data-slideshow-clone-source', String(sourceIndex));
+  clone.classList.remove('swiper-slide-active', 'swiper-slide-next', 'swiper-slide-prev', 'swiper-slide-visible', 'swiper-slide-fully-visible');
+  clone.classList.add('swiper-slide-clone');
+  clone.querySelectorAll('[id], [data-shopify-editor-block], [data-shopify-editor-block-id], [data-shopify-editor-block-type]').forEach((element) => {
     element.removeAttribute('id');
     element.removeAttribute('data-shopify-editor-block');
     element.removeAttribute('data-shopify-editor-block-id');
     element.removeAttribute('data-shopify-editor-block-type');
   });
-  peek.querySelectorAll('a, button, input, select, textarea, summary, video').forEach((element) => {
+  clone.querySelectorAll('a, button, input, select, textarea, summary, video').forEach((element) => {
     element.setAttribute('tabindex', '-1');
     element.setAttribute('aria-hidden', 'true');
   });
-  if ('inert' in peek) peek.inert = true;
-  return peek;
+  if ('inert' in clone) clone.inert = true;
+  return clone;
 };
 
-const createTwoSlidePeeks = (carousel, swiper) => {
-  if (swiper.slides.length !== 2) return null;
-  const slides = [...swiper.slides];
-  const peeks = [];
+const createTwoSlideLoop = (carousel) => {
+  const wrapper = carousel.querySelector('.swiper-wrapper');
+  const slides = wrapper ? [...wrapper.querySelectorAll(`:scope > ${slideSelector}`)] : [];
+  if (slides.length !== 2) return null;
 
-  // A centered Swiper with only two logical slides has no spare slide to keep
-  // both visual edges filled. Build stable, decorative copies up front so a
-  // swipe never removes/reinserts a node during paint (the source of the
-  // visible flash). Each copy is aria-hidden/inert; only the adjacent source
-  // for each side is faded in after a transition completes.
-  slides.forEach((slide) => {
-    ['previous', 'next'].forEach((side) => {
-      const peek = createPeekSlide(slide, side);
-      peek.dataset.sourceIndex = String(slides.indexOf(slide));
-      carousel.append(peek);
-      peeks.push(peek);
-    });
-  });
+  // Swiper 12's loop rearranges original slides; it does not make duplicate
+  // nodes. A centered, two-slide carousel needs one physical slide on either
+  // side, so add inert clones to the Swiper track itself. The active index is
+  // reset to the matching original after a clone is reached.
+  const previousClone = createSlideClone(slides[1], 1, 'previous');
+  const nextClone = createSlideClone(slides[0], 0, 'next');
+  wrapper.prepend(previousClone);
+  wrapper.append(nextClone);
 
-  const update = () => {
-    if (swiper.destroyed) return;
-    const activeIndex = swiper.realIndex === 1 ? 1 : 0;
-    const neighbourIndex = activeIndex === 1 ? 0 : 1;
-    peeks.forEach((peek) => {
-      peek.classList.toggle('slideshow__peek--active', peek.dataset.sourceIndex === String(neighbourIndex));
-    });
+  return {
+    initialSlide: 1,
+    logicalIndex: (activeIndex) => (activeIndex === 0 || activeIndex === 2 ? 1 : 0),
+    originalIndex: (logicalIndex) => logicalIndex + 1,
+    restore(swiper) {
+      if (swiper.destroyed) return;
+      if (swiper.activeIndex === 0) swiper.slideTo(2, 0, false);
+      if (swiper.activeIndex === 3) swiper.slideTo(1, 0, false);
+    },
+    destroy() {
+      previousClone.remove();
+      nextClone.remove();
+    },
   };
-  const destroy = () => {
-    peeks.forEach((peek) => peek.remove());
-  };
-  update();
-  return { update, destroy };
 };
 
 const updateParallax = (root) => {
@@ -89,6 +87,46 @@ const paginationOptions = (root) => {
       renderFraction: type === 'numbers'
         ? (currentClass, totalClass) => `<span class="${currentClass}"></span><span class="slideshow__pagination-separator" aria-hidden="true"> / </span><span class="${totalClass}"></span>`
         : undefined,
+    },
+  };
+};
+
+const createTwoSlidePagination = (root, swiper, loop) => {
+  const element = root.querySelector('[data-slideshow-pagination]');
+  if (!element || !loop) return null;
+  const type = element.dataset.paginationType;
+  const controller = new AbortController();
+  const update = () => {
+    const current = loop.logicalIndex(swiper.activeIndex);
+    if (type === 'numbers') {
+      element.innerHTML = `<span class="swiper-pagination-current">${current + 1}</span><span class="slideshow__pagination-separator" aria-hidden="true"> / </span><span class="swiper-pagination-total">2</span>`;
+    } else if (type === 'progress_bar') {
+      element.innerHTML = '<span class="swiper-pagination-progressbar-fill"></span>';
+      const fill = element.querySelector('.swiper-pagination-progressbar-fill');
+      if (fill) fill.style.transform = `translate3d(0,0,0) scaleX(${current + 1 === 2 ? 1 : 0.5})`;
+    } else {
+      element.querySelectorAll('[data-slideshow-pagination-index]').forEach((bullet) => {
+        bullet.classList.toggle('swiper-pagination-bullet-active', Number(bullet.dataset.slideshowPaginationIndex) === current);
+      });
+    }
+  };
+
+  if (type === 'bullets') {
+    element.innerHTML = [0, 1].map((index) => `<button class="swiper-pagination-bullet" type="button" data-slideshow-pagination-index="${index}" aria-label="Go to slide ${index + 1}"></button>`).join('');
+    element.addEventListener('click', (event) => {
+      const bullet = event.target.closest('[data-slideshow-pagination-index]');
+      if (!bullet) return;
+      event.preventDefault();
+      swiper.slideTo(loop.originalIndex(Number(bullet.dataset.slideshowPaginationIndex)));
+    }, { signal: controller.signal });
+  }
+  swiper.on('activeIndexChange', update);
+  update();
+  return {
+    destroy() {
+      controller.abort();
+      swiper.off('activeIndexChange', update);
+      element.replaceChildren();
     },
   };
 };
@@ -138,28 +176,32 @@ const init = (root) => {
   const pageWidth = root.classList.contains('slideshow--width-page');
   const slideCount = carousel.querySelectorAll(`.swiper-wrapper > ${slideSelector}`).length;
   const twoSlidePage = pageWidth && slideCount === 2;
+  const twoSlideLoop = twoSlidePage ? createTwoSlideLoop(carousel) : null;
   // Page layout exposes adjacent slides, which requires Swiper's slide effect.
   const fade = !pageWidth && root.dataset.transition === 'fade';
   const autoplay = root.dataset.autoplay === 'true' && !reducedMotion();
   const options = {
-    modules: fade ? [EffectFade, Pagination] : [Pagination],
+    modules: twoSlideLoop ? [] : (fade ? [EffectFade, Pagination] : [Pagination]),
     slidesPerView: 1,
     // Keep page-width slides visually separate while letting Swiper include the
     // gap in its translate, drag, loop, and pagination calculations.
     spaceBetween: pageWidth && !fade ? 24 : 0,
     centeredSlides: pageWidth,
     loop: !twoSlidePage && slideCount > 1,
-    rewind: twoSlidePage,
+    initialSlide: twoSlideLoop?.initialSlide || 0,
     watchOverflow: true,
     speed: reducedMotion() ? 0 : 600,
     effect: fade ? 'fade' : 'slide',
     fadeEffect: fade ? { crossFade: true } : undefined,
-    ...paginationOptions(root),
+    ...(twoSlideLoop ? {} : paginationOptions(root)),
   };
   const swiper = createSwiperCarousel(carousel, options);
-  if (!swiper) return;
-  const pagePeeks = twoSlidePage ? createTwoSlidePeeks(carousel, swiper) : null;
-  if (pagePeeks) swiper.on('slideChangeTransitionEnd', pagePeeks.update);
+  if (!swiper) {
+    twoSlideLoop?.destroy();
+    return;
+  }
+  const twoSlidePagination = createTwoSlidePagination(root, swiper, twoSlideLoop);
+  if (twoSlideLoop) swiper.on('slideChangeTransitionEnd', twoSlideLoop.restore);
   const navigationController = bindNavigation(root, swiper);
   const interval = autoplay ? startAutoplay(root, swiper) : null;
   let frame = 0;
@@ -173,7 +215,7 @@ const init = (root) => {
   const updateLockedState = () => root.classList.toggle('slideshow--single-slide', Boolean(swiper.isLocked));
   swiper.on('lock unlock update resize', updateLockedState);
   updateLockedState();
-  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, pagePeeks });
+  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, twoSlideLoop, twoSlidePagination });
 };
 
 const destroy = (root) => {
@@ -183,9 +225,10 @@ const destroy = (root) => {
   if (state.frame) window.cancelAnimationFrame(state.frame);
   if (state.interval) window.clearInterval(state.interval);
   state.navigationController.abort();
-  if (state.pagePeeks) {
-    state.swiper.off('slideChangeTransitionEnd', state.pagePeeks.update);
-    state.pagePeeks.destroy();
+  if (state.twoSlideLoop) {
+    state.swiper.off('slideChangeTransitionEnd', state.twoSlideLoop.restore);
+    state.twoSlidePagination?.destroy();
+    state.twoSlideLoop.destroy();
   }
   state.swiper.off('lock unlock update resize', state.updateLockedState);
   destroySwiperCarousel(state.swiper);
@@ -207,12 +250,11 @@ document.addEventListener('shopify:block:select', (event) => {
   const root = event.target.closest?.(selector);
   const state = root && states.get(root);
   const slide = event.target.closest?.('[data-slideshow-slide]');
-  // The two-slide page fallback adds aria-hidden visual peeks outside the
-  // Swiper wrapper. Keep editor selection mapped to the logical slide list,
-  // not to those decorative clones.
+  // The two-slide page loop adds inert clones to the wrapper. Keep editor
+  // selection mapped to its two logical source slides.
   const slides = state?.carousel.querySelectorAll('.swiper-wrapper > [data-slideshow-slide]');
   const index = slides ? [...slides].indexOf(slide) : -1;
-  if (state && slide && index >= 0) state.swiper.slideTo(index);
+  if (state && slide && index >= 0) state.swiper.slideTo(state.twoSlideLoop?.originalIndex(index) ?? index);
 });
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => initWithin(), { once: true });
