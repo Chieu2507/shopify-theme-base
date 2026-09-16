@@ -24,6 +24,12 @@
   unless hero_media_type == 'image' or hero_media_type == 'video'
     assign hero_media_type = 'image'
   endunless
+  assign hero_media_is_placeholder = true
+  if hero_media_type == 'image' and section.settings.banner_image != blank
+    assign hero_media_is_placeholder = false
+  elsif hero_media_type == 'video' and section.settings.video != blank
+    assign hero_media_is_placeholder = false
+  endif
 
   assign hero_desktop_height = section.settings.desktop_height | default: 'medium'
   unless hero_desktop_height == 'adapt' or hero_desktop_height == 'extra_small' or hero_desktop_height == 'small' or hero_desktop_height == 'medium' or hero_desktop_height == 'large' or hero_desktop_height == 'extra_large' or hero_desktop_height == 'full_screen'
@@ -60,7 +66,7 @@
   {% if hero_style != blank %}style="{{ hero_style | strip }}"{% endif %}
 >
   <div class="hero__media" aria-hidden="true">
-    <div class="hero__media-inner{% if hero_media_type == 'image' and section.settings.banner_image == blank or hero_media_type == 'video' and section.settings.video == blank %} placeholder-image{% endif %}" data-hero-media>
+    <div class="hero__media-inner{% if hero_media_is_placeholder %} hero__media-inner--placeholder placeholder-image{% endif %}" data-hero-media>
     {% if hero_media_type == 'video' and section.settings.video != blank %}
       {{ section.settings.video | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'hero__video hero__video--desktop' }}
       {% if section.settings.mobile_video != blank %}
