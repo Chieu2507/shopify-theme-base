@@ -99,6 +99,18 @@ const init = (root) => {
   };
   const swiper = createSwiperCarousel(carousel, options);
   if (!swiper) return;
+  // With overflow visible, the settled slide needs a neighbour on both sides.
+  // Swiper normally repairs the loop only before the next interaction, leaving
+  // an empty edge after arriving at the first/last DOM slide.
+  let repairingLoop = false;
+  const maintainPageNeighbours = () => {
+    if (!pageWidth || repairingLoop || swiper.destroyed || !swiper.params.loop || swiper.slides.length < 3) return;
+    repairingLoop = true;
+    swiper.loopFix();
+    repairingLoop = false;
+  };
+  swiper.on('transitionEnd resize', maintainPageNeighbours);
+  maintainPageNeighbours();
   const navigationController = bindNavigation(root, swiper);
   const interval = autoplay ? startAutoplay(root, swiper) : null;
   let frame = 0;
@@ -112,7 +124,7 @@ const init = (root) => {
   const updateLockedState = () => root.classList.toggle('slideshow--single-slide', Boolean(swiper.isLocked));
   swiper.on('lock unlock update resize', updateLockedState);
   updateLockedState();
-  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState });
+  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, maintainPageNeighbours });
 };
 
 const destroy = (root) => {
@@ -123,6 +135,7 @@ const destroy = (root) => {
   if (state.interval) window.clearInterval(state.interval);
   state.navigationController.abort();
   state.swiper.off('lock unlock update resize', state.updateLockedState);
+  state.swiper.off('transitionEnd resize', state.maintainPageNeighbours);
   destroySwiperCarousel(state.swiper);
   states.delete(root);
 };
