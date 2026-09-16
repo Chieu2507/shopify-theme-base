@@ -18,7 +18,7 @@
     const surface = hero.querySelector('[data-hero-surface]') || hero;
     const effect = hero.dataset.heroParallax;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
-    if (!(media instanceof HTMLElement) || !effect || effect === 'fixed') return;
+    if (!(media instanceof HTMLElement) || !effect) return;
 
     const update = () => {
       if (effect && media instanceof HTMLElement && !reduceMotion) {
@@ -26,6 +26,10 @@
         const viewportCenter = window.innerHeight / 2;
         const progress = Math.max(-1, Math.min(1, (viewportCenter - (bounds.top + (bounds.height / 2))) / Math.max(bounds.height, 1)));
         let transform = 'translate3d(0, 0, 0) scale(1.08)';
+        if (effect === 'fixed') {
+          const fixedOffset = Math.max(0, Math.min(-bounds.top, Math.max(0, bounds.height - window.innerHeight)));
+          transform = `translate3d(0, ${fixedOffset.toFixed(2)}px, 0)`;
+        }
         if (effect === 'vertical') transform = `translate3d(0, ${(progress * 80).toFixed(2)}px, 0) scale(1.08)`;
         if (effect === 'horizontal') transform = `translate3d(${(progress * 80).toFixed(2)}px, 0) scale(1.08)`;
         if (effect === 'zoom') transform = `translate3d(0, 0, 0) scale(${(1.04 + (Math.abs(progress) * 0.12)).toFixed(3)})`;
