@@ -7,7 +7,7 @@
     {% render 'css-variables' %}
 
     {% # Load and preload the critical CSS %}
-    {{ 'base.css' | asset_url | stylesheet_tag: preload: true }}
+    {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
 
     {% # Social, title, etc. %}
     {% render 'meta-tags' %}
@@ -46,7 +46,7 @@
           {% else %}
             <img
               src="{{ 'gift-card/card.svg' | shopify_asset_url }}"
-              alt="{{ 'gift_card.card' | t | escape }}"
+              alt="{{ 'gift_card.card' | t }}"
               width="300"
               height="200"
             >
@@ -56,17 +56,12 @@
         <h2>{{ shop.name }}</h2>
         <p>{{ 'gift_card.use_at_checkout' | t }}</p>
         <p>{{ gift_card.code | format_code }}</p>
-        <div id="GiftCardQrCode" data-identifier="{{ gift_card.qr_identifier }}" aria-label="{{ 'gift_card.qr_code' | t | escape }}"></div>
-        <p class="gift-card__actions">
-          <button type="button" data-gift-card-print>{{ 'gift_card.print' | t }}</button>
-          <a href="{{ routes.root_url | escape }}">{{ 'gift_card.continue_shopping' | t }}</a>
-        </p>
 
         {% if gift_card.pass_url %}
-          <a href="{{ gift_card.pass_url | escape }}">
+          <a href="{{ gift_card.pass_url }}">
             <img
               src="{{ 'gift-card/add-to-apple-wallet.svg' | shopify_asset_url }}"
-              alt="{{ 'gift_card.add_to_apple_wallet' | t | escape }}"
+              alt="{{ 'gift_card.add_to_apple_wallet' | t }}"
               width="200"
               height="60"
             >
@@ -74,16 +69,5 @@
         {% endif %}
       </div>
     </main>
-    <script src="{{ 'vendor/qrcode.js' | shopify_asset_url }}" defer></script>
-    <script>
-      window.addEventListener('load', function () {
-        var qrCode = document.getElementById('GiftCardQrCode');
-        if (qrCode && qrCode.dataset.identifier && window.QRCode) {
-          new window.QRCode(qrCode, { text: qrCode.dataset.identifier, width: 120, height: 120 });
-        }
-        var printButton = document.querySelector('[data-gift-card-print]');
-        if (printButton) printButton.addEventListener('click', function () { window.print(); });
-      });
-    </script>
   </body>
 </html>

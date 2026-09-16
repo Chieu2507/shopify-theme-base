@@ -1,0 +1,430 @@
+{% doc %}
+  Renders one collection tab in a Collection Cards section. The block owns
+  the collection resource and tab label. Product Card is the only fixed direct
+  child, rendered once per product in the selected collection; section settings
+  own the shared product-list presentation. Collection Tab intentionally has no
+  dynamic child-block slot, so Product Card cannot be added, duplicated, or
+  reordered and remains the final child in the composition.
+
+  @example
+  {% content_for 'block', type: 'collection-tab', id: 'collection-tab' %}
+{% enddoc %}
+
+{% liquid
+  assign collection_tab_collection = block.settings.collection
+  assign collection_tab_label = block.settings.label | strip
+  if collection_tab_label == blank and collection_tab_collection != blank
+    assign collection_tab_label = collection_tab_collection.title
+  endif
+  if collection_tab_label == blank
+    assign collection_tab_label = 'collection_tabs.default_tab' | t
+  endif
+
+  assign collection_tab_max_products = section.settings.max_products | default: 8 | plus: 0
+  if collection_tab_max_products < 1 or collection_tab_max_products > 24
+    assign collection_tab_max_products = 8
+  endif
+
+  assign collection_tab_layout = section.settings.layout_type | default: 'carousel'
+  unless collection_tab_layout == 'grid' or collection_tab_layout == 'carousel'
+    assign collection_tab_layout = 'carousel'
+  endunless
+
+  assign collection_tab_product_card_block = block.blocks | first
+  if collection_tab_product_card_block != blank and collection_tab_product_card_block.blocks != blank
+    assign collection_tab_product_card_block = collection_tab_product_card_block.blocks | first
+  endif
+
+  assign collection_tab_navigation_position = section.settings.navigation_position | default: 'inside'
+  unless collection_tab_navigation_position == 'inside' or collection_tab_navigation_position == 'outside'
+    assign collection_tab_navigation_position = 'inside'
+  endunless
+
+  assign collection_tab_navigation_style = section.settings.navigation_style | default: 'secondary'
+  unless collection_tab_navigation_style == 'primary' or collection_tab_navigation_style == 'secondary' or collection_tab_navigation_style == 'tertiary'
+    assign collection_tab_navigation_style = 'secondary'
+  endunless
+
+  assign collection_tab_navigation_icon = section.settings.navigation_icon | default: 'chevron'
+  unless collection_tab_navigation_icon == 'chevron' or collection_tab_navigation_icon == 'arrow'
+    assign collection_tab_navigation_icon = 'chevron'
+  endunless
+
+  assign collection_tab_navigation_behavior = section.settings.navigation_behavior | default: 'show_on_hover'
+  unless collection_tab_navigation_behavior == 'show_on_hover' or collection_tab_navigation_behavior == 'always'
+    assign collection_tab_navigation_behavior = 'show_on_hover'
+  endunless
+
+  assign collection_tab_pagination_type = section.settings.pagination_type | default: 'progress_bar'
+  unless collection_tab_pagination_type == 'progress_bar' or collection_tab_pagination_type == 'bullets'
+    assign collection_tab_pagination_type = 'progress_bar'
+  endunless
+
+  assign collection_tab_pagination_top_padding = section.settings.pagination_top_padding | default: 50 | plus: 0
+  if collection_tab_pagination_top_padding < 0 or collection_tab_pagination_top_padding > 100
+    assign collection_tab_pagination_top_padding = 50
+  endif
+
+  assign collection_tab_pagination_max_width = section.settings.pagination_max_width | default: 260 | plus: 0
+  if collection_tab_pagination_max_width < 100 or collection_tab_pagination_max_width > 600
+    assign collection_tab_pagination_max_width = 260
+  endif
+
+  assign collection_tab_show_navigation = false
+  if collection_tab_layout == 'carousel' and section.settings.show_navigation_on_desktop
+    assign collection_tab_show_navigation = true
+  endif
+
+  assign collection_tab_show_pagination = false
+  if collection_tab_layout == 'carousel' and section.settings.show_pagination_on_desktop
+    assign collection_tab_show_pagination = true
+  endif
+
+  assign collection_tab_id = block.id | default: 'collection-tab'
+  assign collection_tab_trigger_id = 'CollectionTabTrigger-' | append: collection_tab_id
+  assign collection_tab_panel_id = 'CollectionTabPanel-' | append: collection_tab_id
+
+  assign collection_tab_has_products = false
+  if collection_tab_collection != blank and collection_tab_collection.products != blank
+    assign collection_tab_has_products = true
+  endif
+
+  assign collection_tab_show_grid = false
+  if collection_tab_has_products
+    assign collection_tab_show_grid = true
+  elsif collection_tab_collection == blank and request.design_mode
+    assign collection_tab_show_grid = true
+  endif
+%}
+
+{% capture collection_tab_pagination_style %}
+  --collection-tab-pagination-top-padding: {{ collection_tab_pagination_top_padding }}px;
+  {% if section.settings.pagination_limit_width %}--collection-tab-pagination-max-width: {{ collection_tab_pagination_max_width }}px;{% endif %}
+{% endcapture %}
+{% assign collection_tab_pagination_style = collection_tab_pagination_style | strip %}
+
+<div
+  class="collection-tab"
+  data-collection-tab
+  data-tab-id="{{ collection_tab_id | escape }}"
+  {{ block.shopify_attributes }}
+>
+  <button
+    id="{{ collection_tab_trigger_id | escape }}"
+    class="tab-layout__tab collection-tab__trigger link-underline"
+    type="button"
+    role="tab"
+    aria-selected="false"
+    aria-controls="{{ collection_tab_panel_id | escape }}"
+    tabindex="-1"
+    data-collection-tab-trigger
+    data-underline="active"
+    data-tab-id="{{ collection_tab_id | escape }}"
+    {% if collection_tab_collection != blank %}data-collection-url="{{ collection_tab_collection.url | escape }}"{% endif %}
+  >
+    {{ collection_tab_label | escape }}
+  </button>
+
+  <div
+    id="{{ collection_tab_panel_id | escape }}"
+    class="collection-tab__panel"
+    role="tabpanel"
+    aria-labelledby="{{ collection_tab_trigger_id | escape }}"
+    data-collection-tab-panel
+    data-tab-id="{{ collection_tab_id | escape }}"
+  >
+    {% if collection_tab_show_grid %}
+      <div
+        class="collection-tab__carousel"
+        data-collection-tab-carousel
+        data-tab-id="{{ collection_tab_id | escape }}"
+        data-autoplay="{{ section.settings.autoplay }}"
+      >
+        {% render 'product-collection-grid',
+          collection: collection_tab_collection,
+          max_products: collection_tab_max_products,
+          layout_type: collection_tab_layout,
+          columns_desktop: section.settings.columns_desktop,
+          columns_mobile: section.settings.columns_mobile,
+          custom_columns: section.settings.custom_columns,
+          custom_columns_desktop: section.settings.custom_columns_desktop,
+          custom_columns_mobile: section.settings.custom_columns_mobile,
+          gap_horizontal: section.settings.product_gap_desktop,
+          gap_vertical: section.settings.product_gap_desktop,
+          gap_horizontal_mobile: section.settings.product_gap_mobile,
+          gap_vertical_mobile: section.settings.product_gap_mobile,
+          show_placeholders: request.design_mode,
+          placeholder_count: collection_tab_max_products,
+          grid_class: 'collection-tab__products',
+          item_class: 'collection-tab__product',
+          items_data_attributes: 'data-collection-tab-products',
+          product_carousel: true,
+          next_slide_preview: section.settings.show_next_slide_preview_on_desktop,
+          product_card_block: collection_tab_product_card_block
+        %}
+
+        {% if collection_tab_show_navigation %}
+          <div
+            class="collection-tab__carousel-navigation collection-tab__carousel-navigation--{{ collection_tab_navigation_position }} collection-tab__carousel-navigation--{{ collection_tab_navigation_behavior }}"
+            data-collection-carousel-navigation
+          >
+            <button
+              class="btn btn-{{ collection_tab_navigation_style }} btn--{{ collection_tab_navigation_style }} btn--icon collection-tab__carousel-button"
+              type="button"
+              data-collection-carousel-previous
+              aria-label="{{ 'collection_tabs.previous' | t | escape }}"
+            >
+              {% if collection_tab_navigation_icon == 'arrow' %}
+                {% render 'icon', icon: 'arrow-left', bare: true %}
+              {% else %}
+                {% render 'icon', icon: 'chevron-left', bare: true %}
+              {% endif %}
+            </button>
+            <button
+              class="btn btn-{{ collection_tab_navigation_style }} btn--{{ collection_tab_navigation_style }} btn--icon collection-tab__carousel-button"
+              type="button"
+              data-collection-carousel-next
+              aria-label="{{ 'collection_tabs.next' | t | escape }}"
+            >
+              {% if collection_tab_navigation_icon == 'arrow' %}
+                {% render 'icon', icon: 'arrow-right', bare: true %}
+              {% else %}
+                {% render 'icon', icon: 'chevron-right', bare: true %}
+              {% endif %}
+            </button>
+          </div>
+        {% endif %}
+
+        {% if collection_tab_show_pagination %}
+          <div
+            class="collection-tab__pagination collection-tab__pagination--{{ collection_tab_pagination_type }}"
+            data-collection-carousel-pagination
+            style="{{ collection_tab_pagination_style }}"
+          >
+            {% if collection_tab_pagination_type == 'progress_bar' %}
+              <span
+                class="collection-tab__pagination-track"
+                role="progressbar"
+                aria-label="{{ 'accessibility.pagination' | t | escape }}"
+                aria-valuemin="0"
+                aria-valuemax="100"
+                aria-valuenow="0"
+                data-collection-carousel-progress
+              >
+                <span class="collection-tab__pagination-fill" data-collection-carousel-progress-fill></span>
+              </span>
+            {% else %}
+              <div class="collection-tab__pagination-bullets" role="tablist" aria-label="{{ 'accessibility.pagination' | t | escape }}">
+                {% if collection_tab_collection != blank and collection_tab_collection.products != blank %}
+                  {% for collection_tab_item in collection_tab_collection.products limit: collection_tab_max_products %}
+                    <button
+                      class="collection-tab__pagination-bullet"
+                      type="button"
+                      role="tab"
+                      aria-label="{{ 'accessibility.pagination' | t | escape }} {{ forloop.index }}"
+                      aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                      data-collection-carousel-page="{{ forloop.index0 }}"
+                    ></button>
+                  {% endfor %}
+                {% elsif collection_tab_collection == blank and request.design_mode %}
+                  {% for collection_tab_placeholder_index in (1..collection_tab_max_products) %}
+                  <button
+                    class="collection-tab__pagination-bullet"
+                    type="button"
+                    role="tab"
+                    aria-label="{{ 'accessibility.pagination' | t | escape }} {{ forloop.index }}"
+                    aria-selected="{% if forloop.first %}true{% else %}false{% endif %}"
+                    data-collection-carousel-page="{{ forloop.index0 }}"
+                  ></button>
+                  {% endfor %}
+                {% endif %}
+              </div>
+            {% endif %}
+          </div>
+        {% endif %}
+      </div>
+    {% endif %}
+
+    {% if collection_tab_collection != blank and collection_tab_has_products == false %}
+      <p class="collection-tab__empty body-text body-sm">{{ 'collection_tabs.empty_collection' | t }}</p>
+    {% endif %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .collection-tab {
+    min-width: 0;
+  }
+
+  .collection-tab__panel {
+    min-width: 0;
+  }
+
+  .collection-tab__panel[hidden] {
+    display: none !important;
+  }
+
+  .collection-tab__carousel {
+    position: relative;
+    width: 100%;
+    min-width: 0;
+  }
+
+  @media (min-width: 768px) {
+    .product-collection-grid--carousel[data-next-slide-preview='true'] {
+      grid-auto-columns: calc(var(--product-collection-grid-item-width-desktop) * 0.9);
+    }
+  }
+
+  .collection-tab__carousel-navigation {
+    position: absolute;
+    z-index: 1;
+    top: 50%;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 0.5rem;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .collection-tab__carousel-navigation--outside {
+    right: -0.5rem;
+    left: -0.5rem;
+  }
+
+  .collection-tab__carousel-navigation--show_on_hover {
+    opacity: 0;
+    transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
+  }
+
+  .collection-tab__carousel:hover .collection-tab__carousel-navigation--show_on_hover,
+  .collection-tab__carousel:focus-within .collection-tab__carousel-navigation--show_on_hover {
+    opacity: 1;
+  }
+
+  .collection-tab__carousel-button {
+    pointer-events: auto;
+  }
+
+  .collection-tab__pagination {
+    display: flex;
+    justify-content: center;
+    width: 100%;
+    padding-top: var(--collection-tab-pagination-top-padding, 50px);
+  }
+
+  .collection-tab__pagination-track {
+    display: block;
+    width: min(100%, var(--collection-tab-pagination-max-width, 100%));
+    height: 2px;
+    overflow: hidden;
+    background: color-mix(in srgb, var(--body-color) 20%, transparent);
+  }
+
+  .collection-tab__pagination-fill {
+    display: block;
+    width: var(--collection-tab-pagination-progress, 0%);
+    height: 100%;
+    background: var(--body-color);
+    transition: width var(--motion-duration-standard) var(--motion-ease-standard);
+  }
+
+  .collection-tab__pagination-bullets {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    width: min(100%, var(--collection-tab-pagination-max-width, 100%));
+  }
+
+  .collection-tab__pagination-bullet {
+    width: 0.5rem;
+    height: 0.5rem;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: color-mix(in srgb, var(--body-color) 30%, transparent);
+    cursor: pointer;
+  }
+
+  .collection-tab__pagination-bullet[aria-selected='true'] {
+    background: var(--body-color);
+  }
+
+  .collection-tab__empty {
+    margin-block-start: 1rem;
+    color: color-mix(in srgb, var(--body-color) 72%, transparent);
+  }
+
+  @media (max-width: 767.98px) {
+    .collection-tab__carousel-navigation,
+    .collection-tab__pagination {
+      display: none;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .collection-tab__carousel-navigation--show_on_hover,
+    .collection-tab__pagination-fill {
+      transition: none;
+    }
+
+    .product-collection-grid--carousel {
+      scroll-behavior: auto;
+      scroll-snap-type: none;
+    }
+  }
+{% endstylesheet %}
+
+{% comment %}
+  Keep the static Product Card target discoverable to Theme Check and the
+  Theme Editor. The shared renderer uses the direct child settings for every
+  item because content_for is not available inside snippets.
+{% endcomment %}
+{% if false %}
+  {% content_for 'block', type: 'product-card', id: 'product-card' %}
+{% endif %}
+
+{% schema %}
+{
+  "name": "t:general.collection_tab",
+  "tag": null,
+  "settings": [
+    {
+      "type": "text",
+      "id": "label",
+      "label": "t:labels.tab_label"
+    },
+    {
+      "type": "collection",
+      "id": "collection",
+      "label": "t:labels.collection"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.collection_tab",
+      "category": "t:general.collection",
+      "settings": {
+        "label": "",
+        "collection": ""
+      },
+      "blocks": [
+        {
+          "type": "product-card",
+          "id": "product-card",
+          "static": true,
+          "settings": {
+            "show_ranking": false,
+            "color_type": "inherit",
+            "color_scheme": "scheme-1"
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}

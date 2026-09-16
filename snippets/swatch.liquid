@@ -1,0 +1,59 @@
+{% doc %}
+  Renders one visual swatch. Its parent control supplies the accessible name.
+
+  Shopify standard swatch data is preferred. In image mode, a linked variant
+  image takes precedence; otherwise the saved swatch image, color, and neutral
+  surface are used in that order.
+
+  @param {string} value - Option value used for the fallback class
+  @param {swatch} [swatch] - Shopify product option-value swatch data
+  @param {image} [image] - Optional linked variant image
+  @param {string} [style] - color or variant_image
+  @param {string} [class] - Additional classes
+  @param {boolean} [decorative] - Hide the visual from assistive technology
+
+  @example
+  {% render 'swatch', value: 'Navy', swatch: option_value.swatch, decorative: true %}
+{% enddoc %}
+
+{% liquid
+  assign swatch_style = style | default: settings.swatch_style | default: 'color'
+  unless swatch_style == 'variant_image'
+    assign swatch_style = 'color'
+  endunless
+
+  assign swatch_class = 'swatch swatch--' | append: swatch_style
+  assign swatch_class = swatch_class | append: ' swatch--' | append: value | handleize
+  if class != blank
+    assign swatch_class = swatch_class | append: ' ' | append: class
+  endif
+
+  assign swatch_image = blank
+  assign swatch_color = blank
+  if swatch != blank and swatch.color != blank
+    assign swatch_color = swatch.color
+  endif
+  if swatch_style == 'variant_image' and image != blank
+    assign swatch_image = image
+  elsif swatch != blank and swatch.image != blank
+    assign swatch_image = swatch.image
+  elsif swatch_style == 'color' and image != blank and swatch_color == blank
+    assign swatch_image = image
+  endif
+%}
+
+<span
+  class="{{ swatch_class | strip }}"
+  {% if swatch_color != blank %}
+    style="--swatch-color: {{ swatch_color | escape }};"
+  {% endif %}
+  {% if decorative %}
+    aria-hidden="true"
+  {% else %}
+    role="img" aria-label="{{ value | escape }}"
+  {% endif %}
+>
+  {% if swatch_image != blank %}
+    {{ swatch_image | image_url: width: 128 | image_tag: class: 'swatch__image', alt: '' }}
+  {% endif %}
+</span>

@@ -1,0 +1,48 @@
+{% liquid
+  assign faq_item_id = 'faq-' | append: block.id
+  assign faq_content_id = faq_item_id | append: '-content'
+  assign faq_question = block.settings.question | default: 'Frequently asked question'
+  assign faq_answer = block.settings.answer | default: '<p>Share the answer to this question here.</p>'
+%}
+
+{% capture faq_summary %}
+  <span class="faq-item__question">{{ faq_question | escape }}</span>
+  <span class="faq-item__icon" aria-hidden="true"></span>
+{% endcapture %}
+
+{% render 'accordion-details', id: faq_item_id, content_id: faq_content_id, class: 'faq-item', summary_class: 'faq-item__summary', content_class: 'faq-item__content', content_inner_class: 'faq-item__content-inner', summary: faq_summary, content: faq_answer, initially_open: block.settings.initially_open, attributes: block.shopify_attributes %}
+
+{% stylesheet %}
+  .faq-item { border-bottom: 1px solid var(--border-color); }
+  .faq-item__summary { display: flex; align-items: center; justify-content: space-between; gap: 1rem; min-height: 4rem; padding: 20px 0; color: var(--heading-color); }
+  .faq-item__question { min-width: 0; overflow-wrap: anywhere; }
+  .faq-item__icon { position: relative; flex: 0 0 1rem; width: 1rem; height: 1rem; }
+  .faq-item__icon::before, .faq-item__icon::after { position: absolute; top: 50%; left: 50%; width: 0.75rem; height: 1px; background: currentColor; content: ''; transform: translate(-50%, -50%); }
+  .faq-item__icon::after { transform: translate(-50%, -50%) rotate(90deg); transition: transform var(--motion-duration-standard) var(--motion-ease-standard); }
+  .faq-item[open] .faq-item__icon::after { transform: translate(-50%, -50%) rotate(0deg); }
+  .faq-item__content-inner { width: 100%; padding: 0 2rem 1.5rem 0; color: var(--body-color); }
+  .faq-item__content-inner > :first-child { margin-top: 0; }
+  .faq-item__content-inner > :last-child { margin-bottom: 0; }
+  @media (prefers-reduced-motion: reduce) { .faq-item__icon::after { transition: none; } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.faq_item",
+  "tag": null,
+  "settings": [
+    { "type": "text", "id": "question", "label": "t:labels.question", "default": "Frequently asked question" },
+    { "type": "richtext", "id": "answer", "label": "t:labels.answer", "default": "<p>Share the answer to this question here.</p>" },
+    { "type": "checkbox", "id": "initially_open", "label": "t:labels.initially_open", "default": false }
+  ],
+  "presets": [
+    {
+      "name": "t:general.faq_item",
+      "settings": {
+        "question": "Frequently asked question",
+        "initially_open": false
+      }
+    }
+  ]
+}
+{% endschema %}

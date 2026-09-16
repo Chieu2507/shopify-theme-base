@@ -1,7 +1,10 @@
 <meta charset="utf-8">
 <meta http-equiv="X-UA-Compatible" content="IE=edge">
 <meta name="viewport" content="width=device-width,initial-scale=1">
-<meta name="theme-color" content="{{ settings.background_color | default: '#ffffff' | escape }}" data-spinel-theme-color>
+
+{% if settings.favicon != blank %}
+  <link rel="icon" type="image/png" href="{{ settings.favicon | image_url: width: 64 }}">
+{% endif %}
 
 {%- liquid
   assign og_title = page_title | default: shop.name
@@ -20,11 +23,11 @@
 
 <meta
   property="og:site_name"
-  content="{{ shop.name | escape }}"
+  content="{{ shop.name }}"
 >
 <meta
   property="og:url"
-  content="{{ og_url | escape }}"
+  content="{{ og_url }}"
 >
 <meta
   property="og:title"
@@ -42,11 +45,11 @@
 {%- if page_image -%}
   <meta
     property="og:image"
-    content="{{ page_image | image_url | escape }}"
+    content="http:{{ page_image | image_url }}"
   >
   <meta
     property="og:image:secure_url"
-    content="{{ page_image | image_url | escape }}"
+    content="https:{{ page_image | image_url }}"
   >
   <meta
     property="og:image:width"
@@ -87,18 +90,20 @@
 >
 
 <title>
-  {{ page_title | escape }}
-  {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' | escape }}"{% endif -%}
+  {{ page_title }}
+  {%- if current_tags %} &ndash; tagged "{{ current_tags | join: ', ' }}"{% endif -%}
   {%- if current_page != 1 %} &ndash; Page {{ current_page }}{% endif -%}
-  {%- unless page_title contains shop.name %} &ndash; {{ shop.name | escape }}{% endunless -%}
+  {%- unless page_title contains shop.name %} &ndash; {{ shop.name }}{% endunless -%}
 </title>
 
 <link
   rel="canonical"
-  href="{{ canonical_url | escape }}"
+  href="{{ canonical_url }}"
 >
 
-<meta
-  name="description"
-  content="{{ og_description | escape }}"
->
+{% if page_description %}
+  <meta
+    name="description"
+    content="{{ page_description | escape }}"
+  >
+{% endif %}

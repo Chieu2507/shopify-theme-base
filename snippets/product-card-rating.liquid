@@ -1,0 +1,39 @@
+{% doc %}
+  Renders a product rating when the standard reviews rating metafield has a
+  valid score and scale.
+
+  @param {product} product - Product whose rating should be rendered
+
+  @example
+  {% render 'product-card-rating', product: product %}
+{% enddoc %}
+
+{% liquid
+  assign rating_value = product.metafields.reviews.rating.value
+  assign rating_score = blank
+  assign rating_scale = 5
+
+  if rating_value != blank
+    assign rating_score = rating_value.rating | default: rating_value
+    assign rating_scale = rating_value.scale_max | default: 5
+  endif
+
+  assign rating_score = rating_score | plus: 0
+  assign rating_scale = rating_scale | plus: 0
+  assign rating_count = product.metafields.reviews.rating_count.value | default: product.metafields.reviews.rating_count
+%}
+
+{% if rating_score > 0 and rating_scale > 0 %}
+  <div
+    class="product-card__rating card-price-text"
+    role="img"
+    aria-label="{{ 'products.rating' | t: rating: rating_score, scale: rating_scale }}"
+    data-product-card-rating
+  >
+    <span class="product-card__rating-star" aria-hidden="true">★</span>
+    <span class="product-card__rating-score" aria-hidden="true">{{ rating_score }} / {{ rating_scale }}</span>
+    {% if rating_count != blank %}
+      <span class="product-card__rating-count" aria-hidden="true">({{ rating_count }})</span>
+    {% endif %}
+  </div>
+{% endif %}

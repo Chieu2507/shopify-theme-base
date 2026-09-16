@@ -1,0 +1,47 @@
+{% doc %}
+  Renders configured social media links from the global Social media settings.
+
+  Labels remain available to assistive technology when the visual label setting
+  is disabled.
+{% enddoc %}
+
+{% liquid
+  assign social_names = 'facebook,instagram,tiktok,youtube,pinterest,x,linkedin' | split: ','
+  assign has_social_links = false
+  for social_name in social_names
+    assign social_key = 'social_' | append: social_name
+    if settings[social_key] != blank
+      assign has_social_links = true
+      break
+    endif
+  endfor
+%}
+
+{% if has_social_links %}
+  <nav class="social-links" aria-label="{{ 'accessibility.social_media' | t }}">
+    {% for social_name in social_names %}
+      {% liquid
+        assign social_key = 'social_' | append: social_name
+        assign social_url = settings[social_key]
+        assign social_translation_key = 'social.' | append: social_name
+        assign social_label = social_translation_key | t
+      %}
+      {% if social_url != blank %}
+        <a
+          href="{{ social_url }}"
+          {% if settings.social_new_tab %}
+            target="_blank" rel="noopener noreferrer"
+          {% endif %}
+          aria-label="{{ social_label }}"
+        >
+          {% if settings.social_show_labels %}
+            {{ social_label }}
+          {% else %}
+            <span class="visually-hidden">{{ social_label }}</span>
+            <span aria-hidden="true">{{ social_label | slice: 0, 1 }}</span>
+          {% endif %}
+        </a>
+      {% endif %}
+    {% endfor %}
+  </nav>
+{% endif %}

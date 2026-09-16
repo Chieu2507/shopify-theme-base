@@ -1,234 +1,330 @@
 {% doc %}
-  Renders a reusable text theme block with size-based typography.
+  Renders rich text with a body typography role, responsive layout and spacing.
+
+  The block owns editorial text, body-size role, local color override, size and
+  padding. Width is configurable while text alignment is inherited from the
+  parent composition.
 
   @example
   {% content_for 'block', type: 'text', id: 'text' %}
 {% enddoc %}
 
 {% liquid
-  assign text_content = block.settings.text
-  assign context_product = closest.product | default: product
-  if text_content == blank and context_product == blank and section.type == 'featured-product'
-    assign text_content = '<p>Product description</p>'
+  assign text_size = block.settings.text_size | default: 'md'
+  unless text_size == 'xs' or text_size == 'sm' or text_size == 'md' or text_size == 'lg' or text_size == 'xl' or text_size == 'xxl'
+    assign text_size = 'md'
+  endunless
+
+  assign text_width_mode = block.settings.width | default: 'fit'
+  unless text_width_mode == 'fit' or text_width_mode == 'fill' or text_width_mode == 'custom'
+    assign text_width_mode = 'fit'
+  endunless
+
+  assign text_width = '100%'
+  if text_width_mode == 'fit'
+    assign text_width = 'fit-content'
   endif
+  assign text_max_width = block.settings.max_width | default: 640 | plus: 0
+
+  assign text_width_mobile_mode = text_width_mode
+  assign text_width_mobile = text_width
+  assign text_max_width_mobile = text_max_width
+  if block.settings.customize_mobile_size
+    assign text_width_mobile_mode = block.settings.width_mobile | default: text_width_mode
+    unless text_width_mobile_mode == 'fit' or text_width_mobile_mode == 'fill' or text_width_mobile_mode == 'custom'
+      assign text_width_mobile_mode = text_width_mode
+    endunless
+    assign text_width_mobile = '100%'
+    if text_width_mobile_mode == 'fit'
+      assign text_width_mobile = 'fit-content'
+    endif
+    assign text_max_width_mobile = block.settings.max_width_mobile | default: text_max_width
+    assign text_max_width_mobile = text_max_width_mobile | plus: 0
+  endif
+
+  assign padding_top = block.settings.padding_top | default: 0
+  assign padding_top = padding_top | plus: 0
+  assign padding_bottom = block.settings.padding_bottom | default: 0
+  assign padding_bottom = padding_bottom | plus: 0
+  assign padding_left = block.settings.padding_left | default: 0
+  assign padding_left = padding_left | plus: 0
+  assign padding_right = block.settings.padding_right | default: 0
+  assign padding_right = padding_right | plus: 0
+  assign padding_top_mobile = block.settings.padding_top_mobile | default: 0
+  assign padding_top_mobile = padding_top_mobile | plus: 0
+  assign padding_bottom_mobile = block.settings.padding_bottom_mobile | default: 0
+  assign padding_bottom_mobile = padding_bottom_mobile | plus: 0
+  assign padding_left_mobile = block.settings.padding_left_mobile | default: 0
+  assign padding_left_mobile = padding_left_mobile | plus: 0
+  assign padding_right_mobile = block.settings.padding_right_mobile | default: 0
+  assign padding_right_mobile = padding_right_mobile | plus: 0
+  assign text_class = 'text-block motion-block body-text body-' | append: text_size
 %}
 
-{% render 'content-block',
-  block: block,
-  content: text_content,
-  kind: 'text',
-  default_preset: 'md',
-  default_font: 'body'
-%}
+{% capture text_style %}
+  {% if text_width_mode != 'fit' %}--text-width: {{ text_width }};{% endif %}
+  {% if text_width_mode == 'custom' %}--text-max-width: {{ text_max_width }}px;{% endif %}
+  {% if block.settings.customize_mobile_size %}
+    {% if text_width_mobile != text_width %}--text-width-mobile: {{ text_width_mobile }};{% endif %}
+    {% if text_width_mobile_mode == 'custom' %}
+      {% if text_width_mode != 'custom' or text_max_width_mobile != text_max_width %}--text-max-width-mobile: {{ text_max_width_mobile }}px;{% endif %}
+    {% elsif text_width_mode == 'custom' %}
+      --text-max-width-mobile: 100%;
+    {% endif %}
+  {% endif %}
+  {% if padding_top != 0 %}--text-padding-top: {{ padding_top }}px;{% endif %}
+  {% if padding_bottom != 0 %}--text-padding-bottom: {{ padding_bottom }}px;{% endif %}
+  {% if padding_left != 0 %}--text-padding-left: {{ padding_left }}px;{% endif %}
+  {% if padding_right != 0 %}--text-padding-right: {{ padding_right }}px;{% endif %}
+  {% if block.settings.customize_mobile_padding %}
+    {% if padding_top_mobile != padding_top %}--text-padding-top-mobile: {{ padding_top_mobile }}px;{% endif %}
+    {% if padding_bottom_mobile != padding_bottom %}--text-padding-bottom-mobile: {{ padding_bottom_mobile }}px;{% endif %}
+    {% if padding_left_mobile != padding_left %}--text-padding-left-mobile: {{ padding_left_mobile }}px;{% endif %}
+    {% if padding_right_mobile != padding_right %}--text-padding-right-mobile: {{ padding_right_mobile }}px;{% endif %}
+  {% endif %}
+  {% if block.settings.text_color != blank %}--text-block-color: {{ block.settings.text_color | escape }};{% endif %}
+{% endcapture %}
+{% assign text_style = text_style | strip %}
+
+{% if block.settings.text != blank or request.design_mode %}
+  <div
+    class="{{ text_class }}"
+    {% if text_style != blank %}style="{{ text_style }}"{% endif %}
+    {{ block.shopify_attributes }}
+  >
+    {{ block.settings.text }}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .text-block {
+    display: block;
+    width: var(--text-width, fit-content);
+    max-width: var(--text-max-width, 100%);
+    padding-top: var(--text-padding-top, 0px);
+    padding-right: var(--text-padding-right, 0px);
+    padding-bottom: var(--text-padding-bottom, 0px);
+    padding-left: var(--text-padding-left, 0px);
+    color: var(--text-block-color, var(--body-color));
+    text-align: var(--text-align-default, inherit);
+    overflow-wrap: anywhere;
+  }
+
+  .text-block a {
+    color: inherit;
+  }
+
+  .text-block :where(ul, ol) {
+    padding-inline-start: 1.5em;
+  }
+
+  @media (max-width: 767.98px) {
+    .text-block {
+      width: var(--text-width-mobile, var(--text-width, fit-content));
+      max-width: var(--text-max-width-mobile, var(--text-max-width, 100%));
+      padding-top: var(--text-padding-top-mobile, var(--text-padding-top, 0px));
+      padding-right: var(--text-padding-right-mobile, var(--text-padding-right, 0px));
+      padding-bottom: var(--text-padding-bottom-mobile, var(--text-padding-bottom, 0px));
+      padding-left: var(--text-padding-left-mobile, var(--text-padding-left, 0px));
+    }
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
-  "name": "t:typography_blocks.text",
+  "name": "t:general.text",
   "tag": null,
   "settings": [
     {
       "type": "header",
-      "content": "t:typography_blocks.typography"
+      "content": "t:general.content"
     },
     {
       "type": "richtext",
       "id": "text",
-      "label": "t:typography_blocks.text",
-      "default": "t:typography_defaults.text"
+      "label": "t:labels.text"
     },
     {
       "type": "select",
-      "id": "type_preset",
-      "label": "t:typography_blocks.text_size",
+      "id": "text_size",
+      "label": "t:labels.text_size",
       "options": [
-        { "value": "lg", "label": "t:typography_options.body_large" },
-        { "value": "md", "label": "t:typography_options.body_medium" },
-        { "value": "sm", "label": "t:typography_options.body_small" },
-        { "value": "xs", "label": "t:typography_options.body_extra_small" },
-        { "value": "label", "label": "t:typography_options.label" },
-        { "value": "custom", "label": "t:typography_options.custom" }
+        { "value": "xs", "label": "t:options.text_size.xs" },
+        { "value": "sm", "label": "t:options.text_size.sm" },
+        { "value": "md", "label": "t:options.text_size.md" },
+        { "value": "lg", "label": "t:options.text_size.lg" },
+        { "value": "xl", "label": "t:options.text_size.xl" },
+        { "value": "xxl", "label": "t:options.text_size.xxl" }
       ],
       "default": "md"
     },
     {
-      "type": "range",
-      "id": "font_size",
-      "label": "t:typography_blocks.size",
-      "min": 8,
-      "max": 100,
-      "step": 2,
-      "unit": "px",
-      "default": 16,
-      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-    },
-    {
-      "type": "range",
-      "id": "font_size_mobile",
-      "label": "t:typography_blocks.mobile_size",
-      "min": 8,
-      "max": 100,
-      "step": 2,
-      "unit": "px",
-      "default": 14,
-      "visible_if": "{{ block.settings.type_preset == 'custom' }}"
-    },
-    {
       "type": "color",
       "id": "text_color",
-      "label": "Text color"
-    },
-    {
-      "type": "select",
-      "id": "color",
-      "label": "Legacy color token",
-      "options": [
-        { "value": "text", "label": "Text" },
-        { "value": "subtext", "label": "Subtext" }
-      ],
-      "visible_if": "{{ false }}"
-    },
-    {
-      "type": "checkbox",
-      "id": "disable_line_break_mobile",
-      "label": "t:typography_blocks.disable_line_break_mobile",
-      "default": false
+      "label": "t:labels.text_color"
     },
     {
       "type": "header",
-      "content": "t:typography_blocks.layout"
+      "content": "t:general.size"
     },
     {
       "type": "select",
       "id": "width",
-      "label": "t:typography_blocks.width",
+      "label": "t:labels.width",
       "options": [
-        { "value": "fit-content", "label": "t:typography_options.fit" },
-        { "value": "100%", "label": "t:typography_options.fill" }
+        { "value": "fit", "label": "t:options.width.fit" },
+        { "value": "fill", "label": "t:options.width.fill" },
+        { "value": "custom", "label": "t:options.width.custom" }
       ],
-      "default": "fit-content"
+      "default": "fit"
+    },
+    {
+      "type": "range",
+      "id": "max_width",
+      "label": "t:labels.max_width",
+      "min": 320,
+      "max": 1600,
+      "step": 20,
+      "unit": "px",
+      "default": 640,
+      "visible_if": "{{ block.settings.width == 'custom' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_size",
+      "label": "t:labels.customize_mobile_size",
+      "default": false
     },
     {
       "type": "select",
       "id": "width_mobile",
-      "label": "t:typography_blocks.width_mobile",
+      "label": "t:labels.mobile_width",
       "options": [
-        { "value": "fit-content", "label": "t:typography_options.fit" },
-        { "value": "100%", "label": "t:typography_options.fill" }
+        { "value": "fit", "label": "t:options.width.fit" },
+        { "value": "fill", "label": "t:options.width.fill" },
+        { "value": "custom", "label": "t:options.width.custom" }
       ],
-      "default": "fit-content"
+      "default": "fit",
+      "visible_if": "{{ block.settings.customize_mobile_size }}"
     },
     {
-      "type": "text_alignment",
-      "id": "alignment",
-      "label": "t:typography_blocks.alignment",
-      "default": "left",
-      "visible_if": "{{ block.settings.width == '100%' or block.settings.width_mobile == '100%' }}"
+      "type": "range",
+      "id": "max_width_mobile",
+      "label": "t:labels.mobile_max_width",
+      "min": 240,
+      "max": 800,
+      "step": 20,
+      "unit": "px",
+      "default": 480,
+      "visible_if": "{{ block.settings.customize_mobile_size and block.settings.width_mobile == 'custom' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:labels.top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:labels.bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_left",
+      "label": "t:labels.left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_right",
+      "label": "t:labels.right_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
     },
     {
       "type": "checkbox",
-      "id": "enable_mobile_alignment",
-      "label": "t:typography_blocks.customize_mobile_alignment",
+      "id": "customize_mobile_padding",
+      "label": "t:labels.customize_mobile_padding",
       "default": false
     },
     {
-      "type": "text_alignment",
-      "id": "alignment_mobile",
-      "label": "t:typography_blocks.mobile_alignment",
-      "visible_if": "{{ block.settings.enable_mobile_alignment }}"
-    },
-    {
-      "type": "header",
-      "content": "t:typography_blocks.padding"
-    },
-    {
       "type": "range",
-      "id": "padding-block-start",
-      "label": "t:typography_blocks.top",
+      "id": "padding_top_mobile",
+      "label": "t:labels.mobile_top_padding",
       "min": 0,
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 0
-    },
-    {
-      "type": "range",
-      "id": "padding-block-end",
-      "label": "t:typography_blocks.bottom",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "px",
-      "default": 0
-    },
-    {
-      "type": "range",
-      "id": "padding-inline-start",
-      "label": "t:typography_blocks.left",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "px",
-      "default": 0
-    },
-    {
-      "type": "range",
-      "id": "padding-inline-end",
-      "label": "t:typography_blocks.right",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "px",
-      "default": 0
-    },
-    {
-      "type": "header",
-      "content": "Animation"
-    },
-    {
-      "type": "select",
-      "id": "reveal_type",
-      "label": "Type",
-      "options": [
-        { "value": "none", "label": "None" },
-        { "value": "fade", "label": "Fade" },
-        { "value": "fade-up", "label": "Fade up" },
-        { "value": "fade-down", "label": "Fade down" },
-        { "value": "fade-left", "label": "Fade left" },
-        { "value": "fade-right", "label": "Fade right" },
-        { "value": "zoom", "label": "Zoom" }
-      ],
-      "default": "none"
-    },
-    {
-      "type": "range",
-      "id": "reveal_duration",
-      "label": "Duration",
-      "min": 300,
-      "max": 1500,
-      "step": 50,
-      "unit": "ms",
-      "default": 650,
-      "visible_if": "{{ block.settings.reveal_type != 'none' }}"
-    },
-    {
-      "type": "range",
-      "id": "reveal_delay",
-      "label": "Delay",
-      "min": 0,
-      "max": 1000,
-      "step": 50,
-      "unit": "ms",
       "default": 0,
-      "visible_if": "{{ block.settings.reveal_type != 'none' }}"
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "label": "t:labels.mobile_bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_left_mobile",
+      "label": "t:labels.mobile_left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_right_mobile",
+      "label": "t:labels.mobile_right_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
     }
   ],
   "presets": [
     {
-      "name": "t:typography_blocks.text",
-      "category": "t:typography_blocks.basic",
+      "name": "t:general.text",
+      "category": "t:general.basic",
       "settings": {
-        "text": "t:typography_defaults.text",
-        "type_preset": "md"
+        "text": "<p>Text</p>",
+        "text_size": "md",
+        "width": "fit",
+        "customize_mobile_size": false,
+        "max_width": 640,
+        "width_mobile": "fit",
+        "max_width_mobile": 480
       }
     }
   ]

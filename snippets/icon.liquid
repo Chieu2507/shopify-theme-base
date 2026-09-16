@@ -1,87 +1,194 @@
 {% doc %}
-  Renders a storefront interface icon.
+  Renders a registered icon or a defensively checked custom SVG, optionally as a link.
 
-  @param {string} name - Icon name.
-  @param {string} [class] - Optional class names added to the SVG.
+  The caller owns the accessible name. A link is only rendered when a label is
+  provided; decorative output is hidden from assistive technology.
+
+  @param {string} [icon] - Registered Heroicons key or a supported legacy alias
+  @param {string} [source] - Icon source: library or custom
+  @param {string} [custom_icon] - Custom SVG markup from the Theme Editor
+  @param {boolean} [bare] - Render only the SVG, without the shared wrapper
+  @param {string} [url] - Optional link destination
+  @param {string} [label] - Accessible name for a linked icon
+  @param {boolean} [open_in_new_tab] - Whether the link opens in a new tab
+  @param {number} [width] - Icon width in pixels
+  @param {number} [padding] - Icon padding in pixels
+  @param {string} [class] - Additional wrapper classes
+
+  @example
+  {% render 'icon', icon: 'arrow', width: 24 %}
 {% enddoc %}
 
 {% liquid
-  assign icon_class_attribute = blank
-  if class != blank
-    assign icon_class_value = class | escape
-    assign icon_class_attribute = ' class="' | append: icon_class_value | append: '"'
+  assign icon_source = source | default: 'library'
+  unless icon_source == 'library' or icon_source == 'custom'
+    assign icon_source = 'library'
+  endunless
+
+  assign icon_name = icon | default: 'arrow-right'
+  unless icon_name == 'arrow' or icon_name == 'arrow-left' or icon_name == 'arrow-right' or icon_name == 'bars-3' or icon_name == 'menu' or icon_name == 'chevron' or icon_name == 'chevron-down' or icon_name == 'chevron-left' or icon_name == 'chevron-right' or icon_name == 'x-mark' or icon_name == 'close' or icon_name == 'magnifying-glass' or icon_name == 'search' or icon_name == 'shopping-bag' or icon_name == 'bag' or icon_name == 'cart' or icon_name == 'shopping-cart' or icon_name == 'user' or icon_name == 'account' or icon_name == 'truck' or icon_name == 'shipping' or icon_name == 'tag' or icon_name == 'discount' or icon_name == 'trash' or icon_name == 'remove' or icon_name == 'document-text' or icon_name == 'note' or icon_name == 'receipt-percent' or icon_name == 'coupon' or icon_name == 'share' or icon_name == 'play' or icon_name == 'pause' or icon_name == 'plus' or icon_name == 'minus' or icon_name == 'check' or icon_name == 'circle' or icon_name == 'square' or icon_name == 'triangle' or icon_name == 'diamond'
+    assign icon_name = 'arrow-right'
+  endunless
+
+  assign icon_width = width | default: 24 | plus: 0
+  if icon_width < 8 or icon_width > 100
+    assign icon_width = 24
   endif
+
+  assign icon_padding = padding | default: 0 | plus: 0
+  if icon_padding < 0 or icon_padding > 100
+    assign icon_padding = 0
+  endif
+
+  assign custom_icon_markup = custom_icon | default: '' | strip
+  assign custom_icon_valid = false
+  if custom_icon_markup != blank
+    assign custom_icon_lower = custom_icon_markup | downcase
+    if custom_icon_lower contains '<svg' and custom_icon_lower contains '</svg>'
+      assign custom_icon_valid = true
+      if custom_icon_lower contains '<script' or custom_icon_lower contains '<foreignobject' or custom_icon_lower contains '<iframe' or custom_icon_lower contains '<object' or custom_icon_lower contains '<embed' or custom_icon_lower contains '<form' or custom_icon_lower contains '<input' or custom_icon_lower contains '<button' or custom_icon_lower contains '<a' or custom_icon_lower contains '<img' or custom_icon_lower contains '<video' or custom_icon_lower contains '<audio' or custom_icon_lower contains 'javascript:' or custom_icon_lower contains 'data:' or custom_icon_lower contains 'onload=' or custom_icon_lower contains 'onclick=' or custom_icon_lower contains 'onerror=' or custom_icon_lower contains 'onmouseover=' or custom_icon_lower contains '{{' or custom_icon_lower contains '{%'
+        assign custom_icon_valid = false
+      endif
+    endif
+  endif
+
+  if icon_source == 'custom' and custom_icon_valid == false
+    assign icon_source = 'library'
+  endif
+
+  assign icon_body = blank
+  if icon_source == 'custom'
+    if custom_icon_valid
+      assign icon_body = custom_icon_markup
+    endif
+  else
+    capture icon_body
+      case icon_name
+        when 'arrow', 'arrow-right'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'arrow-left'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m10.5 4.5-7.5 7.5m0 0 7.5 7.5M3 12h18" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'bars-3', 'menu'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'chevron-down'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m19.5 8.25-7.5 7.5-7.5-7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'chevron-left'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m15.75 19.5-7.5-7.5 7.5-7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'chevron-right'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m8.25 4.5 7.5 7.5-7.5 7.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'x-mark', 'close'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M6 18 18 6M6 6l12 12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'magnifying-glass', 'search'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m21 21-5.197-5.197m0 0A7.5 7.5 0 1 0 5.196 5.196a7.5 7.5 0 0 0 10.607 10.607Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'shopping-bag', 'bag', 'cart'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M15.75 10.5V6a3.75 3.75 0 1 0-7.5 0v4.5m11.356-1.993 1.263 12c.07.665-.45 1.243-1.119 1.243H4.25a1.125 1.125 0 0 1-1.12-1.243l1.264-12A1.125 1.125 0 0 1 5.513 7.5h12.974c.576 0 1.059.435 1.12 1.007ZM8.625 10.5a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm6.75 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'shopping-cart'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25C5.843 14.25 4.5 15.593 4.5 17.25h15.75M7.5 14.25h11.218c.68 0 1.273-.454 1.45-1.11.54-1.976 1.032-3.99 1.474-6.028A45.088 45.088 0 0 0 6.75 5.25c-.55 0-1.098.007-1.644.022M7.5 14.25 5.106 5.272M6 20.25c0 .414-.336.75-.75.75s-.75-.336-.75-.75.336-.75.75-.75.75.336.75.75Zm12.75 0c0 .414-.336.75-.75.75s-.75-.336-.75-.75.336-.75.75-.75.75.336.75.75Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'user', 'account'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'truck', 'shipping'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M8.25 18.75C8.25 19.578 7.578 20.25 6.75 20.25s-1.5-.672-1.5-1.5.672-1.5 1.5-1.5 1.5.672 1.5 1.5Zm0 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5c0 .828-.672 1.5-1.5 1.5s-1.5-.672-1.5-1.5.672-1.5 1.5-1.5 1.5.672 1.5 1.5Zm0 0h1.125c.621 0 1.128-.504 1.09-1.124a21.318 21.318 0 0 0-3.214-9.193 1.5 1.5 0 0 0-1.276-.71H14.25m2.25 11.25h-2.25m0-11.176V6.615c0-.568-.423-1.048-.987-1.106A64.418 64.418 0 0 0 8.25 5.25c-1.693 0-3.365.088-5.013.259-.565.058-.987.538-.987 1.106v7.635m12-6.677v6.677m0 0h-12" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'tag', 'discount'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M9.568 3H5.25C4.007 3 3 4.007 3 5.25v4.318c0 .597.237 1.17.659 1.591l9.581 9.581a2.25 2.25 0 0 0 2.607.33 12.5 12.5 0 0 0 5.224-5.224 2.25 2.25 0 0 0-.33-2.607l-9.581-9.581A2.25 2.25 0 0 0 9.568 3Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /><path d="M6 6h.008v.008H6V6Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'trash', 'remove'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m14.74 9-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 0 1-2.244 2.077H8.084a2.25 2.25 0 0 1-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 0 0-3.478-.396m-11.7.396c.34-.052.682-.107 1.022-.165m-1.022.165a48.11 48.11 0 0 1 3.478-.396m4.744 0V4.478c0-1.18-.91-2.164-2.09-2.202a48.11 48.11 0 0 0-3.322 0C7.66 2.314 6.75 3.298 6.75 4.478v.916m8.25 0a48.66 48.66 0 0 0-8.25 0" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'document-text', 'note'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M19.5 14.25v-2.625A3.375 3.375 0 0 0 16.125 8.25h-1.5A1.125 1.125 0 0 1 13.5 7.125v-1.5A3.375 3.375 0 0 0 10.125 2.25H8.25M8.25 15h7.5m-7.5 3H12M10.5 2.25H5.625A1.125 1.125 0 0 0 4.5 3.375v17.25c0 .621.504 1.125 1.125 1.125h12.75a1.125 1.125 0 0 0 1.125-1.125V11.25A9 9 0 0 0 10.5 2.25Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'receipt-percent', 'coupon'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m9 14.25 6-6m4.5-3.493V21.75L15.75 20.25l-3.75 1.5-3.75-1.5-3.75 1.5V4.757c0-1.108.806-2.056 1.907-2.185a48.135 48.135 0 0 1 11.187 0C18.694 2.7 19.5 3.649 19.5 4.757ZM9.75 9h.008v.008H9.75V9Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Zm4.125 4.5h.008v.008h-.008V13.5Zm.375 0a.375.375 0 1 1-.75 0 .375.375 0 0 1 .75 0Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'share'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M7.217 10.907A2.25 2.25 0 1 0 7.217 13.093m0-2.186 9.566-5.314m-9.566 7.5 9.566 5.314m0 0a2.25 2.25 0 1 0 0-2.186m0 0a2.25 2.25 0 1 0 0-12.814 2.25 2.25 0 0 0 0 4.5Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'play'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M5.25 5.653c0-.856.917-1.398 1.667-.986l11.541 6.348a1.125 1.125 0 0 1 0 1.971L6.917 19.334c-.75.412-1.667-.13-1.667-.986V5.653Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'pause'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M8.25 5.25v13.5m7.5-13.5v13.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'plus'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M12 4.5v15m7.5-7.5h-15" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'minus'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="M5 12h14" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'check'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m4.5 12.75 6 6 9-13.5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'circle'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><circle cx="12" cy="12" r="8" stroke="currentColor" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'square'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><rect x="4" y="4" width="16" height="16" stroke="currentColor" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'triangle'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m12 4 8 16H4L12 4Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'diamond'
+          echo '<svg viewBox="0 0 24 24" fill="none" focusable="false" aria-hidden="true"><path d="m12 3 9 9-9 9-9-9 9-9Z" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+        when 'chevron'
+          echo '<svg viewBox="0 0 20 20" fill="none" focusable="false" aria-hidden="true"><path d="m5 7.5 5 5 5-5" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="var(--icon-stroke-width)" /></svg>'
+      endcase
+    endcapture
+    assign icon_body = icon_body | strip
+  endif
+
+  if bare and class != blank and icon_body != blank
+    assign bare_svg_start = '<svg class="' | append: class | append: '"'
+    assign icon_body = icon_body | replace_first: '<svg', bare_svg_start
+  endif
+
+  assign icon_wrapper = 'span'
+  if url != blank and label != blank
+    assign icon_wrapper = 'a'
+  endif
+  assign icon_class = 'icon icon-renderer'
+  if class != blank
+    assign icon_class = icon_class | append: ' ' | append: class
+  endif
+
+  assign icon_style = blank
 %}
 
-{% case name %}
-  {% when 'menu' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><path d="M4 7h16M4 12h16M4 17h16"/></svg>
-  {% when 'close' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="m6 6 12 12M18 6 6 18"/></svg>
-  {% when 'search' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"><circle cx="11" cy="11" r="6.5"/><path d="m16 16 4 4"/></svg>
-  {% when 'account' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="8" r="3.25"/><path d="M5.5 20c.6-3.3 3-5.25 6.5-5.25s5.9 1.95 6.5 5.25"/></svg>
-  {% when 'bag' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5"><path d="M5 8.5h14l-1 12H6l-1-12Z"/><path d="M9 9V6.5a3 3 0 0 1 6 0V9"/></svg>
-  {% when 'bag-simple' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8.5h14v11H5zM9 8.5V6a3 3 0 0 1 6 0v2.5"/></svg>
-  {% when 'chevron-down' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="m3 4.5 3 3 3-3"/></svg>
-  {% when 'chevron-down-wide' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 12 8" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m1 1 5 5 5-5"/></svg>
-  {% when 'chevron-up' %}
-    <svg{{ icon_class_attribute }} width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round"><path d="M15 12.5 10 7.5 5 12.5"/></svg>
-  {% when 'chevron-left' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M14.5 5 7.5 12l7 7"/></svg>
-  {% when 'chevron-right' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="m9.5 5 7 7-7 7"/></svg>
-  {% when 'caret-right' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 12 12" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="rtl-flip-x"><path d="m4.5 3 3 3-3 3"/></svg>
-  {% when 'arrow-right' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 20 20" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round" stroke-linejoin="round" class="rtl-flip-x"><path d="M3 10h13M11 5l5 5-5 5"/></svg>
-  {% when 'button-arrow' %}
-    <svg{{ icon_class_attribute }} width="11" height="9" viewBox="0 0 11 9" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"><path d="M0.599976 4.10001H9.59998M6.09998 7.60001L9.59998 4.10001L6.09998 0.600006"/></svg>
-  {% when 'arrow-up-right' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M5 19 19 5M9 5h10v10"/></svg>
-  {% when 'plus' %}
-    <svg{{ icon_class_attribute }} width="20" height="20" viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.25" stroke-linecap="round"><path d="M10 4V16M4 10H16"/></svg>
-  {% when 'minus' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 12 12" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round"><path d="M2 6h8"/></svg>
-  {% when 'filter' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 18 18" aria-hidden="true" focusable="false"><path d="M3 5h12M5 9h8M7 13h4" fill="none" stroke="currentColor" stroke-linecap="round"/><circle cx="6" cy="5" r="1.2" fill="currentColor"/><circle cx="11" cy="9" r="1.2" fill="currentColor"/><circle cx="9" cy="13" r="1.2" fill="currentColor"/></svg>
-  {% when 'filter-sliders' %}
-    <svg{{ icon_class_attribute }} width="16" height="16" viewBox="0 0 16 16" aria-hidden="true" focusable="false" fill="none" xmlns="http://www.w3.org/2000/svg"><path d="M15.5312 10.7948H14.4596C14.2319 9.23504 12.8855 8.03336 11.2635 8.03336C9.64159 8.03336 8.29522 9.23504 8.06747 10.7948H0.46875C0.209875 10.7948 0 11.0047 0 11.2635C0 11.5224 0.209875 11.7323 0.46875 11.7323H8.06747C8.29522 13.2921 9.64159 14.4938 11.2635 14.4938C12.8855 14.4938 14.2319 13.2921 14.4596 11.7323H15.5312C15.7901 11.7323 16 11.5224 16 11.2635C16 11.0047 15.7901 10.7948 15.5312 10.7948ZM11.2635 13.5563C9.99934 13.5563 8.97084 12.5278 8.97084 11.2635C8.97084 9.99936 9.99934 8.97086 11.2635 8.97086C12.5278 8.97086 13.5562 9.99936 13.5562 11.2635C13.5562 12.5278 12.5278 13.5563 11.2635 13.5563Z" fill="currentColor"/><path d="M0.46875 5.20522H1.54037C1.76813 6.76497 3.1145 7.96666 4.73647 7.96666C6.35841 7.96666 7.70478 6.76497 7.93253 5.20522H15.5312C15.7901 5.20522 16 4.99535 16 4.73647C16 4.4776 15.7901 4.26772 15.5312 4.26772H7.93253C7.70478 2.70794 6.35841 1.50626 4.73647 1.50626C3.1145 1.50626 1.76813 2.70794 1.54037 4.26772H0.46875C0.209875 4.26772 0 4.4776 0 4.73647C0 4.99535 0.209875 5.20522 0.46875 5.20522ZM4.73647 2.44376C6.00066 2.44376 7.02916 3.47226 7.02916 4.73647C7.02916 6.00066 6.00066 7.02916 4.73647 7.02916C3.47225 7.02916 2.44375 6.00066 2.44375 4.73647C2.44375 3.47226 3.47225 2.44376 4.73647 2.44376Z" fill="currentColor"/></svg>
-  {% when 'check' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 14 11" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"><path d="m1 5.5 3.5 3.5L13 1"/></svg>
-  {% when 'globe' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="12" cy="12" r="8.5"/><path d="M3.5 12h17M12 3.5c2.2 2.3 3.3 5.1 3.3 8.5S14.2 18.2 12 20.5M12 3.5C9.8 5.8 8.7 8.6 8.7 12s1.1 6.2 3.3 8.5"/></svg>
-  {% when 'play' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" focusable="false" fill="none"><path d="m9 7 8 5-8 5Z" fill="currentColor"/></svg>
-  {% when 'play-outline' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linejoin="round" stroke-width="1.4"><path d="m8 5 6 5-6 5Z"/></svg>
-  {% when 'pause' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 20 20" aria-hidden="true" focusable="false" fill="none" stroke="currentColor" stroke-linecap="round" stroke-width="1.4"><path d="M7 5v10M13 5v10"/></svg>
-  {% when 'truck' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M3 6h11v10H3zM14 10h4l3 3v3h-7z"/><circle cx="7" cy="18" r="2"/><circle cx="18" cy="18" r="2"/></svg>
-  {% when 'note' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 5.5h11v8H8l-4 4v-12Z"/><path d="m13.5 3 2.5 2.5-5.8 5.8-3 .7.7-3L13.5 3Z"/></svg>
-  {% when 'document' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="3.5" width="14" height="17" rx="1"/><path d="M9 8h6M9 12h6M9 16h4"/></svg>
-  {% when 'shipping' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M18 9a7 7 0 1 0 1 6.7"/><path d="M18 4v5h-5"/></svg>
-  {% when 'tag' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"><path d="M4 11.5 11.5 4H18a2 2 0 0 1 2 2v6.5L12.5 20 4 11.5Z"/><circle cx="15.5" cy="8.5" r="1"/></svg>
-  {% when 'discount' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="currentColor"><path d="m12 2.8 2.1 1.4 2.5-.1 1.2 2.2 2.2 1.2-.1 2.5 1.4 2.1-1.4 2.1.1 2.5-2.2 1.2-1.2 2.2-2.5-.1L12 21.2l-2.1-1.4-2.5.1-1.2-2.2-2.2-1.2.1-2.5L2.8 12l1.4-2.1-.1-2.5 2.2-1.2 1.2-2.2 2.5.1L12 2.8Z"/><path d="m8.8 15.2 6.4-6.4M9.1 9.3h.1m5.7 5.4h.1" fill="none" stroke="var(--color-background, #fff)" stroke-width="1.7" stroke-linecap="round"/><circle cx="9.15" cy="9.25" r="1.05" fill="none" stroke="var(--color-background, #fff)" stroke-width="1.5"/><circle cx="14.85" cy="14.75" r="1.05" fill="none" stroke="var(--color-background, #fff)" stroke-width="1.5"/></svg>
-  {% when 'return' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M9 7H5l3-3M5 7h9a5 5 0 0 1 0 10H9"/></svg>
-  {% when 'heart' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M20.8 8.7c0 5.2-8.8 10.1-8.8 10.1S3.2 13.9 3.2 8.7A4.7 4.7 0 0 1 12 6.3a4.7 4.7 0 0 1 8.8 2.4Z"/></svg>
-  {% when 'box' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="m4 7 8-4 8 4v10l-8 4-8-4V7Z"/><path d="m4 7 8 4 8-4M12 11v10"/></svg>
-  {% when 'shield' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3 19 6v5c0 4.5-2.8 7.8-7 10-4.2-2.2-7-5.5-7-10V6l7-3Z"/><path d="m9 12 2 2 4-4"/></svg>
-  {% when 'sparkles' %}
-    <svg{{ icon_class_attribute }} viewBox="0 0 24 24" aria-hidden="true" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"><path d="m12 3 1.2 4.8L18 9l-4.8 1.2L12 15l-1.2-4.8L6 9l4.8-1.2L12 3Z"/><path d="m19 14 .6 2.4L22 17l-2.4.6L19 20l-.6-2.4L16 17l2.4-.6L19 14Z"/></svg>
-{% endcase %}
+{% if width != blank or padding != blank %}
+  {% capture icon_style %}
+    --icon-width: {{ icon_width }}px;
+    --icon-padding: {{ icon_padding }}px;
+  {% endcapture %}
+  {% assign icon_style = icon_style | strip %}
+{% endif %}
+
+{% if icon_body != blank and bare and url == blank %}
+  {{ icon_body }}
+{% elsif icon_body != blank %}
+  <{{ icon_wrapper }}
+    class="{{ icon_class | strip }}"
+    {% if icon_style != blank %}style="{{ icon_style }}"{% endif %}
+    {% if icon_wrapper == 'a' %}
+      href="{{ url | escape }}"
+      aria-label="{{ label | escape }}"
+      {% if open_in_new_tab %}target="_blank" rel="noopener noreferrer"{% endif %}
+    {% else %}
+      aria-hidden="true"
+    {% endif %}
+  >{{ icon_body }}</{{ icon_wrapper }}>
+{% endif %}
+
+{% stylesheet %}
+  .icon-renderer {
+    box-sizing: content-box;
+    display: inline-flex;
+    flex: 0 0 auto;
+    align-items: center;
+    justify-content: center;
+    width: var(--icon-width, var(--icon-size-medium, 20px));
+    height: var(--icon-width, var(--icon-size-medium, 20px));
+    max-width: 100%;
+    padding: var(--icon-padding, 0px);
+    color: inherit;
+    line-height: 0;
+    overflow: hidden;
+  }
+
+  .icon-renderer > svg {
+    display: block;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+  }
+
+  .icon-renderer:is(a) {
+    color: inherit;
+    text-decoration: none;
+  }
+{% endstylesheet %}

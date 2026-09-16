@@ -1,0 +1,41 @@
+{% doc %}
+  Renders native Shopify pagination for the blog article list.
+{% enddoc %}
+
+{% # theme-check-disable UndefinedObject %}
+{% if paginate.pages > 1 %}
+  <nav class="blog-pagination blog-pagination--{{ block.settings.style }} blog-pagination--height-{{ block.settings.height }}" aria-label="Pagination" style="--blog-pagination-padding-top: {{ block.settings.padding_top }}px; --blog-pagination-padding-bottom: {{ block.settings.padding_bottom }}px; --blog-pagination-padding-left: {{ block.settings.padding_left }}px; --blog-pagination-padding-right: {{ block.settings.padding_right }}px;" {{ block.shopify_attributes }}>
+    {{ paginate | default_pagination }}
+  </nav>
+{% elsif request.design_mode %}
+  <div class="blog-pagination blog-pagination--empty" {{ block.shopify_attributes }}>Pagination appears when this blog has more than one page.</div>
+{% endif %}
+{% # theme-check-enable UndefinedObject %}
+
+{% stylesheet %}
+  .blog-pagination { display: flex; justify-content: center; padding-top: var(--blog-pagination-padding-top, 0px); padding-right: var(--blog-pagination-padding-right, 0px); padding-bottom: var(--blog-pagination-padding-bottom, 0px); padding-left: var(--blog-pagination-padding-left, 0px); }
+  .blog-pagination a, .blog-pagination span { display: inline-flex; align-items: center; justify-content: center; min-width: 2.5rem; min-height: 2.5rem; padding-inline: 0.75rem; color: inherit; }
+  .blog-pagination--empty { opacity: 0.65; font-size: 0.875rem; }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Pagination",
+  "tag": null,
+  "settings": [
+    { "type": "select", "id": "style", "label": "Style", "options": [ { "value": "primary", "label": "Primary" }, { "value": "secondary", "label": "Secondary" }, { "value": "outline", "label": "Outline" }, { "value": "text", "label": "Text" } ], "default": "primary" },
+    { "type": "select", "id": "height", "label": "Height", "options": [ { "value": "inherit", "label": "Inherit" }, { "value": "small", "label": "Small" }, { "value": "medium", "label": "Medium" }, { "value": "large", "label": "Large" } ], "default": "inherit" },
+    { "type": "header", "content": "Padding" },
+    { "type": "range", "id": "padding_top", "label": "Top", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_left", "label": "Left", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_right", "label": "Right", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 }
+  ],
+  "presets": [
+    {
+      "name": "Pagination",
+      "category": "Blog"
+    }
+  ]
+}
+{% endschema %}
