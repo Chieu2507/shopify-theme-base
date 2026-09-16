@@ -24,7 +24,6 @@ const paginationOptions = (root) => {
   if (!element) return {};
   const type = element.dataset.paginationType;
   return {
-    modules: [Pagination],
     pagination: {
       el: element,
       type: type === 'progress_bar' ? 'progressbar' : 'bullets',
@@ -40,9 +39,8 @@ const init = (root) => {
   if (!carousel) return;
   const fade = root.dataset.transition === 'fade';
   const autoplay = root.dataset.autoplay === 'true' && !reducedMotion();
-  const modules = fade ? [EffectFade, Pagination] : [Pagination];
   const options = {
-    modules,
+    modules: fade ? [EffectFade, Pagination] : [Pagination],
     slidesPerView: 1,
     watchOverflow: true,
     speed: reducedMotion() ? 0 : 600,
