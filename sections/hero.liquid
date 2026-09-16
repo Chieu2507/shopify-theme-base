@@ -26,11 +26,11 @@
   endunless
 
   assign hero_desktop_height = section.settings.desktop_height | default: 'medium'
-  unless hero_desktop_height == 'small' or hero_desktop_height == 'medium' or hero_desktop_height == 'large' or hero_desktop_height == 'full_screen'
+  unless hero_desktop_height == 'adapt' or hero_desktop_height == 'extra_small' or hero_desktop_height == 'small' or hero_desktop_height == 'medium' or hero_desktop_height == 'large' or hero_desktop_height == 'extra_large' or hero_desktop_height == 'full_screen'
     assign hero_desktop_height = 'medium'
   endunless
   assign hero_mobile_height = section.settings.mobile_height | default: 'adapt'
-  unless hero_mobile_height == 'adapt' or hero_mobile_height == 'small' or hero_mobile_height == 'medium' or hero_mobile_height == 'large' or hero_mobile_height == 'full_screen'
+  unless hero_mobile_height == 'adapt' or hero_mobile_height == 'extra_small' or hero_mobile_height == 'small' or hero_mobile_height == 'medium' or hero_mobile_height == 'large' or hero_mobile_height == 'extra_large' or hero_mobile_height == 'full_screen'
     assign hero_mobile_height = 'adapt'
   endunless
 
@@ -49,7 +49,7 @@
 <div
   class="section-spacing hero hero--{{ hero_layout }} hero--desktop-{{ hero_desktop_height }} hero--mobile-{{ hero_mobile_height }} color-scheme section-color-scope {{ hero_scheme }}"
   {% if section.settings.allow_transparent_header %}data-hero-transparent-header{% endif %}
-  {% if section.settings.parallax_effect == 'scroll' %}data-hero-parallax{% endif %}
+  {% unless section.settings.parallax_effect == 'none' %}data-hero-parallax="{{ section.settings.parallax_effect }}"{% endunless %}
   {% if hero_style != blank %}style="{{ hero_style | strip }}"{% endif %}
 >
   <div class="hero__media{% if hero_media_type == 'image' and section.settings.banner_image == blank or hero_media_type == 'video' and section.settings.video == blank %} hero__media--placeholder placeholder-image{% endif %}" aria-hidden="true" data-hero-media>
@@ -93,9 +93,12 @@
     color: var(--body-color);
   }
 
+  .hero--desktop-adapt { --hero-min-height: auto; }
+  .hero--desktop-extra_small { --hero-min-height: 42rem; }
   .hero--desktop-small { --hero-min-height: 56rem; }
   .hero--desktop-medium { --hero-min-height: 72rem; }
   .hero--desktop-large { --hero-min-height: 90rem; }
+  .hero--desktop-extra_large { --hero-min-height: 108rem; }
   .hero--desktop-full_screen { --hero-min-height: 100svh; }
 
   .hero__media,
@@ -113,10 +116,6 @@
     z-index: 0;
     pointer-events: none;
     will-change: transform;
-  }
-
-  .hero[data-hero-parallax] .hero__media {
-    transform: translate3d(0, var(--hero-parallax-offset, 0px), 0) scale(1.08);
   }
 
   .hero__media img,
@@ -223,9 +222,11 @@
 
   @media (max-width: 767.98px) {
     .hero--mobile-adapt { --hero-min-height: auto; }
+    .hero--mobile-extra_small { --hero-min-height: 40rem; }
     .hero--mobile-small { --hero-min-height: 48rem; }
     .hero--mobile-medium { --hero-min-height: 62rem; }
     .hero--mobile-large { --hero-min-height: 76rem; }
+    .hero--mobile-extra_large { --hero-min-height: 90rem; }
     .hero--mobile-full_screen { --hero-min-height: 100svh; }
 
     .hero__content {
@@ -401,7 +402,10 @@
       "label": "t:labels.parallax_effect",
       "options": [
         { "value": "none", "label": "t:options.parallax.none" },
-        { "value": "scroll", "label": "t:options.parallax.scroll" }
+        { "value": "fixed", "label": "t:options.parallax.fixed" },
+        { "value": "vertical", "label": "t:options.parallax.vertical" },
+        { "value": "horizontal", "label": "t:options.parallax.horizontal" },
+        { "value": "zoom", "label": "t:options.parallax.zoom" }
       ],
       "default": "none"
     },
@@ -414,9 +418,12 @@
       "id": "desktop_height",
       "label": "t:options.device.desktop",
       "options": [
+        { "value": "adapt", "label": "t:options.hero_height.adapt" },
+        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
         { "value": "small", "label": "t:options.hero_height.small" },
         { "value": "medium", "label": "t:options.hero_height.medium" },
         { "value": "large", "label": "t:options.hero_height.large" },
+        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
         { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
       ],
       "default": "medium"
@@ -427,9 +434,11 @@
       "label": "t:options.device.mobile",
       "options": [
         { "value": "adapt", "label": "t:options.hero_height.adapt" },
+        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
         { "value": "small", "label": "t:options.hero_height.small" },
         { "value": "medium", "label": "t:options.hero_height.medium" },
         { "value": "large", "label": "t:options.hero_height.large" },
+        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
         { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
       ],
       "default": "adapt"
@@ -442,13 +451,13 @@
       "type": "checkbox",
       "id": "content_full_width",
       "label": "t:labels.full_width",
-      "default": false
+      "default": true
     },
     {
       "type": "checkbox",
       "id": "enable_sticky",
       "label": "t:labels.enable_sticky",
-      "default": false
+      "default": true
     },
     {
       "type": "select",
