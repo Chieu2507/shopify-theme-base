@@ -15,6 +15,7 @@
   @param {string} [previous_label] - Accessible previous label
   @param {string} [next_label] - Accessible next label
   @param {string} [center_style] - Inline custom properties for vertical centering
+  @param {boolean} [centered] - Whether controls overlay the carousel viewport
 {% enddoc %}
 
 {% liquid
@@ -66,7 +67,15 @@
     assign swiper_navigation_next_label = next_label
   endif
 
-  assign swiper_navigation_class = 'swiper-carousel__navigation--centered swiper-carousel__navigation--' | append: swiper_navigation_position | append: ' swiper-carousel__navigation--' | append: swiper_navigation_behavior
+  assign swiper_navigation_centered = true
+  if centered == false or centered == 'false'
+    assign swiper_navigation_centered = false
+  endif
+
+  assign swiper_navigation_class = blank
+  if swiper_navigation_centered
+    assign swiper_navigation_class = 'swiper-carousel__navigation--centered swiper-carousel__navigation--' | append: swiper_navigation_position | append: ' swiper-carousel__navigation--' | append: swiper_navigation_behavior
+  endif
   if wrapper_class != blank
     assign swiper_navigation_class = swiper_navigation_class | append: ' ' | append: wrapper_class
   endif
