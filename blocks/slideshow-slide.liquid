@@ -22,10 +22,11 @@
 <div
   class="swiper-slide slideshow-slide slideshow-slide--{{ slide_layout }} slideshow-slide--desktop-{{ block.settings.desktop_position }} slideshow-slide--mobile-{{ block.settings.mobile_position }} color-scheme section-color-scope {{ slide_scheme }}"
   data-slideshow-slide
+  data-parallax="{{ block.settings.parallax_effect | default: 'none' }}"
   {% if slide_style != blank %}style="{{ slide_style | strip }}"{% endif %}
   {{ block.shopify_attributes }}
 >
-  <div class="slideshow-slide__media{% if block.settings.image == blank and block.settings.video == blank %} placeholder-image{% endif %}" aria-hidden="true">
+  <div class="slideshow-slide__media{% if block.settings.image == blank and block.settings.video == blank %} placeholder-image{% endif %}" data-slideshow-media aria-hidden="true">
     {% if slide_media_type == 'video' and block.settings.video != blank %}
       {{ block.settings.video | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'slideshow-slide__video' }}
     {% elsif block.settings.image != blank %}
@@ -89,6 +90,7 @@
     { "type": "header", "content": "Media" }, { "type": "select", "id": "media_type", "label": "Type", "options": [{ "value": "image", "label": "Image" }, { "value": "video", "label": "Video" }], "default": "image" },
     { "type": "image_picker", "id": "image", "label": "Image", "visible_if": "{{ block.settings.media_type == 'image' }}" }, { "type": "image_picker", "id": "mobile_image", "label": "Mobile image", "visible_if": "{{ block.settings.media_type == 'image' }}" }, { "type": "video", "id": "video", "label": "Video", "visible_if": "{{ block.settings.media_type == 'video' }}" },
     { "type": "checkbox", "id": "show_overlay", "label": "Show overlay", "default": true }, { "type": "color", "id": "overlay_color", "label": "Overlay color", "alpha": true, "default": "#00000033", "visible_if": "{{ block.settings.show_overlay }}" },
+    { "type": "select", "id": "parallax_effect", "label": "Parallax effect", "options": [{ "value": "none", "label": "None" }, { "value": "vertical", "label": "Vertical" }, { "value": "horizontal", "label": "Horizontal" }, { "value": "zoom", "label": "Zoom" }], "default": "none", "visible_if": "{{ block.settings.layout == 'classic' }}" },
     { "type": "header", "content": "Content" },
     { "type": "select", "id": "desktop_position", "label": "Desktop position", "options": [{ "value": "top_left", "label": "Top left" }, { "value": "top_center", "label": "Top center" }, { "value": "top_right", "label": "Top right" }, { "value": "center_left", "label": "Center left" }, { "value": "center_center", "label": "Center center" }, { "value": "center_right", "label": "Center right" }, { "value": "bottom_left", "label": "Bottom left" }, { "value": "bottom_center", "label": "Bottom center" }, { "value": "bottom_right", "label": "Bottom right" }], "default": "bottom_left" },
     { "type": "select", "id": "mobile_position", "label": "Mobile position", "options": [{ "value": "top_left", "label": "Top left" }, { "value": "top_center", "label": "Top center" }, { "value": "top_right", "label": "Top right" }, { "value": "center_left", "label": "Center left" }, { "value": "center_center", "label": "Center center" }, { "value": "center_right", "label": "Center right" }, { "value": "bottom_left", "label": "Bottom left" }, { "value": "bottom_center", "label": "Bottom center" }, { "value": "bottom_right", "label": "Bottom right" }], "default": "center_center" },
