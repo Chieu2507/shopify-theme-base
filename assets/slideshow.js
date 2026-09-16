@@ -35,23 +35,23 @@ const createTwoSlideLoop = (carousel) => {
   const slides = wrapper ? [...wrapper.querySelectorAll(`:scope > ${slideSelector}`)] : [];
   if (slides.length !== 2) return null;
 
-  // Swiper 12's loop rearranges original slides; it does not make duplicate
-  // nodes. A centered, two-slide carousel needs one physical slide on either
-  // side, so add inert clones to the Swiper track itself. The active index is
-  // reset to the matching original after a clone is reached.
-  const previousClone = createSlideClone(slides[1], 1, 'previous');
-  const nextClone = createSlideClone(slides[0], 0, 'next');
-  wrapper.prepend(previousClone);
-  wrapper.append(nextClone);
+  // Keep a complete cycle at BOTH ends: A' B' | A B | A' B'.
+  // The clone reached during wrapping must itself have both neighbours so
+  // the visible page-width edges are identical before and after the reset.
+  const before = slides.map((slide, index) => createSlideClone(slide, index, 'previous'));
+  const after = slides.map((slide, index) => createSlideClone(slide, index, 'next'));
+  wrapper.prepend(...before);
+  wrapper.append(...after);
   let resetSlide = null;
 
   return {
-    initialSlide: 1,
-    logicalIndex: (activeIndex) => (activeIndex === 0 || activeIndex === 2 ? 1 : 0),
-    originalIndex: (logicalIndex) => logicalIndex + 1,
+    initialSlide: 2,
+    logicalIndex: (activeIndex) => activeIndex % 2,
+    originalIndex: (logicalIndex) => logicalIndex + 2,
     restore(swiper) {
       if (swiper.destroyed) return;
-      const targetIndex = swiper.activeIndex === 0 ? 2 : swiper.activeIndex === 3 ? 1 : null;
+      const targetIndex = swiper.activeIndex < 2 || swiper.activeIndex > 3
+        ? 2 + (swiper.activeIndex % 2) : null;
       if (targetIndex === null) return;
       resetSlide = swiper.slides[targetIndex];
       resetSlide?.classList.add('slideshow-slide--loop-reset');
@@ -64,8 +64,7 @@ const createTwoSlideLoop = (carousel) => {
     },
     destroy() {
       resetSlide?.classList.remove('slideshow-slide--loop-reset');
-      previousClone.remove();
-      nextClone.remove();
+      [...before, ...after].forEach((clone) => clone.remove());
     },
   };
 };
