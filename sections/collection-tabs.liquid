@@ -19,25 +19,23 @@
     assign collection_tabs_mobile_alignment = 'left'
   endunless
 
-  assign collection_tabs_tab_justify_content = 'flex-start'
+  assign collection_tabs_controls_alignment = 'flex-start'
   case collection_tabs_tab_position
     when 'center'
-      assign collection_tabs_tab_justify_content = 'center'
+      assign collection_tabs_controls_alignment = 'center'
     when 'right'
-      assign collection_tabs_tab_justify_content = 'flex-end'
+      assign collection_tabs_controls_alignment = 'flex-end'
   endcase
-  assign collection_tabs_tab_align_items = collection_tabs_tab_justify_content
   if collection_tabs_layout_direction == 'horizontal'
-    assign collection_tabs_tab_justify_content = 'flex-start'
-    assign collection_tabs_tab_align_items = 'flex-start'
+    assign collection_tabs_controls_alignment = 'flex-start'
   endif
 
-  assign collection_tabs_mobile_justify_content = 'flex-start'
+  assign collection_tabs_mobile_controls_alignment = 'flex-start'
   case collection_tabs_mobile_alignment
     when 'center'
-      assign collection_tabs_mobile_justify_content = 'center'
+      assign collection_tabs_mobile_controls_alignment = 'center'
     when 'right'
-      assign collection_tabs_mobile_justify_content = 'flex-end'
+      assign collection_tabs_mobile_controls_alignment = 'flex-end'
   endcase
 
   assign collection_tabs_scheme = section.settings.color_scheme | default: 'scheme-1'
@@ -64,10 +62,8 @@
 {% capture collection_tabs_style %}
   {% if collection_tabs_gap_desktop != 59 %}--collection-tabs-gap-desktop: {{ collection_tabs_gap_desktop }}px;{% endif %}
   {% if collection_tabs_gap_mobile != 30 %}--collection-tabs-gap-mobile: {{ collection_tabs_gap_mobile }}px;{% endif %}
-  --collection-tabs-tab-justify-content: {{ collection_tabs_tab_justify_content }};
-  --collection-tabs-tab-justify-content-mobile: {{ collection_tabs_mobile_justify_content }};
-  --collection-tabs-tab-align-items: {{ collection_tabs_tab_align_items }};
-  --collection-tabs-tab-align-items-mobile: {{ collection_tabs_mobile_justify_content }};
+  --collection-tabs-controls-alignment: {{ collection_tabs_controls_alignment }};
+  --collection-tabs-controls-alignment-mobile: {{ collection_tabs_mobile_controls_alignment }};
   {% if collection_tabs_padding_top != 16 %}--collection-tabs-padding-top: {{ collection_tabs_padding_top }}px;{% endif %}
   {% if collection_tabs_padding_bottom != 32 %}--collection-tabs-padding-bottom: {{ collection_tabs_padding_bottom }}px;{% endif %}
   {% if section.settings.customize_mobile_padding %}
@@ -87,11 +83,15 @@
       data-collection-tabs
       data-collection-tabs-ready="false"
       data-layout-direction="{{ collection_tabs_layout_direction }}"
+      data-controls-alignment="{{ collection_tabs_controls_alignment }}"
       data-layout-type="{{ section.settings.layout_type | default: 'carousel' }}"
       data-autoplay="{{ section.settings.autoplay }}"
     >
       <div class="collection-tabs__controls" data-collection-tabs-controls>
-        {% content_for 'block', type: 'tab-layout', id: 'tab-layout' %}
+        <div class="collection-tabs__controls-group">
+          {% content_for 'block', type: 'header', id: 'header' %}
+          {% content_for 'block', type: 'tab-layout', id: 'tab-layout' %}
+        </div>
         {% content_for 'block', type: 'collection-tabs-view-all', id: 'collection-tabs-view-all' %}
       </div>
       <div
@@ -129,7 +129,11 @@
     display: contents;
   }
 
-  .collection-tabs__controls > .tab-layout {
+  .collection-tabs__controls-group {
+    display: contents;
+  }
+
+  .collection-tabs__controls-group > .tab-layout {
     flex: 0 0 auto;
     width: 100%;
     order: 1;
@@ -160,11 +164,40 @@
 
   .collection-tabs__controls > .collection-tabs-view-all {
     flex: 0 0 auto;
-    align-self: flex-start;
+    align-self: center;
     order: 3;
   }
 
   @media (min-width: 768px) {
+    .collection-tabs__layout[data-layout-direction='vertical'][data-controls-alignment='center'] > .collection-tabs__controls > .collection-tabs__controls-group > .block-header {
+      --flex-align: center;
+      align-self: center;
+    }
+
+    .collection-tabs__layout[data-layout-direction='vertical'][data-controls-alignment='flex-end'] > .collection-tabs__controls > .collection-tabs__controls-group > .block-header {
+      --flex-align: end;
+      align-self: flex-end;
+    }
+
+    .collection-tabs__layout[data-layout-direction='vertical'][data-controls-alignment='flex-start'] > .collection-tabs__controls {
+      display: flex;
+      align-items: end;
+      justify-content: space-between;
+      gap: var(--collection-tabs-gap-desktop, 59px);
+    }
+
+    .collection-tabs__layout[data-layout-direction='vertical'][data-controls-alignment='flex-start'] > .collection-tabs__controls > .collection-tabs__controls-group {
+      display: flex;
+      flex-direction: column;
+      align-items: flex-start;
+      gap: var(--collection-tabs-gap-desktop, 59px);
+      min-width: 0;
+    }
+
+    .collection-tabs__layout[data-layout-direction='vertical'][data-controls-alignment='flex-start'] > .collection-tabs__controls > .collection-tabs__controls-group > .tab-layout {
+      width: auto;
+    }
+
     .collection-tabs__layout[data-layout-direction='horizontal'] {
       display: grid;
       grid-template-columns: minmax(220px, 0.3fr) minmax(0, 0.7fr);
@@ -181,14 +214,25 @@
       align-items: stretch;
       gap: var(--collection-tabs-gap-desktop, 59px);
       min-width: 0;
+      position: sticky;
+      inset-block-start: var(--header-height, 0px);
+      align-self: start;
     }
 
-    .collection-tabs__layout[data-layout-direction='horizontal'] > .collection-tabs__controls > .tab-layout {
+    .collection-tabs__layout[data-layout-direction='horizontal'] > .collection-tabs__controls > .collection-tabs__controls-group {
+      display: flex;
+      flex-direction: column;
+      gap: var(--collection-tabs-gap-desktop, 59px);
+      min-width: 0;
+    }
+
+    .collection-tabs__layout[data-layout-direction='horizontal'] > .collection-tabs__controls > .collection-tabs__controls-group > .tab-layout {
       display: contents;
       width: auto;
     }
 
     .collection-tabs__layout[data-layout-direction='horizontal'] > .collection-tabs__controls > .collection-tabs-view-all {
+      align-self: end;
       order: 2;
     }
 
@@ -215,7 +259,7 @@
       gap: var(--collection-tabs-gap-mobile, var(--collection-tabs-gap-desktop, 59px));
     }
 
-    .collection-tabs__layout[data-layout-direction='horizontal'] > .collection-tabs__controls > .tab-layout,
+    .collection-tabs__layout[data-layout-direction='horizontal'] > .collection-tabs__controls > .collection-tabs__controls-group > .tab-layout,
     .collection-tabs__layout[data-layout-direction='horizontal'] > .collection-tabs__list {
       width: 100%;
     }
@@ -234,6 +278,7 @@
   "enabled_on": { "templates": ["index"] },
   "max_blocks": 8,
   "blocks": [
+    { "type": "header" },
     { "type": "collection-tab" }
   ],
   "settings": [
@@ -276,7 +321,7 @@
     {
       "type": "select",
       "id": "mobile_alignment",
-      "label": "t:labels.mobile_alignment",
+      "label": "t:labels.mobile_tabs_and_view_all_alignment",
       "options": [
         { "value": "left", "label": "t:options.alignment.left" },
         { "value": "center", "label": "t:options.alignment.center" },
@@ -637,6 +682,26 @@
         "padding_bottom_mobile": 24
       },
       "blocks": [
+        {
+          "type": "header",
+          "id": "header",
+          "static": true,
+          "settings": {
+            "width": "fit",
+            "gap_desktop": 12,
+            "gap_mobile": 8
+          },
+          "blocks": [
+            {
+              "type": "heading",
+              "settings": {
+                "text": "<p>Collection cards</p>",
+                "heading_size": "lg",
+                "html_tag": "h2"
+              }
+            }
+          ]
+        },
         {
           "type": "tab-layout",
           "id": "tab-layout",
