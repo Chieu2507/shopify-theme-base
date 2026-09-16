@@ -184,6 +184,9 @@ const updateControlScheme = (root, swiper) => {
 
   const activeSlide = swiper.slides?.[swiper.activeIndex] || root.querySelector('.swiper-wrapper > .swiper-slide-active');
   const scheme = activeSlide?.dataset.slideshowColorScheme?.trim() || '';
+  // Controls live outside the slides so Swiper can own one pagination instance.
+  // Apply the active slide's scheme to both control surfaces instead of letting
+  // them inherit the section-level fallback scheme.
   root.querySelectorAll('[data-slideshow-control-scope]').forEach((control) => {
     const previousScheme = control.dataset.slideshowControlScheme;
     if (previousScheme && previousScheme !== scheme) control.classList.remove(previousScheme);
