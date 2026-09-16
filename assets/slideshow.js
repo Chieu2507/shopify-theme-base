@@ -62,16 +62,9 @@ const bindNavigation = (root, swiper) => {
   const next = root.querySelector('[data-slideshow-next]');
   const move = (direction) => (event) => {
     event.preventDefault();
-    event.stopImmediatePropagation();
     if (swiper.destroyed) return;
-
-    if (swiper.params.loop && typeof swiper.slideToLoop === 'function') {
-      swiper.slideToLoop(swiper.realIndex + direction);
-      return;
-    }
-
-    const total = swiper.slides.length;
-    if (total > 1) swiper.slideTo((swiper.activeIndex + direction + total) % total);
+    if (direction < 0) swiper.slidePrev();
+    else swiper.slideNext();
   };
 
   previous?.addEventListener('click', move(-1), options);
