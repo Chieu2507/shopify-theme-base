@@ -1,19 +1,20 @@
 {% liquid
-  assign hero_scheme = section.settings.color_scheme | default: 'scheme-1'
+  assign hero_section_scheme = section.settings.color_scheme | default: 'scheme-1'
   if section.settings.color_scheme.id != blank
-    assign hero_scheme = section.settings.color_scheme.id
+    assign hero_section_scheme = section.settings.color_scheme.id
   endif
-  assign hero_scheme = hero_scheme | default: 'scheme-1' | handleize
+  assign hero_section_scheme = hero_section_scheme | default: 'scheme-1' | handleize
+
+  assign hero_content_scheme = section.settings.content_color_scheme | default: 'scheme-1'
+  if section.settings.content_color_scheme.id != blank
+    assign hero_content_scheme = section.settings.content_color_scheme.id
+  endif
+  assign hero_content_scheme = hero_content_scheme | default: 'scheme-1' | handleize
 
   assign hero_width = section.settings.width | default: 'full'
   unless hero_width == 'page' or hero_width == 'full'
     assign hero_width = 'full'
   endunless
-  assign hero_container_class = 'full-width'
-  if hero_width == 'page'
-    assign hero_container_class = 'page-width'
-  endif
-
   assign hero_layout = section.settings.layout | default: 'classic'
   unless hero_layout == 'classic' or hero_layout == 'split'
     assign hero_layout = 'classic'
@@ -47,10 +48,10 @@
   assign hero_content_max_width = section.settings.content_max_width | default: 640 | plus: 0
   assign hero_desktop_gap = section.settings.desktop_gap | default: 12 | plus: 0
   assign hero_mobile_gap = section.settings.mobile_gap | default: 12 | plus: 0
-  assign hero_padding_top = section.settings.padding_top | default: 0 | plus: 0
-  assign hero_padding_bottom = section.settings.padding_bottom | default: 0 | plus: 0
-  assign hero_padding_top_mobile = section.settings.padding_top_mobile | default: 0 | plus: 0
-  assign hero_padding_bottom_mobile = section.settings.padding_bottom_mobile | default: 0 | plus: 0
+  assign hero_padding_top = section.settings.padding_top | default: 50 | plus: 0
+  assign hero_padding_bottom = section.settings.padding_bottom | default: 50 | plus: 0
+  assign hero_padding_top_mobile = section.settings.padding_top_mobile | default: 50 | plus: 0
+  assign hero_padding_bottom_mobile = section.settings.padding_bottom_mobile | default: 50 | plus: 0
   assign hero_page_content_padding = section.settings.page_content_padding | default: 64 | plus: 0
 %}
 
@@ -58,8 +59,8 @@
   {% if hero_desktop_gap != 12 %}--hero-content-gap: {{ hero_desktop_gap }}px;{% endif %}
   {% if hero_mobile_gap != hero_desktop_gap %}--hero-content-gap-mobile: {{ hero_mobile_gap }}px;{% endif %}
   {% if hero_content_width == 'custom' and hero_content_max_width != 640 %}--hero-content-max-width: {{ hero_content_max_width }}px;{% endif %}
-  {% if hero_padding_top != 0 %}--hero-section-padding-top: {{ hero_padding_top }}px;{% endif %}
-  {% if hero_padding_bottom != 0 %}--hero-section-padding-bottom: {{ hero_padding_bottom }}px;{% endif %}
+  {% if hero_padding_top != 50 %}--hero-section-padding-top: {{ hero_padding_top }}px;{% endif %}
+  {% if hero_padding_bottom != 50 %}--hero-section-padding-bottom: {{ hero_padding_bottom }}px;{% endif %}
   {% if section.settings.customize_mobile_padding %}
     {% if hero_padding_top_mobile != hero_padding_top %}--hero-section-padding-top-mobile: {{ hero_padding_top_mobile }}px;{% endif %}
     {% if hero_padding_bottom_mobile != hero_padding_bottom %}--hero-section-padding-bottom-mobile: {{ hero_padding_bottom_mobile }}px;{% endif %}
@@ -69,53 +70,64 @@
 {% endcapture %}
 
 <div
-  class="section-spacing hero hero--width-{{ hero_width }} hero--{{ hero_layout }} hero--desktop-{{ hero_desktop_height }} hero--mobile-{{ hero_mobile_height }} color-scheme section-color-scope {{ hero_scheme }}"
+  class="section-spacing hero hero--width-{{ hero_width }} hero--{{ hero_layout }} hero--desktop-{{ hero_desktop_height }} hero--mobile-{{ hero_mobile_height }}{% if hero_width == 'page' %} color-scheme section-color-scope {{ hero_section_scheme }}{% endif %}"
   {% if section.settings.allow_transparent_header %}data-hero-transparent-header{% endif %}
   {% unless section.settings.parallax_effect == 'none' %}data-hero-parallax="{{ section.settings.parallax_effect }}"{% endunless %}
   {% if section.settings.enable_sticky %}data-hero-sticky{% endif %}
   {% if hero_style != blank %}style="{{ hero_style | strip }}"{% endif %}
 >
-  <div class="hero__media" aria-hidden="true">
-    <div class="hero__media-inner{% if hero_media_is_placeholder %} hero__media-inner--placeholder placeholder-image{% endif %}" data-hero-media>
-    {% if hero_media_type == 'video' and section.settings.video != blank %}
-      {{ section.settings.video | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'hero__video hero__video--desktop' }}
-      {% if section.settings.mobile_video != blank %}
-        {{ section.settings.mobile_video | video_tag: image_size: '1200x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'hero__video hero__video--mobile' }}
-      {% endif %}
-    {% elsif hero_media_type == 'image' and section.settings.banner_image != blank %}
-      <picture>
-        {% if section.settings.mobile_banner_image != blank %}
-          <source
-            media="(max-width: 767.98px)"
-            srcset="{{ section.settings.mobile_banner_image | image_url: width: 1200 }}"
-          >
+  <div class="hero__surface{% if hero_width == 'page' %} container page-width color-scheme section-color-scope {{ hero_section_scheme }}{% else %} hero__surface--full color-scheme section-color-scope {{ hero_content_scheme }}{% endif %}" data-hero-surface>
+    <div class="hero__media" aria-hidden="true">
+      <div class="hero__media-inner{% if hero_media_is_placeholder %} hero__media-inner--placeholder placeholder-image{% endif %}" data-hero-media>
+      {% if hero_media_type == 'video' and section.settings.video != blank %}
+        {{ section.settings.video | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'hero__video hero__video--desktop' }}
+        {% if section.settings.mobile_video != blank %}
+          {{ section.settings.mobile_video | video_tag: image_size: '1200x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'hero__video hero__video--mobile' }}
         {% endif %}
-        {{ section.settings.banner_image | image_url: width: 2400 | image_tag: widths: '750, 1100, 1500, 2000, 2400', sizes: '100vw', alt: '' }}
-      </picture>
-    {% else %}
-      {{ 'lifestyle-1' | placeholder_svg_tag: 'hero__placeholder' }}
-    {% endif %}
+      {% elsif hero_media_type == 'image' and section.settings.banner_image != blank %}
+        <picture>
+          {% if section.settings.mobile_banner_image != blank %}
+            <source
+              media="(max-width: 767.98px)"
+              srcset="{{ section.settings.mobile_banner_image | image_url: width: 1200 }}"
+            >
+          {% endif %}
+          {{ section.settings.banner_image | image_url: width: 2400 | image_tag: widths: '750, 1100, 1500, 2000, 2400', sizes: '100vw', alt: '' }}
+        </picture>
+      {% else %}
+        {{ 'lifestyle-1' | placeholder_svg_tag: 'hero__placeholder' }}
+      {% endif %}
+      </div>
     </div>
-  </div>
 
-  {% if section.settings.overlay != blank %}<div class="hero__overlay" aria-hidden="true"></div>{% endif %}
-  {% if section.settings.link != blank %}<a class="hero__link" href="{{ section.settings.link }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="{{ 'general.hero' | t | escape }}"></a>{% endif %}
+    {% if section.settings.overlay != blank %}<div class="hero__overlay" aria-hidden="true"></div>{% endif %}
+    {% if section.settings.link != blank %}<a class="hero__link" href="{{ section.settings.link }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="{{ 'general.hero' | t | escape }}"></a>{% endif %}
 
-  <div class="container {{ hero_container_class }} hero__container hero__container--desktop-{{ hero_desktop_position }} hero__container--mobile-{{ hero_mobile_position }}">
-    <div class="hero__content hero__content--width-{{ hero_content_width }}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content">
-      {% content_for 'blocks' %}
+    <div class="hero__container hero__container--desktop-{{ hero_desktop_position }} hero__container--mobile-{{ hero_mobile_position }}">
+      <div class="hero__content hero__content--width-{{ hero_content_width }}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content color-scheme section-color-scope {{ hero_content_scheme }}">
+        {% content_for 'blocks' %}
+      </div>
     </div>
   </div>
 </div>
 
 {% stylesheet %}
   .hero {
-    position: relative;
-    display: grid;
-    min-height: var(--hero-min-height, 72rem);
-    overflow: visible;
     background: var(--background-color);
     color: var(--body-color);
+    padding-block: var(--hero-section-padding-top, 5rem) var(--hero-section-padding-bottom, 5rem);
+  }
+
+  .hero__surface {
+    position: relative;
+    display: grid;
+    width: 100%;
+    min-height: var(--hero-min-height, 72rem);
+    overflow: visible;
+  }
+
+  .hero__surface--full {
+    max-width: none;
   }
 
   .hero--desktop-adapt { --hero-min-height: auto; }
@@ -173,12 +185,6 @@
     align-items: var(--hero-content-y, center);
     justify-content: var(--hero-content-x, center);
     min-height: inherit;
-    padding-block: var(--hero-section-padding-top, 0) var(--hero-section-padding-bottom, 0);
-  }
-
-  .hero__container--full-bleed {
-    width: 100%;
-    max-width: none;
   }
 
   .hero__overlay,
@@ -200,7 +206,7 @@
   .hero__content {
     gap: var(--hero-content-gap, 1.2rem);
     width: min(100%, 48rem);
-    padding: clamp(4rem, 8vw, 9rem);
+    padding: 0;
     color: var(--body-color);
   }
 
@@ -237,7 +243,7 @@
     top: calc(var(--header-height, 0px) + 2rem);
   }
 
-  .hero--split {
+  .hero--split .hero__surface {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -276,15 +282,15 @@
 
     .hero__content {
       gap: var(--hero-content-gap-mobile, var(--hero-content-gap, 1.2rem));
-      padding: 4rem;
-    }
-
-    .hero__container {
-      padding-block: var(--hero-section-padding-top-mobile, var(--hero-section-padding-top, 0)) var(--hero-section-padding-bottom-mobile, var(--hero-section-padding-bottom, 0));
+      padding: 0;
     }
 
     .hero--width-page .hero__content {
       padding: min(var(--hero-page-content-padding, 6.4rem), 4rem);
+    }
+
+    .hero {
+      padding-block: var(--hero-section-padding-top-mobile, var(--hero-section-padding-top, 5rem)) var(--hero-section-padding-bottom-mobile, var(--hero-section-padding-bottom, 5rem));
     }
 
     .hero__container--mobile-top_left { --hero-content-y: start; --hero-content-x: start; --flex-align-mobile: start; }
@@ -302,7 +308,7 @@
       top: auto;
     }
 
-    .hero--split {
+    .hero--split .hero__surface {
       grid-template-columns: 1fr;
     }
 
@@ -596,6 +602,12 @@
       "visible_if": "{{ section.settings.width == 'page' }}"
     },
     {
+      "type": "color_scheme",
+      "id": "content_color_scheme",
+      "label": "t:labels.content_color_scheme",
+      "default": "scheme-1"
+    },
+    {
       "type": "header",
       "content": "t:general.padding"
     },
@@ -605,9 +617,9 @@
       "label": "t:options.position.top",
       "min": 0,
       "max": 200,
-      "step": 4,
+      "step": 2,
       "unit": "px",
-      "default": 0
+      "default": 50
     },
     {
       "type": "range",
@@ -615,9 +627,9 @@
       "label": "t:options.position.bottom",
       "min": 0,
       "max": 200,
-      "step": 4,
+      "step": 2,
       "unit": "px",
-      "default": 0
+      "default": 50
     },
     {
       "type": "checkbox",
@@ -631,9 +643,9 @@
       "label": "t:labels.mobile_top_padding",
       "min": 0,
       "max": 200,
-      "step": 4,
+      "step": 2,
       "unit": "px",
-      "default": 0,
+      "default": 50,
       "visible_if": "{{ section.settings.customize_mobile_padding }}"
     },
     {
@@ -642,9 +654,9 @@
       "label": "t:labels.mobile_bottom_padding",
       "min": 0,
       "max": 200,
-      "step": 4,
+      "step": 2,
       "unit": "px",
-      "default": 0,
+      "default": 50,
       "visible_if": "{{ section.settings.customize_mobile_padding }}"
     }
   ],
