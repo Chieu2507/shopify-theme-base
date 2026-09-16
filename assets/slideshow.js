@@ -55,6 +55,25 @@ const startAutoplay = (root, swiper) => {
   }, delay);
 };
 
+const bindNavigation = (root, swiper) => {
+  const controller = new AbortController();
+  const options = { signal: controller.signal };
+  const previous = root.querySelector('[data-slideshow-previous]');
+  const next = root.querySelector('[data-slideshow-next]');
+  const move = (method) => (event) => {
+    event.preventDefault();
+    event.stopPropagation();
+    if (!swiper.destroyed && !swiper.isLocked) swiper[method]();
+  };
+
+  previous?.addEventListener('click', move('slidePrev'), options);
+  next?.addEventListener('click', move('slideNext'), options);
+  [previous, next].filter(Boolean).forEach((control) => control.setAttribute('aria-controls', carouselId(swiper)));
+  return controller;
+};
+
+const carouselId = (swiper) => swiper.el.id || '';
+
 const init = (root) => {
   if (!(root instanceof HTMLElement) || states.has(root)) return;
   const carousel = root.querySelector('[data-slideshow-swiper]');
@@ -69,11 +88,11 @@ const init = (root) => {
     speed: reducedMotion() ? 0 : 600,
     effect: fade ? 'fade' : 'slide',
     fadeEffect: fade ? { crossFade: true } : undefined,
-    controls: { scope: root, previous: '[data-slideshow-previous]', next: '[data-slideshow-next]' },
     ...paginationOptions(root),
   };
   const swiper = createSwiperCarousel(carousel, options);
   if (!swiper) return;
+  const navigationController = bindNavigation(root, swiper);
   const interval = autoplay ? startAutoplay(root, swiper) : null;
   let frame = 0;
   const scheduleParallax = () => {
@@ -86,7 +105,7 @@ const init = (root) => {
   const updateLockedState = () => root.classList.toggle('slideshow--single-slide', Boolean(swiper.isLocked));
   swiper.on('lock unlock update resize', updateLockedState);
   updateLockedState();
-  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, updateLockedState });
+  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState });
 };
 
 const destroy = (root) => {
@@ -95,6 +114,7 @@ const destroy = (root) => {
   window.removeEventListener('scroll', state.scheduleParallax);
   if (state.frame) window.cancelAnimationFrame(state.frame);
   if (state.interval) window.clearInterval(state.interval);
+  state.navigationController.abort();
   state.swiper.off('lock unlock update resize', state.updateLockedState);
   destroySwiperCarousel(state.swiper);
   states.delete(root);
