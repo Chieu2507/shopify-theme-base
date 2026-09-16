@@ -79,8 +79,9 @@ const init = (root) => {
   if (!(root instanceof HTMLElement) || states.has(root)) return;
   const carousel = root.querySelector('[data-slideshow-swiper]');
   if (!carousel) return;
-  const fade = root.dataset.transition === 'fade';
   const pageWidth = root.classList.contains('slideshow--width-page');
+  // Page layout exposes adjacent slides, which requires Swiper's slide effect.
+  const fade = !pageWidth && root.dataset.transition === 'fade';
   const autoplay = root.dataset.autoplay === 'true' && !reducedMotion();
   const options = {
     modules: fade ? [EffectFade, Pagination] : [Pagination],
@@ -88,6 +89,7 @@ const init = (root) => {
     // Keep page-width slides visually separate while letting Swiper include the
     // gap in its translate, drag, loop, and pagination calculations.
     spaceBetween: pageWidth && !fade ? 24 : 0,
+    centeredSlides: pageWidth,
     loop: carousel.querySelectorAll('.swiper-slide').length > 1,
     watchOverflow: true,
     speed: reducedMotion() ? 0 : 600,

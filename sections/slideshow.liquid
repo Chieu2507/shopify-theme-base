@@ -50,6 +50,7 @@
 {% endcapture %}
 
 {% render 'swiper-stylesheet' %}
+<link rel="stylesheet" href="{{ 'swiper-12.2.0-effect-fade.min.css' | asset_url }}">
 <script type="module" src="{{ 'slideshow.js' | asset_url }}"></script>
 
 <div
@@ -96,7 +97,7 @@
 </div>
 
 {% stylesheet %}
-  .slideshow { background: var(--slideshow-background, var(--background-color)); padding-block: var(--slideshow-padding-top, 0px) var(--slideshow-padding-bottom, 0px); }
+  .slideshow { overflow: clip; background: var(--slideshow-background, var(--background-color)); padding-block: var(--slideshow-padding-top, 0px) var(--slideshow-padding-bottom, 0px); }
   .slideshow__container { position: relative; width: 100%; max-width: none; }
   .slideshow--width-page .slideshow__container { --page-margin-current: var(--page-margin-desktop); max-width: var(--page-width); padding-inline: var(--page-margin-current); margin-inline: auto; }
   .slideshow--width-full .slideshow__container { width: calc(100% - (var(--page-margin-desktop) * 2)); margin-inline: auto; }
@@ -111,7 +112,7 @@
   .slideshow--desktop-extra_large { --slideshow-height: 108rem; }
   .slideshow--desktop-full_screen { --slideshow-height: 100svh; }
   .slideshow:not(.slideshow--desktop-adapt) .slideshow__swiper { height: var(--slideshow-height, 72rem); }
-  .slideshow__navigation { --swiper-nav-size: 4.4rem; position: absolute; inset: 50% 1.6rem auto; z-index: 10; display: flex; justify-content: space-between; pointer-events: auto; transform: translateY(-50%); }
+  .slideshow__navigation { --swiper-nav-size: 4.4rem; position: absolute; inset: 50% 1.6rem auto; z-index: 10; display: flex; justify-content: space-between; pointer-events: none; transform: translateY(-50%); }
   .slideshow__arrow { position: relative; z-index: 1; pointer-events: auto; touch-action: manipulation; }
   .slideshow__navigation--show_on_hover { opacity: 0; transition: opacity var(--motion-duration-standard) var(--motion-ease-standard); }
   .slideshow:hover .slideshow__navigation--show_on_hover, .slideshow:focus-within .slideshow__navigation--show_on_hover { opacity: 1; }
@@ -129,9 +130,6 @@
   .slideshow[data-full-width-content='true'] .slideshow-slide__content-inner { width: 100%; max-width: none; }
   @media (min-width: 768px) {
     .slideshow--width-page .slideshow__swiper { overflow: visible; }
-    /* EffectFade intentionally resets Swiper's spaceBetween to zero. Retain the
-       same visual 24px gutter with a margin that its transform accounts for. */
-    .slideshow--width-page .slideshow__swiper.swiper-fade .swiper-slide { margin-inline-end: 2.4rem; }
   }
   @media (min-width: 768px) and (max-width: 1149.98px) { .slideshow--width-page .slideshow__container { --page-margin-current: var(--page-margin-tablet); }.slideshow--width-full .slideshow__container { width: calc(100% - (var(--page-margin-tablet) * 2)); } }
   @media (max-width: 767.98px) {
@@ -166,7 +164,7 @@
   "settings": [
     { "type": "header", "content": "Layout" },
     { "type": "select", "id": "width", "label": "Section width", "options": [{ "value": "page", "label": "Page" }, { "value": "full", "label": "Full" }, { "value": "full_bleed", "label": "Full (no padding)" }], "default": "full_bleed" },
-    { "type": "select", "id": "transition_style", "label": "Transition style", "options": [{ "value": "slide", "label": "Slide" }, { "value": "fade", "label": "Fade" }], "default": "slide" },
+    { "type": "select", "id": "transition_style", "label": "Transition style", "options": [{ "value": "slide", "label": "Slide" }, { "value": "fade", "label": "Fade" }], "default": "slide", "visible_if": "{{ section.settings.width != 'page' }}" },
     { "type": "checkbox", "id": "full_width_content", "label": "Full-width content", "default": false },
     { "type": "header", "content": "Height" },
     { "type": "select", "id": "desktop_height", "label": "Desktop height", "options": [{ "value": "adapt", "label": "Adapt" }, { "value": "extra_small", "label": "Extra small" }, { "value": "small", "label": "Small" }, { "value": "medium", "label": "Medium" }, { "value": "large", "label": "Large" }, { "value": "extra_large", "label": "Extra large" }, { "value": "full_screen", "label": "Full screen" }], "default": "medium" },
