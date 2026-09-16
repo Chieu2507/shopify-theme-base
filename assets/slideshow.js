@@ -51,8 +51,7 @@ const startAutoplay = (root, swiper) => {
       swiper.isLocked
     ) return;
 
-    if (swiper.isEnd) swiper.slideTo(0);
-    else swiper.slideNext();
+    swiper.slideNext();
   }, delay);
 };
 
@@ -65,6 +64,7 @@ const init = (root) => {
   const options = {
     modules: fade ? [EffectFade, Pagination] : [Pagination],
     slidesPerView: 1,
+    loop: carousel.querySelectorAll('.swiper-slide').length > 1,
     watchOverflow: true,
     speed: reducedMotion() ? 0 : 600,
     effect: fade ? 'fade' : 'slide',
