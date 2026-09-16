@@ -318,7 +318,7 @@
     if (!list) return;
     const codes = getStoredDiscountCodes(cart);
     const discountIcon = state.drawer?.dataset.discountIcon || '';
-    list.innerHTML = codes.map((code) => `<li><span class="cart-drawer__discount-code">${discountIcon}<span>${escapeHtml(code)}</span></span><button class="cart-drawer__discount-remove body-text body-xs" type="button" data-cart-drawer-discount-remove data-discount-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}">Remove</button></li>`).join('');
+    list.innerHTML = codes.map((code) => `<li><span class="cart-drawer__discount-code">${discountIcon}<span>${escapeHtml(code)}</span></span><button class="cart-drawer__discount-remove body-text body-xs link-underline" type="button" data-cart-drawer-discount-remove data-discount-code="${escapeHtml(code)}" aria-label="Remove ${escapeHtml(code)}">Remove</button></li>`).join('');
     list.hidden = codes.length === 0;
   };
 
@@ -684,20 +684,6 @@
     }
   };
 
-  const shareCart = async (button) => {
-    const url = window.location.origin + (state.drawer?.dataset.cartUrl || '/cart');
-    try {
-      if (navigator.share) {
-        await navigator.share({ title: document.title, url });
-      } else if (navigator.clipboard?.writeText) {
-        await navigator.clipboard.writeText(url);
-        setMessage(state.drawer.dataset.cartShareCopied || 'Cart link copied.');
-      }
-    } catch (error) {
-      if (error?.name !== 'AbortError') setMessage(state.drawer.dataset.cartShareError || 'Unable to share cart.', true);
-    }
-  };
-
   const applyPromotionCode = () => {
     const drawer = state.drawer;
     if (!drawer) return;
@@ -904,13 +890,6 @@
       if (event.target.closest('[data-cart-drawer-order-options-close]')) {
         event.preventDefault();
         setOrderOptionsOpen();
-        return;
-      }
-
-      const shareButton = event.target.closest('[data-cart-share]');
-      if (shareButton) {
-        event.preventDefault();
-        shareCart(shareButton);
         return;
       }
 

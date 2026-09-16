@@ -1,0 +1,62 @@
+{% doc %}
+  Renders article title and metadata for the Article section.
+{% enddoc %}
+
+{% assign article_title_tag = block.settings.html_title_tag | default: 'h1' %}
+<div class="article-blog-meta article-blog-meta--{{ block.settings.alignment | default: 'center' }}" style="--article-meta-gap: {{ block.settings.gap_desktop }}px; --article-meta-gap-mobile: {{ block.settings.gap_mobile }}px; --article-meta-padding-top: {{ block.settings.padding_top }}px; --article-meta-padding-bottom: {{ block.settings.padding_bottom }}px; --article-meta-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --article-meta-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;" {{ block.shopify_attributes }}>
+  {% if block.settings.show_tags and article.tags != blank %}
+    <ul class="article-blog-meta__tags" role="list">
+      {% for tag in article.tags %}<li><a href="{{ blog.url }}/tagged/{{ tag | handleize }}">{{ tag | escape }}</a></li>{% endfor %}
+    </ul>
+  {% endif %}
+  <{{ article_title_tag }} class="article-blog-meta__title heading-text heading-{{ block.settings.title_size | default: 'h2' }}">{{ article.title | escape }}</{{ article_title_tag }}>
+  <div class="article-blog-meta__details">
+    {% assign article_meta_has_author = false %}
+    {% assign article_meta_has_date = false %}
+    {% if block.settings.show_author and article.author != blank %}{{ article.author | escape }}{% assign article_meta_has_author = true %}{% endif %}
+    {% if block.settings.show_date %}{% if article_meta_has_author %}<span class="article-blog-meta__separator" aria-hidden="true">·</span>{% endif %}<time datetime="{{ article.published_at | date: '%Y-%m-%d' }}">{{ article.published_at | time_tag: format: 'date' }}</time>{% assign article_meta_has_date = true %}{% endif %}
+    {% if block.settings.show_comments and blog.comments_enabled? %}{% if article_meta_has_author or article_meta_has_date %}<span class="article-blog-meta__separator" aria-hidden="true">·</span>{% endif %}<a href="#comments">{{ article.comments_count }} comments</a>{% endif %}
+  </div>
+</div>
+
+{% stylesheet %}
+  .article-blog-meta { display: flex; flex-direction: column; align-items: var(--article-meta-align, center); width: 100%; max-width: 768px; min-height: 126px; margin-inline: auto; gap: var(--article-meta-gap, 12px); padding-top: var(--article-meta-padding-top, 0px); padding-bottom: var(--article-meta-padding-bottom, 0px); text-align: var(--article-meta-text-align, center); box-sizing: border-box; }
+  .article-blog-meta--left { --article-meta-align: flex-start; --article-meta-text-align: left; --article-meta-content-align: flex-start; }
+  .article-blog-meta--center { --article-meta-align: center; --article-meta-text-align: center; }
+  .article-blog-meta--right { --article-meta-align: flex-end; --article-meta-text-align: right; --article-meta-content-align: flex-end; }
+  .article-blog-meta__title { align-self: stretch; min-width: 0; width: 100%; margin: 0; overflow: visible; overflow-wrap: anywhere; text-align: var(--article-meta-text-align, center); white-space: normal; }
+  .article-blog-meta__details { display: flex; align-items: center; justify-content: var(--article-meta-content-align, center); gap: 8px; color: #999999; font-size: var(--font-body-sm); text-align: var(--article-meta-text-align, center); }
+  .article-blog-meta__details a, .article-blog-meta__tags a { color: inherit; }
+  .article-blog-meta__tags { display: flex; flex-wrap: wrap; justify-content: var(--article-meta-content-align, center); gap: 8px; margin: 0; padding: 0; list-style: none; font-size: 9px; line-height: 9px; }
+  .article-blog-meta__tags a { display: inline-flex; align-items: center; justify-content: center; min-width: 34px; min-height: 21px; padding: 6px 12px; color: inherit; background: #f2f2f2; border-radius: 9999px; box-sizing: border-box; text-decoration: none; }
+  @media (max-width: 767.98px) {
+    .article-blog-meta { width: 100%; margin-inline: auto; gap: var(--article-meta-gap-mobile, var(--article-meta-gap, 12px)); min-height: 0; padding-top: var(--article-meta-padding-top-mobile, var(--article-meta-padding-top, 0px)); padding-bottom: var(--article-meta-padding-bottom-mobile, var(--article-meta-padding-bottom, 0px)); }
+    .article-blog-meta__details { flex-wrap: wrap; max-width: 100%; }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Blog meta",
+  "tag": null,
+  "settings": [
+    { "type": "select", "id": "alignment", "label": "Alignment", "options": [{ "value": "left", "label": "Left" }, { "value": "center", "label": "Center" }, { "value": "right", "label": "Right" }], "default": "center" },
+    { "type": "checkbox", "id": "show_tags", "label": "Show tags", "default": true },
+    { "type": "checkbox", "id": "show_date", "label": "Show date", "default": true },
+    { "type": "checkbox", "id": "show_author", "label": "Show author", "default": true },
+    { "type": "checkbox", "id": "show_comments", "label": "Show comments", "default": false },
+    { "type": "header", "content": "Gap" },
+    { "type": "range", "id": "gap_desktop", "label": "Desktop", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 10 },
+    { "type": "range", "id": "gap_mobile", "label": "Mobile", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 10 },
+    { "type": "header", "content": "Typography" },
+    { "type": "select", "id": "title_size", "label": "Title size", "options": [{ "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "h2" },
+    { "type": "select", "id": "html_title_tag", "label": "HTML title tag", "options": [{ "value": "p", "label": "Paragraph" }, { "value": "h1", "label": "H1" }, { "value": "h2", "label": "H2" }, { "value": "h3", "label": "H3" }, { "value": "h4", "label": "H4" }, { "value": "h5", "label": "H5" }, { "value": "h6", "label": "H6" }], "default": "h1" },
+    { "type": "header", "content": "Padding" },
+    { "type": "range", "id": "padding_top", "label": "Top", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "checkbox", "id": "custom_mobile_padding", "label": "Custom for mobile", "default": false },
+    { "type": "range", "id": "padding_top_mobile", "label": "Top (mobile)", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0, "visible_if": "{{ block.settings.custom_mobile_padding }}" },
+    { "type": "range", "id": "padding_bottom_mobile", "label": "Bottom (mobile)", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0, "visible_if": "{{ block.settings.custom_mobile_padding }}" }
+  ]
+}
+{% endschema %}

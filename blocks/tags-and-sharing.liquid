@@ -1,0 +1,55 @@
+{% doc %}
+  Renders article tags and social sharing links.
+{% enddoc %}
+
+<div class="article-tags-sharing" style="--article-tags-padding-top: {{ block.settings.padding_top }}px; --article-tags-padding-bottom: {{ block.settings.padding_bottom }}px; --article-tags-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --article-tags-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;" {{ block.shopify_attributes }}>
+  {% if block.settings.show_share_buttons %}
+    {% assign article_share_url = canonical_url | url_encode %}
+    <div class="article-tags-sharing__share">
+      <p class="article-tags-sharing__label">Share this post</p>
+      <div class="article-tags-sharing__buttons" role="list">
+        <a href="https://www.facebook.com/sharer/sharer.php?u={{ article_share_url }}" target="_blank" rel="noopener" aria-label="Share on Facebook"><span aria-hidden="true">f</span></a>
+        <a href="https://twitter.com/intent/tweet?url={{ article_share_url }}&text={{ article.title | url_encode }}" target="_blank" rel="noopener" aria-label="Share on X"><span aria-hidden="true">𝕏</span></a>
+        <a href="https://www.tiktok.com/" target="_blank" rel="noopener" aria-label="Share on TikTok"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><path fill="currentColor" d="M15.5 3.5c.6 1.8 1.8 3 3.5 3.6v2.8c-1.3-.1-2.5-.5-3.5-1.2v6.8a5.5 5.5 0 1 1-4.7-5.4V13a2.7 2.7 0 1 0 1.9 2.6V3.5h2.8Z"/></svg></a>
+        <a href="https://www.instagram.com/" target="_blank" rel="noopener" aria-label="Share on Instagram"><svg aria-hidden="true" viewBox="0 0 24 24" focusable="false"><rect x="3" y="3" width="18" height="18" rx="5" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="12" cy="12" r="4.25" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="17.5" cy="6.5" r="1.1" fill="currentColor"/></svg></a>
+      </div>
+    </div>
+  {% endif %}
+  {% if block.settings.show_tags and article.tags != blank %}
+    <ul class="article-tags-sharing__tags" role="list">
+      {% for tag in article.tags %}<li><a href="{{ blog.url }}/tagged/{{ tag | handleize }}">{{ tag | escape }}</a></li>{% endfor %}
+    </ul>
+  {% endif %}
+</div>
+
+{% stylesheet %}
+  .article-tags-sharing { display: flex; align-items: flex-end; justify-content: space-between; gap: 24px; width: min(100%, 768px); min-height: 61px; margin-inline: auto; padding-top: var(--article-tags-padding-top, 0px); padding-bottom: var(--article-tags-padding-bottom, 0px); box-sizing: border-box; }
+  .article-tags-sharing__share { display: flex; flex-direction: column; gap: 16px; }
+  .article-tags-sharing__label { margin: 0; }
+  .article-tags-sharing__tags, .article-tags-sharing__buttons { display: flex; flex-wrap: wrap; align-items: center; gap: 20px; margin: 0; padding: 0; list-style: none; }
+  .article-tags-sharing__buttons a { display: inline-flex; align-items: center; justify-content: center; width: 24px; height: 24px; color: inherit; text-decoration: none; }
+  .article-tags-sharing__buttons svg { display: block; width: 24px; height: 24px; }
+  .article-tags-sharing__buttons a:nth-child(1) { font-size: 30px; font-weight: 700; }
+  .article-tags-sharing__buttons a:nth-child(2) { font-size: 25px; }
+  .article-tags-sharing__buttons a:nth-child(3) { font-size: 28px; font-weight: 700; }
+  .article-tags-sharing__buttons a:nth-child(4) { font-size: 34px; line-height: 1; }
+  .article-tags-sharing__tags a { display: inline-flex; align-items: center; justify-content: center; min-width: 68px; min-height: 40px; padding: 10px 16px; color: inherit; background: #f2f2f2; border-radius: 9999px; box-sizing: border-box; text-decoration: none; }
+  @media (max-width: 767.98px) { .article-tags-sharing { width: 100%; min-height: 61px; padding-top: var(--article-tags-padding-top-mobile, var(--article-tags-padding-top, 0px)); padding-bottom: var(--article-tags-padding-bottom-mobile, var(--article-tags-padding-bottom, 0px)); } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Tags and sharing",
+  "tag": null,
+  "settings": [
+    { "type": "checkbox", "id": "show_tags", "label": "Show tags", "default": true },
+    { "type": "checkbox", "id": "show_share_buttons", "label": "Show share buttons", "default": true },
+    { "type": "header", "content": "Padding" },
+    { "type": "range", "id": "padding_top", "label": "Top", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "checkbox", "id": "custom_mobile_padding", "label": "Custom for mobile", "default": false },
+    { "type": "range", "id": "padding_top_mobile", "label": "Top (mobile)", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0, "visible_if": "{{ block.settings.custom_mobile_padding }}" },
+    { "type": "range", "id": "padding_bottom_mobile", "label": "Bottom (mobile)", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0, "visible_if": "{{ block.settings.custom_mobile_padding }}" }
+  ]
+}
+{% endschema %}

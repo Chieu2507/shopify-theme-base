@@ -101,6 +101,29 @@ select {
   color: currentcolor;
 }
 
+.form__control-wrap--select {
+  position: relative;
+  width: 100%;
+}
+
+.form__control-wrap--select::after {
+  position: absolute;
+  top: 50%;
+  right: 1rem;
+  width: 0.5rem;
+  height: 0.5rem;
+  border-right: 1px solid currentcolor;
+  border-bottom: 1px solid currentcolor;
+  color: var(--input-text-color);
+  content: '';
+  pointer-events: none;
+  transform: translateY(-65%) rotate(45deg);
+}
+
+.form__control-wrap--select .form__control--select {
+  padding-right: 2.75rem;
+}
+
 input[type='checkbox'],
 input[type='radio'] {
   width: 1.125rem;
@@ -514,6 +537,116 @@ p:empty {
   color: var(--body-color);
 }
 
+.link-underline,
+.link-underline-trigger .link-underline {
+  position: relative;
+  text-decoration: none;
+}
+
+.link-underline::after {
+  position: absolute;
+  inset-block-end: var(--link-underline-offset, -0.25em);
+  inset-inline-start: 0;
+  display: var(--link-underline-display, block);
+  width: 100%;
+  height: var(--link-underline-thickness, 1px);
+  background: currentColor;
+  content: '';
+  transform: scaleX(0);
+  transform-origin: left center;
+  transition: transform var(--link-underline-duration, var(--motion-duration-fast)) var(--link-underline-ease, var(--motion-ease-standard));
+}
+
+.link-underline[data-underline='persistent']::after {
+  transform: scaleX(1);
+  transform-origin: right center;
+}
+
+.link-underline[data-underline='persistent'] {
+  --link-underline-hover-duration: var(--motion-duration-slow);
+}
+
+.link-underline--active::after,
+.link-underline:not([data-underline='active']):is(:hover, :focus-visible)::after,
+.link-underline-trigger:is(:hover, :focus-visible, :focus-within) .link-underline:not([data-underline='active'])::after {
+  transform: scaleX(1);
+}
+
+@keyframes link-underline-active {
+  from {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  to {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+.link-underline[data-underline='active']::after {
+  transform: scaleX(0);
+  transform-origin: left center;
+}
+
+.link-underline[data-underline='active']:is(:hover, :focus-visible)::after {
+  transform: scaleX(0);
+}
+
+.link-underline[data-underline='active']:is([aria-selected='true'], .link-underline--active)::after {
+  animation: link-underline-active var(--link-underline-active-duration, var(--motion-duration-slow)) var(--link-underline-ease, var(--motion-ease-standard)) both;
+}
+
+@keyframes link-underline-hover {
+  0% {
+    transform: scaleX(1);
+    transform-origin: right center;
+  }
+  50% {
+    transform: scaleX(0);
+    transform-origin: right center;
+  }
+  51% {
+    transform: scaleX(0);
+    transform-origin: left center;
+  }
+  100% {
+    transform: scaleX(1);
+    transform-origin: left center;
+  }
+}
+
+.link-underline[data-underline='persistent']:is(:hover, :focus-visible)::after {
+  animation: link-underline-hover var(--link-underline-hover-duration, var(--motion-duration-fast)) var(--link-underline-ease, var(--motion-ease-standard)) both;
+}
+
+.link-underline[data-underline='persistent'][data-underline-target='text']::after {
+  display: none;
+}
+
+.link-underline[data-underline='persistent'][data-underline-target='text'] .btn__text {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.link-underline[data-underline='persistent'][data-underline-target='text'] .btn__text::after {
+  position: absolute;
+  inset-block-end: var(--link-underline-offset, -0.25em);
+  inset-inline-start: 0;
+  display: var(--link-underline-display, block);
+  width: 100%;
+  height: var(--link-underline-thickness, 1px);
+  background: currentColor;
+  content: '';
+  transform: scaleX(1);
+  transform-origin: right center;
+  transition: transform var(--link-underline-duration, var(--motion-duration-fast)) var(--link-underline-ease, var(--motion-ease-standard));
+}
+
+.link-underline[data-underline='persistent'][data-underline-target='text']:is(:hover, :focus-visible) .btn__text::after {
+  animation: link-underline-hover var(--link-underline-hover-duration, var(--motion-duration-fast)) var(--link-underline-ease, var(--motion-ease-standard)) both;
+}
+
 @keyframes motion-block-enter {
   from {
     opacity: 0;
@@ -522,25 +655,6 @@ p:empty {
   to {
     opacity: 1;
     transform: translateY(0);
-  }
-}
-
-@keyframes button-tertiary-underline-hover {
-  0% {
-    transform: scaleX(1);
-    transform-origin: right center;
-  }
-  45% {
-    transform: scaleX(0);
-    transform-origin: right center;
-  }
-  46% {
-    transform: scaleX(0);
-    transform-origin: left center;
-  }
-  100% {
-    transform: scaleX(1);
-    transform-origin: left center;
   }
 }
 
@@ -648,24 +762,10 @@ input[type='submit'].btn.btn--tertiary {
   background: transparent;
   text-decoration: none;
   transform: none;
-}
-
-.btn.btn-tertiary::after,
-.btn.btn--tertiary::after,
-button.btn.btn-tertiary::after,
-button.btn.btn--tertiary::after,
-input.btn.btn-tertiary::after,
-input.btn.btn--tertiary::after,
-input[type='submit'].btn.btn-tertiary::after,
-input[type='submit'].btn.btn--tertiary::after {
-  position: absolute;
-  inset-inline: 0;
-  inset-block-end: calc(var(--button-tertiary-underline-offset) * -1);
-  height: 1px;
-  background: currentColor;
-  content: '';
-  transform: scaleX(1);
-  transform-origin: left center;
+  --link-underline-offset: calc(var(--button-tertiary-underline-offset) * -1);
+  --link-underline-display: var(--button-tertiary-underline-display, block);
+  --link-underline-duration: var(--motion-duration-fast);
+  --link-underline-hover-duration: calc(var(--button-motion-duration, var(--motion-duration-standard)) * 1.5);
 }
 
 .btn.btn-tertiary:hover,
@@ -680,19 +780,6 @@ input[type='submit'].btn.btn--tertiary:hover {
   background: transparent;
   color: var(--button-hover-foreground);
   transform: none;
-}
-
-.btn.btn-tertiary:is(:hover, :focus-visible)::after,
-.btn.btn--tertiary:is(:hover, :focus-visible)::after,
-button.btn.btn-tertiary:is(:hover, :focus-visible)::after,
-button.btn.btn--tertiary:is(:hover, :focus-visible)::after,
-input.btn.btn-tertiary:is(:hover, :focus-visible)::after,
-input.btn.btn--tertiary:is(:hover, :focus-visible)::after,
-input[type='submit'].btn.btn-tertiary:is(:hover, :focus-visible)::after,
-input[type='submit'].btn.btn--tertiary:is(:hover, :focus-visible)::after {
-  animation: button-tertiary-underline-hover
-    calc(var(--button-motion-duration, var(--motion-duration-standard)) * 1.5)
-    var(--button-motion-ease, var(--motion-ease-standard)) both;
 }
 
 .btn--icon {
@@ -776,6 +863,10 @@ input[type='submit'].btn.btn--tertiary:is(:hover, :focus-visible)::after {
   opacity: var(--button-disabled-opacity);
   pointer-events: none;
   transform: none;
+}
+
+.btn.link-underline[data-underline='persistent']:is(:disabled, [aria-disabled='true']) {
+  pointer-events: auto;
 }
 
 @keyframes btn-spinner {
@@ -876,6 +967,93 @@ legend {
   border: var(--pcard-border-width) solid var(--border-color);
   border-radius: var(--card-radius);
   box-shadow: var(--pcard-shadow);
+}
+
+.product-card-layout__item {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.product-card-layout__item > .product-card {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+}
+
+.product-card-layout__item > .product-card .product-card__media {
+  flex: 0 0 auto;
+  height: fit-content;
+}
+
+.product-card-layout__item > .product-card .product-card__content {
+  flex: 1;
+  min-width: 0;
+  min-height: 0;
+}
+
+/** Shared product collection grid. */
+.product-collection-grid {
+  display: grid;
+  grid-template-columns: repeat(var(--product-collection-grid-columns-desktop, 3), minmax(0, 1fr));
+  column-gap: var(--product-collection-grid-gap-horizontal, 4px);
+  row-gap: var(--product-collection-grid-gap-vertical, 4px);
+  width: 100%;
+  min-width: 0;
+}
+
+.product-collection-grid--carousel,
+.product-collection-grid--swipe-mobile {
+  grid-auto-flow: column;
+  grid-auto-columns: var(--product-collection-grid-item-width-desktop);
+  grid-template-columns: none;
+  overflow-x: auto;
+  overscroll-behavior-inline: contain;
+  scroll-snap-type: inline mandatory;
+  scrollbar-width: thin;
+}
+
+.product-collection-grid--carousel .product-collection-grid__item,
+.product-collection-grid--swipe-mobile .product-collection-grid__item {
+  scroll-snap-align: start;
+}
+
+.product-collection-grid__item {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+.product-collection-grid--placeholder > .product-collection-grid__item,
+.product-collection-grid--placeholder > .product-collection-grid__item > .product-card {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+@media (max-width: 767.98px) {
+  .product-collection-grid {
+    grid-template-columns: repeat(var(--product-collection-grid-columns-mobile, 1), minmax(0, 1fr));
+    column-gap: var(--product-collection-grid-gap-horizontal-mobile, 4px);
+    row-gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
+  }
+
+  .product-collection-grid--carousel,
+  .product-collection-grid--swipe-mobile {
+    grid-template-columns: none;
+    grid-auto-columns: var(--product-collection-grid-item-width-mobile);
+    column-gap: var(--product-collection-grid-gap-horizontal-mobile, 4px);
+    row-gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .product-collection-grid--carousel,
+  .product-collection-grid--swipe-mobile {
+    scroll-behavior: auto;
+    scroll-snap-type: none;
+  }
 }
 
 .product-card--card {
@@ -1081,12 +1259,24 @@ legend {
   display: grid;
   gap: var(--pcard-content-gap);
   min-width: 0;
+  text-align: var(--pcard-alignment);
 }
 
 .product-card__details {
-  display: grid;
+  display: flex;
+  flex-direction: column;
+  align-items: stretch;
+  width: 100%;
   gap: var(--pcard-product-info-gap);
   min-width: 0;
+  text-align: inherit;
+}
+
+.product-card__title,
+.product-card__vendor,
+.product-card__type {
+  width: 100%;
+  text-align: var(--pcard-alignment);
 }
 
 .product-card__title {
@@ -1103,23 +1293,26 @@ legend {
   text-decoration: none;
 }
 
-.product-card--title-limit-1 .product-card__title-link,
-.product-card--title-limit-2 .product-card__title-link,
-.product-card--title-limit-3 .product-card__title-link {
+.product-card--title-limit-1 .product-card__title,
+.product-card--title-limit-2 .product-card__title,
+.product-card--title-limit-3 .product-card__title {
   display: -webkit-box;
   overflow: hidden;
   -webkit-box-orient: vertical;
 }
 
-.product-card--title-limit-1 .product-card__title-link {
+.product-card--title-limit-1 .product-card__title {
+  line-clamp: 1;
   -webkit-line-clamp: 1;
 }
 
-.product-card--title-limit-2 .product-card__title-link {
+.product-card--title-limit-2 .product-card__title {
+  line-clamp: 2;
   -webkit-line-clamp: 2;
 }
 
-.product-card--title-limit-3 .product-card__title-link {
+.product-card--title-limit-3 .product-card__title {
+  line-clamp: 3;
   -webkit-line-clamp: 3;
 }
 
@@ -1129,15 +1322,19 @@ legend {
 }
 
 .product-card__price {
-  justify-self: var(--pcard-alignment);
+  width: 100%;
+  justify-content: var(--pcard-content-alignment);
+  text-align: var(--pcard-alignment);
 }
 
 .product-card__rating {
   display: inline-flex;
   align-items: baseline;
-  justify-self: var(--pcard-alignment);
+  width: 100%;
+  justify-content: var(--pcard-content-alignment);
   gap: 0.25rem;
   color: var(--body-color);
+  text-align: var(--pcard-alignment);
 }
 
 .product-card__rating-star {
@@ -1154,7 +1351,8 @@ legend {
   --swatch-selected-style: var(--pcard-swatch-selected-style);
   display: flex;
   flex-wrap: wrap;
-  justify-content: var(--pcard-alignment);
+  width: 100%;
+  justify-content: var(--pcard-content-alignment);
   gap: var(--pcard-swatch-gap);
 }
 

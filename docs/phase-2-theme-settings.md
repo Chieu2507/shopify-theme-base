@@ -605,10 +605,10 @@ settings đã được loại khỏi contract Colors.
 | input_radius_style | select | square, slightly_rounded, rounded, pill | rounded | `--input-radius` dùng primitive radius chung; không còn numeric radius field |
 | input_border_width | range | 0–3, step 1px | 1 | `--input-border-width`; giữ ID tương thích |
 | input_background_color | color | CSS color | #FFFFFF | `--input-background-color` cho Solid; Outline fallback transparent |
-| form_label_typography | select | body-md, body-sm, body-lg | body-md | `--form-label-font-size`; Body text là mặc định |
-| form_input_typography | select | body-md, body-sm, body-lg | body-md | `--form-input-font-size`; không đổi layout control |
-| form_helper_typography | select | body-md, body-sm, body-lg | body-md | `--form-helper-font-size` |
-| form_error_typography | select | body-md, body-sm, body-lg | body-md | `--form-error-font-size` |
+| form_label_typography | select | xs, sm, md, lg, xl, xxl | md | `--form-label-font-size`; dùng cùng scale `Text size` của Text block |
+| form_input_typography | select | xs, sm, md, lg, xl, xxl | md | `--form-input-font-size`; không đổi layout control |
+| form_helper_typography | select | xs, sm, md, lg, xl, xxl | md | `--form-helper-font-size` |
+| form_error_typography | select | xs, sm, md, lg, xl, xxl | md | `--form-error-font-size` |
 
 Semantic token mapping cố định:
 
@@ -623,11 +623,13 @@ Giá trị legacy `input_height` (nếu store cũ còn lưu) chỉ được dùn
 cho desktop: compact = 40px, standard = 48px, large = 56px. Các setting
 `input_border_color`, `input_focus_color` và `form_label_case` không còn render
 trong Theme Editor; scheme semantic token là ownership mới.
+Các giá trị legacy `body-sm`, `body-md` và `body-lg` của bốn setting Typography
+vẫn được map tương ứng khi store cũ còn lưu.
 
 ### Tiêu chí nghiệm thu
 
 - Theme Editor hiển thị đúng Solid/Outline, 48/44px, 8px, 1px, #FFFFFF,
-  Typography và bốn role Body text theo mặc định.
+  Typography và bốn role `md` theo mặc định.
 - Search, product, article comment, password và cart form dùng cấu trúc form
   chuẩn; input/select/textarea không phá layout trên mobile.
 - Input settings không làm checkbox/radio thành full-width text input; tất cả

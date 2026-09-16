@@ -1,0 +1,88 @@
+{% doc %}
+  Renders the blog article list slot and its ordered child blocks.
+{% enddoc %}
+
+<div
+  class="blog-list"
+  style="--blog-list-columns: {{ block.settings.columns }}; --blog-list-gap-horizontal: {{ block.settings.gap_horizontal }}px; --blog-list-gap-vertical: {{ block.settings.gap_vertical }}px; --blog-list-gap-mobile: {{ block.settings.gap_mobile }}px;"
+  {{ block.shopify_attributes }}
+>
+  {% content_for 'blocks' %}
+</div>
+
+{% stylesheet %}
+  .blog-list {
+    display: grid;
+    grid-template-columns: repeat(var(--blog-list-columns), minmax(0, 1fr));
+    gap: var(--blog-list-gap-vertical) var(--blog-list-gap-horizontal);
+    align-items: start;
+  }
+
+  .blog-list > .blog-featured-post,
+  .blog-list > .blog-pagination {
+    grid-column: 1 / -1;
+  }
+
+  @media (max-width: 767.98px) {
+    .blog-list {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--blog-list-gap-mobile);
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Blog list",
+  "tag": null,
+  "blocks": [
+    { "type": "featured-post" },
+    { "type": "blog-card" },
+    { "type": "pagination" }
+  ],
+  "settings": [
+    {
+      "type": "select",
+      "id": "columns",
+      "label": "Columns",
+      "options": [
+        { "value": "2", "label": "2" },
+        { "value": "3", "label": "3" },
+        { "value": "4", "label": "4" },
+        { "value": "5", "label": "5" }
+      ],
+      "default": "3"
+    },
+    {
+      "type": "range",
+      "id": "gap_horizontal",
+      "label": "Horizontal gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "gap_vertical",
+      "label": "Vertical gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "gap_mobile",
+      "label": "Vertical gap mobile",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 30
+    }
+  ]
+}
+{% endschema %}

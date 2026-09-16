@@ -9,6 +9,7 @@
   const localizationSheetControls = new WeakSet();
   const localizationSheetDetails = new WeakSet();
   const localizationSheetCloseTimers = new WeakMap();
+  const footerLocalizationStates = new WeakMap();
   const openAccountSheets = new WeakSet();
   const mobileMegaMenuOrigins = new Map();
   let localizationSheetDrag = null;
@@ -614,6 +615,80 @@
     });
   };
 
+  const initializeFooterLocalizations = (root = document) => {
+    const localizations = [];
+    if (root.matches?.('.localization-block')) localizations.push(root);
+    root.querySelectorAll?.('.localization-block').forEach((localization) => localizations.push(localization));
+
+    localizations.forEach((localization) => {
+      initializeLocalizationSheets(localization);
+      localization.querySelectorAll(':scope > .header-localization__details').forEach((details) => {
+        if (footerLocalizationStates.has(details)) return;
+
+        const controller = new AbortController();
+        const state = { closeTimer: 0, controller };
+        const clearCloseTimer = () => {
+          if (!state.closeTimer) return;
+          window.clearTimeout(state.closeTimer);
+          state.closeTimer = 0;
+        };
+        const scheduleClose = () => {
+          clearCloseTimer();
+          state.closeTimer = window.setTimeout(() => {
+            state.closeTimer = 0;
+            if (!details.matches(':hover') && !details.matches(':focus-within')) {
+              details.removeAttribute('open');
+              details.classList.remove('is-submenu-closing');
+            }
+          }, 100);
+        };
+        const openOnHover = () => {
+          if (window.innerWidth <= 767 || details.dataset.headerSubmenuTrigger !== 'hover') return;
+          clearCloseTimer();
+          details.classList.remove('is-submenu-closing');
+          details.open = true;
+        };
+        const closeOnLeave = () => {
+          if (window.innerWidth <= 767 || details.dataset.headerSubmenuTrigger !== 'hover' || !details.open) return;
+          details.classList.add('is-submenu-closing');
+          scheduleClose();
+        };
+
+        details.addEventListener('pointerenter', openOnHover, { signal: controller.signal });
+        details.addEventListener('pointerleave', closeOnLeave, { signal: controller.signal });
+        details.addEventListener('focusin', openOnHover, { signal: controller.signal });
+        details.addEventListener('focusout', closeOnLeave, { signal: controller.signal });
+        details.addEventListener('toggle', () => {
+          if (details.open) {
+            clearCloseTimer();
+            details.classList.remove('is-submenu-closing');
+            localization.querySelectorAll(':scope > .header-localization__details[open]').forEach((otherDetails) => {
+              if (otherDetails !== details) otherDetails.removeAttribute('open');
+            });
+          }
+          scheduleUpdate();
+        }, { signal: controller.signal });
+        footerLocalizationStates.set(details, state);
+      });
+    });
+  };
+
+  const removeFooterLocalizations = (root) => {
+    const localizations = [];
+    if (root.matches?.('.localization-block')) localizations.push(root);
+    root.querySelectorAll?.('.localization-block').forEach((localization) => localizations.push(localization));
+
+    localizations.forEach((localization) => {
+      localization.querySelectorAll(':scope > .header-localization__details').forEach((details) => {
+        const state = footerLocalizationStates.get(details);
+        if (!state) return;
+        state.controller.abort();
+        if (state.closeTimer) window.clearTimeout(state.closeTimer);
+        footerLocalizationStates.delete(details);
+      });
+    });
+  };
+
   const resetLocalizationSheetDrag = () => {
     const drag = localizationSheetDrag;
     if (!drag) return;
@@ -796,9 +871,11 @@
 
   document.addEventListener('shopify:section:load', (event) => {
     initializeHeaders(event.target);
+    initializeFooterLocalizations(event.target);
   });
 
   document.addEventListener('shopify:section:unload', (event) => {
+    removeFooterLocalizations(event.target);
     removeHeaders(event.target);
   });
 
@@ -828,4 +905,5 @@
   });
 
   initializeHeaders();
+  initializeFooterLocalizations();
 })();

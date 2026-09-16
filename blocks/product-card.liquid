@@ -8,6 +8,10 @@
 
   @param {product} [product] - Product resource supplied by the parent list
   @param {boolean} [placeholder] - Whether to render the shared empty card state
+  @param {boolean} [show_ranking_override] - Internal parent override for legacy card settings
+  @param {string} [color_type_override] - Internal parent override for legacy card settings
+  @param {object} [color_scheme_override] - Internal parent override for legacy card settings
+  @param {string} [editor_attributes_override] - Internal parent override for legacy editor attributes
 
   A parent may pass `placeholder: true` while a product resource is not
   available so the card can preserve the parent layout in the Theme Editor.
@@ -18,27 +22,43 @@
 
 {% liquid
   assign card_product = product
+  assign product_card_show_ranking = block.settings.show_ranking
+  if show_ranking_override != nil
+    assign product_card_show_ranking = show_ranking_override
+  endif
+  assign product_card_color_type = block.settings.color_type
+  if color_type_override != nil
+    assign product_card_color_type = color_type_override
+  endif
+  assign product_card_color_scheme = block.settings.color_scheme
+  if color_scheme_override != nil
+    assign product_card_color_scheme = color_scheme_override
+  endif
+  assign product_card_editor_attributes = block.shopify_attributes
+  if editor_attributes_override != blank
+    assign product_card_editor_attributes = editor_attributes_override
+  endif
 %}
 
 {% if card_product != blank %}
   {% render 'product-card',
     product: card_product,
-    show_ranking: block.settings.show_ranking,
-    color_type: block.settings.color_type,
-    color_scheme: block.settings.color_scheme,
-    attributes: block.shopify_attributes
+    show_ranking: product_card_show_ranking,
+    color_type: product_card_color_type,
+    color_scheme: product_card_color_scheme,
+    attributes: product_card_editor_attributes
   %}
 {% elsif placeholder %}
   {% render 'product-card',
     product: blank,
     placeholder: true,
-    show_ranking: block.settings.show_ranking,
-    color_type: block.settings.color_type,
-    color_scheme: block.settings.color_scheme,
-    attributes: block.shopify_attributes
+    show_ranking: product_card_show_ranking,
+    color_type: product_card_color_type,
+    color_scheme: product_card_color_scheme,
+    attributes: product_card_editor_attributes
   %}
 {% else %}
-  <div class="product-card product-card--empty" {{ block.shopify_attributes }}>
+  <div class="product-card product-card--empty" {{ product_card_editor_attributes }}>
     <p class="product-card__empty-message body-sm">{{ 'products.no_product' | t }}</p>
   </div>
 {% endif %}

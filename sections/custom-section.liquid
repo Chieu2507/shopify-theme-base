@@ -44,6 +44,8 @@
   {% if section.settings.background_color != blank %}--custom-section-background-color: {{ section.settings.background_color | escape }};{% endif %}
   {% if padding_top != 0 %}--custom-section-padding-top: {{ padding_top }}px;{% endif %}
   {% if padding_bottom != 0 %}--custom-section-padding-bottom: {{ padding_bottom }}px;{% endif %}
+  {% if section.settings.content_gap != blank %}--custom-section-content-gap: {{ section.settings.content_gap | plus: 0 }}px;{% endif %}
+  {% if section.settings.customize_mobile_gap and section.settings.content_gap_mobile != blank %}--custom-section-content-gap-mobile: {{ section.settings.content_gap_mobile | plus: 0 }}px;{% endif %}
   {% if section.settings.customize_mobile_padding %}
     {% if padding_top_mobile != padding_top %}--custom-section-padding-top-mobile: {{ padding_top_mobile }}px;{% endif %}
     {% if padding_bottom_mobile != padding_bottom %}--custom-section-padding-bottom-mobile: {{ padding_bottom_mobile }}px;{% endif %}
@@ -104,9 +106,14 @@
   }
   .custom-section__content {
     min-width: 0;
+    gap: var(--custom-section-content-gap, var(--layout-grid-gap, 1rem));
   }
 
   @media (max-width: 767.98px) {
+    .custom-section__content {
+      gap: var(--custom-section-content-gap-mobile, var(--custom-section-content-gap, var(--layout-grid-gap, 1rem)));
+    }
+
     .custom-section__spacing {
       padding-top: var(--custom-section-padding-top-mobile, var(--custom-section-padding-top, 0px));
       padding-bottom: var(--custom-section-padding-bottom-mobile, var(--custom-section-padding-bottom, 0px));
@@ -135,6 +142,7 @@
     { "type": "row" },
     { "type": "grid" },
     { "type": "email-signup" },
+    { "type": "contact-form" },
     { "type": "product-list" }
   ],
   "settings": [
@@ -176,6 +184,33 @@
       "label": "t:labels.mobile_alignment",
       "default": "left",
       "visible_if": "{{ section.settings.customize_mobile_alignment }}"
+    },
+    {
+      "type": "range",
+      "id": "content_gap",
+      "label": "t:labels.content_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 16
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_gap",
+      "label": "t:labels.customize_mobile_layout",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "content_gap_mobile",
+      "label": "t:labels.mobile_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 12,
+      "visible_if": "{{ section.settings.customize_mobile_gap }}"
     },
     {
       "type": "header",
@@ -253,6 +288,7 @@
   "presets": [
     {
       "name": "t:general.custom_section",
+      "category": "t:general.layout",
       "settings": {
         "section_width": "page_width",
         "alignment": "left",

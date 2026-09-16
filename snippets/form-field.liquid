@@ -14,8 +14,11 @@
   @param {string} [error_text] - Optional error text
   @param {string} [autocomplete] - Optional autocomplete value
   @param {string} [class] - Optional class added to the field wrapper
+  @param {string} [inputmode] - Optional input mode hint for mobile keyboards
+  @param {string} [pattern] - Optional HTML validation pattern
   @param {boolean} [required] - Whether the field is required
   @param {boolean} [disabled] - Whether the field is disabled
+  @param {boolean} [hide_label] - Visually hide the label while keeping it accessible
 
   @example
   {% render 'form-field', id: 'search-q', name: 'q', label: 'Search', type: 'search' %}
@@ -25,6 +28,10 @@
   assign control_type = control | default: 'input'
   assign input_type = type | default: 'text'
   assign field_classes = 'form__field'
+  assign label_classes = 'form__label'
+  if hide_label
+    assign label_classes = label_classes | append: ' visually-hidden'
+  endif
   if error_text != blank
     assign field_classes = field_classes | append: ' form__field--has-error'
   endif
@@ -45,7 +52,7 @@
 %}
 
 <div class="{{ field_classes }}">
-  <label class="form__label" for="{{ id }}">{{ label | escape }}</label>
+  <label class="{{ label_classes }}" for="{{ id }}">{{ label | escape }}</label>
 
   {% case control_type %}
     {% when 'textarea' %}
@@ -58,6 +65,12 @@
         {% endif %}
         {% if autocomplete != blank %}
           autocomplete="{{ autocomplete | escape }}"
+        {% endif %}
+        {% if inputmode != blank %}
+          inputmode="{{ inputmode | escape }}"
+        {% endif %}
+        {% if pattern != blank %}
+          pattern="{{ pattern | escape }}"
         {% endif %}
         {% if describedby != blank %}
           aria-describedby="{{ describedby }}"
@@ -73,29 +86,36 @@
         {% endif %}
       >{{ value | escape }}</textarea>
     {% when 'select' %}
-      <select
-        class="form__control form__control--select{% if error_text != blank %} form__control--error{% endif %}"
-        id="{{ id }}"
-        name="{{ name }}"
-        {% if describedby != blank %}
-          aria-describedby="{{ describedby }}"
-        {% endif %}
-        {% if error_text != blank %}
-          aria-invalid="true"
-        {% endif %}
-        {% if required %}
-          required
-        {% endif %}
-        {% if disabled %}
-          disabled
-        {% endif %}
-      >
-        {% for option in options %}
-          <option value="{{ option.value | escape }}"{% if option.value == selected %} selected{% endif %}>
-            {{ option.label | escape }}
-          </option>
-        {% endfor %}
-      </select>
+      <div class="form__control-wrap form__control-wrap--select">
+        <select
+          class="form__control form__control--select{% if error_text != blank %} form__control--error{% endif %}"
+          id="{{ id }}"
+          name="{{ name }}"
+          {% if describedby != blank %}
+            aria-describedby="{{ describedby }}"
+          {% endif %}
+          {% if error_text != blank %}
+            aria-invalid="true"
+          {% endif %}
+          {% if required %}
+            required
+          {% endif %}
+          {% if disabled %}
+            disabled
+          {% endif %}
+        >
+          {% if placeholder != blank %}
+            <option value=""{% if selected == blank %} selected{% endif %}>{{ placeholder | escape }}</option>
+          {% endif %}
+          {% for option in options %}
+            {% assign option_value = option.value | default: option | strip %}
+            {% assign option_label = option.label | default: option | strip %}
+            <option value="{{ option_value | escape }}"{% if option_value == selected %} selected{% endif %}>
+              {{ option_label | escape }}
+            </option>
+          {% endfor %}
+        </select>
+      </div>
     {% else %}
       <input
         class="form__control form__control--input{% if error_text != blank %} form__control--error{% endif %}"
@@ -108,6 +128,12 @@
         {% endif %}
         {% if autocomplete != blank %}
           autocomplete="{{ autocomplete | escape }}"
+        {% endif %}
+        {% if inputmode != blank %}
+          inputmode="{{ inputmode | escape }}"
+        {% endif %}
+        {% if pattern != blank %}
+          pattern="{{ pattern | escape }}"
         {% endif %}
         {% if describedby != blank %}
           aria-describedby="{{ describedby }}"

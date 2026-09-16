@@ -2,11 +2,11 @@
   Renders a newsletter signup form using Shopify's customer form endpoint.
 
   The block owns the form field, submit control, layout and responsive sizing.
-  Layouts include a standalone button, an input with an embedded button, and
+  Layouts include a standalone button, an embedded button, and
   an underlined input treatment.
   The shared theme-button snippet owns the Button Foundation markup and visual
-  variants. Subscription preferences are exposed as a data state for an
-  integration without inventing an unsupported customer-form field.
+  variants. Subscription preferences render as optional contact fields when
+  enabled so selected values can be handled with the newsletter submission.
 
   @example
   {% content_for 'block', type: 'email-signup', id: 'email-signup' %}
@@ -101,6 +101,9 @@
   unless button_style == 'primary' or button_style == 'secondary' or button_style == 'tertiary'
     assign button_style = 'primary'
   endunless
+  if form_layout == 'underlined_input'
+    assign button_style = 'tertiary'
+  endif
 
   assign button_icon = blank
   assign button_icon_position = 'after'
@@ -163,12 +166,17 @@
   assign email_signup_email_id = email_signup_form_id | append: '-Email'
   assign email_signup_error_id = email_signup_form_id | append: '-Error'
   assign email_signup_success_id = email_signup_form_id | append: '-Success'
+  assign email_signup_preferences_title_id = email_signup_form_id | append: '-SubscriptionPreferencesTitle'
 
   assign subscription_preferences_state = 'disabled'
   assign email_signup_class = 'email-signup-block motion-block email-signup-block--layout-' | append: form_layout
   if block.settings.enable_subscription_preferences
     assign subscription_preferences_state = 'enabled'
     assign email_signup_class = email_signup_class | append: ' email-signup-block--subscription-preferences'
+    assign subscription_preferences_title = block.settings.subscription_preferences_title
+    if subscription_preferences_title == blank
+      assign subscription_preferences_title = 'email_signup.subscription_preferences_title' | t
+    endif
   endif
   if block.settings.vertical_on_mobile
     assign email_signup_class = email_signup_class | append: ' email-signup-block--vertical-mobile'
@@ -221,6 +229,57 @@
 >
   {% form 'customer', id: email_signup_form_id, class: 'email-signup-block__form' %}
     <input type="hidden" name="contact[tags]" value="newsletter">
+
+    {% if block.settings.enable_subscription_preferences %}
+      <div
+        class="email-signup-block__preferences"
+        role="group"
+        aria-labelledby="{{ email_signup_preferences_title_id }}"
+      >
+        {% if subscription_preferences_title != blank %}
+          <div class="email-signup-block__preferences-title" id="{{ email_signup_preferences_title_id }}">
+            {{ subscription_preferences_title }}
+          </div>
+        {% endif %}
+
+        <div class="email-signup-block__preferences-options">
+          {% for preference_index in (1..5) %}
+            {% assign preference_label = blank %}
+            {% case preference_index %}
+              {% when 1 %}
+                {% assign preference_label = block.settings.subscription_preferences_option_1 %}
+              {% when 2 %}
+                {% assign preference_label = block.settings.subscription_preferences_option_2 %}
+              {% when 3 %}
+                {% assign preference_label = block.settings.subscription_preferences_option_3 %}
+              {% when 4 %}
+                {% assign preference_label = block.settings.subscription_preferences_option_4 %}
+              {% when 5 %}
+                {% assign preference_label = block.settings.subscription_preferences_option_5 %}
+            {% endcase %}
+            {% if preference_label == blank %}
+              {% assign preference_locale_key = 'email_signup.subscription_preferences_option_' | append: preference_index %}
+              {% assign preference_label = preference_locale_key | t %}
+            {% endif %}
+            {% assign preference_label = preference_label | strip %}
+
+            {% if preference_label != blank %}
+              {% assign preference_id = email_signup_form_id | append: '-SubscriptionPreference-' | append: preference_index %}
+              <label class="email-signup-block__preference" for="{{ preference_id }}">
+                <input
+                  class="form__control form__control--checkbox"
+                  id="{{ preference_id }}"
+                  type="checkbox"
+                  name="contact[subscription_preference_{{ preference_index }}]"
+                  value="{{ preference_label | escape }}"
+                >
+                <span>{{ preference_label | escape }}</span>
+              </label>
+            {% endif %}
+          {% endfor %}
+        </div>
+      </div>
+    {% endif %}
 
     <div class="form__wrapper">
       <div class="form__fields email-signup-block__fields">
@@ -306,6 +365,14 @@
     min-width: 0;
   }
 
+  .email-signup-block--layout-horizontal .form__fields {
+    align-items: center;
+  }
+
+  .email-signup-block--layout-underlined_input .form__fields {
+    align-items: end;
+  }
+
   .email-signup-block--layout-vertical .form__fields {
     grid-template-columns: minmax(0, 1fr);
   }
@@ -320,11 +387,11 @@
 
   .email-signup-block--layout-input_with_button .email-signup-block__input-wrap {
     display: flex;
-    align-items: center;
+    align-items: stretch;
     width: 100%;
     min-width: 0;
     min-height: var(--email-signup-field-height-desktop, var(--input-height));
-    padding: 0.25rem;
+    padding: 0.65rem 0.875rem;
     border: var(--input-border-width) solid var(--input-border-color);
     border-radius: var(--input-radius);
     background: var(--input-background-color);
@@ -335,6 +402,8 @@
 
   .email-signup-block--layout-input_with_button .email-signup-block__input-wrap:focus-within {
     border-color: var(--input-focus-color);
+    outline: 2px solid var(--input-focus-color);
+    outline-offset: -2px;
   }
 
   .email-signup-block--layout-input_with_button .email-signup-block__input-wrap--error {
@@ -345,14 +414,18 @@
     flex: 1 1 auto;
     width: auto;
     min-height: 0;
-    padding-block: 0;
-    padding-inline: 0.875rem;
+    padding: 0;
     border: 0;
     border-radius: 0;
     background: transparent;
     box-shadow: none;
     color: inherit;
     font: inherit;
+  }
+
+  .email-signup-block--layout-input_with_button .email-signup-block__input-wrap > input.form__control:focus,
+  .email-signup-block--layout-input_with_button .email-signup-block__input-wrap > input.form__control:focus-visible {
+    outline: none;
   }
 
   .email-signup-block__field {
@@ -373,26 +446,56 @@
     padding-left: var(--email-signup-button-padding-left, 0px);
   }
 
+  .email-signup-block--layout-horizontal .email-signup-block__button {
+    align-self: stretch;
+  }
+
+  .email-signup-block--layout-input_with_button .email-signup-block__button {
+    align-self: stretch;
+  }
+
+  .email-signup-block--layout-vertical .email-signup-block__button > .btn {
+    height: var(--email-signup-field-height-desktop, var(--input-height));
+    min-height: var(--email-signup-field-height-desktop, var(--input-height));
+  }
+
   .email-signup-block__submit {
     max-width: 100%;
     white-space: nowrap;
+  }
+
+  .email-signup-block--layout-vertical .email-signup-block__button,
+  .email-signup-block--layout-vertical .email-signup-block__button > .btn {
+    width: 100%;
+  }
+
+  .email-signup-block--layout-vertical .email-signup-block__button > .btn:is(.btn-tertiary, .btn--tertiary) {
+    width: fit-content;
   }
 
   .email-signup-block--layout-input_with_button .email-signup-block__button {
     flex: 0 0 auto;
   }
 
-  .email-signup-block--layout-input_with_button .email-signup-block__button .btn:not(.btn-tertiary):not(.btn--tertiary) {
-    min-height: max(var(--email-signup-field-height-desktop, var(--button-height)), var(--button-height));
+  .email-signup-block--layout-horizontal .email-signup-block__button > .btn,
+  .email-signup-block--layout-input_with_button .email-signup-block__button > .btn {
+    height: 100%;
+    min-height: 0;
   }
 
   .email-signup-block--layout-underlined_input .email-signup-block__field > input.form__control:not([type='checkbox']):not([type='radio']):not([type='hidden']) {
+    height: auto;
+    min-height: 0;
     border: 0;
     border-block-end: var(--input-border-width) solid var(--input-border-color);
+    border-radius: 0;
+    background-color: transparent;
+    box-shadow: none;
   }
 
-  .email-signup-block--layout-underlined_input .email-signup-block__field > input.form__control:not([type='checkbox']):not([type='radio']):not([type='hidden']):focus {
+  .email-signup-block--layout-underlined_input .email-signup-block__field > input.form__control:not([type='checkbox']):not([type='radio']):not([type='hidden']):is(:focus, :focus-visible) {
     border-block-end-color: var(--input-focus-color);
+    outline: none;
   }
 
   .email-signup-block__message {
@@ -401,6 +504,48 @@
 
   .email-signup-block__message ul {
     padding-inline-start: 1.25rem;
+  }
+
+  .email-signup-block__preferences {
+    display: grid;
+    gap: 0.75rem;
+    margin-block-end: 1rem;
+    min-width: 0;
+  }
+
+  .email-signup-block__preferences-title {
+    max-width: 100%;
+    color: var(--body-color);
+    font-weight: 600;
+    overflow-wrap: anywhere;
+  }
+
+  .email-signup-block__preferences-title :where(ul, ol) {
+    padding-inline-start: 1.5em;
+  }
+
+  .email-signup-block__preferences-options {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.75rem 1.5rem;
+    min-width: 0;
+  }
+
+  .email-signup-block__preference {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-width: 0;
+    cursor: pointer;
+  }
+
+  .email-signup-block__preference .form__control--checkbox {
+    flex: 0 0 auto;
+  }
+
+  .email-signup-block__preference > span {
+    overflow-wrap: anywhere;
   }
 
   @media (max-width: 767.98px) {
@@ -430,14 +575,25 @@
       padding-left: var(--email-signup-button-padding-left-mobile, var(--email-signup-button-padding-left, 0px));
     }
 
-    .email-signup-block--layout-input_with_button .email-signup-block__button .btn:not(.btn-tertiary):not(.btn--tertiary) {
-      min-height: max(var(--email-signup-field-height-mobile, var(--button-height-mobile)), var(--button-height-mobile));
+    .email-signup-block--layout-horizontal.email-signup-block--vertical-mobile .email-signup-block__button > .btn,
+    .email-signup-block--layout-vertical .email-signup-block__button > .btn {
+      height: var(--email-signup-field-height-mobile, var(--input-height-mobile));
+      min-height: var(--email-signup-field-height-mobile, var(--input-height-mobile));
     }
 
     .email-signup-block--layout-input_with_button .email-signup-block__input-wrap {
       min-height: var(--email-signup-field-height-mobile, var(--input-height-mobile));
     }
-  }
+
+      .email-signup-block--layout-underlined_input .email-signup-block__field > input.form__control:not([type='checkbox']):not([type='radio']):not([type='hidden']) {
+        height: auto;
+        min-height: 0;
+      }
+
+      .email-signup-block__preferences-options {
+        column-gap: 1rem;
+      }
+    }
 {% endstylesheet %}
 
 {% schema %}
@@ -477,6 +633,48 @@
       "label": "t:labels.enable_subscription_preferences",
       "info": "t:info.email_signup_subscription_preferences",
       "default": false
+    },
+    {
+      "type": "richtext",
+      "id": "subscription_preferences_title",
+      "label": "t:labels.subscription_preferences_title",
+      "default": "<p>What styles are you interested in?</p>",
+      "visible_if": "{{ block.settings.enable_subscription_preferences }}"
+    },
+    {
+      "type": "text",
+      "id": "subscription_preferences_option_1",
+      "label": "t:labels.subscription_preferences_option_1",
+      "default": "Option 1",
+      "visible_if": "{{ block.settings.enable_subscription_preferences }}"
+    },
+    {
+      "type": "text",
+      "id": "subscription_preferences_option_2",
+      "label": "t:labels.subscription_preferences_option_2",
+      "default": "Option 2",
+      "visible_if": "{{ block.settings.enable_subscription_preferences }}"
+    },
+    {
+      "type": "text",
+      "id": "subscription_preferences_option_3",
+      "label": "t:labels.subscription_preferences_option_3",
+      "default": "Option 3",
+      "visible_if": "{{ block.settings.enable_subscription_preferences }}"
+    },
+    {
+      "type": "text",
+      "id": "subscription_preferences_option_4",
+      "label": "t:labels.subscription_preferences_option_4",
+      "default": "Option 4",
+      "visible_if": "{{ block.settings.enable_subscription_preferences }}"
+    },
+    {
+      "type": "text",
+      "id": "subscription_preferences_option_5",
+      "label": "t:labels.subscription_preferences_option_5",
+      "default": "Option 5",
+      "visible_if": "{{ block.settings.enable_subscription_preferences }}"
     },
     {
       "type": "header",
@@ -593,7 +791,8 @@
         { "value": "medium", "label": "t:options.email_signup_field_height.medium" },
         { "value": "large", "label": "t:options.email_signup_field_height.large" }
       ],
-      "default": "large"
+      "default": "large",
+      "visible_if": "{{ block.settings.form_layout != 'underlined_input' }}"
     },
     {
       "type": "header",
@@ -613,7 +812,8 @@
         { "value": "secondary", "label": "t:options.button_variant.secondary" },
         { "value": "tertiary", "label": "t:options.button_variant.tertiary" }
       ],
-      "default": "primary"
+      "default": "primary",
+      "visible_if": "{{ block.settings.form_layout != 'underlined_input' }}"
     },
     {
       "type": "checkbox",
@@ -768,6 +968,12 @@
         "form_layout": "horizontal",
         "vertical_on_mobile": false,
         "enable_subscription_preferences": false,
+        "subscription_preferences_title": "<p>What styles are you interested in?</p>",
+        "subscription_preferences_option_1": "Option 1",
+        "subscription_preferences_option_2": "Option 2",
+        "subscription_preferences_option_3": "Option 3",
+        "subscription_preferences_option_4": "Option 4",
+        "subscription_preferences_option_5": "Option 5",
         "gap_desktop": 0,
         "gap_mobile": 0,
         "width_desktop": "fill",

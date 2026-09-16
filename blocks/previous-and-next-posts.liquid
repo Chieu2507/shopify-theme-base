@@ -1,0 +1,32 @@
+{% doc %}
+  Renders links to the previous and next articles in the current blog.
+{% enddoc %}
+
+<nav class="article-pagination article-pagination--{{ block.settings.corner_radius | default: 'inherit' }}" aria-label="Article navigation" style="--article-pagination-padding-top: {{ block.settings.padding_top }}px; --article-pagination-padding-bottom: {{ block.settings.padding_bottom }}px; --article-pagination-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --article-pagination-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;" {{ block.shopify_attributes }}>
+  {% if blog.previous_article %}<a class="article-pagination__item article-pagination__item--previous" href="{{ blog.previous_article.url }}">Previous Post</a>{% endif %}
+  {% if blog.next_article %}<a class="article-pagination__item article-pagination__item--next" href="{{ blog.next_article.url }}">Next Post</a>{% endif %}
+</nav>
+
+{% stylesheet %}
+  .article-pagination { display: flex; align-items: flex-end; justify-content: space-between; width: 100%; min-height: 22px; gap: 2px; padding-top: var(--article-pagination-padding-top, 0px); padding-bottom: var(--article-pagination-padding-bottom, 0px); box-sizing: border-box; }
+  .article-pagination__item { display: flex; align-items: center; justify-content: center; min-height: 22px; padding: 0 0 1px; color: inherit; font-size: var(--font-body-sm); line-height: 1; text-decoration: none; text-transform: uppercase; border-bottom: 1px solid var(--border-color); }
+  .article-pagination__item--next { text-align: right; }
+  @media (max-width: 767.98px) { .article-pagination { padding-top: var(--article-pagination-padding-top-mobile, var(--article-pagination-padding-top, 0px)); padding-bottom: var(--article-pagination-padding-bottom-mobile, var(--article-pagination-padding-bottom, 0px)); } }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Previous and next posts",
+  "tag": null,
+  "settings": [
+    { "type": "select", "id": "title_size", "label": "Title size", "options": [{ "value": "h1", "label": "Heading 1" }, { "value": "h2", "label": "Heading 2" }, { "value": "h3", "label": "Heading 3" }, { "value": "h4", "label": "Heading 4" }, { "value": "h5", "label": "Heading 5" }, { "value": "h6", "label": "Heading 6" }], "default": "h5" },
+    { "type": "select", "id": "corner_radius", "label": "Corner radius", "options": [{ "value": "inherit", "label": "Inherit" }, { "value": "square", "label": "Square" }, { "value": "rounded", "label": "Rounded" }, { "value": "custom", "label": "Custom" }], "default": "inherit" },
+    { "type": "header", "content": "Padding" },
+    { "type": "range", "id": "padding_top", "label": "Top", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "Bottom", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "checkbox", "id": "custom_mobile_padding", "label": "Custom for mobile", "default": false },
+    { "type": "range", "id": "padding_top_mobile", "label": "Top (mobile)", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0, "visible_if": "{{ block.settings.custom_mobile_padding }}" },
+    { "type": "range", "id": "padding_bottom_mobile", "label": "Bottom (mobile)", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0, "visible_if": "{{ block.settings.custom_mobile_padding }}" }
+  ]
+}
+{% endschema %}

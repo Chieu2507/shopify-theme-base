@@ -17,6 +17,7 @@
   @param {number} [icon_width] - Custom icon width in pixels
   @param {boolean} [icon_only] - Hide the visible label when the icon is the control
   @param {boolean} [open_in_new_tab] - Whether links should open in a new tab
+  @param {boolean} [force_link] - Render a link while its destination is assigned dynamically
   @param {string} [aria_label] - Optional accessible name when it differs from the visible label
   @param {string} [attributes] - Optional HTML attributes owned by the caller
   @param {string} [motion_speed] - Motion token: fast, standard, or slow
@@ -76,6 +77,11 @@
   assign button_motion_style = '--button-motion-duration: ' | append: button_motion_duration | append: ';'
 
   assign button_class = 'btn btn-' | append: button_variant | append: ' btn--' | append: button_variant
+  assign button_underline_attribute = blank
+  if button_variant == 'tertiary'
+    assign button_class = button_class | append: ' link-underline'
+    assign button_underline_attribute = 'data-underline="persistent" data-underline-target="text"'
+  endif
   if loading
     assign button_class = button_class | append: ' btn--loading'
   endif
@@ -113,11 +119,12 @@
   </span>
 {% endcapture %}
 
-{% if url != blank %}
+{% if url != blank or force_link %}
   <a
     class="{{ button_class | strip }}"
-    href="{{ url | escape }}"
+    {% if url != blank and disabled != true %}href="{{ url | escape }}"{% endif %}
     style="{{ button_motion_style }}"
+    {{ button_underline_attribute }}
     {% if aria_label != blank %}aria-label="{{ aria_label | escape }}"{% endif %}
     {% if attributes != blank %}{{ attributes }}{% endif %}
     {% if loading %}aria-busy="true"{% endif %}
@@ -135,6 +142,7 @@
     class="{{ button_class | strip }}"
     type="{{ type | default: 'button' }}"
     style="{{ button_motion_style }}"
+    {{ button_underline_attribute }}
     {% if aria_label != blank %}aria-label="{{ aria_label | escape }}"{% endif %}
     {% if attributes != blank %}{{ attributes }}{% endif %}
     {% if disabled or loading %}disabled{% endif %}
