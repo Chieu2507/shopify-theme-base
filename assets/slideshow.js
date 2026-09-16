@@ -5,10 +5,57 @@ const states = new WeakMap();
 const selector = '[data-slideshow]';
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
 const isVisible = (element) => element.getClientRects().length > 0;
+const slideSelector = '[data-slideshow-slide]';
+
+const createPeekSlide = (slide, side) => {
+  const peek = slide.cloneNode(true);
+  peek.removeAttribute('id');
+  peek.setAttribute('aria-hidden', 'true');
+  peek.setAttribute('data-slideshow-clone', side);
+  peek.classList.remove('swiper-slide-active', 'swiper-slide-next', 'swiper-slide-prev', 'swiper-slide-visible', 'swiper-slide-fully-visible');
+  peek.classList.add('slideshow__peek', `slideshow__peek--${side}`);
+  peek.querySelectorAll('[id], [data-shopify-editor-block], [data-shopify-editor-block-id], [data-shopify-editor-block-type]').forEach((element) => {
+    element.removeAttribute('id');
+    element.removeAttribute('data-shopify-editor-block');
+    element.removeAttribute('data-shopify-editor-block-id');
+    element.removeAttribute('data-shopify-editor-block-type');
+  });
+  peek.querySelectorAll('a, button, input, select, textarea, summary, video').forEach((element) => {
+    element.setAttribute('tabindex', '-1');
+    element.setAttribute('aria-hidden', 'true');
+  });
+  if ('inert' in peek) peek.inert = true;
+  return peek;
+};
+
+const createTwoSlidePeeks = (carousel, swiper) => {
+  if (swiper.slides.length !== 2) return null;
+  const peeks = { previous: null, next: null };
+  const update = () => {
+    if (swiper.destroyed) return;
+    const slides = swiper.slides;
+    const activeIndex = swiper.realIndex === 1 ? 1 : 0;
+    const neighbour = slides[activeIndex === 1 ? 0 : 1];
+    ['previous', 'next'].forEach((side) => {
+      if (peeks[side]?.dataset.sourceIndex === String(activeIndex === 1 ? 0 : 1)) return;
+      peeks[side]?.remove();
+      peeks[side] = createPeekSlide(neighbour, side);
+      peeks[side].dataset.sourceIndex = String(activeIndex === 1 ? 0 : 1);
+      if (side === 'previous') carousel.prepend(peeks[side]);
+      else carousel.append(peeks[side]);
+    });
+  };
+  const destroy = () => {
+    peeks.previous?.remove();
+    peeks.next?.remove();
+  };
+  update();
+  return { update, destroy };
+};
 
 const updateParallax = (root) => {
   if (reducedMotion()) return;
-  root.querySelectorAll('[data-slideshow-slide]').forEach((slide) => {
+  root.querySelectorAll(slideSelector).forEach((slide) => {
     const media = slide.querySelector('[data-slideshow-media]');
     const effect = slide.dataset.parallax;
     if (!media || !effect || effect === 'none') return;
@@ -80,6 +127,8 @@ const init = (root) => {
   const carousel = root.querySelector('[data-slideshow-swiper]');
   if (!carousel) return;
   const pageWidth = root.classList.contains('slideshow--width-page');
+  const slideCount = carousel.querySelectorAll(`.swiper-wrapper > ${slideSelector}`).length;
+  const twoSlidePage = pageWidth && slideCount === 2;
   // Page layout exposes adjacent slides, which requires Swiper's slide effect.
   const fade = !pageWidth && root.dataset.transition === 'fade';
   const autoplay = root.dataset.autoplay === 'true' && !reducedMotion();
@@ -90,7 +139,8 @@ const init = (root) => {
     // gap in its translate, drag, loop, and pagination calculations.
     spaceBetween: pageWidth && !fade ? 24 : 0,
     centeredSlides: pageWidth,
-    loop: carousel.querySelectorAll('.swiper-slide').length > 1,
+    loop: !twoSlidePage && slideCount > 1,
+    rewind: twoSlidePage,
     watchOverflow: true,
     speed: reducedMotion() ? 0 : 600,
     effect: fade ? 'fade' : 'slide',
@@ -99,6 +149,8 @@ const init = (root) => {
   };
   const swiper = createSwiperCarousel(carousel, options);
   if (!swiper) return;
+  const pagePeeks = twoSlidePage ? createTwoSlidePeeks(carousel, swiper) : null;
+  if (pagePeeks) swiper.on('slideChange', pagePeeks.update);
   const navigationController = bindNavigation(root, swiper);
   const interval = autoplay ? startAutoplay(root, swiper) : null;
   let frame = 0;
@@ -112,7 +164,7 @@ const init = (root) => {
   const updateLockedState = () => root.classList.toggle('slideshow--single-slide', Boolean(swiper.isLocked));
   swiper.on('lock unlock update resize', updateLockedState);
   updateLockedState();
-  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState });
+  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, pagePeeks });
 };
 
 const destroy = (root) => {
@@ -122,6 +174,10 @@ const destroy = (root) => {
   if (state.frame) window.cancelAnimationFrame(state.frame);
   if (state.interval) window.clearInterval(state.interval);
   state.navigationController.abort();
+  if (state.pagePeeks) {
+    state.swiper.off('slideChange', state.pagePeeks.update);
+    state.pagePeeks.destroy();
+  }
   state.swiper.off('lock unlock update resize', state.updateLockedState);
   destroySwiperCarousel(state.swiper);
   states.delete(root);
