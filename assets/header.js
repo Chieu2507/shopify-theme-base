@@ -7,6 +7,8 @@
   const megaMenuBackdropControls = new WeakSet();
   const accountElements = new WeakSet();
   const localizationSheetControls = new WeakSet();
+  const localizationSheetDetails = new WeakSet();
+  const localizationSheetCloseTimers = new WeakMap();
   const footerLocalizationStates = new WeakMap();
   const openAccountSheets = new WeakSet();
   const mobileMegaMenuOrigins = new Map();
@@ -66,9 +68,68 @@
     account.querySelector('[slot="signed-out-avatar"]')?.click();
   };
 
+  const getTransitionTotalMs = (element) => {
+    if (!element) return 0;
+    const styles = window.getComputedStyle(element);
+    const toMilliseconds = (value) => {
+      const duration = Number.parseFloat(value) || 0;
+      return value.trim().endsWith('ms') ? duration : duration * 1000;
+    };
+    const durations = styles.transitionDuration.split(',').map(toMilliseconds);
+    const delays = styles.transitionDelay.split(',').map(toMilliseconds);
+    return durations.reduce((maximum, duration, index) => (
+      Math.max(maximum, duration + (delays[index] ?? delays[delays.length - 1] ?? 0))
+    ), 0);
+  };
+
+  const clearLocalizationSheetClose = (details) => {
+    const closeState = localizationSheetCloseTimers.get(details);
+    if (!closeState) return;
+    window.clearTimeout(closeState.timer);
+    closeState.panel?.removeEventListener('transitionend', closeState.onTransitionEnd);
+    localizationSheetCloseTimers.delete(details);
+  };
+
+  const closeLocalizationSheet = (details, { restoreFocus = false } = {}) => {
+    const panel = details.querySelector(':scope > .header-localization__panel');
+    let finished = false;
+
+    const finishClose = () => {
+      if (finished) return;
+      finished = true;
+      clearLocalizationSheetClose(details);
+      details.classList.remove('is-sheet-open');
+      details.removeAttribute('open');
+      if (restoreFocus) {
+        details.querySelector(':scope > .header-localization__summary')?.focus({ preventScroll: true });
+      }
+      scheduleUpdate();
+    };
+
+    clearLocalizationSheetClose(details);
+    if (window.innerWidth > 767 || !details.classList.contains('is-sheet-open') || !panel) {
+      finishClose();
+      return;
+    }
+
+    const onTransitionEnd = (event) => {
+      if (event.target === panel && event.propertyName === 'transform') finishClose();
+    };
+    panel.addEventListener('transitionend', onTransitionEnd);
+    details.classList.remove('is-sheet-open');
+
+    const transitionMs = getTransitionTotalMs(panel);
+    const timer = window.setTimeout(finishClose, transitionMs + 50);
+    localizationSheetCloseTimers.set(details, { timer, panel, onTransitionEnd });
+  };
+
   const closeHeaderSurfaces = (header, active = {}) => {
     header.querySelectorAll('details[open], details.is-submenu-closing').forEach((details) => {
       if (details === active.details) return;
+      if (details.classList.contains('header-localization__details')) {
+        closeLocalizationSheet(details);
+        return;
+      }
       details.removeAttribute('open');
       details.classList.remove('is-submenu-closing');
     });
@@ -368,6 +429,7 @@
 
       summary?.addEventListener('click', (event) => {
         if (window.innerWidth > 767) return;
+        if (details.classList.contains('header-localization__details')) return;
 
         const menu = details.closest('.header-menu');
         if (!menu) return;
@@ -512,17 +574,43 @@
     });
   };
 
-  const initializeLocalizationSheets = (root) => {
-    root.querySelectorAll('[data-header-localization-close]').forEach((control) => {
+  const initializeLocalizationSheets = (header) => {
+    header.querySelectorAll('.header-localization__details').forEach((details) => {
+      if (localizationSheetDetails.has(details)) return;
+      localizationSheetDetails.add(details);
+
+      details.querySelector(':scope > .header-localization__summary')?.addEventListener('click', (event) => {
+        if (window.innerWidth > 767) return;
+        event.preventDefault();
+
+        if (details.open && details.classList.contains('is-sheet-open')) {
+          closeLocalizationSheet(details);
+          return;
+        }
+
+        clearLocalizationSheetClose(details);
+        closeHeaderSurfaces(header, { details, menu: true });
+        details.open = true;
+        details.classList.remove('is-sheet-open');
+
+        // Closed details children have no computed layout. Flush the closed sheet
+        // position before making it visible so its very first opening can animate.
+        void details.querySelector(':scope > .header-localization__panel')?.offsetHeight;
+        window.requestAnimationFrame(() => {
+          if (details.open) details.classList.add('is-sheet-open');
+        });
+        scheduleUpdate();
+      });
+    });
+
+    header.querySelectorAll('[data-header-localization-close]').forEach((control) => {
       if (localizationSheetControls.has(control)) return;
       localizationSheetControls.add(control);
 
       control.addEventListener('click', () => {
         const details = control.closest('.header-localization__details');
         if (!details) return;
-        details.removeAttribute('open');
-        details.querySelector(':scope > .header-localization__summary')?.focus();
-        scheduleUpdate();
+        closeLocalizationSheet(details, { restoreFocus: true });
       });
     });
   };
@@ -669,17 +757,20 @@
     localizationSheetDrag = null;
 
     if (shouldClose) {
-      drag.panel.style.transition = 'transform 280ms cubic-bezier(0.4, 0, 0.2, 1)';
+      drag.details.classList.remove('is-sheet-open');
+      drag.panel.style.transition = 'transform var(--motion-duration-standard) var(--motion-ease-standard)';
       window.requestAnimationFrame(() => {
         drag.panel.style.transform = `translate3d(0, ${Math.max(window.innerHeight, drag.panel.offsetHeight + 60)}px, 0)`;
       });
+      const transitionMs = getTransitionTotalMs(drag.panel);
       window.setTimeout(() => {
+        drag.details.classList.remove('is-sheet-open');
         drag.details.removeAttribute('open');
         drag.details.querySelector(':scope > .header-localization__summary')?.focus({ preventScroll: true });
         drag.panel.style.removeProperty('transition');
         drag.panel.style.removeProperty('transform');
         scheduleUpdate();
-      }, 280);
+      }, transitionMs + 50);
       return;
     }
 

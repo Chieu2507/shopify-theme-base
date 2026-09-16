@@ -1,14 +1,50 @@
 class VariantPicker extends HTMLElement {
   connectedCallback() {
-    this.handleChange = this.handleChange.bind(this);
-    this.addEventListener('change', this.handleChange);
+    if (this.abortController) return;
+
+    this.abortController = new AbortController();
+    this.signal = this.abortController.signal;
+    this.sectionRoot =
+      this.closest('[data-product-information]') || this.closest('.shopify-section') || this.parentElement;
     this.variants = this.readVariants();
     this.variantIdInput = this.querySelector('[data-variant-id]');
-    this.sync();
+    this.initialVariantId = String(this.dataset.currentVariantId || this.variantIdInput?.value || '');
+    this.sizeChartOpener = null;
+
+    this.handleChange = this.handleChange.bind(this);
+    this.handleClick = this.handleClick.bind(this);
+    this.handleKeydown = this.handleKeydown.bind(this);
+    this.handlePopState = this.handlePopState.bind(this);
+    this.handleExternalVariantChange = this.handleExternalVariantChange.bind(this);
+    this.handleSizeChartClose = this.handleSizeChartClose.bind(this);
+    this.handleSizeChartCancel = this.handleSizeChartCancel.bind(this);
+
+    const eventOptions = { signal: this.signal };
+    this.addEventListener('change', this.handleChange, eventOptions);
+    this.addEventListener('click', this.handleClick, eventOptions);
+    this.addEventListener('keydown', this.handleKeydown, eventOptions);
+    window.addEventListener('popstate', this.handlePopState, eventOptions);
+    this.sectionRoot?.addEventListener('variant:change', this.handleExternalVariantChange, eventOptions);
+    this.sizeChartDialog?.addEventListener('close', this.handleSizeChartClose, eventOptions);
+    this.sizeChartDialog?.addEventListener('cancel', this.handleSizeChartCancel, eventOptions);
+
+    this.applyUrlVariant();
+    this.sync({ source: 'initial' });
   }
 
   disconnectedCallback() {
-    this.removeEventListener('change', this.handleChange);
+    window.requestAnimationFrame(() => {
+      if (this.isConnected) return;
+
+      this.abortController?.abort();
+      this.abortController = null;
+      this.signal = null;
+      this.sizeChartOpener = null;
+    });
+  }
+
+  get sizeChartDialog() {
+    return this.querySelector('[data-size-chart-dialog]');
   }
 
   readVariants() {
@@ -40,16 +76,29 @@ class VariantPicker extends HTMLElement {
     });
   }
 
+  variantOptions(variant) {
+    if (Array.isArray(variant?.options) && variant.options.length) {
+      return variant.options;
+    }
+
+    return [variant?.option1, variant?.option2, variant?.option3].slice(0, this.optionGroups().length);
+  }
+
   findVariant(options) {
     return this.variants.find((variant) => {
-      if (!Array.isArray(variant.options) || variant.options.length !== options.length) {
+      const variantOptions = this.variantOptions(variant);
+      if (variantOptions.length !== options.length) {
         return false;
       }
 
-      return variant.options.every(
-        (option, index) => String(option) === String(options[index]),
-      );
+      return variantOptions.every((option, index) => String(option) === String(options[index]));
     });
+  }
+
+  findVariantById(variantId) {
+    if (!variantId) return null;
+
+    return this.variants.find((variant) => String(variant.id) === String(variantId)) || null;
   }
 
   valueState(optionIndex, value, selectedOptions) {
@@ -57,12 +106,16 @@ class VariantPicker extends HTMLElement {
     let hasAvailableVariant = false;
 
     this.variants.forEach((variant) => {
-      if (!Array.isArray(variant.options) || String(variant.options[optionIndex]) !== String(value)) {
+      const variantOptions = this.variantOptions(variant);
+      if (String(variantOptions[optionIndex]) !== String(value)) {
         return;
       }
 
-      const matchesOtherOptions = variant.options.every(
-        (option, index) => index === optionIndex || String(option) === String(selectedOptions[index]),
+      const matchesOtherOptions = variantOptions.every(
+        (option, index) =>
+          index === optionIndex ||
+          !selectedOptions[index] ||
+          String(option) === String(selectedOptions[index]),
       );
 
       if (matchesOtherOptions) {
@@ -103,7 +156,7 @@ class VariantPicker extends HTMLElement {
       control.disabled = state === 'unavailable' && !isCurrentValue;
       choice?.classList.toggle('variant-picker__choice--unavailable', state === 'unavailable');
       choice?.classList.toggle('variant-picker__choice--sold-out', state === 'sold-out');
-      choice?.dataset && (choice.dataset.variantState = state);
+      if (choice) choice.dataset.variantState = state;
       button?.classList.toggle('variant-picker__button--unavailable', state === 'unavailable');
       button?.classList.toggle('variant-picker__button--sold-out', state === 'sold-out');
 
@@ -127,26 +180,128 @@ class VariantPicker extends HTMLElement {
     });
   }
 
+  productForm() {
+    if (!this.dataset.productFormId) {
+      return this.closest('form');
+    }
+
+    return (
+      Array.from(this.sectionRoot?.querySelectorAll('form') || []).find(
+        (form) => form.getAttribute('id') === this.dataset.productFormId,
+      ) ||
+      document.getElementById(this.dataset.productFormId) ||
+      this.closest('form')
+    );
+  }
+
+  updateQuantityInput(variant, productForm) {
+    const productFormId = productForm?.getAttribute('id') || '';
+    const quantityInput = Array.from(
+      this.sectionRoot?.querySelectorAll('[data-quantity-input]') || [],
+    ).find(
+      (input) =>
+        !productForm || input.form === productForm || (productFormId && input.getAttribute('form') === productFormId),
+    );
+
+    if (!quantityInput) return;
+
+    const quantityRule = variant?.quantity_rule || {};
+    const min = Number.isFinite(Number(quantityRule.min)) && Number(quantityRule.min) > 0
+      ? Math.floor(Number(quantityRule.min))
+      : 1;
+    const increment = Number.isFinite(Number(quantityRule.increment)) && Number(quantityRule.increment) > 0
+      ? Math.floor(Number(quantityRule.increment))
+      : 1;
+    const maxValue = Number(quantityRule.max);
+    const max = Number.isFinite(maxValue) && maxValue >= min ? Math.floor(maxValue) : null;
+
+    quantityInput.min = String(min);
+    quantityInput.step = String(increment);
+    if (max == null) {
+      quantityInput.removeAttribute('max');
+    } else {
+      quantityInput.max = String(max);
+    }
+
+    let value = Number(quantityInput.value);
+    if (!Number.isFinite(value) || value < min) value = min;
+    if (increment > 1) value = min + Math.ceil((value - min) / increment) * increment;
+    if (max != null && value > max) {
+      value = min + Math.floor((max - min) / increment) * increment;
+    }
+    quantityInput.value = String(Math.max(min, value));
+    quantityInput.dataset.quantityVariantId = variant?.id ? String(variant.id) : '';
+  }
+
   updateProductForm(variant) {
     const variantId = variant?.id ? String(variant.id) : '';
+    const isAvailable = Boolean(variant?.available);
+    const productForm = this.productForm();
 
     if (this.variantIdInput) {
       this.variantIdInput.value = variantId;
+      this.variantIdInput.setAttribute('value', variantId);
     }
 
-    const submitButton = this.closest('form')?.querySelector('.product-form__submit');
-    if (submitButton) {
-      submitButton.disabled = !variant?.available;
-      submitButton.setAttribute('aria-disabled', String(!variant?.available));
+    productForm?.querySelectorAll('[data-variant-id]').forEach((input) => {
+      input.value = variantId;
+      input.setAttribute('value', variantId);
+    });
+    if (productForm) {
+      productForm.dataset.currentVariantId = variantId;
+      productForm.dataset.variantAvailable = String(isAvailable);
     }
 
+    productForm?.querySelectorAll('.product-form__submit, .shopify-payment-button button').forEach((button) => {
+      button.disabled = !isAvailable;
+      button.setAttribute('aria-disabled', String(!isAvailable));
+      button.dataset.variantAvailable = String(isAvailable);
+    });
+
+    const buyButtons =
+      productForm?.closest('[data-product-buy-buttons]') ||
+      this.sectionRoot?.querySelector('[data-product-buy-buttons]');
+    if (buyButtons) {
+      buyButtons.dataset.backInStockVariantId = variantId;
+      buyButtons.dataset.variantAvailable = String(isAvailable);
+    }
+
+    this.updateQuantityInput(variant, productForm);
+    this.updateAddToCartLabel(productForm, variant);
     this.dataset.currentVariantId = variantId;
+  }
+
+  updateAddToCartLabel(productForm, variant) {
+    const button = productForm?.querySelector('[data-add-to-cart-button]');
+    const label = button?.querySelector('.btn__text');
+
+    if (!button || !label) {
+      return;
+    }
+
+    const variantId = variant?.id ? String(variant.id) : '';
+    let nextLabel = '';
+
+    if (variant && !variant.available) {
+      nextLabel = this.dataset.soldOutLabel;
+    } else if (!variant) {
+      nextLabel = this.dataset.unavailableLabel;
+    } else {
+      const template = Array.from(
+        productForm.querySelectorAll('[data-add-to-cart-label-template]'),
+      ).find((labelTemplate) => labelTemplate.dataset.addToCartLabelTemplate === variantId);
+      nextLabel = template?.content.textContent.trim() || productForm.dataset.addToCartLabel;
+    }
+
+    if (nextLabel) {
+      label.textContent = nextLabel;
+    }
   }
 
   priceContainer() {
     const sectionId = this.dataset.sectionId;
 
-    return Array.from(document.querySelectorAll('[data-product-price-container]')).find(
+    return Array.from(this.sectionRoot?.querySelectorAll('[data-product-price-container]') || []).find(
       (container) => container.dataset.sectionId === sectionId,
     );
   }
@@ -174,9 +329,29 @@ class VariantPicker extends HTMLElement {
     currentPrice.replaceWith(nextPrice.cloneNode(true));
   }
 
+  updateSaleBadge(variant) {
+    const price = this.priceContainer();
+    const container = price?.querySelector('[data-variant-sale-badge-container]');
+
+    if (!price || !container) {
+      return;
+    }
+
+    const variantId = variant?.id ? String(variant.id) : '';
+    const template = Array.from(price.querySelectorAll('[data-variant-sale-badge-template]')).find(
+      (badgeTemplate) => badgeTemplate.dataset.variantSaleBadgeTemplate === variantId,
+    );
+
+    container.replaceChildren(template?.content.cloneNode(true) || document.createDocumentFragment());
+  }
+
   updateMedia(variantId) {
     const galleryId = this.dataset.mediaGalleryId;
-    const gallery = galleryId ? document.getElementById(galleryId) : null;
+    const gallery = galleryId
+      ? Array.from(this.sectionRoot?.querySelectorAll('[data-product-media-gallery]') || []).find(
+          (element) => element.id === galleryId,
+        )
+      : null;
     const mediaItems = gallery ? Array.from(gallery.querySelectorAll('[data-product-media]')) : [];
 
     if (!mediaItems.length) {
@@ -207,14 +382,85 @@ class VariantPicker extends HTMLElement {
     }
   }
 
-  sync() {
+  updateStatus(variant) {
+    const status = this.querySelector('[data-variant-picker-status]');
+    if (!status) return;
+
+    const message = variant ? '' : this.dataset.unavailableSelectionLabel;
+    status.textContent = message || '';
+    status.hidden = !message;
+    status.setAttribute('aria-hidden', String(!message));
+  }
+
+  updateUrl(variantId) {
+    if (window.Shopify?.designMode || !window.history?.replaceState) return;
+
+    const url = new URL(window.location.href);
+    if (variantId) {
+      url.searchParams.set('variant', String(variantId));
+    } else {
+      url.searchParams.delete('variant');
+    }
+
+    const nextUrl = `${url.pathname}${url.search}${url.hash}`;
+    const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+    if (nextUrl === currentUrl) return;
+
+    const currentState = window.history.state;
+    const nextState = currentState && typeof currentState === 'object' ? { ...currentState } : {};
+    nextState.variantId = variantId ? String(variantId) : null;
+    window.history.replaceState(nextState, '', nextUrl);
+  }
+
+  applyUrlVariant() {
+    if (window.Shopify?.designMode) return;
+
+    const url = new URL(window.location.href);
+    const requestedVariantId = url.searchParams.get('variant');
+    const targetVariant = requestedVariantId
+      ? this.findVariantById(requestedVariantId)
+      : this.findVariantById(this.initialVariantId);
+
+    if (targetVariant) {
+      this.setControlsForVariant(targetVariant);
+    }
+  }
+
+  setControlsForVariant(variant) {
+    const variantOptions = this.variantOptions(variant);
+
+    this.optionGroups().forEach((group, index) => {
+      const nextValue = variantOptions[index];
+      if (nextValue == null) return;
+
+      const select = group.querySelector('select[data-option-control]');
+      if (select) {
+        const matchingOption = Array.from(select.options).find(
+          (option) => String(option.value) === String(nextValue),
+        );
+        if (matchingOption) select.value = matchingOption.value;
+        return;
+      }
+
+      const radio = Array.from(group.querySelectorAll('input[data-option-control]')).find(
+        (input) => String(input.value) === String(nextValue),
+      );
+      if (radio) radio.checked = true;
+    });
+  }
+
+  sync({ updateUrl = false, source = 'change' } = {}) {
     const options = this.selectedOptions();
     const variant = this.findVariant(options);
 
     this.updateAvailability(options);
     this.updateProductForm(variant);
+    this.updateStatus(variant);
     this.updatePrice(variant);
+    this.updateSaleBadge(variant);
     this.updateMedia(variant?.id || '');
+    if (updateUrl) this.updateUrl(variant?.id || '');
+
     this.dispatchEvent(
       new CustomEvent('variant:change', {
         bubbles: true,
@@ -222,6 +468,8 @@ class VariantPicker extends HTMLElement {
           variant,
           variantId: variant?.id ? String(variant.id) : '',
           options,
+          available: Boolean(variant?.available),
+          source,
         },
       }),
     );
@@ -232,7 +480,101 @@ class VariantPicker extends HTMLElement {
       return;
     }
 
-    this.sync();
+    this.sync({ updateUrl: true, source: 'change' });
+  }
+
+  handleClick(event) {
+    const trigger = event.target.closest('[data-size-chart-trigger]');
+    if (trigger && this.contains(trigger)) {
+      event.preventDefault();
+      this.openSizeChart(trigger);
+      return;
+    }
+
+    const closeButton = event.target.closest('[data-size-chart-close]');
+    if (closeButton && this.contains(closeButton)) {
+      event.preventDefault();
+      this.closeSizeChart();
+      return;
+    }
+
+    if (event.target === this.sizeChartDialog) {
+      this.closeSizeChart();
+    }
+  }
+
+  handleKeydown(event) {
+    if (event.key !== 'Escape' || !this.sizeChartDialog?.open) return;
+
+    event.preventDefault();
+    this.closeSizeChart();
+  }
+
+  handlePopState() {
+    if (window.Shopify?.designMode) return;
+
+    const url = new URL(window.location.href);
+    const requestedVariantId = url.searchParams.get('variant');
+    const targetVariant = requestedVariantId
+      ? this.findVariantById(requestedVariantId)
+      : this.findVariantById(this.initialVariantId);
+
+    if (!targetVariant) return;
+
+    this.setControlsForVariant(targetVariant);
+    this.sync({ source: 'history' });
+  }
+
+  handleExternalVariantChange(event) {
+    if (event.target === this || !event.detail?.variantId) return;
+    if (String(event.detail.variantId) === String(this.dataset.currentVariantId)) return;
+
+    const variant = this.findVariantById(event.detail.variantId);
+    if (!variant) return;
+
+    this.setControlsForVariant(variant);
+    this.sync({ source: 'external' });
+  }
+
+  openSizeChart(opener) {
+    const dialog = this.sizeChartDialog;
+    if (!dialog || dialog.open) return;
+
+    this.sizeChartOpener = opener;
+    opener.setAttribute('aria-expanded', 'true');
+
+    try {
+      if (typeof dialog.showModal === 'function') {
+        dialog.showModal();
+      } else {
+        dialog.setAttribute('open', '');
+      }
+    } catch (error) {
+      dialog.setAttribute('open', '');
+    }
+  }
+
+  closeSizeChart() {
+    const dialog = this.sizeChartDialog;
+    if (!dialog) return;
+
+    if (typeof dialog.close === 'function' && dialog.open) {
+      dialog.close();
+    } else {
+      dialog.removeAttribute('open');
+      this.handleSizeChartClose();
+    }
+  }
+
+  handleSizeChartCancel(event) {
+    event.preventDefault();
+    this.closeSizeChart();
+  }
+
+  handleSizeChartClose() {
+    this.sizeChartOpener?.setAttribute('aria-expanded', 'false');
+    if (this.sizeChartOpener?.isConnected) this.sizeChartOpener.focus();
+    this.sizeChartOpener = null;
   }
 }
 
