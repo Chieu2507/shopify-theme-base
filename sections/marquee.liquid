@@ -1,0 +1,351 @@
+{% liquid
+  assign marquee_direction = section.settings.animation_direction | default: 'backward'
+  unless marquee_direction == 'forward' or marquee_direction == 'backward'
+    assign marquee_direction = 'forward'
+  endunless
+
+  assign marquee_speed = section.settings.animation_speed | default: 1 | plus: 0
+  if marquee_speed < 0 or marquee_speed > 3
+    assign marquee_speed = 1
+  endif
+  assign marquee_duration = 28.0
+  if marquee_speed > 0
+    assign marquee_duration = 28.0 | divided_by: marquee_speed
+  endif
+
+  assign marquee_scheme = section.settings.color_scheme | default: 'scheme-1'
+  if section.settings.color_scheme.id != blank
+    assign marquee_scheme = section.settings.color_scheme.id
+  endif
+  assign marquee_scheme = marquee_scheme | default: 'scheme-1' | handleize
+
+  assign marquee_background = section.settings.background_color
+
+  assign padding_top = section.settings.padding_top | default: 24 | plus: 0
+  assign padding_bottom = section.settings.padding_bottom | default: 24 | plus: 0
+  assign padding_left = section.settings.padding_left | default: 0 | plus: 0
+  assign padding_right = section.settings.padding_right | default: 0 | plus: 0
+%}
+
+{% capture marquee_style %}
+  --marquee-duration: {{ marquee_duration }}s;
+  {% if marquee_background != blank %}--marquee-background-color: {{ marquee_background | escape }};{% endif %}
+  {% if padding_top != 24 %}--marquee-padding-top: {{ padding_top }}px;{% endif %}
+  {% if padding_bottom != 24 %}--marquee-padding-bottom: {{ padding_bottom }}px;{% endif %}
+  {% if padding_left != 0 %}--marquee-padding-left: {{ padding_left }}px;{% endif %}
+  {% if padding_right != 0 %}--marquee-padding-right: {{ padding_right }}px;{% endif %}
+{% endcapture %}
+{% assign marquee_style = marquee_style | strip | replace: '\n', ' ' %}
+
+{% assign marquee_class = 'section-spacing marquee marquee--' | append: marquee_direction | append: ' color-scheme section-color-scope ' | append: marquee_scheme %}
+{% if marquee_speed == 0 %}
+  {% assign marquee_class = marquee_class | append: ' marquee--static' %}
+{% endif %}
+
+<div
+  class="{{ marquee_class }}"
+  {% if marquee_style != blank %}style="{{ marquee_style }}"{% endif %}
+>
+  <div class="container full-width marquee__container">
+    <div class="marquee__viewport" role="region" aria-label="Marquee">
+      <div class="marquee__track">
+        {% content_for 'blocks' %}
+      </div>
+    </div>
+  </div>
+</div>
+
+{% stylesheet %}
+  .marquee {
+    --marquee-duration: 28s;
+    --marquee-loop-distance: 0px;
+    width: 100%;
+    overflow: hidden;
+    background-color: var(--marquee-background-color, var(--background-color));
+    padding-top: var(--marquee-padding-top, 24px);
+    padding-bottom: var(--marquee-padding-bottom, 24px);
+  }
+
+  .container.full-width.marquee__container {
+    min-width: 0;
+    padding-right: var(--marquee-padding-right, 0px);
+    padding-left: var(--marquee-padding-left, 0px);
+  }
+
+  .marquee__viewport {
+    width: 100%;
+    overflow: hidden;
+  }
+
+  .marquee__track {
+    display: flex;
+    flex-wrap: nowrap;
+    align-items: center;
+    justify-content: flex-start;
+    gap: var(--marquee-gap, 3rem);
+    width: max-content;
+    min-width: 100%;
+    animation: none;
+    will-change: transform;
+  }
+
+  .marquee--ready .marquee__track {
+    animation: marquee-scroll-left var(--marquee-duration) linear infinite;
+  }
+
+  .marquee--forward .marquee__track {
+    animation-name: marquee-scroll-right;
+  }
+
+  .marquee--backward .marquee__track {
+    animation-name: marquee-scroll-left;
+  }
+
+  .marquee--static .marquee__track {
+    animation: none;
+    transform: none;
+  }
+
+  .marquee__track > * {
+    flex: 0 0 auto;
+  }
+
+  /* Marquee items are transparent by default; an Item background setting can override this. */
+  .marquee__track > .group {
+    --group-background-color: transparent;
+  }
+
+  .marquee:hover .marquee__track,
+  .marquee:focus-within .marquee__track {
+    animation-play-state: paused;
+  }
+
+  @keyframes marquee-scroll-left {
+    from { transform: translate3d(0, 0, 0); }
+    to { transform: translate3d(calc(-1 * var(--marquee-loop-distance)), 0, 0); }
+  }
+
+  @keyframes marquee-scroll-right {
+    from { transform: translate3d(calc(-1 * var(--marquee-loop-distance)), 0, 0); }
+    to { transform: translate3d(0, 0, 0); }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .marquee__track {
+      animation: none;
+      transform: none;
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (() => {
+    const instances = new WeakMap();
+    const selector = '.marquee';
+
+    const removeEditorAttributes = (element) => {
+      if (element.nodeType !== Node.ELEMENT_NODE) return;
+      [...element.attributes].forEach((attribute) => {
+        if (attribute.name.startsWith('data-shopify-editor')) element.removeAttribute(attribute.name);
+      });
+      element.querySelectorAll('*').forEach(removeEditorAttributes);
+    };
+
+    const setFocusableState = (element) => {
+      element.setAttribute('aria-hidden', 'true');
+      element.querySelectorAll('a, button, input, select, textarea, [tabindex]').forEach((focusable) => {
+        focusable.setAttribute('tabindex', '-1');
+      });
+    };
+
+    const initialize = (marquee) => {
+      if (!marquee || instances.has(marquee)) return;
+
+      const track = marquee.querySelector('.marquee__track');
+      if (!track || track.children.length === 0) return;
+
+      const originalItems = [...track.children];
+      const clones = originalItems.map((item) => {
+        const clone = item.cloneNode(true);
+        removeEditorAttributes(clone);
+        setFocusableState(clone);
+        clone.dataset.marqueeClone = 'true';
+        track.appendChild(clone);
+        return clone;
+      });
+
+      const updateDistance = () => {
+        const firstClone = clones[0];
+        if (!firstClone) return;
+        const distance = firstClone.getBoundingClientRect().left - track.getBoundingClientRect().left;
+        track.style.setProperty('--marquee-loop-distance', `${distance}px`);
+      };
+
+      const resizeObserver = new ResizeObserver(updateDistance);
+      resizeObserver.observe(track);
+      updateDistance();
+      marquee.classList.add('marquee--ready');
+
+      instances.set(marquee, { clones, resizeObserver });
+    };
+
+    const destroy = (marquee) => {
+      const state = instances.get(marquee);
+      if (!state) return;
+      state.resizeObserver.disconnect();
+      state.clones.forEach((clone) => clone.remove());
+      marquee.classList.remove('marquee--ready');
+      instances.delete(marquee);
+    };
+
+    const initializeRoot = (root = document) => {
+      if (root.matches?.(selector)) initialize(root);
+      root.querySelectorAll?.(selector).forEach(initialize);
+    };
+
+    const destroyRoot = (root) => {
+      if (root.matches?.(selector)) destroy(root);
+      root.querySelectorAll?.(selector).forEach(destroy);
+    };
+
+    document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
+    document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => initializeRoot(), { once: true });
+    } else {
+      initializeRoot();
+    }
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:general.marquee",
+  "class": "section-marquee",
+  "enabled_on": { "templates": ["*"] },
+  "max_blocks": 50,
+  "blocks": [
+    { "type": "marquee-item" }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:general.animation"
+    },
+    {
+      "type": "select",
+      "id": "animation_direction",
+      "label": "t:labels.animation_direction",
+      "options": [
+        { "value": "forward", "label": "t:options.animation_direction.forward" },
+        { "value": "backward", "label": "t:options.animation_direction.backward" }
+      ],
+      "default": "backward"
+    },
+    {
+      "type": "range",
+      "id": "animation_speed",
+      "label": "t:labels.animation_speed",
+      "min": 0,
+      "max": 3,
+      "step": 1,
+      "default": 1
+    },
+    {
+      "type": "header",
+      "content": "t:general.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:labels.background"
+    },
+    {
+      "type": "header",
+      "content": "t:general.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:options.position.top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:options.position.bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "range",
+      "id": "padding_left",
+      "label": "t:labels.left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_right",
+      "label": "t:labels.right_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.marquee",
+      "category": "t:general.content",
+      "blocks": [
+        {
+          "type": "marquee-item",
+          "name": "t:general.item",
+          "settings": { "direction": "horizontal", "position": "center" },
+          "blocks": [
+            { "type": "heading", "settings": { "text": "<p>Diamond statement</p>", "heading_size": "md", "html_tag": "div" } },
+            { "type": "image", "settings": { "image_ratio_desktop": "wide", "width_desktop": "fill", "limit_width_desktop": true, "max_width_desktop": 144, "corner_radius": 100 } }
+          ]
+        },
+        {
+          "type": "marquee-item",
+          "name": "t:general.item",
+          "settings": { "direction": "horizontal", "position": "center" },
+          "blocks": [
+            { "type": "heading", "settings": { "text": "<p>Birthstone</p>", "heading_size": "md", "html_tag": "div" } },
+            { "type": "image", "settings": { "image_ratio_desktop": "wide", "width_desktop": "fill", "limit_width_desktop": true, "max_width_desktop": 144, "corner_radius": 100 } }
+          ]
+        },
+        {
+          "type": "marquee-item",
+          "name": "t:general.item",
+          "settings": { "direction": "horizontal", "position": "center" },
+          "blocks": [
+            { "type": "heading", "settings": { "text": "<p>Diamond statement</p>", "heading_size": "md", "html_tag": "div" } },
+            { "type": "image", "settings": { "image_ratio_desktop": "wide", "width_desktop": "fill", "limit_width_desktop": true, "max_width_desktop": 144, "corner_radius": 100 } }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
