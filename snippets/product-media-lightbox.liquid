@@ -1,0 +1,47 @@
+{% doc %}
+  Renders the Product media lightbox owned by the Product media block.
+
+  @param {product} product - Product whose media is displayed
+{% enddoc %}
+
+<dialog class="product-media-lightbox" data-product-media-lightbox aria-label="{{ 'products.media_gallery' | t: product: product.title | escape }}">
+  <div class="product-media-lightbox__panel">
+    <div class="product-media-lightbox__toolbar">
+      <p class="product-media-lightbox__counter body-text body-sm" aria-live="polite">
+        <span data-product-lightbox-current>1</span>
+        <span aria-hidden="true">/</span>
+        <span data-product-lightbox-total>{{ product.media.size }}</span>
+      </p>
+      <button class="overlay-close product-media-lightbox__close" type="button" aria-label="{{ 'products.close_media' | t | escape }}" data-product-lightbox-close>
+        {% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}
+      </button>
+    </div>
+
+    {% if product.media.size > 1 %}
+      <button class="product-media-lightbox__navigation product-media-lightbox__navigation--previous icon-button" type="button" aria-label="{{ 'products.previous_media' | t | escape }}" data-product-lightbox-previous>
+        {% render 'icon', icon: 'chevron-left', bare: true %}
+      </button>
+    {% endif %}
+
+    <div class="swiper product-media-lightbox__viewport" data-product-lightbox-swiper>
+      <div class="swiper-wrapper">
+        {% for media in product.media %}
+          {% if media.media_type == 'image' or media.preview_image != blank %}
+            {% assign lightbox_image = media.preview_image %}
+            {% if media.media_type == 'image' %}{% assign lightbox_image = media %}{% endif %}
+            {% assign lightbox_alt = media.alt | default: product.title %}
+            <figure class="swiper-slide product-media-lightbox__slide" data-product-lightbox-slide data-media-id="{{ media.id }}">
+              {{ lightbox_image | image_url: width: 3000 | image_tag: widths: '800, 1200, 1600, 2000, 2400, 3000', sizes: '100vw', loading: 'lazy', alt: lightbox_alt }}
+            </figure>
+          {% endif %}
+        {% endfor %}
+      </div>
+    </div>
+
+    {% if product.media.size > 1 %}
+      <button class="product-media-lightbox__navigation product-media-lightbox__navigation--next icon-button" type="button" aria-label="{{ 'products.next_media' | t | escape }}" data-product-lightbox-next>
+        {% render 'icon', icon: 'chevron-right', bare: true %}
+      </button>
+    {% endif %}
+  </div>
+</dialog>
