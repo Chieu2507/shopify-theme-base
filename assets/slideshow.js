@@ -113,12 +113,13 @@ const createSegmentedPagination = (root, swiper, loop, slideCount) => {
 
   const controller = new AbortController();
   const controlsId = carouselId(swiper);
+  const paginationBulletMessage = swiper.params.a11y?.paginationBulletMessage || 'Go to slide {{index}}';
   const segments = Array.from({ length: slideCount }, (_, index) => {
     const segment = document.createElement('button');
     segment.className = 'slideshow__pagination-segment';
     segment.type = 'button';
     segment.dataset.slideshowPaginationIndex = String(index);
-    segment.setAttribute('aria-label', `Go to slide ${index + 1}`);
+    segment.setAttribute('aria-label', paginationBulletMessage.replace('{{index}}', String(index + 1)));
     if (controlsId) segment.setAttribute('aria-controls', controlsId);
 
     const fill = document.createElement('span');
@@ -258,9 +259,8 @@ const updateControlScheme = (root, swiper) => {
 
   const activeSlide = swiper.slides?.[swiper.activeIndex] || root.querySelector('.swiper-wrapper > .swiper-slide-active');
   const scheme = activeSlide?.dataset.slideshowColorScheme?.trim() || '';
-  // Controls live outside the slides so Swiper can own one pagination instance.
-  // Apply the active slide's scheme to both control surfaces instead of letting
-  // them inherit the section-level fallback scheme.
+  // Controls live outside the slides. Apply the active slide's scheme to both
+  // control surfaces instead of letting them inherit the section-level fallback.
   root.querySelectorAll('[data-slideshow-control-scope]').forEach((control) => {
     const previousScheme = control.dataset.slideshowControlScheme;
     if (previousScheme && previousScheme !== scheme) control.classList.remove(previousScheme);
