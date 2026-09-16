@@ -5,15 +5,13 @@
   endif
   assign hero_scheme = hero_scheme | default: 'scheme-1' | handleize
 
-  assign hero_width = section.settings.width | default: 'full_no_padding'
-  unless hero_width == 'page' or hero_width == 'full' or hero_width == 'full_no_padding'
-    assign hero_width = 'full_no_padding'
+  assign hero_width = section.settings.width | default: 'full'
+  unless hero_width == 'page' or hero_width == 'full'
+    assign hero_width = 'full'
   endunless
   assign hero_container_class = 'full-width'
   if hero_width == 'page'
     assign hero_container_class = 'page-width'
-  elsif hero_width == 'full_no_padding'
-    assign hero_container_class = 'hero__container--full-bleed'
   endif
 
   assign hero_layout = section.settings.layout | default: 'classic'
@@ -338,13 +336,12 @@
     {
       "type": "select",
       "id": "width",
-      "label": "t:labels.width",
+      "label": "t:labels.section_width",
       "options": [
         { "value": "page", "label": "t:options.hero_width.page" },
-        { "value": "full", "label": "t:options.hero_width.full" },
-        { "value": "full_no_padding", "label": "t:options.hero_width.full_no_padding" }
+        { "value": "full", "label": "t:options.hero_width.full" }
       ],
-      "default": "full_no_padding"
+      "default": "full"
     },
     {
       "type": "checkbox",
@@ -559,7 +556,8 @@
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "t:general.color_scheme",
-      "default": "scheme-1"
+      "default": "scheme-1",
+      "visible_if": "{{ section.settings.width == 'page' }}"
     }
   ],
   "presets": [
