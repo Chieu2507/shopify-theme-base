@@ -86,9 +86,9 @@ const updateParallax = (root) => {
 
 const paginationOptions = (root) => {
   const element = root.querySelector('[data-slideshow-pagination]');
-  if (!element) return {};
+  if (!element || element.dataset.paginationType === 'progress_bar') return {};
   const type = element.dataset.paginationType;
-  const paginationType = type === 'progress_bar' ? 'progressbar' : type === 'numbers' ? 'fraction' : 'bullets';
+  const paginationType = type === 'numbers' ? 'fraction' : 'bullets';
   return {
     pagination: {
       el: element,
@@ -101,19 +101,93 @@ const paginationOptions = (root) => {
   };
 };
 
+const normalizePaginationIndex = (index, slideCount) => {
+  const numericIndex = Number(index);
+  if (!Number.isFinite(numericIndex) || slideCount < 1) return 0;
+  return ((numericIndex % slideCount) + slideCount) % slideCount;
+};
+
+const createSegmentedPagination = (root, swiper, loop, slideCount) => {
+  const element = root.querySelector('[data-slideshow-pagination]');
+  if (!element || element.dataset.paginationType !== 'progress_bar' || slideCount < 1) return null;
+
+  const controller = new AbortController();
+  const controlsId = carouselId(swiper);
+  const segments = Array.from({ length: slideCount }, (_, index) => {
+    const segment = document.createElement('button');
+    segment.className = 'slideshow__pagination-segment';
+    segment.type = 'button';
+    segment.dataset.slideshowPaginationIndex = String(index);
+    segment.setAttribute('aria-label', `Go to slide ${index + 1}`);
+    if (controlsId) segment.setAttribute('aria-controls', controlsId);
+
+    const fill = document.createElement('span');
+    fill.className = 'slideshow__pagination-segment-fill';
+    fill.setAttribute('aria-hidden', 'true');
+    segment.append(fill);
+    return segment;
+  });
+
+  element.replaceChildren(...segments);
+
+  const getCurrentIndex = () => {
+    const currentIndex = loop
+      ? loop.logicalIndex(swiper.activeIndex)
+      : swiper.params.loop
+        ? swiper.realIndex
+        : swiper.activeIndex;
+    return normalizePaginationIndex(currentIndex, slideCount);
+  };
+
+  const update = () => {
+    if (swiper.destroyed) return;
+    const currentIndex = getCurrentIndex();
+    segments.forEach((segment, index) => {
+      const active = index === currentIndex;
+      segment.classList.toggle('slideshow__pagination-segment--active', active);
+      if (active) segment.setAttribute('aria-current', 'true');
+      else segment.removeAttribute('aria-current');
+    });
+  };
+
+  const goTo = (index) => {
+    const targetIndex = normalizePaginationIndex(index, slideCount);
+    if (loop) swiper.slideTo(loop.originalIndex(targetIndex));
+    else if (swiper.params.loop) swiper.slideToLoop(targetIndex);
+    else swiper.slideTo(targetIndex);
+  };
+
+  element.addEventListener('click', (event) => {
+    const segment = event.target?.closest?.('[data-slideshow-pagination-index]');
+    if (!segment || !element.contains(segment)) return;
+    event.preventDefault();
+    if (swiper.destroyed || swiper.animating) return;
+    goTo(segment.dataset.slideshowPaginationIndex);
+  }, { signal: controller.signal });
+
+  const paginationEvents = ['activeIndexChange', 'realIndexChange', 'slideChangeTransitionEnd'];
+  paginationEvents.forEach((eventName) => swiper.on(eventName, update));
+  update();
+
+  return {
+    destroy() {
+      controller.abort();
+      paginationEvents.forEach((eventName) => swiper.off(eventName, update));
+      element.replaceChildren();
+    },
+  };
+};
+
 const createTwoSlidePagination = (root, swiper, loop) => {
   const element = root.querySelector('[data-slideshow-pagination]');
   if (!element || !loop) return null;
   const type = element.dataset.paginationType;
+  if (type === 'progress_bar') return createSegmentedPagination(root, swiper, loop, 2);
   const controller = new AbortController();
   const update = () => {
     const current = loop.logicalIndex(swiper.activeIndex);
     if (type === 'numbers') {
       element.innerHTML = `<span class="swiper-pagination-current">${current + 1}</span><span class="slideshow__pagination-separator" aria-hidden="true"> / </span><span class="swiper-pagination-total">2</span>`;
-    } else if (type === 'progress_bar') {
-      element.innerHTML = '<span class="swiper-pagination-progressbar-fill"></span>';
-      const fill = element.querySelector('.swiper-pagination-progressbar-fill');
-      if (fill) fill.style.transform = `translate3d(0,0,0) scaleX(${current + 1 === 2 ? 1 : 0.5})`;
     } else {
       element.querySelectorAll('[data-slideshow-pagination-index]').forEach((bullet) => {
         bullet.classList.toggle('swiper-pagination-bullet-active', Number(bullet.dataset.slideshowPaginationIndex) === current);
@@ -211,8 +285,10 @@ const init = (root) => {
   // Page layout exposes adjacent slides, which requires Swiper's slide effect.
   const fade = !pageWidth && root.dataset.transition === 'fade';
   const autoplay = root.dataset.autoplay === 'true' && !reducedMotion();
+  const paginationType = root.querySelector('[data-slideshow-pagination]')?.dataset.paginationType;
+  const paginationModules = paginationType === 'progress_bar' ? [] : [Pagination];
   const options = {
-    modules: twoSlideLoop ? [] : (fade ? [EffectFade, Pagination] : [Pagination]),
+    modules: twoSlideLoop ? [] : (fade ? [EffectFade, ...paginationModules] : paginationModules),
     slidesPerView: 1,
     // Keep page-width slides visually separate while letting Swiper include the
     // gap in its translate, drag, loop, and pagination calculations.
@@ -234,7 +310,9 @@ const init = (root) => {
     twoSlideLoop?.destroy();
     return;
   }
-  const twoSlidePagination = createTwoSlidePagination(root, swiper, twoSlideLoop);
+  const customPagination = twoSlideLoop
+    ? createTwoSlidePagination(root, swiper, twoSlideLoop)
+    : createSegmentedPagination(root, swiper, null, slideCount);
   if (twoSlideLoop) {
     swiper.on('slideChangeTransitionEnd', twoSlideLoop.restore);
     swiper.on('slideChangeTransitionStart', twoSlideLoop.clearReset);
@@ -255,7 +333,7 @@ const init = (root) => {
   const updateLockedState = () => root.classList.toggle('slideshow--single-slide', Boolean(swiper.isLocked));
   swiper.on('lock unlock update resize', updateLockedState);
   updateLockedState();
-  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, twoSlideLoop, twoSlidePagination, syncControlScheme });
+  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, twoSlideLoop, customPagination, syncControlScheme });
 };
 
 const destroy = (root) => {
@@ -265,10 +343,10 @@ const destroy = (root) => {
   if (state.frame) window.cancelAnimationFrame(state.frame);
   if (state.interval) window.clearInterval(state.interval);
   state.navigationController.abort();
+  state.customPagination?.destroy();
   if (state.twoSlideLoop) {
     state.swiper.off('slideChangeTransitionEnd', state.twoSlideLoop.restore);
     state.swiper.off('slideChangeTransitionStart', state.twoSlideLoop.clearReset);
-    state.twoSlidePagination?.destroy();
     state.twoSlideLoop.destroy();
   }
   controlSchemeEvents.forEach((eventName) => state.swiper.off(eventName, state.syncControlScheme));
