@@ -4,11 +4,61 @@
     assign hero_scheme = section.settings.color_scheme.id
   endif
   assign hero_scheme = hero_scheme | default: 'scheme-1' | handleize
+
+  assign hero_width = section.settings.width | default: 'full_no_padding'
+  unless hero_width == 'page' or hero_width == 'full' or hero_width == 'full_no_padding'
+    assign hero_width = 'full_no_padding'
+  endunless
+  assign hero_container_class = 'full-width'
+  if hero_width == 'page'
+    assign hero_container_class = 'page-width'
+  elsif hero_width == 'full_no_padding'
+    assign hero_container_class = 'hero__container--full-bleed'
+  endif
+
+  assign hero_layout = section.settings.layout | default: 'classic'
+  unless hero_layout == 'classic' or hero_layout == 'split'
+    assign hero_layout = 'classic'
+  endunless
+  assign hero_media_type = section.settings.media_type | default: 'image'
+  unless hero_media_type == 'image' or hero_media_type == 'video'
+    assign hero_media_type = 'image'
+  endunless
+
+  assign hero_desktop_height = section.settings.desktop_height | default: 'medium'
+  unless hero_desktop_height == 'small' or hero_desktop_height == 'medium' or hero_desktop_height == 'large' or hero_desktop_height == 'full_screen'
+    assign hero_desktop_height = 'medium'
+  endunless
+  assign hero_mobile_height = section.settings.mobile_height | default: 'adapt'
+  unless hero_mobile_height == 'adapt' or hero_mobile_height == 'small' or hero_mobile_height == 'medium' or hero_mobile_height == 'large' or hero_mobile_height == 'full_screen'
+    assign hero_mobile_height = 'adapt'
+  endunless
+
+  assign hero_desktop_position = section.settings.desktop_position | default: 'bottom_left'
+  assign hero_mobile_position = section.settings.mobile_position | default: 'center_center'
+  assign hero_desktop_gap = section.settings.desktop_gap | default: 12 | plus: 0
+  assign hero_mobile_gap = section.settings.mobile_gap | default: 12 | plus: 0
 %}
 
-<div class="section-spacing hero color-scheme section-color-scope {{ hero_scheme }}">
-  <div class="hero__media{% if section.settings.banner_image == blank %} hero__media--placeholder placeholder-image{% endif %}" aria-hidden="true">
-    {% if section.settings.banner_image != blank %}
+{% capture hero_style %}
+  {% if hero_desktop_gap != 12 %}--hero-content-gap: {{ hero_desktop_gap }}px;{% endif %}
+  {% if hero_mobile_gap != hero_desktop_gap %}--hero-content-gap-mobile: {{ hero_mobile_gap }}px;{% endif %}
+  {% if section.settings.overlay_color != blank %}--hero-overlay-color: {{ section.settings.overlay_color }};{% endif %}
+{% endcapture %}
+
+<div
+  class="section-spacing hero hero--{{ hero_layout }} hero--desktop-{{ hero_desktop_height }} hero--mobile-{{ hero_mobile_height }} color-scheme section-color-scope {{ hero_scheme }}"
+  {% if section.settings.allow_transparent_header %}data-hero-transparent-header{% endif %}
+  {% if section.settings.parallax_effect == 'scroll' %}data-hero-parallax{% endif %}
+  {% if hero_style != blank %}style="{{ hero_style | strip }}"{% endif %}
+>
+  <div class="hero__media{% if hero_media_type == 'image' and section.settings.banner_image == blank or hero_media_type == 'video' and section.settings.video == blank %} hero__media--placeholder placeholder-image{% endif %}" aria-hidden="true" data-hero-media>
+    {% if hero_media_type == 'video' and section.settings.video != blank %}
+      {{ section.settings.video | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'hero__video hero__video--desktop' }}
+      {% if section.settings.mobile_video != blank %}
+        {{ section.settings.mobile_video | video_tag: image_size: '1200x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'hero__video hero__video--mobile' }}
+      {% endif %}
+    {% elsif hero_media_type == 'image' and section.settings.banner_image != blank %}
       <picture>
         {% if section.settings.mobile_banner_image != blank %}
           <source
@@ -23,8 +73,11 @@
     {% endif %}
   </div>
 
-  <div class="container full-width hero__container">
-    <div class="hero__content align-content">
+  {% if section.settings.show_overlay %}<div class="hero__overlay" aria-hidden="true"></div>{% endif %}
+  {% if section.settings.link != blank %}<a class="hero__link" href="{{ section.settings.link }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="{{ 'general.hero' | t | escape }}"></a>{% endif %}
+
+  <div class="container {{ hero_container_class }} hero__container">
+    <div class="hero__content hero__content--desktop-{{ hero_desktop_position }} hero__content--mobile-{{ hero_mobile_position }}{% if section.settings.content_full_width %} hero__content--full-width{% endif %}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content">
       {% content_for 'blocks' %}
     </div>
   </div>
