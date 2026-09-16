@@ -30,6 +30,11 @@
     assign hero_media_is_placeholder = false
   endif
 
+  assign hero_parallax_effect = section.settings.parallax_effect | default: 'none'
+  unless hero_parallax_effect == 'none' or hero_parallax_effect == 'fixed' or hero_parallax_effect == 'vertical' or hero_parallax_effect == 'horizontal' or hero_parallax_effect == 'zoom'
+    assign hero_parallax_effect = 'none'
+  endunless
+
   assign hero_desktop_height = section.settings.desktop_height | default: 'medium'
   unless hero_desktop_height == 'adapt' or hero_desktop_height == 'extra_small' or hero_desktop_height == 'small' or hero_desktop_height == 'medium' or hero_desktop_height == 'large' or hero_desktop_height == 'extra_large' or hero_desktop_height == 'full_screen'
     assign hero_desktop_height = 'medium'
@@ -74,7 +79,7 @@
 <div
   class="hero hero--width-{{ hero_width }} hero--{{ hero_layout }} hero--desktop-{{ hero_desktop_height }} hero--mobile-{{ hero_mobile_height }}{% if hero_width == 'page' %} container page-width section-spacing color-scheme section-color-scope {{ hero_section_scheme }}{% endif %}"
   {% if section.settings.allow_transparent_header %}data-hero-transparent-header{% endif %}
-  {% unless section.settings.parallax_effect == 'none' %}data-hero-parallax="{{ section.settings.parallax_effect }}"{% endunless %}
+  {% unless hero_parallax_effect == 'none' %}data-hero-parallax="{{ hero_parallax_effect }}"{% endunless %}
   {% if hero_style != blank %}style="{{ hero_style | strip }}"{% endif %}
 >
   <div class="hero__surface{% if hero_width == 'full' %} hero__surface--full{% endif %} color-scheme section-color-scope {{ hero_content_scheme }}{% if hero_width == 'full' %} section-spacing{% endif %}" data-hero-surface>
@@ -105,7 +110,7 @@
     {% if section.settings.link != blank %}<a class="hero__link" href="{{ section.settings.link }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="{{ 'general.hero' | t | escape }}"></a>{% endif %}
 
     <div class="hero__container hero__container--desktop-{{ hero_desktop_position }} hero__container--mobile-{{ hero_mobile_position }}">
-      <div class="hero__content hero__content--width-{{ hero_content_width }}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content">
+      <div class="hero__content hero__content--width-{{ hero_content_width }}{% if section.settings.enable_sticky or hero_parallax_effect == 'fixed' %} hero__content--sticky{% endif %} align-content">
         {% content_for 'blocks' %}
       </div>
     </div>
