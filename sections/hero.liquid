@@ -59,6 +59,7 @@
   assign hero_padding_bottom_mobile = section.settings.padding_bottom_mobile | default: 50 | plus: 0
   assign hero_page_content_padding = section.settings.page_content_padding | default: 64 | plus: 0
   assign hero_page_content_padding_mobile = section.settings.page_content_padding_mobile | default: 40 | plus: 0
+  assign hero_overlay_opacity = section.settings.overlay_opacity | default: 10 | plus: 0 | at_least: 0 | at_most: 100
 %}
 
 {% capture hero_style %}
@@ -73,7 +74,7 @@
   {% endif %}
   {% if hero_width == 'page' and hero_page_content_padding != 64 %}--hero-page-content-padding: {{ hero_page_content_padding }}px;{% endif %}
   {% if hero_width == 'page' and hero_page_content_padding_mobile != 40 %}--hero-page-content-padding-mobile: {{ hero_page_content_padding_mobile }}px;{% endif %}
-  {% if section.settings.overlay != blank %}--overlay-color: {{ section.settings.overlay }};{% endif %}
+  {% if section.settings.overlay != blank %}--overlay-color: rgb({{ section.settings.overlay.red }}, {{ section.settings.overlay.green }}, {{ section.settings.overlay.blue }} / {{ hero_overlay_opacity }}%);{% endif %}
 {% endcapture %}
 
 <div
@@ -472,7 +473,17 @@
       "type": "color",
       "id": "overlay",
       "label": "t:labels.overlay",
-      "default": "#0000001A"
+      "default": "#000000"
+    },
+    {
+      "type": "range",
+      "id": "overlay_opacity",
+      "label": "t:labels.overlay_opacity",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 10
     },
     {
       "type": "select",
