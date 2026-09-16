@@ -53,6 +53,7 @@
   assign hero_padding_top_mobile = section.settings.padding_top_mobile | default: 50 | plus: 0
   assign hero_padding_bottom_mobile = section.settings.padding_bottom_mobile | default: 50 | plus: 0
   assign hero_page_content_padding = section.settings.page_content_padding | default: 64 | plus: 0
+  assign hero_page_content_padding_mobile = section.settings.page_content_padding_mobile | default: 40 | plus: 0
 %}
 
 {% capture hero_style %}
@@ -66,6 +67,7 @@
     {% if hero_padding_bottom_mobile != hero_padding_bottom %}--section-padding-bottom-mobile: {{ hero_padding_bottom_mobile }}px;{% endif %}
   {% endif %}
   {% if hero_width == 'page' and hero_page_content_padding != 64 %}--hero-page-content-padding: {{ hero_page_content_padding }}px;{% endif %}
+  {% if hero_width == 'page' and hero_page_content_padding_mobile != 40 %}--hero-page-content-padding-mobile: {{ hero_page_content_padding_mobile }}px;{% endif %}
   {% if section.settings.overlay != blank %}--overlay-color: {{ section.settings.overlay }};{% endif %}
 {% endcapture %}
 
@@ -290,7 +292,7 @@
     }
 
     .hero--width-page .hero__content {
-      padding: min(var(--hero-page-content-padding, 6.4rem), 4rem);
+      padding: var(--hero-page-content-padding-mobile, min(var(--hero-page-content-padding, 6.4rem), 4rem));
     }
 
     .hero--width-full .hero__container {
@@ -592,6 +594,17 @@
       "step": 4,
       "unit": "px",
       "default": 64,
+      "visible_if": "{{ section.settings.width == 'page' }}"
+    },
+    {
+      "type": "range",
+      "id": "page_content_padding_mobile",
+      "label": "t:labels.mobile_padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 40,
       "visible_if": "{{ section.settings.width == 'page' }}"
     },
     {
