@@ -46,9 +46,9 @@
       const scrollTop = window.scrollY;
       const stickyTop = Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
       const start = contentBounds.top + scrollTop - stickyTop;
-      const end = heroBounds.top + scrollTop + heroBounds.height - contentBounds.height - stickyTop;
+      const end = heroBounds.top + scrollTop + heroBounds.height - stickyTop;
 
-      if (end <= start || scrollTop <= start) return;
+      if (scrollTop <= start) return;
 
       if (scrollTop >= end) {
         sticky.style.position = 'absolute';
