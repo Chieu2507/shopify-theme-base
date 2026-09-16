@@ -30,24 +30,33 @@ const createPeekSlide = (slide, side) => {
 
 const createTwoSlidePeeks = (carousel, swiper) => {
   if (swiper.slides.length !== 2) return null;
-  const peeks = { previous: null, next: null };
+  const slides = [...swiper.slides];
+  const peeks = [];
+
+  // A centered Swiper with only two logical slides has no spare slide to keep
+  // both visual edges filled. Build stable, decorative copies up front so a
+  // swipe never removes/reinserts a node during paint (the source of the
+  // visible flash). Each copy is aria-hidden/inert; only the adjacent source
+  // for each side is faded in after a transition completes.
+  slides.forEach((slide) => {
+    ['previous', 'next'].forEach((side) => {
+      const peek = createPeekSlide(slide, side);
+      peek.dataset.sourceIndex = String(slides.indexOf(slide));
+      carousel.append(peek);
+      peeks.push(peek);
+    });
+  });
+
   const update = () => {
     if (swiper.destroyed) return;
-    const slides = swiper.slides;
     const activeIndex = swiper.realIndex === 1 ? 1 : 0;
-    const neighbour = slides[activeIndex === 1 ? 0 : 1];
-    ['previous', 'next'].forEach((side) => {
-      if (peeks[side]?.dataset.sourceIndex === String(activeIndex === 1 ? 0 : 1)) return;
-      peeks[side]?.remove();
-      peeks[side] = createPeekSlide(neighbour, side);
-      peeks[side].dataset.sourceIndex = String(activeIndex === 1 ? 0 : 1);
-      if (side === 'previous') carousel.prepend(peeks[side]);
-      else carousel.append(peeks[side]);
+    const neighbourIndex = activeIndex === 1 ? 0 : 1;
+    peeks.forEach((peek) => {
+      peek.classList.toggle('slideshow__peek--active', peek.dataset.sourceIndex === String(neighbourIndex));
     });
   };
   const destroy = () => {
-    peeks.previous?.remove();
-    peeks.next?.remove();
+    peeks.forEach((peek) => peek.remove());
   };
   update();
   return { update, destroy };
@@ -150,7 +159,7 @@ const init = (root) => {
   const swiper = createSwiperCarousel(carousel, options);
   if (!swiper) return;
   const pagePeeks = twoSlidePage ? createTwoSlidePeeks(carousel, swiper) : null;
-  if (pagePeeks) swiper.on('slideChange', pagePeeks.update);
+  if (pagePeeks) swiper.on('slideChangeTransitionEnd', pagePeeks.update);
   const navigationController = bindNavigation(root, swiper);
   const interval = autoplay ? startAutoplay(root, swiper) : null;
   let frame = 0;
@@ -175,7 +184,7 @@ const destroy = (root) => {
   if (state.interval) window.clearInterval(state.interval);
   state.navigationController.abort();
   if (state.pagePeeks) {
-    state.swiper.off('slideChange', state.pagePeeks.update);
+    state.swiper.off('slideChangeTransitionEnd', state.pagePeeks.update);
     state.pagePeeks.destroy();
   }
   state.swiper.off('lock unlock update resize', state.updateLockedState);
