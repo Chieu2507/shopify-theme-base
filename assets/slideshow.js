@@ -151,7 +151,7 @@ const startAutoplay = (root, swiper) => {
       !isVisible(root) ||
       (pauseOnHover && root.matches(':hover')) ||
       root.contains(document.activeElement) ||
-      swiper.isLocked
+      swiper.isLocked || swiper.animating
     ) return;
 
     swiper.slideNext();
@@ -165,7 +165,7 @@ const bindNavigation = (root, swiper) => {
   const next = root.querySelector('[data-slideshow-next]');
   const move = (direction) => (event) => {
     event.preventDefault();
-    if (swiper.destroyed) return;
+    if (swiper.destroyed || swiper.animating) return;
     if (direction < 0) swiper.slidePrev();
     else swiper.slideNext();
   };
@@ -198,6 +198,9 @@ const init = (root) => {
     centeredSlides: pageWidth,
     loop: !twoSlidePage && slideCount > 1,
     initialSlide: twoSlideLoop?.initialSlide || 0,
+    // Finish the transition and clone reset before accepting another move.
+    // Otherwise rapid input can advance past the buffered loop neighbours.
+    preventInteractionOnTransition: true,
     watchOverflow: true,
     speed: reducedMotion() ? 0 : 600,
     effect: fade ? 'fade' : 'slide',
