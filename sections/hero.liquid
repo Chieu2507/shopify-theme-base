@@ -16,8 +16,15 @@
     assign hero_width = 'full'
   endunless
   assign hero_layout = section.settings.layout | default: 'classic'
-  unless hero_layout == 'classic' or hero_layout == 'split'
+  if hero_layout == 'split'
+    assign hero_layout = 'stack'
+  endif
+  unless hero_layout == 'classic' or hero_layout == 'stack'
     assign hero_layout = 'classic'
+  endunless
+  assign hero_desktop_content_position = section.settings.desktop_content_position | default: 'last'
+  unless hero_desktop_content_position == 'first' or hero_desktop_content_position == 'last'
+    assign hero_desktop_content_position = 'last'
   endunless
   assign hero_media_type = section.settings.media_type | default: 'image'
   unless hero_media_type == 'image' or hero_media_type == 'video'
@@ -89,11 +96,11 @@
 {% endcapture %}
 
 <div
-  class="hero hero--width-{{ hero_width }} hero--{{ hero_layout }} hero--desktop-{{ hero_desktop_height }} hero--mobile-{{ hero_mobile_height }}{% if hero_width == 'page' %} container page-width section-spacing color-scheme section-color-scope {{ hero_section_scheme }}{% endif %}"
+  class="hero hero--width-{{ hero_width }} hero--{{ hero_layout }} hero--content-{{ hero_content_width }} hero--content-position-{{ hero_desktop_content_position }} hero--desktop-{{ hero_desktop_height }} hero--mobile-{{ hero_mobile_height }}{% if hero_width == 'page' %} container page-width section-spacing color-scheme section-color-scope {{ hero_section_scheme }}{% endif %}"
   {% unless hero_parallax_effect == 'none' %}data-hero-parallax="{{ hero_parallax_effect }}"{% endunless %}
   {% if hero_style != blank %}style="{{ hero_style | strip }}"{% endif %}
 >
-  <div class="hero__surface{% if hero_width == 'full' %} hero__surface--full{% endif %}{% unless hero_layout == 'split' %} color-scheme section-color-scope {{ hero_content_scheme }}{% endunless %}{% if hero_width == 'full' %} section-spacing{% endif %}" data-hero-surface>
+  <div class="hero__surface{% if hero_width == 'full' %} hero__surface--full{% endif %}{% unless hero_layout == 'stack' %} color-scheme section-color-scope {{ hero_content_scheme }}{% endunless %}{% if hero_width == 'full' %} section-spacing{% endif %}" data-hero-surface>
     <div class="media" aria-hidden="true">
       <div class="media__inner{% if hero_media_is_placeholder %} placeholder-image{% endif %}" data-hero-media>
       {% if hero_media_type == 'video' and section.settings.video != blank %}
@@ -120,7 +127,7 @@
 
     {% if section.settings.link != blank %}<a class="hero__link" href="{{ section.settings.link }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="Hero"></a>{% endif %}
 
-    <div class="hero__container hero__container--desktop-{{ hero_desktop_position }} hero__container--mobile-{{ hero_mobile_position }}{% if hero_layout == 'split' %} color-scheme section-color-scope {{ hero_content_scheme }}{% endif %}">
+    <div class="hero__container hero__container--desktop-{{ hero_desktop_position }} hero__container--mobile-{{ hero_mobile_position }}{% if hero_layout == 'stack' %} color-scheme section-color-scope {{ hero_content_scheme }}{% endif %}">
       <div class="hero__content hero__content--width-{{ hero_content_width }}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content">
         {% content_for 'blocks' %}
       </div>
@@ -268,18 +275,34 @@
     top: calc(var(--header-height, 0px) + 2rem);
   }
 
-  .hero--split .hero__surface {
+  .hero--stack .hero__surface {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .hero--split .media {
+  .hero--stack.hero--content-fill .hero__surface {
+    grid-template-columns: minmax(0, 2fr) minmax(0, 3fr);
+  }
+
+  .hero--stack.hero--content-custom .hero__surface {
+    grid-template-columns: minmax(0, 1fr) minmax(0, min(70%, var(--hero-content-max-width, 64rem)));
+  }
+
+  .hero--stack .media {
     position: relative;
     grid-column: 1;
     min-height: inherit;
   }
 
-  .hero--split .hero__container {
+  .hero--stack .hero__container {
     grid-column: 2;
+  }
+
+  .hero--stack.hero--content-position-first .media {
+    grid-column: 2;
+  }
+
+  .hero--stack.hero--content-position-first .hero__container {
+    grid-column: 1;
   }
 
   @media (min-width: 768px) and (max-width: 1149.98px) {
@@ -313,7 +336,7 @@
       padding-inline: calc(var(--page-margin-current) + var(--hero-content-padding-mobile, min(var(--hero-content-padding, 6.4rem), 4rem)));
     }
 
-    .hero--width-full.hero--split .hero__container {
+    .hero--width-full.hero--stack .hero__container {
       padding-block: var(--hero-content-padding-mobile, min(var(--hero-content-padding, 6.4rem), 4rem));
       padding-inline: var(--page-margin-current);
     }
@@ -333,19 +356,19 @@
       top: auto;
     }
 
-    .hero--split .hero__surface {
+    .hero--stack .hero__surface {
       grid-template-columns: 1fr;
       grid-template-rows: minmax(32rem, var(--hero-min-height, 50svh)) auto;
     }
 
-    .hero--split .media {
+    .hero--stack .media {
       grid-column: 1;
       grid-row: 1;
       position: relative;
       min-height: 0;
     }
 
-    .hero--split .hero__container {
+    .hero--stack .hero__container {
       grid-column: 1;
       grid-row: 2;
       min-height: 0;
@@ -409,9 +432,20 @@
       "label": "t:general.layout",
       "options": [
         { "value": "classic", "label": "t:options.hero_layout.classic" },
-        { "value": "split", "label": "t:options.hero_layout.split" }
+        { "value": "stack", "label": "t:options.hero_layout.stack" }
       ],
       "default": "classic"
+    },
+    {
+      "type": "select",
+      "id": "desktop_content_position",
+      "label": "t:labels.desktop_content_position",
+      "options": [
+        { "value": "first", "label": "t:options.hero_content_position.first" },
+        { "value": "last", "label": "t:options.hero_content_position.last" }
+      ],
+      "default": "last",
+      "visible_if": "{{ section.settings.layout == 'stack' }}"
     },
     {
       "type": "url",
