@@ -4,6 +4,7 @@ import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.j
 const states = new WeakMap();
 const selector = '[data-slideshow]';
 const reducedMotion = () => window.matchMedia?.('(prefers-reduced-motion: reduce)').matches;
+const isVisible = (element) => element.getClientRects().length > 0;
 
 const updateParallax = (root) => {
   if (reducedMotion()) return;
@@ -23,14 +24,36 @@ const paginationOptions = (root) => {
   const element = root.querySelector('[data-slideshow-pagination]');
   if (!element) return {};
   const type = element.dataset.paginationType;
+  const paginationType = type === 'progress_bar' ? 'progressbar' : type === 'numbers' ? 'fraction' : 'bullets';
   return {
     pagination: {
       el: element,
-      type: type === 'progress_bar' ? 'progressbar' : 'bullets',
-      clickable: type === 'bullets',
-      renderBullet: type === 'numbers' ? (index, className) => `<button class="${className}" type="button" aria-label="Go to slide ${index + 1}">${String(index + 1).padStart(2, '0')}</button>` : undefined,
+      type: paginationType,
+      clickable: paginationType === 'bullets',
+      renderFraction: type === 'numbers'
+        ? (currentClass, totalClass) => `<span class="${currentClass}"></span><span class="slideshow__pagination-separator" aria-hidden="true"> / </span><span class="${totalClass}"></span>`
+        : undefined,
     },
   };
+};
+
+const startAutoplay = (root, swiper) => {
+  if (root.dataset.autoplay !== 'true' || reducedMotion()) return null;
+  const delay = Math.min(60000, Math.max(3000, Number(root.dataset.autoplayDelay) || 6000));
+  const pauseOnHover = root.dataset.pauseOnHover !== 'false';
+
+  return window.setInterval(() => {
+    if (
+      document.hidden ||
+      !isVisible(root) ||
+      (pauseOnHover && root.matches(':hover')) ||
+      root.contains(document.activeElement) ||
+      swiper.isLocked
+    ) return;
+
+    if (swiper.isEnd) swiper.slideTo(0);
+    else swiper.slideNext();
+  }, delay);
 };
 
 const init = (root) => {
@@ -46,12 +69,12 @@ const init = (root) => {
     speed: reducedMotion() ? 0 : 600,
     effect: fade ? 'fade' : 'slide',
     fadeEffect: fade ? { crossFade: true } : undefined,
-    autoplay: autoplay ? { delay: Math.max(3000, Number(root.dataset.autoplayDelay) || 6000), disableOnInteraction: false, pauseOnMouseEnter: root.dataset.pauseOnHover !== 'false' } : false,
     controls: { scope: root, previous: '[data-slideshow-previous]', next: '[data-slideshow-next]' },
     ...paginationOptions(root),
   };
   const swiper = createSwiperCarousel(carousel, options);
   if (!swiper) return;
+  const interval = autoplay ? startAutoplay(root, swiper) : null;
   let frame = 0;
   const scheduleParallax = () => {
     if (frame) return;
@@ -60,7 +83,10 @@ const init = (root) => {
   window.addEventListener('scroll', scheduleParallax, { passive: true });
   swiper.on('slideChangeTransitionEnd', scheduleParallax);
   scheduleParallax();
-  states.set(root, { carousel, swiper, scheduleParallax, frame });
+  const updateLockedState = () => root.classList.toggle('slideshow--single-slide', Boolean(swiper.isLocked));
+  swiper.on('lock unlock update resize', updateLockedState);
+  updateLockedState();
+  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, updateLockedState });
 };
 
 const destroy = (root) => {
@@ -68,6 +94,8 @@ const destroy = (root) => {
   if (!state) return;
   window.removeEventListener('scroll', state.scheduleParallax);
   if (state.frame) window.cancelAnimationFrame(state.frame);
+  if (state.interval) window.clearInterval(state.interval);
+  state.swiper.off('lock unlock update resize', state.updateLockedState);
   destroySwiperCarousel(state.swiper);
   states.delete(root);
 };

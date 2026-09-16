@@ -19,6 +19,18 @@
     assign slideshow_scheme = section.settings.color_scheme.id
   endif
   assign slideshow_scheme = slideshow_scheme | handleize
+  assign slideshow_navigation_style = section.settings.navigation_style | default: 'primary'
+  unless slideshow_navigation_style == 'primary' or slideshow_navigation_style == 'secondary'
+    assign slideshow_navigation_style = 'primary'
+  endunless
+  assign slideshow_navigation_icon = section.settings.navigation_icon | default: 'arrow'
+  unless slideshow_navigation_icon == 'chevron' or slideshow_navigation_icon == 'arrow' or slideshow_navigation_icon == 'long_arrow'
+    assign slideshow_navigation_icon = 'arrow'
+  endunless
+  assign slideshow_navigation_behavior = section.settings.navigation_behavior | default: 'show_on_hover'
+  unless slideshow_navigation_behavior == 'show_on_hover' or slideshow_navigation_behavior == 'always'
+    assign slideshow_navigation_behavior = 'show_on_hover'
+  endunless
 %}
 
 {% capture slideshow_style %}
@@ -65,12 +77,12 @@
     </div>
 
     {% if section.settings.show_navigation %}
-      <div class="slideshow__navigation" aria-label="Slideshow controls">
-        <button class="carousel-navigator__arrow slideshow__arrow" type="button" data-slideshow-previous aria-label="Previous slide">
-          {% render 'carousel-navigation-icon', direction: 'previous' %}
+      <div class="slideshow__navigation slideshow__navigation--{{ slideshow_navigation_behavior }}" aria-label="Slideshow controls">
+        <button class="btn btn-{{ slideshow_navigation_style }} btn--{{ slideshow_navigation_style }} btn--icon swiper-nav-button swiper-nav-button--prev slideshow__arrow" type="button" data-slideshow-previous aria-label="Previous slide">
+          {% render 'carousel-navigation-icon', icon: slideshow_navigation_icon, direction: 'previous' %}
         </button>
-        <button class="carousel-navigator__arrow slideshow__arrow" type="button" data-slideshow-next aria-label="Next slide">
-          {% render 'carousel-navigation-icon', direction: 'next' %}
+        <button class="btn btn-{{ slideshow_navigation_style }} btn--{{ slideshow_navigation_style }} btn--icon swiper-nav-button swiper-nav-button--next slideshow__arrow" type="button" data-slideshow-next aria-label="Next slide">
+          {% render 'carousel-navigation-icon', icon: slideshow_navigation_icon, direction: 'next' %}
         </button>
       </div>
     {% endif %}
@@ -92,17 +104,21 @@
   .slideshow--desktop-extra_large { --slideshow-height: 108rem; }
   .slideshow--desktop-full_screen { --slideshow-height: 100svh; }
   .slideshow:not(.slideshow--desktop-adapt) .slideshow__swiper { height: var(--slideshow-height, 72rem); }
-  .slideshow__navigation { position: absolute; inset: 50% 2.4rem auto; z-index: 4; display: flex; justify-content: space-between; pointer-events: none; }
+  .slideshow__navigation { position: absolute; inset: 50% 2.4rem auto; z-index: 4; display: flex; justify-content: space-between; pointer-events: none; transform: translateY(-50%); }
   .slideshow__arrow { pointer-events: auto; }
-  .slideshow__pagination { z-index: 4; display: flex; width: auto; gap: .8rem; align-items: center; justify-content: flex-start; padding: 2.4rem; color: var(--body-color); }
+  .slideshow__navigation--show_on_hover { opacity: 0; transition: opacity var(--motion-duration-standard) var(--motion-ease-standard); }
+  .slideshow:hover .slideshow__navigation--show_on_hover, .slideshow:focus-within .slideshow__navigation--show_on_hover { opacity: 1; }
+  .slideshow__pagination { position: absolute; inset-block-end: 0; inset-inline-start: 0; z-index: 4; display: flex; width: auto; gap: .8rem; align-items: center; justify-content: flex-start; padding: 2.4rem; color: var(--body-color); }
   .slideshow__pagination .swiper-pagination-bullet { width: .8rem; height: .8rem; margin: 0; opacity: .55; background: currentColor; }
   .slideshow__pagination .swiper-pagination-bullet-active { opacity: 1; }
-  .slideshow__pagination--numbers { font-size: 1.2rem; letter-spacing: .08em; }
-  .slideshow__pagination--progress_bar { right: 2.4rem; bottom: 2.4rem; left: 2.4rem; width: auto; height: 2px; padding: 0; background: color-mix(in srgb, currentColor 30%, transparent); }
+  .slideshow__pagination--numbers { display: block; font-size: 1.2rem; font-variant-numeric: tabular-nums; letter-spacing: .08em; }
+  .slideshow__pagination--numbers .swiper-pagination-current, .slideshow__pagination--numbers .swiper-pagination-total { display: inline-block; min-width: 2ch; }
+  .slideshow__pagination--progress_bar { inset-block-end: 2.4rem; inset-inline: 2.4rem; width: auto; height: 2px; padding: 0; background: color-mix(in srgb, currentColor 30%, transparent); }
   .slideshow__pagination--progress_bar .swiper-pagination-progressbar-fill { background: currentColor; }
   .slideshow__pagination--desktop-left { left: 0; right: auto; justify-content: flex-start; }
   .slideshow__pagination--desktop-center { left: 50%; right: auto; transform: translateX(-50%); justify-content: center; }
   .slideshow__pagination--desktop-right { right: 0; left: auto; justify-content: flex-end; }
+  .slideshow--single-slide .slideshow__navigation, .slideshow--single-slide .slideshow__pagination { display: none; }
   .slideshow[data-full-width-content='true'] .slideshow-slide__content-inner { width: 100%; max-width: none; }
   @media (min-width: 768px) and (max-width: 1149.98px) { .slideshow--width-full .slideshow__container { width: calc(100% - (var(--page-margin-tablet) * 2)); } }
   @media (max-width: 767.98px) {
@@ -117,6 +133,8 @@
     .slideshow--mobile-full_screen { --slideshow-height-mobile: 100svh; }
     .slideshow:not(.slideshow--mobile-adapt) .slideshow__swiper { height: var(--slideshow-height-mobile, 44rem); }
     .slideshow__navigation { inset-inline: 1.6rem; }
+    .slideshow__navigation--show_on_hover { opacity: 1; }
+    .slideshow__pagination--progress_bar { inset-block-end: 1.6rem; inset-inline: 1.6rem; }
     .slideshow__pagination--mobile-left { left: 0; right: auto; transform: none; justify-content: flex-start; }
     .slideshow__pagination--mobile-center { left: 50%; right: auto; transform: translateX(-50%); justify-content: center; }
     .slideshow__pagination--mobile-right { right: 0; left: auto; transform: none; justify-content: flex-end; }
@@ -145,6 +163,9 @@
     { "type": "range", "id": "autoplay_delay", "label": "Autoplay interval", "min": 3, "max": 10, "step": 1, "unit": "s", "default": 6, "visible_if": "{{ section.settings.autoplay }}" },
     { "type": "header", "content": "Navigation" },
     { "type": "checkbox", "id": "show_navigation", "label": "Show navigation", "default": true },
+    { "type": "select", "id": "navigation_style", "label": "Style", "options": [{ "value": "primary", "label": "Primary" }, { "value": "secondary", "label": "Secondary" }], "default": "primary", "visible_if": "{{ section.settings.show_navigation }}" },
+    { "type": "select", "id": "navigation_icon", "label": "Icon", "options": [{ "value": "chevron", "label": "Chevron" }, { "value": "arrow", "label": "Arrow" }, { "value": "long_arrow", "label": "Long arrow" }], "default": "arrow", "visible_if": "{{ section.settings.show_navigation }}" },
+    { "type": "select", "id": "navigation_behavior", "label": "Behavior", "options": [{ "value": "show_on_hover", "label": "Show on hover" }, { "value": "always", "label": "Always show" }], "default": "show_on_hover", "visible_if": "{{ section.settings.show_navigation }}" },
     { "type": "header", "content": "Pagination" },
     { "type": "checkbox", "id": "show_pagination", "label": "Show pagination", "default": true },
     { "type": "select", "id": "pagination_type", "label": "Type", "options": [{ "value": "progress_bar", "label": "Progress bar" }, { "value": "bullets", "label": "Bullets" }, { "value": "numbers", "label": "Numbers" }], "default": "bullets", "visible_if": "{{ section.settings.show_pagination }}" },
