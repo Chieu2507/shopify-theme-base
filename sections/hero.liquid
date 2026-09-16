@@ -36,6 +36,11 @@
 
   assign hero_desktop_position = section.settings.desktop_position | default: 'bottom_left'
   assign hero_mobile_position = section.settings.mobile_position | default: 'center_center'
+  assign hero_content_width = section.settings.content_width | default: 'fit'
+  unless hero_content_width == 'fit' or hero_content_width == 'fill' or hero_content_width == 'custom'
+    assign hero_content_width = 'fit'
+  endunless
+  assign hero_content_max_width = section.settings.content_max_width | default: 640 | plus: 0
   assign hero_desktop_gap = section.settings.desktop_gap | default: 12 | plus: 0
   assign hero_mobile_gap = section.settings.mobile_gap | default: 12 | plus: 0
 %}
@@ -43,6 +48,7 @@
 {% capture hero_style %}
   {% if hero_desktop_gap != 12 %}--hero-content-gap: {{ hero_desktop_gap }}px;{% endif %}
   {% if hero_mobile_gap != hero_desktop_gap %}--hero-content-gap-mobile: {{ hero_mobile_gap }}px;{% endif %}
+  {% if hero_content_width == 'custom' and hero_content_max_width != 640 %}--hero-content-max-width: {{ hero_content_max_width }}px;{% endif %}
   {% if section.settings.overlay != blank %}--overlay-color: {{ section.settings.overlay }};{% endif %}
 {% endcapture %}
 
@@ -52,7 +58,8 @@
   {% unless section.settings.parallax_effect == 'none' %}data-hero-parallax="{{ section.settings.parallax_effect }}"{% endunless %}
   {% if hero_style != blank %}style="{{ hero_style | strip }}"{% endif %}
 >
-  <div class="hero__media{% if hero_media_type == 'image' and section.settings.banner_image == blank or hero_media_type == 'video' and section.settings.video == blank %} hero__media--placeholder placeholder-image{% endif %}" aria-hidden="true" data-hero-media>
+  <div class="hero__media" aria-hidden="true">
+    <div class="hero__media-inner{% if hero_media_type == 'image' and section.settings.banner_image == blank or hero_media_type == 'video' and section.settings.video == blank %} placeholder-image{% endif %}" data-hero-media>
     {% if hero_media_type == 'video' and section.settings.video != blank %}
       {{ section.settings.video | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'hero__video hero__video--desktop' }}
       {% if section.settings.mobile_video != blank %}
@@ -71,13 +78,14 @@
     {% else %}
       {{ 'lifestyle-1' | placeholder_svg_tag: 'hero__placeholder' }}
     {% endif %}
+    </div>
   </div>
 
   {% if section.settings.overlay != blank %}<div class="hero__overlay" aria-hidden="true"></div>{% endif %}
   {% if section.settings.link != blank %}<a class="hero__link" href="{{ section.settings.link }}"{% if section.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="{{ 'general.hero' | t | escape }}"></a>{% endif %}
 
   <div class="container {{ hero_container_class }} hero__container hero__container--desktop-{{ hero_desktop_position }} hero__container--mobile-{{ hero_mobile_position }}">
-    <div class="hero__content{% if section.settings.content_full_width %} hero__content--full-width{% endif %}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content">
+    <div class="hero__content hero__content--width-{{ hero_content_width }}{% if section.settings.enable_sticky %} hero__content--sticky{% endif %} align-content">
       {% content_for 'blocks' %}
     </div>
   </div>
@@ -88,7 +96,7 @@
     position: relative;
     display: grid;
     min-height: var(--hero-min-height, 72rem);
-    overflow: clip;
+    overflow: visible;
     background: var(--background-color);
     color: var(--body-color);
   }
@@ -102,8 +110,10 @@
   .hero--desktop-full_screen { --hero-min-height: 100svh; }
 
   .hero__media,
-  .hero__media picture,
-  .hero__media img,
+  .hero__media-inner,
+  .hero__media-inner picture,
+  .hero__media-inner img,
+  .hero__media-inner video,
   .hero__placeholder {
     position: absolute;
     inset: 0;
@@ -115,11 +125,16 @@
   .hero__media {
     z-index: 0;
     pointer-events: none;
+    overflow: clip;
+  }
+
+  .hero__media-inner {
+    z-index: 0;
     will-change: transform;
   }
 
-  .hero__media img,
-  .hero__media video,
+  .hero__media-inner img,
+  .hero__media-inner video,
   .hero__placeholder {
     object-fit: cover;
   }
@@ -171,9 +186,18 @@
     color: var(--body-color);
   }
 
-  .hero__content--full-width {
+  .hero__content--width-fit {
+    width: fit-content;
+    max-width: 100%;
+  }
+
+  .hero__content--width-fill {
     width: 100%;
     max-width: none;
+  }
+
+  .hero__content--width-custom {
+    width: min(100%, var(--hero-content-max-width, 64rem));
   }
 
   .hero__container--desktop-top_left { --hero-content-y: start; --hero-content-x: start; --flex-align: start; }
@@ -439,10 +463,26 @@
       "content": "t:general.content"
     },
     {
-      "type": "checkbox",
-      "id": "content_full_width",
-      "label": "t:labels.full_width",
-      "default": true
+      "type": "select",
+      "id": "content_width",
+      "label": "t:labels.width",
+      "options": [
+        { "value": "fit", "label": "t:options.width.fit" },
+        { "value": "fill", "label": "t:options.width.fill" },
+        { "value": "custom", "label": "t:options.width.custom" }
+      ],
+      "default": "fit"
+    },
+    {
+      "type": "range",
+      "id": "content_max_width",
+      "label": "t:labels.max_width",
+      "min": 320,
+      "max": 1600,
+      "step": 20,
+      "unit": "px",
+      "default": 640,
+      "visible_if": "{{ section.settings.content_width == 'custom' }}"
     },
     {
       "type": "checkbox",
