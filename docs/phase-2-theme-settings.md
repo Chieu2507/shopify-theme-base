@@ -963,7 +963,7 @@ riêng; cart dùng market money mặc định.
 ### Mục đích
 
 Định nghĩa ngữ cảnh màu, scale typography, backdrop và primitive cho popover,
-drawer, bottom sheet và modal. Component đọc token gần nhất, không tự đặt màu,
+drawer, bottom sheet và popup. Component đọc token gần nhất, không tự đặt màu,
 shadow, padding hoặc z-index rời rạc.
 
 ### Consumer và file liên quan
@@ -974,7 +974,7 @@ shadow, padding hoặc z-index rời rạc.
 - Foundation selectors: `assets/critical.css` gồm `.theme-overlay`,
   `dialog::backdrop`, `[popover]`, `.drawer`, `[data-drawer]`,
   `.bottom-sheet`, `[data-bottom-sheet]` và các title hook.
-- Drawer/modal implementation tương lai phải dùng `--z-base`, `--z-drawer` và
+- Drawer/popup implementation tương lai phải dùng `--z-base`, `--z-drawer` và
   `--z-modal`, không tạo z-index mới trong section.
 
 ### CSS Foundation
@@ -1029,10 +1029,10 @@ radius; reduced-motion policy áp dụng cho animation mở/đóng ở phase Mot
 - Đổi scheme cập nhật background/text/border/shadow của overlay mà không sửa
   markup component; nested scheme không bị phá.
 - Overlay blur, popover border/shadow và drawer padding hoạt động đúng ở
-  desktop/mobile; overlay không che modal do z-index sai thứ tự.
+  desktop/mobile; overlay không che popup do z-index sai thứ tự.
 - Dialog/overlay không khóa scroll ngoài lúc đang mở; focus ring, accessible
   name, `aria-modal` và keyboard Escape contract được giữ khi bổ sung
-  drawer/modal.
+  drawer/popup.
 
 ## 16. Social Media
 

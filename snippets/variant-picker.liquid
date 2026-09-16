@@ -6,28 +6,49 @@
   @param {variant} current_variant - Selected or first available variant
   @param {string} [section_id] - Section identifier used to namespace controls
   @param {string} [media_gallery_id] - Id of the related product media gallery
+  @param {string} [form_id] - Id of the product form that receives the chosen variant
+  @param {string} [block_id] - Optional block identifier used to keep duplicate pickers addressable
+  @param {boolean} [show_option_names] - Whether option legends remain visible
+  @param {string} [size_chart_option_name] - Product option name that should expose the size guide
+  @param {page} [size_chart_page] - Page or dynamic page source rendered by the size guide
+  @param {string} [size_chart_desktop_layout] - Desktop size guide presentation: popup or drawer
+  @param {string} [size_chart_mobile_layout] - Mobile size guide presentation: bottom_sheet or drawer
+  @param {number} [size_chart_width] - Maximum desktop size guide width in pixels
 
   @example
   {% render 'variant-picker', product: product, current_variant: current_variant, section_id: section.id %}
 {% enddoc %}
 
 {% liquid
-  assign picker_type = 'dropdown'
-  if settings.variant_picker_style == 'button' or settings.variant_picker_style == 'buttons'
-    assign picker_type = 'button'
+  assign swatch_style = settings.swatch_style | default: 'color'
+  unless swatch_style == 'color' or swatch_style == 'variant_image'
+    assign swatch_style = 'color'
+  endunless
+
+  assign swatch_width_desktop = settings.swatch_width_desktop | default: 40 | plus: 0
+  if swatch_width_desktop < 16 or swatch_width_desktop > 64
+    assign swatch_width_desktop = 40
   endif
 
-  assign swatch_style = 'color'
-  if settings.swatch_style == 'variant_image'
-    assign swatch_style = 'variant_image'
-  endif
   assign swatch_selected_style = 'underline'
   if settings.swatch_selected_style == 'border'
     assign swatch_selected_style = 'border'
   endif
 
+  assign picker_type = 'dropdown'
+  if settings.variant_picker_style == 'button' or settings.variant_picker_style == 'buttons'
+    assign picker_type = 'button'
+  endif
+
   assign picker_scope = section_id | default: product.id
+  assign product_form_id = form_id
+  if product_form_id == blank
+    assign product_form_id = 'ProductForm-' | append: picker_scope
+  endif
   assign picker_id = 'VariantPicker-' | append: picker_scope
+  if block_id != blank
+    assign picker_id = picker_id | append: '-' | append: block_id
+  endif
   assign gallery_id = 'ProductMedia-' | append: picker_scope
   if media_gallery_id != blank
     assign gallery_id = media_gallery_id
@@ -39,6 +60,35 @@
   if settings.variant_picker_only_selected_media
     assign only_selected_media = true
   endif
+  assign visual_swatches_enabled = true
+  assign show_option_names_setting = show_option_names
+  assign show_option_names = true
+  if show_option_names_setting == false
+    assign show_option_names = false
+  endif
+
+  assign size_chart_option_name = size_chart_option_name | default: 'Size' | strip
+  assign size_chart_option_name_normalized = size_chart_option_name | downcase
+  assign size_chart_desktop_layout = size_chart_desktop_layout | default: 'modal'
+  unless size_chart_desktop_layout == 'modal' or size_chart_desktop_layout == 'drawer'
+    assign size_chart_desktop_layout = 'modal'
+  endunless
+  assign size_chart_mobile_layout = size_chart_mobile_layout | default: 'bottom_sheet'
+  unless size_chart_mobile_layout == 'bottom_sheet' or size_chart_mobile_layout == 'drawer'
+    assign size_chart_mobile_layout = 'bottom_sheet'
+  endunless
+  assign size_chart_width = size_chart_width | default: 600 | plus: 0
+  if size_chart_width < 320 or size_chart_width > 960
+    assign size_chart_width = 600
+  endif
+  assign size_chart_label = 'products.size_guide' | t
+  assign close_size_chart_label = 'products.close_size_guide' | t
+  assign unavailable_selection_label = 'products.variant_selection_unavailable' | t
+  assign size_chart_dialog_id = picker_id | append: '-size-guide'
+  assign size_chart_page_title = size_chart_page.title | default: blank
+  if size_chart_page_title == blank
+    assign size_chart_page_title = size_chart_label
+  endif
 %}
 
 <variant-picker
@@ -46,40 +96,70 @@
   class="variant-picker variant-picker--{{ picker_type }}"
   data-product-variant-picker
   data-section-id="{{ picker_scope }}"
+  data-product-form-id="{{ product_form_id }}"
   data-media-gallery-id="{{ gallery_id }}"
   data-only-selected-media="{{ only_selected_media }}"
   data-current-variant-id="{{ current_variant_id }}"
   data-sold-out-label="{{ sold_out_label | escape }}"
   data-unavailable-label="{{ unavailable_label | escape }}"
+  data-unavailable-selection-label="{{ unavailable_selection_label | escape }}"
+  data-size-chart-dialog-id="{{ size_chart_dialog_id }}"
+  data-swatch-style="{{ swatch_style }}"
+  style="--product-swatch-width: {{ swatch_width_desktop }}px; --product-swatch-width-mobile: var(--swatch-width-mobile);"
 >
-  <input type="hidden" name="id" value="{{ current_variant_id }}" data-variant-id>
+  {% if form_id == blank %}
+    <input type="hidden" name="id" value="{{ current_variant_id }}" data-variant-id>
+  {% else %}
+    <input type="hidden" value="{{ current_variant_id }}" data-variant-id>
+  {% endif %}
   <script type="application/json" data-variant-data>{{ product.variants | json }}</script>
 
   {% for product_option in product.options_with_values %}
     {% liquid
       assign option_index = forloop.index0
       assign option_id = picker_id | append: '-option-' | append: option_index
+      assign option_name_normalized = product_option.name | strip | downcase
       assign option_uses_swatches = false
-      for option_value in product_option.values
-        if option_value.swatch != blank
+      if visual_swatches_enabled
+        for option_value in product_option.values
+          if option_value.swatch != blank
+            assign option_uses_swatches = true
+            break
+          endif
+        endfor
+        if option_uses_swatches == false and option_name_normalized == 'color'
           assign option_uses_swatches = true
-          break
         endif
-      endfor
-      if option_uses_swatches == false and product_option.name == 'Color'
-        assign option_uses_swatches = true
+      endif
+      assign show_size_chart = false
+      if size_chart_page != blank and size_chart_option_name_normalized != blank and option_name_normalized == size_chart_option_name_normalized
+        assign show_size_chart = true
       endif
     %}
 
     <fieldset class="variant-picker__option{% if option_uses_swatches %} variant-picker__option--swatches{% endif %}" data-option-index="{{ option_index }}">
-      <legend id="{{ option_id }}-label" class="variant-picker__label">
-        {{ product_option.name | escape }}
+      <legend id="{{ option_id }}-label" class="variant-picker__label{% unless show_option_names %} visually-hidden{% endunless %}">
+        <span class="variant-picker__option-name">{{ product_option.name | escape }}</span>
       </legend>
+      {% if show_size_chart %}
+        <button
+          class="variant-picker__size-chart-trigger"
+          type="button"
+          aria-haspopup="dialog"
+          aria-controls="{{ size_chart_dialog_id }}"
+          aria-expanded="false"
+          data-size-chart-trigger
+        >
+          {{ size_chart_label | escape }}
+        </button>
+      {% endif %}
 
       {% if picker_type == 'dropdown' %}
         <select
           class="variant-picker__control variant-picker__control--select form__control"
           id="{{ option_id }}"
+          name="options[{{ product_option.name | escape }}]"
+          form="{{ product_form_id }}"
           data-option-control
           data-option-index="{{ option_index }}"
           aria-labelledby="{{ option_id }}-label"
@@ -137,7 +217,8 @@
                 id="{{ value_input_id }}"
                 class="variant-picker__control variant-picker__control--radio{% if option_uses_swatches %} swatch__input{% endif %}"
                 type="radio"
-                name="{{ option_id }}"
+                name="options[{{ product_option.name | escape }}]"
+                form="{{ product_form_id }}"
                 value="{{ option_value.name | escape }}"
                 data-option-control
                 data-option-index="{{ option_index }}"
@@ -182,4 +263,55 @@
       {% endif %}
     </fieldset>
   {% endfor %}
+
+  <p class="variant-picker__status-message" data-variant-picker-status role="status" aria-live="polite" hidden></p>
+
+  {% assign has_size_chart = false %}
+  {% if size_chart_page != blank %}
+    {% for product_option in product.options_with_values %}
+      {% assign option_name_normalized = product_option.name | strip | downcase %}
+      {% if option_name_normalized == size_chart_option_name_normalized %}
+        {% assign has_size_chart = true %}
+        {% break %}
+      {% endif %}
+    {% endfor %}
+  {% endif %}
+  {% if has_size_chart %}
+    <dialog
+      id="{{ size_chart_dialog_id }}"
+      class="variant-picker__size-chart"
+      data-size-chart-dialog
+      data-desktop-layout="{{ size_chart_desktop_layout }}"
+      data-mobile-layout="{{ size_chart_mobile_layout }}"
+      style="--variant-picker-size-chart-width: {{ size_chart_width }}px;"
+      aria-labelledby="{{ size_chart_dialog_id }}-title"
+      scroll-lock
+    >
+      <div class="variant-picker__size-chart-surface">
+        <header class="variant-picker__size-chart-header">
+          <span class="bottom-sheet__handle variant-picker__size-chart-handle" aria-hidden="true"></span>
+          <h2 id="{{ size_chart_dialog_id }}-title" class="heading-text heading-sm">
+            {{ size_chart_page_title | escape }}
+          </h2>
+          <button
+            class="overlay-close variant-picker__size-chart-close"
+            type="button"
+            aria-label="{{ close_size_chart_label | escape }}"
+            data-size-chart-close
+          >
+            {% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}
+          </button>
+        </header>
+        <div class="variant-picker__size-chart-content rte">
+          {% if size_chart_page.content != blank %}
+            {{ size_chart_page.content }}
+          {% elsif size_chart_page.url != blank %}
+            <p><a href="{{ size_chart_page.url | escape }}">{{ size_chart_page_title | escape }}</a></p>
+          {% else %}
+            <p>{{ 'products.size_guide_unavailable' | t }}</p>
+          {% endif %}
+        </div>
+      </div>
+    </dialog>
+  {% endif %}
 </variant-picker>
