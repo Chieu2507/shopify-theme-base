@@ -21,6 +21,7 @@
     if (!(hero instanceof HTMLElement) || states.has(hero)) return;
 
     const media = hero.querySelector('[data-hero-media]');
+    const surface = hero.querySelector('[data-hero-surface]') || hero;
     const sticky = hero.querySelector('.hero__content--sticky');
     const effect = hero.dataset.heroParallax;
     const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -41,7 +42,7 @@
       }
 
       resetSticky();
-      const heroBounds = hero.getBoundingClientRect();
+      const heroBounds = surface.getBoundingClientRect();
       const contentBounds = sticky.getBoundingClientRect();
       const scrollTop = window.scrollY;
       const stickyTop = Number.parseFloat(window.getComputedStyle(sticky).top) || 0;
@@ -66,7 +67,7 @@
 
     const update = () => {
       if (effect && media instanceof HTMLElement && !reduceMotion) {
-        const bounds = hero.getBoundingClientRect();
+        const bounds = surface.getBoundingClientRect();
         const viewportCenter = window.innerHeight / 2;
         const progress = Math.max(-1, Math.min(1, (viewportCenter - (bounds.top + (bounds.height / 2))) / Math.max(bounds.height, 1)));
         let transform = 'translate3d(0, 0, 0) scale(1.08)';
