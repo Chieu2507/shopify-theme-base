@@ -64,7 +64,7 @@ const createTwoSlidePeeks = (carousel, swiper) => {
 
 const updateParallax = (root) => {
   if (reducedMotion()) return;
-  root.querySelectorAll(slideSelector).forEach((slide) => {
+  root.querySelectorAll(`.swiper-wrapper > ${slideSelector}`).forEach((slide) => {
     const media = slide.querySelector('[data-slideshow-media]');
     const effect = slide.dataset.parallax;
     if (!media || !effect || effect === 'none') return;
