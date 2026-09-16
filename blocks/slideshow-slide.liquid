@@ -6,6 +6,7 @@
 {% liquid
   assign slide_layout = block.settings.layout | default: 'classic'
   assign slide_media_type = block.settings.media_type | default: 'image'
+  assign slide_media_2_type = block.settings.media_2_type | default: 'image'
   assign slide_scheme = block.settings.color_scheme | default: 'scheme-1'
   if block.settings.color_scheme.id != blank
     assign slide_scheme = block.settings.color_scheme.id
@@ -26,7 +27,7 @@
   {% if slide_style != blank %}style="{{ slide_style | strip }}"{% endif %}
   {{ block.shopify_attributes }}
 >
-  <div class="slideshow-slide__media{% if block.settings.image == blank and block.settings.video == blank %} placeholder-image{% endif %}" data-slideshow-media aria-hidden="true">
+  <div class="slideshow-slide__media slideshow-slide__media--primary{% if block.settings.image == blank and block.settings.video == blank %} placeholder-image{% endif %}" data-slideshow-media aria-hidden="true">
     {% if slide_media_type == 'video' and block.settings.video != blank %}
       {{ block.settings.video | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'slideshow-slide__video' }}
     {% elsif block.settings.image != blank %}
@@ -39,6 +40,21 @@
     {% endif %}
     {% if block.settings.show_overlay %}<span class="slideshow-slide__overlay"></span>{% endif %}
   </div>
+
+  {% if slide_layout == 'split' %}
+    <div class="slideshow-slide__media slideshow-slide__media--secondary{% if block.settings.image_2 == blank and block.settings.video_2 == blank %} placeholder-image{% endif %}" aria-hidden="true">
+      {% if slide_media_2_type == 'video' and block.settings.video_2 != blank %}
+        {{ block.settings.video_2 | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'slideshow-slide__video' }}
+      {% elsif block.settings.image_2 != blank %}
+        <picture>
+          {% if block.settings.mobile_image_2 != blank %}<source media="(max-width: 767.98px)" srcset="{{ block.settings.mobile_image_2 | image_url: width: 1200 }}">{% endif %}
+          {{ block.settings.image_2 | image_url: width: 2400 | image_tag: widths: '750, 1100, 1500, 2000, 2400', sizes: '50vw', alt: '' }}
+        </picture>
+      {% else %}
+        {{ 'lifestyle-2' | placeholder_svg_tag: 'slideshow-slide__placeholder' }}
+      {% endif %}
+    </div>
+  {% endif %}
 
   {% if block.settings.link != blank %}<a class="slideshow-slide__link" href="{{ block.settings.link }}"{% if block.settings.open_in_new_tab %} target="_blank" rel="noopener noreferrer"{% endif %} aria-label="{{ block.settings.link_label | default: 'Slide link' | escape }}"></a>{% endif %}
 
@@ -63,8 +79,11 @@
   .slideshow-slide--desktop-bottom_left .slideshow-slide__content { align-items: flex-end; justify-content: flex-start; }
   .slideshow-slide--desktop-bottom_center .slideshow-slide__content { align-items: flex-end; justify-content: center; }
   .slideshow-slide--desktop-bottom_right .slideshow-slide__content { align-items: flex-end; justify-content: flex-end; }
-  .slideshow-slide--split .slideshow-slide__media { grid-column: 2; width: 50%; justify-self: end; }
-  .slideshow-slide--split .slideshow-slide__content { grid-column: 1; width: 50%; background: var(--background-color); }
+  .slideshow-slide__media--secondary { display: none; }
+  .slideshow-slide--split { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .slideshow-slide--split .slideshow-slide__media--primary { grid-column: 1; grid-row: 1; }
+  .slideshow-slide--split .slideshow-slide__media--secondary { display: block; grid-column: 2; grid-row: 1; }
+  .slideshow-slide--split .slideshow-slide__content { grid-column: 1; grid-row: 1; width: 100%; background: transparent; }
   .slideshow-slide:not(.swiper-slide-active) .slideshow-slide__content-inner > .shopify-block { opacity: 0; transform: translateY(1.6rem); }
   .slideshow-slide.swiper-slide-active .slideshow-slide__content-inner > .shopify-block { animation: slideshow-content-in .5s ease both; animation-delay: calc(var(--slideshow-block-index, 0) * 75ms); }
   .slideshow-slide__content-inner > .shopify-block:nth-child(1) { --slideshow-block-index: 0; }.slideshow-slide__content-inner > .shopify-block:nth-child(2) { --slideshow-block-index: 1; }.slideshow-slide__content-inner > .shopify-block:nth-child(3) { --slideshow-block-index: 2; }.slideshow-slide__content-inner > .shopify-block:nth-child(4) { --slideshow-block-index: 3; }.slideshow-slide__content-inner > .shopify-block:nth-child(5) { --slideshow-block-index: 4; }.slideshow-slide__content-inner > .shopify-block:nth-child(6) { --slideshow-block-index: 5; }
@@ -73,8 +92,10 @@
     .slideshow-slide__content { padding: 3.2rem calc(var(--page-margin-mobile) + 2.4rem); }
     .slideshow-slide__content-inner { gap: var(--slideshow-slide-gap-mobile, var(--slideshow-slide-gap, 1.2rem)); }
     .slideshow-slide--mobile-top_left .slideshow-slide__content { align-items: flex-start; justify-content: flex-start; }.slideshow-slide--mobile-top_center .slideshow-slide__content { align-items: flex-start; justify-content: center; }.slideshow-slide--mobile-top_right .slideshow-slide__content { align-items: flex-start; justify-content: flex-end; }.slideshow-slide--mobile-center_left .slideshow-slide__content { align-items: center; justify-content: flex-start; }.slideshow-slide--mobile-center_center .slideshow-slide__content { align-items: center; justify-content: center; }.slideshow-slide--mobile-center_right .slideshow-slide__content { align-items: center; justify-content: flex-end; }.slideshow-slide--mobile-bottom_left .slideshow-slide__content { align-items: flex-end; justify-content: flex-start; }.slideshow-slide--mobile-bottom_center .slideshow-slide__content { align-items: flex-end; justify-content: center; }.slideshow-slide--mobile-bottom_right .slideshow-slide__content { align-items: flex-end; justify-content: flex-end; }
-    .slideshow-slide--split .slideshow-slide__media, .slideshow-slide--split .slideshow-slide__content { grid-column: 1; width: 100%; }
-    .slideshow-slide--split .slideshow-slide__media { grid-row: 1; height: 42%; }.slideshow-slide--split .slideshow-slide__content { grid-row: 2; min-height: 58%; }
+    .slideshow-slide--split { grid-template-columns: 1fr; grid-template-rows: repeat(2, minmax(0, 1fr)); }
+    .slideshow-slide--split .slideshow-slide__media--primary { grid-column: 1; grid-row: 1; }
+    .slideshow-slide--split .slideshow-slide__media--secondary { grid-column: 1; grid-row: 2; }
+    .slideshow-slide--split .slideshow-slide__content { grid-column: 1; grid-row: 1; width: 100%; }
   }
 {% endstylesheet %}
 
@@ -105,6 +126,11 @@
     { "type": "url", "id": "link", "label": "Link" }, { "type": "checkbox", "id": "open_in_new_tab", "label": "Open link in new tab", "default": false },
     { "type": "header", "content": "Media" }, { "type": "select", "id": "media_type", "label": "Type", "options": [{ "value": "image", "label": "Image" }, { "value": "video", "label": "Video" }], "default": "image" },
     { "type": "image_picker", "id": "image", "label": "Image", "visible_if": "{{ block.settings.media_type == 'image' }}" }, { "type": "image_picker", "id": "mobile_image", "label": "Mobile image", "visible_if": "{{ block.settings.media_type == 'image' }}" }, { "type": "video", "id": "video", "label": "Video", "visible_if": "{{ block.settings.media_type == 'video' }}" },
+    { "type": "header", "content": "Media 2" },
+    { "type": "select", "id": "media_2_type", "label": "Type", "options": [{ "value": "image", "label": "Image" }, { "value": "video", "label": "Video" }], "default": "image", "visible_if": "{{ block.settings.layout == 'split' }}" },
+    { "type": "image_picker", "id": "image_2", "label": "Image", "visible_if": "{{ block.settings.layout == 'split' and block.settings.media_2_type == 'image' }}" },
+    { "type": "image_picker", "id": "mobile_image_2", "label": "Mobile image", "visible_if": "{{ block.settings.layout == 'split' and block.settings.media_2_type == 'image' }}" },
+    { "type": "video", "id": "video_2", "label": "Video", "visible_if": "{{ block.settings.layout == 'split' and block.settings.media_2_type == 'video' }}" },
     { "type": "checkbox", "id": "show_overlay", "label": "Show overlay", "default": true }, { "type": "color", "id": "overlay_color", "label": "Overlay color", "alpha": true, "default": "#00000033", "visible_if": "{{ block.settings.show_overlay }}" },
     { "type": "select", "id": "parallax_effect", "label": "Parallax effect", "options": [{ "value": "none", "label": "None" }, { "value": "vertical", "label": "Vertical" }, { "value": "horizontal", "label": "Horizontal" }, { "value": "zoom", "label": "Zoom" }], "default": "none", "visible_if": "{{ block.settings.layout == 'classic' }}" },
     { "type": "header", "content": "Content" },
