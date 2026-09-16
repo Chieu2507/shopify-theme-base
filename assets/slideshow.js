@@ -57,17 +57,25 @@ const startAutoplay = (root, swiper) => {
 
 const bindNavigation = (root, swiper) => {
   const controller = new AbortController();
-  const options = { signal: controller.signal };
+  const options = { capture: true, signal: controller.signal };
   const previous = root.querySelector('[data-slideshow-previous]');
   const next = root.querySelector('[data-slideshow-next]');
-  const move = (method) => (event) => {
+  const move = (direction) => (event) => {
     event.preventDefault();
-    event.stopPropagation();
-    if (!swiper.destroyed && !swiper.isLocked) swiper[method]();
+    event.stopImmediatePropagation();
+    if (swiper.destroyed) return;
+
+    if (swiper.params.loop && typeof swiper.slideToLoop === 'function') {
+      swiper.slideToLoop(swiper.realIndex + direction);
+      return;
+    }
+
+    const total = swiper.slides.length;
+    if (total > 1) swiper.slideTo((swiper.activeIndex + direction + total) % total);
   };
 
-  previous?.addEventListener('click', move('slidePrev'), options);
-  next?.addEventListener('click', move('slideNext'), options);
+  previous?.addEventListener('click', move(-1), options);
+  next?.addEventListener('click', move(1), options);
   [previous, next].filter(Boolean).forEach((control) => control.setAttribute('aria-controls', carouselId(swiper)));
   return controller;
 };
