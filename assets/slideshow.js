@@ -43,6 +43,7 @@ const createTwoSlideLoop = (carousel) => {
   const nextClone = createSlideClone(slides[0], 0, 'next');
   wrapper.prepend(previousClone);
   wrapper.append(nextClone);
+  let resetSlide = null;
 
   return {
     initialSlide: 1,
@@ -50,10 +51,19 @@ const createTwoSlideLoop = (carousel) => {
     originalIndex: (logicalIndex) => logicalIndex + 1,
     restore(swiper) {
       if (swiper.destroyed) return;
-      if (swiper.activeIndex === 0) swiper.slideTo(2, 0, false);
-      if (swiper.activeIndex === 3) swiper.slideTo(1, 0, false);
+      const targetIndex = swiper.activeIndex === 0 ? 2 : swiper.activeIndex === 3 ? 1 : null;
+      if (targetIndex === null) return;
+      resetSlide = swiper.slides[targetIndex];
+      resetSlide?.classList.add('slideshow-slide--loop-reset');
+      swiper.slideTo(targetIndex, 0, false);
+    },
+    clearReset() {
+      if (resetSlide?.classList.contains('swiper-slide-active')) return;
+      resetSlide?.classList.remove('slideshow-slide--loop-reset');
+      resetSlide = null;
     },
     destroy() {
+      resetSlide?.classList.remove('slideshow-slide--loop-reset');
       previousClone.remove();
       nextClone.remove();
     },
@@ -201,7 +211,10 @@ const init = (root) => {
     return;
   }
   const twoSlidePagination = createTwoSlidePagination(root, swiper, twoSlideLoop);
-  if (twoSlideLoop) swiper.on('slideChangeTransitionEnd', twoSlideLoop.restore);
+  if (twoSlideLoop) {
+    swiper.on('slideChangeTransitionEnd', twoSlideLoop.restore);
+    swiper.on('slideChangeTransitionStart', twoSlideLoop.clearReset);
+  }
   const navigationController = bindNavigation(root, swiper);
   const interval = autoplay ? startAutoplay(root, swiper) : null;
   let frame = 0;
@@ -227,6 +240,7 @@ const destroy = (root) => {
   state.navigationController.abort();
   if (state.twoSlideLoop) {
     state.swiper.off('slideChangeTransitionEnd', state.twoSlideLoop.restore);
+    state.swiper.off('slideChangeTransitionStart', state.twoSlideLoop.clearReset);
     state.twoSlidePagination?.destroy();
     state.twoSlideLoop.destroy();
   }
