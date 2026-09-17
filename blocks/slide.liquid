@@ -1,10 +1,7 @@
 {% doc %}
-  Renders a layout group that composes theme blocks in a horizontal or
-  vertical flow. The group owns its local layout, surface, border, overlay,
-  and spacing without changing the typography contract of its children.
+  Renders one Carousel slide using the shared group layout contract.
 
-  @example
-  {% content_for 'block', type: 'group', id: 'group' %}
+  Slide content is composed from Image, Heading, Text, and Button blocks.
 {% enddoc %}
 
 {% liquid
@@ -135,16 +132,6 @@
     assign group_shadow = 'none'
   endunless
 
-  assign group_backdrop_blur = block.settings.backdrop_blur | default: 0 | plus: 0
-  if group_backdrop_blur < 0 or group_backdrop_blur > 40
-    assign group_backdrop_blur = 0
-  endif
-
-  assign group_overlay_opacity = block.settings.overlay_opacity | default: 30 | plus: 0
-  if group_overlay_opacity < 0 or group_overlay_opacity > 100
-    assign group_overlay_opacity = 30
-  endif
-
   assign padding_top = block.settings.padding_top | default: 0 | plus: 0
   assign padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
   assign padding_left = block.settings.padding_left | default: 0 | plus: 0
@@ -204,9 +191,6 @@
   if group_appearance_type == 'scheme'
     assign group_class = group_class | append: ' color-scheme ' | append: group_scheme
   endif
-  if block.settings.overlay_color != blank or group_backdrop_blur > 0
-    assign group_class = group_class | append: ' group--has-overlay'
-  endif
   if group_vertical_on_mobile
     assign group_class = group_class | append: ' group--mobile-vertical'
   endif
@@ -243,14 +227,11 @@
     {% if block.settings.background_color != blank %}--group-background-color: {{ block.settings.background_color | escape }};{% endif %}
     {% if block.settings.background_image != blank %}--group-background-image: url('{{ block.settings.background_image | image_url: width: 2400 }}');{% endif %}
   {% endif %}
-  {% if block.settings.overlay_color != blank %}--group-overlay-color: rgb({{ block.settings.overlay_color.rgba }});{% endif %}
-  {% if group_overlay_opacity != 30 %}--group-overlay-opacity: {{ group_overlay_opacity | divided_by: 100.0 }};{% endif %}
-  {% if group_backdrop_blur > 0 %}--group-backdrop-blur: {{ group_backdrop_blur }}px;{% endif %}
 {% endcapture %}
 {% assign group_style = group_style | strip %}
 
 <div
-  class="{{ group_class }}"
+  class="{{ group_class }} carousel-slide swiper-slide"
   {% if group_style != blank %}style="{{ group_style }}"{% endif %}
   {{ block.shopify_attributes }}
 >
@@ -258,6 +239,29 @@
 </div>
 
 {% stylesheet %}
+  .carousel-slide.swiper-slide {
+    display: flex;
+    height: auto;
+    gap: var(--group-gap-desktop, 16px);
+  }
+  .carousel-slide.swiper-slide.group--horizontal {
+    flex-direction: row;
+  }
+  .carousel-slide.swiper-slide.group--horizontal > * {
+    flex: 1 1 0%;
+    min-width: 0;
+  }
+  @media (max-width: 767.98px) {
+    .carousel-slide.swiper-slide {
+      gap: var(--group-gap-mobile, 12px);
+    }
+    .carousel-slide.swiper-slide.group--horizontal.group--mobile-vertical {
+      flex-direction: column;
+    }
+    .carousel-slide.swiper-slide.group--horizontal.group--mobile-vertical > * {
+      flex: 0 1 auto;
+    }
+  }
   .group {
     /* Keep layout overrides local when groups are nested inside other groups. */
     --group-width: initial;
@@ -278,9 +282,6 @@
     --group-background-color: initial;
     --group-background-image: initial;
     --group-border-color: var(--border-color);
-    --group-overlay-color: initial;
-    --group-overlay-opacity: initial;
-    --group-backdrop-blur: initial;
     --group-align: start;
     --group-align-mobile: var(--group-align);
     --group-justify: flex-start;
@@ -408,20 +409,6 @@
     box-shadow: 0 1rem 2rem color-mix(in srgb, var(--shadow-color) 24%, transparent);
   }
 
-  .group--has-overlay::before {
-    --group-overlay-opacity: 0.3;
-    position: absolute;
-    inset: 0;
-    z-index: 0;
-    border-radius: inherit;
-    background: var(--group-overlay-color, transparent);
-    opacity: var(--group-overlay-opacity);
-    -webkit-backdrop-filter: blur(var(--group-backdrop-blur, 0px));
-    backdrop-filter: blur(var(--group-backdrop-blur, 0px));
-    content: '';
-    pointer-events: none;
-  }
-
   .group > * {
     position: relative;
     z-index: 1;
@@ -463,33 +450,12 @@
 
 {% schema %}
 {
-  "name": "t:general.group",
+  "name": "t:general.slide",
   "tag": null,
   "blocks": [
-    { "type": "button" },
-    { "type": "buttons" },
-    { "type": "divider" },
-    { "type": "eyebrow" },
-    { "type": "header" },
-    { "type": "heading" },
-    { "type": "icon" },
-    { "type": "image" },
-    { "type": "image-card" },
-    { "type": "spacer" },
-    { "type": "text" },
-    { "type": "video" },
-    { "type": "group" },
-    { "type": "grid" },
-    { "type": "row" },
-    { "type": "email-signup" },
-    { "type": "localization" },
-    { "type": "logo" },
-    { "type": "menu" },
-    { "type": "payment-icons" },
-    { "type": "policy-links" },
-    { "type": "contact-form" },
-    { "type": "marquee" },
-    { "type": "carousel" }
+    {
+      "type": "@theme"
+    }
   ],
   "settings": [
     {
@@ -501,8 +467,14 @@
       "id": "direction",
       "label": "t:labels.direction",
       "options": [
-        { "value": "horizontal", "label": "t:options.direction.horizontal" },
-        { "value": "vertical", "label": "t:options.direction.vertical" }
+        {
+          "value": "horizontal",
+          "label": "t:options.direction.horizontal"
+        },
+        {
+          "value": "vertical",
+          "label": "t:options.direction.vertical"
+        }
       ],
       "default": "vertical"
     },
@@ -511,9 +483,18 @@
       "id": "position",
       "label": "t:labels.position",
       "options": [
-        { "value": "top", "label": "t:options.position.top" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "bottom", "label": "t:options.position.bottom" }
+        {
+          "value": "top",
+          "label": "t:options.position.top"
+        },
+        {
+          "value": "center",
+          "label": "t:options.alignment.center"
+        },
+        {
+          "value": "bottom",
+          "label": "t:options.position.bottom"
+        }
       ],
       "default": "top",
       "visible_if": "{{ block.settings.direction == 'horizontal' }}"
@@ -523,10 +504,22 @@
       "id": "horizontal_alignment",
       "label": "t:labels.alignment",
       "options": [
-        { "value": "left", "label": "t:options.alignment.left" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" },
-        { "value": "space-between", "label": "t:options.alignment.space_between" }
+        {
+          "value": "left",
+          "label": "t:options.alignment.left"
+        },
+        {
+          "value": "center",
+          "label": "t:options.alignment.center"
+        },
+        {
+          "value": "right",
+          "label": "t:options.alignment.right"
+        },
+        {
+          "value": "space-between",
+          "label": "t:options.alignment.space_between"
+        }
       ],
       "default": "left",
       "visible_if": "{{ block.settings.direction == 'horizontal' }}"
@@ -543,10 +536,18 @@
       "id": "alignment_mobile",
       "label": "t:labels.alignment_mobile",
       "options": [
-        { "value": "left", "label": "t:options.alignment.left" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" },
-        { "value": "space-between", "label": "t:options.alignment.space_between" }
+        {
+          "value": "left",
+          "label": "t:options.alignment.left"
+        },
+        {
+          "value": "center",
+          "label": "t:options.alignment.center"
+        },
+        {
+          "value": "right",
+          "label": "t:options.alignment.right"
+        }
       ],
       "default": "left",
       "visible_if": "{{ block.settings.direction == 'horizontal' and block.settings.customize_mobile_alignment }}"
@@ -556,9 +557,18 @@
       "id": "alignment",
       "label": "t:labels.alignment",
       "options": [
-        { "value": "left", "label": "t:options.alignment.left" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" }
+        {
+          "value": "left",
+          "label": "t:options.alignment.left"
+        },
+        {
+          "value": "center",
+          "label": "t:options.alignment.center"
+        },
+        {
+          "value": "right",
+          "label": "t:options.alignment.right"
+        }
       ],
       "default": "left",
       "visible_if": "{{ block.settings.direction == 'vertical' }}"
@@ -596,9 +606,18 @@
       "id": "width",
       "label": "t:labels.width",
       "options": [
-        { "value": "fit", "label": "t:options.width.fit" },
-        { "value": "fill", "label": "t:options.width.fill" },
-        { "value": "custom", "label": "t:options.width.custom" }
+        {
+          "value": "fit",
+          "label": "t:options.width.fit"
+        },
+        {
+          "value": "fill",
+          "label": "t:options.width.fill"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.width.custom"
+        }
       ],
       "default": "fit"
     },
@@ -624,9 +643,18 @@
       "id": "width_mobile",
       "label": "t:labels.mobile_width",
       "options": [
-        { "value": "fit", "label": "t:options.width.fit" },
-        { "value": "fill", "label": "t:options.width.fill" },
-        { "value": "custom", "label": "t:options.width.custom" }
+        {
+          "value": "fit",
+          "label": "t:options.width.fit"
+        },
+        {
+          "value": "fill",
+          "label": "t:options.width.fill"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.width.custom"
+        }
       ],
       "default": "fit",
       "visible_if": "{{ block.settings.customize_mobile_size }}"
@@ -647,8 +675,14 @@
       "id": "height",
       "label": "t:labels.height",
       "options": [
-        { "value": "fit", "label": "t:options.width.fit" },
-        { "value": "fill", "label": "t:options.width.fill" }
+        {
+          "value": "fit",
+          "label": "t:options.width.fit"
+        },
+        {
+          "value": "fill",
+          "label": "t:options.width.fill"
+        }
       ],
       "default": "fill"
     },
@@ -661,8 +695,14 @@
       "id": "appearance_type",
       "label": "t:labels.type",
       "options": [
-        { "value": "inherit", "label": "t:options.appearance_type.inherit" },
-        { "value": "scheme", "label": "t:options.appearance_type.scheme" }
+        {
+          "value": "inherit",
+          "label": "t:options.appearance_type.inherit"
+        },
+        {
+          "value": "scheme",
+          "label": "t:options.appearance_type.scheme"
+        }
       ],
       "default": "inherit"
     },
@@ -694,11 +734,26 @@
       "id": "border_type",
       "label": "t:labels.type",
       "options": [
-        { "value": "none", "label": "t:options.border_type.none" },
-        { "value": "solid", "label": "t:options.border_type.solid" },
-        { "value": "dashed", "label": "t:options.border_type.dashed" },
-        { "value": "dotted", "label": "t:options.border_type.dotted" },
-        { "value": "double", "label": "t:options.border_type.double" }
+        {
+          "value": "none",
+          "label": "t:options.border_type.none"
+        },
+        {
+          "value": "solid",
+          "label": "t:options.border_type.solid"
+        },
+        {
+          "value": "dashed",
+          "label": "t:options.border_type.dashed"
+        },
+        {
+          "value": "dotted",
+          "label": "t:options.border_type.dotted"
+        },
+        {
+          "value": "double",
+          "label": "t:options.border_type.double"
+        }
       ],
       "default": "none"
     },
@@ -713,10 +768,22 @@
       "id": "corner_radius",
       "label": "t:labels.corner_radius",
       "options": [
-        { "value": "square", "label": "t:options.radius_preset.square" },
-        { "value": "slightly_rounded", "label": "t:options.radius_preset.slightly_rounded" },
-        { "value": "rounded", "label": "t:options.radius_preset.rounded" },
-        { "value": "pill", "label": "t:options.radius_preset.pill" }
+        {
+          "value": "square",
+          "label": "t:options.radius_preset.square"
+        },
+        {
+          "value": "slightly_rounded",
+          "label": "t:options.radius_preset.slightly_rounded"
+        },
+        {
+          "value": "rounded",
+          "label": "t:options.radius_preset.rounded"
+        },
+        {
+          "value": "pill",
+          "label": "t:options.radius_preset.pill"
+        }
       ],
       "default": "square"
     },
@@ -725,41 +792,24 @@
       "id": "shadow",
       "label": "t:labels.shadow",
       "options": [
-        { "value": "none", "label": "t:options.overlay_shadow.none" },
-        { "value": "small", "label": "t:options.overlay_shadow.small" },
-        { "value": "medium", "label": "t:options.overlay_shadow.medium" },
-        { "value": "large", "label": "t:options.overlay_shadow.large" }
+        {
+          "value": "none",
+          "label": "t:options.overlay_shadow.none"
+        },
+        {
+          "value": "small",
+          "label": "t:options.overlay_shadow.small"
+        },
+        {
+          "value": "medium",
+          "label": "t:options.overlay_shadow.medium"
+        },
+        {
+          "value": "large",
+          "label": "t:options.overlay_shadow.large"
+        }
       ],
       "default": "none"
-    },
-    {
-      "type": "header",
-      "content": "t:general.overlay"
-    },
-    {
-      "type": "color",
-      "id": "overlay_color",
-      "label": "t:labels.overlay_color"
-    },
-    {
-      "type": "range",
-      "id": "overlay_opacity",
-      "label": "t:labels.overlay_opacity",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "%",
-      "default": 30
-    },
-    {
-      "type": "range",
-      "id": "backdrop_blur",
-      "label": "t:labels.backdrop_blur",
-      "min": 0,
-      "max": 40,
-      "step": 1,
-      "unit": "px",
-      "default": 0
     },
     {
       "type": "header",
@@ -858,8 +908,8 @@
   ],
   "presets": [
     {
-      "name": "t:general.group",
-      "category": "t:general.layout",
+      "name": "t:general.slide",
+      "category": "t:general.carousel",
       "settings": {
         "direction": "vertical",
         "position": "top",
@@ -878,9 +928,53 @@
         "border_type": "none",
         "corner_radius": "square",
         "shadow": "none",
-        "backdrop_blur": 0,
         "customize_mobile_padding": false
-      }
+      },
+      "blocks": [
+        {
+          "type": "image",
+          "settings": {
+            "image_ratio_desktop": "square",
+            "image_ratio_mobile": "square",
+            "customize_mobile_size": true,
+            "width_desktop": "fill",
+            "width_mobile": "fill",
+            "limit_width_desktop": false,
+            "limit_width_mobile": false,
+            "padding_bottom": 10
+          }
+        },
+        {
+          "type": "heading",
+          "settings": {
+            "text": "<p>Heading</p>",
+            "heading_size": "md",
+            "html_tag": "h3",
+            "width": "fill",
+            "customize_mobile_size": false,
+            "width_mobile": "fill"
+          }
+        },
+        {
+          "type": "text",
+          "settings": {
+            "text": "<p>Use this text to describe your product, collection, or feature. Share a few details to inform or inspire your customers.</p>",
+            "text_size": "sm",
+            "width": "fill",
+            "customize_mobile_size": false,
+            "width_mobile": "fill"
+          }
+        },
+        {
+          "type": "button",
+          "settings": {
+            "button_label": "Button label",
+            "button_style": "tertiary",
+            "width": "fit",
+            "width_mobile": "fit"
+          }
+        }
+      ]
     }
   ]
 }
