@@ -22,13 +22,13 @@
   --collections-background-heading-size-mobile: var(--font-heading-{{ section.settings.heading_size_mobile }});
   --collections-background-heading-line-height-mobile: var(--font-heading-{{ section.settings.heading_size_mobile }}-line-height);
   --collections-background-heading-spacing-mobile: var(--font-heading-{{ section.settings.heading_size_mobile }}-letter-spacing);
-  --section-padding-top: {{ section.settings.padding_top }}px;
-  --section-padding-bottom: {{ section.settings.padding_bottom }}px;
-  {% if section.settings.customize_mobile_padding %}--section-padding-top-mobile: {{ section.settings.padding_top_mobile }}px;--section-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;{% endif %}
+  --collections-background-padding-top: {{ section.settings.padding_top }}px;
+  --collections-background-padding-bottom: {{ section.settings.padding_bottom }}px;
+  {% if section.settings.customize_mobile_padding %}--collections-background-padding-top-mobile: {{ section.settings.padding_top_mobile }}px;--collections-background-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;{% endif %}
 {% endcapture %}
 
-<div class="section-spacing collections-with-background color-scheme section-color-scope {{ collections_background_scheme }}" style="{{ collections_background_style | strip }}" data-collections-background data-title-layout="{{ section.settings.title_layout }}" data-desktop-position="{{ section.settings.desktop_position }}" data-mobile-layout="{{ section.settings.mobile_layout }}" data-mobile-position="{{ section.settings.mobile_position }}" data-outline-text="{{ section.settings.outline_text }}">
-  <div class="collections-with-background__frame collections-with-background__frame--{{ section.settings.width }} collections-with-background__frame--{{ section.settings.height }} collections-with-background__frame--mobile-{{ section.settings.mobile_width }} collections-with-background__frame--mobile-height-{{ section.settings.mobile_height }}">
+<div class="section-spacing collections-with-background color-scheme section-color-scope {{ collections_background_scheme }}" style="{{ collections_background_style | strip }}" data-collections-background data-title-layout="{{ section.settings.title_layout }}" data-desktop-position="{{ section.settings.desktop_position }}" data-mobile-layout="{{ section.settings.mobile_layout }}" data-mobile-position="{{ section.settings.mobile_position }}" data-sticky-title="{{ section.settings.sticky_title }}" data-outline-text="{{ section.settings.outline_text }}">
+  <div class="collections-with-background__frame collections-with-background__frame--{{ section.settings.section_width }} collections-with-background__frame--{{ section.settings.height }} collections-with-background__frame--mobile-{{ section.settings.mobile_width }} collections-with-background__frame--mobile-height-{{ section.settings.mobile_height }}">
     <div class="collections-with-background__panels" data-collections-background-panels>{% content_for 'blocks' %}</div>
     <div class="collections-with-background__titles color-scheme section-color-scope {{ collections_background_collection_scheme }}" role="tablist" aria-label="Collections" data-collections-background-tabs></div>
   </div>
@@ -37,9 +37,11 @@
 <script type="module" src="{{ 'collections-with-background.js' | asset_url }}"></script>
 
 {% stylesheet %}
-  .collections-with-background__frame { position: relative; min-height: 32rem; overflow: hidden; background: var(--background-color); }
-  .collections-with-background__frame--page { max-width: var(--page-width); margin-inline: auto; }
-  .collections-with-background__frame--full { margin-inline: var(--page-margin-current); }
+  .collections-with-background { --section-padding-top: var(--collections-background-padding-top); --section-padding-bottom: var(--collections-background-padding-bottom); }
+  .collections-with-background__frame { --collections-background-page-margin: var(--page-margin-desktop); position: relative; width: calc(100% - (var(--collections-background-page-margin) * 2)); min-height: 32rem; margin-inline: auto; overflow: hidden; background: var(--background-color); }
+  .collections-with-background__frame--page_width { max-width: var(--page-width); }
+  .collections-with-background__frame--full_width { max-width: none; }
+  .collections-with-background__frame--full_width_no_padding { width: 100%; max-width: none; }
   .collections-with-background__frame--extra_small { min-height: 28rem; }
   .collections-with-background__frame--small { min-height: 36rem; }
   .collections-with-background__frame--medium { min-height: 44rem; }
@@ -65,20 +67,34 @@
   [data-title-layout='horizontal'] .collections-with-background__titles { flex-flow: row wrap; align-items: center; }
   .collection-background-item__trigger { position: relative; z-index: 1; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; font: var(--font-heading-style) var(--font-heading-weight) var(--collections-background-heading-size) / var(--collections-background-heading-line-height) var(--font-heading-family); letter-spacing: var(--collections-background-heading-spacing); text-transform: var(--font-heading-xl-text-transform); opacity: var(--collections-background-text-opacity, .6); transition: opacity var(--motion-duration-standard) var(--motion-ease-standard); }
   .collection-background-item__trigger[aria-selected='true'], .collection-background-item__trigger:hover, .collection-background-item__trigger:focus-visible { opacity: 1; }
-  .collection-background-item__count { margin-inline-start: .2em; font-size: .55em; vertical-align: super; }
+  .collection-background-item__count { display: inline-block; margin-inline-start: .35em; color: var(--body-color); font-size: .55em; vertical-align: super; -webkit-text-stroke: 0; }
   .collection-background-item__mobile-title { display: none; }
-  [data-outline-text='true'] .collection-background-item__trigger { color: transparent; -webkit-text-stroke: 1px currentColor; }
+  [data-outline-text='true'] .collection-background-item__trigger:not([aria-selected='true']) { color: transparent; -webkit-text-stroke: 1px var(--body-color); }
   .collection-background-item__trigger:focus-visible { outline: 2px solid currentColor; outline-offset: .25rem; }
+  .is-sticky-title .collections-with-background__titles { position: fixed; z-index: var(--z-sticky, 20); }
+  @media (min-width: 768px) and (max-width: 1149.98px) { .collections-with-background { --section-padding-top: calc(var(--collections-background-padding-top) * .75); --section-padding-bottom: calc(var(--collections-background-padding-bottom) * .75); } .collections-with-background__frame { --collections-background-page-margin: var(--page-margin-tablet); } }
   @media (max-width: 767.98px) {
-    .collections-with-background__frame { min-height: 0; overflow: visible; }
+    .collections-with-background { --section-padding-top: var(--collections-background-padding-top-mobile, calc(var(--collections-background-padding-top) * .5)); --section-padding-bottom: var(--collections-background-padding-bottom-mobile, calc(var(--collections-background-padding-bottom) * .5)); }
+    .collections-with-background__frame { --collections-background-page-margin: var(--page-margin-mobile); min-height: 0; overflow: visible; }
     .collections-with-background__frame--mobile-page { margin-inline: var(--page-margin-current); }
     .collections-with-background__frame--mobile-full { margin-inline: 0; }
     .collections-with-background__panels { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--collections-background-gap-mobile); }
-    .collection-background-item { position: relative; inset: auto; aspect-ratio: 1 / 1.25; overflow: hidden; }
+    [data-mobile-layout='horizontal'] .collections-with-background__panels { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 83.333%); grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
+    [data-mobile-layout='horizontal'] .collections-with-background__panels::-webkit-scrollbar { display: none; }
+    .collection-background-item { position: relative; inset: auto; aspect-ratio: 1 / 1.25; overflow: hidden; scroll-snap-align: start; }
     .collection-background-item__panel { position: absolute; inset: 0; }
     .collection-background-item__panel[hidden] { display: block; }
     .collections-with-background__titles { display: none !important; }
-    .collection-background-item__mobile-title { position: absolute; z-index: 1; inset: auto 1rem 1rem; display: block; margin: 0; color: var(--body-color); font: var(--font-heading-style) var(--font-heading-weight) var(--collections-background-heading-size-mobile) / var(--collections-background-heading-line-height-mobile) var(--font-heading-family); letter-spacing: var(--collections-background-heading-spacing-mobile); text-transform: var(--font-heading-xl-text-transform); }
+    .collection-background-item__mobile-title { position: absolute; z-index: 1; display: block; margin: 0; color: var(--body-color); font: var(--font-heading-style) var(--font-heading-weight) var(--collections-background-heading-size-mobile) / var(--collections-background-heading-line-height-mobile) var(--font-heading-family); letter-spacing: var(--collections-background-heading-spacing-mobile); text-transform: var(--font-heading-xl-text-transform); }
+    [data-mobile-position='top_left'] .collection-background-item__mobile-title { inset: 1rem auto auto 1rem; text-align: left; }
+    [data-mobile-position='top_center'] .collection-background-item__mobile-title { inset: 1rem 1rem auto; text-align: center; }
+    [data-mobile-position='top_right'] .collection-background-item__mobile-title { inset: 1rem 1rem auto auto; text-align: right; }
+    [data-mobile-position='center_left'] .collection-background-item__mobile-title { inset: 50% auto auto 1rem; transform: translateY(-50%); text-align: left; }
+    [data-mobile-position='center_center'] .collection-background-item__mobile-title { inset: 50% 1rem auto; transform: translateY(-50%); text-align: center; }
+    [data-mobile-position='center_right'] .collection-background-item__mobile-title { inset: 50% 1rem auto auto; transform: translateY(-50%); text-align: right; }
+    [data-mobile-position='bottom_left'] .collection-background-item__mobile-title { inset: auto auto 1rem 1rem; text-align: left; }
+    [data-mobile-position='bottom_center'] .collection-background-item__mobile-title { inset: auto 1rem 1rem; text-align: center; }
+    [data-mobile-position='bottom_right'] .collection-background-item__mobile-title { inset: auto 1rem 1rem auto; text-align: right; }
   }
 {% endstylesheet %}
 
