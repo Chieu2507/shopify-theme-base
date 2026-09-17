@@ -62,10 +62,24 @@
 
 {% capture collection_card_content %}{% content_for 'blocks' %}{% endcapture %}
 
+{% capture collection_card_padding_style %}
+  {% if collection_card_padding_top != 16 %}--card-padding-top: {{ collection_card_padding_top }}px;{% endif %}
+  {% if collection_card_padding_bottom != 0 %}--card-padding-bottom: {{ collection_card_padding_bottom }}px;{% endif %}
+  {% if collection_card_padding_left != 0 %}--card-padding-left: {{ collection_card_padding_left }}px;{% endif %}
+  {% if collection_card_padding_right != 0 %}--card-padding-right: {{ collection_card_padding_right }}px;{% endif %}
+  {% if block.settings.customize_mobile_padding %}
+    {% if collection_card_padding_top_mobile != collection_card_padding_top %}--card-padding-top-mobile: {{ collection_card_padding_top_mobile }}px;{% endif %}
+    {% if collection_card_padding_bottom_mobile != collection_card_padding_bottom %}--card-padding-bottom-mobile: {{ collection_card_padding_bottom_mobile }}px;{% endif %}
+    {% if collection_card_padding_left_mobile != collection_card_padding_left %}--card-padding-left-mobile: {{ collection_card_padding_left_mobile }}px;{% endif %}
+    {% if collection_card_padding_right_mobile != collection_card_padding_right %}--card-padding-right-mobile: {{ collection_card_padding_right_mobile }}px;{% endif %}
+  {% endif %}
+{% endcapture %}
+{% assign collection_card_padding_style = collection_card_padding_style | strip %}
+
 <article
   class="collection-card-kernel collection-card-kernel--{{ collection_card_placement }} collection-card-kernel--{{ collection_card_ratio }}{% if collection_card_is_placeholder %} collection-card-kernel--placeholder{% endif %}{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ collection_card_scheme }}{% endif %}"
   data-collection-card
-  style="--card-border:{{ block.settings.border_thickness | default: 0 }}px;--card-align:{{ block.settings.alignment | default: 'left' }};--card-padding-top:{{ block.settings.padding_top | default: 16 }}px;--card-padding-bottom:{{ block.settings.padding_bottom | default: 0 }}px;"
+  style="--card-border:{{ block.settings.border_thickness | default: 0 }}px;--card-align:{{ block.settings.alignment | default: 'left' }};{% if collection_card_padding_style != blank %}{{ collection_card_padding_style }}{% endif %}"
   {{ block.shopify_attributes }}
 >
   <a
