@@ -62,9 +62,11 @@ const initialize = (section) => {
       activate(tabs[(active + 1) % tabs.length].dataset.collectionsWithTabsId);
     }, duration);
   };
-  section.addEventListener('click', (event) => {
-    const tab = event.target.closest('[data-collections-with-tabs-tab]');
-    if (tab && section.contains(tab)) activate(tab.dataset.collectionsWithTabsId);
+  tabs.forEach((tab) => {
+    tab.addEventListener('pointerenter', () => activate(tab.dataset.collectionsWithTabsId), { signal: controller.signal });
+  });
+  section.addEventListener('collections-with-tabs:activate', (event) => {
+    activate(event.detail?.id);
   }, { signal: controller.signal });
   section.addEventListener('keydown', (event) => {
     const tab = event.target.closest('[data-collections-with-tabs-tab]');
@@ -120,6 +122,6 @@ document.addEventListener('shopify:block:select', (event) => {
   const section = item?.closest('[data-collections-with-tabs]');
   const tab = item?.querySelector('[data-collections-with-tabs-tab]');
   if (!section || !tab) return;
-  tab?.click();
+  section.dispatchEvent(new CustomEvent('collections-with-tabs:activate', { detail: { id: tab.dataset.collectionsWithTabsId } }));
 });
 document.readyState === 'loading' ? document.addEventListener('DOMContentLoaded', () => initializeRoot(), { once: true }) : initializeRoot();
