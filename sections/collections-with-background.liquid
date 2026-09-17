@@ -4,6 +4,12 @@
     assign collections_background_scheme = section.settings.color_scheme.id
   endif
   assign collections_background_scheme = collections_background_scheme | handleize
+  assign collections_background_first_block = section.blocks.first
+  assign collections_background_first_collection = collections_background_first_block.settings.collection
+  assign collections_background_first_image = collections_background_first_block.settings.image | default: collections_background_first_collection.featured_image | default: collections_background_first_collection.image
+  assign collections_background_first_mobile_image = collections_background_first_block.settings.mobile_image | default: collections_background_first_image
+  assign collections_background_aspect_ratio = collections_background_first_image.aspect_ratio | default: 1.5
+  assign collections_background_mobile_aspect_ratio = collections_background_first_mobile_image.aspect_ratio | default: collections_background_aspect_ratio
 %}
 
 {% capture collections_background_style %}
@@ -14,9 +20,13 @@
   --collections-background-heading-size: var(--font-heading-{{ section.settings.heading_size }});
   --collections-background-heading-line-height: var(--font-heading-{{ section.settings.heading_size }}-line-height);
   --collections-background-heading-spacing: var(--font-heading-{{ section.settings.heading_size }}-letter-spacing);
+  --collections-background-heading-transform: var(--font-heading-{{ section.settings.heading_size }}-text-transform);
   --collections-background-heading-size-mobile: var(--font-heading-{{ section.settings.heading_size_mobile }});
   --collections-background-heading-line-height-mobile: var(--font-heading-{{ section.settings.heading_size_mobile }}-line-height);
   --collections-background-heading-spacing-mobile: var(--font-heading-{{ section.settings.heading_size_mobile }}-letter-spacing);
+  --collections-background-heading-transform-mobile: var(--font-heading-{{ section.settings.heading_size_mobile }}-text-transform);
+  --collections-background-aspect-ratio: {{ collections_background_aspect_ratio }};
+  --collections-background-mobile-aspect-ratio: {{ collections_background_mobile_aspect_ratio }};
   --collections-background-padding-top: {{ section.settings.padding_top }}px;
   --collections-background-padding-bottom: {{ section.settings.padding_bottom }}px;
   {% if section.settings.customize_mobile_padding %}--collections-background-padding-top-mobile: {{ section.settings.padding_top_mobile }}px;--collections-background-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;{% endif %}
@@ -37,6 +47,7 @@
   .collections-with-background__frame--page_width { max-width: var(--page-width); }
   .collections-with-background__frame--full_width { max-width: none; }
   .collections-with-background__frame--full_width_no_padding { width: 100%; max-width: none; }
+  .collections-with-background__frame--adapt { min-height: 0; aspect-ratio: var(--collections-background-aspect-ratio); }
   .collections-with-background__frame--extra_small { min-height: 28rem; }
   .collections-with-background__frame--small { min-height: 36rem; }
   .collections-with-background__frame--medium { min-height: 44rem; }
@@ -61,7 +72,7 @@
   [data-desktop-position='bottom_right'] .collections-with-background__titles { inset: auto 2rem 2rem auto; justify-content: flex-end; text-align: right; }
   [data-title-layout='vertical'] .collections-with-background__titles { flex-direction: column; align-items: inherit; }
   [data-title-layout='horizontal'] .collections-with-background__titles { flex-flow: row wrap; align-items: center; }
-  .collection-background-item__trigger { position: relative; z-index: 1; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; font: var(--font-heading-style) var(--font-heading-weight) var(--collections-background-heading-size) / var(--collections-background-heading-line-height) var(--font-heading-family); letter-spacing: var(--collections-background-heading-spacing); text-transform: var(--font-heading-xl-text-transform); opacity: var(--collections-background-text-opacity, .6); transition: opacity var(--motion-duration-standard) var(--motion-ease-standard); }
+  .collection-background-item__trigger { position: relative; z-index: 1; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; font: var(--font-heading-style) var(--font-heading-weight) var(--collections-background-heading-size) / var(--collections-background-heading-line-height) var(--font-heading-family); letter-spacing: var(--collections-background-heading-spacing); text-transform: var(--collections-background-heading-transform); opacity: var(--collections-background-text-opacity, .6); transition: opacity var(--motion-duration-standard) var(--motion-ease-standard); }
   .collection-background-item__trigger[aria-selected='true'], .collection-background-item__trigger:hover, .collection-background-item__trigger:focus-visible { opacity: 1; }
   .collection-background-item__count { display: inline-block; margin-inline-start: .35em; color: var(--body-color); font-size: .55em; vertical-align: super; -webkit-text-stroke: 0; }
   .collection-background-item__mobile-title { display: none; }
@@ -73,16 +84,19 @@
   @media (max-width: 767.98px) {
     .collections-with-background { --section-padding-top: var(--collections-background-padding-top-mobile, calc(var(--collections-background-padding-top) * .5)); --section-padding-bottom: var(--collections-background-padding-bottom-mobile, calc(var(--collections-background-padding-bottom) * .5)); }
     .collections-with-background__frame { --collections-background-page-margin: var(--page-margin-mobile); min-height: 0; overflow: visible; }
-    .collections-with-background__frame--mobile-page { margin-inline: var(--page-margin-current); }
-    .collections-with-background__frame--mobile-full { margin-inline: 0; }
+    .collections-with-background__frame--mobile-page { width: calc(100% - (var(--collections-background-page-margin) * 2)); margin-inline: auto; }
+    .collections-with-background__frame--mobile-full { width: 100%; margin-inline: 0; }
     .collections-with-background__panels { position: relative; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: var(--collections-background-gap-mobile); }
     [data-mobile-layout='horizontal'] .collections-with-background__panels { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 83.333%); grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
     [data-mobile-layout='horizontal'] .collections-with-background__panels::-webkit-scrollbar { display: none; }
-    .collection-background-item { position: relative; inset: auto; aspect-ratio: 1 / 1.25; overflow: hidden; scroll-snap-align: start; }
+    .collection-background-item { position: relative; inset: auto; aspect-ratio: var(--collections-background-mobile-aspect-ratio); overflow: hidden; scroll-snap-align: start; }
+    .collections-with-background__frame--mobile-height-extra_small .collection-background-item { aspect-ratio: 1 / 1; }
+    .collections-with-background__frame--mobile-height-small .collection-background-item { aspect-ratio: 4 / 5; }
+    .collections-with-background__frame--mobile-height-medium .collection-background-item { aspect-ratio: 3 / 4; }
     .collection-background-item__panel { position: absolute; inset: 0; }
     .collection-background-item__panel[hidden] { display: block; }
     .collections-with-background__titles { display: none !important; }
-    .collection-background-item__mobile-title { position: absolute; z-index: 1; display: block; margin: 0; color: var(--body-color); font: var(--font-heading-style) var(--font-heading-weight) var(--collections-background-heading-size-mobile) / var(--collections-background-heading-line-height-mobile) var(--font-heading-family); letter-spacing: var(--collections-background-heading-spacing-mobile); text-transform: var(--font-heading-xl-text-transform); }
+    .collection-background-item__mobile-title { position: absolute; z-index: 1; display: block; margin: 0; color: var(--body-color); font: var(--font-heading-style) var(--font-heading-weight) var(--collections-background-heading-size-mobile) / var(--collections-background-heading-line-height-mobile) var(--font-heading-family); letter-spacing: var(--collections-background-heading-spacing-mobile); text-transform: var(--collections-background-heading-transform-mobile); }
     [data-mobile-position='top_left'] .collection-background-item__mobile-title { inset: 1rem auto auto 1rem; text-align: left; }
     [data-mobile-position='top_center'] .collection-background-item__mobile-title { inset: 1rem 1rem auto; text-align: center; }
     [data-mobile-position='top_right'] .collection-background-item__mobile-title { inset: 1rem 1rem auto auto; text-align: right; }
