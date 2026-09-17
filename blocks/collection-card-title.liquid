@@ -68,8 +68,12 @@
 
   assign collection_card_title_padding_top = block.settings.padding_top | default: 0 | plus: 0
   assign collection_card_title_padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
+  assign collection_card_title_padding_left = block.settings.padding_left | default: 0 | plus: 0
+  assign collection_card_title_padding_right = block.settings.padding_right | default: 0 | plus: 0
   assign collection_card_title_padding_top_mobile = block.settings.padding_top_mobile | default: collection_card_title_padding_top | plus: 0
   assign collection_card_title_padding_bottom_mobile = block.settings.padding_bottom_mobile | default: collection_card_title_padding_bottom | plus: 0
+  assign collection_card_title_padding_left_mobile = block.settings.padding_left_mobile | default: collection_card_title_padding_left | plus: 0
+  assign collection_card_title_padding_right_mobile = block.settings.padding_right_mobile | default: collection_card_title_padding_right | plus: 0
 
   if collection_card_title_padding_top < 0 or collection_card_title_padding_top > 100
     assign collection_card_title_padding_top = 0
@@ -77,20 +81,36 @@
   if collection_card_title_padding_bottom < 0 or collection_card_title_padding_bottom > 100
     assign collection_card_title_padding_bottom = 0
   endif
+  if collection_card_title_padding_left < 0 or collection_card_title_padding_left > 100
+    assign collection_card_title_padding_left = 0
+  endif
+  if collection_card_title_padding_right < 0 or collection_card_title_padding_right > 100
+    assign collection_card_title_padding_right = 0
+  endif
   if collection_card_title_padding_top_mobile < 0 or collection_card_title_padding_top_mobile > 100
     assign collection_card_title_padding_top_mobile = collection_card_title_padding_top
   endif
   if collection_card_title_padding_bottom_mobile < 0 or collection_card_title_padding_bottom_mobile > 100
     assign collection_card_title_padding_bottom_mobile = collection_card_title_padding_bottom
   endif
+  if collection_card_title_padding_left_mobile < 0 or collection_card_title_padding_left_mobile > 100
+    assign collection_card_title_padding_left_mobile = collection_card_title_padding_left
+  endif
+  if collection_card_title_padding_right_mobile < 0 or collection_card_title_padding_right_mobile > 100
+    assign collection_card_title_padding_right_mobile = collection_card_title_padding_right
+  endif
 %}
 
 {% capture collection_card_title_style %}
   {% if collection_card_title_padding_top != 0 %}--collection-card-title-padding-top: {{ collection_card_title_padding_top }}px;{% endif %}
+  {% if collection_card_title_padding_right != 0 %}--collection-card-title-padding-right: {{ collection_card_title_padding_right }}px;{% endif %}
   {% if collection_card_title_padding_bottom != 0 %}--collection-card-title-padding-bottom: {{ collection_card_title_padding_bottom }}px;{% endif %}
+  {% if collection_card_title_padding_left != 0 %}--collection-card-title-padding-left: {{ collection_card_title_padding_left }}px;{% endif %}
   {% if block.settings.customize_mobile_padding %}
     {% if collection_card_title_padding_top_mobile != collection_card_title_padding_top %}--collection-card-title-padding-top-mobile: {{ collection_card_title_padding_top_mobile }}px;{% endif %}
+    {% if collection_card_title_padding_right_mobile != collection_card_title_padding_right %}--collection-card-title-padding-right-mobile: {{ collection_card_title_padding_right_mobile }}px;{% endif %}
     {% if collection_card_title_padding_bottom_mobile != collection_card_title_padding_bottom %}--collection-card-title-padding-bottom-mobile: {{ collection_card_title_padding_bottom_mobile }}px;{% endif %}
+    {% if collection_card_title_padding_left_mobile != collection_card_title_padding_left %}--collection-card-title-padding-left-mobile: {{ collection_card_title_padding_left_mobile }}px;{% endif %}
   {% endif %}
 {% endcapture %}
 {% assign collection_card_title_style = collection_card_title_style | strip %}
@@ -121,7 +141,9 @@
     align-items: var(--collection-card-title-align, inherit);
     gap: 0.2rem;
     padding-top: var(--collection-card-title-padding-top, 0px);
+    padding-right: var(--collection-card-title-padding-right, 0px);
     padding-bottom: var(--collection-card-title-padding-bottom, 0px);
+    padding-left: var(--collection-card-title-padding-left, 0px);
     text-align: inherit;
   }
 
@@ -152,7 +174,9 @@
   @media (max-width: 767.98px) {
     .collection-card-title {
       padding-top: var(--collection-card-title-padding-top-mobile, var(--collection-card-title-padding-top, 0px));
+      padding-right: var(--collection-card-title-padding-right-mobile, var(--collection-card-title-padding-right, 0px));
       padding-bottom: var(--collection-card-title-padding-bottom-mobile, var(--collection-card-title-padding-bottom, 0px));
+      padding-left: var(--collection-card-title-padding-left-mobile, var(--collection-card-title-padding-left, 0px));
     }
   }
 {% endstylesheet %}
@@ -229,12 +253,12 @@
     },
     {
       "type": "header",
-      "content": "Padding"
+      "content": "t:general.padding"
     },
     {
       "type": "range",
       "id": "padding_top",
-      "label": "Top",
+      "label": "t:labels.top_padding",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -244,7 +268,27 @@
     {
       "type": "range",
       "id": "padding_bottom",
-      "label": "Bottom",
+      "label": "t:labels.bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_left",
+      "label": "t:labels.left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_right",
+      "label": "t:labels.right_padding",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -254,13 +298,13 @@
     {
       "type": "checkbox",
       "id": "customize_mobile_padding",
-      "label": "Custom for mobile",
+      "label": "t:labels.customize_mobile_padding",
       "default": false
     },
     {
       "type": "range",
       "id": "padding_top_mobile",
-      "label": "Top",
+      "label": "t:labels.mobile_top_padding",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -271,7 +315,29 @@
     {
       "type": "range",
       "id": "padding_bottom_mobile",
-      "label": "Bottom",
+      "label": "t:labels.mobile_bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_left_mobile",
+      "label": "t:labels.mobile_left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_right_mobile",
+      "label": "t:labels.mobile_right_padding",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -292,6 +358,12 @@
         "product_count_font_size": "sm",
         "padding_top": 0,
         "padding_bottom": 0,
+        "padding_left": 0,
+        "padding_right": 0,
+        "padding_top_mobile": 0,
+        "padding_bottom_mobile": 0,
+        "padding_left_mobile": 0,
+        "padding_right_mobile": 0,
         "customize_mobile_padding": false
       }
     }
