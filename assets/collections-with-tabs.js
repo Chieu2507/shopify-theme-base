@@ -40,8 +40,13 @@ const initialize = (section) => {
     const activePanel = panels.find((panel) => panel.dataset.collectionsWithTabsId === activeId) || panels[0];
     window.cancelAnimationFrame(activationFrame);
     panels.forEach((panel) => {
-      panel.hidden = panel !== activePanel;
-      panel.dataset.active = 'false';
+      const active = panel === activePanel;
+      // Keep panels in the layout while they transition, but remove inactive
+      // content from both the accessibility tree and pointer interaction.
+      panel.hidden = false;
+      panel.inert = !active;
+      panel.setAttribute('aria-hidden', String(!active));
+      panel.dataset.active = String(active);
     });
     activationFrame = window.requestAnimationFrame(() => { activePanel.dataset.active = 'true'; });
     if (focus) activeTab.focus();
@@ -64,6 +69,10 @@ const initialize = (section) => {
   };
   tabs.forEach((tab) => {
     tab.addEventListener('pointerenter', () => activate(tab.dataset.collectionsWithTabsId), { signal: controller.signal });
+    // Tabs switch on hover. Prevent the pointer interaction from moving focus
+    // to the button, which can make the Theme Editor scroll the viewport.
+    tab.addEventListener('pointerdown', (event) => event.preventDefault(), { signal: controller.signal });
+    tab.addEventListener('click', (event) => event.preventDefault(), { signal: controller.signal });
   });
   section.addEventListener('collections-with-tabs:activate', (event) => {
     activate(event.detail?.id);

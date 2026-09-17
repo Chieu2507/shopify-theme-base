@@ -177,11 +177,16 @@
 
   const hasOpenHeaderSubmenu = (header) => Boolean(header.querySelector('details[open], details:hover, details:focus-within, details.is-submenu-closing'));
 
-  const hasOpenMegaMenu = (header) => Boolean(
-    header.querySelector(
-      '.header-menu__details--mega[open], .header-menu__details--mega:hover, .header-menu__details--mega:focus-within, .header-menu__details--mega.is-submenu-closing',
-    ),
-  );
+  const hasOpenMegaMenu = (header) => Array.from(
+    header.querySelectorAll('.header-menu__details--mega'),
+  ).some((details) => {
+    if (details.open || details.classList.contains('is-submenu-closing')) return true;
+
+    // Hover/focus only opens a mega menu when this menu is configured to use
+    // the hover trigger. In click mode, these states must not activate the
+    // backdrop before the visitor opens the details element.
+    return details.dataset.headerSubmenuTrigger === 'hover' && details.matches(':hover, :focus-within');
+  });
 
   const synchronizeSubmenuOffsets = (header) => {
     const headerTop = header.querySelector('.header-top');
