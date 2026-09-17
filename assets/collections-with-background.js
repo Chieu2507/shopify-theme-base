@@ -1,5 +1,11 @@
+import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
+
 const instances = new WeakMap();
 const mobileQuery = window.matchMedia('(max-width: 767.98px)');
+
+const mobileGap = (root) => Number.parseFloat(
+  getComputedStyle(root).getPropertyValue('--collections-background-gap-mobile'),
+) || 8;
 
 const activate = (state, id, focus = false) => {
   const entry = state.entries.find((candidate) => candidate.id === id) || state.entries[0];
@@ -17,6 +23,7 @@ const activate = (state, id, focus = false) => {
 const initialize = (root) => {
   if (!root || instances.has(root)) return;
   const tablist = root.querySelector('[data-collections-background-tabs]');
+  const carousel = root.querySelector('[data-collections-background-swiper]');
   if (!tablist) return;
   const entries = [...root.querySelectorAll('[data-collections-background-item]')]
     .map((item) => ({
@@ -30,9 +37,20 @@ const initialize = (root) => {
 
   const controller = new AbortController();
   entries.forEach((entry) => tablist.append(entry.trigger));
-  const state = { entries, controller };
+  const state = { carousel, controller, entries, mobileSwiper: null };
   instances.set(root, state);
   const updatePresentation = () => {
+    const useMobileSwiper = mobileQuery.matches && root.dataset.mobileLayout === 'horizontal';
+    if (useMobileSwiper && carousel && !state.mobileSwiper) {
+      state.mobileSwiper = createSwiperCarousel(carousel, {
+        slidesPerView: 1.2,
+        spaceBetween: mobileGap(root),
+      });
+    }
+    if (!useMobileSwiper && state.mobileSwiper) {
+      destroySwiperCarousel(state.mobileSwiper);
+      state.mobileSwiper = null;
+    }
     if (mobileQuery.matches) {
       tablist.hidden = true;
       tablist.setAttribute('aria-hidden', 'true');
@@ -107,6 +125,7 @@ const destroyRoot = (root) => {
     const state = instances.get(node);
     if (!state) return;
     state.controller.abort();
+    if (state.mobileSwiper) destroySwiperCarousel(state.mobileSwiper);
     node.classList.remove('is-sticky-title');
     state.entries.forEach((entry) => {
       entry.panel.hidden = false;
@@ -124,7 +143,11 @@ document.addEventListener('shopify:block:select', (event) => {
   initialize(root);
   const state = instances.get(root);
   const id = event.target.closest?.('[data-collections-background-item]')?.dataset.itemId;
-  if (state && id) activate(state, id);
+  if (state && id) {
+    activate(state, id);
+    const index = state.entries.findIndex((entry) => entry.id === id);
+    if (state.mobileSwiper && index >= 0) state.mobileSwiper.slideTo(index);
+  }
 });
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => initializeRoot(), { once: true });

@@ -39,11 +39,14 @@
 
 <div class="section-spacing collections-with-background color-scheme section-color-scope {{ collections_background_scheme }}" style="{{ collections_background_style | strip }}" data-collections-background data-title-layout="{{ section.settings.title_layout }}" data-desktop-position="{{ section.settings.desktop_position }}" data-mobile-layout="{{ section.settings.mobile_layout }}" data-mobile-position="{{ section.settings.mobile_position }}" data-sticky-title="{{ section.settings.sticky_title }}" data-outline-text="{{ section.settings.outline_text }}">
   <div class="collections-with-background__frame collections-with-background__frame--{{ section.settings.section_width }} collections-with-background__frame--{{ section.settings.height }} collections-with-background__frame--mobile-{{ section.settings.mobile_width }} collections-with-background__frame--mobile-height-{{ section.settings.mobile_height }}">
-    <div class="collections-with-background__panels" data-collections-background-panels>{% content_for 'blocks' %}</div>
+    <div class="swiper collections-with-background__mobile-swiper" data-collections-background-swiper>
+      <div class="swiper-wrapper collections-with-background__panels" data-collections-background-panels>{% content_for 'blocks' %}</div>
+    </div>
     <div class="collections-with-background__titles {{ collections_background_collection_scheme }}" role="tablist" aria-label="Collections" data-collections-background-tabs></div>
   </div>
 </div>
 
+{% render 'swiper-stylesheet' %}
 <script type="module" src="{{ 'collections-with-background.js' | asset_url }}"></script>
 
 {% stylesheet %}
@@ -59,7 +62,7 @@
   .collections-with-background__frame--large { min-height: 52rem; }
   .collections-with-background__frame--extra_large { min-height: 62rem; }
   .collections-with-background__frame--full_screen { min-height: 100svh; }
-  .collections-with-background__panels, .collection-background-item, .collection-background-item__panel { position: absolute; inset: 0; }
+  .collections-with-background__mobile-swiper, .collections-with-background__panels, .collection-background-item, .collection-background-item__panel { position: absolute; inset: 0; }
   .collection-background-item__panel[hidden] { display: none; }
   .collection-background-item__media { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
   .collection-background-item__media :is(.media__inner > img, .media__inner > video, .media__inner > svg, .media__inner > picture > img) { object-fit: cover; transform: scale(1); transition: transform 400ms var(--motion-ease-standard); }
@@ -91,8 +94,8 @@
     .collections-with-background__frame--mobile-page { width: calc(100% - (var(--collections-background-page-margin) * 2)); margin-inline: auto; }
     .collections-with-background__frame--mobile-full { width: 100%; margin-inline: 0; }
     .collections-with-background__panels { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); gap: var(--collections-background-gap-mobile); }
-    [data-mobile-layout='horizontal'] .collections-with-background__panels { display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 83.333%); grid-template-columns: none; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-    [data-mobile-layout='horizontal'] .collections-with-background__panels::-webkit-scrollbar { display: none; }
+    .collections-with-background__mobile-swiper { position: relative; inset: auto; width: 100%; }
+    [data-mobile-layout='horizontal'] .collections-with-background__panels { display: flex; gap: 0; }
     .collection-background-item { position: relative; inset: auto; aspect-ratio: var(--collections-background-mobile-aspect-ratio); overflow: hidden; scroll-snap-align: start; }
     .collections-with-background__frame--mobile-height-extra_small .collection-background-item { aspect-ratio: 1 / 1; }
     .collections-with-background__frame--mobile-height-small .collection-background-item { aspect-ratio: 4 / 5; }
