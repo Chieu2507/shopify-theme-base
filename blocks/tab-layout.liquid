@@ -420,21 +420,25 @@
   };
 
   const updateViewAll = (state, trigger) => {
-    const viewAll = state.scope.querySelector('[data-collection-tabs-view-all]') || (state.viewAll?.isConnected ? state.viewAll : null);
-    state.viewAll = viewAll || null;
-    if (!viewAll) return;
+    const viewAll = Array.from(state.scope.querySelectorAll('[data-collection-tabs-view-all]'));
+    state.viewAll = viewAll;
+    if (!viewAll.length) return;
 
     const url = trigger?.dataset.collectionUrl?.trim() || '';
     if (url) {
-      viewAll.setAttribute('href', url);
-      viewAll.removeAttribute('aria-disabled');
-      viewAll.removeAttribute('tabindex');
+      viewAll.forEach((button) => {
+        button.setAttribute('href', url);
+        button.removeAttribute('aria-disabled');
+        button.removeAttribute('tabindex');
+      });
       return;
     }
 
-    viewAll.removeAttribute('href');
-    viewAll.setAttribute('aria-disabled', 'true');
-    viewAll.setAttribute('tabindex', '-1');
+    viewAll.forEach((button) => {
+      button.removeAttribute('href');
+      button.setAttribute('aria-disabled', 'true');
+      button.setAttribute('tabindex', '-1');
+    });
   };
 
   const getExternalNavigation = (state) => state.scope.querySelector('[data-collection-tabs-navigation]');
@@ -539,7 +543,7 @@
       navigation,
       entries: [],
       activeEntry: null,
-      viewAll: scope.querySelector('[data-collection-tabs-view-all]') || null,
+      viewAll: Array.from(scope.querySelectorAll('[data-collection-tabs-view-all]')),
       controller,
       observer: null,
       panelAnimation: null,
