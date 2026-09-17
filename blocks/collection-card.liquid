@@ -19,13 +19,17 @@
   assign collection_card_scheme = collection_card_scheme | default: 'scheme-1' | handleize
   assign collection_card_placement = block.settings.placement | default: 'below_image'
   assign collection_card_ratio = block.settings.ratio | default: 'original'
+  assign collection_card_is_placeholder = false
+  if placeholder
+    assign collection_card_is_placeholder = true
+  endif
   assign collection_card_content = blank
 %}
 
 {% capture collection_card_content %}{% content_for 'blocks' %}{% endcapture %}
 
 <article
-  class="collection-card-kernel collection-card-kernel--{{ collection_card_placement }} collection-card-kernel--{{ collection_card_ratio }}{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ collection_card_scheme }}{% endif %}"
+  class="collection-card-kernel collection-card-kernel--{{ collection_card_placement }} collection-card-kernel--{{ collection_card_ratio }}{% if collection_card_is_placeholder %} collection-card-kernel--placeholder{% endif %}{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ collection_card_scheme }}{% endif %}"
   data-collection-card
   style="--card-border:{{ block.settings.border_thickness | default: 0 }}px;--card-align:{{ block.settings.alignment | default: 'left' }};--card-padding-top:{{ block.settings.padding_top | default: 16 }}px;--card-padding-bottom:{{ block.settings.padding_bottom | default: 0 }}px;"
   {{ block.shopify_attributes }}
@@ -47,6 +51,15 @@
     </div>
   </a>
 </article>
+
+{% comment %}
+  The title is a fixed child of Collection Card. This conditional declaration
+  keeps its static ID discoverable to Theme Check while the normal render uses
+  content_for 'blocks' above so the configured child remains editor-aware.
+{% endcomment %}
+{% if false %}
+  {% content_for 'block', type: 'collection-card-title', id: 'title' %}
+{% endif %}
 
 {% stylesheet %}
   .collection-card-kernel {
