@@ -4,10 +4,12 @@
   assign item_image = block.settings.custom_image | default: item_collection.featured_image | default: item_collection.image
   assign item_id = block.id
   assign item_title_tag = section.settings.title_tag | default: 'div'
+  assign item_title_size = section.settings.title_size | default: 'heading_2'
+  assign item_title_size = item_title_size | replace: 'heading_1', 'display' | replace: 'heading_2', 'xl' | replace: 'heading_3', 'lg' | replace: 'heading_4', 'md'
 %}
 <div class="collections-with-tabs-item" {{ block.shopify_attributes }}>
   <button id="CollectionsWithTabsTab-{{ item_id }}" class="collections-with-tabs__tab" type="button" role="tab" aria-controls="CollectionsWithTabsPanel-{{ item_id }}" aria-selected="false" tabindex="-1" data-collections-with-tabs-tab data-collections-with-tabs-id="{{ item_id }}">
-    <{{ item_title_tag }} class="collections-with-tabs__tab-title">{{ item_title | escape }}</{{ item_title_tag }}>
+    <{{ item_title_tag }} class="collections-with-tabs__tab-title heading-text heading-{{ item_title_size }}">{{ item_title | escape }}</{{ item_title_tag }}>
     {% if section.settings.show_product_count and item_collection != blank %}<small>{{ item_collection.products_count }}</small>{% endif %}
   </button>
   <div id="CollectionsWithTabsPanel-{{ item_id }}" class="collections-with-tabs__panel{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ block.settings.color_scheme | default: 'scheme-1' }}{% endif %}" role="tabpanel" aria-labelledby="CollectionsWithTabsTab-{{ item_id }}" hidden data-collections-with-tabs-panel data-collections-with-tabs-id="{{ item_id }}">
