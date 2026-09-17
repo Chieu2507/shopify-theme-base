@@ -1,0 +1,261 @@
+{% doc %}
+  Renders a collection card title with an optional product count.
+
+  The block reads the collection supplied by the parent Collection Card through
+  `closest.collection`. It owns its heading semantics, product-count styling,
+  and vertical spacing so each part remains independently editable.
+
+  @example
+  {% content_for 'block', type: 'collection-card-title', id: 'title' %}
+{% enddoc %}
+
+{% liquid
+  assign collection_card_title_collection = closest.collection
+  assign collection_card_title = collection_card_title_collection.title | default: 'collection_list.default_title' | t
+
+  assign collection_card_title_size = block.settings.heading_size | default: 'heading_5'
+  case collection_card_title_size
+    when 'heading_1', 'display'
+      assign collection_card_title_size = 'display'
+    when 'heading_2', 'xl'
+      assign collection_card_title_size = 'xl'
+    when 'heading_3', 'lg'
+      assign collection_card_title_size = 'lg'
+    when 'heading_4', 'md'
+      assign collection_card_title_size = 'md'
+    when 'heading_5', 'sm'
+      assign collection_card_title_size = 'sm'
+    when 'heading_6', 'xs'
+      assign collection_card_title_size = 'xs'
+    else
+      assign collection_card_title_size = 'sm'
+  endcase
+
+  assign collection_card_title_tag = block.settings.html_tag | default: 'h3'
+  unless collection_card_title_tag == 'div' or collection_card_title_tag == 'h1' or collection_card_title_tag == 'h2' or collection_card_title_tag == 'h3' or collection_card_title_tag == 'h4' or collection_card_title_tag == 'h5' or collection_card_title_tag == 'h6'
+    assign collection_card_title_tag = 'h3'
+  endunless
+
+  assign collection_card_title_count_font = block.settings.product_count_font | default: 'body'
+  unless collection_card_title_count_font == 'body' or collection_card_title_count_font == 'heading'
+    assign collection_card_title_count_font = 'body'
+  endunless
+
+  assign collection_card_title_count_size = block.settings.product_count_font_size | default: 'sm'
+  unless collection_card_title_count_size == 'xs' or collection_card_title_count_size == 'sm' or collection_card_title_count_size == 'md' or collection_card_title_count_size == 'lg' or collection_card_title_count_size == 'xl' or collection_card_title_count_size == 'xxl'
+    assign collection_card_title_count_size = 'sm'
+  endunless
+
+  assign collection_card_title_product_count = collection_card_title_collection.products_count
+  if collection_card_title_product_count == blank
+    assign collection_card_title_product_count = collection_card_title_collection.all_products_count
+  endif
+  assign collection_card_title_show_count = false
+  if block.settings.show_product_count and collection_card_title_collection != blank
+    assign collection_card_title_show_count = true
+  elsif block.settings.show_product_count and request.design_mode
+    assign collection_card_title_show_count = true
+    assign collection_card_title_product_count = collection_card_title_product_count | default: 0
+  endif
+
+  assign collection_card_title_padding_top = block.settings.padding_top | default: 0 | plus: 0
+  assign collection_card_title_padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
+  assign collection_card_title_padding_top_mobile = block.settings.padding_top_mobile | default: collection_card_title_padding_top | plus: 0
+  assign collection_card_title_padding_bottom_mobile = block.settings.padding_bottom_mobile | default: collection_card_title_padding_bottom | plus: 0
+
+  if collection_card_title_padding_top < 0 or collection_card_title_padding_top > 100
+    assign collection_card_title_padding_top = 0
+  endif
+  if collection_card_title_padding_bottom < 0 or collection_card_title_padding_bottom > 100
+    assign collection_card_title_padding_bottom = 0
+  endif
+  if collection_card_title_padding_top_mobile < 0 or collection_card_title_padding_top_mobile > 100
+    assign collection_card_title_padding_top_mobile = collection_card_title_padding_top
+  endif
+  if collection_card_title_padding_bottom_mobile < 0 or collection_card_title_padding_bottom_mobile > 100
+    assign collection_card_title_padding_bottom_mobile = collection_card_title_padding_bottom
+  endif
+%}
+
+{% capture collection_card_title_style %}
+  {% if collection_card_title_padding_top != 0 %}--collection-card-title-padding-top: {{ collection_card_title_padding_top }}px;{% endif %}
+  {% if collection_card_title_padding_bottom != 0 %}--collection-card-title-padding-bottom: {{ collection_card_title_padding_bottom }}px;{% endif %}
+  {% if block.settings.customize_mobile_padding %}
+    {% if collection_card_title_padding_top_mobile != collection_card_title_padding_top %}--collection-card-title-padding-top-mobile: {{ collection_card_title_padding_top_mobile }}px;{% endif %}
+    {% if collection_card_title_padding_bottom_mobile != collection_card_title_padding_bottom %}--collection-card-title-padding-bottom-mobile: {{ collection_card_title_padding_bottom_mobile }}px;{% endif %}
+  {% endif %}
+{% endcapture %}
+{% assign collection_card_title_style = collection_card_title_style | strip %}
+
+<div
+  class="collection-card-title"
+  {% if collection_card_title_style != blank %}style="{{ collection_card_title_style }}"{% endif %}
+  {{ block.shopify_attributes }}
+>
+  <{{ collection_card_title_tag }} class="collection-card-title__heading heading-text heading-{{ collection_card_title_size }}">
+    {{ collection_card_title | escape }}
+  </{{ collection_card_title_tag }}>
+
+  {% if collection_card_title_show_count %}
+    <span class="collection-card-title__count font-{{ collection_card_title_count_font }} body-{{ collection_card_title_count_size }}">
+      {{ 'collection_list.products_count' | t: count: collection_card_title_product_count }}
+    </span>
+  {% endif %}
+</div>
+
+{% stylesheet %}
+  .collection-card-title {
+    display: flex;
+    flex-direction: column;
+    align-items: var(--collection-card-title-align, inherit);
+    gap: 0.2rem;
+    padding-top: var(--collection-card-title-padding-top, 0px);
+    padding-bottom: var(--collection-card-title-padding-bottom, 0px);
+    text-align: inherit;
+  }
+
+  .collection-card-title__heading,
+  .collection-card-title__count {
+    margin: 0;
+  }
+
+  .collection-card-title__heading {
+    overflow-wrap: anywhere;
+  }
+
+  .collection-card-title__count {
+    color: color-mix(in srgb, currentColor 70%, transparent);
+  }
+
+  @media (max-width: 767.98px) {
+    .collection-card-title {
+      padding-top: var(--collection-card-title-padding-top-mobile, var(--collection-card-title-padding-top, 0px));
+      padding-bottom: var(--collection-card-title-padding-bottom-mobile, var(--collection-card-title-padding-bottom, 0px));
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "Title",
+  "tag": null,
+  "settings": [
+    {
+      "type": "checkbox",
+      "id": "show_product_count",
+      "label": "Show product count",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "Typography"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "Size",
+      "options": [
+        { "value": "heading_1", "label": "Heading 1" },
+        { "value": "heading_2", "label": "Heading 2" },
+        { "value": "heading_3", "label": "Heading 3" },
+        { "value": "heading_4", "label": "Heading 4" },
+        { "value": "heading_5", "label": "Heading 5" },
+        { "value": "heading_6", "label": "Heading 6" }
+      ],
+      "default": "heading_5"
+    },
+    {
+      "type": "select",
+      "id": "html_tag",
+      "label": "HTML Tag",
+      "info": "t:info.heading_html_tag",
+      "options": [
+        { "value": "div", "label": "Paragraph" },
+        { "value": "h1", "label": "H1" },
+        { "value": "h2", "label": "H2" },
+        { "value": "h3", "label": "H3" },
+        { "value": "h4", "label": "H4" },
+        { "value": "h5", "label": "H5" },
+        { "value": "h6", "label": "H6" }
+      ],
+      "default": "h3"
+    },
+    {
+      "type": "select",
+      "id": "product_count_font",
+      "label": "Product count font",
+      "options": [
+        { "value": "body", "label": "Body" },
+        { "value": "heading", "label": "Heading" }
+      ],
+      "default": "body"
+    },
+    {
+      "type": "select",
+      "id": "product_count_font_size",
+      "label": "Product count font size",
+      "options": [
+        { "value": "xs", "label": "Extra small" },
+        { "value": "sm", "label": "Small" },
+        { "value": "md", "label": "Medium" },
+        { "value": "lg", "label": "Large" },
+        { "value": "xl", "label": "Extra large" },
+        { "value": "xxl", "label": "2X large" }
+      ],
+      "default": "sm"
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_padding",
+      "label": "Custom for mobile",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "padding_top_mobile",
+      "label": "Top",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "label": "Bottom",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    }
+  ]
+}
+{% endschema %}
