@@ -57,10 +57,7 @@
   if placeholder
     assign collection_card_is_placeholder = true
   endif
-  assign collection_card_content = blank
 %}
-
-{% capture collection_card_content %}{% content_for 'blocks' %}{% endcapture %}
 
 {% capture collection_card_padding_style %}
   {% if collection_card_padding_top != 16 %}--card-padding-top: {{ collection_card_padding_top }}px;{% endif %}
@@ -77,62 +74,61 @@
 {% assign collection_card_padding_style = collection_card_padding_style | strip %}
 
 <article
-  class="collection-card-kernel collection-card-kernel--{{ collection_card_placement }} collection-card-kernel--{{ collection_card_ratio }}{% if collection_card_is_placeholder %} collection-card-kernel--placeholder{% endif %}{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ collection_card_scheme }}{% endif %}"
+  class="collection-card-kernel collection-card-kernel--{{ collection_card_placement }} collection-card-kernel--{{ collection_card_ratio }}{% if collection_card_is_placeholder %} collection-card-kernel--placeholder{% else %} collection-card-kernel--linked{% endif %}{% if request.design_mode %} collection-card-kernel--design-mode{% endif %}{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ collection_card_scheme }}{% endif %}"
   data-collection-card
   style="--card-border:{{ block.settings.border_thickness | default: 0 }}px;--card-align:{{ block.settings.alignment | default: 'left' }};{% if collection_card_padding_style != blank %}{{ collection_card_padding_style }}{% endif %}"
   {{ block.shopify_attributes }}
 >
-  <a
-    class="collection-card-kernel__link"
-    {% if collection_card_collection != blank %}
-      href="{{ collection_card_collection.url }}"
+  <div class="collection-card-kernel__media{% if collection_card_image == blank %} placeholder-image{% endif %}">
+    {% if collection_card_image != blank %}
+      {{ collection_card_image | image_url: width: 1200 | image_tag: alt: collection_card_collection.title }}
     {% else %}
-      role="link"
-      aria-disabled="true"
+      {{ 'collection-1' | placeholder_svg_tag }}
     {% endif %}
-  >
-    <div class="collection-card-kernel__media{% if collection_card_image == blank %} placeholder-image{% endif %}">
-      {% if collection_card_image != blank %}
-        {{ collection_card_image | image_url: width: 1200 | image_tag: alt: collection_card_collection.title }}
-      {% else %}
-        {{ 'collection-1' | placeholder_svg_tag }}
-      {% endif %}
-    </div>
-    <div class="collection-card-kernel__content">
-      {% if collection_card_content != blank %}
-        {{ collection_card_content }}
-      {% else %}
-        <h3>{{ collection_card_collection.title | default: 'collection_list.default_title' | t | escape }}</h3>
-      {% endif %}
-    </div>
-  </a>
-</article>
+  </div>
 
-{% comment %}
-  The title is a fixed child of Collection Card. This conditional declaration
-  keeps its static ID discoverable to Theme Check while the normal render uses
-  content_for 'blocks' above so the configured child remains editor-aware.
-{% endcomment %}
-{% if false %}
-  {% content_for 'block', type: 'collection-card-title', id: 'title' %}
-{% endif %}
+  {% if collection_card_collection != blank %}
+    <a
+      class="collection-card-kernel__link"
+      href="{{ collection_card_collection.url }}"
+      aria-label="{{ collection_card_collection.title | escape }}"
+    ></a>
+  {% else %}
+    <span class="collection-card-kernel__link" role="link" aria-disabled="true"></span>
+  {% endif %}
+
+  <div class="collection-card-kernel__content">
+    {% content_for 'blocks' %}
+  </div>
+</article>
 
 {% stylesheet %}
   .collection-card-kernel {
+    position: relative;
     overflow: hidden;
     border: var(--card-border) solid var(--border-color);
     border-radius: var(--card-radius);
     background: var(--background-color);
+    isolation: isolate;
   }
 
   .collection-card-kernel__link {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
     display: block;
-    height: 100%;
     color: inherit;
     text-decoration: none;
   }
 
+  .collection-card-kernel__link:focus-visible {
+    outline: 2px solid currentColor;
+    outline-offset: -4px;
+  }
+
   .collection-card-kernel__media {
+    position: relative;
+    z-index: 0;
     overflow: hidden;
   }
 
@@ -153,8 +149,22 @@
   }
 
   .collection-card-kernel__content {
+    position: relative;
+    z-index: 3;
     padding: var(--card-padding-top, 16px) var(--card-padding-right, 0px) var(--card-padding-bottom, 0px) var(--card-padding-left, 0px);
     text-align: var(--card-align);
+  }
+
+  .collection-card-kernel--linked .collection-card-kernel__content {
+    pointer-events: none;
+  }
+
+  .collection-card-kernel--linked .collection-card-kernel__content :where(a, button, input, select, textarea) {
+    pointer-events: auto;
+  }
+
+  .collection-card-kernel--design-mode .collection-card-kernel__content {
+    pointer-events: auto;
   }
 
   .collection-card-kernel__content h3 {
@@ -167,6 +177,7 @@
 
   .collection-card-kernel--on_image .collection-card-kernel__content {
     position: absolute;
+    z-index: 3;
     inset: auto 0 0;
     padding: var(--card-padding-top, 1.6rem) var(--card-padding-right, 1.6rem) var(--card-padding-bottom, 1.6rem) var(--card-padding-left, 1.6rem);
     color: #fff;
