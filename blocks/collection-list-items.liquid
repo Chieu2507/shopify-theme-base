@@ -9,6 +9,10 @@
 
 {% liquid
   assign collection_list_card_block = block.blocks | first
+  assign collection_list_card_editor_attributes = blank
+  if collection_list_card_block != blank
+    assign collection_list_card_editor_attributes = collection_list_card_block.shopify_attributes
+  endif
 
   assign collection_list_layout = block.settings.layout_type | default: block.settings.layout | default: 'carousel'
   unless collection_list_layout == 'grid' or collection_list_layout == 'carousel'
@@ -149,13 +153,21 @@
     {% if block.settings.collections != blank %}
       {% for collection in block.settings.collections %}
         <div class="{% if collection_list_layout == 'carousel' %}swiper-slide {% endif %}collection-card-list__item">
-          {% render 'collection-card', collection: collection, card_block: collection_list_card_block %}
+          {% render 'collection-card',
+            collection: collection,
+            card_block: collection_list_card_block,
+            attributes: collection_list_card_editor_attributes
+          %}
         </div>
       {% endfor %}
     {% elsif request.design_mode %}
       {% for index in (1..collection_list_desktop_columns) %}
         <div class="{% if collection_list_layout == 'carousel' %}swiper-slide {% endif %}collection-card-list__item">
-          {% render 'collection-card', card_block: collection_list_card_block, placeholder: true %}
+          {% render 'collection-card',
+            card_block: collection_list_card_block,
+            placeholder: true,
+            attributes: collection_list_card_editor_attributes
+          %}
         </div>
       {% endfor %}
     {% endif %}
