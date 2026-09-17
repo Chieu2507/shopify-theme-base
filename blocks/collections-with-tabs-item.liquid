@@ -6,27 +6,45 @@
   assign item_title_tag = section.settings.title_tag | default: 'div'
   assign item_title_size = section.settings.title_size | default: 'heading_2'
   assign item_title_size = item_title_size | replace: 'heading_1', 'display' | replace: 'heading_2', 'xl' | replace: 'heading_3', 'lg' | replace: 'heading_4', 'md'
+  assign image_ratio = section.settings.image_ratio | default: 'auto'
+  if image_ratio == 'auto'
+    if item_image != blank and item_image.aspect_ratio > 0
+      assign image_ratio = item_image.aspect_ratio
+    else
+      assign image_ratio = 1
+    endif
+  endif
 %}
 <div class="collections-with-tabs-item" {{ block.shopify_attributes }}>
   <button id="CollectionsWithTabsTab-{{ item_id }}" class="collections-with-tabs__tab" type="button" role="tab" aria-controls="CollectionsWithTabsPanel-{{ item_id }}" aria-selected="false" tabindex="-1" data-collections-with-tabs-tab data-collections-with-tabs-id="{{ item_id }}">
-    <{{ item_title_tag }} class="collections-with-tabs__tab-title collections-with-tabs__tab-title--{{ item_title_size }} heading-text heading-{{ item_title_size }}">{{ item_title | escape }}</{{ item_title_tag }}>
-    {% if section.settings.show_product_count and item_collection != blank %}<small>{{ item_collection.products_count }}</small>{% endif %}
+    <span class="collections-with-tabs__tab-content">
+      <{{ item_title_tag }} class="collections-with-tabs__tab-title collections-with-tabs__tab-title--{{ item_title_size }}">{{ item_title | escape }}</{{ item_title_tag }}>
+      {% if section.settings.show_product_count and item_collection != blank %}<sup class="collections-with-tabs__tab-count">{{ item_collection.products_count }}</sup>{% endif %}
+    </span>
+    <span class="collections-with-tabs__tab-action" aria-hidden="true">{% render 'icon', icon: 'arrow-right', bare: true %}</span>
   </button>
   <div id="CollectionsWithTabsPanel-{{ item_id }}" class="collections-with-tabs__panel{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ block.settings.color_scheme | default: 'scheme-1' }}{% endif %}" role="tabpanel" aria-labelledby="CollectionsWithTabsTab-{{ item_id }}" hidden data-collections-with-tabs-panel data-collections-with-tabs-id="{{ item_id }}">
-    <div class="collections-with-tabs__media{% if block.settings.custom_background %} collections-with-tabs__media--custom{% endif %}"{% if block.settings.custom_background %} style="--collections-with-tabs-custom-background: {{ block.settings.background_color }}"{% endif %}>
+    <div class="collections-with-tabs__media{% if block.settings.custom_background %} collections-with-tabs__media--custom{% endif %}" style="--collections-with-tabs-panel-ratio: {{ image_ratio }}{% if block.settings.custom_background %};--collections-with-tabs-custom-background: {{ block.settings.background_color }}{% endif %}">
       {% if item_image != blank %}
         {{ item_image | image_url: width: 1600 | image_tag: widths: '480, 720, 960, 1200, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: item_title, loading: 'lazy' }}
       {% else %}
         {{ 'image' | placeholder_svg_tag: 'collections-with-tabs__placeholder' }}
       {% endif %}
+      {% if section.settings.show_featured_products and item_collection != blank %}
+        <div class="collections-with-tabs__featured" aria-label="Featured products">
+          <span class="collections-with-tabs__featured-more" aria-hidden="true">+</span>
+          {% for product in item_collection.products limit: section.settings.products_to_show %}
+            <a class="collections-with-tabs__featured-product" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+              {% if product.featured_image != blank %}
+                {{ product.featured_image | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '40px', alt: product.title, loading: 'lazy' }}
+              {% else %}
+                {{ 'product-1' | placeholder_svg_tag }}
+              {% endif %}
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
     </div>
-    {% if section.settings.show_featured_products and item_collection != blank %}
-      <div class="collections-with-tabs__products">
-        {% for product in item_collection.products limit: section.settings.products_to_show %}
-          {% render 'product-card', product: product %}
-        {% endfor %}
-      </div>
-    {% endif %}
   </div>
 </div>
 {% schema %}
