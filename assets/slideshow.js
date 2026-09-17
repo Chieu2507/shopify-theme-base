@@ -186,9 +186,32 @@ const createNumberedPagination = (root, swiper, loop, slideCount) => {
     number.className = 'slideshow__pagination-number';
     number.type = 'button';
     number.dataset.slideshowPaginationIndex = String(index);
-    number.textContent = String(index + 1);
     number.setAttribute('aria-label', paginationBulletMessage.replace('{{index}}', String(index + 1)));
+    number.setAttribute('aria-current', 'false');
     if (controlsId) number.setAttribute('aria-controls', controlsId);
+
+    const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+    svg.setAttribute('width', '100%');
+    svg.setAttribute('height', '100%');
+    svg.setAttribute('aria-hidden', 'true');
+    svg.style.setProperty('--percent', '0');
+
+    const backgroundCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    backgroundCircle.setAttribute('cx', '50%');
+    backgroundCircle.setAttribute('cy', '50%');
+    backgroundCircle.setAttribute('r', '15');
+
+    const progressCircle = document.createElementNS('http://www.w3.org/2000/svg', 'circle');
+    progressCircle.setAttribute('cx', '50%');
+    progressCircle.setAttribute('cy', '50%');
+    progressCircle.setAttribute('r', '15');
+    progressCircle.style.setProperty('stroke-dasharray', '93.6404px, 93.6404px');
+
+    svg.append(backgroundCircle, progressCircle);
+
+    const label = document.createElement('span');
+    label.textContent = String(index + 1);
+    number.append(svg, label);
     return number;
   });
 
@@ -206,11 +229,14 @@ const createNumberedPagination = (root, swiper, loop, slideCount) => {
   const update = () => {
     if (swiper.destroyed) return;
     const currentIndex = getCurrentIndex();
+    const autoplayProgress = root.style.getPropertyValue('--slideshow-autoplay-progress').trim();
+    const hasAutoplayClock = autoplayProgress !== '';
+    const progress = hasAutoplayClock ? Math.max(0, Math.min(1, Number(autoplayProgress) || 0)) : 1;
     numbers.forEach((number, index) => {
       const active = index === currentIndex;
       number.classList.toggle('slideshow__pagination-number--active', active);
-      if (active) number.setAttribute('aria-current', 'true');
-      else number.removeAttribute('aria-current');
+      number.setAttribute('aria-current', active ? 'true' : 'false');
+      number.querySelector('svg')?.style.setProperty('--percent', active ? String(progress) : '0');
     });
   };
 
@@ -287,7 +313,13 @@ const startAutoplay = (root, swiper, loop) => {
   let previous = null;
   let frame = 0;
   let touching = false;
-  const paint = () => root.style.setProperty('--slideshow-autoplay-progress', String(elapsed / delay));
+  const paint = () => {
+    const progress = Math.max(0, Math.min(1, elapsed / delay));
+    root.style.setProperty('--slideshow-autoplay-progress', String(progress));
+    root.querySelectorAll('[data-slideshow-pagination][data-pagination-type="numbers"] .slideshow__pagination-number').forEach((number) => {
+      number.querySelector('svg')?.style.setProperty('--percent', number.getAttribute('aria-current') === 'true' ? String(progress) : '0');
+    });
+  };
   const reset = () => {
     // Moving from a clone to its original is still the same logical slide.
     if (current === index()) return;
