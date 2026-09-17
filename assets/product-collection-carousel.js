@@ -49,7 +49,9 @@ const getFirstDataValue = (elements, key) => {
 };
 
 const buildOptions = (carousel, scope) => {
-  const pagination = carousel.querySelector('[data-swiper-pagination]');
+  const pagination =
+    carousel.querySelector('[data-product-collection-pagination]') ||
+    carousel.querySelector('[data-swiper-pagination]');
   const paginationType = getPaginationType(pagination?.dataset.paginationType || carousel.dataset.swiperPaginationType);
   const options = {
     slidesPerView: getSlidesPerView(carousel.dataset.swiperColumnsMobile),
@@ -95,6 +97,8 @@ const getAutoplaySettings = (carousel, scope) => {
 
 const isVisible = (element) => element.getClientRects().length > 0;
 
+const isWrapperHovered = (swiper) => swiper.wrapperEl?.matches(':hover') || false;
+
 const startAutoplay = (state) => {
   const autoplay = getAutoplaySettings(state.carousel, state.scope);
   if (!autoplay.enabled) return;
@@ -103,7 +107,7 @@ const startAutoplay = (state) => {
     if (
       document.hidden ||
       !isVisible(state.carousel) ||
-      (autoplay.pauseOnHover && state.scope.matches(':hover')) ||
+      (autoplay.pauseOnHover && isWrapperHovered(state.swiper)) ||
       state.scope.contains(document.activeElement) ||
       state.swiper.isLocked
     ) {
