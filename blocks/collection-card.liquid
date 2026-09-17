@@ -18,6 +18,22 @@
   endif
   assign collection_card_scheme = collection_card_scheme | default: 'scheme-1' | handleize
   assign collection_card_placement = block.settings.placement | default: 'below_image'
+  assign collection_card_radius = 'var(--card-radius)'
+  case block.settings.corner_radius
+    when 'square'
+      assign collection_card_radius = 'var(--radius-square)'
+    when 'rounded'
+      assign collection_card_radius = 'var(--radius-rounded)'
+  endcase
+
+  assign collection_card_shadow = 'none'
+  case block.settings.shadow
+    when 'small'
+      assign collection_card_shadow = '0 2px 8px rgb(0 0 0 / 0.12)'
+    when 'medium'
+      assign collection_card_shadow = '0 8px 24px rgb(0 0 0 / 0.16)'
+  endcase
+
   assign collection_card_ratio_setting = block.settings.ratio | default: 'auto'
   if collection_card_ratio_setting == 'original'
     assign collection_card_ratio_setting = 'auto'
@@ -108,7 +124,7 @@
 <article
   class="collection-card-kernel collection-card-kernel--{{ collection_card_placement }} collection-card-kernel--{{ collection_card_ratio_setting }}{% if collection_card_is_placeholder %} collection-card-kernel--placeholder{% else %} collection-card-kernel--linked{% endif %}{% if request.design_mode %} collection-card-kernel--design-mode{% endif %}{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ collection_card_scheme }}{% endif %}"
   data-collection-card
-  style="--card-border:{{ block.settings.border_thickness | default: 0 }}px;--card-align:{{ block.settings.alignment | default: 'left' }};--collection-card-ratio:{{ collection_card_ratio }};{% if collection_card_padding_style != blank %}{{ collection_card_padding_style }}{% endif %}"
+  style="--card-border:{{ block.settings.border_thickness | default: 0 }}px;--card-align:{{ block.settings.alignment | default: 'left' }};--collection-card-radius:{{ collection_card_radius }};--collection-card-shadow:{{ collection_card_shadow }};--collection-card-ratio:{{ collection_card_ratio }};{% if collection_card_padding_style != blank %}{{ collection_card_padding_style }}{% endif %}"
   {{ block.shopify_attributes }}
 >
   <div class="collection-card-kernel__media{% if collection_card_image == blank %} placeholder-image{% endif %}">
@@ -140,8 +156,9 @@
     position: relative;
     overflow: hidden;
     border: var(--card-border) solid var(--border-color);
-    border-radius: var(--card-radius);
+    border-radius: var(--collection-card-radius, var(--card-radius));
     background: var(--background-color);
+    box-shadow: var(--collection-card-shadow, none);
     isolation: isolate;
   }
 
