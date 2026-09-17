@@ -79,9 +79,14 @@
     assign product_list_pagination_limit_width = true
   endif
 
-  assign product_list_pagination_top_padding = block.settings.pagination_top_padding | default: 50 | plus: 0
-  if product_list_pagination_top_padding < 0 or product_list_pagination_top_padding > 100
-    assign product_list_pagination_top_padding = 50
+  assign product_list_pagination_top_padding_desktop = block.settings.pagination_top_padding_desktop | default: block.settings.pagination_top_padding | default: 50 | plus: 0
+  if product_list_pagination_top_padding_desktop < 0 or product_list_pagination_top_padding_desktop > 100
+    assign product_list_pagination_top_padding_desktop = 50
+  endif
+
+  assign product_list_pagination_top_padding_mobile = block.settings.pagination_top_padding_mobile | default: 24 | plus: 0
+  if product_list_pagination_top_padding_mobile < 0 or product_list_pagination_top_padding_mobile > 100
+    assign product_list_pagination_top_padding_mobile = 24
   endif
 
   assign product_list_pagination_max_width = block.settings.pagination_max_width | default: 260 | plus: 0
@@ -114,13 +119,14 @@
 %}
 
 {% capture product_list_pagination_style %}
-  --swiper-pagination-spacing: {{ product_list_pagination_top_padding }}px;
+  --swiper-pagination-spacing: {{ product_list_pagination_top_padding_desktop }}px;
+  --swiper-pagination-spacing-mobile: {{ product_list_pagination_top_padding_mobile }}px;
   {% if product_list_pagination_limit_width %}--swiper-pagination-width: min(100%, {{ product_list_pagination_max_width }}px);{% endif %}
 {% endcapture %}
 {% assign product_list_pagination_style = product_list_pagination_style | strip %}
 
 {% capture product_list_navigation_center_style %}
-  {% if product_list_layout == 'carousel' and product_list_show_pagination %}--swiper-navigation-center-offset: calc(({{ product_list_pagination_top_padding }}px + {{ product_list_pagination_size }}) / 2);{% endif %}
+  {% if product_list_layout == 'carousel' and product_list_show_pagination %}--swiper-navigation-center-offset: calc(({{ product_list_pagination_top_padding_desktop }}px + {{ product_list_pagination_size }}) / 2);{% endif %}
 {% endcapture %}
 {% assign product_list_navigation_center_style = product_list_navigation_center_style | strip %}
 

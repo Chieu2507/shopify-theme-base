@@ -78,9 +78,14 @@
     assign collection_list_pagination_size = 'var(--swiper-pagination-bullet-size, 0.5rem)'
   endif
 
-  assign collection_list_pagination_top_padding = block.settings.pagination_top_padding | default: 50 | plus: 0
-  if collection_list_pagination_top_padding < 0 or collection_list_pagination_top_padding > 100
-    assign collection_list_pagination_top_padding = 50
+  assign collection_list_pagination_top_padding_desktop = block.settings.pagination_top_padding_desktop | default: block.settings.pagination_top_padding | default: 50 | plus: 0
+  if collection_list_pagination_top_padding_desktop < 0 or collection_list_pagination_top_padding_desktop > 100
+    assign collection_list_pagination_top_padding_desktop = 50
+  endif
+
+  assign collection_list_pagination_top_padding_mobile = block.settings.pagination_top_padding_mobile | default: 24 | plus: 0
+  if collection_list_pagination_top_padding_mobile < 0 or collection_list_pagination_top_padding_mobile > 100
+    assign collection_list_pagination_top_padding_mobile = 24
   endif
 
   assign collection_list_pagination_limit_width = false
@@ -122,14 +127,15 @@
 %}
 
 {% capture collection_list_pagination_style %}
-  --swiper-pagination-spacing: {{ collection_list_pagination_top_padding }}px;
+  --swiper-pagination-spacing: {{ collection_list_pagination_top_padding_desktop }}px;
+  --swiper-pagination-spacing-mobile: {{ collection_list_pagination_top_padding_mobile }}px;
   {% if collection_list_pagination_limit_width %}--swiper-pagination-width: min(100%, {{ collection_list_pagination_max_width }}px);{% endif %}
   {% if collection_list_autoplay_enabled %}--swiper-pagination-bullet-progress-duration: {{ collection_list_autoplay_delay }}ms;{% endif %}
 {% endcapture %}
 {% assign collection_list_pagination_style = collection_list_pagination_style | strip %}
 
 {% capture collection_list_navigation_center_style %}
-  {% if collection_list_show_pagination %}--swiper-navigation-center-offset: calc(({{ collection_list_pagination_top_padding }}px + {{ collection_list_pagination_size }}) / 2);{% endif %}
+  {% if collection_list_show_pagination %}--swiper-navigation-center-offset: calc(({{ collection_list_pagination_top_padding_desktop }}px + {{ collection_list_pagination_size }}) / 2);{% endif %}
 {% endcapture %}
 {% assign collection_list_navigation_center_style = collection_list_navigation_center_style | strip %}
 
