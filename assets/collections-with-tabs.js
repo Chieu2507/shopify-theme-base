@@ -8,13 +8,16 @@ const initialize = (section) => {
   if (!tabs.length || !panels.length) return;
 
   const controller = new AbortController();
-  let timer;
-  let progressFrame;
+  let timer = 0;
+  let progressFrame = 0;
+  let paused = false;
   const duration = Math.max(1, Number(section.dataset.autoRotateSpeed || 6)) * 1000;
-  const clearRotation = () => {
+  const clearRotation = (resetProgress = true) => {
     window.clearTimeout(timer);
     window.cancelAnimationFrame(progressFrame);
-    if (progress) progress.style.transform = 'scaleX(0)';
+    timer = 0;
+    progressFrame = 0;
+    if (resetProgress && progress) progress.style.transform = 'scaleX(0)';
   };
   const animateProgress = () => {
     if (!progress || section.dataset.autoRotate !== 'true' || tabs.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
@@ -35,14 +38,19 @@ const initialize = (section) => {
     });
     panels.forEach((panel) => { panel.hidden = panel.dataset.collectionsWithTabsId !== activeId; });
     if (focus) activeTab.focus();
-    clearRotation();
-    rotate();
+    scheduleRotation();
   };
-  const rotate = () => {
-    if (section.dataset.autoRotate !== 'true' || tabs.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+  const canRotate = () => section.dataset.autoRotate === 'true'
+    && tabs.length > 1
+    && !paused
+    && !document.hidden
+    && !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const scheduleRotation = () => {
+    clearRotation();
+    if (!canRotate()) return;
     animateProgress();
     timer = window.setTimeout(() => {
-      if (section.matches(':hover') || section.contains(document.activeElement)) return;
+      if (!canRotate()) return;
       const active = tabs.findIndex((tab) => tab.getAttribute('aria-selected') === 'true');
       activate(tabs[(active + 1) % tabs.length].dataset.collectionsWithTabsId);
     }, duration);
@@ -59,18 +67,28 @@ const initialize = (section) => {
     const next = event.key === 'Home' ? 0 : event.key === 'End' ? tabs.length - 1 : (index + (event.key === 'ArrowDown' ? 1 : -1) + tabs.length) % tabs.length;
     activate(tabs[next].dataset.collectionsWithTabsId, true);
   }, { signal: controller.signal });
-  section.addEventListener('pointerenter', clearRotation, { signal: controller.signal });
+  const pause = () => {
+    paused = true;
+    clearRotation();
+  };
+  const resume = () => {
+    paused = false;
+    scheduleRotation();
+  };
+  section.addEventListener('pointerenter', pause, { signal: controller.signal });
   section.addEventListener('pointerleave', () => {
-    const active = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true') || tabs[0];
-    activate(active.dataset.collectionsWithTabsId);
+    resume();
   }, { signal: controller.signal });
-  section.addEventListener('focusin', clearRotation, { signal: controller.signal });
+  section.addEventListener('focusin', pause, { signal: controller.signal });
   section.addEventListener('focusout', () => {
     window.setTimeout(() => {
       if (section.contains(document.activeElement)) return;
-      const active = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true') || tabs[0];
-      activate(active.dataset.collectionsWithTabsId);
+      resume();
     }, 0);
+  }, { signal: controller.signal });
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) pause();
+    else resume();
   }, { signal: controller.signal });
   activate(tabs[0].dataset.collectionsWithTabsId);
   instances.set(section, { controller, clearRotation });
