@@ -216,22 +216,64 @@ const createTwoSlidePagination = (root, swiper, loop) => {
   };
 };
 
-const startAutoplay = (root, swiper) => {
+const startAutoplay = (root, swiper, loop) => {
   if (root.dataset.autoplay !== 'true' || reducedMotion()) return null;
   const delay = Math.min(60000, Math.max(3000, Number(root.dataset.autoplayDelay) || 6000));
   const pauseOnHover = root.dataset.pauseOnHover !== 'false';
 
-  return window.setInterval(() => {
-    if (
-      document.hidden ||
-      !isVisible(root) ||
+  const index = () => loop ? loop.logicalIndex(swiper.activeIndex) : swiper.realIndex;
+  let current = index();
+  let elapsed = 0;
+  let previous = null;
+  let frame = 0;
+  let touching = false;
+  const paint = () => root.style.setProperty('--slideshow-autoplay-progress', String(elapsed / delay));
+  const reset = () => {
+    // Moving from a clone to its original is still the same logical slide.
+    if (current === index()) return;
+    current = index();
+    elapsed = 0;
+    previous = null;
+    paint();
+  };
+  const touchStart = () => { touching = true; previous = null; };
+  const touchEnd = () => { touching = false; previous = null; };
+  const visibilityChange = () => { previous = null; };
+  const tick = (now) => {
+    const paused = document.hidden || !isVisible(root) || reducedMotion() ||
       (pauseOnHover && root.matches(':hover')) ||
-      root.contains(document.activeElement) ||
-      swiper.isLocked || swiper.animating
-    ) return;
-
-    swiper.slideNext();
-  }, delay);
+      Boolean(root.querySelector(':focus-visible')) || touching || swiper.isLocked || swiper.animating;
+    if (paused) previous = null;
+    else {
+      if (previous !== null) elapsed = Math.min(delay, elapsed + now - previous);
+      previous = now;
+      paint();
+      if (elapsed >= delay) {
+        elapsed = 0;
+        previous = null;
+        swiper.slideNext();
+        paint();
+      }
+    }
+    frame = window.requestAnimationFrame(tick);
+  };
+  // The timer and both pagination styles share one clock, including pauses.
+  swiper.on('activeIndexChange realIndexChange', reset);
+  swiper.on('touchStart', touchStart);
+  swiper.on('touchEnd', touchEnd);
+  document.addEventListener('visibilitychange', visibilityChange);
+  paint();
+  frame = window.requestAnimationFrame(tick);
+  return {
+    destroy() {
+      window.cancelAnimationFrame(frame);
+      swiper.off('activeIndexChange realIndexChange', reset);
+      swiper.off('touchStart', touchStart);
+      swiper.off('touchEnd', touchEnd);
+      document.removeEventListener('visibilitychange', visibilityChange);
+      root.style.removeProperty('--slideshow-autoplay-progress');
+    },
+  };
 };
 
 const bindNavigation = (root, swiper) => {
@@ -321,7 +363,7 @@ const init = (root) => {
   controlSchemeEvents.forEach((eventName) => swiper.on(eventName, syncControlScheme));
   syncControlScheme();
   const navigationController = bindNavigation(root, swiper);
-  const interval = autoplay ? startAutoplay(root, swiper) : null;
+  const interval = autoplay ? startAutoplay(root, swiper, twoSlideLoop) : null;
   let frame = 0;
   const scheduleParallax = () => {
     if (frame) return;
@@ -341,7 +383,7 @@ const destroy = (root) => {
   if (!state) return;
   window.removeEventListener('scroll', state.scheduleParallax);
   if (state.frame) window.cancelAnimationFrame(state.frame);
-  if (state.interval) window.clearInterval(state.interval);
+  state.interval?.destroy();
   state.navigationController.abort();
   state.customPagination?.destroy();
   if (state.twoSlideLoop) {
