@@ -127,9 +127,9 @@ const destroyRoot = (root) => {
 document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
 document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
 document.addEventListener('shopify:block:select', (event) => {
-  const item = event.target.closest?.('.collections-with-tabs-item');
-  const section = item?.closest('[data-collections-with-tabs]');
-  const tab = item?.querySelector('[data-collections-with-tabs-tab]');
+  const block = event.target.closest?.('[data-shopify-editor-block]');
+  const section = block?.closest('[data-collections-with-tabs]');
+  const tab = block?.querySelector('[data-collections-with-tabs-tab]');
   if (!section || !tab) return;
   section.dispatchEvent(new CustomEvent('collections-with-tabs:activate', { detail: { id: tab.dataset.collectionsWithTabsId } }));
 });
