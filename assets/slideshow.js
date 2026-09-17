@@ -183,7 +183,7 @@ const createNumberedPagination = (root, swiper, loop, slideCount) => {
   const paginationBulletMessage = swiper.params.a11y?.paginationBulletMessage || 'Go to slide {{index}}';
   const numbers = Array.from({ length: slideCount }, (_, index) => {
     const number = document.createElement('button');
-    number.className = 'slideshow__pagination-number';
+    number.className = 'slideshow__pagination-number body-text body-lg';
     number.type = 'button';
     number.dataset.slideshowPaginationIndex = String(index);
     number.setAttribute('aria-label', paginationBulletMessage.replace('{{index}}', String(index + 1)));
