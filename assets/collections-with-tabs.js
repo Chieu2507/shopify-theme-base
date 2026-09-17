@@ -4,7 +4,6 @@ const initialize = (section) => {
   if (!section || instances.has(section)) return;
   const tabs = [...section.querySelectorAll('[data-collections-with-tabs-tab]')];
   const panels = [...section.querySelectorAll('[data-collections-with-tabs-panel]')];
-  const progress = section.querySelector('[data-collections-with-tabs-progress] span');
   if (!tabs.length || !panels.length) return;
 
   const controller = new AbortController();
@@ -18,13 +17,14 @@ const initialize = (section) => {
     window.cancelAnimationFrame(progressFrame);
     timer = 0;
     progressFrame = 0;
-    if (resetProgress && progress) progress.style.transform = 'scaleX(0)';
+    if (resetProgress) tabs.forEach((tab) => tab.style.setProperty('--collections-with-tabs-progress-scale', '0'));
   };
   const animateProgress = () => {
-    if (!progress || section.dataset.autoRotate !== 'true' || tabs.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+    if (section.dataset.autoRotate !== 'true' || tabs.length < 2 || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
     const startedAt = performance.now();
     const tick = (now) => {
-      progress.style.transform = `scaleX(${Math.min(1, (now - startedAt) / duration)})`;
+      const activeTab = tabs.find((tab) => tab.getAttribute('aria-selected') === 'true');
+      activeTab?.style.setProperty('--collections-with-tabs-progress-scale', String(Math.min(1, (now - startedAt) / duration)));
       if (now - startedAt < duration) progressFrame = window.requestAnimationFrame(tick);
     };
     progressFrame = window.requestAnimationFrame(tick);
