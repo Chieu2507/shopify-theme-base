@@ -14,7 +14,7 @@ const activate = (state, id, focus = false) => {
     const active = candidate === entry;
     candidate.trigger.setAttribute('aria-selected', String(active));
     candidate.trigger.tabIndex = active ? 0 : -1;
-    candidate.panel.hidden = !active;
+    candidate.panel.setAttribute('aria-hidden', String(!active));
     candidate.item.classList.toggle('is-active', active);
   });
   if (focus) entry.trigger.focus();
@@ -57,7 +57,7 @@ const initialize = (root) => {
       entries.forEach((entry) => {
         entry.trigger.tabIndex = -1;
         entry.trigger.setAttribute('aria-selected', 'false');
-        entry.panel.hidden = false;
+        entry.panel.removeAttribute('aria-hidden');
       });
       return;
     }
@@ -128,7 +128,7 @@ const destroyRoot = (root) => {
     if (state.mobileSwiper) destroySwiperCarousel(state.mobileSwiper);
     node.classList.remove('is-sticky-title');
     state.entries.forEach((entry) => {
-      entry.panel.hidden = false;
+      entry.panel.removeAttribute('aria-hidden');
       entry.trigger.setAttribute('aria-selected', 'false');
       entry.trigger.tabIndex = -1;
     });
