@@ -143,12 +143,11 @@
     assign collection_tab_has_products = true
   endif
 
-  assign collection_tab_show_grid = false
-  if collection_tab_has_products
-    assign collection_tab_show_grid = true
-  elsif collection_tab_collection == blank and request.design_mode
-    assign collection_tab_show_grid = true
-  endif
+  assign collection_tab_show_grid = true
+  assign collection_tab_show_placeholders = false
+  unless collection_tab_has_products
+    assign collection_tab_show_placeholders = true
+  endunless
 %}
 
 {% capture collection_tab_pagination_style %}
@@ -213,7 +212,8 @@
           gap_vertical: section.settings.product_gap_desktop,
           gap_horizontal_mobile: section.settings.product_gap_mobile,
           gap_vertical_mobile: section.settings.product_gap_mobile,
-          show_placeholders: request.design_mode,
+          show_placeholders: collection_tab_show_placeholders,
+          show_placeholders_for_empty_collection: collection_tab_show_placeholders,
           placeholder_count: collection_tab_max_products,
           grid_class: 'collection-tab__products',
           item_class: 'collection-tab__product',
@@ -253,7 +253,7 @@
       </div>
     {% endif %}
 
-    {% if collection_tab_collection != blank and collection_tab_has_products == false %}
+    {% if collection_tab_collection != blank and collection_tab_has_products == false and collection_tab_show_placeholders == false %}
       <p class="collection-tab__empty body-text body-sm">{{ 'collection_tabs.empty_collection' | t }}</p>
     {% endif %}
   </div>

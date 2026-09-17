@@ -4,8 +4,9 @@
   The data source is selected in the block settings and is read from the
   collection supplied by the parent Collection Card through `closest.collection`.
   Description copy is reduced to plain text for a predictable card height.
-  When a card is shown as an editor placeholder without a selected collection,
-  the description source uses the localized collection-description placeholder.
+  When a card has no selected collection, the description source uses the
+  localized collection-description placeholder so the fallback remains
+  visible on the storefront as well as in the editor.
 
   @example
   {% content_for 'block', type: 'collection-card-description', id: 'description' %}
@@ -30,7 +31,7 @@
 
   assign collection_card_description_text = collection_card_description_collection.description | strip_html | strip
   assign collection_card_description_placeholder = 'collection_list.default_description' | t
-  if collection_card_description_text == blank and collection_card_description_collection == blank and request.design_mode
+  if collection_card_description_text == blank and collection_card_description_collection == blank
     assign collection_card_description_text = collection_card_description_placeholder
   endif
   assign collection_card_description_product_count = collection_card_description_collection.products_count
@@ -43,7 +44,7 @@
     assign collection_card_description_has_content = true
   elsif collection_card_description_source == 'product_count' and collection_card_description_collection != blank
     assign collection_card_description_has_content = true
-  elsif request.design_mode
+  elsif collection_card_description_collection == blank
     assign collection_card_description_has_content = true
     assign collection_card_description_product_count = collection_card_description_product_count | default: 0
   endif
