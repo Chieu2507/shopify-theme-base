@@ -1,10 +1,10 @@
 {% liquid
-  assign marquee_direction = section.settings.animation_direction | default: 'backward'
+  assign marquee_direction = block.settings.animation_direction | default: 'backward'
   unless marquee_direction == 'forward' or marquee_direction == 'backward'
     assign marquee_direction = 'forward'
   endunless
 
-  assign marquee_speed = section.settings.animation_speed | default: 1 | plus: 0
+  assign marquee_speed = block.settings.animation_speed | default: 1 | plus: 0
   if marquee_speed < 0 or marquee_speed > 3
     assign marquee_speed = 1
   endif
@@ -13,18 +13,20 @@
     assign marquee_duration = 28.0 | divided_by: marquee_speed
   endif
 
-  assign marquee_scheme = section.settings.color_scheme | default: 'scheme-1'
-  if section.settings.color_scheme.id != blank
-    assign marquee_scheme = section.settings.color_scheme.id
+  assign marquee_scheme = block.settings.color_scheme | default: 'scheme-1'
+  if block.settings.color_scheme.id != blank
+    assign marquee_scheme = block.settings.color_scheme.id
   endif
   assign marquee_scheme = marquee_scheme | default: 'scheme-1' | handleize
 
-  assign marquee_background = section.settings.background_color
+  assign marquee_background = block.settings.background_color
 
-  assign padding_top = section.settings.padding_top | default: 24 | plus: 0
-  assign padding_bottom = section.settings.padding_bottom | default: 24 | plus: 0
-  assign padding_left = section.settings.padding_left | default: 0 | plus: 0
-  assign padding_right = section.settings.padding_right | default: 0 | plus: 0
+  assign padding_top = block.settings.padding_top | default: 24 | plus: 0
+  assign padding_bottom = block.settings.padding_bottom | default: 24 | plus: 0
+  assign padding_left = block.settings.padding_left | default: 0 | plus: 0
+  assign padding_right = block.settings.padding_right | default: 0 | plus: 0
+  assign marquee_gap_desktop = block.settings.gap_desktop | default: 48 | plus: 0
+  assign marquee_gap_mobile = block.settings.gap_mobile | default: 32 | plus: 0
 %}
 
 {% capture marquee_style %}
@@ -34,6 +36,8 @@
   {% if padding_bottom != 24 %}--marquee-padding-bottom: {{ padding_bottom }}px;{% endif %}
   {% if padding_left != 0 %}--marquee-padding-left: {{ padding_left }}px;{% endif %}
   {% if padding_right != 0 %}--marquee-padding-right: {{ padding_right }}px;{% endif %}
+  {% if marquee_gap_desktop != 48 %}--marquee-gap: {{ marquee_gap_desktop }}px;{% endif %}
+  {% if marquee_gap_mobile != 32 %}--marquee-gap-mobile: {{ marquee_gap_mobile }}px;{% endif %}
 {% endcapture %}
 {% assign marquee_style = marquee_style | strip | replace: '\n', ' ' %}
 
@@ -44,6 +48,7 @@
 
 <div
   class="{{ marquee_class }}"
+  {{ block.shopify_attributes }}
   {% if marquee_style != blank %}style="{{ marquee_style }}"{% endif %}
 >
   <div class="container full-width marquee__container">
@@ -82,9 +87,10 @@
     flex-wrap: nowrap;
     align-items: center;
     justify-content: flex-start;
-    gap: var(--marquee-gap, 3rem);
+    gap: var(--marquee-gap, 48px);
     width: max-content;
-    min-width: 100%;
+    min-width: 0;
+    max-width: min-content;
     animation: none;
     will-change: transform;
   }
@@ -106,7 +112,28 @@
     transform: none;
   }
 
+  @media (max-width: 767.98px) {
+    .marquee__track {
+      gap: var(--marquee-gap-mobile, var(--marquee-gap, 48px));
+    }
+  }
+
   .marquee__track > * {
+    flex: 0 0 auto;
+  }
+
+  .marquee__track > .group {
+    width: fit-content;
+    max-width: max-content;
+  }
+
+  .marquee__track > .group--horizontal {
+    flex-wrap: nowrap;
+  }
+
+  /* Percentage widths are circular inside a fit-content horizontal item. */
+  .marquee__track > .group--horizontal > * {
+    width: fit-content;
     flex: 0 0 auto;
   }
 
@@ -143,14 +170,6 @@
     const instances = new WeakMap();
     const selector = '.marquee';
 
-    const removeEditorAttributes = (element) => {
-      if (element.nodeType !== Node.ELEMENT_NODE) return;
-      [...element.attributes].forEach((attribute) => {
-        if (attribute.name.startsWith('data-shopify-editor')) element.removeAttribute(attribute.name);
-      });
-      element.querySelectorAll('*').forEach(removeEditorAttributes);
-    };
-
     const setFocusableState = (element) => {
       element.setAttribute('aria-hidden', 'true');
       element.querySelectorAll('a, button, input, select, textarea, [tabindex]').forEach((focusable) => {
@@ -164,15 +183,44 @@
       const track = marquee.querySelector('.marquee__track');
       if (!track || track.children.length === 0) return;
 
-      const originalItems = [...track.children];
-      const clones = originalItems.map((item) => {
-        const clone = item.cloneNode(true);
-        removeEditorAttributes(clone);
-        setFocusableState(clone);
-        clone.dataset.marqueeClone = 'true';
-        track.appendChild(clone);
-        return clone;
+      let clones = [];
+      let isSyncing = false;
+
+      const syncClones = () => {
+        if (isSyncing) return;
+        isSyncing = true;
+        mutationObserver.disconnect();
+
+        clones.forEach((clone) => clone.remove());
+        const originalItems = [...track.children].filter((item) => !item.hasAttribute('data-marquee-clone'));
+        clones = originalItems.map((item, index) => {
+          const clone = item.cloneNode(true);
+          setFocusableState(clone);
+          clone.dataset.marqueeClone = 'true';
+          clone.dataset.marqueeCloneIndex = String(index);
+          track.appendChild(clone);
+          return clone;
+        });
+
+        mutationObserver.observe(track, {
+          attributes: true,
+          childList: true,
+          subtree: true
+        });
+        isSyncing = false;
+      };
+
+      const mutationObserver = new MutationObserver((mutations) => {
+        if (mutations.some((mutation) => {
+          if (mutation.type === 'attributes') {
+            if (mutation.attributeName === 'class' || mutation.attributeName === 'style') return false;
+            if (mutation.attributeName.startsWith('data-shopify-editor')) return false;
+          }
+          return !mutation.target.closest?.('[data-marquee-clone]');
+        })) syncClones();
       });
+
+      syncClones();
 
       const updateDistance = () => {
         const firstClone = clones[0];
@@ -182,18 +230,24 @@
       };
 
       const resizeObserver = new ResizeObserver(updateDistance);
+      mutationObserver.observe(track, {
+        attributes: true,
+        childList: true,
+        subtree: true
+      });
       resizeObserver.observe(track);
       updateDistance();
       marquee.classList.add('marquee--ready');
 
-      instances.set(marquee, { clones, resizeObserver });
+      instances.set(marquee, { clones, resizeObserver, mutationObserver });
     };
 
     const destroy = (marquee) => {
       const state = instances.get(marquee);
       if (!state) return;
       state.resizeObserver.disconnect();
-      state.clones.forEach((clone) => clone.remove());
+      state.mutationObserver.disconnect();
+      marquee.querySelectorAll('[data-marquee-clone]').forEach((clone) => clone.remove());
       marquee.classList.remove('marquee--ready');
       instances.delete(marquee);
     };
@@ -222,9 +276,7 @@
 {% schema %}
 {
   "name": "t:general.marquee",
-  "class": "section-marquee",
-  "enabled_on": { "templates": ["*"] },
-  "max_blocks": 50,
+  "tag": null,
   "blocks": [
     { "type": "marquee-item" }
   ],
@@ -266,6 +318,30 @@
       "type": "color",
       "id": "background_color",
       "label": "t:labels.background"
+    },
+    {
+      "type": "header",
+      "content": "t:general.gap"
+    },
+    {
+      "type": "range",
+      "id": "gap_desktop",
+      "label": "t:labels.desktop_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 48
+    },
+    {
+      "type": "range",
+      "id": "gap_mobile",
+      "label": "t:labels.mobile_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 32
     },
     {
       "type": "header",
@@ -314,7 +390,7 @@
   ],
   "presets": [
     {
-      "name": "t:general.marquee",
+      "name": "Marquee",
       "category": "t:general.content",
       "blocks": [
         {
@@ -323,7 +399,7 @@
           "settings": { "direction": "horizontal", "position": "center" },
           "blocks": [
             { "type": "heading", "settings": { "text": "<p>Diamond statement</p>", "heading_size": "md", "html_tag": "div" } },
-            { "type": "image", "settings": { "image_ratio_desktop": "wide", "width_desktop": "fill", "limit_width_desktop": true, "max_width_desktop": 144, "corner_radius": 100 } }
+            { "type": "image", "settings": { "image_ratio_desktop": "custom", "image_ratio_custom_width_desktop": 2, "image_ratio_custom_height_desktop": 1, "width_desktop": "fill", "corner_radius": 0 } }
           ]
         },
         {
@@ -332,7 +408,7 @@
           "settings": { "direction": "horizontal", "position": "center" },
           "blocks": [
             { "type": "heading", "settings": { "text": "<p>Birthstone</p>", "heading_size": "md", "html_tag": "div" } },
-            { "type": "image", "settings": { "image_ratio_desktop": "wide", "width_desktop": "fill", "limit_width_desktop": true, "max_width_desktop": 144, "corner_radius": 100 } }
+            { "type": "image", "settings": { "image_ratio_desktop": "custom", "image_ratio_custom_width_desktop": 2, "image_ratio_custom_height_desktop": 1, "width_desktop": "fill", "corner_radius": 0 } }
           ]
         },
         {
@@ -341,7 +417,7 @@
           "settings": { "direction": "horizontal", "position": "center" },
           "blocks": [
             { "type": "heading", "settings": { "text": "<p>Diamond statement</p>", "heading_size": "md", "html_tag": "div" } },
-            { "type": "image", "settings": { "image_ratio_desktop": "wide", "width_desktop": "fill", "limit_width_desktop": true, "max_width_desktop": 144, "corner_radius": 100 } }
+            { "type": "image", "settings": { "image_ratio_desktop": "custom", "image_ratio_custom_width_desktop": 2, "image_ratio_custom_height_desktop": 1, "width_desktop": "fill", "corner_radius": 0 } }
           ]
         }
       ]

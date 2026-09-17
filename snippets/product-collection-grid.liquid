@@ -1,8 +1,9 @@
 {% doc %}
   Renders the shared responsive product collection grid used by Product List
   and Collection Tab. Parents provide the resource and setting source; this
-  renderer owns normalization, placeholders, columns, gaps, item markup, and
-  the canonical Product Card snippet.
+  renderer owns normalization, placeholders, columns, gaps and the shared
+  carousel/grid shell. Callers can provide pre-rendered item content when a
+  nested theme block must own each item.
 
   @param {object} [collection] - Collection resource to render
   @param {number} [max_products] - Maximum number of products to render
@@ -21,7 +22,6 @@
   @param {string} [item_class] - Additional class for each grid item
   @param {string} [items_data_attributes] - Additional grid data attributes
   @param {boolean} [next_slide_preview] - Whether to reveal the next slide on desktop
-  @param {boolean} [next_slide_preview_on_mobile] - Whether to show a 1.2-slide mobile preview
   @param {string} [carousel_id] - Stable ID for the carousel root
   @param {string} [aria_label] - Accessible name for the carousel
   @param {string} [previous_selector] - CSS selector for the previous control
@@ -33,6 +33,7 @@
   @param {boolean} [autoplay] - Whether the carousel auto-rotates
   @param {boolean} [autoplay_pause_on_hover] - Whether pointer hover pauses autoplay
   @param {number} [autoplay_delay] - Autoplay delay in milliseconds
+  @param {string} [items_content] - Optional pre-rendered item markup. When provided, the caller owns item rendering.
   @param {object} [product_card_block] - Direct Product Card child settings and editor attributes
   @param {boolean} [product_card_override_enabled] - Whether to use legacy card setting overrides
   @param {boolean} [product_card_show_ranking_override] - Legacy card ranking override
@@ -60,8 +61,10 @@
   endunless
 
   assign product_collection_grid_show_pagination = false
-  if show_pagination and product_collection_grid_layout == 'carousel'
-    assign product_collection_grid_show_pagination = true
+  if product_collection_grid_layout == 'carousel'
+    if show_pagination == true or show_pagination == 'true'
+      assign product_collection_grid_show_pagination = true
+    endif
   endif
 
   assign product_collection_grid_autoplay_enabled = false
@@ -187,7 +190,10 @@
 {% endcapture %}
 {% assign product_collection_grid_style = product_collection_grid_style | strip %}
 
-{% if product_collection_grid_items != blank %}
+{% assign product_collection_grid_content = blank %}
+{% if items_content != blank %}
+  {% assign product_collection_grid_content = items_content %}
+{% elsif product_collection_grid_items != blank %}
   {% capture product_collection_grid_content %}
     {% for product_collection_grid_item in product_collection_grid_items limit: product_collection_grid_item_limit %}
       {% liquid
@@ -210,7 +216,9 @@
       </div>
     {% endfor %}
   {% endcapture %}
+{% endif %}
 
+{% if product_collection_grid_content != blank %}
   {% if product_collection_grid_layout == 'carousel' %}
     {% capture product_collection_grid_carousel_attributes %}
       data-product-collection-grid
@@ -229,17 +237,19 @@
     {% endcapture %}
 
     {% capture product_collection_grid_pagination %}
-      {% capture product_collection_grid_pagination_style %}
-        {{ pagination_style }}
-        {% if product_collection_grid_autoplay_enabled %}--swiper-pagination-bullet-progress-duration: {{ product_collection_grid_autoplay_delay }}ms;{% endif %}
-      {% endcapture %}
-      {% assign product_collection_grid_pagination_style = product_collection_grid_pagination_style | strip %}
-      {% render 'swiper-pagination',
-        show: product_collection_grid_show_pagination,
-        type: product_collection_grid_pagination_type,
-        class: pagination_class,
-        style: product_collection_grid_pagination_style
-      %}
+      {% if product_collection_grid_show_pagination %}
+        {% capture product_collection_grid_pagination_style %}
+          {{ pagination_style }}
+          {% if product_collection_grid_autoplay_enabled %}--swiper-pagination-bullet-progress-duration: {{ product_collection_grid_autoplay_delay }}ms;{% endif %}
+        {% endcapture %}
+        {% assign product_collection_grid_pagination_style = product_collection_grid_pagination_style | strip %}
+        <div
+          class="swiper-pagination{% if pagination_class != blank %} {{ pagination_class }}{% endif %}"
+          data-product-collection-pagination
+          data-pagination-type="{{ product_collection_grid_pagination_type }}"
+          {% if product_collection_grid_pagination_style != blank %}style="{{ product_collection_grid_pagination_style }}"{% endif %}
+        ></div>
+      {% endif %}
     {% endcapture %}
 
     {% render 'swiper-carousel',
@@ -250,7 +260,6 @@
       aria_label: product_collection_grid_aria_label,
       pagination: product_collection_grid_pagination,
       show_next_slide_preview: next_slide_preview,
-      show_next_slide_preview_on_mobile: next_slide_preview_on_mobile,
       autoplay: autoplay,
       pause_on_hover: autoplay_pause_on_hover,
       autoplay_delay: autoplay_delay

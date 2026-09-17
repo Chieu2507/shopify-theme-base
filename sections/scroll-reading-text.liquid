@@ -8,6 +8,10 @@
   assign padding_right = section.settings.padding_right | default: 0 | plus: 0
   assign padding_bottom = section.settings.padding_bottom | default: 0 | plus: 0
   assign padding_left = section.settings.padding_left | default: 0 | plus: 0
+  assign padding_top_mobile = section.settings.padding_top_mobile | default: padding_top | plus: 0
+  assign padding_right_mobile = section.settings.padding_right_mobile | default: padding_right | plus: 0
+  assign padding_bottom_mobile = section.settings.padding_bottom_mobile | default: padding_bottom | plus: 0
+  assign padding_left_mobile = section.settings.padding_left_mobile | default: padding_left | plus: 0
 %}
 
 {% capture value_proposition_style %}
@@ -15,6 +19,12 @@
   {% if padding_right != 0 %}--value-proposition-padding-right: {{ padding_right }}px;{% endif %}
   {% if padding_bottom != 0 %}--value-proposition-padding-bottom: {{ padding_bottom }}px;{% endif %}
   {% if padding_left != 0 %}--value-proposition-padding-left: {{ padding_left }}px;{% endif %}
+  {% if section.settings.customize_mobile_padding %}
+    {% if padding_top_mobile != padding_top %}--value-proposition-padding-top-mobile: {{ padding_top_mobile }}px;{% endif %}
+    {% if padding_right_mobile != padding_right %}--value-proposition-padding-right-mobile: {{ padding_right_mobile }}px;{% endif %}
+    {% if padding_bottom_mobile != padding_bottom %}--value-proposition-padding-bottom-mobile: {{ padding_bottom_mobile }}px;{% endif %}
+    {% if padding_left_mobile != padding_left %}--value-proposition-padding-left-mobile: {{ padding_left_mobile }}px;{% endif %}
+  {% endif %}
 {% endcapture %}
 {% assign value_proposition_style = value_proposition_style | strip %}
 
@@ -31,7 +41,7 @@
   <div class="container page-width value-proposition-01__container">
     <div class="value-proposition-01__content align-content">
       {% content_for 'block', type: 'text', id: 'text' %}
-      {% content_for 'block', type: 'heading', id: 'heading' %}
+      {% content_for 'block', type: 'editorial-text', id: 'editorial-text' %}
       {% content_for 'block', type: 'button', id: 'button' %}
       {% content_for 'blocks' %}
     </div>
@@ -47,6 +57,15 @@
     padding-bottom: var(--value-proposition-padding-bottom, 0px);
     padding-left: var(--value-proposition-padding-left, 0px);
     background-color: var(--value-proposition-background, var(--background-color));
+  }
+
+  @media (max-width: 767.98px) {
+    .value-proposition-01 {
+      padding-top: var(--value-proposition-padding-top-mobile, var(--value-proposition-padding-top, 0px));
+      padding-right: var(--value-proposition-padding-right-mobile, var(--value-proposition-padding-right, 0px));
+      padding-bottom: var(--value-proposition-padding-bottom-mobile, var(--value-proposition-padding-bottom, 0px));
+      padding-left: var(--value-proposition-padding-left-mobile, var(--value-proposition-padding-left, 0px));
+    }
   }
 
   .value-proposition-01__background {
@@ -65,6 +84,7 @@
   .value-proposition-01__container {
     position: relative;
     z-index: 1;
+    padding-inline: 0;
   }
 
   .value-proposition-01__content {
@@ -196,13 +216,30 @@
 
 {% schema %}
 {
-  "name": "Value Proposition 01",
+  "name": "Scroll reading text",
   "class": "section-value-proposition-01",
   "enabled_on": { "templates": ["*"] },
   "blocks": [
-    { "type": "text" },
+    { "type": "header" },
     { "type": "heading" },
-    { "type": "button" }
+    { "type": "editorial-text" },
+    { "type": "eyebrow" },
+    { "type": "text" },
+    { "type": "image" },
+    { "type": "image-card" },
+    { "type": "video" },
+    { "type": "button" },
+    { "type": "buttons" },
+    { "type": "icon" },
+    { "type": "divider" },
+    { "type": "spacer" },
+    { "type": "group" },
+    { "type": "marquee" },
+    { "type": "row" },
+    { "type": "grid" },
+    { "type": "email-signup" },
+    { "type": "contact-form" },
+    { "type": "product-list" }
   ],
   "settings": [
     {
@@ -268,12 +305,62 @@
       "step": 1,
       "unit": "px",
       "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_padding",
+      "label": "t:labels.customize_mobile_padding",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "padding_top_mobile",
+      "label": "t:labels.mobile_top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ section.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_right_mobile",
+      "label": "t:labels.mobile_right_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ section.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "label": "t:labels.mobile_bottom_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ section.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_left_mobile",
+      "label": "t:labels.mobile_left_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ section.settings.customize_mobile_padding }}"
     }
   ],
   "presets": [
     {
-      "name": "Value Proposition 01",
-      "category": "Value Proposition",
+      "name": "Scroll reading text",
+      "category": "Storytelling",
       "settings": { "color_scheme": "scheme-1" },
       "blocks": [
         {
@@ -281,16 +368,16 @@
           "id": "text",
           "static": true,
           "settings": {
-            "text": "<p>The pavilion standard</p>",
+            "text": "<p>The pavilion standard</p>"
           }
         },
         {
-          "type": "heading",
-          "id": "heading",
+          "type": "editorial-text",
+          "id": "editorial-text",
           "static": true,
           "settings": {
             "text": "<p>Every piece that leaves our studio passes through no fewer than forty pairs of hands. We believe jewelry should outlive trends and outlive us.</p>",
-            "html_tag": "h2",
+            "size": "lg",
             "width": "custom",
             "max_width": 900
           }
