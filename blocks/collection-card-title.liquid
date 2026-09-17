@@ -57,6 +57,9 @@
     assign collection_card_title_show_count = true
     assign collection_card_title_product_count = collection_card_title_product_count | default: 0
   endif
+  if collection_card_title_show_count
+    assign collection_card_title_product_count = collection_card_title_product_count | default: 0
+  endif
 
   assign collection_card_title_padding_top = block.settings.padding_top | default: 0 | plus: 0
   assign collection_card_title_padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
@@ -88,7 +91,7 @@
 {% assign collection_card_title_style = collection_card_title_style | strip %}
 
 <div
-  class="collection-card-title"
+  class="collection-card-title{% if collection_card_title_show_count %} collection-card-title--with-count{% endif %}"
   {% if collection_card_title_style != blank %}style="{{ collection_card_title_style }}"{% endif %}
   {{ block.shopify_attributes }}
 >
@@ -97,8 +100,11 @@
   </{{ collection_card_title_tag }}>
 
   {% if collection_card_title_show_count %}
-    <span class="collection-card-title__count font-{{ collection_card_title_count_font }} body-{{ collection_card_title_count_size }}">
-      {{ 'collection_list.products_count' | t: count: collection_card_title_product_count }}
+    <span
+      class="collection-card-title__count font-{{ collection_card_title_count_font }} body-{{ collection_card_title_count_size }}"
+      aria-label="{{ 'collection_list.products_count' | t: count: collection_card_title_product_count | escape }}"
+    >
+      {{ collection_card_title_product_count }}
     </span>
   {% endif %}
 </div>
@@ -114,16 +120,27 @@
     text-align: inherit;
   }
 
+  .collection-card-title--with-count {
+    flex-direction: row;
+    align-items: baseline;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
   .collection-card-title__heading,
   .collection-card-title__count {
     margin: 0;
   }
 
   .collection-card-title__heading {
+    min-width: 0;
+    flex: 1 1 auto;
     overflow-wrap: anywhere;
   }
 
   .collection-card-title__count {
+    flex: 0 0 auto;
+    white-space: nowrap;
     color: color-mix(in srgb, currentColor 70%, transparent);
   }
 
