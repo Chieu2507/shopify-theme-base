@@ -4,11 +4,6 @@
     assign collections_background_scheme = section.settings.color_scheme.id
   endif
   assign collections_background_scheme = collections_background_scheme | handleize
-  assign collections_background_collection_scheme = section.settings.collection_color_scheme | default: 'scheme-1'
-  if section.settings.collection_color_scheme.id != blank
-    assign collections_background_collection_scheme = section.settings.collection_color_scheme.id
-  endif
-  assign collections_background_collection_scheme = collections_background_collection_scheme | handleize
 %}
 
 {% capture collections_background_style %}
@@ -30,7 +25,7 @@
 <div class="section-spacing collections-with-background color-scheme section-color-scope {{ collections_background_scheme }}" style="{{ collections_background_style | strip }}" data-collections-background data-title-layout="{{ section.settings.title_layout }}" data-desktop-position="{{ section.settings.desktop_position }}" data-mobile-layout="{{ section.settings.mobile_layout }}" data-mobile-position="{{ section.settings.mobile_position }}" data-sticky-title="{{ section.settings.sticky_title }}" data-outline-text="{{ section.settings.outline_text }}">
   <div class="collections-with-background__frame collections-with-background__frame--{{ section.settings.section_width }} collections-with-background__frame--{{ section.settings.height }} collections-with-background__frame--mobile-{{ section.settings.mobile_width }} collections-with-background__frame--mobile-height-{{ section.settings.mobile_height }}">
     <div class="collections-with-background__panels" data-collections-background-panels>{% content_for 'blocks' %}</div>
-    <div class="collections-with-background__titles color-scheme section-color-scope {{ collections_background_collection_scheme }}" role="tablist" aria-label="Collections" data-collections-background-tabs></div>
+    <div class="collections-with-background__titles" role="tablist" aria-label="Collections" data-collections-background-tabs></div>
   </div>
 </div>
 
@@ -50,8 +45,9 @@
   .collections-with-background__frame--full_screen { min-height: 100svh; }
   .collections-with-background__panels, .collection-background-item, .collection-background-item__panel { position: absolute; inset: 0; }
   .collection-background-item__panel[hidden] { display: none; }
-  .collection-background-item__media, .collection-background-item__media img, .collection-background-item__media video, .collection-background-item__overlay { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
-  .collection-background-item__media img, .collection-background-item__media video { object-fit: cover; }
+  .collection-background-item__media, .collection-background-item__media img, .collection-background-item__media video, .collection-background-item__media svg, .collection-background-item__overlay { position: absolute; inset: 0; display: block; width: 100%; height: 100%; }
+  .collection-background-item__media img, .collection-background-item__media video, .collection-background-item__media svg { object-fit: cover; transform: scale(1); transition: transform 400ms var(--motion-ease-standard); }
+  .collection-background-item.is-active .collection-background-item__media img, .collection-background-item.is-active .collection-background-item__media video, .collection-background-item.is-active .collection-background-item__media svg { transform: scale(1.035); }
   .collection-background-item__overlay { background: var(--collection-background-overlay-color, #000); opacity: var(--collection-background-overlay-opacity, 0); }
   .collections-with-background__titles { position: absolute; z-index: 2; display: flex; gap: var(--collections-background-gap); width: min(100% - 4rem, var(--collections-background-title-width)); color: var(--collection-background-body-color, var(--body-color)); }
   [data-desktop-position='top_left'] .collections-with-background__titles { inset: 2rem auto auto 2rem; justify-content: flex-start; text-align: left; }
@@ -71,6 +67,7 @@
   .collection-background-item__mobile-title { display: none; }
   [data-outline-text='true'] .collection-background-item__trigger:not([aria-selected='true']) { color: transparent; -webkit-text-stroke: 1px var(--body-color); }
   .collection-background-item__trigger:focus-visible { outline: 2px solid currentColor; outline-offset: .25rem; }
+  @media (prefers-reduced-motion: reduce) { .collection-background-item__media img, .collection-background-item__media video, .collection-background-item__media svg { transition: none; } }
   .is-sticky-title .collections-with-background__titles { position: fixed; z-index: var(--z-sticky, 20); }
   @media (min-width: 768px) and (max-width: 1149.98px) { .collections-with-background { --section-padding-top: calc(var(--collections-background-padding-top) * .75); --section-padding-bottom: calc(var(--collections-background-padding-bottom) * .75); } .collections-with-background__frame { --collections-background-page-margin: var(--page-margin-tablet); } }
   @media (max-width: 767.98px) {

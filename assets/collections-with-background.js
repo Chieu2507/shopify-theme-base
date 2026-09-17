@@ -9,6 +9,7 @@ const activate = (state, id, focus = false) => {
     candidate.trigger.setAttribute('aria-selected', String(active));
     candidate.trigger.tabIndex = active ? 0 : -1;
     candidate.panel.hidden = !active;
+    candidate.item.classList.toggle('is-active', active);
   });
   if (focus) entry.trigger.focus();
 };
@@ -22,6 +23,7 @@ const initialize = (root) => {
       id: item.dataset.itemId,
       trigger: item.querySelector('[data-collections-background-trigger]'),
       panel: item.querySelector('[data-collections-background-panel]'),
+      item,
     }))
     .filter((entry) => entry.trigger && entry.panel);
   if (!entries.length) return;
@@ -60,6 +62,18 @@ const initialize = (root) => {
   tablist.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-collections-background-trigger]');
     const entry = entries.find((candidate) => candidate.trigger === trigger);
+    if (entry) activate(state, entry.id);
+  }, { signal: controller.signal });
+
+  tablist.addEventListener('pointerover', (event) => {
+    if (event.pointerType === 'touch') return;
+    const trigger = event.target.closest('[data-collections-background-trigger]');
+    const entry = entries.find((candidate) => candidate.trigger === trigger);
+    if (entry) activate(state, entry.id);
+  }, { signal: controller.signal });
+
+  tablist.addEventListener('focusin', (event) => {
+    const entry = entries.find((candidate) => candidate.trigger === event.target);
     if (entry) activate(state, entry.id);
   }, { signal: controller.signal });
 

@@ -13,6 +13,14 @@
   assign item_image = block.settings.image | default: item_collection.featured_image | default: item_collection.image
   assign item_mobile_image = block.settings.mobile_image | default: item_image
   assign item_id = 'CollectionBackground-' | append: section.id | append: '-' | append: block.id
+  assign item_placeholder_index = 1
+  for section_block in section.blocks
+    if section_block.id == block.id
+      assign item_placeholder_index = forloop.index0 | modulo: 6 | plus: 1
+      break
+    endif
+  endfor
+  assign item_placeholder = 'collection-' | append: item_placeholder_index
   assign item_scheme = section.settings.collection_color_scheme | default: 'scheme-1'
   if section.settings.collection_color_scheme.id != blank
     assign item_scheme = section.settings.collection_color_scheme.id
@@ -28,7 +36,7 @@
       {% elsif item_image != blank %}
         <picture>{% if item_mobile_image != blank %}<source media="(max-width: 767.98px)" srcset="{{ item_mobile_image | image_url: width: 1000 }}">{% endif %}{{ item_image | image_url: width: 2400 | image_tag: widths: '750, 1100, 1500, 2000, 2400', sizes: '100vw', alt: '' }}</picture>
       {% else %}
-        {{ 'collection-1' | placeholder_svg_tag }}
+        {{ item_placeholder | placeholder_svg_tag }}
       {% endif %}
     </div>
     {% if block.settings.show_overlay %}<span class="collection-background-item__overlay" style="--collection-background-overlay-color: {{ block.settings.overlay_color }}; --collection-background-overlay-opacity: 0.45;" aria-hidden="true"></span>{% endif %}
