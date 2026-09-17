@@ -86,17 +86,12 @@ const updateParallax = (root) => {
 
 const paginationOptions = (root) => {
   const element = root.querySelector('[data-slideshow-pagination]');
-  if (!element || element.dataset.paginationType === 'progress_bar') return {};
-  const type = element.dataset.paginationType;
-  const paginationType = type === 'numbers' ? 'fraction' : 'bullets';
+  if (!element || element.dataset.paginationType === 'progress_bar' || element.dataset.paginationType === 'numbers') return {};
   return {
     pagination: {
       el: element,
-      type: paginationType,
-      clickable: paginationType === 'bullets',
-      renderFraction: type === 'numbers'
-        ? (currentClass, totalClass) => `<span class="${currentClass}"></span><span class="slideshow__pagination-separator" aria-hidden="true"> / </span><span class="${totalClass}"></span>`
-        : undefined,
+      type: 'bullets',
+      clickable: true,
     },
   };
 };
@@ -179,21 +174,86 @@ const createSegmentedPagination = (root, swiper, loop, slideCount) => {
   };
 };
 
+const createNumberedPagination = (root, swiper, loop, slideCount) => {
+  const element = root.querySelector('[data-slideshow-pagination]');
+  if (!element || element.dataset.paginationType !== 'numbers' || slideCount < 1) return null;
+
+  const controller = new AbortController();
+  const controlsId = carouselId(swiper);
+  const paginationBulletMessage = swiper.params.a11y?.paginationBulletMessage || 'Go to slide {{index}}';
+  const numbers = Array.from({ length: slideCount }, (_, index) => {
+    const number = document.createElement('button');
+    number.className = 'slideshow__pagination-number';
+    number.type = 'button';
+    number.dataset.slideshowPaginationIndex = String(index);
+    number.textContent = String(index + 1);
+    number.setAttribute('aria-label', paginationBulletMessage.replace('{{index}}', String(index + 1)));
+    if (controlsId) number.setAttribute('aria-controls', controlsId);
+    return number;
+  });
+
+  element.replaceChildren(...numbers);
+
+  const getCurrentIndex = () => {
+    const currentIndex = loop
+      ? loop.logicalIndex(swiper.activeIndex)
+      : swiper.params.loop
+        ? swiper.realIndex
+        : swiper.activeIndex;
+    return normalizePaginationIndex(currentIndex, slideCount);
+  };
+
+  const update = () => {
+    if (swiper.destroyed) return;
+    const currentIndex = getCurrentIndex();
+    numbers.forEach((number, index) => {
+      const active = index === currentIndex;
+      number.classList.toggle('slideshow__pagination-number--active', active);
+      if (active) number.setAttribute('aria-current', 'true');
+      else number.removeAttribute('aria-current');
+    });
+  };
+
+  const goTo = (index) => {
+    const targetIndex = normalizePaginationIndex(index, slideCount);
+    if (loop) swiper.slideTo(loop.originalIndex(targetIndex));
+    else if (swiper.params.loop) swiper.slideToLoop(targetIndex);
+    else swiper.slideTo(targetIndex);
+  };
+
+  element.addEventListener('click', (event) => {
+    const number = event.target?.closest?.('[data-slideshow-pagination-index]');
+    if (!number || !element.contains(number)) return;
+    event.preventDefault();
+    if (swiper.destroyed || swiper.animating) return;
+    goTo(number.dataset.slideshowPaginationIndex);
+  }, { signal: controller.signal });
+
+  const paginationEvents = ['activeIndexChange', 'realIndexChange', 'slideChangeTransitionEnd'];
+  paginationEvents.forEach((eventName) => swiper.on(eventName, update));
+  update();
+
+  return {
+    destroy() {
+      controller.abort();
+      paginationEvents.forEach((eventName) => swiper.off(eventName, update));
+      element.replaceChildren();
+    },
+  };
+};
+
 const createTwoSlidePagination = (root, swiper, loop) => {
   const element = root.querySelector('[data-slideshow-pagination]');
   if (!element || !loop) return null;
   const type = element.dataset.paginationType;
   if (type === 'progress_bar') return createSegmentedPagination(root, swiper, loop, 2);
+  if (type === 'numbers') return createNumberedPagination(root, swiper, loop, 2);
   const controller = new AbortController();
   const update = () => {
     const current = loop.logicalIndex(swiper.activeIndex);
-    if (type === 'numbers') {
-      element.innerHTML = `<span class="swiper-pagination-current">${current + 1}</span><span class="slideshow__pagination-separator" aria-hidden="true"> / </span><span class="swiper-pagination-total">2</span>`;
-    } else {
-      element.querySelectorAll('[data-slideshow-pagination-index]').forEach((bullet) => {
-        bullet.classList.toggle('swiper-pagination-bullet-active', Number(bullet.dataset.slideshowPaginationIndex) === current);
-      });
-    }
+    element.querySelectorAll('[data-slideshow-pagination-index]').forEach((bullet) => {
+      bullet.classList.toggle('swiper-pagination-bullet-active', Number(bullet.dataset.slideshowPaginationIndex) === current);
+    });
   };
 
   if (type === 'bullets') {
@@ -328,7 +388,7 @@ const init = (root) => {
   const fade = !pageWidth && root.dataset.transition === 'fade';
   const autoplay = root.dataset.autoplay === 'true' && !reducedMotion();
   const paginationType = root.querySelector('[data-slideshow-pagination]')?.dataset.paginationType;
-  const paginationModules = paginationType === 'progress_bar' ? [] : [Pagination];
+  const paginationModules = paginationType === 'progress_bar' || paginationType === 'numbers' ? [] : [Pagination];
   const options = {
     modules: twoSlideLoop ? [] : (fade ? [EffectFade, ...paginationModules] : paginationModules),
     slidesPerView: 1,
@@ -354,7 +414,9 @@ const init = (root) => {
   }
   const customPagination = twoSlideLoop
     ? createTwoSlidePagination(root, swiper, twoSlideLoop)
-    : createSegmentedPagination(root, swiper, null, slideCount);
+    : paginationType === 'numbers'
+      ? createNumberedPagination(root, swiper, null, slideCount)
+      : createSegmentedPagination(root, swiper, null, slideCount);
   if (twoSlideLoop) {
     swiper.on('slideChangeTransitionEnd', twoSlideLoop.restore);
     swiper.on('slideChangeTransitionStart', twoSlideLoop.clearReset);
