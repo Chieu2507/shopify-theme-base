@@ -27,6 +27,11 @@
     assign product_list_show_next_slide_preview = true
   endif
 
+  assign product_list_show_next_slide_preview_on_mobile = false
+  if product_list_layout == 'carousel' and block.settings.show_next_slide_preview_on_mobile
+    assign product_list_show_next_slide_preview_on_mobile = true
+  endif
+
   assign product_list_gap_desktop = block.settings.product_gap_desktop | default: block.settings.gap_horizontal | default: 4 | plus: 0
   assign product_list_gap_mobile = block.settings.product_gap_mobile | default: block.settings.gap_horizontal_mobile | default: 4 | plus: 0
   if product_list_gap_desktop < 0 or product_list_gap_desktop > 40
@@ -159,6 +164,7 @@
       item_class: 'product-list__item',
       items_data_attributes: 'data-product-list-items',
       next_slide_preview: product_list_show_next_slide_preview,
+      next_slide_preview_on_mobile: product_list_show_next_slide_preview_on_mobile,
       carousel_id: product_list_carousel_id,
       aria_label: product_list_aria_label,
       previous_selector: '[data-product-list-previous]',
@@ -328,6 +334,13 @@
         { "value": "2", "label": "2" }
       ],
       "default": "1"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_next_slide_preview_on_mobile",
+      "label": "t:labels.show_next_slide_preview_on_mobile",
+      "default": false,
+      "visible_if": "{{ block.settings.layout_type == 'carousel' }}"
     },
     {
       "type": "checkbox",
@@ -523,6 +536,7 @@
         "layout_type": "carousel",
         "columns_desktop": "3",
         "columns_mobile": "1",
+        "show_next_slide_preview_on_mobile": false,
         "show_next_slide_preview_on_desktop": false,
         "product_gap_desktop": 4,
         "product_gap_mobile": 4,
