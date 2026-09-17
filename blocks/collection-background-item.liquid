@@ -3,7 +3,13 @@
 {% enddoc %}
 {% liquid
   assign item_collection = block.settings.collection
-  assign item_title = block.settings.custom_title | strip | default: item_collection.title | default: 'collection_list.default_title' | t
+  assign item_title = block.settings.custom_title | strip
+  if item_title == blank and item_collection != blank
+    assign item_title = item_collection.title
+  endif
+  if item_title == blank
+    assign item_title = 'collection_list.default_title' | t
+  endif
   assign item_image = block.settings.image | default: item_collection.featured_image | default: item_collection.image
   assign item_mobile_image = block.settings.mobile_image | default: item_image
   assign item_id = 'CollectionBackground-' | append: section.id | append: '-' | append: block.id
@@ -13,8 +19,9 @@
   endif
 %}
 <div class="collection-background-item" data-collections-background-item data-item-id="{{ item_id }}" {{ block.shopify_attributes }}>
-  <button id="{{ item_id }}-tab" class="collection-background-item__trigger" type="button" role="tab" aria-selected="false" aria-controls="{{ item_id }}-panel" tabindex="-1" data-collections-background-trigger>{{ item_title | escape }}</button>
+  <button id="{{ item_id }}-tab" class="collection-background-item__trigger" type="button" role="tab" aria-selected="false" aria-controls="{{ item_id }}-panel" tabindex="-1" data-collections-background-trigger>{{ item_title | escape }}{% if section.settings.show_product_count and item_collection != blank %}<span class="collection-background-item__count">{{ item_collection.all_products_count }}</span>{% endif %}</button>
   <div id="{{ item_id }}-panel" class="collection-background-item__panel color-scheme section-color-scope {{ item_scheme }}" role="tabpanel" aria-labelledby="{{ item_id }}-tab" data-collections-background-panel>
+    <{{ section.settings.heading_tag }} class="visually-hidden">{{ item_title | escape }}</{{ section.settings.heading_tag }}>
     <div class="collection-background-item__media" aria-hidden="true">
       {% if block.settings.media_type == 'video' and block.settings.video != blank %}
         {{ block.settings.video | video_tag: autoplay: true, loop: true, muted: true, controls: false, image_size: '2400x' }}

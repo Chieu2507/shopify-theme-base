@@ -1,0 +1,31 @@
+{% liquid
+  assign item_collection = block.settings.collection
+  assign item_title = block.settings.custom_title | default: item_collection.title | default: 'Collection title'
+  assign item_image = block.settings.custom_image | default: item_collection.featured_image | default: item_collection.image
+  assign item_id = block.id
+%}
+<div class="collections-with-tabs-item" {{ block.shopify_attributes }}>
+  <button id="CollectionsWithTabsTab-{{ item_id }}" class="collections-with-tabs__tab" type="button" role="tab" aria-controls="CollectionsWithTabsPanel-{{ item_id }}" aria-selected="false" tabindex="-1" data-collections-with-tabs-tab data-collections-with-tabs-id="{{ item_id }}">
+    <span>{{ item_title | escape }}</span>
+    {% if section.settings.show_product_count and item_collection != blank %}<small>{{ item_collection.products_count }}</small>{% endif %}
+  </button>
+  <div id="CollectionsWithTabsPanel-{{ item_id }}" class="collections-with-tabs__panel{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ block.settings.color_scheme | default: 'scheme-1' }}{% endif %}" role="tabpanel" aria-labelledby="CollectionsWithTabsTab-{{ item_id }}" hidden data-collections-with-tabs-panel data-collections-with-tabs-id="{{ item_id }}">
+    <div class="collections-with-tabs__media{% if block.settings.custom_background %} collections-with-tabs__media--custom{% endif %}"{% if block.settings.custom_background %} style="--collections-with-tabs-custom-background: {{ block.settings.background_color }}"{% endif %}>
+      {% if item_image != blank %}
+        {{ item_image | image_url: width: 1600 | image_tag: widths: '480, 720, 960, 1200, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: item_title, loading: 'lazy' }}
+      {% else %}
+        {{ 'collection-1' | placeholder_svg_tag: 'collections-with-tabs__placeholder' }}
+      {% endif %}
+    </div>
+    {% if section.settings.show_featured_products and item_collection != blank %}
+      <div class="collections-with-tabs__products">
+        {% for product in item_collection.products limit: section.settings.products_to_show %}
+          {% render 'product-card', product: product %}
+        {% endfor %}
+      </div>
+    {% endif %}
+  </div>
+</div>
+{% schema %}
+{"name":"Collection","tag":null,"settings":[{"type":"collection","id":"collection","label":"Collection"},{"type":"text","id":"custom_title","label":"Custom title"},{"type":"image_picker","id":"custom_image","label":"Custom image"},{"type":"header","content":"Color"},{"type":"select","id":"color_type","label":"Color type","options":[{"value":"inherit","label":"Inherit"},{"value":"color_scheme","label":"Color scheme"}],"default":"inherit"},{"type":"color_scheme","id":"color_scheme","label":"Color scheme","default":"scheme-1","visible_if":"{{ block.settings.color_type == 'color_scheme' }}"},{"type":"checkbox","id":"custom_background","label":"Custom background","default":false},{"type":"color","id":"background_color","label":"Background color","default":"#f1f1f1","visible_if":"{{ block.settings.custom_background }}"}],"presets":[{"name":"Collection"}]}
+{% endschema %}

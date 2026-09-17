@@ -4,6 +4,11 @@
     assign collections_background_scheme = section.settings.color_scheme.id
   endif
   assign collections_background_scheme = collections_background_scheme | handleize
+  assign collections_background_collection_scheme = section.settings.collection_color_scheme | default: 'scheme-1'
+  if section.settings.collection_color_scheme.id != blank
+    assign collections_background_collection_scheme = section.settings.collection_color_scheme.id
+  endif
+  assign collections_background_collection_scheme = collections_background_collection_scheme | handleize
 %}
 
 {% capture collections_background_style %}
@@ -25,7 +30,7 @@
 <div class="section-spacing collections-with-background color-scheme section-color-scope {{ collections_background_scheme }}" style="{{ collections_background_style | strip }}" data-collections-background data-title-layout="{{ section.settings.title_layout }}" data-desktop-position="{{ section.settings.desktop_position }}" data-mobile-layout="{{ section.settings.mobile_layout }}" data-mobile-position="{{ section.settings.mobile_position }}" data-outline-text="{{ section.settings.outline_text }}">
   <div class="collections-with-background__frame collections-with-background__frame--{{ section.settings.width }} collections-with-background__frame--{{ section.settings.height }} collections-with-background__frame--mobile-{{ section.settings.mobile_width }} collections-with-background__frame--mobile-height-{{ section.settings.mobile_height }}">
     <div class="collections-with-background__panels" data-collections-background-panels>{% content_for 'blocks' %}</div>
-    <div class="collections-with-background__titles" role="tablist" aria-label="Collections" data-collections-background-tabs></div>
+    <div class="collections-with-background__titles color-scheme section-color-scope {{ collections_background_collection_scheme }}" role="tablist" aria-label="Collections" data-collections-background-tabs></div>
   </div>
 </div>
 
@@ -60,6 +65,7 @@
   [data-title-layout='horizontal'] .collections-with-background__titles { flex-flow: row wrap; align-items: center; }
   .collection-background-item__trigger { position: relative; z-index: 1; padding: 0; border: 0; background: transparent; color: inherit; cursor: pointer; font: var(--font-heading-style) var(--font-heading-weight) var(--collections-background-heading-size) / var(--collections-background-heading-line-height) var(--font-heading-family); letter-spacing: var(--collections-background-heading-spacing); text-transform: var(--font-heading-xl-text-transform); opacity: var(--collections-background-text-opacity, .6); transition: opacity var(--motion-duration-standard) var(--motion-ease-standard); }
   .collection-background-item__trigger[aria-selected='true'], .collection-background-item__trigger:hover, .collection-background-item__trigger:focus-visible { opacity: 1; }
+  .collection-background-item__count { margin-inline-start: .2em; font-size: .55em; vertical-align: super; }
   [data-outline-text='true'] .collection-background-item__trigger { color: transparent; -webkit-text-stroke: 1px currentColor; }
   .collection-background-item__trigger:focus-visible { outline: 2px solid currentColor; outline-offset: .25rem; }
   @media (max-width: 767.98px) {
