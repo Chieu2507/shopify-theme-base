@@ -47,6 +47,16 @@ const initialize = (root) => {
   };
   updatePresentation();
 
+  const updateStickyTitle = () => {
+    if (root.dataset.stickyTitle !== 'true' || mobileQuery.matches) {
+      root.classList.remove('is-sticky-title');
+      return;
+    }
+    const bounds = root.getBoundingClientRect();
+    root.classList.toggle('is-sticky-title', bounds.top <= 0 && bounds.bottom > window.innerHeight);
+  };
+  updateStickyTitle();
+
   tablist.addEventListener('click', (event) => {
     const trigger = event.target.closest('[data-collections-background-trigger]');
     const entry = entries.find((candidate) => candidate.trigger === trigger);
@@ -65,6 +75,9 @@ const initialize = (root) => {
     activate(state, entries[next].id, true);
   }, { signal: controller.signal });
   mobileQuery.addEventListener('change', updatePresentation, { signal: controller.signal });
+  mobileQuery.addEventListener('change', updateStickyTitle, { signal: controller.signal });
+  window.addEventListener('scroll', updateStickyTitle, { passive: true, signal: controller.signal });
+  window.addEventListener('resize', updateStickyTitle, { passive: true, signal: controller.signal });
 };
 
 const initializeRoot = (root = document) => {
@@ -80,6 +93,7 @@ const destroyRoot = (root) => {
     const state = instances.get(node);
     if (!state) return;
     state.controller.abort();
+    node.classList.remove('is-sticky-title');
     state.entries.forEach((entry) => {
       entry.panel.hidden = false;
       entry.trigger.setAttribute('aria-selected', 'false');
