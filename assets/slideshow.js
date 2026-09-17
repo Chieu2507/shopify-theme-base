@@ -363,7 +363,7 @@ const init = (root) => {
   controlSchemeEvents.forEach((eventName) => swiper.on(eventName, syncControlScheme));
   syncControlScheme();
   const navigationController = bindNavigation(root, swiper);
-  const interval = autoplay ? startAutoplay(root, swiper, twoSlideLoop) : null;
+  const autoplayController = autoplay ? startAutoplay(root, swiper, twoSlideLoop) : null;
   let frame = 0;
   const scheduleParallax = () => {
     if (frame) return;
@@ -375,7 +375,7 @@ const init = (root) => {
   const updateLockedState = () => root.classList.toggle('slideshow--single-slide', Boolean(swiper.isLocked));
   swiper.on('lock unlock update resize', updateLockedState);
   updateLockedState();
-  states.set(root, { carousel, swiper, scheduleParallax, frame, interval, navigationController, updateLockedState, twoSlideLoop, customPagination, syncControlScheme });
+  states.set(root, { carousel, swiper, scheduleParallax, frame, autoplayController, navigationController, updateLockedState, twoSlideLoop, customPagination, syncControlScheme });
 };
 
 const destroy = (root) => {
@@ -383,7 +383,7 @@ const destroy = (root) => {
   if (!state) return;
   window.removeEventListener('scroll', state.scheduleParallax);
   if (state.frame) window.cancelAnimationFrame(state.frame);
-  state.interval?.destroy();
+  state.autoplayController?.destroy();
   state.navigationController.abort();
   state.customPagination?.destroy();
   if (state.twoSlideLoop) {
