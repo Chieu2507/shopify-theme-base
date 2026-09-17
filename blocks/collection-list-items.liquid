@@ -8,12 +8,6 @@
 {% enddoc %}
 
 {% liquid
-  assign collection_list_card_block = block.blocks | first
-  assign collection_list_card_editor_attributes = blank
-  if collection_list_card_block != blank
-    assign collection_list_card_editor_attributes = collection_list_card_block.shopify_attributes
-  endif
-
   assign collection_list_layout = block.settings.layout_type | default: block.settings.layout | default: 'carousel'
   unless collection_list_layout == 'grid' or collection_list_layout == 'carousel'
     assign collection_list_layout = 'carousel'
@@ -153,21 +147,13 @@
     {% if block.settings.collections != blank %}
       {% for collection in block.settings.collections %}
         <div class="{% if collection_list_layout == 'carousel' %}swiper-slide {% endif %}collection-card-list__item">
-          {% render 'collection-card',
-            collection: collection,
-            card_block: collection_list_card_block,
-            attributes: collection_list_card_editor_attributes
-          %}
+          {% content_for 'block', type: 'collection-card', id: 'collection-card', closest.collection: collection %}
         </div>
       {% endfor %}
     {% elsif request.design_mode %}
       {% for index in (1..collection_list_desktop_columns) %}
         <div class="{% if collection_list_layout == 'carousel' %}swiper-slide {% endif %}collection-card-list__item">
-          {% render 'collection-card',
-            card_block: collection_list_card_block,
-            placeholder: true,
-            attributes: collection_list_card_editor_attributes
-          %}
+          {% content_for 'block', type: 'collection-card', id: 'collection-card', placeholder: true %}
         </div>
       {% endfor %}
     {% endif %}
@@ -234,15 +220,6 @@
     </div>
   {% endif %}
 </div>
-
-{% comment %}
-  Keep the static Collection Card target discoverable to Theme Check and the
-  Theme Editor. The renderer uses the direct child settings for every item
-  because content_for is not available inside snippets.
-{% endcomment %}
-{% if false %}
-  {% content_for 'block', type: 'collection-card', id: 'collection-card' %}
-{% endif %}
 
 {% stylesheet %}
   .collection-card-list,
