@@ -116,22 +116,21 @@
 {% assign collection_card_title_style = collection_card_title_style | strip %}
 
 <div
-  class="collection-card-title{% if collection_card_title_show_count %} collection-card-title--with-count{% endif %}"
+  class="collection-card-title"
   {% if collection_card_title_style != blank %}style="{{ collection_card_title_style }}"{% endif %}
   {{ block.shopify_attributes }}
 >
   <{{ collection_card_title_tag }} class="collection-card-title__heading heading-text heading-{{ collection_card_title_size }}">
     {{ collection_card_title | escape }}
+    {% if collection_card_title_show_count %}
+      <span
+        class="collection-card-title__count font-{{ collection_card_title_count_font }} body-{{ collection_card_title_count_size }}"
+        aria-label="{{ 'collection_list.products_count' | t: count: collection_card_title_product_count | escape }}"
+      >
+        {{ collection_card_title_product_count }}
+      </span>
+    {% endif %}
   </{{ collection_card_title_tag }}>
-
-  {% if collection_card_title_show_count %}
-    <span
-      class="collection-card-title__count font-{{ collection_card_title_count_font }} body-{{ collection_card_title_count_size }}"
-      aria-label="{{ 'collection_list.products_count' | t: count: collection_card_title_product_count | escape }}"
-    >
-      {{ collection_card_title_product_count }}
-    </span>
-  {% endif %}
 </div>
 
 {% stylesheet %}
@@ -147,27 +146,20 @@
     text-align: inherit;
   }
 
-  .collection-card-title--with-count {
-    flex-direction: row;
-    align-items: baseline;
-    justify-content: space-between;
-    gap: 1rem;
-  }
-
-  .collection-card-title__heading,
-  .collection-card-title__count {
+  .collection-card-title__heading {
     margin: 0;
   }
 
   .collection-card-title__heading {
     min-width: 0;
-    flex: 1 1 auto;
     overflow-wrap: anywhere;
   }
 
   .collection-card-title__count {
-    flex: 0 0 auto;
+    display: inline-block;
     white-space: nowrap;
+    vertical-align: top;
+    padding-inline-start: 6px;
     color: color-mix(in srgb, currentColor 70%, transparent);
   }
 
