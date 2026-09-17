@@ -10,6 +10,7 @@ const initialize = (section) => {
   const controller = new AbortController();
   let timer = 0;
   let progressFrame = 0;
+  let activationFrame = 0;
   let paused = false;
   const duration = Math.max(1, Number(section.dataset.autoRotateSpeed || 6)) * 1000;
   const clearRotation = (resetProgress = true) => {
@@ -36,7 +37,13 @@ const initialize = (section) => {
       tab.setAttribute('aria-selected', String(active));
       tab.tabIndex = active ? 0 : -1;
     });
-    panels.forEach((panel) => { panel.hidden = panel.dataset.collectionsWithTabsId !== activeId; });
+    const activePanel = panels.find((panel) => panel.dataset.collectionsWithTabsId === activeId) || panels[0];
+    window.cancelAnimationFrame(activationFrame);
+    panels.forEach((panel) => {
+      panel.hidden = panel !== activePanel;
+      panel.dataset.active = 'false';
+    });
+    activationFrame = window.requestAnimationFrame(() => { activePanel.dataset.active = 'true'; });
     if (focus) activeTab.focus();
     scheduleRotation();
   };
@@ -91,7 +98,7 @@ const initialize = (section) => {
     else resume();
   }, { signal: controller.signal });
   activate(tabs[0].dataset.collectionsWithTabsId);
-  instances.set(section, { controller, clearRotation });
+  instances.set(section, { controller, clearRotation, get activationFrame() { return activationFrame; } });
 };
 
 const destroy = (section) => {
@@ -99,6 +106,7 @@ const destroy = (section) => {
   if (!state) return;
   state.controller.abort();
   state.clearRotation();
+  window.cancelAnimationFrame(state.activationFrame);
   instances.delete(section);
 };
 const initializeRoot = (root = document) => {
