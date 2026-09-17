@@ -18,7 +18,29 @@
   endif
   assign collection_card_scheme = collection_card_scheme | default: 'scheme-1' | handleize
   assign collection_card_placement = block.settings.placement | default: 'below_image'
-  assign collection_card_ratio = block.settings.ratio | default: 'original'
+  assign collection_card_ratio_setting = block.settings.ratio | default: 'auto'
+  if collection_card_ratio_setting == 'original'
+    assign collection_card_ratio_setting = 'auto'
+  endif
+  unless collection_card_ratio_setting == 'auto' or collection_card_ratio_setting == 'square' or collection_card_ratio_setting == 'portrait' or collection_card_ratio_setting == 'landscape' or collection_card_ratio_setting == 'wide' or collection_card_ratio_setting == 'custom'
+    assign collection_card_ratio_setting = 'auto'
+  endunless
+  assign collection_card_ratio = 'auto'
+  case collection_card_ratio_setting
+    when 'square'
+      assign collection_card_ratio = '1'
+    when 'portrait'
+      assign collection_card_ratio = '0.8'
+    when 'landscape'
+      assign collection_card_ratio = '1.3333'
+    when 'wide'
+      assign collection_card_ratio = '1.7778'
+    when 'custom'
+      assign collection_card_ratio = block.settings.ratio_custom | default: 1 | plus: 0
+      if collection_card_ratio < 0.3 or collection_card_ratio > 3
+        assign collection_card_ratio = 1
+      endif
+  endcase
   assign collection_card_gap_desktop = block.settings.gap_desktop | default: 4 | plus: 0
   assign collection_card_gap_mobile = block.settings.gap_mobile | default: collection_card_gap_desktop | plus: 0
   if collection_card_gap_desktop < 0 or collection_card_gap_desktop > 40
@@ -86,7 +108,7 @@
 <article
   class="collection-card-kernel collection-card-kernel--{{ collection_card_placement }} collection-card-kernel--{{ collection_card_ratio }}{% if collection_card_is_placeholder %} collection-card-kernel--placeholder{% else %} collection-card-kernel--linked{% endif %}{% if request.design_mode %} collection-card-kernel--design-mode{% endif %}{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ collection_card_scheme }}{% endif %}"
   data-collection-card
-  style="--card-border:{{ block.settings.border_thickness | default: 0 }}px;--card-align:{{ block.settings.alignment | default: 'left' }};{% if collection_card_padding_style != blank %}{{ collection_card_padding_style }}{% endif %}"
+  style="--card-border:{{ block.settings.border_thickness | default: 0 }}px;--card-align:{{ block.settings.alignment | default: 'left' }};--collection-card-ratio:{{ collection_card_ratio }};{% if collection_card_padding_style != blank %}{{ collection_card_padding_style }}{% endif %}"
   {{ block.shopify_attributes }}
 >
   <div class="collection-card-kernel__media{% if collection_card_image == blank %} placeholder-image{% endif %}">
@@ -141,14 +163,7 @@
     position: relative;
     z-index: 0;
     overflow: hidden;
-  }
-
-  .collection-card-kernel--square .collection-card-kernel__media {
-    aspect-ratio: 1;
-  }
-
-  .collection-card-kernel--portrait .collection-card-kernel__media {
-    aspect-ratio: 2 / 3;
+    aspect-ratio: var(--collection-card-ratio, auto);
   }
 
   .collection-card-kernel__media img,
@@ -211,5 +226,5 @@
 {% endstylesheet %}
 
 {% schema %}
-{"name":"t:general.collection_card","tag":null,"blocks":[{"type":"collection-card-button"},{"type":"collection-card-description"},{"type":"collection-card-title"}],"settings":[{"type":"header","content":"t:general.media"},{"type":"select","id":"ratio","label":"Ratio","options":[{"value":"original","label":"Original"},{"value":"square","label":"Square"},{"value":"portrait","label":"Portrait"}],"default":"original"},{"type":"header","content":"t:general.content"},{"type":"select","id":"placement","label":"Placement","options":[{"value":"on_image","label":"On image"},{"value":"below_image","label":"Below image"}],"default":"below_image"},{"type":"text_alignment","id":"alignment","label":"t:labels.alignment","default":"left"},{"type":"header","content":"t:labels.content_gap"},{"type":"range","id":"gap_desktop","label":"t:options.device.desktop","min":0,"max":40,"step":1,"unit":"px","default":4},{"type":"range","id":"gap_mobile","label":"t:options.device.mobile","min":0,"max":40,"step":1,"unit":"px","default":4},{"type":"header","content":"t:general.appearance"},{"type":"range","id":"border_thickness","label":"t:labels.border_thickness","min":0,"max":10,"step":1,"unit":"px","default":0},{"type":"select","id":"corner_radius","label":"t:labels.corner_radius","options":[{"value":"inherit","label":"Inherit"},{"value":"square","label":"Square"},{"value":"rounded","label":"Rounded"}],"default":"inherit"},{"type":"select","id":"shadow","label":"t:labels.shadow","options":[{"value":"none","label":"None"},{"value":"small","label":"Small"},{"value":"medium","label":"Medium"}],"default":"none"},{"type":"header","content":"t:general.color"},{"type":"select","id":"color_type","label":"t:labels.type","options":[{"value":"inherit","label":"t:options.color_type.inherit"},{"value":"color_scheme","label":"t:options.color_type.color_scheme"}],"default":"color_scheme"},{"type":"color_scheme","id":"color_scheme","label":"t:labels.color_scheme","default":"scheme-1","visible_if":"{{ block.settings.color_type == 'color_scheme' }}"},{"type":"header","content":"Content padding"},{"type":"range","id":"padding_top","label":"t:labels.top_padding","min":0,"max":100,"step":1,"unit":"px","default":16},{"type":"range","id":"padding_bottom","label":"t:labels.bottom_padding","min":0,"max":100,"step":1,"unit":"px","default":0},{"type":"range","id":"padding_left","label":"t:labels.left_padding","min":0,"max":100,"step":1,"unit":"px","default":0},{"type":"range","id":"padding_right","label":"t:labels.right_padding","min":0,"max":100,"step":1,"unit":"px","default":0},{"type":"checkbox","id":"customize_mobile_padding","label":"t:labels.customize_mobile_padding","default":false},{"type":"range","id":"padding_top_mobile","label":"t:labels.mobile_top_padding","min":0,"max":100,"step":1,"unit":"px","default":16,"visible_if":"{{ block.settings.customize_mobile_padding }}"},{"type":"range","id":"padding_bottom_mobile","label":"t:labels.mobile_bottom_padding","min":0,"max":100,"step":1,"unit":"px","default":0,"visible_if":"{{ block.settings.customize_mobile_padding }}"},{"type":"range","id":"padding_left_mobile","label":"t:labels.mobile_left_padding","min":0,"max":100,"step":1,"unit":"px","default":0,"visible_if":"{{ block.settings.customize_mobile_padding }}"},{"type":"range","id":"padding_right_mobile","label":"t:labels.mobile_right_padding","min":0,"max":100,"step":1,"unit":"px","default":0,"visible_if":"{{ block.settings.customize_mobile_padding }}"}],"presets":[{"name":"t:general.collection_card","blocks":[{"type":"collection-card-title","id":"title","static":true}]}]}
+{"name":"t:general.collection_card","tag":null,"blocks":[{"type":"collection-card-button"},{"type":"collection-card-description"},{"type":"collection-card-title"}],"settings":[{"type":"header","content":"t:general.media"},{"type":"select","id":"ratio","label":"t:labels.image_ratio","options":[{"value":"auto","label":"t:options.image_ratio.auto"},{"value":"square","label":"t:options.image_ratio.square"},{"value":"portrait","label":"t:options.image_ratio.portrait"},{"value":"landscape","label":"t:options.image_ratio.landscape"},{"value":"wide","label":"t:options.image_ratio.wide"},{"value":"custom","label":"t:options.image_ratio.custom"}],"default":"auto"},{"type":"range","id":"ratio_custom","label":"t:labels.custom_image_ratio","min":0.3,"max":3,"step":0.1,"default":1,"visible_if":"{{ block.settings.ratio == 'custom' }}"},{"type":"header","content":"t:general.content"},{"type":"select","id":"placement","label":"Placement","options":[{"value":"on_image","label":"On image"},{"value":"below_image","label":"Below image"}],"default":"below_image"},{"type":"text_alignment","id":"alignment","label":"t:labels.alignment","default":"left"},{"type":"header","content":"t:labels.content_gap"},{"type":"range","id":"gap_desktop","label":"t:options.device.desktop","min":0,"max":40,"step":1,"unit":"px","default":4},{"type":"range","id":"gap_mobile","label":"t:options.device.mobile","default":4,"min":0,"max":40,"step":1,"unit":"px"},{"type":"header","content":"t:general.appearance"},{"type":"range","id":"border_thickness","label":"t:labels.border_thickness","min":0,"max":10,"step":1,"unit":"px","default":0},{"type":"select","id":"corner_radius","label":"t:labels.corner_radius","options":[{"value":"inherit","label":"Inherit"},{"value":"square","label":"Square"},{"value":"rounded","label":"Rounded"}],"default":"inherit"},{"type":"select","id":"shadow","label":"t:labels.shadow","options":[{"value":"none","label":"None"},{"value":"small","label":"Small"},{"value":"medium","label":"Medium"}],"default":"none"},{"type":"header","content":"t:general.color"},{"type":"select","id":"color_type","label":"t:labels.type","options":[{"value":"inherit","label":"t:options.color_type.inherit"},{"value":"color_scheme","label":"t:options.color_type.color_scheme"}],"default":"color_scheme"},{"type":"color_scheme","id":"color_scheme","label":"t:labels.color_scheme","default":"scheme-1","visible_if":"{{ block.settings.color_type == 'color_scheme' }}"},{"type":"header","content":"Content padding"},{"type":"range","id":"padding_top","label":"t:labels.top_padding","min":0,"max":100,"step":1,"unit":"px","default":16},{"type":"range","id":"padding_bottom","label":"t:labels.bottom_padding","min":0,"max":100,"step":1,"unit":"px","default":0},{"type":"range","id":"padding_left","label":"t:labels.left_padding","min":0,"max":100,"step":1,"unit":"px","default":0},{"type":"range","id":"padding_right","label":"t:labels.right_padding","min":0,"max":100,"step":1,"unit":"px","default":0},{"type":"checkbox","id":"customize_mobile_padding","label":"t:labels.customize_mobile_padding","default":false},{"type":"range","id":"padding_top_mobile","label":"t:labels.mobile_top_padding","min":0,"max":100,"step":1,"unit":"px","default":16,"visible_if":"{{ block.settings.customize_mobile_padding }}"},{"type":"range","id":"padding_bottom_mobile","label":"t:labels.mobile_bottom_padding","min":0,"max":100,"step":1,"unit":"px","default":0,"visible_if":"{{ block.settings.customize_mobile_padding }}"},{"type":"range","id":"padding_left_mobile","label":"t:labels.mobile_left_padding","min":0,"max":100,"step":1,"unit":"px","default":0,"visible_if":"{{ block.settings.customize_mobile_padding }}"},{"type":"range","id":"padding_right_mobile","label":"t:labels.mobile_right_padding","min":0,"max":100,"step":1,"unit":"px","default":0,"visible_if":"{{ block.settings.customize_mobile_padding }}"}],"presets":[{"name":"t:general.collection_card","blocks":[{"type":"collection-card-title","id":"title","static":true}]}]}
 {% endschema %}
