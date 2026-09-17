@@ -26,17 +26,19 @@
     {% if item_collection != blank %}<a class="btn btn--secondary btn--icon collections-with-tabs__tab-action" href="{{ item_collection.url }}" aria-label="View {{ item_title | escape }}">↗</a>{% endif %}
   </div>
   <div id="CollectionsWithTabsPanel-{{ item_id }}" class="collections-with-tabs__panel{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ block.settings.color_scheme | default: 'scheme-1' }}{% endif %}" role="tabpanel" aria-labelledby="CollectionsWithTabsTab-{{ item_id }}" hidden data-collections-with-tabs-panel data-collections-with-tabs-id="{{ item_id }}">
-    <div class="collections-with-tabs__media{% if block.settings.custom_background %} collections-with-tabs__media--custom{% endif %}" style="--collections-with-tabs-panel-ratio: {{ image_ratio }}{% if block.settings.custom_background %};--collections-with-tabs-custom-background: {{ block.settings.background_color }}{% endif %}">
-      {% if item_image != blank %}
-        {{ item_image | image_url: width: 1600 | image_tag: widths: '480, 720, 960, 1200, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: item_title, loading: 'lazy' }}
-      {% else %}
-        {{ 'image' | placeholder_svg_tag: 'collections-with-tabs__placeholder' }}
-      {% endif %}
+    <div class="media collections-with-tabs__media{% if block.settings.custom_background %} collections-with-tabs__media--custom{% endif %}" style="--collections-with-tabs-panel-ratio: {{ image_ratio }}{% if block.settings.custom_background %};--collections-with-tabs-custom-background: {{ block.settings.background_color }}{% endif %}">
+      <div class="media__inner{% if item_image == blank %} placeholder-image{% endif %}">
+        {% if item_image != blank %}
+          {{ item_image | image_url: width: 1600 | image_tag: widths: '480, 720, 960, 1200, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: item_title, loading: 'lazy' }}
+        {% else %}
+          {{ 'image' | placeholder_svg_tag: 'collections-with-tabs__placeholder' }}
+        {% endif %}
+      </div>
       {% if section.settings.show_featured_products and item_collection != blank %}
         <div class="collections-with-tabs__featured" aria-label="Featured products">
           <span class="collections-with-tabs__featured-more" aria-hidden="true">+</span>
           {% for product in item_collection.products limit: section.settings.products_to_show %}
-            <a class="collections-with-tabs__featured-product" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
+            <a class="media collections-with-tabs__featured-product{% if product.featured_image == blank %} placeholder-image{% endif %}" href="{{ product.url }}" aria-label="{{ product.title | escape }}">
               {% if product.featured_image != blank %}
                 {{ product.featured_image | image_url: width: 160 | image_tag: widths: '80, 160', sizes: '40px', alt: product.title, loading: 'lazy' }}
               {% else %}
