@@ -82,10 +82,6 @@ const initialize = (section) => {
     paused = false;
     scheduleRotation();
   };
-  section.addEventListener('pointerenter', pause, { signal: controller.signal });
-  section.addEventListener('pointerleave', () => {
-    resume();
-  }, { signal: controller.signal });
   section.addEventListener('focusin', pause, { signal: controller.signal });
   section.addEventListener('focusout', () => {
     window.setTimeout(() => {
