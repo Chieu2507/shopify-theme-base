@@ -1,0 +1,32 @@
+{% doc %}
+  Renders one collection panel and its corresponding tab trigger for Collections background.
+{% enddoc %}
+{% liquid
+  assign item_collection = block.settings.collection
+  assign item_title = block.settings.custom_title | strip | default: item_collection.title | default: 'collection_list.default_title' | t
+  assign item_image = block.settings.image | default: item_collection.featured_image | default: item_collection.image
+  assign item_mobile_image = block.settings.mobile_image | default: item_image
+  assign item_id = 'CollectionBackground-' | append: section.id | append: '-' | append: block.id
+  assign item_scheme = section.settings.collection_color_scheme | default: 'scheme-1'
+  if section.settings.collection_color_scheme.id != blank
+    assign item_scheme = section.settings.collection_color_scheme.id
+  endif
+%}
+<div class="collection-background-item" data-collections-background-item data-item-id="{{ item_id }}" {{ block.shopify_attributes }}>
+  <button id="{{ item_id }}-tab" class="collection-background-item__trigger" type="button" role="tab" aria-selected="false" aria-controls="{{ item_id }}-panel" tabindex="-1" data-collections-background-trigger>{{ item_title | escape }}</button>
+  <div id="{{ item_id }}-panel" class="collection-background-item__panel color-scheme section-color-scope {{ item_scheme }}" role="tabpanel" aria-labelledby="{{ item_id }}-tab" data-collections-background-panel>
+    <div class="collection-background-item__media" aria-hidden="true">
+      {% if block.settings.media_type == 'video' and block.settings.video != blank %}
+        {{ block.settings.video | video_tag: autoplay: true, loop: true, muted: true, controls: false, image_size: '2400x' }}
+      {% elsif item_image != blank %}
+        <picture>{% if item_mobile_image != blank %}<source media="(max-width: 767.98px)" srcset="{{ item_mobile_image | image_url: width: 1000 }}">{% endif %}{{ item_image | image_url: width: 2400 | image_tag: widths: '750, 1100, 1500, 2000, 2400', sizes: '100vw', alt: '' }}</picture>
+      {% else %}
+        {{ 'collection-1' | placeholder_svg_tag }}
+      {% endif %}
+    </div>
+    {% if block.settings.show_overlay %}<span class="collection-background-item__overlay" style="--collection-background-overlay-color: {{ block.settings.overlay_color }}; --collection-background-overlay-opacity: 0.45;" aria-hidden="true"></span>{% endif %}
+  </div>
+</div>
+{% schema %}
+{"name":"Collection","tag":null,"settings":[{"type":"collection","id":"collection","label":"Collection"},{"type":"text","id":"custom_title","label":"Custom title"},{"type":"select","id":"media_type","label":"Media type","options":[{"value":"image","label":"Image"},{"value":"video","label":"Video"}],"default":"image"},{"type":"image_picker","id":"image","label":"Custom image","visible_if":"{{ block.settings.media_type == 'image' }}"},{"type":"image_picker","id":"mobile_image","label":"Custom image mobile (optional)","visible_if":"{{ block.settings.media_type == 'image' }}"},{"type":"video","id":"video","label":"Custom video","visible_if":"{{ block.settings.media_type == 'video' }}"},{"type":"checkbox","id":"show_overlay","label":"Overlay","default":true},{"type":"color","id":"overlay_color","label":"Overlay color","default":"#000000","visible_if":"{{ block.settings.show_overlay }}"}]}
+{% endschema %}
