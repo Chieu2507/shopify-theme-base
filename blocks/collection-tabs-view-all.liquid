@@ -1,7 +1,9 @@
 {% doc %}
-  Renders the fixed View all action for the Collection tabs section.
-  The destination is assigned by the Tab layout runtime from the active
-  collection, so this block intentionally has no link settings.
+  Renders the responsive View all actions for the Collection tabs section.
+  Desktop and mobile each receive their own button so the action can occupy
+  its native layout slot at each breakpoint. The destination is assigned by
+  the Tab layout runtime from the active collection, so this block
+  intentionally has no link settings.
 
   @example
   {% content_for 'block', type: 'collection-tabs-view-all', id: 'collection-tabs-view-all' %}
@@ -79,9 +81,25 @@
 
 {% if collection_tabs_view_all_label != blank or request.design_mode %}
   <div
-    class="{{ collection_tabs_view_all_class }}"
+    class="{{ collection_tabs_view_all_class }} collection-tabs-view-all--desktop"
     {% if collection_tabs_view_all_style_attribute != blank %}style="{{ collection_tabs_view_all_style_attribute }}"{% endif %}
     {{ block.shopify_attributes }}
+  >
+    {% render 'theme-button',
+      label: collection_tabs_view_all_label,
+      force_link: true,
+      variant: collection_tabs_view_all_style,
+      icon: collection_tabs_view_all_icon,
+      icon_position: collection_tabs_view_all_icon_position,
+      icon_size: collection_tabs_view_all_icon_size,
+      icon_width: collection_tabs_view_all_icon_width,
+      class: 'collection-tabs-view-all__button',
+      attributes: 'data-collection-tabs-view-all aria-disabled="true" tabindex="-1"'
+    %}
+  </div>
+  <div
+    class="{{ collection_tabs_view_all_class }} collection-tabs-view-all--mobile"
+    {% if collection_tabs_view_all_style_attribute != blank %}style="{{ collection_tabs_view_all_style_attribute }}"{% endif %}
   >
     {% render 'theme-button',
       label: collection_tabs_view_all_label,
@@ -109,6 +127,10 @@
     padding-left: var(--collection-tabs-view-all-padding-left, 0px);
   }
 
+  .collection-tabs-view-all--mobile {
+    display: none;
+  }
+
   .collection-tabs-view-all--width-fill {
     --collection-tabs-view-all-width: 100%;
   }
@@ -122,6 +144,14 @@
   }
 
   @media (max-width: 767.98px) {
+    .collection-tabs-view-all--desktop {
+      display: none;
+    }
+
+    .collection-tabs-view-all--mobile {
+      display: block;
+    }
+
     .collection-tabs-view-all {
       width: var(--collection-tabs-view-all-width-mobile, var(--collection-tabs-view-all-width, fit-content));
       padding-top: var(--collection-tabs-view-all-padding-top-mobile, var(--collection-tabs-view-all-padding-top, 0px));
@@ -135,6 +165,14 @@
     }
 
     .collection-tabs-view-all--width-mobile-fill .collection-tabs-view-all__button {
+      width: 100%;
+    }
+
+    .collection-tabs-view-all--mobile {
+      width: 100%;
+    }
+
+    .collection-tabs-view-all--mobile .collection-tabs-view-all__button {
       width: 100%;
     }
   }

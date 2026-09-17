@@ -25,6 +25,18 @@ const getSlidesPerView = (value) => {
   return Math.max(1, Math.floor(slidesPerView));
 };
 
+const getMobileSlidesPerView = (carousel) => {
+  const columns = getSlidesPerView(carousel.dataset.swiperColumnsMobile);
+
+  // The preview is intended for a one-column mobile layout. Keep an explicit
+  // two-column choice intact instead of silently replacing it with 1.2.
+  if (columns === 1 && carousel.dataset.swiperNextSlidePreviewMobile === 'true') {
+    return 1.2;
+  }
+
+  return columns;
+};
+
 const getPaginationType = (value) => (value === 'progress_bar' ? 'progressbar' : 'bullets');
 
 const getControls = (carousel, scope) => {
@@ -49,10 +61,12 @@ const getFirstDataValue = (elements, key) => {
 };
 
 const buildOptions = (carousel, scope) => {
-  const pagination = carousel.querySelector('[data-product-collection-pagination]');
+  const pagination =
+    carousel.querySelector('[data-product-collection-pagination]') ||
+    carousel.querySelector('[data-swiper-pagination]');
   const paginationType = getPaginationType(pagination?.dataset.paginationType || carousel.dataset.swiperPaginationType);
   const options = {
-    slidesPerView: getSlidesPerView(carousel.dataset.swiperColumnsMobile),
+    slidesPerView: getMobileSlidesPerView(carousel),
     spaceBetween: toNumber(carousel.dataset.swiperGapMobile, 0),
     breakpoints: {
       [desktopBreakpoint]: {
@@ -95,6 +109,8 @@ const getAutoplaySettings = (carousel, scope) => {
 
 const isVisible = (element) => element.getClientRects().length > 0;
 
+const isWrapperHovered = (swiper) => swiper.wrapperEl?.matches(':hover') || false;
+
 const startAutoplay = (state) => {
   const autoplay = getAutoplaySettings(state.carousel, state.scope);
   if (!autoplay.enabled) return;
@@ -103,7 +119,7 @@ const startAutoplay = (state) => {
     if (
       document.hidden ||
       !isVisible(state.carousel) ||
-      (autoplay.pauseOnHover && state.scope.matches(':hover')) ||
+      (autoplay.pauseOnHover && isWrapperHovered(state.swiper)) ||
       state.scope.contains(document.activeElement) ||
       state.swiper.isLocked
     ) {

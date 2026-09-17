@@ -21,6 +21,7 @@
   @param {string} [item_class] - Additional class for each grid item
   @param {string} [items_data_attributes] - Additional grid data attributes
   @param {boolean} [next_slide_preview] - Whether to reveal the next slide on desktop
+  @param {boolean} [next_slide_preview_on_mobile] - Whether to show a 1.2-slide mobile preview
   @param {string} [carousel_id] - Stable ID for the carousel root
   @param {string} [aria_label] - Accessible name for the carousel
   @param {string} [previous_selector] - CSS selector for the previous control
@@ -61,6 +62,16 @@
   assign product_collection_grid_show_pagination = false
   if show_pagination and product_collection_grid_layout == 'carousel'
     assign product_collection_grid_show_pagination = true
+  endif
+
+  assign product_collection_grid_autoplay_enabled = false
+  if autoplay == true or autoplay == 'true'
+    assign product_collection_grid_autoplay_enabled = true
+  endif
+
+  assign product_collection_grid_autoplay_delay = autoplay_delay | default: 4000 | plus: 0
+  if product_collection_grid_autoplay_delay < 1000 or product_collection_grid_autoplay_delay > 60000
+    assign product_collection_grid_autoplay_delay = 4000
   endif
 
   assign product_collection_grid_aria_label = aria_label | default: 'search.products' | t
@@ -218,14 +229,17 @@
     {% endcapture %}
 
     {% capture product_collection_grid_pagination %}
-      {% if product_collection_grid_show_pagination %}
-        <div
-          class="swiper-pagination{% if pagination_class != blank %} {{ pagination_class }}{% endif %}"
-          data-product-collection-pagination
-          data-pagination-type="{{ product_collection_grid_pagination_type }}"
-          {% if pagination_style != blank %}style="{{ pagination_style }}"{% endif %}
-        ></div>
-      {% endif %}
+      {% capture product_collection_grid_pagination_style %}
+        {{ pagination_style }}
+        {% if product_collection_grid_autoplay_enabled %}--swiper-pagination-bullet-progress-duration: {{ product_collection_grid_autoplay_delay }}ms;{% endif %}
+      {% endcapture %}
+      {% assign product_collection_grid_pagination_style = product_collection_grid_pagination_style | strip %}
+      {% render 'swiper-pagination',
+        show: product_collection_grid_show_pagination,
+        type: product_collection_grid_pagination_type,
+        class: pagination_class,
+        style: product_collection_grid_pagination_style
+      %}
     {% endcapture %}
 
     {% render 'swiper-carousel',
@@ -236,6 +250,7 @@
       aria_label: product_collection_grid_aria_label,
       pagination: product_collection_grid_pagination,
       show_next_slide_preview: next_slide_preview,
+      show_next_slide_preview_on_mobile: next_slide_preview_on_mobile,
       autoplay: autoplay,
       pause_on_hover: autoplay_pause_on_hover,
       autoplay_delay: autoplay_delay

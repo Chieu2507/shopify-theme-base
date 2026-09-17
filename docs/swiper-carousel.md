@@ -79,6 +79,11 @@ viewport's controlled visual overflow to reveal a 15% preview
 configured column width. The preview is desktop-only and does not affect grid
 layouts or mobile slide counts.
 
+Pass `show_next_slide_preview_on_mobile: true` when a one-column mobile
+carousel should reveal the next item. The product/collection carousel runtime
+uses `slidesPerView: 1.2` at mobile widths; an explicit two-column mobile
+setting remains unchanged.
+
 ## JavaScript
 
 Use the shared factory from a section or feature module:

@@ -23,16 +23,9 @@
   if collection_tabs_navigation_style == 'tertiary'
     assign collection_tabs_navigation_style = 'icon_only'
   endif
-  unless collection_tabs_navigation_style == 'primary' or collection_tabs_navigation_style == 'secondary' or collection_tabs_navigation_style == 'icon_only'
+  unless collection_tabs_navigation_style == 'primary' or collection_tabs_navigation_style == 'secondary' or collection_tabs_navigation_style == 'outline' or collection_tabs_navigation_style == 'icon_only'
     assign collection_tabs_navigation_style = 'secondary'
   endunless
-
-  assign collection_tabs_navigation_button_variant = collection_tabs_navigation_style
-  assign collection_tabs_navigation_button_modifier = blank
-  if collection_tabs_navigation_style == 'icon_only'
-    assign collection_tabs_navigation_button_variant = 'tertiary'
-    assign collection_tabs_navigation_button_modifier = 'swiper-nav-button--icon-only'
-  endif
 
   assign collection_tabs_navigation_icon = section.settings.navigation_icon | default: 'chevron'
   unless collection_tabs_navigation_icon == 'chevron' or collection_tabs_navigation_icon == 'arrow' or collection_tabs_navigation_icon == 'long_arrow'
@@ -162,27 +155,18 @@
         <div class="collection-tabs__actions">
           {% content_for 'block', type: 'collection-tabs-view-all', id: 'collection-tabs-view-all' %}
           {% if collection_tabs_navigation_in_controls %}
-            <div
-              class="collection-tabs__navigation collection-tabs__navigation--{{ collection_tabs_navigation_behavior }}"
-              data-collection-tabs-navigation
-            >
-              <button
-                class="btn btn-{{ collection_tabs_navigation_button_variant }} btn--{{ collection_tabs_navigation_button_variant }} btn--icon{% if collection_tabs_navigation_button_modifier != blank %} {{ collection_tabs_navigation_button_modifier }}{% endif %} swiper-nav-button swiper-nav-button--prev collection-tabs__navigation-button"
-                type="button"
-                data-collection-tabs-navigation-previous
-                aria-label="{{ 'collection_tabs.previous' | t | escape }}"
-              >
-                {% render 'carousel-navigation-icon', icon: collection_tabs_navigation_icon, direction: 'previous' %}
-              </button>
-              <button
-                class="btn btn-{{ collection_tabs_navigation_button_variant }} btn--{{ collection_tabs_navigation_button_variant }} btn--icon{% if collection_tabs_navigation_button_modifier != blank %} {{ collection_tabs_navigation_button_modifier }}{% endif %} swiper-nav-button swiper-nav-button--next collection-tabs__navigation-button"
-                type="button"
-                data-collection-tabs-navigation-next
-                aria-label="{{ 'collection_tabs.next' | t | escape }}"
-              >
-                {% render 'carousel-navigation-icon', icon: collection_tabs_navigation_icon, direction: 'next' %}
-              </button>
-            </div>
+            {% render 'swiper-navigation',
+              show: true,
+              style: collection_tabs_navigation_style,
+              icon: collection_tabs_navigation_icon,
+              behavior: collection_tabs_navigation_behavior,
+              wrapper_class: 'collection-tabs__navigation',
+              wrapper_attributes: 'data-collection-tabs-navigation',
+              button_class: 'collection-tabs__navigation-button',
+              previous_attribute: 'data-collection-tabs-navigation-previous',
+              next_attribute: 'data-collection-tabs-navigation-next',
+              centered: false
+            %}
           {% endif %}
         </div>
       </div>
@@ -322,13 +306,13 @@
       order: 2;
     }
 
-    .collection-tabs__navigation--show_on_hover {
+    .swiper-carousel__navigation--show_on_hover {
       opacity: 0;
       transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
     }
 
-    .collection-tabs__controls:hover .collection-tabs__navigation--show_on_hover,
-    .collection-tabs__controls:focus-within .collection-tabs__navigation--show_on_hover {
+    .collection-tabs__controls:hover .swiper-carousel__navigation--show_on_hover,
+    .collection-tabs__controls:focus-within .swiper-carousel__navigation--show_on_hover {
       opacity: 1;
     }
 
@@ -408,6 +392,12 @@
       padding-bottom: var(--collection-tabs-padding-bottom-mobile, var(--collection-tabs-padding-bottom, 32px));
     }
 
+    /* Keep the View all action after the active collection list on mobile. */
+    .collection-tabs__layout > .collection-tabs__controls > .collection-tabs__actions > .collection-tabs-view-all {
+      order: 3;
+      align-self: var(--collection-tabs-controls-alignment-mobile, flex-start);
+    }
+
     .collection-tabs__navigation {
       display: none;
     }
@@ -416,7 +406,7 @@
 
 {% schema %}
 {
-  "name": "t:general.collection_cards",
+  "name": "t:general.collection_tabs",
   "class": "section-collection-tabs",
   "enabled_on": { "templates": ["index"] },
   "max_blocks": 8,
@@ -544,6 +534,13 @@
     },
     {
       "type": "checkbox",
+      "id": "show_next_slide_preview_on_mobile",
+      "label": "t:labels.show_next_slide_preview_on_mobile",
+      "default": false,
+      "visible_if": "{{ section.settings.layout_type == 'carousel' }}"
+    },
+    {
+      "type": "checkbox",
       "id": "show_next_slide_preview_on_desktop",
       "label": "t:labels.show_next_slide_preview_on_desktop",
       "default": false,
@@ -603,6 +600,7 @@
       "options": [
         { "value": "primary", "label": "t:options.button_variant.primary" },
         { "value": "secondary", "label": "t:options.button_variant.secondary" },
+        { "value": "outline", "label": "t:options.button_variant.outline" },
         { "value": "icon_only", "label": "t:options.button_variant.icon_only" }
       ],
       "default": "secondary",
@@ -639,7 +637,7 @@
     {
       "type": "checkbox",
       "id": "show_pagination_on_desktop",
-      "label": "t:labels.show_pagination_on_desktop",
+      "label": "t:labels.show_pagination",
       "default": true,
       "visible_if": "{{ section.settings.layout_type == 'carousel' }}"
     },
@@ -656,13 +654,24 @@
     },
     {
       "type": "range",
-      "id": "pagination_top_padding",
-      "label": "t:labels.pagination_top_padding",
+      "id": "pagination_top_padding_desktop",
+      "label": "t:labels.pagination_desktop_top_padding",
       "min": 0,
       "max": 100,
       "step": 1,
       "unit": "px",
       "default": 50,
+      "visible_if": "{{ section.settings.layout_type == 'carousel' and section.settings.show_pagination_on_desktop }}"
+    },
+    {
+      "type": "range",
+      "id": "pagination_top_padding_mobile",
+      "label": "t:labels.pagination_mobile_top_padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
       "visible_if": "{{ section.settings.layout_type == 'carousel' and section.settings.show_pagination_on_desktop }}"
     },
     {
@@ -778,7 +787,7 @@
   ],
   "presets": [
     {
-      "name": "t:general.collection_cards",
+      "name": "t:general.collection_tabs",
       "category": "t:general.collection",
       "settings": {
         "section_width": "full_width",
@@ -791,6 +800,7 @@
         "layout_type": "carousel",
         "columns_desktop": "4",
         "columns_mobile": "1",
+        "show_next_slide_preview_on_mobile": false,
         "show_next_slide_preview_on_desktop": false,
         "product_gap_desktop": 4,
         "product_gap_mobile": 4,
@@ -801,7 +811,8 @@
         "navigation_behavior": "show_on_hover",
         "show_pagination_on_desktop": true,
         "pagination_type": "progress_bar",
-        "pagination_top_padding": 50,
+        "pagination_top_padding_desktop": 50,
+        "pagination_top_padding_mobile": 24,
         "pagination_limit_width": true,
         "pagination_max_width": 260,
         "autoplay": false,
