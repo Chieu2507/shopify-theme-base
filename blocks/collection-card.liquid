@@ -19,6 +19,14 @@
   assign collection_card_scheme = collection_card_scheme | default: 'scheme-1' | handleize
   assign collection_card_placement = block.settings.placement | default: 'below_image'
   assign collection_card_ratio = block.settings.ratio | default: 'original'
+  assign collection_card_gap_desktop = block.settings.gap_desktop | default: 4 | plus: 0
+  assign collection_card_gap_mobile = block.settings.gap_mobile | default: collection_card_gap_desktop | plus: 0
+  if collection_card_gap_desktop < 0 or collection_card_gap_desktop > 40
+    assign collection_card_gap_desktop = 4
+  endif
+  if collection_card_gap_mobile < 0 or collection_card_gap_mobile > 40
+    assign collection_card_gap_mobile = collection_card_gap_desktop
+  endif
   assign collection_card_padding_top = block.settings.padding_top | default: 16 | plus: 0
   assign collection_card_padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
   assign collection_card_padding_left = block.settings.padding_left | default: 0 | plus: 0
@@ -60,6 +68,8 @@
 %}
 
 {% capture collection_card_padding_style %}
+  {% if collection_card_gap_desktop != 4 %}--card-content-gap: {{ collection_card_gap_desktop }}px;{% endif %}
+  {% if collection_card_gap_mobile != collection_card_gap_desktop %}--card-content-gap-mobile: {{ collection_card_gap_mobile }}px;{% endif %}
   {% if collection_card_padding_top != 16 %}--card-padding-top: {{ collection_card_padding_top }}px;{% endif %}
   {% if collection_card_padding_bottom != 0 %}--card-padding-bottom: {{ collection_card_padding_bottom }}px;{% endif %}
   {% if collection_card_padding_left != 0 %}--card-padding-left: {{ collection_card_padding_left }}px;{% endif %}
@@ -150,8 +160,11 @@
   }
 
   .collection-card-kernel__content {
+    display: flex;
+    flex-direction: column;
     position: relative;
     z-index: 3;
+    gap: var(--card-content-gap, 4px);
     padding: var(--card-padding-top, 16px) var(--card-padding-right, 0px) var(--card-padding-bottom, 0px) var(--card-padding-left, 0px);
     text-align: var(--card-align);
   }
@@ -187,6 +200,7 @@
 
   @media (max-width: 767.98px) {
     .collection-card-kernel__content {
+      gap: var(--card-content-gap-mobile, var(--card-content-gap, 4px));
       padding: var(--card-padding-top-mobile, var(--card-padding-top, 16px)) var(--card-padding-right-mobile, var(--card-padding-right, 0px)) var(--card-padding-bottom-mobile, var(--card-padding-bottom, 0px)) var(--card-padding-left-mobile, var(--card-padding-left, 0px));
     }
 
