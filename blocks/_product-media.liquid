@@ -54,6 +54,10 @@
   endif
   assign media_thumbnail_gap = media_gap | plus: 4
   assign media_thumbnail_gap_mobile = media_gap_mobile | plus: 2
+  assign media_bottom_thumbnail_width = block.settings.bottom_thumbnail_width | default: 72 | plus: 0
+  if media_bottom_thumbnail_width < 48 or media_bottom_thumbnail_width > 200
+    assign media_bottom_thumbnail_width = 72
+  endif
 
   assign media_thumbnail_ratio_setting = block.settings.thumbnail_ratio | default: 'auto'
   assign media_thumbnail_ratio = 'auto'
@@ -116,7 +120,7 @@
   data-block-animations="{{ media_block_motion_enabled }}"
   data-current-variant-id="{{ current_variant.id | default: '' }}"
   data-filter-variant-media="{{ settings.variant_picker_only_selected_media }}"
-  style="--product-media-thumbnail-aspect-ratio: {{ media_thumbnail_ratio }};--product-media-thumbnail-gap: {{ media_thumbnail_gap }}px;--product-media-thumbnail-gap-mobile: {{ media_thumbnail_gap_mobile }}px;{% if media_gap != 12 %}--product-media-gap: {{ media_gap }}px;{% endif %}{% if media_gap_mobile != 10 %}--product-media-gap-mobile: {{ media_gap_mobile }}px;{% endif %}"
+  style="--product-media-thumbnail-aspect-ratio: {{ media_thumbnail_ratio }};--product-media-thumbnail-gap: {{ media_thumbnail_gap }}px;--product-media-thumbnail-gap-mobile: {{ media_thumbnail_gap_mobile }}px;--product-media-bottom-thumbnail-width: {{ media_bottom_thumbnail_width }}px;{% if media_gap != 12 %}--product-media-gap: {{ media_gap }}px;{% endif %}{% if media_gap_mobile != 10 %}--product-media-gap-mobile: {{ media_gap_mobile }}px;{% endif %}"
   {{ block.shopify_attributes }}
 >
   {% if media_product != blank and media_product.media.size > 0 %}
@@ -181,10 +185,13 @@
         <div class="media-thumbnails__carousel">
           {% capture product_media_thumbnail_content %}
             {% for media in media_product.media %}
-              {% assign thumbnail_alt = media.alt | default: media_product.title %}
+              {% liquid
+                assign thumbnail_alt = media.alt | default: media_product.title
+                assign thumbnail_sizes = '(min-width: 768px) ' | append: media_bottom_thumbnail_width | append: 'px, 80px'
+              %}
               <button class="swiper-slide product-media-gallery__thumbnail{% if media.preview_image == blank %} placeholder-image{% endif %}" type="button" data-product-media-thumbnail data-media-id="{{ media.id }}" aria-label="{{ 'products.view_media' | t: index: forloop.index | escape }}">
                 {% if media.preview_image != blank %}
-                  {{ media.preview_image | image_url: width: 240 | image_tag: widths: '96, 144, 192, 240', sizes: '80px', loading: 'lazy', alt: thumbnail_alt }}
+                  {{ media.preview_image | image_url: width: 240 | image_tag: widths: '96, 144, 192, 240', sizes: thumbnail_sizes, loading: 'lazy', alt: thumbnail_alt }}
                 {% else %}
                   {{ 'product-1' | placeholder_svg_tag: 'product-media-gallery__thumbnail-placeholder' }}
                 {% endif %}
@@ -253,6 +260,17 @@
       "id": "full_width_media",
       "label": "t:labels.edge_to_edge_media",
       "default": false
+    },
+    {
+      "type": "range",
+      "id": "bottom_thumbnail_width",
+      "label": "Thumbnail width",
+      "min": 48,
+      "max": 200,
+      "step": 4,
+      "unit": "px",
+      "default": 72,
+      "visible_if": "{{ block.settings.desktop_layout == 'bottom_thumbnails' }}"
     },
     {
       "type": "select",
