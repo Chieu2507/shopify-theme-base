@@ -1,7 +1,8 @@
 import { EffectFade, Pagination, Thumbs } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
-const LIGHTBOX_ZOOM_SCALE = 2.25;
+const LIGHTBOX_ZOOM_SCALE = 1;
+const LIGHTBOX_ZOOM_STATE_SCALE = 2;
 const LIGHTBOX_DRAG_THRESHOLD = 4;
 const LIGHTBOX_DISMISS_AXIS_RATIO = 1.15;
 const LIGHTBOX_DISMISS_ANIMATION_MS = 240;
@@ -588,7 +589,7 @@ class ProductMediaGallery extends HTMLElement {
     const hasPointerCoordinates = Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY);
     state.image = image;
     state.slide = slide;
-    state.scale = LIGHTBOX_ZOOM_SCALE;
+    state.scale = LIGHTBOX_ZOOM_STATE_SCALE;
     this.prepareLightboxZoom(slide);
 
     const bounds = this.getLightboxPanBounds(slide);
