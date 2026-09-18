@@ -1,6 +1,7 @@
 import { EffectFade, Pagination, Thumbs } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
+// Keep the zoom image at its natural cover size; an extra multiplier makes the lightbox too aggressive.
 const LIGHTBOX_ZOOM_SCALE = 1;
 const LIGHTBOX_ZOOM_STATE_SCALE = 2;
 const LIGHTBOX_DRAG_THRESHOLD = 4;
