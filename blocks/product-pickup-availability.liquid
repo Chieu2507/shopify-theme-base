@@ -1,0 +1,57 @@
+{% doc %}
+  Pickup availability for the selected variant. Per-variant templates let the
+  block follow the shared variant:change event without a page reload.
+{% enddoc %}
+
+{% liquid
+  assign pickup_product = closest.product | default: product
+  assign pickup_variant = pickup_product.selected_or_first_available_variant
+%}
+
+{% if pickup_variant != blank or request.design_mode %}
+  <product-pickup-availability class="product-pickup-availability" data-product-pickup-availability {{ block.shopify_attributes }}>
+    <div data-pickup-availability-message role="status" aria-live="polite">
+      {% if pickup_variant.available and pickup_variant.store_availabilities.size > 0 %}
+        {% assign pickup_store = pickup_variant.store_availabilities.first %}
+        {% if pickup_store.available %}
+          {% render 'icon', icon: 'check', bare: true, class: 'product-pickup-availability__icon' %}
+          <span>Pickup available at {{ pickup_store.location.name | escape }}</span>
+        {% else %}
+          {% render 'icon', icon: 'truck', bare: true, class: 'product-pickup-availability__icon' %}
+          <span>Pickup is currently unavailable</span>
+        {% endif %}
+      {% else %}
+        {% render 'icon', icon: 'truck', bare: true, class: 'product-pickup-availability__icon' %}
+        <span>Pickup availability is shown at checkout</span>
+      {% endif %}
+    </div>
+    <div hidden aria-hidden="true" data-pickup-availability-templates>
+      {% for variant in pickup_product.variants %}
+        <template data-pickup-availability-template="{{ variant.id }}">
+          {% if variant.available and variant.store_availabilities.size > 0 %}
+            {% assign pickup_store = variant.store_availabilities.first %}
+            {% if pickup_store.available %}
+              {% render 'icon', icon: 'check', bare: true, class: 'product-pickup-availability__icon' %}
+              <span>Pickup available at {{ pickup_store.location.name | escape }}</span>
+            {% else %}
+              {% render 'icon', icon: 'truck', bare: true, class: 'product-pickup-availability__icon' %}
+              <span>Pickup is currently unavailable</span>
+            {% endif %}
+          {% else %}
+            {% render 'icon', icon: 'truck', bare: true, class: 'product-pickup-availability__icon' %}
+            <span>Pickup availability is shown at checkout</span>
+          {% endif %}
+        </template>
+      {% endfor %}
+    </div>
+  </product-pickup-availability>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Pickup availability",
+  "tag": null,
+  "settings": [],
+  "presets": [{ "name": "Pickup availability" }]
+}
+{% endschema %}

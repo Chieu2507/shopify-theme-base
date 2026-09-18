@@ -1,0 +1,39 @@
+{% doc %}
+  A viewport-aware sticky Add to cart bar. It delegates submission to the
+  canonical Product buy buttons form, preserving cart and quantity behavior.
+{% enddoc %}
+
+{% liquid
+  assign sticky_product = closest.product | default: product
+  assign sticky_variant = sticky_product.selected_or_first_available_variant
+%}
+
+{% if sticky_product != blank %}
+  <product-sticky-add-to-cart
+    class="product-sticky-add-to-cart"
+    data-product-sticky-add-to-cart
+    data-current-variant-id="{{ sticky_variant.id }}"
+    data-available="{{ sticky_variant.available }}"
+    {{ block.shopify_attributes }}
+  >
+    <div class="product-sticky-add-to-cart__content">
+      <div class="product-sticky-add-to-cart__product">
+        <span class="product-sticky-add-to-cart__title">{{ sticky_product.title | escape }}</span>
+        <span data-sticky-add-to-cart-price>{{ sticky_variant.price | money }}</span>
+      </div>
+      <button type="button" class="btn btn-primary" data-sticky-add-to-cart-button{% unless sticky_variant.available %} disabled aria-disabled="true"{% endunless %}>Add to cart</button>
+    </div>
+    <div hidden aria-hidden="true" data-sticky-add-to-cart-templates>
+      {% for variant in sticky_product.variants %}<template data-sticky-add-to-cart-template="{{ variant.id }}" data-available="{{ variant.available }}">{{ variant.price | money }}</template>{% endfor %}
+    </div>
+  </product-sticky-add-to-cart>
+{% endif %}
+
+{% schema %}
+{
+  "name": "Sticky add to cart",
+  "tag": null,
+  "settings": [],
+  "presets": [{ "name": "Sticky add to cart" }]
+}
+{% endschema %}
