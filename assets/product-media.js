@@ -467,8 +467,9 @@ class ProductMediaGallery extends HTMLElement {
 
     state.dismissCandidate = false;
     state.dismissDragging = false;
+    const pointerId = state.dismissPointerId;
     state.dismissPointerId = null;
-    state.dismissImage?.releasePointerCapture?.(state.dismissPointerId);
+    state.dismissImage?.releasePointerCapture?.(pointerId);
     state.dismissImage = null;
     state.dismissSlide = null;
     this.lightbox?.classList.remove('is-dismiss-dragging');
