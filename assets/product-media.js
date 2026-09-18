@@ -335,6 +335,8 @@ class ProductMediaGallery extends HTMLElement {
     const lightbox = target?.closest?.('[data-product-media-lightbox]');
     const image = target?.closest?.('.product-media-lightbox__image');
 
+    // Swiper can emit a click after a completed swipe; keep that synthetic click
+    // from opening the lightbox while preserving a normal tap/click.
     if (!lightbox && target?.closest?.('[data-product-media-content]')) {
       if (event.pointerType === 'mouse' && event.button !== 0) return;
       state.mediaPointerId = event.pointerId;
