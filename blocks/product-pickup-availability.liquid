@@ -23,7 +23,10 @@
   assign corner_radius = block.settings.corner_radius | default: 'inherit'
   assign shadow = block.settings.shadow | default: 'none'
   assign appearance_type = block.settings.appearance_type | default: 'inherit'
-  assign color_scheme = block.settings.color_scheme
+  assign color_scheme = block.settings.color_scheme | default: 'scheme-1'
+  if block.settings.color_scheme.id != blank
+    assign color_scheme = block.settings.color_scheme.id
+  endif
   assign padding_top = block.settings.padding_top | default: 0
   assign padding_bottom = block.settings.padding_bottom | default: 0
   assign mobile_padding_top = block.settings.mobile_padding_top | default: 0
@@ -40,10 +43,11 @@
 
 {% if has_pickup %}
   <product-pickup-availability
-    class="product-pickup-availability{% if boxed %} product-pickup-availability--boxed{% endif %} product-pickup-availability--radius-{{ corner_radius }} product-pickup-availability--shadow-{{ shadow }} product-pickup-availability--message-{{ message_size }} product-pickup-availability--message-{{ message_color }}{% if appearance_type == 'color_scheme' and color_scheme != blank %} color-{{ color_scheme.id }}{% endif %}"
+    class="product-pickup-availability{% if boxed %} product-pickup-availability--boxed{% endif %} product-pickup-availability--radius-{{ corner_radius }} product-pickup-availability--shadow-{{ shadow }} product-pickup-availability--message-{{ message_size }} product-pickup-availability--message-{{ message_color }}{% if appearance_type == 'color_scheme' %} section-color-scope color-scheme {{ color_scheme | handleize }}{% endif %}"
     data-product-pickup-availability
     data-popup-layout-desktop="{{ desktop_layout }}"
     data-popup-layout-mobile="{{ mobile_layout }}"
+    {% if block.settings.custom_mobile_padding %}data-custom-mobile-padding{% endif %}
     style="{{ pickup_style }}"
     {{ block.shopify_attributes }}
   >
