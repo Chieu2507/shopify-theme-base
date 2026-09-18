@@ -25,15 +25,13 @@ class ProductMediaGallery extends HTMLElement {
     this.handleBreakpoint = this.handleBreakpoint.bind(this);
     this.handleVariantChange = this.handleVariantChange.bind(this);
 
-    this.addEventListener('click', this.handleClick, { signal: this.signal });
+    this.addEventListener('click', this.handleClick, { signal: this.signal, capture: true });
     this.addEventListener('keydown', this.handleKeydown, { signal: this.signal });
-    this.lightbox?.addEventListener('click', this.handleClick, { signal: this.signal, capture: true });
-    this.lightbox?.addEventListener('pointerdown', this.handleLightboxPointerDown, { signal: this.signal, capture: true });
-    this.lightbox?.addEventListener('pointermove', this.handleLightboxPointerMove, { signal: this.signal, capture: true });
-    this.lightbox?.addEventListener('pointerup', this.handleLightboxPointerUp, { signal: this.signal, capture: true });
-    this.lightbox?.addEventListener('pointercancel', this.handleLightboxPointerUp, { signal: this.signal, capture: true });
-    this.lightbox?.addEventListener('dragstart', this.handleLightboxDragStart, { signal: this.signal, capture: true });
-    this.addEventListener('dragstart', this.handleLightboxDragStart, { signal: this.signal });
+    this.addEventListener('pointerdown', this.handleLightboxPointerDown, { signal: this.signal, capture: true });
+    this.addEventListener('pointermove', this.handleLightboxPointerMove, { signal: this.signal, capture: true });
+    this.addEventListener('pointerup', this.handleLightboxPointerUp, { signal: this.signal, capture: true });
+    this.addEventListener('pointercancel', this.handleLightboxPointerUp, { signal: this.signal, capture: true });
+    this.addEventListener('dragstart', this.handleLightboxDragStart, { signal: this.signal, capture: true });
     this.mobileQuery.addEventListener('change', this.handleBreakpoint, { signal: this.signal });
     this.productInformation?.addEventListener('variant:change', this.handleVariantChange, { signal: this.signal });
     this.lightbox?.addEventListener('close', () => this.destroyLightbox(), { signal: this.signal });
