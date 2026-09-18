@@ -583,12 +583,30 @@ class ProductMediaGallery extends HTMLElement {
       return;
     }
 
+    const imageRect = image.getBoundingClientRect();
+    const slideRect = slide.getBoundingClientRect();
+    const hasPointerCoordinates = Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY);
     state.image = image;
     state.slide = slide;
     state.scale = LIGHTBOX_ZOOM_SCALE;
-    const pan = this.prepareLightboxZoom(slide);
-    state.x = pan.x;
-    state.y = pan.y;
+    this.prepareLightboxZoom(slide);
+
+    const bounds = this.getLightboxPanBounds(slide);
+    const focusX = hasPointerCoordinates
+      ? clamp(event.clientX - imageRect.left, 0, imageRect.width)
+      : imageRect.width / 2;
+    const focusY = hasPointerCoordinates
+      ? clamp(event.clientY - imageRect.top, 0, imageRect.height)
+      : imageRect.height / 2;
+    const focusRatioX = imageRect.width > 0 ? focusX / imageRect.width : 0.5;
+    const focusRatioY = imageRect.height > 0 ? focusY / imageRect.height : 0.5;
+    const zoomWidth = Number(slide.dataset.zoomWidth || imageRect.width);
+    const zoomHeight = Number(slide.dataset.zoomHeight || imageRect.height);
+    const viewportFocusX = hasPointerCoordinates ? event.clientX - slideRect.left : slideRect.width / 2;
+    const viewportFocusY = hasPointerCoordinates ? event.clientY - slideRect.top : slideRect.height / 2;
+
+    state.x = clamp(viewportFocusX - (focusRatioX * zoomWidth), bounds.minX, bounds.maxX);
+    state.y = clamp(viewportFocusY - (focusRatioY * zoomHeight), bounds.minY, bounds.maxY);
     this.applyLightboxZoom();
   }
 
