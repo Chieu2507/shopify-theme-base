@@ -122,6 +122,19 @@
   unless media_container_radius == 'square' or media_container_radius == 'slightly_rounded' or media_container_radius == 'rounded' or media_container_radius == 'extra_rounded'
     assign media_container_radius = 'square'
   endunless
+
+  assign media_appearance_type = block.settings.appearance_type | default: 'inherit'
+  unless media_appearance_type == 'inherit' or media_appearance_type == 'scheme'
+    assign media_appearance_type = 'inherit'
+  endunless
+  assign media_controls_color_scheme = blank
+  if media_appearance_type == 'scheme'
+    assign media_controls_color_scheme = block.settings.color_scheme | default: 'scheme-1'
+    if block.settings.color_scheme.id != blank
+      assign media_controls_color_scheme = block.settings.color_scheme.id
+    endif
+    assign media_controls_color_scheme = media_controls_color_scheme | default: 'scheme-1' | handleize
+  endif
 %}
 
 <product-media-gallery
@@ -172,7 +185,7 @@
       {% endcapture %}
 
       {% capture product_media_main_pagination %}
-        <div class="swiper-pagination product-media-gallery__pagination" data-product-media-pagination data-pagination-type="bullets"></div>
+        <div class="swiper-pagination product-media-gallery__pagination{% if media_controls_color_scheme != blank %} color-scheme {{ media_controls_color_scheme }}{% endif %}" data-product-media-pagination data-pagination-type="bullets"></div>
       {% endcapture %}
 
       {% render 'swiper-carousel',
@@ -185,7 +198,7 @@
         show_next_slide_preview_on_mobile: media_mobile_show_next_slide
       %}
 
-        <div class="media-gallery__controls">
+        <div class="media-gallery__controls{% if media_controls_color_scheme != blank %} color-scheme {{ media_controls_color_scheme }}{% endif %}">
           {% if media_product.media.size > 1 %}
             <button class="media-gallery__navigation media-gallery__navigation--previous product-media-gallery__navigation product-media-gallery__navigation--previous btn btn-secondary btn--secondary btn--icon swiper-nav-button swiper-nav-button--prev" type="button" aria-label="{{ 'products.previous_media' | t | escape }}" data-product-media-previous>
               {% render 'carousel-navigation-icon', icon: 'chevron', direction: 'previous' %}
@@ -342,6 +355,27 @@
       "id": "full_width_media",
       "label": "t:labels.edge_to_edge_media",
       "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:general.appearance"
+    },
+    {
+      "type": "select",
+      "id": "appearance_type",
+      "label": "t:labels.type",
+      "options": [
+        { "value": "inherit", "label": "t:options.appearance_type.inherit" },
+        { "value": "scheme", "label": "t:options.appearance_type.scheme" }
+      ],
+      "default": "inherit"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "default": "scheme-1",
+      "visible_if": "{{ block.settings.appearance_type == 'scheme' }}"
     },
     {
       "type": "header",
