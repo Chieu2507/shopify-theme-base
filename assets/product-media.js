@@ -95,6 +95,7 @@ class ProductMediaGallery extends HTMLElement {
         dismissStartY: 0,
         dismissOffset: 0,
         dismissImage: null,
+        dismissCapture: null,
         dismissSlide: null,
         dismissTimer: null,
       };
@@ -312,15 +313,17 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   handleLightboxPointerDown(event) {
-    const image = event.target?.closest?.('.product-media-lightbox__image');
     const state = this.lightboxZoomState;
-    if (!image || !this.lightboxSwiper || state.dismissAnimating) return;
+    const target = event.target;
+    const lightbox = target?.closest?.('[data-product-media-lightbox]');
+    const image = target?.closest?.('.product-media-lightbox__image');
+    if (!lightbox || !this.lightboxSwiper || state.dismissAnimating) return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
     if (state.scale <= 1) {
-      const slide = image.closest('.product-media-lightbox__slide');
       const activeSlide = this.lightboxSwiper.slides?.[this.lightboxSwiper.activeIndex];
-      if (!slide || slide !== activeSlide) return;
+      const interactiveTarget = target.closest?.('button, a, input, select, textarea, [data-product-lightbox-thumbnail]');
+      if (!activeSlide || interactiveTarget) return;
 
       state.dismissCandidate = true;
       state.dismissDragging = false;
@@ -330,7 +333,9 @@ class ProductMediaGallery extends HTMLElement {
       state.dismissStartY = event.clientY;
       state.dismissOffset = 0;
       state.dismissImage = image;
-      state.dismissSlide = slide;
+      state.dismissCapture = lightbox;
+      state.dismissSlide = activeSlide;
+      lightbox.setPointerCapture?.(event.pointerId);
       return;
     }
 
@@ -383,7 +388,7 @@ class ProductMediaGallery extends HTMLElement {
 
       state.dismissAxis = 'vertical';
       state.dismissDragging = true;
-      state.dismissImage?.setPointerCapture?.(event.pointerId);
+      state.dismissCapture?.setPointerCapture?.(event.pointerId);
       this.lightbox?.classList.add('is-dismiss-dragging');
       if (this.lightboxSwiper) this.lightboxSwiper.allowTouchMove = false;
     }
@@ -522,8 +527,10 @@ class ProductMediaGallery extends HTMLElement {
     state.dismissDragging = false;
     const pointerId = state.dismissPointerId;
     state.dismissPointerId = null;
+    state.dismissCapture?.releasePointerCapture?.(pointerId);
     state.dismissImage?.releasePointerCapture?.(pointerId);
     state.dismissImage = null;
+    state.dismissCapture = null;
     state.dismissSlide = null;
     this.lightbox?.classList.remove('is-dismiss-dragging');
 
@@ -562,6 +569,7 @@ class ProductMediaGallery extends HTMLElement {
     state.dismissAxis = null;
     state.dismissOffset = 0;
     state.dismissImage = null;
+    state.dismissCapture = null;
     state.dismissSlide = null;
     this.lightbox?.classList.remove('is-dismiss-dragging', 'is-dismiss-snapping', 'is-dismiss-animating');
     this.lightboxPanel?.style.removeProperty('--lightbox-dismiss-y');
