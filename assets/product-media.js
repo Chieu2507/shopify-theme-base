@@ -63,9 +63,10 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   activeMediaId() {
-    return this.mainSwiper?.slides?.[this.mainSwiper.activeIndex]?.dataset.mediaId
-      || this.visibleSlides()[0]?.dataset.mediaId
-      || '';
+    const activeSlide = this.mainSwiper?.slides?.[this.mainSwiper.activeIndex];
+    if (activeSlide && !activeSlide.hidden) return activeSlide.dataset.mediaId || '';
+
+    return this.visibleSlides()[0]?.dataset.mediaId || '';
   }
 
   variantIdsFor(element) {
@@ -177,11 +178,14 @@ class ProductMediaGallery extends HTMLElement {
       this.dataset.currentVariantId = variantId;
       const filtersVariantMedia = this.applyVariantMediaFilter(variantId);
       this.syncThumbnailVisibility();
-      const mediaId = featuredMediaId || this.activeMediaId();
+      const visibleMediaIds = new Set(this.visibleSlides().map((slide) => String(slide.dataset.mediaId)));
+      const mediaId = featuredMediaId && visibleMediaIds.has(String(featuredMediaId))
+        ? String(featuredMediaId)
+        : this.activeMediaId();
 
       if (filtersVariantMedia) {
         this.destroyGallery();
-        this.initializeGallery(String(mediaId || this.activeMediaId()));
+        this.initializeGallery(mediaId);
         return;
       }
 
