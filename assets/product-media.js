@@ -1,7 +1,7 @@
 import { EffectFade, Pagination, Thumbs } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
-// Keep the zoom image at its natural cover size; an extra multiplier makes the lightbox too aggressive.
+// Zoom relative to the fitted image, capped by source resolution and display size.
 const LIGHTBOX_ZOOM_SCALE = 3;
 const LIGHTBOX_MAX_IMAGE_SIZE = 2000;
 const LIGHTBOX_DRAG_THRESHOLD = 4;
@@ -486,7 +486,12 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   layoutLightboxImages() {
-    this.lightbox?.querySelectorAll('.product-media-lightbox__slide').forEach((slide) => this.layoutLightboxImage(slide));
+    const lightbox = this.lightbox;
+    if (!lightbox) return;
+    lightbox.classList.add('is-layout-updating');
+    lightbox.querySelectorAll('.product-media-lightbox__slide').forEach((slide) => this.layoutLightboxImage(slide));
+    lightbox.getBoundingClientRect();
+    lightbox.classList.remove('is-layout-updating');
   }
 
   prepareLightboxZoom(slide) {
