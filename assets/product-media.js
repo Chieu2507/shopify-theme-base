@@ -285,6 +285,8 @@ class ProductMediaGallery extends HTMLElement {
       modules: [EffectFade],
       effect: 'fade',
       fadeEffect: { crossFade: true },
+      slidesPerView: 1,
+      watchOverflow: true,
       speed: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 240,
       controls: {
         scope: this.lightbox,
