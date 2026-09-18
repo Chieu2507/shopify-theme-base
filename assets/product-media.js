@@ -255,7 +255,6 @@ class ProductMediaGallery extends HTMLElement {
   handleClick(event) {
     const target = event.target;
     if (!target?.closest) return;
-    console.debug('[ProductMedia debug] click', target.className, Boolean(this.lightboxSwiper));
 
     if (target.closest('[data-product-lightbox-close]')) {
       this.lightbox?.close();
@@ -524,7 +523,6 @@ class ProductMediaGallery extends HTMLElement {
 
     const activeSlide = this.lightboxSwiper?.slides?.[this.lightboxSwiper.activeIndex];
     const slide = image.closest('.product-media-lightbox__slide');
-    console.debug('[ProductMedia debug] zoom', Boolean(activeSlide), slide === activeSlide, state.scale, activeSlide?.dataset?.mediaId, slide?.dataset?.mediaId, activeSlide?.className, slide?.className);
     if (!activeSlide || slide !== activeSlide) return;
 
     if (state.scale > 1) {
