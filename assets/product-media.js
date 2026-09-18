@@ -273,6 +273,15 @@ class ProductMediaGallery extends HTMLElement {
     const target = event.target;
     if (!target?.closest) return;
 
+    // Pointer capture retargets the click following a drag to the dialog itself.
+    // Consume it before either image zoom or the backdrop-close handler runs.
+    if (target.closest('[data-product-media-lightbox]') && this.lightboxZoomState.suppressClickUntil > performance.now()) {
+      this.lightboxZoomState.suppressClickUntil = 0;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
+
     if (target.closest('[data-product-lightbox-close]')) {
       this.closeLightbox();
       event.stopPropagation();
@@ -428,12 +437,13 @@ class ProductMediaGallery extends HTMLElement {
     const deltaX = event.clientX - state.dismissStartX;
     const deltaY = event.clientY - state.dismissStartY;
     if (!state.dismissAxis) {
-      if (Math.hypot(deltaX, deltaY) < LIGHTBOX_DRAG_THRESHOLD) return;
-      if (Math.abs(deltaY) <= Math.abs(deltaX) * LIGHTBOX_DISMISS_AXIS_RATIO) {
+      if (Math.hypot(deltaX, deltaY) < 8) return;
+      if (Math.abs(deltaX) > Math.abs(deltaY) * LIGHTBOX_DISMISS_AXIS_RATIO) {
         state.dismissAxis = 'horizontal';
         this.resetLightboxDismiss();
         return;
       }
+      if (Math.abs(deltaY) <= Math.abs(deltaX) * LIGHTBOX_DISMISS_AXIS_RATIO) return;
 
       state.dismissAxis = 'vertical';
       state.dismissDragging = true;
@@ -479,7 +489,7 @@ class ProductMediaGallery extends HTMLElement {
     if (!state.dismissCandidate || state.dismissPointerId !== event.pointerId) return;
 
     if (state.dismissAxis === 'vertical') {
-      this.finishLightboxDismiss();
+      this.finishLightboxDismiss(event.type === 'pointercancel');
       state.suppressClickUntil = performance.now() + 250;
       event.preventDefault();
       event.stopPropagation();
@@ -595,7 +605,7 @@ class ProductMediaGallery extends HTMLElement {
     lightbox.style.setProperty('--lightbox-surface-amount', `${(1 - progress) * 100}%`);
   }
 
-  finishLightboxDismiss() {
+  finishLightboxDismiss(cancelled = false) {
     const state = this.lightboxZoomState;
     const panel = this.lightboxPanel;
     if (!panel) {
@@ -614,7 +624,7 @@ class ProductMediaGallery extends HTMLElement {
     state.dismissSlide = null;
     this.lightbox?.classList.remove('is-dismiss-dragging');
 
-    if (Math.abs(state.dismissOffset) < this.getLightboxDismissThreshold()) {
+    if (cancelled || Math.abs(state.dismissOffset) < this.getLightboxDismissThreshold()) {
       state.dismissOffset = 0;
       this.lightbox?.classList.add('is-dismiss-snapping');
       this.applyLightboxDismiss();
