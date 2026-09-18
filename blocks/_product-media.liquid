@@ -24,6 +24,16 @@
     assign media_mobile_layout = 'slider'
   endunless
 
+  assign media_mobile_show_next_slide = false
+  if media_mobile_layout == 'slider' and block.settings.mobile_show_next_slide
+    assign media_mobile_show_next_slide = true
+  endif
+
+  assign media_mobile_show_pagination = true
+  if media_mobile_layout != 'slider' or block.settings.mobile_show_pagination == false
+    assign media_mobile_show_pagination = false
+  endif
+
   assign media_full_width = false
   if block.settings.full_width_media
     assign media_full_width = true
@@ -116,6 +126,7 @@
   data-product-media-gallery
   data-desktop-layout="{{ media_desktop_layout }}"
   data-mobile-layout="{{ media_mobile_layout }}"
+  data-mobile-show-pagination="{{ media_mobile_show_pagination }}"
   data-zoom="{{ media_zoom }}"
   data-block-animations="{{ media_block_motion_enabled }}"
   data-current-variant-id="{{ current_variant.id | default: '' }}"
@@ -165,7 +176,8 @@
         content: product_media_main_content,
         root_class: 'media-gallery__main product-media-gallery__main',
         root_attributes: 'data-product-main-swiper',
-        aria_label: media_main_aria_label
+        aria_label: media_main_aria_label,
+        show_next_slide_preview_on_mobile: media_mobile_show_next_slide
       %}
 
         <div class="media-gallery__controls">
@@ -246,14 +258,32 @@
       "default": "left_thumbnails"
     },
     {
+      "type": "header",
+      "content": "t:labels.mobile_layout"
+    },
+    {
       "type": "select",
       "id": "mobile_layout",
-      "label": "t:labels.mobile_presentation",
+      "label": "t:labels.layout_style",
       "options": [
         { "value": "thumbnails", "label": "t:options.product_media_mobile_layout.thumbnails" },
         { "value": "slider", "label": "t:options.product_media_mobile_layout.slider" }
       ],
       "default": "slider"
+    },
+    {
+      "type": "checkbox",
+      "id": "mobile_show_next_slide",
+      "label": "t:labels.show_next_slide_preview_on_mobile",
+      "default": false,
+      "visible_if": "{{ block.settings.mobile_layout == 'slider' }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "mobile_show_pagination",
+      "label": "t:labels.show_pagination",
+      "default": true,
+      "visible_if": "{{ block.settings.mobile_layout == 'slider' }}"
     },
     {
       "type": "checkbox",

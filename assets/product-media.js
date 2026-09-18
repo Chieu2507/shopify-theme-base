@@ -132,7 +132,7 @@ class ProductMediaGallery extends HTMLElement {
     this.activeGalleryMode = mode;
     const isMobile = mode === 'mobile';
     const showThumbnails = !isMobile || this.dataset.mobileLayout === 'thumbnails';
-    const showPagination = isMobile && this.dataset.mobileLayout === 'slider';
+    const showPagination = isMobile && this.dataset.mobileLayout === 'slider' && this.dataset.mobileShowPagination === 'true';
     const gapProperty = isMobile ? '--product-media-gap-mobile' : '--product-media-gap';
     const thumbnailGapProperty = isMobile ? '--product-media-thumbnail-gap-mobile' : '--product-media-thumbnail-gap';
     const gap = Number.parseFloat(getComputedStyle(this).getPropertyValue(gapProperty)) || 0;
