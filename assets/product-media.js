@@ -308,7 +308,6 @@ class ProductMediaGallery extends HTMLElement {
     state.moved = false;
     state.slide?.classList.add('is-dragging');
     image.setPointerCapture?.(event.pointerId);
-    event.preventDefault();
     event.stopPropagation();
   }
 
