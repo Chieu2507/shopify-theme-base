@@ -134,12 +134,14 @@ class ProductMediaGallery extends HTMLElement {
     const showThumbnails = !isMobile || this.dataset.mobileLayout === 'thumbnails';
     const showPagination = isMobile && this.dataset.mobileLayout === 'slider';
     const gapProperty = isMobile ? '--product-media-gap-mobile' : '--product-media-gap';
+    const thumbnailGapProperty = isMobile ? '--product-media-thumbnail-gap-mobile' : '--product-media-thumbnail-gap';
     const gap = Number.parseFloat(getComputedStyle(this).getPropertyValue(gapProperty)) || 0;
+    const thumbnailGap = Number.parseFloat(getComputedStyle(this).getPropertyValue(thumbnailGapProperty)) || gap;
 
     if (showThumbnails && this.thumbnailElement) {
       this.thumbnailSwiper = createSwiperCarousel(this.thumbnailElement, {
         slidesPerView: 'auto',
-        spaceBetween: gap,
+        spaceBetween: thumbnailGap,
         direction: !isMobile && this.dataset.desktopLayout === 'left_thumbnails' ? 'vertical' : 'horizontal',
         watchSlidesProgress: true,
         a11y: { enabled: true },
