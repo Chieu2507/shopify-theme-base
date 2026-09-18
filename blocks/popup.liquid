@@ -3,11 +3,20 @@
   product assistance, but intentionally reusable on every supported surface.
 {% enddoc %}
 
+{% liquid
+  assign popup_id = 'Popup-' | append: section.id | append: '-' | append: block.id
+  assign popup_desktop_layout = block.settings.desktop_layout | default: 'popup'
+  assign popup_mobile_layout = block.settings.mobile_layout | default: 'bottom_sheet'
+%}
+
 <popup-block class="popup-block" data-popup {{ block.shopify_attributes }}>
-  <button type="button" class="btn btn-tertiary popup-block__trigger" data-popup-open aria-haspopup="dialog">{{ block.settings.trigger_label | default: 'Open' | escape }}</button>
-  <dialog class="popup-block__dialog" data-popup-dialog aria-label="{{ block.settings.trigger_label | default: 'Dialog' | escape }}">
+  <button type="button" class="btn btn-tertiary popup-block__trigger" data-popup-open aria-haspopup="dialog" aria-controls="{{ popup_id }}" aria-expanded="false">{{ block.settings.trigger_label | default: 'Open' | escape }}</button>
+  <dialog id="{{ popup_id }}" class="popup-block__dialog" data-popup-dialog data-desktop-layout="{{ popup_desktop_layout }}" data-mobile-layout="{{ popup_mobile_layout }}" aria-label="{{ block.settings.trigger_label | default: 'Dialog' | escape }}" aria-modal="true" scroll-lock>
     <div class="popup-block__surface">
-      <button type="button" class="popup-block__close" data-popup-close aria-label="Close">{% render 'icon', icon: 'x-mark', bare: true %}</button>
+      <header class="popup-block__header">
+        <span class="bottom-sheet__handle popup-block__handle" aria-hidden="true"></span>
+        <button type="button" class="overlay-close popup-block__close" data-popup-close aria-label="Close">{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button>
+      </header>
       <div class="popup-block__content">{% content_for 'blocks' %}</div>
     </div>
   </dialog>
@@ -18,6 +27,10 @@
   "name": "Popup",
   "tag": null,
   "blocks": [{ "type": "@theme" }, { "type": "@app" }],
-  "settings": [{ "type": "text", "id": "trigger_label", "label": "Button label", "default": "Open" }]
+  "settings": [
+    { "type": "text", "id": "trigger_label", "label": "Button label", "default": "Open" },
+    { "type": "select", "id": "desktop_layout", "label": "Desktop layout", "default": "popup", "options": [{ "value": "popup", "label": "Popup" }, { "value": "drawer", "label": "Drawer" }] },
+    { "type": "select", "id": "mobile_layout", "label": "Mobile layout", "default": "bottom_sheet", "options": [{ "value": "bottom_sheet", "label": "Bottom sheet" }, { "value": "drawer", "label": "Drawer" }] }
+  ]
 }
 {% endschema %}

@@ -87,10 +87,21 @@ class PopupBlock extends HTMLElement {
     if (this.abortController) return;
     this.abortController = new AbortController();
     this.dialog = this.querySelector('[data-popup-dialog]');
-    this.querySelector('[data-popup-open]')?.addEventListener('click', () => this.dialog?.showModal(), { signal: this.abortController.signal });
-    this.querySelector('[data-popup-close]')?.addEventListener('click', () => this.dialog?.close(), { signal: this.abortController.signal });
-    this.dialog?.addEventListener('click', (event) => { if (event.target === this.dialog) this.dialog.close(); }, { signal: this.abortController.signal });
+    this.trigger = this.querySelector('[data-popup-open]');
+    this.trigger?.addEventListener('click', () => this.open(), { signal: this.abortController.signal });
+    this.querySelector('[data-popup-close]')?.addEventListener('click', () => this.close(), { signal: this.abortController.signal });
+    this.dialog?.addEventListener('click', (event) => { if (event.target === this.dialog) this.close(); }, { signal: this.abortController.signal });
+    this.dialog?.addEventListener('cancel', (event) => { event.preventDefault(); this.close(); }, { signal: this.abortController.signal });
+    this.dialog?.addEventListener('close', () => this.handleClose(), { signal: this.abortController.signal });
   }
+  open() {
+    if (!this.dialog || this.dialog.open) return;
+    this.trigger?.setAttribute('aria-expanded', 'true');
+    try { this.dialog.showModal(); } catch (error) { this.dialog.setAttribute('open', ''); }
+    window.requestAnimationFrame(() => this.dialog.querySelector('input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled), button:not(:disabled)')?.focus({ preventScroll: true }));
+  }
+  close() { if (this.dialog?.open) this.dialog.close(); else this.dialog?.removeAttribute('open'); }
+  handleClose() { this.trigger?.setAttribute('aria-expanded', 'false'); this.trigger?.focus({ preventScroll: true }); }
   disconnectedCallback() { this.abortController?.abort(); this.abortController = null; }
 }
 
