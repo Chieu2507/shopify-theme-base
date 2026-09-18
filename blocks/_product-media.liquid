@@ -108,7 +108,7 @@
 
 <product-media-gallery
   id="{{ gallery_id }}"
-  class="product-media-gallery motion-block product-media-gallery--desktop-{{ media_desktop_layout }} product-media-gallery--mobile-{{ media_mobile_layout }} product-media-gallery--radius-{{ media_container_radius }}{% if media_full_width %} product-media-gallery--mobile-full-width{% endif %}"
+  class="media-gallery product-media-gallery motion-block product-media-gallery--desktop-{{ media_desktop_layout }} product-media-gallery--mobile-{{ media_mobile_layout }} product-media-gallery--radius-{{ media_container_radius }}{% if media_full_width %} product-media-gallery--mobile-full-width{% endif %}"
   data-product-media-gallery
   data-desktop-layout="{{ media_desktop_layout }}"
   data-mobile-layout="{{ media_mobile_layout }}"
@@ -120,7 +120,8 @@
   {{ block.shopify_attributes }}
 >
   {% if media_product != blank and media_product.media.size > 0 %}
-    <div class="product-media-gallery__layout">
+    <div class="media-gallery__layout product-media-gallery__layout">
+      <div class="media-gallery__carousel">
       {% capture product_media_main_content %}
         {% for media in media_product.media %}
           {% liquid
@@ -158,42 +159,47 @@
       {% render 'swiper-carousel',
         id: main_swiper_id,
         content: product_media_main_content,
-        root_class: 'product-media-gallery__main',
+        root_class: 'media-gallery__main product-media-gallery__main',
         root_attributes: 'data-product-main-swiper',
-        aria_label: media_main_aria_label,
-        pagination: product_media_main_pagination
+        aria_label: media_main_aria_label
       %}
 
-      {% if media_product.media.size > 1 %}
-        {% capture product_media_thumbnail_content %}
-          {% for media in media_product.media %}
-            {% assign thumbnail_alt = media.alt | default: media_product.title %}
-            <button class="swiper-slide product-media-gallery__thumbnail{% if media.preview_image == blank %} placeholder-image{% endif %}" type="button" data-product-media-thumbnail data-media-id="{{ media.id }}" aria-label="{{ 'products.view_media' | t: index: forloop.index | escape }}">
-              {% if media.preview_image != blank %}
-                {{ media.preview_image | image_url: width: 240 | image_tag: widths: '96, 144, 192, 240', sizes: '80px', loading: 'lazy', alt: thumbnail_alt }}
-              {% else %}
-                {{ 'product-1' | placeholder_svg_tag: 'product-media-gallery__thumbnail-placeholder' }}
-              {% endif %}
+        <div class="media-gallery__controls">
+          {{ product_media_main_pagination }}
+          {% if media_product.media.size > 1 %}
+            <button class="media-gallery__navigation media-gallery__navigation--previous product-media-gallery__navigation product-media-gallery__navigation--previous icon-button swiper-nav-button swiper-nav-button--prev" type="button" aria-label="{{ 'products.previous_media' | t | escape }}" data-product-media-previous>
+              {% render 'icon', icon: 'chevron-left', bare: true %}
             </button>
-          {% endfor %}
-        {% endcapture %}
-
-        {% render 'swiper-carousel',
-          id: thumbnail_swiper_id,
-          content: product_media_thumbnail_content,
-          root_class: 'product-media-gallery__thumbnails',
-          root_attributes: 'data-product-thumbnail-swiper',
-          aria_label: media_thumbnails_aria_label
-        %}
-      {% endif %}
+            <button class="media-gallery__navigation media-gallery__navigation--next product-media-gallery__navigation product-media-gallery__navigation--next icon-button swiper-nav-button swiper-nav-button--next" type="button" aria-label="{{ 'products.next_media' | t | escape }}" data-product-media-next>
+              {% render 'icon', icon: 'chevron-right', bare: true %}
+            </button>
+          {% endif %}
+        </div>
+      </div>
 
       {% if media_product.media.size > 1 %}
-        <button class="product-media-gallery__navigation product-media-gallery__navigation--previous icon-button swiper-nav-button swiper-nav-button--prev" type="button" aria-label="{{ 'products.previous_media' | t | escape }}" data-product-media-previous>
-          {% render 'icon', icon: 'chevron-left', bare: true %}
-        </button>
-        <button class="product-media-gallery__navigation product-media-gallery__navigation--next icon-button swiper-nav-button swiper-nav-button--next" type="button" aria-label="{{ 'products.next_media' | t | escape }}" data-product-media-next>
-          {% render 'icon', icon: 'chevron-right', bare: true %}
-        </button>
+        <div class="media-thumbnails__carousel">
+          {% capture product_media_thumbnail_content %}
+            {% for media in media_product.media %}
+              {% assign thumbnail_alt = media.alt | default: media_product.title %}
+              <button class="swiper-slide product-media-gallery__thumbnail{% if media.preview_image == blank %} placeholder-image{% endif %}" type="button" data-product-media-thumbnail data-media-id="{{ media.id }}" aria-label="{{ 'products.view_media' | t: index: forloop.index | escape }}">
+                {% if media.preview_image != blank %}
+                  {{ media.preview_image | image_url: width: 240 | image_tag: widths: '96, 144, 192, 240', sizes: '80px', loading: 'lazy', alt: thumbnail_alt }}
+                {% else %}
+                  {{ 'product-1' | placeholder_svg_tag: 'product-media-gallery__thumbnail-placeholder' }}
+                {% endif %}
+              </button>
+            {% endfor %}
+          {% endcapture %}
+
+          {% render 'swiper-carousel',
+            id: thumbnail_swiper_id,
+            content: product_media_thumbnail_content,
+            root_class: 'media-gallery__thumbnails product-media-gallery__thumbnails',
+            root_attributes: 'data-product-thumbnail-swiper',
+            aria_label: media_thumbnails_aria_label
+          %}
+        </div>
       {% endif %}
     </div>
 
