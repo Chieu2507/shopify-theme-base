@@ -53,6 +53,32 @@
     assign media_gap_mobile = 10
   endif
 
+  assign media_thumbnail_ratio_setting = block.settings.thumbnail_ratio | default: 'auto'
+  assign media_thumbnail_ratio = 'auto'
+  case media_thumbnail_ratio_setting
+    when 'square'
+      assign media_thumbnail_ratio = '1'
+    when 'portrait'
+      assign media_thumbnail_ratio = '0.8'
+    when 'landscape'
+      assign media_thumbnail_ratio = '1.3333'
+    when 'wide'
+      assign media_thumbnail_ratio = '1.7778'
+    when 'custom'
+      assign media_thumbnail_ratio_width = block.settings.thumbnail_ratio_custom_width | default: 1 | plus: 0
+      assign media_thumbnail_ratio_height = block.settings.thumbnail_ratio_custom_height | default: 1 | plus: 0
+      if media_thumbnail_ratio_width < 1 or media_thumbnail_ratio_width > 100
+        assign media_thumbnail_ratio_width = 1
+      endif
+      if media_thumbnail_ratio_height < 1 or media_thumbnail_ratio_height > 100
+        assign media_thumbnail_ratio_height = 1
+      endif
+      assign media_thumbnail_ratio = media_thumbnail_ratio_width | times: 1.0 | divided_by: media_thumbnail_ratio_height
+      if media_thumbnail_ratio < 0.25 or media_thumbnail_ratio > 3
+        assign media_thumbnail_ratio = '1'
+      endif
+  endcase
+
   if settings.variant_picker_only_selected_media and current_variant != blank
     for image in media_product.images
       for image_variant in image.variants
@@ -88,7 +114,7 @@
   data-block-animations="{{ media_block_motion_enabled }}"
   data-current-variant-id="{{ current_variant.id | default: '' }}"
   data-filter-variant-media="{{ settings.variant_picker_only_selected_media }}"
-  {% if media_gap != 12 or media_gap_mobile != 10 %}style="{% if media_gap != 12 %}--product-media-gap: {{ media_gap }}px;{% endif %}{% if media_gap_mobile != 10 %}--product-media-gap-mobile: {{ media_gap_mobile }}px;{% endif %}"{% endif %}
+  style="--product-media-thumbnail-aspect-ratio: {{ media_thumbnail_ratio }};{% if media_gap != 12 %}--product-media-gap: {{ media_gap }}px;{% endif %}{% if media_gap_mobile != 10 %}--product-media-gap-mobile: {{ media_gap_mobile }}px;{% endif %}"
   {{ block.shopify_attributes }}
 >
   {% if media_product != blank and media_product.media.size > 0 %}
@@ -219,6 +245,34 @@
       "id": "full_width_media",
       "label": "t:labels.edge_to_edge_media",
       "default": false
+    },
+    {
+      "type": "select",
+      "id": "thumbnail_ratio",
+      "label": "t:labels.thumbnail_aspect_ratio",
+      "options": [
+        { "value": "auto", "label": "t:options.image_ratio.auto" },
+        { "value": "square", "label": "t:options.image_ratio.square" },
+        { "value": "portrait", "label": "t:options.image_ratio.portrait" },
+        { "value": "landscape", "label": "t:options.image_ratio.landscape" },
+        { "value": "wide", "label": "t:options.image_ratio.wide" },
+        { "value": "custom", "label": "t:options.image_ratio.custom" }
+      ],
+      "default": "auto"
+    },
+    {
+      "type": "number",
+      "id": "thumbnail_ratio_custom_width",
+      "label": "W",
+      "default": 1,
+      "visible_if": "{{ block.settings.thumbnail_ratio == 'custom' }}"
+    },
+    {
+      "type": "number",
+      "id": "thumbnail_ratio_custom_height",
+      "label": "H",
+      "default": 1,
+      "visible_if": "{{ block.settings.thumbnail_ratio == 'custom' }}"
     },
     {
       "type": "header",
