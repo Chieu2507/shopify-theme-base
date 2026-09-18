@@ -135,8 +135,11 @@ class ProductMediaGallery extends HTMLElement {
     const showPagination = isMobile && this.dataset.mobileLayout === 'slider' && this.dataset.mobileShowPagination === 'true';
     const gapProperty = isMobile ? '--product-media-gap-mobile' : '--product-media-gap';
     const thumbnailGapProperty = isMobile ? '--product-media-thumbnail-gap-mobile' : '--product-media-thumbnail-gap';
-    const gap = Number.parseFloat(getComputedStyle(this).getPropertyValue(gapProperty)) || 0;
-    const thumbnailGap = Number.parseFloat(getComputedStyle(this).getPropertyValue(thumbnailGapProperty)) || gap;
+    const computedStyle = getComputedStyle(this);
+    const gapValue = Number.parseFloat(computedStyle.getPropertyValue(gapProperty));
+    const gap = Number.isFinite(gapValue) ? gapValue : (isMobile ? 10 : 12);
+    const thumbnailGapValue = Number.parseFloat(computedStyle.getPropertyValue(thumbnailGapProperty));
+    const thumbnailGap = Number.isFinite(thumbnailGapValue) ? thumbnailGapValue : gap;
 
     if (showThumbnails && this.thumbnailElement) {
       this.thumbnailSwiper = createSwiperCarousel(this.thumbnailElement, {
