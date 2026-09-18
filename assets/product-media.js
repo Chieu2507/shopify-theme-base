@@ -788,6 +788,9 @@ class ProductMediaGallery extends HTMLElement {
     const sourceGeometry = sourceImage && this.lightboxImageGeometry(sourceImage);
     this.lightboxOpener = opener;
     this.destroyLightbox(false);
+    // Native dialog focus restoration must belong to this opening, not the
+    // previously focused gallery item (pointer activation need not focus it).
+    opener?.focus({ preventScroll: true });
     this.lightbox.showModal();
     document.documentElement.classList.add('product-media-lightbox-open');
 
@@ -855,14 +858,14 @@ class ProductMediaGallery extends HTMLElement {
     const slide = this.lightboxSwiper?.slides?.[this.lightboxSwiper.activeIndex];
     const image = slide?.querySelector('.product-media-lightbox__image');
     if (!image || !source || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      if (!opening) lightbox?.close();
+      if (!opening) this.finishLightboxClose();
       return;
     }
     const from = sourceGeometry || this.lightboxImageGeometry(opening ? source : (this.lightboxTransition?.clone || image));
     const to = this.lightboxImageGeometry(opening ? image : source);
     this.clearLightboxTransition();
     if (!from || !to) {
-      if (!opening) lightbox.close();
+      if (!opening) this.finishLightboxClose();
       return;
     }
     const clone = image.cloneNode(false);
@@ -894,8 +897,22 @@ class ProductMediaGallery extends HTMLElement {
     this.lightboxTransition = transition;
     await Promise.all(animations.map((animation) => animation.finished.catch(() => {})));
     if (this.lightboxTransition !== transition) return;
-    if (!opening) lightbox.close();
+    if (!opening) this.finishLightboxClose();
     this.clearLightboxTransition();
+  }
+
+  finishLightboxClose() {
+    // dialog.close() restores focus synchronously. Swiper's A11y listener
+    // otherwise queues a slideTo for that old focus target on the next frame.
+    const a11y = this.mainSwiper?.params.a11y;
+    const scrollOnFocus = a11y?.scrollOnFocus;
+    if (a11y) a11y.scrollOnFocus = false;
+    try {
+      this.lightbox?.close();
+      if (this.lightboxOpener?.isConnected) this.lightboxOpener.focus({ preventScroll: true });
+    } finally {
+      if (a11y) a11y.scrollOnFocus = scrollOnFocus;
+    }
   }
 
   closeLightbox() {
