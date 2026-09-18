@@ -507,7 +507,7 @@ document.addEventListener('shopify:block:select', (event) => {
   const state = root && states.get(root);
   const slide = event.target.closest?.('[data-slideshow-slide]');
   // The page-width loop adds inert clones to the wrapper. Keep editor
-  // selection mapped to its two logical source slides.
+  // selection mapped to its logical source slides.
   const slides = state?.carousel.querySelectorAll('.swiper-wrapper > [data-slideshow-slide]');
   const index = slides ? [...slides].indexOf(slide) : -1;
   if (state && slide && index >= 0) state.swiper.slideTo(state.manualLoop?.originalIndex(index) ?? index);
