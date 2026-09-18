@@ -64,9 +64,13 @@
   endif
   assign media_thumbnail_gap = media_gap | plus: 4
   assign media_thumbnail_gap_mobile = media_gap_mobile | plus: 2
-  assign media_bottom_thumbnail_width = block.settings.bottom_thumbnail_width | default: 72 | plus: 0
-  if media_bottom_thumbnail_width < 48 or media_bottom_thumbnail_width > 200
-    assign media_bottom_thumbnail_width = 72
+  assign media_thumbnail_width = block.settings.bottom_thumbnail_width | default: 72 | plus: 0
+  if media_thumbnail_width < 48 or media_thumbnail_width > 200
+    assign media_thumbnail_width = 72
+  endif
+  assign media_thumbnail_width_mobile = block.settings.thumbnail_width_mobile | default: 64 | plus: 0
+  if media_thumbnail_width_mobile < 40 or media_thumbnail_width_mobile > 160
+    assign media_thumbnail_width_mobile = 64
   endif
 
   assign media_thumbnail_ratio_setting = block.settings.thumbnail_ratio | default: 'auto'
@@ -131,7 +135,7 @@
   data-block-animations="{{ media_block_motion_enabled }}"
   data-current-variant-id="{{ current_variant.id | default: '' }}"
   data-filter-variant-media="{{ settings.variant_picker_only_selected_media }}"
-  style="--product-media-thumbnail-aspect-ratio: {{ media_thumbnail_ratio }};--product-media-thumbnail-gap: {{ media_thumbnail_gap }}px;--product-media-thumbnail-gap-mobile: {{ media_thumbnail_gap_mobile }}px;--product-media-bottom-thumbnail-width: {{ media_bottom_thumbnail_width }}px;{% if media_gap != 12 %}--product-media-gap: {{ media_gap }}px;{% endif %}{% if media_gap_mobile != 10 %}--product-media-gap-mobile: {{ media_gap_mobile }}px;{% endif %}"
+  style="--product-media-thumbnail-aspect-ratio: {{ media_thumbnail_ratio }};--product-media-thumbnail-width: {{ media_thumbnail_width }}px;--product-media-thumbnail-width-mobile: {{ media_thumbnail_width_mobile }}px;--product-media-thumbnail-gap: {{ media_thumbnail_gap }}px;--product-media-thumbnail-gap-mobile: {{ media_thumbnail_gap_mobile }}px;{% if media_gap != 12 %}--product-media-gap: {{ media_gap }}px;{% endif %}{% if media_gap_mobile != 10 %}--product-media-gap-mobile: {{ media_gap_mobile }}px;{% endif %}"
   {{ block.shopify_attributes }}
 >
   {% if media_product != blank and media_product.media.size > 0 %}
@@ -177,17 +181,17 @@
         root_class: 'media-gallery__main product-media-gallery__main',
         root_attributes: 'data-product-main-swiper',
         aria_label: media_main_aria_label,
+        pagination: product_media_main_pagination,
         show_next_slide_preview_on_mobile: media_mobile_show_next_slide
       %}
 
         <div class="media-gallery__controls">
-          {{ product_media_main_pagination }}
           {% if media_product.media.size > 1 %}
-            <button class="media-gallery__navigation media-gallery__navigation--previous product-media-gallery__navigation product-media-gallery__navigation--previous icon-button swiper-nav-button swiper-nav-button--prev" type="button" aria-label="{{ 'products.previous_media' | t | escape }}" data-product-media-previous>
-              {% render 'icon', icon: 'chevron-left', bare: true %}
+            <button class="media-gallery__navigation media-gallery__navigation--previous product-media-gallery__navigation product-media-gallery__navigation--previous btn btn-secondary btn--secondary btn--icon swiper-nav-button swiper-nav-button--prev" type="button" aria-label="{{ 'products.previous_media' | t | escape }}" data-product-media-previous>
+              {% render 'carousel-navigation-icon', icon: 'chevron', direction: 'previous' %}
             </button>
-            <button class="media-gallery__navigation media-gallery__navigation--next product-media-gallery__navigation product-media-gallery__navigation--next icon-button swiper-nav-button swiper-nav-button--next" type="button" aria-label="{{ 'products.next_media' | t | escape }}" data-product-media-next>
-              {% render 'icon', icon: 'chevron-right', bare: true %}
+            <button class="media-gallery__navigation media-gallery__navigation--next product-media-gallery__navigation product-media-gallery__navigation--next btn btn-secondary btn--secondary btn--icon swiper-nav-button swiper-nav-button--next" type="button" aria-label="{{ 'products.next_media' | t | escape }}" data-product-media-next>
+              {% render 'carousel-navigation-icon', icon: 'chevron', direction: 'next' %}
             </button>
           {% endif %}
         </div>
@@ -199,7 +203,7 @@
             {% for media in media_product.media %}
               {% liquid
                 assign thumbnail_alt = media.alt | default: media_product.title
-                assign thumbnail_sizes = '(min-width: 768px) ' | append: media_bottom_thumbnail_width | append: 'px, 80px'
+                assign thumbnail_sizes = '(min-width: 768px) ' | append: media_thumbnail_width | append: 'px, ' | append: media_thumbnail_width_mobile | append: 'px'
               %}
               <button class="swiper-slide product-media-gallery__thumbnail{% if media.preview_image == blank %} placeholder-image{% endif %}" type="button" data-product-media-thumbnail data-media-id="{{ media.id }}" aria-label="{{ 'products.view_media' | t: index: forloop.index | escape }}">
                 {% if media.preview_image != blank %}
@@ -246,7 +250,7 @@
     {
       "type": "select",
       "id": "desktop_layout",
-      "label": "t:labels.gallery_layout",
+      "label": "t:labels.desktop_layout",
       "options": [
         { "value": "left_thumbnails", "label": "t:options.product_media_layout.left_thumbnails" },
         { "value": "bottom_thumbnails", "label": "t:options.product_media_layout.bottom_thumbnails" },
@@ -256,6 +260,47 @@
         { "value": "two_column_grid", "label": "t:options.product_media_layout.two_column_grid" }
       ],
       "default": "left_thumbnails"
+    },
+    {
+      "type": "range",
+      "id": "bottom_thumbnail_width",
+      "label": "t:labels.desktop_thumbnail_width",
+      "min": 48,
+      "max": 200,
+      "step": 4,
+      "unit": "px",
+      "default": 72
+    },
+    {
+      "type": "range",
+      "id": "thumbnail_width_mobile",
+      "label": "t:labels.mobile_thumbnail_width",
+      "min": 40,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 64
+    },
+    {
+      "type": "select",
+      "id": "thumbnail_ratio",
+      "label": "Thumbnail aspect ratio",
+      "options": [
+        { "value": "auto", "label": "t:options.image_ratio.auto" },
+        { "value": "square", "label": "t:options.image_ratio.square" },
+        { "value": "portrait", "label": "t:options.image_ratio.portrait" },
+        { "value": "landscape", "label": "t:options.image_ratio.landscape" },
+        { "value": "wide", "label": "t:options.image_ratio.wide" },
+        { "value": "custom", "label": "t:options.image_ratio.custom" }
+      ],
+      "default": "auto"
+    },
+    {
+      "type": "number",
+      "id": "thumbnail_ratio_custom_width",
+      "label": "W",
+      "default": 1,
+      "visible_if": "{{ block.settings.thumbnail_ratio == 'custom' }}"
     },
     {
       "type": "header",
@@ -290,38 +335,6 @@
       "id": "full_width_media",
       "label": "t:labels.edge_to_edge_media",
       "default": false
-    },
-    {
-      "type": "range",
-      "id": "bottom_thumbnail_width",
-      "label": "Thumbnail width",
-      "min": 48,
-      "max": 200,
-      "step": 4,
-      "unit": "px",
-      "default": 72,
-      "visible_if": "{{ block.settings.desktop_layout == 'bottom_thumbnails' }}"
-    },
-    {
-      "type": "select",
-      "id": "thumbnail_ratio",
-      "label": "Thumbnail aspect ratio",
-      "options": [
-        { "value": "auto", "label": "t:options.image_ratio.auto" },
-        { "value": "square", "label": "t:options.image_ratio.square" },
-        { "value": "portrait", "label": "t:options.image_ratio.portrait" },
-        { "value": "landscape", "label": "t:options.image_ratio.landscape" },
-        { "value": "wide", "label": "t:options.image_ratio.wide" },
-        { "value": "custom", "label": "t:options.image_ratio.custom" }
-      ],
-      "default": "auto"
-    },
-    {
-      "type": "number",
-      "id": "thumbnail_ratio_custom_width",
-      "label": "W",
-      "default": 1,
-      "visible_if": "{{ block.settings.thumbnail_ratio == 'custom' }}"
     },
     {
       "type": "number",
