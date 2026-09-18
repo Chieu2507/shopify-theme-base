@@ -210,6 +210,14 @@ class ProductMediaGallery extends HTMLElement {
       return;
     }
 
+    const lightboxThumbnail = event.target.closest('[data-product-lightbox-thumbnail]');
+    if (lightboxThumbnail) {
+      const slides = Array.from(this.lightboxSwiper?.slides || []);
+      const index = slides.findIndex((slide) => String(slide.dataset.mediaId) === String(lightboxThumbnail.dataset.mediaId));
+      if (index >= 0) this.lightboxSwiper?.slideTo(index);
+      return;
+    }
+
     const thumbnail = event.target.closest('[data-product-media-thumbnail]');
     if (thumbnail) {
       if (this.galleryMode === 'desktop-static') {
@@ -296,8 +304,21 @@ class ProductMediaGallery extends HTMLElement {
   updateLightboxCounter() {
     const current = this.querySelector('[data-product-lightbox-current]');
     const total = this.querySelector('[data-product-lightbox-total]');
-    if (current) current.textContent = String((this.lightboxSwiper?.realIndex || 0) + 1);
+    const activeIndex = this.lightboxSwiper?.realIndex ?? this.lightboxSwiper?.activeIndex ?? 0;
+    if (current) current.textContent = String(activeIndex + 1);
     if (total) total.textContent = String(this.lightboxSwiper?.slides?.length || 0);
+    this.updateLightboxThumbnailState(activeIndex);
+  }
+
+  updateLightboxThumbnailState(activeIndex = 0) {
+    this.querySelectorAll('[data-product-lightbox-thumbnail]').forEach((thumbnail, index) => {
+      const isActive = index === activeIndex;
+      thumbnail.classList.toggle('is-active', isActive);
+      thumbnail.setAttribute('aria-current', String(isActive));
+      if (isActive && typeof thumbnail.scrollIntoView === 'function') {
+        thumbnail.scrollIntoView({ block: 'nearest', inline: 'nearest' });
+      }
+    });
   }
 
   destroyLightbox(restoreFocus = true) {
