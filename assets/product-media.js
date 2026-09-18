@@ -2,8 +2,8 @@ import { EffectFade, Pagination, Thumbs } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
 // Keep the zoom image at its natural cover size; an extra multiplier makes the lightbox too aggressive.
-const LIGHTBOX_ZOOM_SCALE = 1;
-const LIGHTBOX_ZOOM_STATE_SCALE = 2;
+const LIGHTBOX_ZOOM_SCALE = 3;
+const LIGHTBOX_MAX_IMAGE_SIZE = 2000;
 const LIGHTBOX_DRAG_THRESHOLD = 4;
 const LIGHTBOX_DISMISS_AXIS_RATIO = 1.15;
 const LIGHTBOX_DISMISS_ANIMATION_MS = 240;
@@ -35,6 +35,11 @@ class ProductMediaGallery extends HTMLElement {
     this.addEventListener('pointercancel', this.handleLightboxPointerUp, { signal: this.signal, capture: true });
     this.addEventListener('dragstart', this.handleLightboxDragStart, { signal: this.signal, capture: true });
     this.mobileQuery.addEventListener('change', this.handleBreakpoint, { signal: this.signal });
+    window.addEventListener('resize', () => {
+      if (!this.lightbox?.open) return;
+      this.resetLightboxZoom();
+      this.layoutLightboxImages();
+    }, { signal: this.signal });
     this.productInformation?.addEventListener('variant:change', this.handleVariantChange, { signal: this.signal });
     this.lightbox?.addEventListener('close', () => this.destroyLightbox(), { signal: this.signal });
     this.lightbox?.addEventListener('click', (event) => {
@@ -440,10 +445,10 @@ class ProductMediaGallery extends HTMLElement {
     const viewportHeight = slide?.clientHeight || viewport?.clientHeight || 0;
 
     return {
-      minX: Math.min(0, viewportWidth - zoomWidth),
-      maxX: 0,
-      minY: Math.min(0, viewportHeight - zoomHeight),
-      maxY: 0,
+      minX: zoomWidth <= viewportWidth ? (viewportWidth - zoomWidth) / 2 : viewportWidth - zoomWidth,
+      maxX: zoomWidth <= viewportWidth ? (viewportWidth - zoomWidth) / 2 : 0,
+      minY: zoomHeight <= viewportHeight ? (viewportHeight - zoomHeight) / 2 : viewportHeight - zoomHeight,
+      maxY: zoomHeight <= viewportHeight ? (viewportHeight - zoomHeight) / 2 : 0,
     };
   }
 
@@ -452,37 +457,51 @@ class ProductMediaGallery extends HTMLElement {
     slide.dataset.panX = String(x);
     slide.dataset.panY = String(y);
     const image = slide.querySelector('.product-media-lightbox__image');
-    if (image) image.style.transform = `translate3d(${x}px, ${y}px, 0px) scale3d(1, 1, 1)`;
+    const scale = Number(slide.dataset.zoomScale || 1);
+    if (image) image.style.transform = `translate3d(${x}px, ${y}px, 0px) scale(${scale})`;
+    if (this.lightboxZoomState.slide === slide) {
+      this.lightboxZoomState.x = x;
+      this.lightboxZoomState.y = y;
+    }
   }
 
-  prepareLightboxZoom(slide) {
+  layoutLightboxImage(slide) {
     const image = slide?.querySelector('.product-media-lightbox__image');
     if (!slide || !image) return { x: 0, y: 0 };
 
     image.loading = 'eager';
     const viewportWidth = slide.clientWidth || window.innerWidth;
     const viewportHeight = slide.clientHeight || window.innerHeight;
-    const sourceWidth = image.naturalWidth || Number(image.getAttribute('width')) || viewportWidth;
-    const sourceHeight = image.naturalHeight || Number(image.getAttribute('height')) || viewportHeight;
-    const coverScale = Math.max(viewportWidth / sourceWidth, viewportHeight / sourceHeight, 1);
-    const zoomWidth = Math.round(sourceWidth * coverScale * LIGHTBOX_ZOOM_SCALE);
-    const zoomHeight = Math.round(sourceHeight * coverScale * LIGHTBOX_ZOOM_SCALE);
+    const sourceWidth = Number(image.getAttribute('width')) || image.naturalWidth || viewportWidth;
+    const sourceHeight = Number(image.getAttribute('height')) || image.naturalHeight || viewportHeight;
+    const fit = Math.min(viewportWidth / sourceWidth, viewportHeight / sourceHeight, 1);
+    const width = sourceWidth * fit;
+    const height = sourceHeight * fit;
+    slide.dataset.fitWidth = String(width);
+    slide.dataset.fitHeight = String(height);
+    slide.style.setProperty('--lightbox-fit-width', `${width}px`);
+    slide.style.setProperty('--lightbox-fit-height', `${height}px`);
+    slide.style.setProperty('--lightbox-fit-x', `${(viewportWidth - width) / 2}px`);
+    slide.style.setProperty('--lightbox-fit-y', `${(viewportHeight - height) / 2}px`);
+  }
+
+  layoutLightboxImages() {
+    this.lightbox?.querySelectorAll('.product-media-lightbox__slide').forEach((slide) => this.layoutLightboxImage(slide));
+  }
+
+  prepareLightboxZoom(slide) {
+    const image = slide.querySelector('.product-media-lightbox__image');
+    const width = Number(slide.dataset.fitWidth);
+    const height = Number(slide.dataset.fitHeight);
+    const sourceWidth = Number(image.getAttribute('width')) || width;
+    const sourceHeight = Number(image.getAttribute('height')) || height;
+    const scale = Math.max(1, Math.min(LIGHTBOX_ZOOM_SCALE, sourceWidth / width, sourceHeight / height, LIGHTBOX_MAX_IMAGE_SIZE / Math.max(width, height)));
+    const zoomWidth = width * scale;
+    const zoomHeight = height * scale;
+    slide.dataset.zoomScale = String(scale);
     slide.dataset.zoomWidth = String(zoomWidth);
     slide.dataset.zoomHeight = String(zoomHeight);
-    slide.style.setProperty('--lightbox-zoom-width', `${zoomWidth}px`);
-    slide.style.setProperty('--lightbox-zoom-height', `${zoomHeight}px`);
-    image.style.transformOrigin = '0 0';
-
-    const bounds = this.getLightboxPanBounds(slide);
-    const x = (bounds.minX + bounds.maxX) / 2;
-    const y = (bounds.minY + bounds.maxY) / 2;
-    this.setLightboxPan(slide, x, y);
-    if (!image.complete) {
-      image.addEventListener('load', () => {
-        if (slide.classList.contains('is-zoomed')) this.prepareLightboxZoom(slide);
-      }, { once: true, signal: this.signal });
-    }
-    return { x, y };
+    return scale;
   }
 
   clampLightboxPan(slide) {
@@ -599,8 +618,7 @@ class ProductMediaGallery extends HTMLElement {
     const hasPointerCoordinates = Number.isFinite(event?.clientX) && Number.isFinite(event?.clientY);
     state.image = image;
     state.slide = slide;
-    state.scale = LIGHTBOX_ZOOM_STATE_SCALE;
-    this.prepareLightboxZoom(slide);
+    state.scale = this.prepareLightboxZoom(slide);
 
     const bounds = this.getLightboxPanBounds(slide);
     const focusX = hasPointerCoordinates
@@ -639,6 +657,7 @@ class ProductMediaGallery extends HTMLElement {
     slide.setAttribute('aria-pressed', 'false');
     slide.removeAttribute('data-zoom-width');
     slide.removeAttribute('data-zoom-height');
+    slide.removeAttribute('data-zoom-scale');
     slide.removeAttribute('data-pan-x');
     slide.removeAttribute('data-pan-y');
     slide.style.removeProperty('--lightbox-zoom-width');
@@ -725,6 +744,7 @@ class ProductMediaGallery extends HTMLElement {
       a11y: { enabled: true },
     });
     this.resetLightboxZoom();
+    this.layoutLightboxImages();
     const index = Array.from(this.lightboxSwiper.slides).findIndex(
       (slide) => String(slide.dataset.mediaId) === String(mediaId),
     );
