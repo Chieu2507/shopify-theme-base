@@ -278,6 +278,11 @@ class ProductMediaGallery extends HTMLElement {
       event.stopPropagation();
       return;
     }
+    if (this.lightboxTransition && target.closest('[data-product-media-lightbox]')) {
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
 
     const lightboxThumbnail = target.closest('[data-product-lightbox-thumbnail]');
     if (lightboxThumbnail) {
@@ -769,6 +774,8 @@ class ProductMediaGallery extends HTMLElement {
 
   openLightbox(mediaId, opener) {
     if (!this.lightbox?.showModal) return;
+    const sourceImage = opener?.querySelector('img');
+    const sourceGeometry = sourceImage && this.lightboxImageGeometry(sourceImage);
     this.lightboxOpener = opener;
     this.destroyLightbox(false);
     this.lightbox.showModal();
@@ -801,7 +808,7 @@ class ProductMediaGallery extends HTMLElement {
       this.resetLightboxZoom();
       this.updateLightboxCounter();
     });
-    this.animateLightboxTransition(true, opener?.querySelector('img'));
+    this.animateLightboxTransition(true, sourceImage, sourceGeometry);
   }
 
   // Measure the painted image, including object-fit cropping in the gallery.
@@ -833,7 +840,7 @@ class ProductMediaGallery extends HTMLElement {
     this.lightbox?.classList.remove('is-transitioning', 'is-closing');
   }
 
-  async animateLightboxTransition(opening, source) {
+  async animateLightboxTransition(opening, source, sourceGeometry) {
     const lightbox = this.lightbox;
     const slide = this.lightboxSwiper?.slides?.[this.lightboxSwiper.activeIndex];
     const image = slide?.querySelector('.product-media-lightbox__image');
@@ -841,7 +848,7 @@ class ProductMediaGallery extends HTMLElement {
       if (!opening) lightbox?.close();
       return;
     }
-    const from = this.lightboxImageGeometry(opening ? source : (this.lightboxTransition?.clone || image));
+    const from = sourceGeometry || this.lightboxImageGeometry(opening ? source : (this.lightboxTransition?.clone || image));
     const to = this.lightboxImageGeometry(opening ? image : source);
     this.clearLightboxTransition();
     if (!from || !to) {
@@ -918,7 +925,7 @@ class ProductMediaGallery extends HTMLElement {
     destroySwiperCarousel(this.lightboxSwiper);
     this.lightboxSwiper = null;
     document.documentElement.classList.remove('product-media-lightbox-open');
-    if (restoreFocus && this.lightboxOpener?.isConnected) this.lightboxOpener.focus();
+    if (restoreFocus && this.lightboxOpener?.isConnected) this.lightboxOpener.focus({ preventScroll: true });
     if (restoreFocus) this.lightboxOpener = null;
   }
 
