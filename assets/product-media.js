@@ -583,8 +583,6 @@ class ProductMediaGallery extends HTMLElement {
       return;
     }
 
-    const viewport = this.querySelector('[data-product-lightbox-swiper]');
-    const rect = viewport?.getBoundingClientRect() || slide.getBoundingClientRect();
     state.image = image;
     state.slide = slide;
     state.scale = LIGHTBOX_ZOOM_SCALE;
@@ -603,6 +601,23 @@ class ProductMediaGallery extends HTMLElement {
     state.slide.classList.toggle('is-zoomed', state.scale > 1);
     state.slide.setAttribute('aria-pressed', String(state.scale > 1));
     if (this.lightboxSwiper) this.lightboxSwiper.allowTouchMove = state.scale <= 1;
+  }
+
+  clearLightboxZoom(slide) {
+    if (!slide) return;
+
+    slide.classList.remove('is-zoomed', 'is-dragging');
+    slide.setAttribute('aria-pressed', 'false');
+    slide.removeAttribute('data-zoom-width');
+    slide.removeAttribute('data-zoom-height');
+    slide.removeAttribute('data-pan-x');
+    slide.removeAttribute('data-pan-y');
+    slide.style.removeProperty('--lightbox-zoom-width');
+    slide.style.removeProperty('--lightbox-zoom-height');
+
+    const image = slide.querySelector('.product-media-lightbox__image');
+    image?.style.removeProperty('transform');
+    image?.style.removeProperty('transform-origin');
   }
 
   resetLightboxZoom() {
