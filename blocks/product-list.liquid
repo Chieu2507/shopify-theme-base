@@ -1,6 +1,6 @@
 {% doc %}
-  Renders a responsive product collection using one controlled Product Card
-  child for every product. The block owns the collection query, item count,
+  Renders a responsive product collection using one static Product Card theme
+  block for every product. The block owns the collection query, item count,
   grid/carousel layout, columns, and gaps; Product Card owns presentation.
 
   @example
@@ -14,9 +14,21 @@
     assign product_list_layout = 'grid'
   endunless
 
-  assign product_list_product_card_block = block.blocks | first
-  if product_list_product_card_block != blank and product_list_product_card_block.blocks != blank
-    assign product_list_product_card_block = product_list_product_card_block.blocks | first
+  assign product_list_max_products = block.settings.max_products | default: 6 | plus: 0
+  if product_list_max_products < 1 or product_list_max_products > 24
+    assign product_list_max_products = 6
+  endif
+
+  assign product_list_items = blank
+  assign product_list_item_limit = product_list_max_products
+  assign product_list_is_placeholder = false
+  if product_list_collection != blank and product_list_collection.products != blank
+    assign product_list_items = product_list_collection.products
+  else
+    assign product_list_placeholder_count = product_list_max_products
+    assign product_list_items = (1..product_list_placeholder_count)
+    assign product_list_item_limit = product_list_placeholder_count
+    assign product_list_is_placeholder = true
   endif
 
   assign product_list_carousel_id = 'ProductListCarousel-' | append: block.id
@@ -25,11 +37,6 @@
   assign product_list_show_next_slide_preview = false
   if block.settings.show_next_slide_preview_on_desktop
     assign product_list_show_next_slide_preview = true
-  endif
-
-  assign product_list_show_next_slide_preview_on_mobile = false
-  if product_list_layout == 'carousel' and block.settings.show_next_slide_preview_on_mobile
-    assign product_list_show_next_slide_preview_on_mobile = true
   endif
 
   assign product_list_gap_desktop = block.settings.product_gap_desktop | default: block.settings.gap_horizontal | default: 4 | plus: 0
@@ -42,7 +49,7 @@
   endif
 
   assign product_list_navigation_position = block.settings.navigation_position | default: 'inside'
-  unless product_list_navigation_position == 'inside' or product_list_navigation_position == 'outside'
+  unless product_list_navigation_position == 'inside' or product_list_navigation_position == 'outside' or product_list_navigation_position == 'top'
     assign product_list_navigation_position = 'inside'
   endunless
 
@@ -54,19 +61,34 @@
     assign product_list_navigation_style = 'secondary'
   endunless
 
+  assign product_list_navigation_button_variant = product_list_navigation_style
+  assign product_list_navigation_button_modifier = blank
+  if product_list_navigation_style == 'icon_only'
+    assign product_list_navigation_button_variant = 'tertiary'
+    assign product_list_navigation_button_modifier = 'swiper-nav-button--icon-only'
+  elsif product_list_navigation_style == 'outline'
+    assign product_list_navigation_button_variant = 'secondary'
+    assign product_list_navigation_button_modifier = 'swiper-nav-button--outline'
+  endif
+
   assign product_list_navigation_icon = block.settings.navigation_icon | default: 'chevron'
   unless product_list_navigation_icon == 'chevron' or product_list_navigation_icon == 'arrow' or product_list_navigation_icon == 'long_arrow'
     assign product_list_navigation_icon = 'chevron'
   endunless
 
-  assign product_list_navigation_behavior = block.settings.navigation_behavior | default: 'show_on_hover'
-  unless product_list_navigation_behavior == 'show_on_hover' or product_list_navigation_behavior == 'always'
-    assign product_list_navigation_behavior = 'show_on_hover'
-  endunless
+  assign product_list_navigation_behavior = 'always'
+  if product_list_navigation_position != 'top'
+    assign product_list_navigation_behavior = block.settings.navigation_behavior | default: 'show_on_hover'
+    unless product_list_navigation_behavior == 'show_on_hover' or product_list_navigation_behavior == 'always'
+      assign product_list_navigation_behavior = 'show_on_hover'
+    endunless
+  endif
 
   assign product_list_show_navigation = true
-  if block.settings.show_navigation_on_desktop == false or block.settings.show_navigation_on_desktop == 'false'
-    assign product_list_show_navigation = false
+  if product_list_navigation_position != 'top'
+    if block.settings.show_navigation_on_desktop == false or block.settings.show_navigation_on_desktop == 'false'
+      assign product_list_show_navigation = false
+    endif
   endif
 
   assign product_list_pagination_type = block.settings.pagination_type | default: 'progress_bar'
@@ -99,9 +121,12 @@
     assign product_list_pagination_max_width = 260
   endif
 
-  assign product_list_show_pagination = true
-  if block.settings.show_pagination_on_desktop == false or block.settings.show_pagination_on_desktop == 'false'
-    assign product_list_show_pagination = false
+  assign product_list_show_pagination = false
+  if product_list_layout == 'carousel'
+    assign product_list_show_pagination = true
+    if block.settings.show_pagination_on_desktop == false or block.settings.show_pagination_on_desktop == 'false'
+      assign product_list_show_pagination = false
+    endif
   endif
 
   assign product_list_autoplay_enabled = false
@@ -123,17 +148,65 @@
   assign product_list_pagination_class = 'swiper-pagination--below product-list__pagination product-list__pagination--' | append: product_list_pagination_type
 %}
 
+{% capture product_list_items_content %}
+  {% if product_list_items != blank %}
+    {% for product_list_item in product_list_items limit: product_list_item_limit %}
+      {% liquid
+        assign product_list_card_product = product_list_item
+        assign product_list_card_placeholder = false
+        if product_list_is_placeholder
+          assign product_list_card_product = blank
+          assign product_list_card_placeholder = true
+        endif
+      %}
+      <div class="{% if product_list_layout == 'carousel' %}swiper-slide {% endif %}product-collection-grid__item product-card-layout__item product-list__item">
+        {% content_for 'block', type: 'product-card', id: 'product-card', product: product_list_card_product, closest.product: product_list_card_product, placeholder: product_list_card_placeholder %}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endcapture %}
+
 {% capture product_list_pagination_style %}
-  --swiper-pagination-spacing: {{ product_list_pagination_top_padding_desktop }}px;
-  --swiper-pagination-spacing-mobile: {{ product_list_pagination_top_padding_mobile }}px;
-  {% if product_list_pagination_limit_width %}--swiper-pagination-width: min(100%, {{ product_list_pagination_max_width }}px);{% endif %}
+  {% if product_list_show_pagination %}
+    --swiper-pagination-spacing: {{ product_list_pagination_top_padding_desktop }}px;
+    --swiper-pagination-spacing-mobile: {{ product_list_pagination_top_padding_mobile }}px;
+    {% if product_list_pagination_limit_width %}--swiper-pagination-width: min(100%, {{ product_list_pagination_max_width }}px);{% endif %}
+  {% endif %}
 {% endcapture %}
 {% assign product_list_pagination_style = product_list_pagination_style | strip %}
 
 {% capture product_list_navigation_center_style %}
-  {% if product_list_layout == 'carousel' and product_list_show_pagination %}--swiper-navigation-center-offset: calc(({{ product_list_pagination_top_padding_desktop }}px + {{ product_list_pagination_size }}) / 2);{% endif %}
+  {% if product_list_layout == 'carousel' and product_list_show_pagination and product_list_navigation_position != 'top' %}--swiper-navigation-center-offset: calc(({{ product_list_pagination_top_padding_desktop }}px + {{ product_list_pagination_size }}) / 2);{% endif %}
 {% endcapture %}
 {% assign product_list_navigation_center_style = product_list_navigation_center_style | strip %}
+
+{% capture product_list_navigation_markup %}
+  {% if product_list_layout == 'carousel' and product_list_show_navigation %}
+    <div
+      class="swiper-carousel__navigation--centered swiper-carousel__navigation--{{ product_list_navigation_behavior }} product-list__navigation product-list__navigation--{{ product_list_navigation_position }} product-list__navigation--{{ product_list_navigation_behavior }}"
+      data-product-list-navigation
+      {% if product_list_navigation_center_style != blank %}style="{{ product_list_navigation_center_style }}"{% endif %}
+    >
+      <button
+        class="btn btn-{{ product_list_navigation_button_variant }} btn--{{ product_list_navigation_button_variant }} btn--icon{% if product_list_navigation_button_modifier != blank %} {{ product_list_navigation_button_modifier }}{% endif %} swiper-nav-button swiper-nav-button--prev product-list__carousel-button"
+        type="button"
+        data-product-list-previous
+        aria-label="{{ 'collection_tabs.previous' | t | escape }}"
+      >
+        {% render 'carousel-navigation-icon', icon: product_list_navigation_icon, direction: 'previous' %}
+      </button>
+      <button
+        class="btn btn-{{ product_list_navigation_button_variant }} btn--{{ product_list_navigation_button_variant }} btn--icon{% if product_list_navigation_button_modifier != blank %} {{ product_list_navigation_button_modifier }}{% endif %} swiper-nav-button swiper-nav-button--next product-list__carousel-button"
+        type="button"
+        data-product-list-next
+        aria-label="{{ 'collection_tabs.next' | t | escape }}"
+      >
+        {% render 'carousel-navigation-icon', icon: product_list_navigation_icon, direction: 'next' %}
+      </button>
+    </div>
+  {% endif %}
+{% endcapture %}
+{% assign product_list_navigation_markup = product_list_navigation_markup | strip %}
 
 {% if product_list_layout == 'carousel' %}
   {% render 'swiper-stylesheet' %}
@@ -144,12 +217,14 @@
   class="product-list"
   data-product-list
   data-layout="{{ product_list_layout }}"
+  data-collection-url="{{ product_list_collection.url | escape }}"
   {{ block.shopify_attributes }}
 >
+  {% if product_list_navigation_position == 'top' %}{{ product_list_navigation_markup }}{% endif %}
   <div class="product-list__carousel swiper-carousel__container" data-product-list-carousel>
     {% render 'product-collection-grid',
       collection: product_list_collection,
-      max_products: block.settings.max_products,
+      max_products: product_list_max_products,
       layout_type: product_list_layout,
       columns_desktop: block.settings.columns_desktop,
       columns_mobile: block.settings.columns_mobile,
@@ -159,12 +234,11 @@
       gap_vertical_mobile: product_list_gap_mobile,
       show_placeholders: true,
       show_placeholders_for_empty_collection: true,
-      placeholder_count: 8,
+      placeholder_count: product_list_max_products,
       grid_class: 'product-list__items',
       item_class: 'product-list__item',
       items_data_attributes: 'data-product-list-items',
       next_slide_preview: product_list_show_next_slide_preview,
-      next_slide_preview_on_mobile: product_list_show_next_slide_preview_on_mobile,
       carousel_id: product_list_carousel_id,
       aria_label: product_list_aria_label,
       previous_selector: '[data-product-list-previous]',
@@ -176,35 +250,12 @@
       autoplay: product_list_autoplay_enabled,
       autoplay_pause_on_hover: product_list_autoplay_pause_on_hover,
       autoplay_delay: product_list_autoplay_delay,
-      product_card_block: product_list_product_card_block
+      items_content: product_list_items_content
     %}
 
-    {% if product_list_layout == 'carousel' and product_list_show_navigation %}
-      {% render 'swiper-navigation',
-        show: true,
-        position: product_list_navigation_position,
-        style: product_list_navigation_style,
-        icon: product_list_navigation_icon,
-        behavior: product_list_navigation_behavior,
-        wrapper_class: 'product-list__navigation',
-        wrapper_attributes: 'data-product-list-navigation',
-        button_class: 'product-list__carousel-button',
-        previous_attribute: 'data-product-list-previous',
-        next_attribute: 'data-product-list-next',
-        center_style: product_list_navigation_center_style
-      %}
-    {% endif %}
+    {% if product_list_navigation_position != 'top' %}{{ product_list_navigation_markup }}{% endif %}
   </div>
 </div>
-
-{% comment %}
-  Keep the static Product Card target discoverable to Theme Check and the
-  Theme Editor. The shared renderer uses the direct child settings for every
-  item because content_for is not available inside snippets.
-{% endcomment %}
-{% if false %}
-  {% content_for 'block', type: 'product-card', id: 'product-card' %}
-{% endif %}
 
 {% stylesheet %}
   .product-list {
@@ -231,49 +282,42 @@
     transform: translateY(-50%);
   }
 
-  .swiper-carousel__navigation--show_on_hover {
-    opacity: 0;
-    transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
+  .product-list__navigation--outside {
+    padding-inline: 0;
   }
 
-  .product-list__carousel:hover .swiper-carousel__navigation--show_on_hover,
-  .product-list__carousel:focus-within .swiper-carousel__navigation--show_on_hover {
-    opacity: 1;
+  .product-list__navigation.product-list__navigation--top {
+    position: relative;
+    inset: auto;
+    width: max-content;
+    max-width: 100%;
+    gap: 0.5rem;
+    padding-inline: 0;
+    transform: none;
+  }
+
+  .product-list__navigation--outside .swiper-nav-button--prev {
+    margin-inline-start: calc(-1 * var(--swiper-nav-size) / 2);
+  }
+
+  .product-list__navigation--outside .swiper-nav-button--next {
+    margin-inline-end: calc(-1 * var(--swiper-nav-size) / 2);
   }
 
   .product-list__carousel-button {
     pointer-events: auto;
   }
 
-  .product-list__pagination--progress_bar {
-    --swiper-pagination-progressbar-bg-color: color-mix(in srgb, var(--body-color) 20%, transparent);
-    --swiper-pagination-color: var(--body-color);
-  }
-
-  .product-list__pagination--bullets {
-    --swiper-pagination-bullet-size: 0.5rem;
-    --swiper-pagination-bullet-horizontal-gap: 0;
-    --swiper-pagination-bullet-inactive-color: color-mix(in srgb, var(--body-color) 30%, transparent);
-    --swiper-pagination-bullet-inactive-opacity: 1;
-    --swiper-pagination-color: var(--body-color);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.5rem;
-  }
-
   @media (max-width: 767.98px) {
-    .product-list__navigation,
-    .product-list__pagination {
+    .product-list__navigation {
       display: none;
     }
-  }
 
-  @media (prefers-reduced-motion: reduce) {
-    .swiper-carousel__navigation--show_on_hover {
-      transition: none;
+    .product-list__navigation.product-list__navigation--top {
+      display: flex;
     }
   }
+
 {% endstylesheet %}
 
 {% schema %}
@@ -323,7 +367,7 @@
         { "value": "5", "label": "5" },
         { "value": "6", "label": "6" }
       ],
-      "default": "3"
+      "default": "4"
     },
     {
       "type": "select",
@@ -334,13 +378,6 @@
         { "value": "2", "label": "2" }
       ],
       "default": "1"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_next_slide_preview_on_mobile",
-      "label": "t:labels.show_next_slide_preview_on_mobile",
-      "default": false,
-      "visible_if": "{{ block.settings.layout_type == 'carousel' }}"
     },
     {
       "type": "checkbox",
@@ -391,7 +428,8 @@
       "label": "t:labels.position",
       "options": [
         { "value": "outside", "label": "t:options.collection_navigation_position.outside" },
-        { "value": "inside", "label": "t:options.collection_navigation_position.inside" }
+        { "value": "inside", "label": "t:options.collection_navigation_position.inside" },
+        { "value": "top", "label": "t:options.position.top" }
       ],
       "default": "inside",
       "visible_if": "{{ block.settings.layout_type == 'carousel' and block.settings.show_navigation_on_desktop }}"
@@ -430,7 +468,7 @@
         { "value": "always", "label": "t:options.collection_navigation_behavior.always" }
       ],
       "default": "show_on_hover",
-      "visible_if": "{{ block.settings.layout_type == 'carousel' and block.settings.show_navigation_on_desktop }}"
+      "visible_if": "{{ block.settings.layout_type == 'carousel' and block.settings.show_navigation_on_desktop and block.settings.navigation_position != 'top' }}"
     },
     {
       "type": "header",
@@ -534,9 +572,8 @@
         "collection": "",
         "max_products": 6,
         "layout_type": "carousel",
-        "columns_desktop": "3",
+        "columns_desktop": "4",
         "columns_mobile": "1",
-        "show_next_slide_preview_on_mobile": false,
         "show_next_slide_preview_on_desktop": false,
         "product_gap_desktop": 4,
         "product_gap_mobile": 4,
