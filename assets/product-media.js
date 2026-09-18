@@ -42,8 +42,12 @@ class ProductMediaGallery extends HTMLElement {
     }, { signal: this.signal });
     this.productInformation?.addEventListener('variant:change', this.handleVariantChange, { signal: this.signal });
     this.lightbox?.addEventListener('close', () => this.destroyLightbox(), { signal: this.signal });
+    this.lightbox?.addEventListener('cancel', (event) => {
+      event.preventDefault();
+      this.closeLightbox();
+    }, { signal: this.signal });
     this.lightbox?.addEventListener('click', (event) => {
-      if (event.target === this.lightbox) this.lightbox.close();
+      if (event.target === this.lightbox) this.closeLightbox();
     }, { signal: this.signal });
 
     this.applyVariantMediaFilter(this.dataset.currentVariantId);
@@ -270,7 +274,7 @@ class ProductMediaGallery extends HTMLElement {
     if (!target?.closest) return;
 
     if (target.closest('[data-product-lightbox-close]')) {
-      this.lightbox?.close();
+      this.closeLightbox();
       event.stopPropagation();
       return;
     }
@@ -334,6 +338,7 @@ class ProductMediaGallery extends HTMLElement {
     const target = event.target;
     const lightbox = target?.closest?.('[data-product-media-lightbox]');
     const image = target?.closest?.('.product-media-lightbox__image');
+    if (lightbox && this.lightboxTransition) return;
 
     // Swiper can emit a click after a completed swipe; keep that synthetic click
     // from opening the lightbox while preserving a normal tap/click.
@@ -616,16 +621,7 @@ class ProductMediaGallery extends HTMLElement {
       return;
     }
 
-    state.dismissAnimating = true;
-    this.lightbox?.classList.add('is-dismiss-animating');
-    const viewport = this.querySelector('[data-product-lightbox-swiper]');
-    const height = viewport?.clientHeight || window.innerHeight;
-    state.dismissOffset = Math.sign(state.dismissOffset || 1) * height;
-    this.applyLightboxDismiss();
-    window.clearTimeout(state.dismissTimer);
-    state.dismissTimer = window.setTimeout(() => {
-      if (this.lightbox?.open) this.lightbox.close();
-    }, LIGHTBOX_DISMISS_ANIMATION_MS);
+    this.closeLightbox();
   }
 
   resetLightboxDismiss() {
@@ -805,6 +801,95 @@ class ProductMediaGallery extends HTMLElement {
       this.resetLightboxZoom();
       this.updateLightboxCounter();
     });
+    this.animateLightboxTransition(true, opener?.querySelector('img'));
+  }
+
+  // Measure the painted image, including object-fit cropping in the gallery.
+  lightboxImageGeometry(image) {
+    const rect = image.getBoundingClientRect();
+    const style = getComputedStyle(image);
+    const ratio = (Number(image.getAttribute('width')) || image.naturalWidth) /
+      (Number(image.getAttribute('height')) || image.naturalHeight);
+    if (!ratio || !rect.width || !rect.height) return null;
+    const cover = style.objectFit === 'cover';
+    const width = (cover ? rect.width / rect.height < ratio : rect.width / rect.height > ratio)
+      ? rect.height * ratio : rect.width;
+    const height = width / ratio;
+    const position = style.objectPosition.split(' ').map((value) => Number.parseFloat(value) / 100);
+    const x = rect.left + (rect.width - width) * (Number.isFinite(position[0]) ? position[0] : 0.5);
+    const y = rect.top + (rect.height - height) * (Number.isFinite(position[1]) ? position[1] : 0.5);
+    return { x, y, width, height, clip: [Math.max(0, rect.top - y) / height * 100,
+      Math.max(0, x + width - rect.right) / width * 100,
+      Math.max(0, y + height - rect.bottom) / height * 100,
+      Math.max(0, rect.left - x) / width * 100] };
+  }
+
+  clearLightboxTransition() {
+    const transition = this.lightboxTransition;
+    this.lightboxTransition = null;
+    transition?.animations.forEach((animation) => animation.cancel());
+    transition?.clone?.remove();
+    transition?.source?.classList.remove('is-lightbox-source');
+    this.lightbox?.classList.remove('is-transitioning', 'is-closing');
+  }
+
+  async animateLightboxTransition(opening, source) {
+    const lightbox = this.lightbox;
+    const slide = this.lightboxSwiper?.slides?.[this.lightboxSwiper.activeIndex];
+    const image = slide?.querySelector('.product-media-lightbox__image');
+    if (!image || !source || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      if (!opening) lightbox?.close();
+      return;
+    }
+    const from = this.lightboxImageGeometry(opening ? source : (this.lightboxTransition?.clone || image));
+    const to = this.lightboxImageGeometry(opening ? image : source);
+    this.clearLightboxTransition();
+    if (!from || !to) {
+      if (!opening) lightbox.close();
+      return;
+    }
+    const clone = image.cloneNode(false);
+    clone.className = 'product-media-lightbox__transition-image';
+    clone.alt = '';
+    clone.setAttribute('aria-hidden', 'true');
+    clone.removeAttribute('style');
+    clone.src = opening ? source.currentSrc || source.src : image.currentSrc || image.src;
+    clone.style.width = `${to.width}px`;
+    clone.style.height = `${to.height}px`;
+    lightbox.append(clone);
+    source.classList.add('is-lightbox-source');
+    lightbox.classList.add('is-transitioning');
+    lightbox.classList.toggle('is-closing', !opening);
+    const options = { duration: 333, easing: 'cubic-bezier(0.4, 0, 0.22, 1)', fill: 'both' };
+    const frame = (rect) => ({
+      transform: `translate3d(${rect.x}px, ${rect.y}px, 0) scale(${rect.width / to.width}, ${rect.height / to.height})`,
+      clipPath: `inset(${rect.clip.map((value) => `${value}%`).join(' ')})`,
+    });
+    const animations = [clone.animate([frame(from), frame(to)], options)];
+    const panel = this.lightboxPanel;
+    const background = getComputedStyle(panel).backgroundColor;
+    animations.push(panel.animate({ backgroundColor: opening ? ['transparent', background] : [background, 'transparent'] }, options));
+    for (const control of lightbox.querySelectorAll('.product-media-lightbox__toolbar, .product-media-lightbox__navigation, .product-media-lightbox__thumbnails')) {
+      animations.push(control.animate({ opacity: opening ? [0, 1] : [1, 0] }, options));
+    }
+    animations.push(lightbox.animate({ opacity: opening ? [0, 1] : [1, 0] }, { ...options, pseudoElement: '::backdrop' }));
+    const transition = { clone, source, animations };
+    this.lightboxTransition = transition;
+    await Promise.all(animations.map((animation) => animation.finished.catch(() => {})));
+    if (this.lightboxTransition !== transition) return;
+    if (!opening) lightbox.close();
+    this.clearLightboxTransition();
+  }
+
+  closeLightbox() {
+    if (!this.lightbox?.open || this.lightbox.classList.contains('is-closing')) return;
+    const slide = this.lightboxSwiper?.slides?.[this.lightboxSwiper.activeIndex];
+    const mediaId = slide?.dataset.mediaId;
+    const media = Array.from(this.querySelectorAll('[data-product-media-content]')).find((item) =>
+      item.dataset.mediaId === mediaId && !item.closest('[data-product-media]')?.hidden);
+    if (media && this.mainSwiper) this.showMedia(mediaId, true);
+    if (media) this.lightboxOpener = media;
+    this.animateLightboxTransition(false, media?.querySelector('img'));
   }
 
   updateLightboxCounter() {
@@ -828,6 +913,7 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   destroyLightbox(restoreFocus = true) {
+    this.clearLightboxTransition();
     this.resetLightboxZoom();
     destroySwiperCarousel(this.lightboxSwiper);
     this.lightboxSwiper = null;
