@@ -1,6 +1,10 @@
 import { EffectFade, Pagination, Thumbs } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
+const LIGHTBOX_ZOOM_SCALE = 2.25;
+const LIGHTBOX_DRAG_THRESHOLD = 4;
+const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
+
 class ProductMediaGallery extends HTMLElement {
   connectedCallback() {
     if (this.abortController) return;
@@ -12,11 +16,20 @@ class ProductMediaGallery extends HTMLElement {
 
     this.handleClick = this.handleClick.bind(this);
     this.handleKeydown = this.handleKeydown.bind(this);
+    this.handleLightboxPointerDown = this.handleLightboxPointerDown.bind(this);
+    this.handleLightboxPointerMove = this.handleLightboxPointerMove.bind(this);
+    this.handleLightboxPointerUp = this.handleLightboxPointerUp.bind(this);
+    this.handleLightboxDragStart = this.handleLightboxDragStart.bind(this);
     this.handleBreakpoint = this.handleBreakpoint.bind(this);
     this.handleVariantChange = this.handleVariantChange.bind(this);
 
     this.addEventListener('click', this.handleClick, { signal: this.signal });
     this.addEventListener('keydown', this.handleKeydown, { signal: this.signal });
+    this.addEventListener('pointerdown', this.handleLightboxPointerDown, { signal: this.signal });
+    this.addEventListener('pointermove', this.handleLightboxPointerMove, { signal: this.signal });
+    this.addEventListener('pointerup', this.handleLightboxPointerUp, { signal: this.signal });
+    this.addEventListener('pointercancel', this.handleLightboxPointerUp, { signal: this.signal });
+    this.addEventListener('dragstart', this.handleLightboxDragStart, { signal: this.signal });
     this.mobileQuery.addEventListener('change', this.handleBreakpoint, { signal: this.signal });
     this.productInformation?.addEventListener('variant:change', this.handleVariantChange, { signal: this.signal });
     this.lightbox?.addEventListener('close', () => this.destroyLightbox(), { signal: this.signal });
@@ -51,6 +64,28 @@ class ProductMediaGallery extends HTMLElement {
 
   get lightbox() {
     return this.querySelector('[data-product-media-lightbox]');
+  }
+
+  get lightboxZoomState() {
+    if (!this._lightboxZoomState) {
+      this._lightboxZoomState = {
+        scale: 1,
+        x: 0,
+        y: 0,
+        image: null,
+        slide: null,
+        dragging: false,
+        pointerId: null,
+        startX: 0,
+        startY: 0,
+        originX: 0,
+        originY: 0,
+        moved: false,
+        suppressClickUntil: 0,
+      };
+    }
+
+    return this._lightboxZoomState;
   }
 
   get galleryMode() {
@@ -205,12 +240,15 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   handleClick(event) {
-    if (event.target.closest('[data-product-lightbox-close]')) {
+    const target = event.target;
+    if (!target?.closest) return;
+
+    if (target.closest('[data-product-lightbox-close]')) {
       this.lightbox?.close();
       return;
     }
 
-    const lightboxThumbnail = event.target.closest('[data-product-lightbox-thumbnail]');
+    const lightboxThumbnail = target.closest('[data-product-lightbox-thumbnail]');
     if (lightboxThumbnail) {
       const slides = Array.from(this.lightboxSwiper?.slides || []);
       const index = slides.findIndex((slide) => String(slide.dataset.mediaId) === String(lightboxThumbnail.dataset.mediaId));
@@ -218,7 +256,13 @@ class ProductMediaGallery extends HTMLElement {
       return;
     }
 
-    const thumbnail = event.target.closest('[data-product-media-thumbnail]');
+    const lightboxImage = target.closest('.product-media-lightbox__image');
+    if (lightboxImage) {
+      this.toggleLightboxZoom(lightboxImage, event);
+      return;
+    }
+
+    const thumbnail = target.closest('[data-product-media-thumbnail]');
     if (thumbnail) {
       if (this.galleryMode === 'desktop-static') {
         this.scrollToMedia(thumbnail.dataset.mediaId);
@@ -226,16 +270,160 @@ class ProductMediaGallery extends HTMLElement {
       return;
     }
 
-    const media = event.target.closest('[data-product-media-content]');
+    const media = target.closest('[data-product-media-content]');
     if (!media) return;
     this.activateMedia(media);
   }
 
   handleKeydown(event) {
-    const media = event.target.closest('[data-product-media-content]');
+    const target = event.target;
+    if (!target?.closest) return;
+
+    const lightboxSlide = target.closest('.product-media-lightbox__slide');
+    if (lightboxSlide && ['Enter', ' '].includes(event.key)) {
+      event.preventDefault();
+      const image = lightboxSlide.querySelector('.product-media-lightbox__image');
+      if (image) this.toggleLightboxZoom(image, event);
+      return;
+    }
+
+    const media = target.closest('[data-product-media-content]');
     if (!media || !['Enter', ' '].includes(event.key)) return;
     event.preventDefault();
     this.activateMedia(media);
+  }
+
+  handleLightboxPointerDown(event) {
+    const image = event.target?.closest?.('.product-media-lightbox__image');
+    const state = this.lightboxZoomState;
+    if (!image || !this.lightboxSwiper || state.scale <= 1 || image !== state.image) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+
+    state.dragging = true;
+    state.pointerId = event.pointerId;
+    state.startX = event.clientX;
+    state.startY = event.clientY;
+    state.originX = state.x;
+    state.originY = state.y;
+    state.moved = false;
+    state.slide?.classList.add('is-dragging');
+    image.setPointerCapture?.(event.pointerId);
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  handleLightboxPointerMove(event) {
+    const state = this.lightboxZoomState;
+    if (!state.dragging || state.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - state.startX;
+    const deltaY = event.clientY - state.startY;
+    if (!state.moved && Math.hypot(deltaX, deltaY) < LIGHTBOX_DRAG_THRESHOLD) return;
+    state.moved = true;
+    state.x = state.originX + deltaX;
+    state.y = state.originY + deltaY;
+    this.applyLightboxZoom();
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  handleLightboxPointerUp(event) {
+    const state = this.lightboxZoomState;
+    if (!state.dragging || state.pointerId !== event.pointerId) return;
+
+    state.image?.releasePointerCapture?.(event.pointerId);
+    state.dragging = false;
+    state.pointerId = null;
+    state.slide?.classList.remove('is-dragging');
+    if (state.moved) {
+      state.suppressClickUntil = performance.now() + 250;
+      event.preventDefault();
+      event.stopPropagation();
+    }
+  }
+
+  handleLightboxDragStart(event) {
+    if (event.target?.closest?.('.product-media-lightbox__image')) event.preventDefault();
+  }
+
+  getLightboxPanBounds(image, scale = this.lightboxZoomState.scale) {
+    const viewport = this.querySelector('[data-product-lightbox-swiper]');
+    const viewportWidth = viewport?.clientWidth || image.clientWidth;
+    const viewportHeight = viewport?.clientHeight || image.clientHeight;
+    const imageWidth = image.clientWidth || viewportWidth;
+    const imageHeight = image.clientHeight || viewportHeight;
+
+    return {
+      x: Math.max(0, (imageWidth * scale - viewportWidth) / 2),
+      y: Math.max(0, (imageHeight * scale - viewportHeight) / 2),
+    };
+  }
+
+  toggleLightboxZoom(image, event = {}) {
+    const state = this.lightboxZoomState;
+    if (state.suppressClickUntil > performance.now()) {
+      state.suppressClickUntil = 0;
+      return;
+    }
+
+    const activeSlide = this.lightboxSwiper?.slides?.[this.lightboxSwiper.activeIndex];
+    const slide = image.closest('.product-media-lightbox__slide');
+    if (!activeSlide || slide !== activeSlide) return;
+
+    if (state.scale > 1) {
+      this.resetLightboxZoom();
+      return;
+    }
+
+    const viewport = this.querySelector('[data-product-lightbox-swiper]');
+    const rect = viewport?.getBoundingClientRect() || slide.getBoundingClientRect();
+    const centerX = rect.left + (rect.width / 2);
+    const centerY = rect.top + (rect.height / 2);
+    const pointerX = Number.isFinite(event.clientX) && event.clientX ? event.clientX : centerX;
+    const pointerY = Number.isFinite(event.clientY) && event.clientY ? event.clientY : centerY;
+    const scale = LIGHTBOX_ZOOM_SCALE;
+    const bounds = this.getLightboxPanBounds(image, scale);
+
+    state.image = image;
+    state.slide = slide;
+    state.scale = scale;
+    state.x = clamp((1 - scale) * (pointerX - centerX), -bounds.x, bounds.x);
+    state.y = clamp((1 - scale) * (pointerY - centerY), -bounds.y, bounds.y);
+    this.applyLightboxZoom();
+  }
+
+  applyLightboxZoom() {
+    const state = this.lightboxZoomState;
+    if (!state.image || !state.slide) return;
+
+    const bounds = this.getLightboxPanBounds(state.image);
+    state.x = clamp(state.x, -bounds.x, bounds.x);
+    state.y = clamp(state.y, -bounds.y, bounds.y);
+    state.image.style.transform = state.scale > 1
+      ? `translate3d(${state.x}px, ${state.y}px, 0) scale3d(${state.scale}, ${state.scale}, 1)`
+      : '';
+    state.slide.classList.toggle('is-zoomed', state.scale > 1);
+    state.slide.setAttribute('aria-pressed', String(state.scale > 1));
+    if (this.lightboxSwiper) this.lightboxSwiper.allowTouchMove = state.scale <= 1;
+  }
+
+  resetLightboxZoom() {
+    const state = this.lightboxZoomState;
+    this.lightbox?.querySelectorAll('.product-media-lightbox__slide').forEach((slide) => {
+      slide.classList.remove('is-zoomed', 'is-dragging');
+      slide.setAttribute('aria-pressed', 'false');
+      slide.querySelector('.product-media-lightbox__image')?.style.removeProperty('transform');
+    });
+    state.scale = 1;
+    state.x = 0;
+    state.y = 0;
+    state.image = null;
+    state.slide = null;
+    state.dragging = false;
+    state.pointerId = null;
+    state.moved = false;
+    state.suppressClickUntil = 0;
+    if (this.lightboxSwiper) this.lightboxSwiper.allowTouchMove = true;
   }
 
   activateMedia(media) {
@@ -295,12 +483,16 @@ class ProductMediaGallery extends HTMLElement {
       },
       a11y: { enabled: true },
     });
+    this.resetLightboxZoom();
     const index = Array.from(this.lightboxSwiper.slides).findIndex(
       (slide) => String(slide.dataset.mediaId) === String(mediaId),
     );
     if (index >= 0) this.lightboxSwiper.slideTo(index, 0);
     this.updateLightboxCounter();
-    this.lightboxSwiper.on('slideChange', () => this.updateLightboxCounter());
+    this.lightboxSwiper.on('slideChange', () => {
+      this.resetLightboxZoom();
+      this.updateLightboxCounter();
+    });
   }
 
   updateLightboxCounter() {
@@ -324,6 +516,7 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   destroyLightbox(restoreFocus = true) {
+    this.resetLightboxZoom();
     destroySwiperCarousel(this.lightboxSwiper);
     this.lightboxSwiper = null;
     document.documentElement.classList.remove('product-media-lightbox-open');
