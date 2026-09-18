@@ -91,6 +91,11 @@ class ProductMediaGallery extends HTMLElement {
         originY: 0,
         moved: false,
         suppressClickUntil: 0,
+        mediaPointerId: null,
+        mediaStartX: 0,
+        mediaStartY: 0,
+        mediaMoved: false,
+        mediaSuppressClickUntil: 0,
         dismissCandidate: false,
         dismissDragging: false,
         dismissAnimating: false,
@@ -296,6 +301,13 @@ class ProductMediaGallery extends HTMLElement {
 
     const media = target.closest('[data-product-media-content]');
     if (!media) return;
+    const state = this.lightboxZoomState;
+    if (state.mediaSuppressClickUntil > performance.now()) {
+      state.mediaSuppressClickUntil = 0;
+      event.preventDefault();
+      event.stopPropagation();
+      return;
+    }
     this.activateMedia(media);
   }
 
@@ -322,6 +334,17 @@ class ProductMediaGallery extends HTMLElement {
     const target = event.target;
     const lightbox = target?.closest?.('[data-product-media-lightbox]');
     const image = target?.closest?.('.product-media-lightbox__image');
+
+    if (!lightbox && target?.closest?.('[data-product-media-content]')) {
+      if (event.pointerType === 'mouse' && event.button !== 0) return;
+      state.mediaPointerId = event.pointerId;
+      state.mediaStartX = event.clientX;
+      state.mediaStartY = event.clientY;
+      state.mediaMoved = false;
+      state.mediaSuppressClickUntil = 0;
+      return;
+    }
+
     if (!lightbox || !this.lightboxSwiper || state.dismissAnimating) return;
     if (event.pointerType === 'mouse' && event.button !== 0) return;
 
@@ -359,6 +382,16 @@ class ProductMediaGallery extends HTMLElement {
 
   handleLightboxPointerMove(event) {
     const state = this.lightboxZoomState;
+    if (state.mediaPointerId === event.pointerId) {
+      const deltaX = event.clientX - state.mediaStartX;
+      const deltaY = event.clientY - state.mediaStartY;
+      if (!state.mediaMoved && Math.hypot(deltaX, deltaY) >= LIGHTBOX_DRAG_THRESHOLD) {
+        state.mediaMoved = true;
+      }
+      if (state.mediaMoved) state.mediaSuppressClickUntil = performance.now() + 300;
+      return;
+    }
+
     if (state.dragging && state.pointerId === event.pointerId) {
       const deltaX = event.clientX - state.startX;
       const deltaY = event.clientY - state.startY;
@@ -406,6 +439,17 @@ class ProductMediaGallery extends HTMLElement {
 
   handleLightboxPointerUp(event) {
     const state = this.lightboxZoomState;
+    if (state.mediaPointerId === event.pointerId) {
+      if (state.mediaMoved && event.type === 'pointerup') {
+        state.mediaSuppressClickUntil = performance.now() + 300;
+      } else if (event.type === 'pointercancel') {
+        state.mediaSuppressClickUntil = 0;
+      }
+      state.mediaPointerId = null;
+      state.mediaMoved = false;
+      return;
+    }
+
     if (state.dragging && state.pointerId === event.pointerId) {
       state.image?.releasePointerCapture?.(event.pointerId);
       state.dragging = false;
