@@ -335,7 +335,6 @@ class ProductMediaGallery extends HTMLElement {
       state.dismissImage = image;
       state.dismissCapture = lightbox;
       state.dismissSlide = activeSlide;
-      lightbox.setPointerCapture?.(event.pointerId);
       return;
     }
 
@@ -505,14 +504,15 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   applyLightboxDismiss() {
-    const panel = this.lightboxPanel;
-    if (!panel) return;
+    const lightbox = this.lightbox;
+    if (!lightbox) return;
 
     const viewport = this.querySelector('[data-product-lightbox-swiper]');
     const height = viewport?.clientHeight || window.innerHeight;
     const progress = clamp(Math.abs(this.lightboxZoomState.dismissOffset) / Math.max(1, height), 0, 1);
-    panel.style.setProperty('--lightbox-dismiss-y', `${this.lightboxZoomState.dismissOffset}px`);
-    panel.style.setProperty('--lightbox-dismiss-opacity', String(1 - (progress * 0.4)));
+    lightbox.style.setProperty('--lightbox-dismiss-y', `${this.lightboxZoomState.dismissOffset}px`);
+    lightbox.style.setProperty('--lightbox-dismiss-progress', String(progress));
+    lightbox.style.setProperty('--lightbox-surface-amount', `${(1 - progress) * 100}%`);
   }
 
   finishLightboxDismiss() {
@@ -572,8 +572,9 @@ class ProductMediaGallery extends HTMLElement {
     state.dismissCapture = null;
     state.dismissSlide = null;
     this.lightbox?.classList.remove('is-dismiss-dragging', 'is-dismiss-snapping', 'is-dismiss-animating');
-    this.lightboxPanel?.style.removeProperty('--lightbox-dismiss-y');
-    this.lightboxPanel?.style.removeProperty('--lightbox-dismiss-opacity');
+    this.lightbox?.style.removeProperty('--lightbox-dismiss-y');
+    this.lightbox?.style.removeProperty('--lightbox-dismiss-progress');
+    this.lightbox?.style.removeProperty('--lightbox-surface-amount');
     if (this.lightboxSwiper) this.lightboxSwiper.allowTouchMove = true;
   }
 
