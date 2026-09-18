@@ -353,8 +353,14 @@ class ProductMediaGallery extends HTMLElement {
       const deltaY = event.clientY - state.startY;
       if (!state.moved && Math.hypot(deltaX, deltaY) < LIGHTBOX_DRAG_THRESHOLD) return;
       state.moved = true;
-      state.x = state.originX + deltaX;
-      state.y = state.originY + deltaY;
+      const bounds = this.getLightboxPanBounds(state.slide);
+      const resist = (value, min, max) => {
+        if (value > max) return max + ((value - max) * 0.25);
+        if (value < min) return min + ((value - min) * 0.25);
+        return value;
+      };
+      state.x = resist(state.originX + deltaX, bounds.minX, bounds.maxX);
+      state.y = resist(state.originY + deltaY, bounds.minY, bounds.maxY);
       this.applyLightboxZoom();
       event.preventDefault();
       event.stopPropagation();
@@ -394,6 +400,7 @@ class ProductMediaGallery extends HTMLElement {
       state.dragging = false;
       state.pointerId = null;
       state.slide?.classList.remove('is-dragging');
+      this.clampLightboxPan(state.slide);
       if (state.moved) {
         state.suppressClickUntil = performance.now() + 250;
         event.preventDefault();
@@ -419,17 +426,65 @@ class ProductMediaGallery extends HTMLElement {
     if (event.target?.closest?.('.product-media-lightbox__image')) event.preventDefault();
   }
 
-  getLightboxPanBounds(image, scale = this.lightboxZoomState.scale) {
+  getLightboxPanBounds(slide) {
     const viewport = this.querySelector('[data-product-lightbox-swiper]');
-    const viewportWidth = viewport?.clientWidth || image.clientWidth;
-    const viewportHeight = viewport?.clientHeight || image.clientHeight;
-    const imageWidth = image.clientWidth || viewportWidth;
-    const imageHeight = image.clientHeight || viewportHeight;
+    const zoomWidth = Number(slide?.dataset.zoomWidth || 0);
+    const zoomHeight = Number(slide?.dataset.zoomHeight || 0);
+    const viewportWidth = slide?.clientWidth || viewport?.clientWidth || 0;
+    const viewportHeight = slide?.clientHeight || viewport?.clientHeight || 0;
 
     return {
-      x: Math.max(0, (imageWidth * scale - viewportWidth) / 2),
-      y: Math.max(0, (imageHeight * scale - viewportHeight) / 2),
+      minX: Math.min(0, viewportWidth - zoomWidth),
+      maxX: 0,
+      minY: Math.min(0, viewportHeight - zoomHeight),
+      maxY: 0,
     };
+  }
+
+  setLightboxPan(slide, x, y) {
+    if (!slide) return;
+    slide.dataset.panX = String(x);
+    slide.dataset.panY = String(y);
+    const image = slide.querySelector('.product-media-lightbox__image');
+    if (image) image.style.transform = `translate3d(${x}px, ${y}px, 0px) scale3d(1, 1, 1)`;
+  }
+
+  prepareLightboxZoom(slide) {
+    const image = slide?.querySelector('.product-media-lightbox__image');
+    if (!slide || !image) return { x: 0, y: 0 };
+
+    image.loading = 'eager';
+    const viewportWidth = slide.clientWidth || window.innerWidth;
+    const viewportHeight = slide.clientHeight || window.innerHeight;
+    const sourceWidth = image.naturalWidth || Number(image.getAttribute('width')) || viewportWidth;
+    const sourceHeight = image.naturalHeight || Number(image.getAttribute('height')) || viewportHeight;
+    const coverScale = Math.max(viewportWidth / sourceWidth, viewportHeight / sourceHeight, 1);
+    const zoomWidth = Math.round(sourceWidth * coverScale * LIGHTBOX_ZOOM_SCALE);
+    const zoomHeight = Math.round(sourceHeight * coverScale * LIGHTBOX_ZOOM_SCALE);
+    slide.dataset.zoomWidth = String(zoomWidth);
+    slide.dataset.zoomHeight = String(zoomHeight);
+    slide.style.setProperty('--lightbox-zoom-width', `${zoomWidth}px`);
+    slide.style.setProperty('--lightbox-zoom-height', `${zoomHeight}px`);
+    image.style.transformOrigin = '0 0';
+
+    const bounds = this.getLightboxPanBounds(slide);
+    const x = (bounds.minX + bounds.maxX) / 2;
+    const y = (bounds.minY + bounds.maxY) / 2;
+    this.setLightboxPan(slide, x, y);
+    if (!image.complete) {
+      image.addEventListener('load', () => {
+        if (slide.classList.contains('is-zoomed')) this.prepareLightboxZoom(slide);
+      }, { once: true, signal: this.signal });
+    }
+    return { x, y };
+  }
+
+  clampLightboxPan(slide) {
+    if (!slide) return;
+    const bounds = this.getLightboxPanBounds(slide);
+    const x = clamp(Number(slide.dataset.panX || 0), bounds.minX, bounds.maxX);
+    const y = clamp(Number(slide.dataset.panY || 0), bounds.minY, bounds.maxY);
+    this.setLightboxPan(slide, x, y);
   }
 
   get lightboxPanel() {
@@ -530,18 +585,12 @@ class ProductMediaGallery extends HTMLElement {
 
     const viewport = this.querySelector('[data-product-lightbox-swiper]');
     const rect = viewport?.getBoundingClientRect() || slide.getBoundingClientRect();
-    const centerX = rect.left + (rect.width / 2);
-    const centerY = rect.top + (rect.height / 2);
-    const pointerX = Number.isFinite(event.clientX) && event.clientX ? event.clientX : centerX;
-    const pointerY = Number.isFinite(event.clientY) && event.clientY ? event.clientY : centerY;
-    const scale = LIGHTBOX_ZOOM_SCALE;
-    const bounds = this.getLightboxPanBounds(image, scale);
-
     state.image = image;
     state.slide = slide;
-    state.scale = scale;
-    state.x = clamp((1 - scale) * (pointerX - centerX), -bounds.x, bounds.x);
-    state.y = clamp((1 - scale) * (pointerY - centerY), -bounds.y, bounds.y);
+    state.scale = LIGHTBOX_ZOOM_SCALE;
+    const pan = this.prepareLightboxZoom(slide);
+    state.x = pan.x;
+    state.y = pan.y;
     this.applyLightboxZoom();
   }
 
@@ -549,12 +598,8 @@ class ProductMediaGallery extends HTMLElement {
     const state = this.lightboxZoomState;
     if (!state.image || !state.slide) return;
 
-    const bounds = this.getLightboxPanBounds(state.image);
-    state.x = clamp(state.x, -bounds.x, bounds.x);
-    state.y = clamp(state.y, -bounds.y, bounds.y);
-    state.image.style.transform = state.scale > 1
-      ? `translate3d(${state.x}px, ${state.y}px, 0) scale3d(${state.scale}, ${state.scale}, 1)`
-      : '';
+    if (state.scale > 1) this.setLightboxPan(state.slide, state.x, state.y);
+    else state.image.style.removeProperty('transform');
     state.slide.classList.toggle('is-zoomed', state.scale > 1);
     state.slide.setAttribute('aria-pressed', String(state.scale > 1));
     if (this.lightboxSwiper) this.lightboxSwiper.allowTouchMove = state.scale <= 1;
@@ -564,9 +609,7 @@ class ProductMediaGallery extends HTMLElement {
     const state = this.lightboxZoomState;
     this.resetLightboxDismiss();
     this.lightbox?.querySelectorAll('.product-media-lightbox__slide').forEach((slide) => {
-      slide.classList.remove('is-zoomed', 'is-dragging');
-      slide.setAttribute('aria-pressed', 'false');
-      slide.querySelector('.product-media-lightbox__image')?.style.removeProperty('transform');
+      this.clearLightboxZoom(slide);
     });
     state.scale = 1;
     state.x = 0;
