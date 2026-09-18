@@ -24,6 +24,7 @@ class ProductMediaGallery extends HTMLElement {
       if (event.target === this.lightbox) this.lightbox.close();
     }, { signal: this.signal });
 
+    this.applyVariantMediaFilter(this.dataset.currentVariantId);
     this.syncThumbnailVisibility();
     this.initializeGallery();
     this.initializeShopifyMedia();
@@ -59,6 +60,45 @@ class ProductMediaGallery extends HTMLElement {
 
   visibleSlides() {
     return Array.from(this.querySelectorAll('[data-product-media]')).filter((slide) => !slide.hidden);
+  }
+
+  activeMediaId() {
+    return this.mainSwiper?.slides?.[this.mainSwiper.activeIndex]?.dataset.mediaId
+      || this.visibleSlides()[0]?.dataset.mediaId
+      || '';
+  }
+
+  variantIdsFor(element) {
+    return (element?.dataset.variantIds || '')
+      .split(',')
+      .map((variantId) => variantId.trim())
+      .filter(Boolean);
+  }
+
+  setMediaVisibility(element, hidden) {
+    if (!element) return;
+
+    element.hidden = hidden;
+    element.style.display = hidden ? 'none' : '';
+    element.setAttribute('aria-hidden', String(hidden));
+  }
+
+  applyVariantMediaFilter(variantId) {
+    if (this.dataset.filterVariantMedia !== 'true') return false;
+
+    const slides = Array.from(this.querySelectorAll('[data-product-media]'));
+    const normalizedVariantId = String(variantId || '');
+    const hasLinkedMedia = Boolean(normalizedVariantId) && slides.some((slide) =>
+      this.variantIdsFor(slide).includes(normalizedVariantId),
+    );
+
+    slides.forEach((slide) => {
+      const variantIds = this.variantIdsFor(slide);
+      const hidden = hasLinkedMedia && variantIds.length > 0 && !variantIds.includes(normalizedVariantId);
+      this.setMediaVisibility(slide, hidden);
+    });
+
+    return true;
   }
 
   destroyGallery() {
@@ -101,7 +141,6 @@ class ProductMediaGallery extends HTMLElement {
         spaceBetween: gap,
         direction: !isMobile && this.dataset.desktopLayout === 'left_thumbnails' ? 'vertical' : 'horizontal',
         watchSlidesProgress: true,
-        slideToClickedSlide: true,
         a11y: { enabled: true },
       });
     }
@@ -127,14 +166,25 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   handleBreakpoint() {
-    const activeMediaId = this.mainSwiper?.slides?.[this.mainSwiper.activeIndex]?.dataset.mediaId || '';
+    const activeMediaId = this.activeMediaId();
     this.initializeGallery(activeMediaId);
   }
 
   handleVariantChange(event) {
-    const mediaId = event.detail?.variant?.featured_media?.id;
+    const variantId = String(event.detail?.variantId || event.detail?.variant?.id || '');
+    const featuredMediaId = event.detail?.variant?.featured_media?.id;
     window.requestAnimationFrame(() => {
+      this.dataset.currentVariantId = variantId;
+      const filtersVariantMedia = this.applyVariantMediaFilter(variantId);
       this.syncThumbnailVisibility();
+      const mediaId = featuredMediaId || this.activeMediaId();
+
+      if (filtersVariantMedia) {
+        this.destroyGallery();
+        this.initializeGallery(String(mediaId || this.activeMediaId()));
+        return;
+      }
+
       if (this.galleryMode === 'desktop-static') {
         if (mediaId) this.scrollToMedia(String(mediaId), true);
         return;
@@ -153,9 +203,9 @@ class ProductMediaGallery extends HTMLElement {
 
     const thumbnail = event.target.closest('[data-product-media-thumbnail]');
     if (thumbnail) {
-      this.galleryMode === 'desktop-static'
-        ? this.scrollToMedia(thumbnail.dataset.mediaId)
-        : this.showMedia(thumbnail.dataset.mediaId);
+      if (this.galleryMode === 'desktop-static') {
+        this.scrollToMedia(thumbnail.dataset.mediaId);
+      }
       return;
     }
 
@@ -181,8 +231,7 @@ class ProductMediaGallery extends HTMLElement {
     const slides = Array.from(this.querySelectorAll('[data-product-media]'));
     this.querySelectorAll('[data-product-media-thumbnail]').forEach((thumbnail) => {
       const slide = slides.find((item) => item.dataset.mediaId === thumbnail.dataset.mediaId);
-      thumbnail.hidden = Boolean(slide?.hidden);
-      thumbnail.setAttribute('aria-hidden', String(Boolean(slide?.hidden)));
+      this.setMediaVisibility(thumbnail, Boolean(slide?.hidden));
     });
   }
 
