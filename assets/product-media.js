@@ -369,9 +369,7 @@ class ProductMediaGallery extends HTMLElement {
       if (Math.hypot(deltaX, deltaY) < LIGHTBOX_DRAG_THRESHOLD) return;
       if (Math.abs(deltaY) <= Math.abs(deltaX) * LIGHTBOX_DISMISS_AXIS_RATIO) {
         state.dismissAxis = 'horizontal';
-        state.dismissCandidate = false;
-        state.dismissImage = null;
-        state.dismissSlide = null;
+        this.resetLightboxDismiss();
         return;
       }
 
