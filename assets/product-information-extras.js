@@ -3,15 +3,39 @@ class ProductPickupAvailability extends HTMLElement {
     if (this.abortController) return;
     this.abortController = new AbortController();
     this.message = this.querySelector('[data-pickup-availability-message]');
+    this.stores = this.querySelector('[data-pickup-availability-stores]');
+    this.dialog = this.querySelector('[data-pickup-availability-dialog]');
     const root = this.closest('[data-product-information]');
     root?.addEventListener('variant:change', (event) => this.update(event.detail?.variantId), { signal: this.abortController.signal });
+    this.querySelector('[data-pickup-availability-open]')?.addEventListener('click', () => this.open(), { signal: this.abortController.signal });
+    this.querySelector('[data-pickup-availability-close]')?.addEventListener('click', () => this.dialog?.close(), { signal: this.abortController.signal });
+    this.dialog?.addEventListener('click', (event) => { if (event.target === this.dialog) this.dialog.close(); }, { signal: this.abortController.signal });
   }
 
   disconnectedCallback() { this.abortController?.abort(); this.abortController = null; }
 
   update(variantId) {
     const template = this.querySelector(`[data-pickup-availability-template="${CSS.escape(String(variantId || ''))}"]`);
-    if (template && this.message) this.message.innerHTML = template.innerHTML;
+    const hasPickup = template?.dataset.hasPickup === 'true';
+    this.hidden = !hasPickup;
+    if (!hasPickup) {
+      if (this.dialog?.open) this.dialog.close();
+      return;
+    }
+    const content = template.content;
+    const message = content.querySelector('[data-pickup-availability-message-template]');
+    const stores = content.querySelector('[data-pickup-availability-stores-template]');
+    if (message && this.message) this.message.innerHTML = message.innerHTML;
+    if (stores && this.stores) this.stores.innerHTML = stores.innerHTML;
+  }
+
+  open() {
+    if (!this.dialog) return;
+    const mobile = window.matchMedia('(max-width: 767.98px)').matches;
+    const layout = mobile ? this.dataset.popupLayoutMobile : this.dataset.popupLayoutDesktop;
+    this.dialog.classList.toggle('product-pickup-availability__dialog--drawer', layout === 'drawer');
+    this.dialog.classList.toggle('product-pickup-availability__dialog--bottom-sheet', layout === 'bottom-sheet');
+    this.dialog.showModal();
   }
 }
 
