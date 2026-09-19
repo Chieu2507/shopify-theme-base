@@ -700,6 +700,9 @@
     const panel = drawer?.querySelector('[data-cart-drawer-order-options]');
     if (!drawer || !panel) return;
     const isOpen = Boolean(name);
+    const previousTrigger = drawer.querySelector('[data-cart-drawer-order-options-open][aria-expanded="true"]');
+    if (!isOpen && panel.contains(document.activeElement)) previousTrigger?.focus({ preventScroll: true });
+    panel.inert = !isOpen;
     drawer.classList.toggle('is-order-options-open', isOpen);
     panel.setAttribute('aria-hidden', String(!isOpen));
     drawer.querySelectorAll('[data-cart-drawer-order-options-open]').forEach((trigger) => {
