@@ -88,6 +88,20 @@
         close: () => this.close({ fromGesture: true }),
       });
       dialog.addEventListener('cancel', (event) => { event.preventDefault(); this.close(); }, options);
+      dialog.addEventListener('keydown', (event) => {
+        if (event.key !== 'Tab') return;
+        const controls = [...dialog.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea, iframe, [tabindex]')]
+          .filter((element) => !element.disabled && element.tabIndex >= 0 && !element.closest('[inert]') && element.getClientRects().length);
+        const first = controls[0];
+        const last = controls[controls.length - 1];
+        if (event.shiftKey && document.activeElement === first) {
+          event.preventDefault();
+          last?.focus({ preventScroll: true });
+        } else if (!event.shiftKey && document.activeElement === last) {
+          event.preventDefault();
+          first?.focus({ preventScroll: true });
+        }
+      }, options);
       dialog.addEventListener('click', (event) => {
         if (event.target.closest('[data-overlay-close]')) this.close();
         if (event.target !== dialog) return;
