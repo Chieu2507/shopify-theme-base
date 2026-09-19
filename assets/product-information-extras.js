@@ -35,12 +35,37 @@ class PdpDrawerElement extends HTMLElement {
     document.addEventListener('shopify:section:unload', (event) => {
       if (event.target === this || event.target?.contains?.(this)) this.close({ force: true, restoreFocus: false });
     }, { signal: this.abortController.signal });
+
+    this.portalDrawer();
   }
 
   disconnectedCallback() {
+    const drawer = this.drawer;
     this.close({ force: true, restoreFocus: false });
+    window.clearTimeout(this.closeTimer);
+    this.closeTimer = null;
+    if (drawer?.dataset.pdpDrawerPortal === 'true' && drawer.parentElement === document.body) {
+      this.append(drawer);
+      delete drawer.dataset.pdpDrawerPortal;
+    }
+    if (this.portalColorScopeClasses?.length) {
+      drawer?.classList.remove(...this.portalColorScopeClasses);
+      this.portalColorScopeClasses = [];
+    }
     this.abortController?.abort();
     this.abortController = null;
+  }
+
+  portalDrawer() {
+    if (!this.drawer || !document.body || this.drawer.parentElement === document.body) return;
+
+    const colorScope = this.closest('.section-color-scope');
+    this.portalColorScopeClasses = Array.from(colorScope?.classList || [])
+      .filter((className) => className === 'section-color-scope' || className === 'color-scheme' || className.startsWith('scheme-'))
+      .filter((className) => !this.drawer.classList.contains(className));
+    this.drawer.classList.add(...this.portalColorScopeClasses);
+    this.drawer.dataset.pdpDrawerPortal = 'true';
+    document.body.append(this.drawer);
   }
 
   getFocusable() {
@@ -123,7 +148,7 @@ class ProductPickupAvailability extends PdpDrawerElement {
     super.connectedCallback();
     if (!this.abortController) return;
     this.message = this.querySelector('[data-pickup-availability-message]');
-    this.stores = this.querySelector('[data-pickup-availability-stores]');
+    this.stores = this.drawer?.querySelector('[data-pickup-availability-stores]');
     const root = this.closest('[data-product-information]');
     root?.addEventListener('variant:change', (event) => this.update(event.detail?.variantId), { signal: this.abortController.signal });
   }
