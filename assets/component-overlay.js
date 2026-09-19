@@ -54,6 +54,7 @@
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.transition = reduced.matches ? 'none' : 'transform var(--motion-duration-standard) var(--motion-ease-standard)';
       if (dismiss) this.close();
+      if (reduced.matches) { this.reset(); return; }
       this.frame = requestAnimationFrame(() => {
         this.panel.style.transform = dismiss ? 'translateY(100%)' : 'translateY(0)';
         this.timer = setTimeout(() => this.reset(), duration(this.panel) + 50);
@@ -92,13 +93,19 @@
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.close();
       }, options);
       dialog.addEventListener('close', () => {
+        // Native close events are queued; a reopened dialog owns the new state.
+        if (dialog.open) return;
+        this.finishClose();
+      }, options);
+    }
+
+    finishClose() {
         clearTimeout(this.timer);
         this.gesture.reset();
-        dialog.dataset.state = 'closed';
+        this.dialog.dataset.state = 'closed';
         this.opener?.setAttribute('aria-expanded', 'false');
         if (this.restoreFocus && this.opener?.isConnected && !this.opener.hidden) this.opener.focus({ preventScroll: true });
         this.opener = null;
-      }, options);
     }
 
     open({ opener = document.activeElement, focus = true } = {}) {
@@ -121,7 +128,11 @@
       this.restoreFocus = restoreFocus;
       if (!fromGesture) this.gesture.reset();
       this.dialog.dataset.state = 'closing';
-      const finish = () => { if (this.dialog.open) this.dialog.close(); };
+      const finish = () => {
+        if (!this.dialog.open) return;
+        this.dialog.close();
+        this.finishClose();
+      };
       if (immediate || reduced.matches) finish();
       else this.timer = setTimeout(finish, duration(this.dialog) + 50);
     }

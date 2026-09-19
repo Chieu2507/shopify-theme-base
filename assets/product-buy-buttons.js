@@ -68,7 +68,7 @@ class ProductBuyButtons extends HTMLElement {
       this.form = null;
       this.currentQuantityRule = null;
       window.ThemeOverlay.get(this.backInStockDialog)?.destroy();
-      });
+    });
   }
 
   isDesignMode() {
