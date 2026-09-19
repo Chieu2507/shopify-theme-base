@@ -84,12 +84,12 @@ class ProductStickyAddToCart extends HTMLElement {
       if (this.productRoot && event.target.contains(this.productRoot)) this.remove();
     }, { signal: this.abortController.signal });
     document.addEventListener('shopify:block:select', (event) => {
-      if (event.target !== this && !this.contains(event.target)) return;
+      if (!this.matchesEditorBlockEvent(event)) return;
       this.editorSelected = true;
       this.syncVisibility();
     }, { signal: this.abortController.signal });
     document.addEventListener('shopify:block:deselect', (event) => {
-      if (event.target !== this && !this.contains(event.target)) return;
+      if (!this.matchesEditorBlockEvent(event)) return;
       this.editorSelected = false;
       this.syncVisibility();
     }, { signal: this.abortController.signal });
@@ -144,6 +144,12 @@ class ProductStickyAddToCart extends HTMLElement {
     this.classList.toggle('is-visible', visible);
     this.setAttribute('aria-hidden', String(!visible));
     this.inert = !visible;
+  }
+
+  matchesEditorBlockEvent(event) {
+    return event.target === this
+      || this.contains(event.target)
+      || String(event.detail?.blockId || '') === String(this.dataset.blockId || '');
   }
 
   update(variantId, available) {
