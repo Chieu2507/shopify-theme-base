@@ -71,7 +71,9 @@ class PdpDrawerElement extends HTMLElement {
 
   open({ focus = true } = {}) {
     if (!this.drawer || this.drawer.classList.contains('is-open')) return;
-    const shouldAnimate = !this.drawer.classList.contains('is-closing');
+    // Keep the re-open path identical to Cart drawer so a quick close/open
+    // still replays the panel transition instead of jumping to the end state.
+    const shouldAnimate = !this.drawer.classList.contains('is-open');
     window.clearTimeout(this.closeTimer);
     this.closeTimer = null;
     if (shouldAnimate) this.previousFocus = document.activeElement;
