@@ -15,6 +15,14 @@
   endfor
 
   assign boxed = block.settings.boxed | default: false
+  assign pickup_desktop_layout = block.settings.desktop_layout | default: 'drawer'
+  unless pickup_desktop_layout == 'popup' or pickup_desktop_layout == 'drawer'
+    assign pickup_desktop_layout = 'drawer'
+  endunless
+  assign pickup_mobile_layout = block.settings.mobile_layout | default: 'bottom_sheet'
+  unless pickup_mobile_layout == 'bottom_sheet' or pickup_mobile_layout == 'drawer'
+    assign pickup_mobile_layout = 'bottom_sheet'
+  endunless
   assign message_size = block.settings.message_size | default: 'medium'
   assign message_color = block.settings.message_color | default: 'text'
   assign pickup_id = 'PickupAvailability-' | append: section.id | append: '-' | append: block.id
@@ -45,6 +53,8 @@
   <product-pickup-availability
     class="product-pickup-availability{% if boxed %} product-pickup-availability--boxed{% endif %} product-pickup-availability--radius-{{ corner_radius }} product-pickup-availability--shadow-{{ shadow }} product-pickup-availability--message-{{ message_size }} product-pickup-availability--message-{{ message_color }}{% if appearance_type == 'color_scheme' %} section-color-scope color-scheme {{ color_scheme | handleize }}{% endif %}"
     data-product-pickup-availability
+    data-desktop-layout="{{ pickup_desktop_layout }}"
+    data-mobile-layout="{{ pickup_mobile_layout }}"
     {% if block.settings.custom_mobile_padding %}data-custom-mobile-padding{% endif %}
     style="{{ pickup_style }}"
     {{ block.shopify_attributes }}
@@ -58,7 +68,7 @@
     </div>
     <button class="product-pickup-availability__link" type="button" data-pickup-availability-open data-pdp-drawer-open aria-haspopup="dialog" aria-controls="{{ pickup_id }}" aria-expanded="false">Check availability at other stores</button>
 
-    <div id="{{ pickup_id }}" class="pdp-drawer product-pickup-availability__drawer" data-pdp-drawer data-pickup-availability-dialog hidden aria-hidden="true">
+    <div id="{{ pickup_id }}" class="pdp-drawer product-pickup-availability__drawer" data-pdp-drawer data-pickup-availability-dialog data-desktop-layout="{{ pickup_desktop_layout }}" data-mobile-layout="{{ pickup_mobile_layout }}" hidden aria-hidden="true">
       <button class="pdp-drawer__backdrop product-pickup-availability__backdrop" type="button" data-pickup-availability-close data-pdp-drawer-close aria-label="Close"></button>
       <aside class="pdp-drawer__panel product-pickup-availability__panel" data-pdp-drawer-panel role="dialog" aria-modal="true" aria-labelledby="{{ pickup_title_id }}" tabindex="-1">
         <div class="pdp-drawer__inner product-pickup-availability__surface">
@@ -95,6 +105,27 @@
   "tag": null,
   "settings": [
     { "type": "checkbox", "id": "boxed", "label": "Enable boxed layout", "default": false },
+    { "type": "header", "content": "Popup presentation" },
+    {
+      "type": "select",
+      "id": "desktop_layout",
+      "label": "Desktop layout",
+      "default": "drawer",
+      "options": [
+        { "value": "popup", "label": "Popup" },
+        { "value": "drawer", "label": "Drawer" }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "mobile_layout",
+      "label": "Mobile layout",
+      "default": "bottom_sheet",
+      "options": [
+        { "value": "bottom_sheet", "label": "Bottom sheet" },
+        { "value": "drawer", "label": "Drawer" }
+      ]
+    },
     { "type": "header", "content": "Typography" },
     {
       "type": "select",
