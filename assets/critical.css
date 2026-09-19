@@ -74,7 +74,7 @@ svg {
   background: var(--overlay-color);
 }
 
-\.backdrop-blur {
+.backdrop-blur {
   -webkit-backdrop-filter: blur(var(--backdrop-blur, 0px));
   backdrop-filter: blur(var(--backdrop-blur, 0px));
 }
@@ -320,6 +320,70 @@ dialog::backdrop {
   opacity: var(--overlay-opacity);
   -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
   backdrop-filter: blur(var(--overlay-backdrop-blur));
+}
+
+/* Shared native overlay motion. Layout-specific dialogs can opt into the
+   same contract while keeping their popup, drawer, or bottom-sheet geometry. */
+@keyframes overlay-dialog-backdrop-enter {
+  from { opacity: 0; }
+  to { opacity: var(--overlay-opacity); }
+}
+
+@keyframes overlay-dialog-popup-enter {
+  from {
+    opacity: 0;
+    transform: scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes overlay-dialog-drawer-enter {
+  from {
+    opacity: 0;
+    transform: translateX(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+@keyframes overlay-dialog-bottom-sheet-enter {
+  from {
+    opacity: 0;
+    transform: translateY(100%);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+dialog[data-overlay-motion='popup'][open] {
+  animation: overlay-dialog-popup-enter var(--motion-duration-standard) var(--motion-ease-standard) both;
+}
+
+dialog[data-overlay-motion='popup'][open]::backdrop {
+  animation: overlay-dialog-backdrop-enter var(--motion-duration-standard) var(--motion-ease-standard) both;
+}
+
+@media (min-width: 990px) {
+  dialog[data-overlay-motion='popup'][data-desktop-layout='drawer'][open] {
+    animation-name: overlay-dialog-drawer-enter;
+  }
+}
+
+@media (max-width: 989.98px) {
+  dialog[data-overlay-motion='popup'][data-mobile-layout='bottom_sheet'][open] {
+    animation-name: overlay-dialog-bottom-sheet-enter;
+  }
+
+  dialog[data-overlay-motion='popup'][data-mobile-layout='drawer'][open] {
+    animation-name: overlay-dialog-drawer-enter;
+  }
 }
 
 .overlay__title,
