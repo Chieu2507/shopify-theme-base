@@ -494,9 +494,7 @@ class VariantPicker extends HTMLElement {
       return;
     }
 
-    if (event.target === this.sizeChartDialog) {
-      this.closeSizeChart();
-    }
+
   }
 
   handleKeydown(event) {

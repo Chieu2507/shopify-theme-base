@@ -315,7 +315,7 @@ class ProductBuyButtons extends HTMLElement {
       return;
     }
 
-    if (event.target === this.backInStockDialog) this.closeBackInStock(true);
+
   }
 
   openBackInStock() {
