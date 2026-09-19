@@ -147,9 +147,17 @@ class ProductStickyAddToCart extends HTMLElement {
   }
 
   matchesEditorBlockEvent(event) {
+    let editorBlockId = '';
+    try {
+      editorBlockId = JSON.parse(this.getAttribute('data-shopify-editor-block') || '{}').id || '';
+    } catch {
+      editorBlockId = '';
+    }
+    const selectedBlockId = String(event.detail?.blockId || '');
     return event.target === this
       || this.contains(event.target)
-      || String(event.detail?.blockId || '') === String(this.dataset.blockId || '');
+      || selectedBlockId === String(this.dataset.blockId || '')
+      || selectedBlockId === String(editorBlockId);
   }
 
   update(variantId, available) {
