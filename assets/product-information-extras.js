@@ -185,14 +185,10 @@ class PdpDrawerElement extends HTMLElement {
     drag.panel.style.transition = 'transform var(--motion-duration-standard) var(--motion-ease-standard)';
 
     if (shouldClose) {
+      this.close({ force: true, skipSheetDragReset: true });
       window.requestAnimationFrame(() => {
         drag.panel.style.transform = `translate3d(0, ${Math.max(window.innerHeight, drag.panel.offsetHeight + 60)}px, 0)`;
       });
-      const transitionMs = this.getDrawerTransitionTotalMs(drag.panel);
-      this.sheetDragTimer = window.setTimeout(() => {
-        this.sheetDragTimer = 0;
-        this.close({ force: true, skipSheetDragReset: true });
-      }, transitionMs + 50);
       return;
     }
 
