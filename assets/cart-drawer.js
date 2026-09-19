@@ -705,10 +705,11 @@
     drawer.querySelectorAll('[data-cart-drawer-order-options-open]').forEach((trigger) => {
       trigger.setAttribute('aria-expanded', String(isOpen && trigger.dataset.cartDrawerOrderOptionsOpen === name));
     });
+    if (!isOpen) return;
+    state.orderOptionsDrag?.reset();
     drawer.querySelectorAll('[data-cart-drawer-order-options-content]').forEach((content) => {
       content.hidden = content.dataset.cartDrawerOrderOptionsContent !== name;
     });
-    if (!isOpen) return;
     const trigger = drawer.querySelector(`[data-cart-drawer-order-options-open="${name}"]`);
     const title = panel.querySelector('[data-cart-drawer-order-options-title]');
     if (title) title.textContent = trigger?.dataset.cartDrawerOrderOptionsTitle || 'Cart options';
@@ -994,6 +995,8 @@
     const target = event.target;
     if (target === state.sectionRoot || target?.contains?.(state.drawer)) {
       close({ force: true });
+      state.orderOptionsDrag?.destroy();
+      state.orderOptionsDrag = null;
       state.drawer = null;
       state.sectionRoot = null;
       state.editorSelected = false;

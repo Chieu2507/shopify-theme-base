@@ -797,6 +797,10 @@
   });
 
   document.addEventListener('shopify:section:unload', (event) => {
+    if (event.target.contains(localizationSheetDrag?.panel)) {
+      localizationSheetDrag.destroy();
+      localizationSheetDrag = null;
+    }
     removeFooterLocalizations(event.target);
     removeHeaders(event.target);
   });

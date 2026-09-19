@@ -318,8 +318,8 @@ class ProductBuyButtons extends HTMLElement {
 
   }
 
-  openBackInStock() {
-    window.ThemeOverlay.get(this.backInStockDialog)?.open({ opener: this.backInStockTrigger });
+  openBackInStock(fromTrigger = true) {
+    window.ThemeOverlay.get(this.backInStockDialog)?.open({ opener: fromTrigger ? this.backInStockTrigger : null });
   }
 
   closeBackInStock(restoreFocus = true) {
