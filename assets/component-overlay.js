@@ -19,6 +19,7 @@
       header?.addEventListener('pointermove', (event) => this.move(event), options);
       header?.addEventListener('pointerup', (event) => this.end(event), options);
       header?.addEventListener('pointercancel', (event) => this.end(event, true), options);
+      header?.addEventListener('lostpointercapture', () => { if (this.drag) this.reset(); }, options);
       mobile.addEventListener('change', () => this.reset(), options);
     }
 
@@ -49,8 +50,8 @@
       const drag = this.drag;
       if (!drag || drag.id !== event.pointerId) return;
       const dismiss = !cancelled && (drag.distance >= Math.min(140, this.panel.offsetHeight * 0.2) || (drag.distance >= 32 && drag.velocity > 0.55 && performance.now() - drag.time < 100));
-      if (this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
       this.drag = null;
+      if (this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.transition = reduced.matches ? 'none' : 'transform var(--motion-duration-standard) var(--motion-ease-standard)';
       if (dismiss) this.close();
@@ -64,8 +65,9 @@
     reset() {
       clearTimeout(this.timer);
       cancelAnimationFrame(this.frame);
-      if (this.drag && this.header.hasPointerCapture(this.drag.id)) this.header.releasePointerCapture(this.drag.id);
+      const drag = this.drag;
       this.drag = null;
+      if (drag && this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.removeProperty('transition');
       this.panel.style.removeProperty('transform');
