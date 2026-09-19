@@ -1,27 +1,140 @@
-class ProductPickupAvailability extends HTMLElement {
+const PDP_DRAWER_CLOSE_DELAY = 350;
+const PDP_DRAWER_FOCUSABLE_SELECTOR = 'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])';
+
+const syncPdpDrawerScrollLock = () => {
+  const isOpen = Boolean(document.querySelector('[data-pdp-drawer].is-open'));
+  document.documentElement.classList.toggle('pdp-drawer-open', isOpen);
+  document.body.classList.toggle('pdp-drawer-open', isOpen);
+};
+
+class PdpDrawerElement extends HTMLElement {
   connectedCallback() {
     if (this.abortController) return;
     this.abortController = new AbortController();
-    this.message = this.querySelector('[data-pickup-availability-message]');
-    this.stores = this.querySelector('[data-pickup-availability-stores]');
-    this.dialog = this.querySelector('[data-pickup-availability-dialog]');
-    const root = this.closest('[data-product-information]');
-    root?.addEventListener('variant:change', (event) => this.update(event.detail?.variantId), { signal: this.abortController.signal });
-    this.querySelector('[data-pickup-availability-open]')?.addEventListener('click', () => this.open(), { signal: this.abortController.signal });
-    this.querySelector('[data-pickup-availability-close]')?.addEventListener('click', () => this.dialog?.close(), { signal: this.abortController.signal });
-    this.dialog?.addEventListener('click', (event) => { if (event.target === this.dialog) this.dialog.close(); }, { signal: this.abortController.signal });
+    this.drawer = this.querySelector('[data-pdp-drawer]');
+    this.panel = this.drawer?.querySelector('[data-pdp-drawer-panel]');
+    this.trigger = this.querySelector('[data-pdp-drawer-open]');
+    this.closeButton = this.panel?.querySelector('[data-pdp-drawer-close]');
+    this.closeTimer = null;
+    this.previousFocus = null;
+
+    this.trigger?.addEventListener('click', () => this.open(), { signal: this.abortController.signal });
+    this.drawer?.addEventListener('click', (event) => {
+      if (event.target.closest?.('[data-pdp-drawer-close]')) {
+        event.preventDefault();
+        this.close();
+      }
+    }, { signal: this.abortController.signal });
+    this.drawer?.addEventListener('keydown', (event) => this.handleKeydown(event), { signal: this.abortController.signal });
+    document.addEventListener('shopify:block:select', (event) => {
+      if (event.target === this || this.contains(event.target)) this.open({ focus: false });
+    }, { signal: this.abortController.signal });
+    document.addEventListener('shopify:block:deselect', (event) => {
+      if (event.target === this) this.close({ force: true });
+    }, { signal: this.abortController.signal });
+    document.addEventListener('shopify:section:unload', (event) => {
+      if (event.target === this || event.target?.contains?.(this)) this.close({ force: true, restoreFocus: false });
+    }, { signal: this.abortController.signal });
   }
 
-  disconnectedCallback() { this.abortController?.abort(); this.abortController = null; }
+  disconnectedCallback() {
+    this.close({ force: true, restoreFocus: false });
+    this.abortController?.abort();
+    this.abortController = null;
+  }
+
+  getFocusable() {
+    return Array.from(this.panel?.querySelectorAll(PDP_DRAWER_FOCUSABLE_SELECTOR) || [])
+      .filter((element) => !element.hidden && element.getClientRects().length > 0);
+  }
+
+  handleKeydown(event) {
+    if (!this.drawer?.classList.contains('is-open')) return;
+    if (event.key === 'Escape') {
+      event.preventDefault();
+      this.close({ force: true });
+      return;
+    }
+    if (event.key !== 'Tab') return;
+    const focusable = this.getFocusable();
+    if (!focusable.length) return;
+    const first = focusable[0];
+    const last = focusable[focusable.length - 1];
+    if (event.shiftKey && document.activeElement === first) {
+      event.preventDefault();
+      last.focus();
+    } else if (!event.shiftKey && document.activeElement === last) {
+      event.preventDefault();
+      first.focus();
+    }
+  }
+
+  open({ focus = true } = {}) {
+    if (!this.drawer || this.drawer.classList.contains('is-open')) return;
+    const shouldAnimate = !this.drawer.classList.contains('is-closing');
+    window.clearTimeout(this.closeTimer);
+    this.closeTimer = null;
+    if (shouldAnimate) this.previousFocus = document.activeElement;
+    this.drawer.hidden = false;
+    this.drawer.setAttribute('aria-hidden', 'false');
+    this.drawer.classList.remove('is-closing');
+    if (shouldAnimate) {
+      this.drawer.classList.remove('is-open');
+      this.panel?.getBoundingClientRect();
+    }
+    this.drawer.classList.add('is-open');
+    this.trigger?.setAttribute('aria-expanded', 'true');
+    syncPdpDrawerScrollLock();
+
+    if (focus) {
+      window.requestAnimationFrame(() => {
+        if (!this.drawer?.classList.contains('is-open')) return;
+        (this.closeButton || this.panel)?.focus({ preventScroll: true });
+      });
+    }
+  }
+
+  close({ force = false, restoreFocus = true } = {}) {
+    if (!this.drawer || this.drawer.hidden || (!this.drawer.classList.contains('is-open') && !this.drawer.classList.contains('is-closing'))) return;
+    if (!force && this.editorSelected) return;
+    this.drawer.classList.remove('is-open');
+    this.drawer.classList.add('is-closing');
+    this.drawer.setAttribute('aria-hidden', 'true');
+    this.trigger?.setAttribute('aria-expanded', 'false');
+    syncPdpDrawerScrollLock();
+    window.clearTimeout(this.closeTimer);
+    this.closeTimer = window.setTimeout(() => {
+      if (!this.drawer?.classList.contains('is-open')) {
+        this.drawer?.classList.remove('is-closing');
+        if (this.drawer) this.drawer.hidden = true;
+      }
+    }, PDP_DRAWER_CLOSE_DELAY);
+
+    const restoreTarget = this.previousFocus;
+    this.previousFocus = null;
+    if (restoreFocus && restoreTarget?.isConnected && !restoreTarget.hidden) restoreTarget.focus();
+  }
+}
+
+class ProductPickupAvailability extends PdpDrawerElement {
+  connectedCallback() {
+    super.connectedCallback();
+    if (!this.abortController) return;
+    this.message = this.querySelector('[data-pickup-availability-message]');
+    this.stores = this.querySelector('[data-pickup-availability-stores]');
+    const root = this.closest('[data-product-information]');
+    root?.addEventListener('variant:change', (event) => this.update(event.detail?.variantId), { signal: this.abortController.signal });
+  }
 
   update(variantId) {
     const template = this.querySelector(`[data-pickup-availability-template="${CSS.escape(String(variantId || ''))}"]`);
     const hasPickup = template?.dataset.hasPickup === 'true';
-    this.hidden = !hasPickup;
     if (!hasPickup) {
-      if (this.dialog?.open) this.dialog.close();
+      this.close({ force: true, restoreFocus: false });
+      this.hidden = true;
       return;
     }
+    this.hidden = false;
     const content = template.content;
     const message = content.querySelector('[data-pickup-availability-message-template]');
     const stores = content.querySelector('[data-pickup-availability-stores-template]');
@@ -29,14 +142,6 @@ class ProductPickupAvailability extends HTMLElement {
     if (stores && this.stores) this.stores.innerHTML = stores.innerHTML;
   }
 
-  open() {
-    if (!this.dialog) return;
-    const mobile = window.matchMedia('(max-width: 767.98px)').matches;
-    const layout = mobile ? this.dataset.popupLayoutMobile : this.dataset.popupLayoutDesktop;
-    this.dialog.classList.toggle('product-pickup-availability__dialog--drawer', layout === 'drawer');
-    this.dialog.classList.toggle('product-pickup-availability__dialog--bottom-sheet', layout === 'bottom-sheet');
-    this.dialog.showModal();
-  }
 }
 
 class ProductRecommendations extends HTMLElement {
@@ -82,28 +187,7 @@ class ProductStickyAddToCart extends HTMLElement {
   }
 }
 
-class PopupBlock extends HTMLElement {
-  connectedCallback() {
-    if (this.abortController) return;
-    this.abortController = new AbortController();
-    this.dialog = this.querySelector('[data-popup-dialog]');
-    this.trigger = this.querySelector('[data-popup-open]');
-    this.trigger?.addEventListener('click', () => this.open(), { signal: this.abortController.signal });
-    this.querySelector('[data-popup-close]')?.addEventListener('click', () => this.close(), { signal: this.abortController.signal });
-    this.dialog?.addEventListener('click', (event) => { if (event.target === this.dialog) this.close(); }, { signal: this.abortController.signal });
-    this.dialog?.addEventListener('cancel', (event) => { event.preventDefault(); this.close(); }, { signal: this.abortController.signal });
-    this.dialog?.addEventListener('close', () => this.handleClose(), { signal: this.abortController.signal });
-  }
-  open() {
-    if (!this.dialog || this.dialog.open) return;
-    this.trigger?.setAttribute('aria-expanded', 'true');
-    try { this.dialog.showModal(); } catch (error) { this.dialog.setAttribute('open', ''); }
-    window.requestAnimationFrame(() => this.dialog.querySelector('input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled), button:not(:disabled)')?.focus({ preventScroll: true }));
-  }
-  close() { if (this.dialog?.open) this.dialog.close(); else this.dialog?.removeAttribute('open'); }
-  handleClose() { this.trigger?.setAttribute('aria-expanded', 'false'); this.trigger?.focus({ preventScroll: true }); }
-  disconnectedCallback() { this.abortController?.abort(); this.abortController = null; }
-}
+class PopupBlock extends PdpDrawerElement {}
 
 if (!customElements.get('product-pickup-availability')) customElements.define('product-pickup-availability', ProductPickupAvailability);
 if (!customElements.get('product-recommendations')) customElements.define('product-recommendations', ProductRecommendations);
