@@ -26,36 +26,20 @@ class ProductBuyButtons extends HTMLElement {
     this.recipientError = this.recipientForm?.querySelector('[data-gift-card-recipient-error]');
     this.backInStockTrigger = this.querySelector('[data-back-in-stock-trigger]');
     this.backInStockDialog = this.querySelector('[data-back-in-stock-dialog]');
-    this.backInStockHeader = this.backInStockDialog?.querySelector('.product-buy-buttons__back-in-stock-header');
     this.backInStockForm = this.querySelector('[data-back-in-stock-form]');
     this.backInStockContext = this.backInStockForm?.querySelector('[data-back-in-stock-context]');
-    this.backInStockOpener = null;
-    this.backInStockDrag = null;
-    this.backInStockDragTimer = 0;
 
     this.handleVariantChange = this.handleVariantChange.bind(this);
     this.handleClick = this.handleClick.bind(this);
     this.handleInput = this.handleInput.bind(this);
     this.handleChange = this.handleChange.bind(this);
     this.handleSubmit = this.handleSubmit.bind(this);
-    this.handleDialogCancel = this.handleDialogCancel.bind(this);
-    this.handleDialogClose = this.handleDialogClose.bind(this);
-    this.handleBackInStockPointerDown = this.handleBackInStockPointerDown.bind(this);
-    this.handleBackInStockPointerMove = this.handleBackInStockPointerMove.bind(this);
-    this.handleBackInStockPointerUp = this.handleBackInStockPointerUp.bind(this);
-    this.handleBackInStockPointerCancel = this.handleBackInStockPointerCancel.bind(this);
 
     this.sectionRoot?.addEventListener('variant:change', this.handleVariantChange, { signal: this.signal });
     this.sectionRoot?.addEventListener('input', this.handleInput, { signal: this.signal });
     this.sectionRoot?.addEventListener('change', this.handleChange, { signal: this.signal });
     this.addEventListener('click', this.handleClick, { signal: this.signal });
     this.form?.addEventListener('submit', this.handleSubmit, { signal: this.signal });
-    this.backInStockDialog?.addEventListener('cancel', this.handleDialogCancel, { signal: this.signal });
-    this.backInStockDialog?.addEventListener('close', this.handleDialogClose, { signal: this.signal });
-    document.addEventListener('pointerdown', this.handleBackInStockPointerDown, { signal: this.signal });
-    document.addEventListener('pointermove', this.handleBackInStockPointerMove, { signal: this.signal });
-    document.addEventListener('pointerup', this.handleBackInStockPointerUp, { signal: this.signal });
-    document.addEventListener('pointercancel', this.handleBackInStockPointerCancel, { signal: this.signal });
 
     this.syncGiftCardRecipient();
     this.normalizeQuantity();
@@ -83,9 +67,8 @@ class ProductBuyButtons extends HTMLElement {
       this.sectionRoot = null;
       this.form = null;
       this.currentQuantityRule = null;
-      this.resetBackInStockDrag();
-      this.backInStockOpener = null;
-    });
+      window.ThemeOverlay.get(this.backInStockDialog)?.destroy();
+      });
   }
 
   isDesignMode() {
@@ -269,126 +252,6 @@ class ProductBuyButtons extends HTMLElement {
     this.recipientEmail?.toggleAttribute('aria-invalid', Boolean(message) && emailInvalid);
   }
 
-  getBackInStockTransitionTotalMs(element) {
-    if (!element) return 0;
-    const styles = window.getComputedStyle(element);
-    const toMilliseconds = (value) => {
-      const duration = Number.parseFloat(value) || 0;
-      return value.trim().endsWith('ms') ? duration : duration * 1000;
-    };
-    const durations = styles.transitionDuration.split(',').map(toMilliseconds);
-    const delays = styles.transitionDelay.split(',').map(toMilliseconds);
-    return durations.reduce((maximum, duration, index) => (
-      Math.max(maximum, duration + (delays[index] ?? delays[delays.length - 1] ?? 0))
-    ), 0);
-  }
-
-  resetBackInStockDrag() {
-    if (this.backInStockDragTimer) {
-      window.clearTimeout(this.backInStockDragTimer);
-      this.backInStockDragTimer = 0;
-    }
-
-    const drag = this.backInStockDrag;
-    drag?.header.releasePointerCapture?.(drag.pointerId);
-    this.backInStockDrag = null;
-    this.backInStockDialog?.classList.remove('is-bottom-sheet-dragging');
-    this.backInStockDialog?.style.removeProperty('transition');
-    this.backInStockDialog?.style.removeProperty('transform');
-  }
-
-  handleBackInStockPointerDown(event) {
-    if (
-      window.innerWidth > 767
-      || !event.isPrimary
-      || event.button !== 0
-      || !this.backInStockDialog?.open
-      || this.backInStockDialog.dataset.mobileLayout !== 'bottom_sheet'
-    ) return;
-
-    const sheetHeader = event.target instanceof Element
-      ? event.target.closest('.product-buy-buttons__back-in-stock-header')
-      : null;
-    if (event.target instanceof Element && event.target.closest('[data-back-in-stock-close]')) return;
-    if (!sheetHeader || sheetHeader !== this.backInStockHeader) return;
-
-    this.resetBackInStockDrag();
-    this.backInStockDrag = {
-      pointerId: event.pointerId,
-      header: sheetHeader,
-      dialog: this.backInStockDialog,
-      startY: event.clientY,
-      lastY: event.clientY,
-      lastTime: performance.now(),
-      distance: 0,
-      velocity: 0,
-    };
-    this.backInStockDialog.classList.add('is-bottom-sheet-dragging');
-    this.backInStockDialog.style.transition = 'none';
-    this.backInStockDialog.style.transform = 'translate3d(0, 0, 0)';
-    sheetHeader.setPointerCapture?.(event.pointerId);
-    event.preventDefault();
-  }
-
-  handleBackInStockPointerMove(event) {
-    const drag = this.backInStockDrag;
-    if (!drag || event.pointerId !== drag.pointerId) return;
-
-    const now = performance.now();
-    const elapsed = Math.max(now - drag.lastTime, 1);
-    drag.velocity = (event.clientY - drag.lastY) / elapsed;
-    drag.lastY = event.clientY;
-    drag.lastTime = now;
-    drag.distance = Math.max(0, event.clientY - drag.startY);
-    drag.dialog.style.transform = `translate3d(0, ${drag.distance}px, 0)`;
-    event.preventDefault();
-  }
-
-  handleBackInStockPointerUp(event) {
-    this.finishBackInStockDrag(event);
-  }
-
-  handleBackInStockPointerCancel(event) {
-    this.finishBackInStockDrag(event, true);
-  }
-
-  finishBackInStockDrag(event, cancelled = false) {
-    const drag = this.backInStockDrag;
-    if (!drag || event.pointerId !== drag.pointerId) return;
-
-    drag.header.releasePointerCapture?.(event.pointerId);
-    const closeDistance = Math.min(140, drag.dialog.getBoundingClientRect().height * 0.2);
-    const shouldClose = !cancelled && (
-      drag.distance >= closeDistance || (drag.distance >= 32 && drag.velocity > 0.55)
-    );
-    this.backInStockDrag = null;
-
-    drag.dialog.style.transition = 'transform var(--motion-duration-standard) var(--motion-ease-standard)';
-    if (shouldClose) {
-      window.requestAnimationFrame(() => {
-        drag.dialog.style.transform = `translate3d(0, ${Math.max(window.innerHeight, drag.dialog.offsetHeight + 60)}px, 0)`;
-      });
-      const transitionMs = this.getBackInStockTransitionTotalMs(drag.dialog);
-      this.backInStockDragTimer = window.setTimeout(() => {
-        this.backInStockDragTimer = 0;
-        this.closeBackInStock(true);
-      }, transitionMs + 50);
-      return;
-    }
-
-    window.requestAnimationFrame(() => {
-      if (drag.dialog.open) drag.dialog.style.transform = 'translate3d(0, 0, 0)';
-    });
-    const transitionMs = this.getBackInStockTransitionTotalMs(drag.dialog);
-    this.backInStockDragTimer = window.setTimeout(() => {
-      this.backInStockDragTimer = 0;
-      if (!drag.dialog.open) return;
-      drag.dialog.classList.remove('is-bottom-sheet-dragging');
-      drag.dialog.style.removeProperty('transition');
-      drag.dialog.style.removeProperty('transform');
-    }, transitionMs + 50);
-  }
-
   handleInput(event) {
     if (event.target === this.quantityInput) this.updateQuantityButtons();
     if (event.target.matches('[data-gift-card-recipient-field]') && this.recipientForm?.contains(event.target)) {
@@ -455,53 +318,12 @@ class ProductBuyButtons extends HTMLElement {
     if (event.target === this.backInStockDialog) this.closeBackInStock(true);
   }
 
-  openBackInStock(restoreFocus = true) {
-    const dialog = this.backInStockDialog;
-    if (!dialog || dialog.open) return;
-
-    this.resetBackInStockDrag();
-    this.backInStockOpener = restoreFocus ? this.backInStockTrigger : null;
-    this.backInStockTrigger?.setAttribute('aria-expanded', 'true');
-    try {
-      if (typeof dialog.showModal === 'function') dialog.showModal();
-      else dialog.setAttribute('open', '');
-    } catch (error) {
-      dialog.setAttribute('open', '');
-    }
-    window.requestAnimationFrame(() => {
-      dialog.querySelector('input:not([type="hidden"]):not(:disabled), textarea:not(:disabled), select:not(:disabled)')?.focus({ preventScroll: true });
-    });
+  openBackInStock() {
+    window.ThemeOverlay.get(this.backInStockDialog)?.open({ opener: this.backInStockTrigger });
   }
 
   closeBackInStock(restoreFocus = true) {
-    const dialog = this.backInStockDialog;
-    if (!dialog) return;
-
-    this.resetBackInStockDrag();
-    if (!restoreFocus) this.backInStockOpener = null;
-    if (typeof dialog.close === 'function' && dialog.open) dialog.close();
-    else {
-      dialog.removeAttribute('open');
-      this.handleDialogClose();
-    }
-  }
-
-  handleDialogCancel(event) {
-    event.preventDefault();
-    this.closeBackInStock(true);
-  }
-
-  handleDialogClose() {
-    this.resetBackInStockDrag();
-    this.backInStockTrigger?.setAttribute('aria-expanded', 'false');
-    if (
-      this.backInStockOpener?.isConnected
-      && !this.backInStockOpener.hidden
-      && this.backInStockOpener.getAttribute('aria-hidden') !== 'true'
-    ) {
-      this.backInStockOpener.focus({ preventScroll: true });
-    }
-    this.backInStockOpener = null;
+    window.ThemeOverlay.get(this.backInStockDialog)?.close({ restoreFocus });
   }
 
   updateBackInStockContext(variantId, variant) {
