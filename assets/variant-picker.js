@@ -256,15 +256,19 @@ class VariantPicker extends HTMLElement {
     this.dataset.currentVariantId = variantId;
     this.dataset.currentVariantAvailable = String(isAvailable);
 
+    // Keep every cart form input synchronized even when the modern buy-button
+    // controller has not upgraded yet. This also makes the initial lifecycle
+    // deterministic when the picker script is defined before the form script.
+    productForm?.querySelectorAll('[data-variant-id-input]').forEach((input) => {
+      input.value = variantId;
+      input.setAttribute('value', variantId);
+    });
+
     // Product buy buttons owns the modern product form. The picker only keeps
     // its own state in sync and emits the shared variant:change contract;
     // legacy product forms still use the fallback branch below.
     if (productFormController) return;
 
-    productForm?.querySelectorAll('[data-variant-id-input]').forEach((input) => {
-      input.value = variantId;
-      input.setAttribute('value', variantId);
-    });
     if (productForm) {
       productForm.dataset.currentVariantId = variantId;
       productForm.dataset.variantAvailable = String(isAvailable);
