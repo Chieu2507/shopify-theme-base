@@ -59,9 +59,14 @@
   endcase
   if swatch != blank and swatch.color != blank
     assign native_swatch_color = swatch.color | append: '' | strip
-    unless native_swatch_color == blank or native_swatch_color == 'transparent' or native_swatch_color == 'rgba(0,0,0,0)' or native_swatch_color == 'rgba(0, 0, 0, 0)' or native_swatch_color == '#00000000' or native_swatch_color == '#0000'
-      assign swatch_color = native_swatch_color
-    endunless
+    if native_swatch_color contains '#'
+      unless native_swatch_color == '#00000000' or native_swatch_color == '#0000'
+        assign swatch_color = native_swatch_color
+      endunless
+    endif
+  endif
+  if swatch_color == blank
+    assign swatch_color = '#e5e7eb'
   endif
   if swatch_style == 'variant_image'
     if image != blank
@@ -74,7 +79,9 @@
 
 <span
   class="{{ swatch_class | strip }}"
-  {% if swatch_color != blank %}
+  {% if swatch_color != blank and swatch_style == 'color' %}
+    style="--swatch-color: {{ swatch_color | escape }}; background-color: {{ swatch_color | escape }};"
+  {% elsif swatch_color != blank %}
     style="--swatch-color: {{ swatch_color | escape }};"
   {% endif %}
   {% if decorative %}
