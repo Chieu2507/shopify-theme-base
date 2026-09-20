@@ -96,10 +96,16 @@ class ProductBuyButtons extends HTMLElement {
     this.dataset.backInStockVariantId = variantId;
     this.dataset.variantAvailable = String(isAvailable);
 
-    if (this.variantInput) {
-      this.variantInput.value = variantId;
-      this.variantInput.setAttribute('value', variantId);
-    }
+    const variantInputs = [
+      this.variantInput,
+      ...Array.from(this.form?.querySelectorAll('[data-variant-id-input]') || []),
+      ...Array.from(this.form?.querySelectorAll('[data-variant-id]:not([data-option-control])') || []),
+    ].filter((input, index, inputs) => input && inputs.indexOf(input) === index);
+
+    variantInputs.forEach((input) => {
+      input.value = variantId;
+      input.setAttribute('value', variantId);
+    });
     if (this.form) {
       this.form.dataset.currentVariantId = variantId;
       this.form.dataset.variantAvailable = String(isAvailable);

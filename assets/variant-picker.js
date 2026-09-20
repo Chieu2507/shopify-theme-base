@@ -248,10 +248,16 @@ class VariantPicker extends HTMLElement {
     const productForm = this.productForm();
     const productFormController = this.productFormController(productForm);
 
-    if (this.variantIdInput) {
-      this.variantIdInput.value = variantId;
-      this.variantIdInput.setAttribute('value', variantId);
-    }
+    const variantInputs = [
+      this.variantIdInput,
+      ...this.querySelectorAll('[data-variant-id-input]'),
+      ...Array.from(productForm?.querySelectorAll('[data-variant-id-input]') || []),
+    ].filter((input, index, inputs) => input && inputs.indexOf(input) === index);
+
+    variantInputs.forEach((input) => {
+      input.value = variantId;
+      input.setAttribute('value', variantId);
+    });
 
     this.dataset.currentVariantId = variantId;
     this.dataset.currentVariantAvailable = String(isAvailable);
@@ -259,11 +265,6 @@ class VariantPicker extends HTMLElement {
     // Keep every cart form input synchronized even when the modern buy-button
     // controller has not upgraded yet. This also makes the initial lifecycle
     // deterministic when the picker script is defined before the form script.
-    productForm?.querySelectorAll('[data-variant-id-input]').forEach((input) => {
-      input.value = variantId;
-      input.setAttribute('value', variantId);
-    });
-
     // Product buy buttons owns the modern product form. The picker only keeps
     // its own state in sync and emits the shared variant:change contract;
     // legacy product forms still use the fallback branch below.
