@@ -27,6 +27,7 @@ class ProductMediaGallery extends HTMLElement {
       ? String(currentVariant.featured_media.id)
       : this.dataset.currentVariantMediaId || linkedVariantMedia?.dataset.mediaId || '';
     if (currentVariantId) this.dataset.currentVariantId = currentVariantId;
+    if (preferredMediaId) this.dataset.currentVariantMediaId = preferredMediaId;
 
     this.handleClick = this.handleClick.bind(this);
     this.handleKeydown = this.handleKeydown.bind(this);
@@ -262,6 +263,7 @@ class ProductMediaGallery extends HTMLElement {
       const mediaId = featuredMediaId && visibleMediaIds.has(String(featuredMediaId))
         ? String(featuredMediaId)
         : this.activeMediaId();
+      this.dataset.currentVariantMediaId = mediaId || '';
 
       if (filtersVariantMedia) {
         this.destroyGallery();
