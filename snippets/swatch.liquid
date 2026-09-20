@@ -1,9 +1,8 @@
 {% doc %}
   Renders one visual swatch. Its parent control supplies the accessible name.
 
-  Shopify standard swatch data is preferred. In image mode, a linked variant
-  image takes precedence; otherwise the saved swatch image, color, and neutral
-  surface are used in that order.
+  Shopify standard swatch data is preferred. Color mode is intentionally color
+  only; variant_image mode is the only mode that renders an image.
 
   @param {string} value - Option value used for the fallback class
   @param {swatch} [swatch] - Shopify product option-value swatch data
@@ -33,12 +32,12 @@
   if swatch != blank and swatch.color != blank
     assign swatch_color = swatch.color
   endif
-  if swatch_style == 'variant_image' and image != blank
-    assign swatch_image = image
-  elsif swatch != blank and swatch.image != blank
-    assign swatch_image = swatch.image
-  elsif swatch_style == 'color' and image != blank and swatch_color == blank
-    assign swatch_image = image
+  if swatch_style == 'variant_image'
+    if image != blank
+      assign swatch_image = image
+    elsif swatch != blank and swatch.image != blank
+      assign swatch_image = swatch.image
+    endif
   endif
 %}
 

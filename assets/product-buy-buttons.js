@@ -7,7 +7,8 @@ class ProductBuyButtons extends HTMLElement {
     this.sectionRoot =
       this.closest('[data-product-information]') || this.closest('.shopify-section') || this.parentElement;
     this.form = this.querySelector('[data-product-form]');
-    this.variantInput = this.form?.querySelector('[data-variant-id]');
+    this.variantInput = this.form?.querySelector('[data-variant-id-input]')
+      || this.form?.querySelector('[data-variant-id]:not([data-option-control])');
     this.addButton = this.form?.querySelector('[data-add-to-cart-button]');
     this.paymentWrapper = this.form?.querySelector('[data-accelerated-checkout-wrapper]');
     this.quantityInput = this.form?.querySelector('[data-quantity-input]');
@@ -43,10 +44,17 @@ class ProductBuyButtons extends HTMLElement {
 
     this.syncGiftCardRecipient();
     this.normalizeQuantity();
+    const variantPicker = this.sectionRoot?.querySelector('[data-product-variant-picker]');
+    const pickerVariantId = variantPicker?.dataset.currentVariantId || '';
+    const pickerVariant = variantPicker?.findVariantById?.(pickerVariantId) || null;
+    const initialVariantId = pickerVariantId || this.dataset.currentVariantId || this.variantInput?.value || '';
+    const initialVariantAvailable = variantPicker
+      ? variantPicker.dataset.currentVariantAvailable === 'true'
+      : this.dataset.variantAvailable === 'true';
     this.syncPurchaseState(
-      this.dataset.currentVariantId || this.variantInput?.value || '',
-      this.dataset.variantAvailable === 'true',
-      null,
+      initialVariantId,
+      initialVariantAvailable,
+      pickerVariant,
     );
 
     const backInStockFormState = this.backInStockForm?.querySelector('[data-back-in-stock-form-state]')?.dataset.backInStockFormState

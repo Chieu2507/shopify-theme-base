@@ -17,6 +17,10 @@ class ProductMediaGallery extends HTMLElement {
     this.signal = this.abortController.signal;
     this.mobileQuery = window.matchMedia('(max-width: 767.98px)');
     this.productInformation = this.closest('[data-product-information]');
+    const variantPicker = this.productInformation?.querySelector('[data-product-variant-picker]');
+    const currentVariantId = variantPicker?.dataset.currentVariantId || this.dataset.currentVariantId;
+    const currentVariant = variantPicker?.findVariantById?.(currentVariantId);
+    if (currentVariantId) this.dataset.currentVariantId = currentVariantId;
 
     this.handleClick = this.handleClick.bind(this);
     this.handleKeydown = this.handleKeydown.bind(this);
@@ -52,7 +56,7 @@ class ProductMediaGallery extends HTMLElement {
 
     this.applyVariantMediaFilter(this.dataset.currentVariantId);
     this.syncThumbnailVisibility();
-    this.initializeGallery();
+    this.initializeGallery(currentVariant?.featured_media?.id ? String(currentVariant.featured_media.id) : '');
     this.initializeShopifyMedia();
   }
 

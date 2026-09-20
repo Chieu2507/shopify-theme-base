@@ -7,7 +7,9 @@ class VariantPicker extends HTMLElement {
     this.sectionRoot =
       this.closest('[data-product-information]') || this.closest('.shopify-section') || this.parentElement;
     this.variants = this.readVariants();
-    this.variantIdInput = this.querySelector('[data-variant-id]');
+    this.variantIdInput = this.querySelector('[data-variant-id-input]')
+      || this.querySelector('[data-variant-id]:not([data-option-control])');
+    this.sizeChartDialogElement = this.querySelector('[data-size-chart-dialog]');
     this.initialVariantId = String(this.dataset.currentVariantId || this.variantIdInput?.value || '');
     this.sizeChartOpener = null;
 
@@ -40,7 +42,7 @@ class VariantPicker extends HTMLElement {
   }
 
   get sizeChartDialog() {
-    return this.querySelector('[data-size-chart-dialog]');
+    return this.sizeChartDialogElement || this.querySelector('[data-size-chart-dialog]');
   }
 
   readVariants() {
@@ -190,6 +192,12 @@ class VariantPicker extends HTMLElement {
     );
   }
 
+  productFormController(productForm = this.productForm()) {
+    return productForm?.closest('[data-product-buy-buttons]')
+      || this.sectionRoot?.querySelector('[data-product-buy-buttons]')
+      || null;
+  }
+
   updateQuantityInput(variant, productForm) {
     const productFormId = productForm?.getAttribute('id') || '';
     const quantityInput = Array.from(
@@ -233,13 +241,22 @@ class VariantPicker extends HTMLElement {
     const variantId = variant?.id ? String(variant.id) : '';
     const isAvailable = Boolean(variant?.available);
     const productForm = this.productForm();
+    const productFormController = this.productFormController(productForm);
 
     if (this.variantIdInput) {
       this.variantIdInput.value = variantId;
       this.variantIdInput.setAttribute('value', variantId);
     }
 
-    productForm?.querySelectorAll('[data-variant-id]').forEach((input) => {
+    this.dataset.currentVariantId = variantId;
+    this.dataset.currentVariantAvailable = String(isAvailable);
+
+    // Product buy buttons owns the modern product form. The picker only keeps
+    // its own state in sync and emits the shared variant:change contract;
+    // legacy product forms still use the fallback branch below.
+    if (productFormController) return;
+
+    productForm?.querySelectorAll('[data-variant-id-input]').forEach((input) => {
       input.value = variantId;
       input.setAttribute('value', variantId);
     });
@@ -254,17 +271,8 @@ class VariantPicker extends HTMLElement {
       button.dataset.variantAvailable = String(isAvailable);
     });
 
-    const buyButtons =
-      productForm?.closest('[data-product-buy-buttons]') ||
-      this.sectionRoot?.querySelector('[data-product-buy-buttons]');
-    if (buyButtons) {
-      buyButtons.dataset.backInStockVariantId = variantId;
-      buyButtons.dataset.variantAvailable = String(isAvailable);
-    }
-
     this.updateQuantityInput(variant, productForm);
     this.updateAddToCartLabel(productForm, variant);
-    this.dataset.currentVariantId = variantId;
   }
 
   updateAddToCartLabel(productForm, variant) {
@@ -341,7 +349,7 @@ class VariantPicker extends HTMLElement {
     container.replaceChildren(template?.content.cloneNode(true) || document.createDocumentFragment());
   }
 
-  updateMedia(variantId) {
+  updateLegacyMedia(variantId) {
     const galleryId = this.dataset.mediaGalleryId;
     const gallery = galleryId
       ? Array.from(this.sectionRoot?.querySelectorAll('[data-product-media-gallery]') || []).find(
@@ -349,6 +357,11 @@ class VariantPicker extends HTMLElement {
         )
       : null;
     const mediaItems = gallery ? Array.from(gallery.querySelectorAll('[data-product-media]')) : [];
+
+    // ProductMediaGallery is the single owner of modern media filtering and
+    // featured-media selection. Keep this fallback only for the legacy
+    // product section, which renders a plain gallery element.
+    if (gallery?.matches('product-media-gallery')) return;
 
     if (!mediaItems.length) {
       return;
@@ -454,7 +467,7 @@ class VariantPicker extends HTMLElement {
     this.updateStatus(variant);
     this.updatePrice(variant);
     this.updateSaleBadge(variant);
-    this.updateMedia(variant?.id || '');
+    this.updateLegacyMedia(variant?.id || '');
     if (updateUrl) this.updateUrl(variant?.id || '');
 
     this.dispatchEvent(

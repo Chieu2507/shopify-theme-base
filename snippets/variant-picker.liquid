@@ -1,6 +1,8 @@
 {% doc %}
   Renders the product variant picker using the global Variant picker and
   Swatches settings. Both presentations submit one resolved variant id.
+  Variant metadata is exposed on each option control so media and form
+  controllers can consume the same contract without taking over selection.
 
   @param {product} product - Product whose options and variants should be rendered
   @param {variant} current_variant - Selected or first available variant
@@ -99,6 +101,7 @@
   data-media-gallery-id="{{ gallery_id }}"
   data-only-selected-media="{{ only_selected_media }}"
   data-current-variant-id="{{ current_variant_id }}"
+  data-current-variant-available="{{ current_variant.available }}"
   data-sold-out-label="{{ sold_out_label | escape }}"
   data-unavailable-label="{{ unavailable_label | escape }}"
   data-unavailable-selection-label="{{ unavailable_selection_label | escape }}"
@@ -107,9 +110,9 @@
   style="--product-swatch-width: {{ swatch_width_desktop }}px; --product-swatch-width-mobile: var(--swatch-width-mobile);"
 >
   {% if form_id == blank %}
-    <input type="hidden" name="id" value="{{ current_variant_id }}" data-variant-id>
+    <input type="hidden" name="id" value="{{ current_variant_id }}" data-variant-id data-variant-id-input>
   {% else %}
-    <input type="hidden" value="{{ current_variant_id }}" data-variant-id>
+    <input type="hidden" value="{{ current_variant_id }}" data-variant-id data-variant-id-input>
   {% endif %}
   <script type="application/json" data-variant-data>{{ product.variants | json }}</script>
 
@@ -172,10 +175,21 @@
                   assign value_state = 'sold-out'
                 endif
               endunless
+              assign option_value_id = option_value.id | default: blank
+              assign option_variant_id = blank
+              assign option_media_id = blank
+              if option_value.variant != blank
+                assign option_variant_id = option_value.variant.id
+                assign option_media_id = option_value.variant.featured_media.id
+              endif
             %}
             <option
               value="{{ option_value.name | escape }}"
               data-label="{{ option_value.name | escape }}"
+              data-option-value-id="{{ option_value_id }}"
+              data-option-available="{{ option_value.available }}"
+              data-variant-id="{{ option_variant_id }}"
+              data-option-media-id="{{ option_media_id }}"
               data-option-control
               data-option-index="{{ option_index }}"
               data-variant-state="{{ value_state }}"
@@ -206,10 +220,21 @@
                 endif
               endunless
               assign value_input_id = option_id | append: '-' | append: forloop.index0
+              assign option_value_id = option_value.id | default: blank
+              assign option_variant_id = blank
+              assign option_media_id = blank
+              if option_value.variant != blank
+                assign option_variant_id = option_value.variant.id
+                assign option_media_id = option_value.variant.featured_media.id
+              endif
             %}
             <div
               class="variant-picker__choice{% if option_uses_swatches %} swatches__item{% endif %}{% if value_state == 'unavailable' %} variant-picker__choice--unavailable{% elsif value_state == 'sold-out' %} variant-picker__choice--sold-out{% endif %}"
               data-option-value="{{ option_value.name | escape }}"
+              data-option-value-id="{{ option_value_id }}"
+              data-option-available="{{ option_value.available }}"
+              data-variant-id="{{ option_variant_id }}"
+              data-option-media-id="{{ option_media_id }}"
               data-variant-state="{{ value_state }}"
             >
               <input
@@ -219,6 +244,10 @@
                 name="options[{{ product_option.name | escape }}]"
                 form="{{ product_form_id }}"
                 value="{{ option_value.name | escape }}"
+                data-option-value-id="{{ option_value_id }}"
+                data-option-available="{{ option_value.available }}"
+                data-variant-id="{{ option_variant_id }}"
+                data-option-media-id="{{ option_media_id }}"
                 data-option-control
                 data-option-index="{{ option_index }}"
                 {% if option_value.selected %}
@@ -286,6 +315,6 @@
           {% endif %}
     {% endcapture %}
     {% assign chart_title = size_chart_page_title | escape %}
-    {% render 'component-overlay', id: size_chart_dialog_id, label: size_chart_page_title, title: chart_title, content: chart_content, desktop_layout: size_chart_desktop_layout, mobile_layout: size_chart_mobile_layout, attributes: 'data-size-chart-dialog', body_class: 'rte', width: size_chart_width %}
+    {% render 'component-overlay', id: size_chart_dialog_id, label: size_chart_page_title, title: chart_title, content: chart_content, append_to_body: true, desktop_layout: size_chart_desktop_layout, mobile_layout: size_chart_mobile_layout, attributes: 'data-size-chart-dialog', body_class: 'rte', width: size_chart_width %}
   {% endif %}
 </variant-picker>

@@ -8,10 +8,12 @@ class PdpDrawerElement extends HTMLElement {
     const options = { signal: this.abortController.signal };
     this.trigger?.addEventListener('click', () => this.open(), options);
     document.addEventListener('shopify:block:select', (event) => {
-      if (event.target === this || this.contains(event.target)) this.open({ focus: false });
+      if (event.target === this || this.contains(event.target) || this.drawer?.contains(event.target)) {
+        this.open({ focus: false });
+      }
     }, options);
     document.addEventListener('shopify:block:deselect', (event) => {
-      if (event.target === this || this.contains(event.target)) this.close();
+      if (event.target === this || this.contains(event.target) || this.drawer?.contains(event.target)) this.close();
     }, options);
     document.addEventListener('shopify:section:unload', (event) => {
       if (event.target.contains(this)) this.close({ restoreFocus: false, immediate: true });
