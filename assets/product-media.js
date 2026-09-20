@@ -20,6 +20,12 @@ class ProductMediaGallery extends HTMLElement {
     const variantPicker = this.productInformation?.querySelector('[data-product-variant-picker]');
     const currentVariantId = variantPicker?.dataset.currentVariantId || this.dataset.currentVariantId;
     const currentVariant = variantPicker?.findVariantById?.(currentVariantId);
+    const linkedVariantMedia = Array.from(this.querySelectorAll('[data-product-media]')).find((media) =>
+      this.variantIdsFor(media).includes(String(currentVariantId || '')),
+    );
+    const preferredMediaId = currentVariant?.featured_media?.id
+      ? String(currentVariant.featured_media.id)
+      : this.dataset.currentVariantMediaId || linkedVariantMedia?.dataset.mediaId || '';
     if (currentVariantId) this.dataset.currentVariantId = currentVariantId;
 
     this.handleClick = this.handleClick.bind(this);
@@ -56,7 +62,7 @@ class ProductMediaGallery extends HTMLElement {
 
     this.applyVariantMediaFilter(this.dataset.currentVariantId);
     this.syncThumbnailVisibility();
-    this.initializeGallery(currentVariant?.featured_media?.id ? String(currentVariant.featured_media.id) : '');
+    this.initializeGallery(preferredMediaId);
     this.initializeShopifyMedia();
   }
 

@@ -176,6 +176,11 @@ class VariantPicker extends HTMLElement {
         status.hidden = state === 'available';
       }
     });
+
+    this.optionGroups().forEach((group, optionIndex) => {
+      const selectedValue = group.querySelector('[data-variant-selected-value]');
+      if (selectedValue) selectedValue.textContent = selectedOptions[optionIndex] ? `: ${selectedOptions[optionIndex]}` : '';
+    });
   }
 
   productForm() {

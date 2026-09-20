@@ -121,7 +121,7 @@
     }
 
     portalToBody() {
-      if (!this.dialog.hasAttribute('data-append-to-body') || this.dialog.parentElement === document.body) return;
+      if (!this.dialog.hasAttribute?.('data-append-to-body') || !document.body || this.dialog.parentElement === document.body) return;
 
       this.originalParent = this.dialog.parentNode;
       this.originalNextSibling = this.dialog.nextSibling;
