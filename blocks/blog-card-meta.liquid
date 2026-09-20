@@ -11,10 +11,15 @@
     assign blog_card_meta_size = 'sm'
   endunless
 
-  assign blog_card_meta_color = block.settings.color | default: 'text'
-  unless blog_card_meta_color == 'heading' or blog_card_meta_color == 'text'
-    assign blog_card_meta_color = 'text'
-  endunless
+  assign blog_card_meta_color = block.settings.text_color
+  if blog_card_meta_color == blank
+    case block.settings.color
+      when 'heading'
+        assign blog_card_meta_color = 'var(--heading-color)'
+      when 'text'
+        assign blog_card_meta_color = 'var(--text-color)'
+    endcase
+  endif
 
   assign blog_card_meta_padding_top = block.settings.padding_top | default: 0 | plus: 0
   assign blog_card_meta_padding_bottom = block.settings.padding_bottom | default: 4 | plus: 0
@@ -25,6 +30,7 @@
 {% capture blog_card_meta_style %}
   {% if blog_card_meta_padding_top != 0 %}--blog-card-meta-padding-top: {{ blog_card_meta_padding_top }}px;{% endif %}
   {% if blog_card_meta_padding_bottom != 0 %}--blog-card-meta-padding-bottom: {{ blog_card_meta_padding_bottom }}px;{% endif %}
+  {% if blog_card_meta_color != blank %}--blog-card-meta-color: {{ blog_card_meta_color | escape }};{% endif %}
   {% if block.settings.customize_mobile_padding %}
     {% if blog_card_meta_padding_top_mobile != blog_card_meta_padding_top %}--blog-card-meta-padding-top-mobile: {{ blog_card_meta_padding_top_mobile }}px;{% endif %}
     {% if blog_card_meta_padding_bottom_mobile != blog_card_meta_padding_bottom %}--blog-card-meta-padding-bottom-mobile: {{ blog_card_meta_padding_bottom_mobile }}px;{% endif %}
@@ -34,7 +40,7 @@
 
 {% if block.settings.show_date or block.settings.show_author or request.design_mode %}
   <div
-    class="blog-card-meta blog-card-meta--{{ blog_card_meta_color }} body-{{ blog_card_meta_size }}"
+    class="blog-card-meta body-{{ blog_card_meta_size }}"
     {% if blog_card_meta_style != blank %}style="{{ blog_card_meta_style }}"{% endif %}
     {{ block.shopify_attributes }}
   >
@@ -60,11 +66,10 @@
     width: 100%;
     padding-top: var(--blog-card-meta-padding-top, 0px);
     padding-bottom: var(--blog-card-meta-padding-bottom, 4px);
-    color: var(--text-color);
+    color: var(--blog-card-meta-color, var(--text-color));
     text-align: inherit;
   }
 
-  .blog-card-meta--heading { color: var(--heading-color); }
   .blog-card-meta__separator { opacity: 0.7; }
 
   @media (max-width: 767.98px) {
@@ -111,14 +116,9 @@
       "default": "sm"
     },
     {
-      "type": "select",
-      "id": "color",
-      "label": "Color",
-      "options": [
-        { "value": "heading", "label": "Heading" },
-        { "value": "text", "label": "Text" }
-      ],
-      "default": "text"
+      "type": "color",
+      "id": "text_color",
+      "label": "t:labels.text_color"
     },
     {
       "type": "header",
@@ -181,7 +181,7 @@
         "show_date": true,
         "show_author": true,
         "size": "sm",
-        "color": "text",
+        "text_color": "",
         "padding_top": 0,
         "padding_bottom": 4,
         "customize_mobile_padding": false,
