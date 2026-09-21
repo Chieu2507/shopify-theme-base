@@ -14,29 +14,6 @@
     assign collection_tabs_tab_position = 'left'
   endunless
 
-  assign collection_tabs_navigation_position = section.settings.navigation_position | default: 'inside'
-  unless collection_tabs_navigation_position == 'inside' or collection_tabs_navigation_position == 'outside'
-    assign collection_tabs_navigation_position = 'inside'
-  endunless
-
-  assign collection_tabs_navigation_style = section.settings.navigation_style | default: 'secondary'
-  if collection_tabs_navigation_style == 'tertiary'
-    assign collection_tabs_navigation_style = 'icon_only'
-  endif
-  unless collection_tabs_navigation_style == 'primary' or collection_tabs_navigation_style == 'secondary' or collection_tabs_navigation_style == 'outline' or collection_tabs_navigation_style == 'icon_only'
-    assign collection_tabs_navigation_style = 'secondary'
-  endunless
-
-  assign collection_tabs_navigation_icon = section.settings.navigation_icon | default: 'chevron'
-  unless collection_tabs_navigation_icon == 'chevron' or collection_tabs_navigation_icon == 'arrow' or collection_tabs_navigation_icon == 'long_arrow'
-    assign collection_tabs_navigation_icon = 'chevron'
-  endunless
-
-  assign collection_tabs_navigation_behavior = section.settings.navigation_behavior | default: 'show_on_hover'
-  unless collection_tabs_navigation_behavior == 'show_on_hover' or collection_tabs_navigation_behavior == 'always'
-    assign collection_tabs_navigation_behavior = 'show_on_hover'
-  endunless
-
   assign collection_tabs_mobile_alignment = section.settings.mobile_alignment | default: 'left'
   unless collection_tabs_mobile_alignment == 'left' or collection_tabs_mobile_alignment == 'center' or collection_tabs_mobile_alignment == 'right'
     assign collection_tabs_mobile_alignment = 'left'
@@ -62,16 +39,6 @@
     assign collection_tabs_autoplay_speed = 4
   endif
   assign collection_tabs_autoplay_delay = collection_tabs_autoplay_speed | times: 1000
-
-  assign collection_tabs_show_navigation = false
-  if collection_tabs_layout_type == 'carousel' and section.settings.show_navigation_on_desktop
-    assign collection_tabs_show_navigation = true
-  endif
-
-  assign collection_tabs_navigation_in_controls = false
-  if collection_tabs_show_navigation and collection_tabs_layout_direction == 'vertical' and collection_tabs_tab_position == 'left' and collection_tabs_navigation_position == 'outside' and collection_tabs_navigation_style == 'icon_only' and collection_tabs_navigation_behavior == 'always'
-    assign collection_tabs_navigation_in_controls = true
-  endif
 
   assign collection_tabs_controls_alignment = 'flex-start'
   case collection_tabs_tab_position
@@ -138,8 +105,6 @@
       data-collection-tabs-ready="false"
       data-layout-direction="{{ collection_tabs_layout_direction }}"
       data-tab-position="{{ collection_tabs_tab_position }}"
-      data-navigation-position="{{ collection_tabs_navigation_position }}"
-      data-navigation-placement="{% if collection_tabs_navigation_in_controls %}controls{% else %}carousel{% endif %}"
       data-controls-alignment="{{ collection_tabs_controls_alignment }}"
       data-layout-type="{{ collection_tabs_layout_type }}"
       data-autoplay="{{ collection_tabs_autoplay_enabled }}"
@@ -153,21 +118,7 @@
           {% content_for 'block', type: 'tab-layout', id: 'tab-layout' %}
         </div>
         <div class="collection-tabs__actions">
-          {% content_for 'block', type: 'collection-tabs-view-all', id: 'collection-tabs-view-all' %}
-          {% if collection_tabs_navigation_in_controls %}
-            {% render 'swiper-navigation',
-              show: true,
-              style: collection_tabs_navigation_style,
-              icon: collection_tabs_navigation_icon,
-              behavior: collection_tabs_navigation_behavior,
-              wrapper_class: 'collection-tabs__navigation',
-              wrapper_attributes: 'data-collection-tabs-navigation',
-              button_class: 'collection-tabs__navigation-button',
-              previous_attribute: 'data-collection-tabs-navigation-previous',
-              next_attribute: 'data-collection-tabs-navigation-next',
-              centered: false
-            %}
-          {% endif %}
+          {% content_for 'block', type: 'tabs-view-all-button', id: 'collection-tabs-view-all' %}
         </div>
       </div>
       <div
@@ -287,35 +238,6 @@
       align-self: end;
     }
 
-    .collection-tabs__layout[data-navigation-placement='controls'] > .collection-tabs__controls > .collection-tabs__actions {
-      display: flex;
-      align-items: center;
-      justify-content: flex-end;
-      gap: 0.5rem;
-      min-width: 0;
-    }
-
-    .collection-tabs__layout[data-navigation-placement='controls'] > .collection-tabs__controls > .collection-tabs__actions > .collection-tabs-view-all {
-      order: 1;
-    }
-
-    .collection-tabs__navigation {
-      display: flex;
-      align-items: center;
-      gap: 0.5rem;
-      order: 2;
-    }
-
-    .swiper-carousel__navigation--show_on_hover {
-      opacity: 0;
-      transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
-    }
-
-    .collection-tabs__controls:hover .swiper-carousel__navigation--show_on_hover,
-    .collection-tabs__controls:focus-within .swiper-carousel__navigation--show_on_hover {
-      opacity: 1;
-    }
-
     .collection-tabs__layout[data-layout-direction='horizontal'] {
       display: grid;
       grid-template-columns: minmax(220px, 0.3fr) minmax(0, 0.7fr);
@@ -392,15 +314,6 @@
       padding-bottom: var(--collection-tabs-padding-bottom-mobile, var(--collection-tabs-padding-bottom, 32px));
     }
 
-    /* Keep the View all action after the active collection list on mobile. */
-    .collection-tabs__layout > .collection-tabs__controls > .collection-tabs__actions > .collection-tabs-view-all {
-      order: 3;
-      align-self: var(--collection-tabs-controls-alignment-mobile, flex-start);
-    }
-
-    .collection-tabs__navigation {
-      display: none;
-    }
   }
 {% endstylesheet %}
 
@@ -412,7 +325,9 @@
   "max_blocks": 8,
   "blocks": [
     { "type": "header" },
-    { "type": "collection-tab" }
+    { "type": "tab-layout" },
+    { "type": "collection-tab" },
+    { "type": "tabs-view-all-button" }
   ],
   "settings": [
     {
@@ -531,13 +446,6 @@
         { "value": "2", "label": "2" }
       ],
       "default": "1"
-    },
-    {
-      "type": "checkbox",
-      "id": "show_next_slide_preview_on_mobile",
-      "label": "t:labels.show_next_slide_preview_on_mobile",
-      "default": false,
-      "visible_if": "{{ section.settings.layout_type == 'carousel' }}"
     },
     {
       "type": "checkbox",
@@ -793,14 +701,13 @@
         "section_width": "full_width",
         "layout_direction": "vertical",
         "tab_position": "left",
-        "mobile_alignment": "left",
-        "gap_desktop": 59,
-        "gap_mobile": 30,
+        "mobile_alignment": "center",
+        "gap_desktop": 32,
+        "gap_mobile": 24,
         "max_products": 8,
         "layout_type": "carousel",
         "columns_desktop": "4",
         "columns_mobile": "1",
-        "show_next_slide_preview_on_mobile": false,
         "show_next_slide_preview_on_desktop": false,
         "product_gap_desktop": 4,
         "product_gap_mobile": 4,
@@ -811,9 +718,9 @@
         "navigation_behavior": "show_on_hover",
         "show_pagination_on_desktop": true,
         "pagination_type": "progress_bar",
-        "pagination_top_padding_desktop": 50,
+        "pagination_top_padding_desktop": 48,
         "pagination_top_padding_mobile": 24,
-        "pagination_limit_width": true,
+        "pagination_limit_width": false,
         "pagination_max_width": 260,
         "autoplay": false,
         "autoplay_pause_on_hover": true,
@@ -839,7 +746,7 @@
             {
               "type": "heading",
               "settings": {
-                "text": "<p>Collection cards</p>",
+                "text": "<p>Collection tabs</p>",
                 "heading_size": "lg",
                 "html_tag": "h2"
               }
@@ -852,17 +759,17 @@
           "static": true,
           "settings": {
             "vertical_layout": false,
-            "style": "underline",
+            "style": "button",
             "active_style": "primary",
             "gap_desktop": 16,
             "gap_mobile": 16,
-            "font": "body"
+            "font": "heading"
           }
         },
         {
           "type": "collection-tab",
           "settings": {
-            "label": "Best sellers",
+            "label": "Tab 1",
             "collection": ""
           },
           "blocks": [
@@ -881,7 +788,7 @@
         {
           "type": "collection-tab",
           "settings": {
-            "label": "Work-Casual",
+            "label": "Tab 2",
             "collection": ""
           },
           "blocks": [
@@ -900,7 +807,7 @@
         {
           "type": "collection-tab",
           "settings": {
-            "label": "Weekend basics",
+            "label": "Tab 3",
             "collection": ""
           },
           "blocks": [
@@ -917,7 +824,7 @@
           ]
         },
         {
-          "type": "collection-tabs-view-all",
+          "type": "tabs-view-all-button",
           "id": "collection-tabs-view-all",
           "static": true,
           "settings": {
