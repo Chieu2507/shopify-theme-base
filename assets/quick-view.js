@@ -23,11 +23,11 @@ const loadProductFeatures = () => {
 
 const sectionContent = (root) => {
   if (!root) return null;
-  if (root.matches?.('[data-quick-add-overlay]')) return root;
-  return root.querySelector?.('[data-quick-add-overlay]');
+  if (root.matches?.('[data-quick-view-overlay]')) return root;
+  return root.querySelector?.('[data-quick-view-overlay]');
 };
 
-class QuickAddController {
+class QuickViewController {
   constructor(dialog) {
     this.dialog = dialog;
     this.sectionRoot = dialog.closest('.shopify-section');
@@ -54,7 +54,7 @@ class QuickAddController {
   }
 
   get content() {
-    return this.dialog.querySelector('[data-quick-add-content]');
+    return this.dialog.querySelector('[data-quick-view-content]');
   }
 
   get sectionId() {
@@ -62,7 +62,7 @@ class QuickAddController {
   }
 
   productUrl(trigger) {
-    const rawUrl = trigger?.dataset.productCardQuickAddOverlayUrl || trigger?.href;
+    const rawUrl = trigger?.dataset.productCardQuickViewOverlayUrl || trigger?.href;
     if (!rawUrl) return null;
 
     try {
@@ -75,14 +75,14 @@ class QuickAddController {
   }
 
   handleClick(event) {
-    const retry = event.target.closest?.('[data-quick-add-retry]');
+    const retry = event.target.closest?.('[data-quick-view-retry]');
     if (retry && this.dialog.contains(retry)) {
       event.preventDefault();
       this.handleRetry();
       return;
     }
 
-    const trigger = event.target.closest?.('[data-product-card-quick-add-overlay]');
+    const trigger = event.target.closest?.('[data-product-card-quick-view-overlay]');
     if (!trigger) return;
 
     const url = this.productUrl(trigger);
@@ -110,10 +110,10 @@ class QuickAddController {
     const content = this.content;
     if (!content) return;
 
-    const layout = content.querySelector('[data-quick-add-layout]');
-    const loading = content.querySelector('[data-quick-add-loading]');
-    const error = content.querySelector('[data-quick-add-error]');
-    const errorMessage = content.querySelector('[data-quick-add-error-message]');
+    const layout = content.querySelector('[data-quick-view-layout]');
+    const loading = content.querySelector('[data-quick-view-loading]');
+    const error = content.querySelector('[data-quick-view-error]');
+    const errorMessage = content.querySelector('[data-quick-view-error-message]');
 
     if (layout) layout.hidden = status !== 'content';
     if (loading) loading.hidden = status !== 'loading';
@@ -135,7 +135,7 @@ class QuickAddController {
     const html = await response.text();
     const template = document.createElement('template');
     template.innerHTML = html;
-    const content = template.content.querySelector('[data-quick-add-content]');
+    const content = template.content.querySelector('[data-quick-view-content]');
     if (!content || content.dataset.quickAddHasProduct !== 'true') {
       throw new Error('The requested product is unavailable.');
     }
@@ -190,7 +190,7 @@ class QuickAddController {
       if (this.requestController !== requestController) return;
       console.error('[Spinel] Quick add failed to load product.', error);
       this.setStatus('error', this.dialog.dataset.quickAddErrorLabel || error.message);
-      this.dialog.querySelector('[data-quick-add-retry]')?.focus({ preventScroll: true });
+      this.dialog.querySelector('[data-quick-view-retry]')?.focus({ preventScroll: true });
     } finally {
       if (this.requestController === requestController && !requestController.signal.aborted) {
         this.dialog.removeAttribute('aria-busy');
@@ -217,18 +217,18 @@ class QuickAddController {
 const controllers = new WeakMap();
 const controllersBySection = new WeakMap();
 
-const initializeQuickAdds = (root = document) => {
+const initializeQuickViews = (root = document) => {
   const dialog = sectionContent(root);
   if (!dialog || controllers.has(dialog)) return;
 
-  const controller = new QuickAddController(dialog);
+  const controller = new QuickViewController(dialog);
   if (controller.overlay) {
     controllers.set(dialog, controller);
     if (controller.sectionRoot) controllersBySection.set(controller.sectionRoot, controller);
   }
 };
 
-const destroyQuickAdds = (root) => {
+const destroyQuickViews = (root) => {
   if (!root) return;
   const controller = controllersBySection.get(root)
     || (() => {
@@ -240,9 +240,9 @@ const destroyQuickAdds = (root) => {
 
 const controllerKey = '__quickAddController';
 if (!window[controllerKey]) {
-  window[controllerKey] = { initialize: initializeQuickAdds };
-  document.addEventListener('shopify:section:load', (event) => initializeQuickAdds(event.target));
-  document.addEventListener('shopify:section:unload', (event) => destroyQuickAdds(event.target));
+  window[controllerKey] = { initialize: initializeQuickViews };
+  document.addEventListener('shopify:section:load', (event) => initializeQuickViews(event.target));
+  document.addEventListener('shopify:section:unload', (event) => destroyQuickViews(event.target));
 }
 
-initializeQuickAdds(document);
+initializeQuickViews(document);
