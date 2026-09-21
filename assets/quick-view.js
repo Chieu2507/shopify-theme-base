@@ -41,9 +41,11 @@ const waitForImage = (image) => new Promise((resolve) => {
 });
 
 const waitForContentReady = async (content) => {
-  const primaryImages = [...content.querySelectorAll('img')]
+  const images = [...content.querySelectorAll('img')];
+  const primaryImages = images
     .filter((image) => image.getAttribute('loading') !== 'lazy')
     .slice(0, 2);
+  if (!primaryImages.length && images[0]) primaryImages.push(images[0]);
   await Promise.all(primaryImages.map(waitForImage));
   await nextFrame();
 };
