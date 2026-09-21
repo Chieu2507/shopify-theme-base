@@ -59,6 +59,7 @@ const initialize = (carousel) => {
 
   const swiper = createSwiperCarousel(carousel, {
     modules: [Pagination],
+    watchOverflow: false,
     slidesPerView: 1,
     spaceBetween: 0,
     cssMode: true,
