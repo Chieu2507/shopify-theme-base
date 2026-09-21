@@ -38,6 +38,9 @@ class ProductMediaGallery extends HTMLElement {
     this.handleBreakpoint = this.handleBreakpoint.bind(this);
     this.handleVariantChange = this.handleVariantChange.bind(this);
     this.scheduleGalleryRefresh = this.scheduleGalleryRefresh.bind(this);
+    this.handleQuickAddStripPointerDown = this.handleQuickAddStripPointerDown.bind(this);
+    this.handleQuickAddStripPointerMove = this.handleQuickAddStripPointerMove.bind(this);
+    this.handleQuickAddStripPointerUp = this.handleQuickAddStripPointerUp.bind(this);
 
     this.addEventListener('click', this.handleClick, { signal: this.signal, capture: true });
     this.addEventListener('keydown', this.handleKeydown, { signal: this.signal });
@@ -204,6 +207,9 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   destroyGallery() {
+    this.quickAddStripController?.abort();
+    this.quickAddStripController = null;
+    this.quickAddStripDrag = null;
     destroySwiperCarousel(this.mainSwiper);
     destroySwiperCarousel(this.thumbnailSwiper);
     this.mainSwiper = null;
@@ -278,7 +284,97 @@ class ProductMediaGallery extends HTMLElement {
       a11y: { enabled: true },
     });
 
+    if (isQuickAddStrip) this.bindQuickAddStripDrag(main);
+
     if (preferredMediaId) this.showMedia(preferredMediaId, true);
+  }
+
+  bindQuickAddStripDrag(main) {
+    if (!main || this.quickAddStripController) return;
+
+    this.quickAddStripController = new AbortController();
+    const options = { capture: true, signal: this.quickAddStripController.signal };
+    main.addEventListener('pointerdown', this.handleQuickAddStripPointerDown, options);
+    main.addEventListener('pointermove', this.handleQuickAddStripPointerMove, options);
+    main.addEventListener('pointerup', this.handleQuickAddStripPointerUp, options);
+    main.addEventListener('pointercancel', this.handleQuickAddStripPointerUp, options);
+    main.addEventListener('lostpointercapture', this.handleQuickAddStripPointerUp, options);
+  }
+
+  handleQuickAddStripPointerDown(event) {
+    if (this.galleryMode !== 'quick-add-strip' || !this.mainSwiper || !event.isPrimary) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.target.closest?.('button, a, input, select, textarea, video, iframe, model-viewer')) return;
+
+    this.quickAddStripDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      axis: null,
+      moved: false,
+    };
+    this.mainSwiper.allowTouchMove = false;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    // Swiper's own pointer listeners must not compete with this desktop-only
+    // fallback. A normal click still reaches the gallery click handler.
+    event.stopPropagation();
+  }
+
+  handleQuickAddStripPointerMove(event) {
+    const drag = this.quickAddStripDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (!drag.axis) {
+      if (Math.hypot(deltaX, deltaY) < 6) return;
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        this.finishQuickAddStripDrag(event, false);
+        return;
+      }
+      drag.axis = 'horizontal';
+      drag.moved = true;
+    }
+
+    if (drag.axis !== 'horizontal') return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  handleQuickAddStripPointerUp(event) {
+    const drag = this.quickAddStripDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - drag.startX;
+    const shouldSlide = drag.axis === 'horizontal' && drag.moved;
+    const swiper = this.mainSwiper;
+    if (shouldSlide && swiper && !swiper.destroyed) {
+      const threshold = Math.max(24, (swiper.el.clientWidth || 0) * 0.08);
+      if (Math.abs(deltaX) >= threshold) {
+        const next = swiper.rtlTranslate ? deltaX > 0 : deltaX < 0;
+        next ? swiper.slideNext() : swiper.slidePrev();
+        event.preventDefault();
+      }
+    }
+
+    this.finishQuickAddStripDrag(event, shouldSlide);
+  }
+
+  finishQuickAddStripDrag(event, moved) {
+    const drag = this.quickAddStripDrag;
+    if (!drag) return;
+
+    const swiper = this.mainSwiper;
+    event.currentTarget.releasePointerCapture?.(drag.pointerId);
+    this.quickAddStripDrag = null;
+    if (moved) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.lightboxZoomState.mediaSuppressClickUntil = performance.now() + 300;
+    }
+    window.requestAnimationFrame(() => {
+      if (swiper && !swiper.destroyed) swiper.allowTouchMove = true;
+    });
   }
 
   handleBreakpoint() {
