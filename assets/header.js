@@ -29,6 +29,10 @@
         item.classList.remove('is-mobile-submenu-active');
         item.querySelector(':scope > .header__mobile-drawer-details')?.removeAttribute('open');
       });
+      drawer?.querySelectorAll('[data-mobile-drawer-submenu-details]').forEach((details) => {
+        details.classList.remove('is-mobile-submenu-active');
+        details.removeAttribute('open');
+      });
       drawer?.querySelectorAll('[data-header-menu-back]').forEach((back) => {
         back.hidden = true;
       });
@@ -355,7 +359,7 @@
       submenuCloseTimers.set(details, timer);
     };
 
-    header.querySelectorAll('details:not([data-mobile-drawer-details])').forEach((details) => {
+    header.querySelectorAll('details:not([data-mobile-drawer-details]):not([data-mobile-drawer-submenu-details])').forEach((details) => {
       const trigger = details.dataset.headerSubmenuTrigger || 'click';
       const summary = details.querySelector(':scope > summary');
 
@@ -483,20 +487,45 @@
     if (!drawer || drawer.dataset.ready === 'true') return;
     drawer.dataset.ready = 'true';
 
+    const setBackLabel = (title) => {
+      drawer.querySelectorAll('[data-header-menu-back]').forEach((back) => { back.hidden = false; });
+      drawer.querySelectorAll('[data-header-menu-back-label]').forEach((label) => {
+        label.textContent = title || label.dataset.headerMenuBackDefaultLabel || 'Menu';
+      });
+    };
+
+    const clearActiveSubmenu = () => {
+      drawer.querySelectorAll('[data-mobile-drawer-submenu-details]').forEach((details) => {
+        details.classList.remove('is-mobile-submenu-active');
+        details.removeAttribute('open');
+      });
+      drawer.querySelectorAll('.header__mobile-drawer-item.is-mobile-submenu-active').forEach((item) => {
+        item.classList.remove('is-mobile-submenu-active');
+        item.querySelector(':scope > .header__mobile-drawer-details')?.removeAttribute('open');
+      });
+    };
+
     const resetSubmenu = (animate = true) => {
       drawer.classList.remove('header__mobile-drawer--submenu-active');
       drawer.querySelectorAll('[data-header-menu-back]').forEach((back) => { back.hidden = true; });
       drawer.querySelectorAll('[data-header-menu-back-label]').forEach((label) => {
         label.textContent = label.dataset.headerMenuBackDefaultLabel || 'Menu';
       });
-      const clearActiveSubmenu = () => {
-        drawer.querySelectorAll('.header__mobile-drawer-item.is-mobile-submenu-active').forEach((item) => {
-          item.classList.remove('is-mobile-submenu-active');
-          item.querySelector(':scope > .header__mobile-drawer-details')?.removeAttribute('open');
-        });
-      };
       if (animate) window.setTimeout(clearActiveSubmenu, 320);
       else clearActiveSubmenu();
+    };
+
+    const backToParentSubmenu = () => {
+      const activeNestedDetails = drawer.querySelector('[data-mobile-drawer-submenu-details].is-mobile-submenu-active');
+      if (!activeNestedDetails) {
+        resetSubmenu();
+        return;
+      }
+
+      activeNestedDetails.classList.remove('is-mobile-submenu-active');
+      activeNestedDetails.removeAttribute('open');
+      const rootSummary = activeNestedDetails.closest('[data-mobile-drawer-details]')?.querySelector(':scope > summary');
+      setBackLabel(rootSummary?.querySelector('span')?.textContent?.trim());
     };
 
     const moveMegaMenuToMobileDrawer = (item) => {
@@ -528,16 +557,37 @@
         window.requestAnimationFrame(() => {
           item.classList.add('is-mobile-submenu-active');
           drawer.classList.add('header__mobile-drawer--submenu-active');
-          drawer.querySelectorAll('[data-header-menu-back]').forEach((back) => { back.hidden = false; });
-          drawer.querySelectorAll('[data-header-menu-back-label]').forEach((label) => {
-            label.textContent = summary.querySelector('span')?.textContent?.trim() || label.dataset.headerMenuBackDefaultLabel || 'Menu';
-          });
+          setBackLabel(summary.querySelector('span')?.textContent?.trim());
+        });
+      });
+    });
+
+    drawer.querySelectorAll('[data-mobile-drawer-submenu-details] > summary').forEach((summary) => {
+      summary.addEventListener('click', (event) => {
+        if (window.innerWidth > 767) return;
+        event.preventDefault();
+
+        const details = summary.parentElement;
+        const rootDetails = details?.closest('[data-mobile-drawer-details]');
+        const rootItem = rootDetails?.closest('.header__mobile-drawer-item');
+        if (!details || !rootItem?.classList.contains('is-mobile-submenu-active')) return;
+
+        drawer.querySelectorAll('[data-mobile-drawer-submenu-details].is-mobile-submenu-active').forEach((activeDetails) => {
+          if (activeDetails === details) return;
+          activeDetails.classList.remove('is-mobile-submenu-active');
+          activeDetails.removeAttribute('open');
+        });
+
+        details.open = true;
+        window.requestAnimationFrame(() => {
+          details.classList.add('is-mobile-submenu-active');
+          setBackLabel(summary.querySelector('span')?.textContent?.trim());
         });
       });
     });
 
     drawer.querySelectorAll('[data-header-menu-back]').forEach((back) => {
-      back.addEventListener('click', resetSubmenu);
+      back.addEventListener('click', backToParentSubmenu);
     });
     drawer.querySelectorAll('[data-header-menu-backdrop]').forEach((backdrop) => {
       backdrop.addEventListener('click', () => setHeaderMenuState(header, false));
