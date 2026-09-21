@@ -904,7 +904,8 @@ class ProductMediaGallery extends HTMLElement {
     for (const control of lightbox.querySelectorAll('.product-media-lightbox__toolbar, .product-media-lightbox__navigation, .product-media-lightbox__thumbnails')) {
       animations.push(control.animate({ opacity: opening ? [0, 1] : [1, 0] }, options));
     }
-    animations.push(lightbox.animate({ opacity: opening ? [0, 1] : [1, 0] }, { ...options, pseudoElement: '::backdrop' }));
+    const backdropColor = getComputedStyle(lightbox, '::backdrop').backgroundColor;
+    animations.push(lightbox.animate({ backgroundColor: opening ? ['transparent', backdropColor] : [backdropColor, 'transparent'] }, { ...options, pseudoElement: '::backdrop' }));
     const transition = { clone, source, animations };
     this.lightboxTransition = transition;
     await Promise.all(animations.map((animation) => animation.finished.catch(() => {})));
