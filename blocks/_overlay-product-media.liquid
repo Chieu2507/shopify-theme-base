@@ -10,10 +10,14 @@
   assign overlay_media_product = closest.product | default: product
   assign overlay_current_variant = overlay_media_product.selected_or_first_available_variant
   assign overlay_section_type = section.type | default: ''
+  assign overlay_is_quick_add = false
+  if overlay_section_type == 'quick-add' or section.id contains 'quick-add'
+    assign overlay_is_quick_add = true
+  endif
   assign overlay_media_position = section.settings.media_position | default: 'left'
   assign overlay_media_presentation = 'quick-view'
 
-  if overlay_section_type == 'quick-add'
+  if overlay_is_quick_add
     if overlay_media_position == 'top'
       assign overlay_media_presentation = 'quick-add-strip'
     else
