@@ -40,17 +40,22 @@ const initialize = (carousel) => {
   const swiper = createSwiperCarousel(carousel, {
     slidesPerView: 1,
     spaceBetween: 0,
-    cssMode: true,
     observer: true,
     observeParents: true,
   });
   if (!swiper) return;
 
   const sync = () => updateDots(carousel, swiper.activeIndex);
+  let observedWidth = 0;
+  let observedHeight = 0;
   const resizeObserver = typeof ResizeObserver === 'undefined'
     ? null
-    : new ResizeObserver(() => {
-      if (swiper.destroyed || !carousel.clientWidth) return;
+    : new ResizeObserver(([entry]) => {
+      const width = Math.round(entry?.contentRect?.width || carousel.clientWidth);
+      const height = Math.round(entry?.contentRect?.height || carousel.clientHeight);
+      if (swiper.destroyed || !width || (width === observedWidth && height === observedHeight)) return;
+      observedWidth = width;
+      observedHeight = height;
       swiper.update();
       sync();
     });
