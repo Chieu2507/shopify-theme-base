@@ -9,6 +9,8 @@ const productFeatureModules = [
 
 let productFeaturesPromise;
 
+const nextFrame = () => new Promise((resolve) => window.requestAnimationFrame(resolve));
+
 const loadProductFeatures = () => {
   if (!productFeaturesPromise) {
     productFeaturesPromise = Promise.all(productFeatureModules.map((moduleUrl) => import(moduleUrl)))
@@ -175,7 +177,6 @@ class QuickViewController {
     this.requestController = requestController;
     this.setStatus('loading');
     this.dialog.setAttribute('aria-busy', 'true');
-    this.overlay.open({ opener, focus: true });
 
     try {
       const nextContent = await this.fetchContent(targetUrl, requestController.signal);
@@ -185,11 +186,21 @@ class QuickViewController {
       await loadProductFeatures();
       if (requestController.signal.aborted || this.requestController !== requestController) return;
       this.setStatus('content');
+
+      // Let the browser commit the product DOM before presenting the overlay.
+      // This keeps the first visible frame useful instead of showing a spinner.
+      await nextFrame();
+      if (requestController.signal.aborted || this.requestController !== requestController) return;
+
+      this.dialog.removeAttribute('aria-busy');
+      this.overlay.open({ opener, focus: true });
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (this.requestController !== requestController) return;
       console.error('[Spinel] Quick view failed to load product.', error);
       this.setStatus('error', this.dialog.dataset.quickViewErrorLabel || error.message);
+      this.dialog.removeAttribute('aria-busy');
+      this.overlay.open({ opener, focus: true });
       this.dialog.querySelector('[data-quick-view-retry]')?.focus({ preventScroll: true });
     } finally {
       if (this.requestController === requestController && !requestController.signal.aborted) {
