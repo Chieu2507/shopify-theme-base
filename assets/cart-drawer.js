@@ -390,19 +390,6 @@
     element.hidden = !message;
   };
 
-  const updateRecommendationDot = (forcedIndex = null) => {
-    const list = state.drawer?.querySelector('[data-cart-drawer-recommendation-list]');
-    const dots = state.drawer?.querySelectorAll('[data-cart-drawer-recommendation-dot]');
-    if (!list || !dots?.length) return;
-    const slides = Array.from(list.children);
-    const index = forcedIndex ?? slides.reduce((closest, slide, slideIndex) => {
-      const currentDistance = Math.abs(slide.offsetLeft - list.scrollLeft);
-      const closestDistance = Math.abs(slides[closest].offsetLeft - list.scrollLeft);
-      return currentDistance < closestDistance ? slideIndex : closest;
-    }, 0);
-    dots.forEach((dot, dotIndex) => dot.setAttribute('aria-current', String(dotIndex === index)));
-  };
-
   const hideRecommendations = () => {
     const recommendations = state.drawer?.querySelector('[data-cart-drawer-recommendations]');
     if (recommendations) recommendations.hidden = true;
@@ -413,29 +400,30 @@
     const drawer = state.drawer;
     const recommendations = drawer?.querySelector('[data-cart-drawer-recommendations]');
     const list = drawer?.querySelector('[data-cart-drawer-recommendation-list]');
-    const dots = drawer?.querySelector('[data-cart-drawer-recommendation-dots]');
-    if (!recommendations || !list || !dots) return;
+    if (!recommendations || !list) return;
     const recommendationIcon = drawer.dataset.recommendationIcon || '';
+    const wrapper = list.querySelector(':scope > .swiper-wrapper');
+    if (!wrapper) return;
 
-    list.innerHTML = products.map((product) => {
+    wrapper.innerHTML = products.map((product) => {
       const variantId = product.variants?.[0]?.id || '';
       const image = product.featured_image || product.images?.[0] || '';
       const imageMarkup = image
         ? `<img src="${escapeHtml(image)}" alt="${escapeHtml(product.title)}" loading="lazy">`
         : '';
-      return `<article class="cart-drawer__recommendation">
-        <a class="cart-drawer__recommendation-media" href="${escapeHtml(product.url)}" aria-label="${escapeHtml(product.title)}">${imageMarkup}</a>
-        <div class="cart-drawer__recommendation-info">
-          <a class="cart-drawer__recommendation-title card-title-text" href="${escapeHtml(product.url)}">${escapeHtml(product.title)}</a>
-          <span class="cart-drawer__recommendation-price card-price-text body-sm">${formatMoney(product.price, currency)}</span>
-        </div>
-        <button class="icon-button cart-drawer__recommendation-add" type="button" data-cart-related-add data-variant-id="${escapeHtml(variantId)}" aria-label="Add ${escapeHtml(product.title)} to cart">${recommendationIcon}</button>
-      </article>`;
+      return `<div class="swiper-slide">
+        <article class="cart-drawer__recommendation">
+          <a class="cart-drawer__recommendation-media" href="${escapeHtml(product.url)}" aria-label="${escapeHtml(product.title)}">${imageMarkup}</a>
+          <div class="cart-drawer__recommendation-info">
+            <a class="cart-drawer__recommendation-title card-title-text" href="${escapeHtml(product.url)}">${escapeHtml(product.title)}</a>
+            <span class="cart-drawer__recommendation-price card-price-text body-sm">${formatMoney(product.price, currency)}</span>
+          </div>
+          <button class="icon-button cart-drawer__recommendation-add" type="button" data-cart-related-add data-variant-id="${escapeHtml(variantId)}" aria-label="Add ${escapeHtml(product.title)} to cart">${recommendationIcon}</button>
+        </article>
+      </div>`;
     }).join('');
 
-    dots.innerHTML = products.map((product, index) => `<button class="cart-drawer__recommendation-dot" type="button" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="View related product ${index + 1}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`).join('');
     recommendations.hidden = false;
-    updateRecommendationDot(0);
   };
 
   const loadRecommendations = async (cart) => {
@@ -862,16 +850,6 @@
         return;
       }
 
-      const recommendationDot = event.target.closest('[data-cart-drawer-recommendation-dot]');
-      if (recommendationDot) {
-        event.preventDefault();
-        const list = nextDrawer.querySelector('[data-cart-drawer-recommendation-list]');
-        const slide = list?.children[Number(recommendationDot.dataset.index)];
-        if (slide) list.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' });
-        updateRecommendationDot(Number(recommendationDot.dataset.index));
-        return;
-      }
-
       if (event.target.closest('[data-cart-drawer-save-note]')) {
         event.preventDefault();
         saveNote();
@@ -914,10 +892,6 @@
         estimateShipping(shippingForm);
       }
     });
-
-    nextDrawer.addEventListener('scroll', (event) => {
-      if (event.target.matches?.('[data-cart-drawer-recommendation-list]')) updateRecommendationDot();
-    }, { passive: true, capture: true });
 
     if (state.editorSelected) open({ focus: false });
   };
