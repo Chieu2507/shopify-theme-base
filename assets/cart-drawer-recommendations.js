@@ -20,6 +20,14 @@ const updateDots = (carousel, index) => {
 const renderDots = (carousel, swiper) => {
   swiper.pagination?.render();
   swiper.pagination?.update();
+  const dots = carousel.closest('[data-cart-drawer-recommendations]')
+    ?.querySelector('[data-cart-drawer-recommendation-dots]');
+  dots?.classList.remove(
+    'swiper-pagination',
+    'swiper-pagination-bullets',
+    'swiper-pagination-horizontal',
+    'swiper-pagination-clickable',
+  );
   updateDots(carousel, swiper.activeIndex);
 };
 
