@@ -9,6 +9,47 @@ const productFeatureModules = [
 
 let productFeaturesPromise;
 
+const nextFrame = () => new Promise((resolve) => {
+  if (window.requestAnimationFrame) {
+    window.requestAnimationFrame(resolve);
+  } else {
+    window.setTimeout(resolve, 0);
+  }
+});
+
+const waitForImage = (image) => new Promise((resolve) => {
+  let settled = false;
+  let timeout;
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeout);
+    image.removeEventListener?.('load', finish);
+    image.removeEventListener?.('error', finish);
+    const decoded = typeof image.decode === 'function' ? image.decode() : Promise.resolve();
+    Promise.resolve(decoded).catch(() => {}).finally(resolve);
+  };
+
+  if (image.complete) {
+    finish();
+    return;
+  }
+
+  image.addEventListener?.('load', finish, { once: true });
+  image.addEventListener?.('error', finish, { once: true });
+  timeout = window.setTimeout(finish, 1800);
+});
+
+const waitForContentReady = async (content) => {
+  const images = [...content.querySelectorAll('img')];
+  const primaryImages = images
+    .filter((image) => image.getAttribute('loading') !== 'lazy')
+    .slice(0, 2);
+  if (!primaryImages.length && images[0]) primaryImages.push(images[0]);
+  await Promise.all(primaryImages.map(waitForImage));
+  await nextFrame();
+};
+
 const loadProductFeatures = () => {
   if (!productFeaturesPromise) {
     productFeaturesPromise = Promise.all(productFeatureModules.map((moduleUrl) => import(moduleUrl)))
@@ -36,6 +77,7 @@ class QuickAddController {
     this.requestController = null;
     this.currentUrl = '';
     this.opener = null;
+    this.loadingTrigger = null;
     this.signal = this.abortController.signal;
 
     if (!this.overlay) return;
@@ -74,6 +116,29 @@ class QuickAddController {
     }
   }
 
+  setTriggerLoading(trigger, isLoading) {
+    if (!trigger) return;
+
+    const wrapper = trigger.closest?.('[data-product-card-quick-add-overlay-wrapper]');
+    if (isLoading) {
+      if (this.loadingTrigger && this.loadingTrigger !== trigger) this.setTriggerLoading(this.loadingTrigger, false);
+      this.loadingTrigger = trigger;
+      trigger.dataset.quickAddLoading = 'true';
+      trigger.setAttribute('aria-busy', 'true');
+      if (wrapper) wrapper.dataset.quickAddLoading = 'true';
+      return;
+    }
+
+    delete trigger.dataset.quickAddLoading;
+    trigger.removeAttribute('aria-busy');
+    if (wrapper) delete wrapper.dataset.quickAddLoading;
+    if (this.loadingTrigger === trigger) this.loadingTrigger = null;
+  }
+
+  clearTriggerLoading() {
+    this.setTriggerLoading(this.loadingTrigger, false);
+  }
+
   handleClick(event) {
     const retry = event.target.closest?.('[data-quick-add-retry]');
     if (retry && this.dialog.contains(retry)) {
@@ -84,6 +149,7 @@ class QuickAddController {
 
     const trigger = event.target.closest?.('[data-product-card-quick-add-overlay]');
     if (!trigger) return;
+    if (trigger.dataset.quickAddLoading === 'true') return;
 
     const url = this.productUrl(trigger);
     if (!url) return;
@@ -168,14 +234,15 @@ class QuickAddController {
 
     this.requestController?.abort();
     if (this.dialog.open) this.overlay.close({ immediate: true, restoreFocus: false });
+    this.clearTriggerLoading();
 
     this.currentUrl = targetUrl.href;
     this.opener = opener;
+    this.setTriggerLoading(opener, true);
     const requestController = new AbortController();
     this.requestController = requestController;
     this.setStatus('loading');
     this.dialog.setAttribute('aria-busy', 'true');
-    this.overlay.open({ opener, focus: true });
 
     try {
       const nextContent = await this.fetchContent(targetUrl, requestController.signal);
@@ -185,11 +252,25 @@ class QuickAddController {
       await loadProductFeatures();
       if (requestController.signal.aborted || this.requestController !== requestController) return;
       this.setStatus('content');
+      await waitForContentReady(this.content);
+      if (requestController.signal.aborted || this.requestController !== requestController) return;
+
+      // Commit the product DOM before presenting the overlay so Quick Add never
+      // flashes an empty panel or exposes a loading spinner as its first frame.
+      await nextFrame();
+      if (requestController.signal.aborted || this.requestController !== requestController) return;
+
+      this.dialog.removeAttribute('aria-busy');
+      this.clearTriggerLoading();
+      this.overlay.open({ opener, focus: true, defer: true });
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (this.requestController !== requestController) return;
       console.error('[Spinel] Quick add failed to load product.', error);
       this.setStatus('error', this.dialog.dataset.quickAddErrorLabel || error.message);
+      this.dialog.removeAttribute('aria-busy');
+      this.clearTriggerLoading();
+      this.overlay.open({ opener, focus: true, defer: true });
       this.dialog.querySelector('[data-quick-add-retry]')?.focus({ preventScroll: true });
     } finally {
       if (this.requestController === requestController && !requestController.signal.aborted) {
@@ -201,12 +282,14 @@ class QuickAddController {
   handleClose() {
     this.requestController?.abort();
     this.requestController = null;
+    this.clearTriggerLoading();
     this.dialog.removeAttribute('aria-busy');
     this.setStatus('loading');
   }
 
   destroy() {
     this.requestController?.abort();
+    this.clearTriggerLoading();
     this.overlay?.destroy();
     this.abortController.abort();
     controllers.delete(this.dialog);
