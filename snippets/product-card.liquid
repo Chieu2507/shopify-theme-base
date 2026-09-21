@@ -155,10 +155,14 @@
   endif
   assign secondary_image = blank
   assign current_variant = blank
+  assign quick_add_overlay = false
   assign product_card_image_placeholder = true
   if product != blank
     assign secondary_image = product.images[1]
     assign current_variant = product.selected_or_first_available_variant
+    if product.has_only_default_variant == false or product.selling_plan_groups.size > 0
+      assign quick_add_overlay = true
+    endif
     if product.featured_image
       assign product_card_image_placeholder = false
     endif
@@ -205,14 +209,26 @@
     </div>
 
     {% if quick_add_enabled and product.available and current_variant != blank %}
-      {% render 'product-card-quick-add',
-        variant_id: current_variant.id,
-        label: quick_add_label,
-        style: quick_add_style,
-        full_width: quick_add_full_width,
-        color_scheme: quick_add_color_scheme,
-        motion_speed: product_card_motion_speed
-      %}
+      {% if quick_add_overlay %}
+        {% render 'product-card-quick-add-overlay',
+          url: product.url,
+          label: quick_add_label,
+          product_title: product.title,
+          style: quick_add_style,
+          full_width: quick_add_full_width,
+          color_scheme: quick_add_color_scheme,
+          motion_speed: product_card_motion_speed
+        %}
+      {% else %}
+        {% render 'product-card-quick-add',
+          variant_id: current_variant.id,
+          label: quick_add_label,
+          style: quick_add_style,
+          full_width: quick_add_full_width,
+          color_scheme: quick_add_color_scheme,
+          motion_speed: product_card_motion_speed
+        %}
+      {% endif %}
     {% endif %}
 
     {% if quick_view_enabled %}
