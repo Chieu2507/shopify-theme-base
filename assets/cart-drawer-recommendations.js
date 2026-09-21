@@ -27,6 +27,8 @@ const renderDots = (carousel, swiper) => {
     'swiper-pagination-bullets',
     'swiper-pagination-horizontal',
     'swiper-pagination-clickable',
+    'swiper-pagination-lock',
+    'swiper-pagination-hidden',
   );
   updateDots(carousel, swiper.activeIndex);
 };
