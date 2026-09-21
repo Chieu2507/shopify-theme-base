@@ -2,6 +2,7 @@
 (() => {
   const mobile = window.matchMedia('(max-width: 767.98px)');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const pointerMedia = window.matchMedia('(hover: hover) and (pointer: fine)');
   const instances = new WeakMap();
   const transitionBuffer = 16;
   const duration = (element) => {
@@ -87,6 +88,7 @@
       this.portaled = false;
       this.portalContextClass = null;
       this.openFrame = null;
+      this.backdropPointer = dialog.querySelector('.overlay-backdrop-pointer');
       this.portalToBody();
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
@@ -117,11 +119,41 @@
         const rect = dialog.getBoundingClientRect();
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.close();
       }, options);
+      if (this.backdropPointer && document.addEventListener) {
+        document.addEventListener('mousemove', (event) => this.updateBackdropPointer(event), options);
+        document.addEventListener('mouseleave', () => this.hideBackdropPointer(), options);
+      }
       dialog.addEventListener('close', () => {
         // Native close events are queued; a reopened dialog owns the new state.
         if (dialog.open) return;
         this.finishClose();
       }, options);
+    }
+
+    hideBackdropPointer() {
+      this.backdropPointer?.classList.remove('is-visible');
+    }
+
+    updateBackdropPointer(event) {
+      const pointer = this.backdropPointer;
+      if (!pointer || !pointerMedia.matches || !this.dialog.open || this.dialog.dataset.state !== 'open') {
+        this.hideBackdropPointer();
+        return;
+      }
+
+      const rect = this.dialog.getBoundingClientRect();
+      const overBackdrop = event.clientX < rect.left
+        || event.clientX > rect.right
+        || event.clientY < rect.top
+        || event.clientY > rect.bottom;
+      if (!overBackdrop) {
+        this.hideBackdropPointer();
+        return;
+      }
+
+      pointer.style.setProperty('--overlay-pointer-x', `${event.clientX}px`);
+      pointer.style.setProperty('--overlay-pointer-y', `${event.clientY}px`);
+      pointer.classList.add('is-visible');
     }
 
     portalToBody() {
@@ -158,13 +190,14 @@
     }
 
     finishClose() {
-        clearTimeout(this.timer);
-        this.cancelOpenFrame();
-        this.gesture.reset();
-        this.dialog.dataset.state = 'closed';
-        this.opener?.setAttribute('aria-expanded', 'false');
-        if (this.restoreFocus && this.opener?.isConnected && !this.opener.hidden) this.opener.focus({ preventScroll: true });
-        this.opener = null;
+      clearTimeout(this.timer);
+      this.cancelOpenFrame();
+      this.hideBackdropPointer();
+      this.gesture.reset();
+      this.dialog.dataset.state = 'closed';
+      this.opener?.setAttribute('aria-expanded', 'false');
+      if (this.restoreFocus && this.opener?.isConnected && !this.opener.hidden) this.opener.focus({ preventScroll: true });
+      this.opener = null;
     }
 
     cancelOpenFrame() {
@@ -176,6 +209,7 @@
       clearTimeout(this.timer);
       this.cancelOpenFrame();
       this.gesture.reset();
+      this.hideBackdropPointer();
       if (this.dialog.open && this.dialog.dataset.state === 'open') return;
       this.opener = opener;
       this.restoreFocus = true;
@@ -197,6 +231,7 @@
       if (!this.dialog.open) return;
       clearTimeout(this.timer);
       this.cancelOpenFrame();
+      this.hideBackdropPointer();
       this.restoreFocus = restoreFocus;
       if (!fromGesture) this.gesture.reset();
       this.dialog.dataset.state = 'closing';

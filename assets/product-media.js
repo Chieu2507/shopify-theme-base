@@ -565,7 +565,9 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   handleLightboxDragStart(event) {
-    if (event.target?.closest?.('.product-media-lightbox__image')) event.preventDefault();
+    if (event.target?.closest?.('.product-media-lightbox__image, [data-product-media-content]')) {
+      event.preventDefault();
+    }
   }
 
   getLightboxPanBounds(slide) {

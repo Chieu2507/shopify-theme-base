@@ -977,8 +977,8 @@
       pointer.classList.remove('is-visible');
       return;
     }
-    pointer.style.setProperty('--cart-drawer-pointer-x', `${event.clientX}px`);
-    pointer.style.setProperty('--cart-drawer-pointer-y', `${event.clientY}px`);
+    pointer.style.setProperty('--overlay-pointer-x', `${event.clientX}px`);
+    pointer.style.setProperty('--overlay-pointer-y', `${event.clientY}px`);
     pointer.classList.add('is-visible');
   }, { passive: true });
 

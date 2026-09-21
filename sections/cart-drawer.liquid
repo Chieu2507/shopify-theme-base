@@ -149,7 +149,7 @@
   data-recommendation-icon="{{ cart_drawer_recommendation_icon_data }}"
 >
   <button class="cart-drawer__backdrop" type="button" aria-label="{{ 'cart.close' | t | escape }}" data-cart-drawer-close></button>
-  <span class="cart-drawer__backdrop-pointer" aria-hidden="true"></span>
+  <span class="overlay-backdrop-pointer cart-drawer__backdrop-pointer" aria-hidden="true"></span>
 
   <aside class="cart-drawer__panel drawer" data-drawer role="dialog" aria-modal="true" aria-labelledby="CartDrawerHeading" tabindex="-1">
     <div class="cart-drawer__inner">
@@ -398,14 +398,18 @@
     height: 100%;
     padding: 0;
     border: 0;
-    background-color: var(--overlay-backdrop-color);
+    background-color: transparent;
     cursor: pointer;
     -webkit-backdrop-filter: blur(0);
     backdrop-filter: blur(0);
-    transition: backdrop-filter var(--motion-duration-standard) var(--motion-ease-standard);
+    transition:
+      background-color var(--motion-duration-standard) var(--motion-ease-standard),
+      -webkit-backdrop-filter var(--motion-duration-standard) var(--motion-ease-standard),
+      backdrop-filter var(--motion-duration-standard) var(--motion-ease-standard);
   }
 
   .cart-drawer.is-open .cart-drawer__backdrop {
+    background-color: var(--overlay-backdrop-color);
     -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
     backdrop-filter: blur(var(--overlay-backdrop-blur));
   }
@@ -1110,48 +1114,6 @@
   }
 
   .cart-drawer__panel { z-index: 3; }
-
-  .cart-drawer__backdrop-pointer {
-    --cart-drawer-pointer-size: var(--overlay-close-size, 4rem);
-    --cart-drawer-pointer-hide-delay: 180ms;
-    position: absolute;
-    z-index: 2;
-    top: var(--cart-drawer-pointer-y, -5rem);
-    left: var(--cart-drawer-pointer-x, -5rem);
-    display: grid;
-    width: var(--cart-drawer-pointer-size);
-    height: var(--cart-drawer-pointer-size);
-    place-items: center;
-    border: 1px solid color-mix(in srgb, var(--background-color) 42%, transparent);
-    border-radius: 50%;
-    background: var(--background-color);
-    color: var(--heading-color);
-    opacity: 0;
-    pointer-events: none;
-    transform: translate(-50%, -50%) scale(0.82);
-    will-change: opacity, transform;
-    transition:
-      opacity var(--motion-duration-standard) var(--motion-ease-standard) var(--cart-drawer-pointer-hide-delay),
-      transform var(--motion-duration-standard) var(--motion-ease-standard) var(--cart-drawer-pointer-hide-delay);
-  }
-
-  .cart-drawer__backdrop-pointer::before,
-  .cart-drawer__backdrop-pointer::after {
-    position: absolute;
-    width: 1.35rem;
-    height: 2px;
-    border-radius: 999px;
-    background: currentColor;
-    content: '';
-  }
-
-  .cart-drawer__backdrop-pointer::before { transform: rotate(45deg); }
-  .cart-drawer__backdrop-pointer::after { transform: rotate(-45deg); }
-  .cart-drawer__backdrop-pointer.is-visible { opacity: 1; transform: translate(-50%, -50%) scale(1); transition-delay: 0s; }
-
-  @media (prefers-reduced-motion: reduce) {
-    .cart-drawer__backdrop-pointer { transition: none; }
-  }
 
   .cart-drawer__shipping-progress {
     display: grid;
