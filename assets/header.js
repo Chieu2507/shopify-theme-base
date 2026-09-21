@@ -101,6 +101,21 @@
     scheduleUpdate();
   };
 
+  const releaseHoverSubmenuFocus = (details) => {
+    if (details?.dataset.headerSubmenuTrigger !== 'hover') return;
+
+    const summary = details.querySelector(':scope > summary');
+    if (summary?.matches(':focus') && !summary.matches(':focus-visible')) {
+      summary.blur();
+    }
+  };
+
+  const closeHeaderDetails = (details) => {
+    details.removeAttribute('open');
+    details.classList.remove('is-submenu-closing');
+    releaseHoverSubmenuFocus(details);
+  };
+
   const closeHeaderSurfaces = (header, active = {}) => {
     closeLocalizationDialogs(header, active.details);
     header.querySelectorAll('details[open], details.is-submenu-closing').forEach((details) => {
@@ -109,8 +124,7 @@
         closeLocalizationSheet(details);
         return;
       }
-      details.removeAttribute('open');
-      details.classList.remove('is-submenu-closing');
+      closeHeaderDetails(details);
     });
 
     if (!active.menu) setHeaderMenuState(header, false);
@@ -351,8 +365,7 @@
           details.matches(':focus-within') &&
           (trigger === 'click' || details.querySelector(':scope > summary')?.matches(':focus-visible'));
         if (!details.dataset.editorSelected && !details.matches(':hover') && !keepFocusOpen) {
-          details.removeAttribute('open');
-          details.classList.remove('is-submenu-closing');
+          closeHeaderDetails(details);
           scheduleUpdate();
         }
       }, 100);
