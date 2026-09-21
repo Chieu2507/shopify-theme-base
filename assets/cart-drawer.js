@@ -19,6 +19,29 @@
     orderOptionsDrag: null,
   };
 
+  const transitionDuration = (element) => {
+    if (!element) return 0;
+    const style = window.getComputedStyle(element);
+    const milliseconds = (value) => {
+      const normalized = value.trim();
+      const amount = Number.parseFloat(normalized);
+      if (!Number.isFinite(amount)) return 0;
+      return amount * (normalized.endsWith('ms') ? 1 : 1000);
+    };
+    const delays = style.transitionDelay.split(',').map(milliseconds);
+    return Math.max(
+      0,
+      ...style.transitionDuration.split(',').map((value, index) => (
+        milliseconds(value) + (delays[index % delays.length] || 0)
+      )),
+    );
+  };
+
+  const drawerTransitionDuration = (drawer) => Math.max(
+    transitionDuration(drawer),
+    transitionDuration(drawer?.querySelector('[data-drawer]')),
+  );
+
   const getDrawer = (root = document) => {
     if (!root) return null;
     if (root.matches?.('[data-cart-drawer]')) return root;
@@ -788,12 +811,13 @@
     document.querySelectorAll('[data-cart-drawer-open]').forEach((trigger) => trigger.setAttribute('aria-expanded', 'false'));
     document.dispatchEvent(new CustomEvent('cart-drawer:close', { detail: { drawer } }));
     window.clearTimeout(state.closeTimer);
+    const closeDuration = drawerTransitionDuration(drawer);
     state.closeTimer = window.setTimeout(() => {
       if (!drawer.classList.contains('is-open')) {
         drawer.classList.remove('is-closing');
         drawer.hidden = true;
       }
-    }, 350);
+    }, closeDuration + 16);
 
     const restoreTarget = state.previousFocus;
     state.previousFocus = null;

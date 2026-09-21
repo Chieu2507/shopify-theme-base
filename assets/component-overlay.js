@@ -3,6 +3,7 @@
   const mobile = window.matchMedia('(max-width: 767.98px)');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const instances = new WeakMap();
+  const transitionBuffer = 16;
   const duration = (element) => {
     const style = getComputedStyle(element);
     const milliseconds = (value) => parseFloat(value) * (value.trim().endsWith('ms') ? 1 : 1000) || 0;
@@ -58,7 +59,7 @@
       if (reduced.matches) { this.reset(); return; }
       this.frame = requestAnimationFrame(() => {
         this.panel.style.transform = dismiss ? 'translateY(100%)' : 'translateY(0)';
-        this.timer = setTimeout(() => this.reset(), duration(this.panel) + 50);
+        this.timer = setTimeout(() => this.reset(), duration(this.panel) + transitionBuffer);
       });
     }
 
@@ -188,7 +189,7 @@
         this.finishClose();
       };
       if (immediate || reduced.matches) finish();
-      else this.timer = setTimeout(finish, duration(this.dialog) + 50);
+      else this.timer = setTimeout(finish, duration(this.dialog) + transitionBuffer);
     }
 
     destroy() {

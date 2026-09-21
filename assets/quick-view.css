@@ -1,13 +1,13 @@
 /* Product content composition for the shared overlay shell. */
 @media (min-width: 768px) {
   .component-overlay[data-quick-view-overlay][data-desktop-layout='popup'] {
-    --overlay-rest-transform: scale(.97);
+    --overlay-rest-transform: scale(.985);
   }
 }
 
 .component-overlay[data-quick-view-overlay] {
-  --quick-view-transition-duration: 420ms;
-  --quick-view-transition-delay: 40ms;
+  --quick-view-transition-duration: 360ms;
+  --quick-view-transition-delay: 0ms;
   will-change: transform, opacity;
   transition:
     transform var(--quick-view-transition-duration) cubic-bezier(0.22, 1, 0.36, 1) var(--quick-view-transition-delay),
@@ -15,7 +15,9 @@
 }
 
 .component-overlay[data-quick-view-overlay]::backdrop {
-  transition: background-color var(--quick-view-transition-duration) cubic-bezier(0.22, 1, 0.36, 1) var(--quick-view-transition-delay);
+  transition:
+    background-color var(--quick-view-transition-duration) cubic-bezier(0.22, 1, 0.36, 1) var(--quick-view-transition-delay),
+    backdrop-filter var(--quick-view-transition-duration) cubic-bezier(0.22, 1, 0.36, 1) var(--quick-view-transition-delay);
 }
 
 .component-overlay[data-quick-view-overlay][data-state='closing'] {
@@ -24,6 +26,46 @@
 
 .component-overlay[data-quick-view-overlay][data-state='open'] {
   transform: scale(1);
+}
+
+/* Match the reference card action: a compact, circular icon control over media. */
+.product-card__quick-view {
+  padding-inline: 0;
+}
+
+.product-card__quick-view-button {
+  --quick-view-button-background: var(--button-secondary-background, var(--background-color));
+  --quick-view-button-foreground: var(--button-secondary-text, var(--body-color));
+  --quick-view-button-hover-background: var(--button-secondary-hover-background, var(--quick-view-button-background));
+  --quick-view-button-hover-foreground: var(--button-secondary-hover-text, var(--quick-view-button-foreground));
+  width: 44px;
+  min-width: 44px;
+  height: 44px;
+  min-height: 44px;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: var(--quick-view-button-background);
+  color: var(--quick-view-button-foreground);
+  box-shadow: 0 2px 10px rgb(0 0 0 / 8%);
+  transform: translateY(0);
+}
+
+.product-card__quick-view-button:hover,
+.product-card__quick-view-button:focus-visible {
+  border-color: transparent;
+  background: var(--quick-view-button-hover-background);
+  color: var(--quick-view-button-hover-foreground);
+  transform: translateY(0) scale(1.03);
+}
+
+.product-card__quick-view-button .btn__label {
+  width: 100%;
+  height: 100%;
+}
+
+.product-card__quick-view-button .btn__icon {
+  --button-icon-size: 18px;
 }
 
 /* Keep the product-card trigger visible while its product section is loading. */
@@ -39,6 +81,12 @@
 
 .product-card__quick-view-button[data-quick-view-loading='true'] .btn__label {
   visibility: hidden;
+}
+
+.product-card__quick-view-button[data-quick-view-loading='true'] {
+  background: var(--quick-view-button-background);
+  color: var(--quick-view-button-foreground);
+  transform: translateY(0);
 }
 
 .product-card__quick-view-button[data-quick-view-loading='true']::after {
