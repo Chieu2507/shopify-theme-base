@@ -1,3 +1,4 @@
+import { Pagination } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
 const carouselSelector = '[data-cart-drawer-recommendation-list]';
@@ -14,6 +15,12 @@ const updateDots = (carousel, index) => {
     .forEach((dot, dotIndex) => {
       dot.setAttribute('aria-current', String(dotIndex === index));
     });
+};
+
+const renderDots = (carousel, swiper) => {
+  swiper.pagination?.render();
+  swiper.pagination?.update();
+  updateDots(carousel, swiper.activeIndex);
 };
 
 const destroy = (carousel) => {
@@ -33,16 +40,27 @@ const initialize = (carousel) => {
   const existing = instances.get(carousel);
   if (existing?.swiper && !existing.swiper.destroyed) {
     existing.swiper.update();
-    updateDots(carousel, existing.swiper.activeIndex);
+    renderDots(carousel, existing.swiper);
     return;
   }
 
+  const dots = recommendations.querySelector('[data-cart-drawer-recommendation-dots]');
+  if (!dots) return;
+
   const swiper = createSwiperCarousel(carousel, {
+    modules: [Pagination],
     slidesPerView: 1,
     spaceBetween: 0,
     cssMode: true,
     observer: true,
     observeParents: true,
+    pagination: {
+      el: dots,
+      clickable: true,
+      renderBullet: (index, className) => (
+        `<button class="${className} cart-drawer__recommendation-dot" type="button" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="View related product ${index + 1}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`
+      ),
+    },
   });
   if (!swiper) return;
 
@@ -66,7 +84,7 @@ const initialize = (carousel) => {
   });
   resizeObserver?.observe(carousel);
   instances.set(carousel, { swiper, syncEvents, resizeObserver });
-  sync();
+  renderDots(carousel, swiper);
 };
 
 const initializeRoot = (root = document) => {
@@ -93,16 +111,6 @@ document.addEventListener('cart:updated', (event) => {
 
 document.addEventListener('cart-drawer:open', (event) => {
   scheduleInitialize(event.detail?.drawer || document.querySelector('[data-cart-drawer]'));
-});
-
-document.addEventListener('cart-drawer:recommendation-dot', (event) => {
-  const carousel = event.detail?.list;
-  const instance = carousel && instances.get(carousel);
-  const index = Number(event.detail?.index);
-  if (!instance?.swiper || instance.swiper.destroyed || !Number.isInteger(index)) return;
-
-  instance.swiper.slideTo(index);
-  updateDots(carousel, index);
 });
 
 document.addEventListener('shopify:section:load', (event) => scheduleInitialize(event.target));
