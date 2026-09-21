@@ -874,14 +874,9 @@
         event.preventDefault();
         const list = nextDrawer.querySelector('[data-cart-drawer-recommendation-list]');
         const index = Number(recommendationDot.dataset.index);
-        const swiper = list?.swiper;
-        if (swiper && !swiper.destroyed) {
-          swiper.slideTo(index);
-        } else {
-          const wrapper = list?.querySelector(':scope > .swiper-wrapper');
-          const slide = wrapper?.children[index];
-          if (slide) list.scrollTo({ left: slide.offsetLeft, behavior: 'smooth' });
-        }
+        document.dispatchEvent(new CustomEvent('cart-drawer:recommendation-dot', {
+          detail: { list, index },
+        }));
         updateRecommendationDot(index);
         return;
       }

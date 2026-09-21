@@ -89,6 +89,16 @@ document.addEventListener('cart-drawer:open', (event) => {
   scheduleInitialize(event.detail?.drawer || document.querySelector('[data-cart-drawer]'));
 });
 
+document.addEventListener('cart-drawer:recommendation-dot', (event) => {
+  const carousel = event.detail?.list;
+  const instance = carousel && instances.get(carousel);
+  const index = Number(event.detail?.index);
+  if (!instance?.swiper || instance.swiper.destroyed || !Number.isInteger(index)) return;
+
+  instance.swiper.slideTo(index);
+  updateDots(carousel, index);
+});
+
 document.addEventListener('shopify:section:load', (event) => scheduleInitialize(event.target));
 document.addEventListener('shopify:section:select', (event) => scheduleInitialize(event.target));
 document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
