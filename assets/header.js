@@ -6,7 +6,6 @@
   const menuToggleButtons = new WeakSet();
   const megaMenuBackdropControls = new WeakSet();
   const accountElements = new WeakSet();
-  const localizationSheetControls = new WeakSet();
   const localizationSheetDetails = new WeakSet();
   const footerLocalizationStates = new WeakMap();
   const openAccountSheets = new WeakSet();
@@ -90,7 +89,7 @@
       return;
     }
 
-    details.classList.remove('is-sheet-open', 'is-submenu-closing');
+    details.classList.remove('is-submenu-closing');
     details.removeAttribute('open');
     if (restoreFocus) {
       details.querySelector(':scope > .header-localization__summary')?.focus({ preventScroll: true });
@@ -581,16 +580,6 @@
       });
     });
 
-    header.querySelectorAll('[data-header-localization-close]').forEach((control) => {
-      if (localizationSheetControls.has(control)) return;
-      localizationSheetControls.add(control);
-
-      control.addEventListener('click', () => {
-        const details = control.closest('.header-localization__details');
-        if (!details) return;
-        closeLocalizationSheet(details, { restoreFocus: true });
-      });
-    });
   };
 
   const initializeFooterLocalizations = (root = document) => {
