@@ -138,7 +138,7 @@ class ProductMediaGallery extends HTMLElement {
 
   get quickAddStripSlidesPerView() {
     const visibleMediaCount = this.visibleSlides().length;
-    return visibleMediaCount > 4 ? 4.15 : Math.max(1, visibleMediaCount);
+    return visibleMediaCount > 4 ? 4 : Math.max(1, visibleMediaCount);
   }
 
   syncQuickAddStripSlidesPerView() {
