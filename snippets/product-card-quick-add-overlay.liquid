@@ -41,6 +41,14 @@
   if product_title != blank
     assign quick_add_accessible_label = label | append: ': ' | append: product_title
   endif
+
+  capture quick_add_trigger_attributes
+    echo 'data-product-card-quick-add-overlay '
+    echo 'data-product-card-quick-add-url="'
+    echo url | escape
+    echo '" aria-haspopup="dialog" aria-expanded="false"'
+  endcapture
+  assign quick_add_trigger_attributes = quick_add_trigger_attributes | strip_newlines | strip
 %}
 
 <div class="{{ quick_add_class }}{% if color_scheme != blank %} {{ color_scheme }}{% endif %}" data-product-card-quick-add-overlay-wrapper>
@@ -53,7 +61,7 @@
       icon: 'cart',
       icon_only: true,
       motion_speed: quick_add_motion_speed,
-      attributes: 'data-product-card-quick-add-overlay aria-haspopup="dialog" aria-expanded="false"',
+      attributes: quick_add_trigger_attributes,
       class: 'product-card__quick-add-button btn--icon'
     %}
   {% else %}
@@ -63,7 +71,7 @@
       variant: 'primary',
       aria_label: quick_add_accessible_label,
       motion_speed: quick_add_motion_speed,
-      attributes: 'data-product-card-quick-add-overlay aria-haspopup="dialog" aria-expanded="false"',
+      attributes: quick_add_trigger_attributes,
       class: 'product-card__quick-add-button'
     %}
   {% endif %}
