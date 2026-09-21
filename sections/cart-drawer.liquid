@@ -1056,6 +1056,7 @@
   @media (prefers-reduced-motion: reduce) {
     .cart-drawer,
     .cart-drawer__panel,
+    .cart-drawer__backdrop-pointer,
     .cart-drawer__shipping-progress-track > span,
     .cart-drawer__accordion summary > span:last-child { transition: none; animation: none; }
   }
@@ -1088,13 +1089,15 @@
   .cart-drawer__panel { z-index: 3; }
 
   .cart-drawer__backdrop-pointer {
+    --cart-drawer-pointer-size: var(--overlay-close-size, 4rem);
+    --cart-drawer-pointer-hide-delay: 180ms;
     position: absolute;
     z-index: 2;
     top: var(--cart-drawer-pointer-y, -5rem);
     left: var(--cart-drawer-pointer-x, -5rem);
     display: grid;
-    width: 3.25rem;
-    height: 3.25rem;
+    width: var(--cart-drawer-pointer-size);
+    height: var(--cart-drawer-pointer-size);
     place-items: center;
     border: 1px solid color-mix(in srgb, var(--background-color) 42%, transparent);
     border-radius: 50%;
@@ -1103,14 +1106,17 @@
     opacity: 0;
     pointer-events: none;
     transform: translate(-50%, -50%) scale(0.82);
-    transition: opacity 150ms ease, transform 180ms cubic-bezier(0.22, 1, 0.36, 1);
+    will-change: opacity, transform;
+    transition:
+      opacity var(--motion-duration-standard) var(--motion-ease-standard) var(--cart-drawer-pointer-hide-delay),
+      transform var(--motion-duration-standard) var(--motion-ease-standard) var(--cart-drawer-pointer-hide-delay);
   }
 
   .cart-drawer__backdrop-pointer::before,
   .cart-drawer__backdrop-pointer::after {
     position: absolute;
-    width: 1.1rem;
-    height: 1px;
+    width: 1.35rem;
+    height: 2px;
     border-radius: 999px;
     background: currentColor;
     content: '';
@@ -1118,7 +1124,7 @@
 
   .cart-drawer__backdrop-pointer::before { transform: rotate(45deg); }
   .cart-drawer__backdrop-pointer::after { transform: rotate(-45deg); }
-  .cart-drawer__backdrop-pointer.is-visible { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  .cart-drawer__backdrop-pointer.is-visible { opacity: 1; transform: translate(-50%, -50%) scale(1); transition-delay: 0s; }
 
   .cart-drawer__shipping-progress {
     display: grid;
