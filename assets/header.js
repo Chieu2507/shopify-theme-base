@@ -530,15 +530,25 @@
 
     const moveMegaMenuToMobileDrawer = (item) => {
       const trigger = item.dataset.menuTitle;
+      const featuredSlot = trigger
+        ? drawer.querySelector(`[data-mobile-mega-featured-slot="${CSS.escape(trigger)}"]`)
+        : null;
       const slot = trigger ? drawer.querySelector(`[data-mobile-mega-slot="${CSS.escape(trigger)}"]`) : null;
       const megaMenu = trigger
         ? Array.from(header.querySelectorAll('[data-header-mega-menu]')).find((menu) => menu.dataset.megaMenuTrigger === trigger)
         : null;
-      if (!slot || !megaMenu) return;
+      const featured = megaMenu?.querySelector(':scope .header-mega-menu__featured');
+      if (!featuredSlot || !slot || !megaMenu) return;
 
       if (!mobileMegaMenuOrigins.has(megaMenu)) {
-        mobileMegaMenuOrigins.set(megaMenu, megaMenu.parentElement);
+        mobileMegaMenuOrigins.set(megaMenu, {
+          parent: megaMenu.parentElement,
+          featured,
+          featuredParent: featured?.parentElement,
+          featuredNextSibling: featured?.nextSibling,
+        });
       }
+      if (featured) featuredSlot.append(featured);
       slot.append(megaMenu);
       megaMenu.hidden = false;
       item.classList.add('has-mobile-mega');
@@ -605,8 +615,14 @@
 
   const restoreMobileMegaMenus = () => {
     if (window.innerWidth <= 767) return;
-    mobileMegaMenuOrigins.forEach((parent, megaMenu) => {
-      if (parent?.isConnected) parent.append(megaMenu);
+    mobileMegaMenuOrigins.forEach((origin, megaMenu) => {
+      if (origin.featured?.isConnected && origin.featuredParent?.isConnected) {
+        const nextSibling = origin.featuredNextSibling?.parentNode === origin.featuredParent
+          ? origin.featuredNextSibling
+          : null;
+        origin.featuredParent.insertBefore(origin.featured, nextSibling);
+      }
+      if (origin.parent?.isConnected) origin.parent.append(megaMenu);
       mobileMegaMenuOrigins.delete(megaMenu);
     });
   };
