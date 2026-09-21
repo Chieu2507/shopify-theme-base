@@ -1,0 +1,69 @@
+{% doc %}
+  Renders the product-card action that opens the shared Quick Add overlay.
+
+  The product URL remains the progressive-enhancement fallback. The Quick Add
+  controller intercepts the link and requests the configured overlay section in
+  the context of that product.
+
+  @param {string} url - Product destination
+  @param {string} label - Visible button label
+  @param {string} [product_title] - Product title used for the accessible name
+  @param {string} [style] - Button style: icon or text
+  @param {boolean} [full_width] - Whether the action fills its wrapper
+  @param {string} [color_scheme] - Color scheme class for the action
+  @param {string} [motion_speed] - Motion token: fast, standard, or slow
+
+  @example
+  {% render 'product-card-quick-add-overlay', url: product.url, label: 'Quick add', product_title: product.title %}
+{% enddoc %}
+
+{% liquid
+  assign quick_add_overlay_style = style | default: 'text'
+  unless quick_add_overlay_style == 'icon' or quick_add_overlay_style == 'text'
+    assign quick_add_overlay_style = 'text'
+  endunless
+
+  assign quick_add_overlay_motion_speed = motion_speed | default: 'standard'
+  case quick_add_overlay_motion_speed
+    when 'fast', 'slow'
+    when 'standard'
+    else
+      assign quick_add_overlay_motion_speed = 'standard'
+  endcase
+
+  assign quick_add_overlay_accessible_label = label
+  if product_title != blank
+    assign quick_add_overlay_accessible_label = label | append: ': ' | append: product_title
+  endif
+
+  assign quick_add_overlay_class = 'product-card__action product-card__quick-add product-card__action--motion-' | append: quick_add_overlay_motion_speed
+  if full_width != false
+    assign quick_add_overlay_class = quick_add_overlay_class | append: ' product-card__quick-add--full'
+  endif
+%}
+
+<div class="{{ quick_add_overlay_class }}{% if color_scheme != blank %} {{ color_scheme }}{% endif %}" data-product-card-quick-add-overlay-wrapper>
+  {% if quick_add_overlay_style == 'icon' %}
+    {% render 'theme-button',
+      label: label,
+      url: url,
+      variant: 'primary',
+      icon: 'cart',
+      icon_only: true,
+      aria_label: quick_add_overlay_accessible_label,
+      motion_speed: quick_add_overlay_motion_speed,
+      attributes: 'data-product-card-quick-add-overlay aria-haspopup="dialog" aria-expanded="false"',
+      class: 'product-card__quick-add-button btn--icon'
+    %}
+  {% else %}
+    {% render 'theme-button',
+      label: label,
+      url: url,
+      variant: 'primary',
+      aria_label: quick_add_overlay_accessible_label,
+      motion_speed: quick_add_overlay_motion_speed,
+      attributes: 'data-product-card-quick-add-overlay aria-haspopup="dialog" aria-expanded="false"',
+      class: 'product-card__quick-add-button'
+    %}
+  {% endif %}
+</div>
