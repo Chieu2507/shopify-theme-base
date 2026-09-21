@@ -365,8 +365,8 @@ class ProductMediaGallery extends HTMLElement {
     if (!drag) return;
 
     const swiper = this.mainSwiper;
-    event.currentTarget.releasePointerCapture?.(drag.pointerId);
     this.quickAddStripDrag = null;
+    event.currentTarget.releasePointerCapture?.(drag.pointerId);
     if (moved) {
       event.preventDefault();
       event.stopPropagation();
