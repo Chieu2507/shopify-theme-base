@@ -1,4 +1,3 @@
-import { Pagination } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
 const carouselSelector = '[data-cart-drawer-recommendation-list]';
@@ -17,17 +16,12 @@ const updateDots = (carousel, index) => {
     });
 };
 
-const renderDots = (carousel, swiper) => {
-  swiper.pagination?.render();
-  swiper.pagination?.update();
-  updateDots(carousel, swiper.activeIndex);
-};
-
 const destroy = (carousel) => {
   const instance = instances.get(carousel);
   if (!instance) return;
 
   instance.syncEvents.forEach(([eventName, handler]) => instance.swiper.off(eventName, handler));
+  instance.dotContainer?.removeEventListener('click', instance.dotClickHandler);
   instance.resizeObserver?.disconnect();
   destroySwiperCarousel(carousel);
   instances.delete(carousel);
@@ -40,32 +34,31 @@ const initialize = (carousel) => {
   const existing = instances.get(carousel);
   if (existing?.swiper && !existing.swiper.destroyed) {
     existing.swiper.update();
-    renderDots(carousel, existing.swiper);
+    updateDots(carousel, existing.swiper.activeIndex);
     return;
   }
 
-  const dots = recommendations.querySelector('[data-cart-drawer-recommendation-dots]');
-  if (!dots) return;
-
   const swiper = createSwiperCarousel(carousel, {
-    modules: [Pagination],
-    watchOverflow: false,
     slidesPerView: 1,
     spaceBetween: 0,
     cssMode: true,
     observer: true,
     observeParents: true,
-    pagination: {
-      el: dots,
-      clickable: true,
-      renderBullet: (index, className) => (
-        `<button class="${className} cart-drawer__recommendation-dot" type="button" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="View related product ${index + 1}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`
-      ),
-    },
   });
   if (!swiper) return;
 
   const sync = () => updateDots(carousel, swiper.activeIndex);
+  const dotContainer = recommendations.querySelector('[data-cart-drawer-recommendation-dots]');
+  const dotClickHandler = (event) => {
+    const dot = event.target.closest?.('[data-cart-drawer-recommendation-dot]');
+    if (!dot || !dotContainer.contains(dot)) return;
+    const index = Number(dot.dataset.index);
+    if (!Number.isInteger(index)) return;
+    event.preventDefault();
+    swiper.slideTo(index);
+    updateDots(carousel, index);
+  };
+  dotContainer?.addEventListener('click', dotClickHandler);
   let observedWidth = 0;
   let observedHeight = 0;
   const resizeObserver = typeof ResizeObserver === 'undefined'
@@ -84,8 +77,8 @@ const initialize = (carousel) => {
     return [eventName, sync];
   });
   resizeObserver?.observe(carousel);
-  instances.set(carousel, { swiper, syncEvents, resizeObserver });
-  renderDots(carousel, swiper);
+  instances.set(carousel, { swiper, syncEvents, resizeObserver, dotContainer, dotClickHandler });
+  sync();
 };
 
 const initializeRoot = (root = document) => {
