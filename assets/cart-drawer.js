@@ -390,22 +390,6 @@
     element.hidden = !message;
   };
 
-  const updateRecommendationDot = (forcedIndex = null) => {
-    const list = state.drawer?.querySelector('[data-cart-drawer-recommendation-list]');
-    const dots = state.drawer?.querySelectorAll('[data-cart-drawer-recommendation-dot]');
-    if (!list || !dots?.length) return;
-    const wrapper = list.querySelector(':scope > .swiper-wrapper');
-    const slides = Array.from(wrapper?.children || list.children);
-    const swiper = list.swiper;
-    const activeIndex = swiper && !swiper.destroyed ? swiper.activeIndex : null;
-    const index = forcedIndex ?? activeIndex ?? slides.reduce((closest, slide, slideIndex) => {
-      const currentDistance = Math.abs(slide.offsetLeft - list.scrollLeft);
-      const closestDistance = Math.abs(slides[closest].offsetLeft - list.scrollLeft);
-      return currentDistance < closestDistance ? slideIndex : closest;
-    }, 0);
-    dots.forEach((dot, dotIndex) => dot.setAttribute('aria-current', String(dotIndex === index)));
-  };
-
   const hideRecommendations = () => {
     const recommendations = state.drawer?.querySelector('[data-cart-drawer-recommendations]');
     if (recommendations) recommendations.hidden = true;
@@ -440,9 +424,7 @@
       </div>`;
     }).join('');
 
-    dots.innerHTML = products.map((product, index) => `<button class="cart-drawer__recommendation-dot" type="button" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="View related product ${index + 1}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`).join('');
     recommendations.hidden = false;
-    updateRecommendationDot(0);
   };
 
   const loadRecommendations = async (cart) => {
@@ -869,18 +851,6 @@
         return;
       }
 
-      const recommendationDot = event.target.closest('[data-cart-drawer-recommendation-dot]');
-      if (recommendationDot) {
-        event.preventDefault();
-        const list = nextDrawer.querySelector('[data-cart-drawer-recommendation-list]');
-        const index = Number(recommendationDot.dataset.index);
-        document.dispatchEvent(new CustomEvent('cart-drawer:recommendation-dot', {
-          detail: { list, index },
-        }));
-        updateRecommendationDot(index);
-        return;
-      }
-
       if (event.target.closest('[data-cart-drawer-save-note]')) {
         event.preventDefault();
         saveNote();
@@ -923,12 +893,6 @@
         estimateShipping(shippingForm);
       }
     });
-
-    nextDrawer.addEventListener('scroll', (event) => {
-      if (event.target.matches?.('[data-cart-drawer-recommendation-list]') && !event.target.swiper) {
-        updateRecommendationDot();
-      }
-    }, { passive: true, capture: true });
 
     if (state.editorSelected) open({ focus: false });
   };
