@@ -1,0 +1,208 @@
+/* Product content composition for the shared overlay shell. */
+.quick-add__body {
+  display: flex;
+  min-height: 0;
+  padding: 0;
+  overflow: auto;
+}
+
+.component-overlay__header--untitled + .quick-add__body {
+  padding-top: 0;
+}
+
+.quick-add__content {
+  position: relative;
+  display: flex;
+  width: 100%;
+  min-height: 0;
+  flex-direction: column;
+  padding: 40px 30px;
+  color: var(--body-color);
+}
+
+.quick-add__layout {
+  display: grid;
+  width: 100%;
+  min-width: 0;
+  min-height: 0;
+  gap: var(--quick-add-gap-desktop, 20px);
+}
+
+.quick-add__layout[hidden],
+.quick-add__loading[hidden],
+.quick-add__error[hidden] {
+  display: none;
+}
+
+.quick-add__media,
+.quick-add__details {
+  min-width: 0;
+}
+
+.quick-add__media {
+  overflow: hidden;
+}
+
+.quick-add__details {
+  min-height: 0;
+  padding: 0;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  scrollbar-gutter: stable;
+}
+
+.quick-add__details > .product-details {
+  max-width: none;
+  position: static;
+}
+
+.quick-add--media-top .quick-add__layout {
+  grid-template-columns: minmax(0, 1fr);
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.quick-add--media-top .quick-add__details {
+  padding: 24px 0 0;
+}
+
+.quick-add--media-top .quick-add__media {
+  max-height: min(48dvh, 34rem);
+  overflow: hidden;
+}
+
+.quick-add--media-top .product-media-gallery__main .product-media {
+  aspect-ratio: 1 / 1;
+}
+
+.quick-add--media-top .product-media-gallery__main .product-media > :where(img, video, iframe, model-viewer) {
+  height: 100%;
+  object-fit: cover;
+}
+
+.quick-add--media-left .quick-add__layout {
+  grid-template-columns: minmax(0, 1.35fr) minmax(320px, 1fr);
+  align-items: stretch;
+}
+
+.quick-add--media-left .quick-add__media {
+  min-height: 0;
+  overflow: hidden;
+}
+
+.quick-add--media-left .quick-add__details {
+  max-height: min(78dvh, 48rem);
+}
+
+.quick-add__loading,
+.quick-add__error {
+  position: absolute;
+  z-index: 5;
+  inset: 0;
+  display: grid;
+  place-content: center;
+  justify-items: center;
+  gap: 16px;
+  padding: 32px 24px;
+  background: var(--background-color);
+  color: var(--body-color);
+  text-align: center;
+}
+
+.quick-add__error p {
+  max-width: 30ch;
+  margin: 0;
+}
+
+.quick-add__spinner {
+  width: 28px;
+  height: 28px;
+  border: 2px solid color-mix(in srgb, currentColor 20%, transparent);
+  border-top-color: currentColor;
+  border-radius: 50%;
+  animation: quick-add-spin 700ms linear infinite;
+}
+
+@keyframes quick-add-spin {
+  to { transform: rotate(360deg); }
+}
+
+@media (min-width: 768px) {
+  .component-overlay[data-desktop-layout='drawer'] .quick-add__content {
+    height: 100%;
+  }
+
+  .component-overlay[data-desktop-layout='drawer'] .quick-add__layout {
+    height: 100%;
+  }
+
+  .component-overlay[data-desktop-layout='drawer'] .quick-add--media-left .quick-add__layout {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .component-overlay[data-desktop-layout='drawer'] .quick-add--media-top .quick-add__details {
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 767.98px) {
+  .quick-add__body {
+    overflow-y: auto;
+  }
+
+  .quick-add__content {
+    padding: 24px 20px;
+  }
+
+  .quick-add__layout {
+    gap: var(--quick-add-gap-mobile, 20px);
+  }
+
+  .quick-add__details {
+    padding: 20px 0 0;
+    overflow: visible;
+  }
+
+  .quick-add--media-top .quick-add__media {
+    max-height: none;
+  }
+
+  .quick-add--media-left .quick-add__layout {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .quick-add--media-left .quick-add__details {
+    max-height: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .quick-add__spinner {
+    animation: none;
+  }
+}
+
+/* Quick Add keeps the compact, titled layout used by the product-card action. */
+.quick-add__body {
+  overflow: hidden;
+}
+
+.quick-add__content {
+  padding: 0;
+}
+
+.quick-add__details,
+.quick-add--media-top .quick-add__details {
+  padding: 24px;
+}
+
+@media (max-width: 767.98px) {
+  .quick-add__body {
+    overflow-y: auto;
+  }
+
+  .quick-add__details,
+  .quick-add--media-top .quick-add__details {
+    padding: 20px;
+  }
+}
