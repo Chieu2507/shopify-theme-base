@@ -93,6 +93,11 @@
   assign cart_drawer_recommendation_icon_data = cart_drawer_recommendation_icon | escape
 %}
 
+{% if section.settings.show_recommendations %}
+  {% render 'swiper-stylesheet' %}
+  <script type="module" src="{{ 'cart-drawer-recommendations.js' | asset_url }}"></script>
+{% endif %}
+
 <div
   id="CartDrawer"
   class="cart-drawer color-scheme section-color-scope {{ cart_drawer_scheme }}{% if section.settings.product_cards %} cart-drawer--product-cards{% endif %}{% if section.settings.enable_block_animations %} cart-drawer--animated{% endif %}"
@@ -272,7 +277,15 @@
               <h3 id="CartDrawerRecommendationsHeading" class="cart-drawer__section-title heading-text heading-sm">{{ section.settings.recommendations_heading | default: 'You may also like' | escape }}</h3>
               <div class="cart-drawer__recommendation-dots" data-cart-drawer-recommendation-dots></div>
             </div>
-            <div class="cart-drawer__recommendation-list" data-cart-drawer-recommendation-list></div>
+            <div
+              class="swiper swiper-carousel--carousel cart-drawer__recommendation-list"
+              data-swiper-carousel
+              data-swiper-layout="carousel"
+              data-cart-drawer-recommendation-list
+              aria-label="{{ section.settings.recommendations_heading | default: 'You may also like' | escape }}"
+            >
+              <div class="swiper-wrapper"></div>
+            </div>
           </section>
         {% endif %}
 
@@ -600,26 +613,29 @@
   }
 
   .cart-drawer__recommendation-list {
-    display: grid;
-    grid-auto-columns: 100%;
-    grid-auto-flow: column;
-    gap: 0;
-    overflow-x: auto;
-    scroll-snap-type: x mandatory;
-    scrollbar-width: none;
+    overflow: hidden;
   }
 
-  .cart-drawer__recommendation-list::-webkit-scrollbar {
-    display: none;
+  .cart-drawer__recommendation-list > .swiper-wrapper {
+    display: flex;
+  }
+
+  .cart-drawer__recommendation-list > .swiper-wrapper > .swiper-slide {
+    display: grid;
+    width: 100%;
+    min-width: 0;
+    height: auto;
+    flex-shrink: 0;
+    align-items: center;
   }
 
   .cart-drawer__recommendation {
     display: grid;
     grid-template-columns: 4.875rem minmax(0, 1fr);
     gap: 1rem;
-    min-width: 100%;
+    width: 100%;
+    min-width: 0;
     align-items: center;
-    scroll-snap-align: start;
   }
 
   .cart-drawer__recommendation-media {
@@ -955,9 +971,10 @@
   .cart-drawer__recommendations { padding: 1.75rem var(--cart-drawer-padding) 2.125rem; border-top: 1px solid var(--border-color); }
   .cart-drawer__section-heading { margin-bottom: 1.125rem; }
   .cart-drawer__section-title { margin: 0; color: var(--heading-color); }
-  .cart-drawer__recommendation-list { display: grid; grid-auto-columns: 100%; grid-auto-flow: column; overflow-x: auto; scroll-snap-type: x mandatory; scrollbar-width: none; }
-  .cart-drawer__recommendation-list::-webkit-scrollbar { display: none; }
-  .cart-drawer__recommendation { display: grid; grid-template-columns: 6.125rem minmax(0, 1fr) auto; gap: 1rem; min-width: 100%; align-items: center; scroll-snap-align: start; }
+  .cart-drawer__recommendation-list { overflow: hidden; }
+  .cart-drawer__recommendation-list > .swiper-wrapper { display: flex; }
+  .cart-drawer__recommendation-list > .swiper-wrapper > .swiper-slide { display: grid; width: 100%; min-width: 0; height: auto; flex-shrink: 0; align-items: center; }
+  .cart-drawer__recommendation { display: grid; grid-template-columns: 6.125rem minmax(0, 1fr) auto; gap: 1rem; width: 100%; min-width: 0; align-items: center; }
   .cart-drawer__recommendation-media { display: block; width: 6.125rem; aspect-ratio: 1; overflow: hidden; background: color-mix(in srgb, var(--background-color) 88%, var(--body-color)); }
   .cart-drawer__recommendation-media img { display: block; width: 100%; height: 100%; object-fit: cover; }
   .cart-drawer__recommendation-info { min-width: 0; }
