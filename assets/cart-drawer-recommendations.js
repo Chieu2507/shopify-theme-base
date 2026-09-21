@@ -1,3 +1,4 @@
+import { Pagination } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
 const carouselSelector = '[data-cart-drawer-recommendation-list]';
@@ -8,20 +9,10 @@ const getSlides = (carousel) => {
   return Array.from(wrapper?.children || []);
 };
 
-const updateDots = (carousel, index) => {
-  carousel.closest('[data-cart-drawer-recommendations]')
-    ?.querySelectorAll('[data-cart-drawer-recommendation-dot]')
-    .forEach((dot, dotIndex) => {
-      dot.setAttribute('aria-current', String(dotIndex === index));
-    });
-};
-
 const destroy = (carousel) => {
   const instance = instances.get(carousel);
   if (!instance) return;
 
-  instance.syncEvents.forEach(([eventName, handler]) => instance.swiper.off(eventName, handler));
-  instance.dotContainer?.removeEventListener('click', instance.dotClickHandler);
   instance.resizeObserver?.disconnect();
   destroySwiperCarousel(carousel);
   instances.delete(carousel);
@@ -34,31 +25,26 @@ const initialize = (carousel) => {
   const existing = instances.get(carousel);
   if (existing?.swiper && !existing.swiper.destroyed) {
     existing.swiper.update();
-    updateDots(carousel, existing.swiper.activeIndex);
+    existing.swiper.pagination?.render();
+    existing.swiper.pagination?.update();
     return;
   }
 
+  const pagination = recommendations.querySelector('[data-cart-drawer-recommendation-pagination]');
   const swiper = createSwiperCarousel(carousel, {
+    modules: [Pagination],
     slidesPerView: 1,
     spaceBetween: 0,
-    cssMode: true,
     observer: true,
     observeParents: true,
+    pagination: pagination ? {
+      el: pagination,
+      type: 'bullets',
+      clickable: true,
+    } : undefined,
   });
   if (!swiper) return;
 
-  const sync = () => updateDots(carousel, swiper.activeIndex);
-  const dotContainer = recommendations.querySelector('[data-cart-drawer-recommendation-dots]');
-  const dotClickHandler = (event) => {
-    const dot = event.target.closest?.('[data-cart-drawer-recommendation-dot]');
-    if (!dot || !dotContainer.contains(dot)) return;
-    const index = Number(dot.dataset.index);
-    if (!Number.isInteger(index)) return;
-    event.preventDefault();
-    swiper.slideTo(index);
-    updateDots(carousel, index);
-  };
-  dotContainer?.addEventListener('click', dotClickHandler);
   let observedWidth = 0;
   let observedHeight = 0;
   const resizeObserver = typeof ResizeObserver === 'undefined'
@@ -70,15 +56,10 @@ const initialize = (carousel) => {
       observedWidth = width;
       observedHeight = height;
       swiper.update();
-      sync();
+      swiper.pagination?.update();
     });
-  const syncEvents = ['slideChange', 'update', 'lock', 'unlock'].map((eventName) => {
-    swiper.on(eventName, sync);
-    return [eventName, sync];
-  });
   resizeObserver?.observe(carousel);
-  instances.set(carousel, { swiper, syncEvents, resizeObserver, dotContainer, dotClickHandler });
-  sync();
+  instances.set(carousel, { swiper, resizeObserver });
 };
 
 const initializeRoot = (root = document) => {
