@@ -21,6 +21,7 @@ const destroy = (carousel) => {
   if (!instance) return;
 
   instance.syncEvents.forEach(([eventName, handler]) => instance.swiper.off(eventName, handler));
+  instance.resizeObserver?.disconnect();
   destroySwiperCarousel(carousel);
   instances.delete(carousel);
 };
@@ -46,11 +47,19 @@ const initialize = (carousel) => {
   if (!swiper) return;
 
   const sync = () => updateDots(carousel, swiper.activeIndex);
+  const resizeObserver = typeof ResizeObserver === 'undefined'
+    ? null
+    : new ResizeObserver(() => {
+      if (swiper.destroyed || !carousel.clientWidth) return;
+      swiper.update();
+      sync();
+    });
   const syncEvents = ['slideChange', 'update', 'lock', 'unlock'].map((eventName) => {
     swiper.on(eventName, sync);
     return [eventName, sync];
   });
-  instances.set(carousel, { swiper, syncEvents });
+  resizeObserver?.observe(carousel);
+  instances.set(carousel, { swiper, syncEvents, resizeObserver });
   sync();
 };
 
@@ -60,7 +69,9 @@ const initializeRoot = (root = document) => {
 };
 
 const scheduleInitialize = (root) => {
-  window.requestAnimationFrame(() => initializeRoot(root));
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => initializeRoot(root));
+  });
 };
 
 const destroyRoot = (root) => {
