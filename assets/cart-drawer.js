@@ -400,8 +400,7 @@
     const drawer = state.drawer;
     const recommendations = drawer?.querySelector('[data-cart-drawer-recommendations]');
     const list = drawer?.querySelector('[data-cart-drawer-recommendation-list]');
-    const dots = drawer?.querySelector('[data-cart-drawer-recommendation-dots]');
-    if (!recommendations || !list || !dots) return;
+    if (!recommendations || !list) return;
     const recommendationIcon = drawer.dataset.recommendationIcon || '';
     const wrapper = list.querySelector(':scope > .swiper-wrapper');
     if (!wrapper) return;
@@ -424,7 +423,6 @@
       </div>`;
     }).join('');
 
-    dots.innerHTML = products.map((product, index) => `<button class="cart-drawer__recommendation-dot" type="button" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="View related product ${index + 1}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`).join('');
     recommendations.hidden = false;
   };
 
