@@ -1,8 +1,13 @@
 {% liquid
   assign shop_the_look_section_width = 'page-width'
-  if section.settings.section_width == 'full_width'
-    assign shop_the_look_section_width = 'full-width'
-  endif
+  assign shop_the_look_section_no_padding = false
+  case section.settings.section_width
+    when 'full_width'
+      assign shop_the_look_section_width = 'full-width'
+    when 'full_width_no_padding'
+      assign shop_the_look_section_width = 'full-width'
+      assign shop_the_look_section_no_padding = true
+  endcase
 
   assign shop_the_look_media_position = section.settings.media_position | default: 'right'
   unless shop_the_look_media_position == 'left' or shop_the_look_media_position == 'right'
@@ -23,6 +28,15 @@
   if shop_the_look_gap_mobile < 0 or shop_the_look_gap_mobile > 100
     assign shop_the_look_gap_mobile = 16
   endif
+
+  assign shop_the_look_image_block = section.blocks | where: 'type', 'image' | first
+  assign shop_the_look_image_ratio_desktop = 'auto'
+  if shop_the_look_image_block != blank
+    assign shop_the_look_image_ratio_desktop = shop_the_look_image_block.settings.image_ratio_desktop | default: 'auto'
+  endif
+  unless shop_the_look_image_ratio_desktop == 'auto' or shop_the_look_image_ratio_desktop == 'square' or shop_the_look_image_ratio_desktop == 'portrait' or shop_the_look_image_ratio_desktop == 'landscape' or shop_the_look_image_ratio_desktop == 'wide' or shop_the_look_image_ratio_desktop == 'custom'
+    assign shop_the_look_image_ratio_desktop = 'auto'
+  endunless
 
   assign shop_the_look_scheme = section.settings.color_scheme | default: 'scheme-1'
   if section.settings.color_scheme.id != blank
@@ -50,11 +64,12 @@
 {% assign shop_the_look_style = shop_the_look_style | strip %}
 
 <div
-  class="section-spacing shop-the-look-section section-color-scope {{ shop_the_look_scheme }} shop-the-look-section--media-{{ shop_the_look_media_position }} shop-the-look-section--mobile-media-{{ shop_the_look_mobile_media_position }}"
+  class="section-spacing shop-the-look-section section-color-scope {{ shop_the_look_scheme }} shop-the-look-section--media-{{ shop_the_look_media_position }} shop-the-look-section--mobile-media-{{ shop_the_look_mobile_media_position }}{% if shop_the_look_section_no_padding %} shop-the-look-section--no-padding{% endif %}"
   {% if shop_the_look_style != blank %}style="{{ shop_the_look_style }}"{% endif %}
+  data-shop-the-look-image-ratio-desktop="{{ shop_the_look_image_ratio_desktop }}"
   data-shop-the-look-section
 >
-  <div class="container {{ shop_the_look_section_width }} shop-the-look-section__container">
+  <div class="container {{ shop_the_look_section_width }} shop-the-look-section__container{% if shop_the_look_section_no_padding %} shop-the-look-section__container--no-padding{% endif %}">
     <div class="shop-the-look-section__layout">
       <div class="shop-the-look-section__media">
         {% content_for 'block', type: 'image', id: 'image' %}
@@ -82,8 +97,16 @@
     padding-bottom: var(--shop-the-look-padding-bottom, 0px);
   }
 
+  .shop-the-look-section--no-padding {
+    padding-inline: 0;
+  }
+
   .shop-the-look-section__container {
     min-width: 0;
+  }
+
+  .shop-the-look-section .container.shop-the-look-section__container--no-padding {
+    padding-inline: 0;
   }
 
   .shop-the-look-section__layout {
@@ -91,7 +114,7 @@
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
     column-gap: var(--shop-the-look-gap-desktop, 50px);
-    align-items: stretch;
+    align-items: center;
     width: 100%;
     min-width: 0;
   }
@@ -127,6 +150,20 @@
     width: 100%;
     height: 100%;
     object-fit: cover;
+  }
+
+  @media (min-width: 768px) {
+    .shop-the-look-section[data-shop-the-look-image-ratio-desktop]:not([data-shop-the-look-image-ratio-desktop='auto']) .shop-the-look-section__media,
+    .shop-the-look-section__media:has(> .image-block[class*='image-block--ratio-desktop-']:not(.image-block--ratio-desktop-auto)) {
+      align-self: center;
+    }
+
+    .shop-the-look-section[data-shop-the-look-image-ratio-desktop]:not([data-shop-the-look-image-ratio-desktop='auto']) .shop-the-look-section__media > .image-block,
+    .shop-the-look-section[data-shop-the-look-image-ratio-desktop]:not([data-shop-the-look-image-ratio-desktop='auto']) .shop-the-look-section__media > .image-block > .image-block__media,
+    .shop-the-look-section__media:has(> .image-block[class*='image-block--ratio-desktop-']:not(.image-block--ratio-desktop-auto)) > .image-block,
+    .shop-the-look-section__media:has(> .image-block[class*='image-block--ratio-desktop-']:not(.image-block--ratio-desktop-auto)) > .image-block > .image-block__media {
+      height: auto;
+    }
   }
 
   .shop-the-look-section__hotspots {
@@ -185,14 +222,19 @@
 
     .shop-the-look-section__media {
       order: 1;
-      width: calc(100% + (var(--page-margin-current) * 2));
-      margin-inline: calc(var(--page-margin-current) * -1);
+      width: 100%;
+      margin-inline: 0;
     }
 
     .shop-the-look-section__content {
       order: 2;
       width: 100%;
       padding: 0;
+      padding-inline: 16px;
+    }
+
+    .shop-the-look-section--no-padding .shop-the-look-section__content {
+      padding-inline: var(--page-margin-current);
     }
 
     .shop-the-look-section__content { min-height: 0; }
@@ -229,7 +271,8 @@
       "label": "t:labels.section_width",
       "options": [
         { "value": "page_width", "label": "t:options.section_width.page_width" },
-        { "value": "full_width", "label": "t:options.section_width.full_width" }
+        { "value": "full_width", "label": "t:options.section_width.full_width" },
+        { "value": "full_width_no_padding", "label": "t:options.section_width.full_width_no_padding" }
       ],
       "default": "full_width"
     },
