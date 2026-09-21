@@ -543,7 +543,13 @@
       backdrop.addEventListener('click', () => setHeaderMenuState(header, false));
     });
     drawer.addEventListener('click', (event) => {
-      if (event.target.closest('a')) setHeaderMenuState(header, false);
+      const link = event.target.closest?.('a[href]');
+      if (!link) return;
+
+      // Let the anchor's default navigation run before collapsing the drawer.
+      // Closing the active <details> during the same click event can remove the
+      // active submenu before the browser activates a real child-link URL.
+      window.setTimeout(() => setHeaderMenuState(header, false), 0);
     });
   };
 
