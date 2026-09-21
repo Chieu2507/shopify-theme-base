@@ -63,6 +63,7 @@ class ProductMediaGallery extends HTMLElement {
 
     this.applyVariantMediaFilter(this.dataset.currentVariantId);
     this.syncThumbnailVisibility();
+    this.syncGalleryOverflow();
     this.initializeGallery(preferredMediaId);
     this.initializeShopifyMedia();
   }
@@ -259,6 +260,7 @@ class ProductMediaGallery extends HTMLElement {
       this.dataset.currentVariantId = variantId;
       const filtersVariantMedia = this.applyVariantMediaFilter(variantId);
       this.syncThumbnailVisibility();
+      this.syncGalleryOverflow();
       const visibleMediaIds = new Set(this.visibleSlides().map((slide) => String(slide.dataset.mediaId)));
       const mediaId = featuredMediaId && visibleMediaIds.has(String(featuredMediaId))
         ? String(featuredMediaId)
@@ -772,6 +774,17 @@ class ProductMediaGallery extends HTMLElement {
       const slide = slides.find((item) => item.dataset.mediaId === thumbnail.dataset.mediaId);
       this.setMediaVisibility(thumbnail, Boolean(slide?.hidden));
     });
+  }
+
+  syncGalleryOverflow() {
+    const visibleMediaCount = this.visibleSlides().length;
+    const hasOverflow = visibleMediaCount > 1;
+    this.dataset.visibleMediaCount = String(visibleMediaCount);
+    this.classList.toggle('product-media-gallery--single-media', !hasOverflow);
+
+    this.querySelector('.media-thumbnails__carousel')?.toggleAttribute('hidden', !hasOverflow);
+    this.querySelector('.media-gallery__controls')?.toggleAttribute('hidden', !hasOverflow);
+    this.querySelector('[data-product-media-pagination]')?.toggleAttribute('hidden', !hasOverflow);
   }
 
   showMedia(mediaId, instant = false) {
