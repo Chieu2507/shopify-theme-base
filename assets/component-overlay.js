@@ -54,7 +54,9 @@
       this.drag = null;
       if (this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
-      this.panel.style.transition = reduced.matches ? 'none' : 'transform var(--motion-duration-standard) var(--motion-ease-standard)';
+      this.panel.style.transition = reduced.matches
+        ? 'none'
+        : 'transform var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard))';
       if (dismiss) this.close();
       if (reduced.matches) { this.reset(); return; }
       this.frame = requestAnimationFrame(() => {
@@ -84,6 +86,7 @@
       this.originalNextSibling = null;
       this.portaled = false;
       this.portalContextClass = null;
+      this.openFrame = null;
       this.portalToBody();
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
@@ -156,6 +159,7 @@
 
     finishClose() {
         clearTimeout(this.timer);
+        this.cancelOpenFrame();
         this.gesture.reset();
         this.dialog.dataset.state = 'closed';
         this.opener?.setAttribute('aria-expanded', 'false');
@@ -163,23 +167,36 @@
         this.opener = null;
     }
 
-    open({ opener = document.activeElement, focus = true } = {}) {
+    cancelOpenFrame() {
+      cancelAnimationFrame(this.openFrame);
+      this.openFrame = null;
+    }
+
+    open({ opener = document.activeElement, focus = true, defer = false } = {}) {
       clearTimeout(this.timer);
+      this.cancelOpenFrame();
       this.gesture.reset();
       if (this.dialog.open && this.dialog.dataset.state === 'open') return;
       this.opener = opener;
       this.restoreFocus = true;
       this.opener?.setAttribute('aria-expanded', 'true');
-      this.dialog.dataset.state = 'opening';
       if (!this.dialog.open) this.dialog.showModal();
+      this.dialog.dataset.state = 'opening';
       void this.dialog.offsetHeight;
-      this.dialog.dataset.state = 'open';
-      if (focus) this.dialog.querySelector('[data-overlay-close]')?.focus({ preventScroll: true });
+      const reveal = () => {
+        this.openFrame = null;
+        if (!this.dialog.open || this.dialog.dataset.state !== 'opening') return;
+        this.dialog.dataset.state = 'open';
+        if (focus) this.dialog.querySelector('[data-overlay-close]')?.focus({ preventScroll: true });
+      };
+      if (defer && !reduced.matches) this.openFrame = requestAnimationFrame(reveal);
+      else reveal();
     }
 
     close({ restoreFocus = true, immediate = false, fromGesture = false } = {}) {
       if (!this.dialog.open) return;
       clearTimeout(this.timer);
+      this.cancelOpenFrame();
       this.restoreFocus = restoreFocus;
       if (!fromGesture) this.gesture.reset();
       this.dialog.dataset.state = 'closing';

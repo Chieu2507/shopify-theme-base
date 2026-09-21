@@ -17,6 +17,37 @@ const nextFrame = () => new Promise((resolve) => {
   }
 });
 
+const waitForImage = (image) => new Promise((resolve) => {
+  let settled = false;
+  let timeout;
+  const finish = () => {
+    if (settled) return;
+    settled = true;
+    clearTimeout(timeout);
+    image.removeEventListener?.('load', finish);
+    image.removeEventListener?.('error', finish);
+    const decoded = typeof image.decode === 'function' ? image.decode() : Promise.resolve();
+    Promise.resolve(decoded).catch(() => {}).finally(resolve);
+  };
+
+  if (image.complete) {
+    finish();
+    return;
+  }
+
+  image.addEventListener?.('load', finish, { once: true });
+  image.addEventListener?.('error', finish, { once: true });
+  timeout = window.setTimeout(finish, 1800);
+});
+
+const waitForContentReady = async (content) => {
+  const primaryImages = [...content.querySelectorAll('img')]
+    .filter((image) => image.getAttribute('loading') !== 'lazy')
+    .slice(0, 2);
+  await Promise.all(primaryImages.map(waitForImage));
+  await nextFrame();
+};
+
 const loadProductFeatures = () => {
   if (!productFeaturesPromise) {
     productFeaturesPromise = Promise.all(productFeatureModules.map((moduleUrl) => import(moduleUrl)))
@@ -219,6 +250,8 @@ class QuickViewController {
       await loadProductFeatures();
       if (requestController.signal.aborted || this.requestController !== requestController) return;
       this.setStatus('content');
+      await waitForContentReady(this.content);
+      if (requestController.signal.aborted || this.requestController !== requestController) return;
 
       // Let the browser commit the product DOM before presenting the overlay.
       // This keeps the first visible frame useful instead of showing a spinner.
@@ -227,7 +260,7 @@ class QuickViewController {
 
       this.dialog.removeAttribute('aria-busy');
       this.clearTriggerLoading();
-      this.overlay.open({ opener, focus: true });
+      this.overlay.open({ opener, focus: true, defer: true });
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (this.requestController !== requestController) return;
@@ -235,7 +268,7 @@ class QuickViewController {
       this.setStatus('error', this.dialog.dataset.quickViewErrorLabel || error.message);
       this.dialog.removeAttribute('aria-busy');
       this.clearTriggerLoading();
-      this.overlay.open({ opener, focus: true });
+      this.overlay.open({ opener, focus: true, defer: true });
       this.dialog.querySelector('[data-quick-view-retry]')?.focus({ preventScroll: true });
     } finally {
       if (this.requestController === requestController && !requestController.signal.aborted) {
