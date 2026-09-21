@@ -8,11 +8,9 @@
   const accountElements = new WeakSet();
   const localizationSheetControls = new WeakSet();
   const localizationSheetDetails = new WeakSet();
-  const localizationSheetCloseTimers = new WeakMap();
   const footerLocalizationStates = new WeakMap();
   const openAccountSheets = new WeakSet();
   const mobileMegaMenuOrigins = new Map();
-  let localizationSheetDrag = null;
   let lastScrollY = window.scrollY;
   let frameId = null;
 
@@ -26,6 +24,7 @@
     drawer?.setAttribute('aria-hidden', String(!isOpen));
 
     if (!isOpen) {
+      closeLocalizationDialogs(header);
       drawer?.classList.remove('header__mobile-drawer--submenu-active');
       drawer?.querySelectorAll('.header__mobile-drawer-item.is-mobile-submenu-active').forEach((item) => {
         item.classList.remove('is-mobile-submenu-active');
@@ -68,62 +67,39 @@
     account.querySelector('[slot="signed-out-avatar"]')?.click();
   };
 
-  const getTransitionTotalMs = (element) => {
-    if (!element) return 0;
-    const styles = window.getComputedStyle(element);
-    const toMilliseconds = (value) => {
-      const duration = Number.parseFloat(value) || 0;
-      return value.trim().endsWith('ms') ? duration : duration * 1000;
-    };
-    const durations = styles.transitionDuration.split(',').map(toMilliseconds);
-    const delays = styles.transitionDelay.split(',').map(toMilliseconds);
-    return durations.reduce((maximum, duration, index) => (
-      Math.max(maximum, duration + (delays[index] ?? delays[delays.length - 1] ?? 0))
-    ), 0);
+  const getLocalizationDialog = (details) => {
+    const id = details?.dataset.localizationDialogId;
+    return id ? document.getElementById(id) : null;
   };
 
-  const clearLocalizationSheetClose = (details) => {
-    const closeState = localizationSheetCloseTimers.get(details);
-    if (!closeState) return;
-    window.clearTimeout(closeState.timer);
-    closeState.panel?.removeEventListener('transitionend', closeState.onTransitionEnd);
-    localizationSheetCloseTimers.delete(details);
+  const closeLocalizationDialogs = (header, activeDetails = null) => {
+    header.querySelectorAll('.header-localization__details').forEach((details) => {
+      if (details === activeDetails) return;
+      const dialog = getLocalizationDialog(details);
+      if (!dialog?.open) return;
+      window.ThemeOverlay?.get(dialog)?.close({ restoreFocus: false });
+    });
   };
 
   const closeLocalizationSheet = (details, { restoreFocus = false } = {}) => {
-    const panel = details.querySelector(':scope > .header-localization__panel');
-    let finished = false;
-
-    const finishClose = () => {
-      if (finished) return;
-      finished = true;
-      clearLocalizationSheetClose(details);
-      details.classList.remove('is-sheet-open');
-      details.removeAttribute('open');
-      if (restoreFocus) {
-        details.querySelector(':scope > .header-localization__summary')?.focus({ preventScroll: true });
-      }
-      scheduleUpdate();
-    };
-
-    clearLocalizationSheetClose(details);
-    if (window.innerWidth > 767 || !details.classList.contains('is-sheet-open') || !panel) {
-      finishClose();
+    const dialog = getLocalizationDialog(details);
+    if (dialog?.open) {
+      const overlay = window.ThemeOverlay?.get(dialog);
+      if (overlay) overlay.close({ restoreFocus });
+      else dialog.close();
       return;
     }
 
-    const onTransitionEnd = (event) => {
-      if (event.target === panel && event.propertyName === 'transform') finishClose();
-    };
-    panel.addEventListener('transitionend', onTransitionEnd);
-    details.classList.remove('is-sheet-open');
-
-    const transitionMs = getTransitionTotalMs(panel);
-    const timer = window.setTimeout(finishClose, transitionMs + 50);
-    localizationSheetCloseTimers.set(details, { timer, panel, onTransitionEnd });
+    details.classList.remove('is-sheet-open', 'is-submenu-closing');
+    details.removeAttribute('open');
+    if (restoreFocus) {
+      details.querySelector(':scope > .header-localization__summary')?.focus({ preventScroll: true });
+    }
+    scheduleUpdate();
   };
 
   const closeHeaderSurfaces = (header, active = {}) => {
+    closeLocalizationDialogs(header, active.details);
     header.querySelectorAll('details[open], details.is-submenu-closing').forEach((details) => {
       if (details === active.details) return;
       if (details.classList.contains('header-localization__details')) {
@@ -585,26 +561,22 @@
       if (localizationSheetDetails.has(details)) return;
       localizationSheetDetails.add(details);
 
-      details.querySelector(':scope > .header-localization__summary')?.addEventListener('click', (event) => {
+      const summary = details.querySelector(':scope > .header-localization__summary');
+      summary?.addEventListener('click', (event) => {
         if (window.innerWidth > 767) return;
         event.preventDefault();
 
-        if (details.open && details.classList.contains('is-sheet-open')) {
-          closeLocalizationSheet(details);
+        const dialog = getLocalizationDialog(details);
+        const overlay = dialog ? window.ThemeOverlay?.get(dialog) : null;
+        if (!dialog || !overlay) return;
+
+        if (dialog.open) {
+          overlay.close({ restoreFocus: true });
           return;
         }
 
-        clearLocalizationSheetClose(details);
         closeHeaderSurfaces(header, { details, menu: true });
-        details.open = true;
-        details.classList.remove('is-sheet-open');
-
-        // Closed details children have no computed layout. Flush the closed sheet
-        // position before making it visible so its very first opening can animate.
-        void details.querySelector(':scope > .header-localization__panel')?.offsetHeight;
-        window.requestAnimationFrame(() => {
-          if (details.open) details.classList.add('is-sheet-open');
-        });
+        overlay.open({ opener: summary });
         scheduleUpdate();
       });
     });
@@ -695,18 +667,16 @@
     });
   };
 
-  const beginLocalizationSheetDrag = (event) => {
-    const header = event.target.closest?.('.header-localization__sheet-header');
-    const panel = header?.closest('.header-localization__panel');
-    const details = panel?.closest('.header-localization__details[open]');
-    if (!details || !window.ThemeOverlay.mobile.matches) return;
-    localizationSheetDrag?.destroy();
-    localizationSheetDrag = new window.ThemeOverlay.SheetGesture({
-      panel, header, delegated: true,
-      enabled: () => details.open && window.ThemeOverlay.mobile.matches,
-      close: () => closeLocalizationSheet(details, { restoreFocus: true }),
+  const destroyLocalizationOverlays = (root) => {
+    const details = [];
+    if (root.matches?.('.header-localization__details')) details.push(root);
+    root.querySelectorAll?.('.header-localization__details').forEach((item) => details.push(item));
+
+    details.forEach((item) => {
+      const dialog = getLocalizationDialog(item);
+      if (dialog?.parentElement !== document.body) return;
+      window.ThemeOverlay?.get(dialog)?.destroy();
     });
-    localizationSheetDrag.start(event);
   };
 
   const initializeAccountSheets = (header) => {
@@ -757,7 +727,6 @@
     restoreMobileMegaMenus();
     scheduleUpdate();
   });
-  document.addEventListener('pointerdown', beginLocalizationSheetDrag);
 
   document.addEventListener('focusin', (event) => {
     const headerTop = event.target.closest?.(HEADER_SELECTOR);
@@ -797,10 +766,7 @@
   });
 
   document.addEventListener('shopify:section:unload', (event) => {
-    if (event.target.contains(localizationSheetDrag?.panel)) {
-      localizationSheetDrag.destroy();
-      localizationSheetDrag = null;
-    }
+    destroyLocalizationOverlays(event.target);
     removeFooterLocalizations(event.target);
     removeHeaders(event.target);
   });

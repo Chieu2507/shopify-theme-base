@@ -45,6 +45,9 @@
 
   assign country_selector_label = 'localization.country_label' | t
   assign language_selector_label = 'localization.language_label' | t
+  assign localization_id_prefix = 'FooterLocalization-' | append: section.id | append: '-' | append: block.id
+  assign country_dialog_id = localization_id_prefix | append: '-country'
+  assign language_dialog_id = localization_id_prefix | append: '-language'
 
   assign has_country_selector = false
   if show_country_selector and localization.available_countries.size > 1
@@ -74,8 +77,8 @@
   <div class="{{ localization_class }}" {{ block.shopify_attributes }}>
     {% if has_localization %}
       {% if has_country_selector %}
-        <details class="header-localization__details" data-header-submenu-trigger="{{ localization_trigger }}">
-          <summary class="header-localization__summary">
+        <details class="header-localization__details" data-header-submenu-trigger="{{ localization_trigger }}" data-localization-dialog-id="{{ country_dialog_id }}">
+          <summary class="header-localization__summary" aria-controls="{{ country_dialog_id }}" aria-expanded="false">
             <span class="header-localization__country">
               {% if show_country_flag %}
                 {{ localization.country | image_url: width: 24 | image_tag: class: 'header-localization__flag', alt: '' }}
@@ -90,7 +93,7 @@
           </summary>
 
           <button class="header-localization__sheet-backdrop" type="button" aria-label="{{ country_selector_label | escape }}" data-header-localization-close></button>
-          <div class="header-localization__panel component-sheet--mobile">
+          <div class="header-localization__panel header-localization__desktop-panel component-sheet--mobile">
             <header class="header-localization__sheet-header component-sheet__header">
               <span class="bottom-sheet__handle header-localization__sheet-handle" aria-hidden="true"></span>
               <h2 class="heading-text heading-sm">{{ country_selector_label }}</h2>
@@ -116,17 +119,18 @@
               </div>
             {% endform %}
           </div>
+          {% render 'localization-overlay', id: country_dialog_id, selector_type: 'country', localization: localization, label: country_selector_label, show_country_flag: show_country_flag %}
         </details>
       {% endif %}
 
       {% if has_language_selector %}
-        <details class="header-localization__details header-localization__details--language" data-header-submenu-trigger="{{ localization_trigger }}">
-          <summary class="header-localization__summary">
+        <details class="header-localization__details header-localization__details--language" data-header-submenu-trigger="{{ localization_trigger }}" data-localization-dialog-id="{{ language_dialog_id }}">
+          <summary class="header-localization__summary" aria-controls="{{ language_dialog_id }}" aria-expanded="false">
             <span class="header-localization__language">{{ localization.language.endonym_name }}</span>
             {% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}
           </summary>
           <button class="header-localization__sheet-backdrop" type="button" aria-label="{{ language_selector_label | escape }}" data-header-localization-close></button>
-          <div class="header-localization__panel component-sheet--mobile">
+          <div class="header-localization__panel header-localization__desktop-panel component-sheet--mobile">
             <header class="header-localization__sheet-header component-sheet__header">
               <span class="bottom-sheet__handle header-localization__sheet-handle" aria-hidden="true"></span>
               <h2 class="heading-text heading-sm">{{ language_selector_label }}</h2>
@@ -146,6 +150,7 @@
               </div>
             {% endform %}
           </div>
+          {% render 'localization-overlay', id: language_dialog_id, selector_type: 'language', localization: localization, label: language_selector_label %}
         </details>
       {% endif %}
     {% else %}
@@ -462,6 +467,13 @@
 
     .header-localization__form {
       padding-block-start: 1rem;
+    }
+
+    /* Mobile selectors use the shared component-overlay dialog. Keep the
+       legacy inline sheet markup available for desktop only. */
+    .header-localization__sheet-backdrop,
+    .header-localization__desktop-panel {
+      display: none !important;
     }
   }
 

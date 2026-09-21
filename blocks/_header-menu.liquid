@@ -1,4 +1,10 @@
 {% liquid
+  assign country_selector_label = 'localization.country_label' | t
+  assign language_selector_label = 'localization.language_label' | t
+  assign localization_id_prefix = 'MobileHeaderLocalization-' | append: section.id | append: '-' | append: block.id
+  assign country_dialog_id = localization_id_prefix | append: '-country'
+  assign language_dialog_id = localization_id_prefix | append: '-language'
+
   assign dropdown_trigger = block.settings.dropdown_trigger | default: 'hover'
   unless dropdown_trigger == 'hover' or dropdown_trigger == 'click'
     assign dropdown_trigger = 'hover'
@@ -191,17 +197,17 @@
         {% if localization.available_countries.size > 1 or localization.available_languages.size > 0 %}
           <div class="header__mobile-drawer-localization header-localization">
             {% if localization.available_countries.size > 1 %}
-              <details class="header-localization__details" data-header-submenu-trigger="click">
-                <summary class="header-localization__summary">
+              <details class="header-localization__details" data-header-submenu-trigger="click" data-localization-dialog-id="{{ country_dialog_id }}">
+                <summary class="header-localization__summary" aria-controls="{{ country_dialog_id }}" aria-expanded="false">
                   <span class="header-localization__country">
                     {{ localization.country | image_url: width: 24 | image_tag: class: 'header-localization__flag', alt: '' }}
                     <span>{{ localization.country.currency.iso_code }} {{ localization.country.currency.symbol }}</span>
                   </span>
                   {% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}
                 </summary>
-                <button class="header-localization__sheet-backdrop" type="button" aria-label="Close country selector" data-header-localization-close></button>
-                <div class="header-localization__panel component-sheet--mobile">
-                  <header class="header-localization__sheet-header component-sheet__header"><span class="bottom-sheet__handle header-localization__sheet-handle" aria-hidden="true"></span><h2 class="heading-text heading-sm">Country</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close country selector" data-header-localization-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button></header>
+                <button class="header-localization__sheet-backdrop" type="button" aria-label="{{ country_selector_label | escape }}" data-header-localization-close></button>
+                <div class="header-localization__panel header-localization__desktop-panel component-sheet--mobile">
+                  <header class="header-localization__sheet-header component-sheet__header"><span class="bottom-sheet__handle header-localization__sheet-handle" aria-hidden="true"></span><h2 class="heading-text heading-sm">{{ country_selector_label }}</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="{{ country_selector_label | escape }}" data-header-localization-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button></header>
                   {% form 'localization', class: 'header-localization__form' %}
                     <input type="hidden" name="return_to" value="{{ request.path }}">
                     <div class="header-localization__country-list">
@@ -214,19 +220,21 @@
                     </div>
                   {% endform %}
                 </div>
+                {% render 'localization-overlay', id: country_dialog_id, selector_type: 'country', localization: localization, label: country_selector_label, show_country_flag: true %}
               </details>
             {% endif %}
             {% if localization.language != blank %}
-              <details class="header-localization__details header-localization__details--language" data-header-submenu-trigger="click">
-                <summary class="header-localization__summary"><span class="header-localization__language">{{ localization.language.endonym_name }}</span>{% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}</summary>
-                <button class="header-localization__sheet-backdrop" type="button" aria-label="Close language selector" data-header-localization-close></button>
-                <div class="header-localization__panel component-sheet--mobile">
-                  <header class="header-localization__sheet-header component-sheet__header"><span class="bottom-sheet__handle header-localization__sheet-handle" aria-hidden="true"></span><h2 class="heading-text heading-sm">Language</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="Close language selector" data-header-localization-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button></header>
+              <details class="header-localization__details header-localization__details--language" data-header-submenu-trigger="click" data-localization-dialog-id="{{ language_dialog_id }}">
+                <summary class="header-localization__summary" aria-controls="{{ language_dialog_id }}" aria-expanded="false"><span class="header-localization__language">{{ localization.language.endonym_name }}</span>{% render 'icon', icon: 'chevron-down', class: 'header-localization__icon' %}</summary>
+                <button class="header-localization__sheet-backdrop" type="button" aria-label="{{ language_selector_label | escape }}" data-header-localization-close></button>
+                <div class="header-localization__panel header-localization__desktop-panel component-sheet--mobile">
+                  <header class="header-localization__sheet-header component-sheet__header"><span class="bottom-sheet__handle header-localization__sheet-handle" aria-hidden="true"></span><h2 class="heading-text heading-sm">{{ language_selector_label }}</h2><button class="overlay-close header-localization__sheet-close" type="button" aria-label="{{ language_selector_label | escape }}" data-header-localization-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button></header>
                   {% form 'localization', class: 'header-localization__form' %}
                     <input type="hidden" name="return_to" value="{{ request.path }}">
                     <div class="header-localization__language-list">{% for language in localization.available_languages %}<button class="header-localization__language-option{% if language.iso_code == localization.language.iso_code %} is-selected{% endif %}" type="submit" name="language_code" value="{{ language.iso_code }}">{{ language.endonym_name }}</button>{% endfor %}</div>
                   {% endform %}
                 </div>
+                {% render 'localization-overlay', id: language_dialog_id, selector_type: 'language', localization: localization, label: language_selector_label %}
               </details>
             {% endif %}
           </div>
