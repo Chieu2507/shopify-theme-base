@@ -87,6 +87,8 @@
   assign carousel_customize_mobile_padding = block.settings.customize_mobile_padding
   assign carousel_id = 'Carousel-' | append: block.id
   assign carousel_delay = carousel_speed | times: 1000
+  assign carousel_previous_label = 'collection_tabs.previous' | t
+  assign carousel_next_label = 'collection_tabs.next' | t
 %}
 
 {% render 'swiper-stylesheet' %}
@@ -147,16 +149,20 @@
       pause_on_hover: carousel_pause_on_hover,
       autoplay_delay: carousel_delay
     %}
-    {% if carousel_show_navigation %}
-      <div class="carousel-block__navigation swiper-carousel__navigation--{{ carousel_navigation_behavior }}">
-        <button class="btn btn-{{ carousel_navigation_style }} btn--{{ carousel_navigation_style }} btn--icon swiper-nav-button swiper-nav-button--prev" type="button" data-carousel-previous aria-label="{{ 'collection_tabs.previous' | t | escape }}">
-          {% render 'carousel-navigation-icon', icon: carousel_navigation_icon, direction: 'previous' %}
-        </button>
-        <button class="btn btn-{{ carousel_navigation_style }} btn--{{ carousel_navigation_style }} btn--icon swiper-nav-button swiper-nav-button--next" type="button" data-carousel-next aria-label="{{ 'collection_tabs.next' | t | escape }}">
-          {% render 'carousel-navigation-icon', icon: carousel_navigation_icon, direction: 'next' %}
-        </button>
-      </div>
-    {% endif %}
+    {% render 'swiper-navigation',
+      show: carousel_show_navigation,
+      position: 'inside',
+      style: carousel_navigation_style,
+      icon: carousel_navigation_icon,
+      behavior: carousel_navigation_behavior,
+      centered: true,
+      wrapper_class: 'carousel-block__navigation',
+      wrapper_attributes: 'data-carousel-navigation',
+      previous_attribute: 'data-carousel-previous',
+      next_attribute: 'data-carousel-next',
+      previous_label: carousel_previous_label,
+      next_label: carousel_next_label
+    %}
   </div>
 </div>
 
@@ -168,7 +174,6 @@
   .carousel-block__navigation { position: absolute; z-index: 2; inset: 50% 0 auto; display: flex; justify-content: space-between; padding-inline: 0.5rem; transform: translateY(-50%); pointer-events: none; }
   .carousel-block__navigation .swiper-nav-button { pointer-events: auto; }
   .carousel-block__navigation .swiper-nav-button.swiper-button-disabled { pointer-events: none; }
-  .carousel-block__navigation--show_on_hover { opacity: 1; }
   .carousel-block__viewport > .swiper-pagination { width: var(--carousel-pagination-width, 100%); margin-block: var(--carousel-pagination-padding-desktop, 0px) 0; margin-inline: auto; padding-top: 0; }
   .carousel-block__viewport > .carousel-block__pagination--limited { width: min(100%, var(--carousel-pagination-max-width, 100%)); }
   .carousel-block__viewport > .carousel-block__pagination--progress_bar { --swiper-pagination-progressbar-size: 2px; }
