@@ -44,6 +44,7 @@ class QuickViewController {
     this.requestController = null;
     this.currentUrl = '';
     this.opener = null;
+    this.loadingTrigger = null;
     this.signal = this.abortController.signal;
 
     if (!this.overlay) return;
@@ -82,6 +83,29 @@ class QuickViewController {
     }
   }
 
+  setTriggerLoading(trigger, isLoading) {
+    if (!trigger) return;
+
+    const wrapper = trigger.closest?.('[data-product-card-quick-view-wrapper]');
+    if (isLoading) {
+      if (this.loadingTrigger && this.loadingTrigger !== trigger) this.setTriggerLoading(this.loadingTrigger, false);
+      this.loadingTrigger = trigger;
+      trigger.dataset.quickViewLoading = 'true';
+      trigger.setAttribute('aria-busy', 'true');
+      if (wrapper) wrapper.dataset.quickViewLoading = 'true';
+      return;
+    }
+
+    delete trigger.dataset.quickViewLoading;
+    trigger.removeAttribute('aria-busy');
+    if (wrapper) delete wrapper.dataset.quickViewLoading;
+    if (this.loadingTrigger === trigger) this.loadingTrigger = null;
+  }
+
+  clearTriggerLoading() {
+    this.setTriggerLoading(this.loadingTrigger, false);
+  }
+
   handleClick(event) {
     const retry = event.target.closest?.('[data-quick-view-retry]');
     if (retry && this.dialog.contains(retry)) {
@@ -92,6 +116,7 @@ class QuickViewController {
 
     const trigger = event.target.closest?.('[data-product-card-quick-view]');
     if (!trigger) return;
+    if (trigger.dataset.quickViewLoading === 'true') return;
 
     const url = this.productUrl(trigger);
     if (!url) return;
@@ -176,9 +201,11 @@ class QuickViewController {
 
     this.requestController?.abort();
     if (this.dialog.open) this.overlay.close({ immediate: true, restoreFocus: false });
+    this.clearTriggerLoading();
 
     this.currentUrl = targetUrl.href;
     this.opener = opener;
+    this.setTriggerLoading(opener, true);
     const requestController = new AbortController();
     this.requestController = requestController;
     this.setStatus('loading');
@@ -199,6 +226,7 @@ class QuickViewController {
       if (requestController.signal.aborted || this.requestController !== requestController) return;
 
       this.dialog.removeAttribute('aria-busy');
+      this.clearTriggerLoading();
       this.overlay.open({ opener, focus: true });
     } catch (error) {
       if (error.name === 'AbortError') return;
@@ -206,6 +234,7 @@ class QuickViewController {
       console.error('[Spinel] Quick view failed to load product.', error);
       this.setStatus('error', this.dialog.dataset.quickViewErrorLabel || error.message);
       this.dialog.removeAttribute('aria-busy');
+      this.clearTriggerLoading();
       this.overlay.open({ opener, focus: true });
       this.dialog.querySelector('[data-quick-view-retry]')?.focus({ preventScroll: true });
     } finally {
@@ -218,12 +247,14 @@ class QuickViewController {
   handleClose() {
     this.requestController?.abort();
     this.requestController = null;
+    this.clearTriggerLoading();
     this.dialog.removeAttribute('aria-busy');
     this.setStatus('loading');
   }
 
   destroy() {
     this.requestController?.abort();
+    this.clearTriggerLoading();
     this.overlay?.destroy();
     this.abortController.abort();
     controllers.delete(this.dialog);

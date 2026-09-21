@@ -1,6 +1,7 @@
 /* One shell for popup, drawer and bottom sheet. Content never owns geometry. */
 .component-overlay {
-  --overlay-inset: max(16px, var(--overlay-drawer-padding-desktop));
+  --overlay-inset: var(--overlay-drawer-content-padding-desktop, 1.5rem);
+  --overlay-drawer-inset: var(--overlay-drawer-padding-desktop, 0px);
   --overlay-rest-transform: scale(.95);
   position: fixed;
   inset: 0;
@@ -34,15 +35,34 @@
 .component-overlay__header--untitled + .component-overlay__body { padding-top: 56px; }
 .component-sheet { border-radius: var(--bottom-sheet-radius) var(--bottom-sheet-radius) 0 0; }
 @media (min-width: 768px) {
-  .component-overlay[data-desktop-layout='drawer'] { --overlay-rest-transform: translateX(100%); inset: 0 0 0 auto; width: min(var(--component-overlay-width, 550px), 100vw); height: 100dvh; max-height: none; margin: 0; border-radius: var(--drawer-radius) 0 0 var(--drawer-radius); }
+  .component-overlay[data-desktop-layout='drawer'] {
+    --overlay-rest-transform: translateX(100%);
+    inset: var(--overlay-drawer-inset) var(--overlay-drawer-inset) var(--overlay-drawer-inset) auto;
+    width: min(var(--component-overlay-width, 550px), calc(100vw - var(--overlay-drawer-inset)));
+    height: calc(100dvh - var(--overlay-drawer-inset) - var(--overlay-drawer-inset));
+    max-height: calc(100dvh - var(--overlay-drawer-inset) - var(--overlay-drawer-inset));
+    margin: 0;
+    border-radius: var(--drawer-radius) 0 0 var(--drawer-radius);
+  }
 }
 @media (max-width: 767.98px) {
   .component-sheet--mobile[class] { border-radius: var(--bottom-sheet-radius) var(--bottom-sheet-radius) 0 0; }
   .component-sheet--mobile > .component-sheet__header,
   .component-sheet > .component-sheet__header { min-height: 74px; padding-top: 24px; padding-bottom: 16px; }
-  .component-overlay { --overlay-inset: max(16px, var(--page-margin-mobile)); }
+  .component-overlay {
+    --overlay-inset: var(--overlay-drawer-content-padding-mobile, 1rem);
+    --overlay-drawer-inset: var(--overlay-drawer-padding-mobile, 0px);
+  }
   .component-overlay[data-mobile-layout='bottom_sheet'] { --overlay-rest-transform: translateY(100%); inset: auto 0 0; width: 100%; max-height: calc(90dvh - env(safe-area-inset-top, 0px)); margin: 0; border-radius: var(--bottom-sheet-radius) var(--bottom-sheet-radius) 0 0; }
-  .component-overlay[data-mobile-layout='drawer'] { --overlay-rest-transform: translateX(100%); inset: 0 0 0 auto; width: 100%; height: 100dvh; max-height: none; margin: 0; border-radius: var(--drawer-radius) 0 0 var(--drawer-radius); }
+  .component-overlay[data-mobile-layout='drawer'] {
+    --overlay-rest-transform: translateX(100%);
+    inset: var(--overlay-drawer-inset) var(--overlay-drawer-inset) var(--overlay-drawer-inset) auto;
+    width: calc(100vw - var(--overlay-drawer-inset));
+    height: calc(100dvh - var(--overlay-drawer-inset) - var(--overlay-drawer-inset));
+    max-height: calc(100dvh - var(--overlay-drawer-inset) - var(--overlay-drawer-inset));
+    margin: 0;
+    border-radius: var(--drawer-radius) 0 0 var(--drawer-radius);
+  }
   .component-overlay[data-mobile-layout='bottom_sheet'] .component-overlay__header { padding-top: 24px; touch-action: none; user-select: none; cursor: grab; }
   .component-overlay[data-mobile-layout='bottom_sheet'] .component-overlay__handle { display: block; }
   .component-overlay[data-mobile-layout='bottom_sheet'] .component-overlay__header--untitled { height: 48px; min-height: 48px; padding: 0; }
