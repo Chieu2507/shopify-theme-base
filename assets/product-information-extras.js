@@ -8,10 +8,12 @@ class PdpDrawerElement extends HTMLElement {
     const options = { signal: this.abortController.signal };
     this.trigger?.addEventListener('click', () => this.open(), options);
     document.addEventListener('shopify:block:select', (event) => {
-      if (event.target === this || this.contains(event.target)) this.open({ focus: false });
+      if (event.target === this || this.contains(event.target) || this.drawer?.contains(event.target)) {
+        this.open({ focus: false });
+      }
     }, options);
     document.addEventListener('shopify:block:deselect', (event) => {
-      if (event.target === this || this.contains(event.target)) this.close();
+      if (event.target === this || this.contains(event.target) || this.drawer?.contains(event.target)) this.close();
     }, options);
     document.addEventListener('shopify:section:unload', (event) => {
       if (event.target.contains(this)) this.close({ restoreFocus: false, immediate: true });
@@ -32,24 +34,31 @@ class ProductPickupAvailability extends PdpDrawerElement {
     if (!this.abortController) return;
     this.message = this.querySelector('[data-pickup-availability-message]');
     this.stores = this.drawer?.querySelector('[data-pickup-availability-stores]');
+    this.variantTitle = this.drawer?.querySelector('[data-pickup-availability-variant]');
     const root = this.closest('[data-product-information]');
     root?.addEventListener('variant:change', (event) => this.update(event.detail?.variantId), { signal: this.abortController.signal });
+    this.update(root?.querySelector('[data-product-variant-picker]')?.dataset.currentVariantId || this.dataset.currentVariantId || '');
   }
 
   update(variantId) {
     const template = this.querySelector(`[data-pickup-availability-template="${CSS.escape(String(variantId || ''))}"]`);
     const hasPickup = template?.dataset.hasPickup === 'true';
+    this.dataset.currentVariantId = String(variantId || '');
     if (!hasPickup) {
-      this.close({ force: true, restoreFocus: false });
+      this.close({ immediate: true, restoreFocus: false });
       this.hidden = true;
+      this.setAttribute('aria-hidden', 'true');
       return;
     }
     this.hidden = false;
+    this.setAttribute('aria-hidden', 'false');
     const content = template.content;
     const message = content.querySelector('[data-pickup-availability-message-template]');
     const stores = content.querySelector('[data-pickup-availability-stores-template]');
+    const variantTitle = content.querySelector('[data-pickup-availability-variant-template]');
     if (message && this.message) this.message.innerHTML = message.innerHTML;
     if (stores && this.stores) this.stores.innerHTML = stores.innerHTML;
+    if (variantTitle && this.variantTitle) this.variantTitle.textContent = variantTitle.textContent;
   }
 
 }

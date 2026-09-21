@@ -12,8 +12,9 @@
 
 Popup blocks, Pickup availability, back-in-stock Notify and Size chart render
 this same shell. Native `showModal()` places them in the browser top layer;
-they stay in their section's DOM for editor lifecycle and inherited settings,
-without being clipped by the Product Details container.
+dialogs marked with `append_to_body` are portaled to `document.body` before
+opening so Product Details transforms and overflow cannot clip them. The
+controller remembers the original location and restores it during teardown.
 
 Cart order options and Localization retain their existing commerce/navigation
 shells. They consume the shared sheet radius/header classes and `SheetGesture`

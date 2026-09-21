@@ -5,7 +5,7 @@ const vm = require('node:vm');
 const path = require('node:path');
 
 // Controller contract tests, not a substitute for native-dialog browser QA.
-function fixture({ mobile = true, reduced = false } = {}) {
+function fixture({ mobile = true, reduced = false, portal = false } = {}) {
   const timers = new Map();
   const frames = new Map();
   const nativeEvents = [];
@@ -24,6 +24,7 @@ function fixture({ mobile = true, reduced = false } = {}) {
       this.isConnected = true;
       this.tabIndex = 0;
     }
+    hasAttribute(name) { return Object.prototype.hasOwnProperty.call(this.attributes, name); }
     setAttribute(name, value) { this.attributes[name] = value; }
     focus() { this.focusCount = (this.focusCount || 0) + 1; document.activeElement = this; }
     getClientRects() { return [{}]; }
@@ -38,6 +39,18 @@ function fixture({ mobile = true, reduced = false } = {}) {
   const lastInput = new Element();
   document.activeElement = opener;
   const dialog = new Element();
+  const originalParent = {
+    insertBefore(element) {
+      element.parentNode = this;
+      element.parentElement = this;
+    },
+  };
+  document.body = {
+    append(element) {
+      element.parentNode = this;
+      element.parentElement = this;
+    },
+  };
   Object.assign(dialog, {
     open: false,
     dataset: { mobileLayout: 'bottom_sheet', state: 'closed' },
@@ -45,8 +58,13 @@ function fixture({ mobile = true, reduced = false } = {}) {
     querySelectorAll: () => [closeButton, lastInput],
     showModal() { this.open = true; },
     close() { this.open = false; nativeEvents.push(() => this.dispatchEvent(new Event('close'))); },
+    remove() { this.parentNode = null; this.parentElement = null; },
     getBoundingClientRect: () => ({ left: 0, top: 100, right: 400, bottom: 600 }),
+    parentNode: originalParent,
+    parentElement: originalParent,
+    nextSibling: null,
   });
+  if (portal) dialog.attributes['data-append-to-body'] = '';
   const media = new EventTarget();
   media.matches = mobile;
   const reducedMedia = new EventTarget();
@@ -211,4 +229,11 @@ test('destroy clears timers, listeners and cache without restoring stale focus',
   assert.equal(f.opener.focusCount, undefined);
   assert.equal(f.opener.attributes['aria-expanded'], 'false');
   assert.notEqual(f.api.get(f.dialog), f.overlay);
+});
+
+test('append-to-body portals the dialog and restores its original parent on destroy', () => {
+  const f = fixture({ portal: true });
+  assert.equal(f.dialog.parentElement, f.document.body);
+  f.overlay.destroy();
+  assert.notEqual(f.dialog.parentElement, f.document.body);
 });
