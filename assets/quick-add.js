@@ -210,6 +210,7 @@ class QuickAddController {
     this.overlay?.destroy();
     this.abortController.abort();
     controllers.delete(this.dialog);
+    if (this.sectionRoot) controllersBySection.delete(this.sectionRoot);
   }
 }
 
