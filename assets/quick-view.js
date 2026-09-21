@@ -9,7 +9,13 @@ const productFeatureModules = [
 
 let productFeaturesPromise;
 
-const nextFrame = () => new Promise((resolve) => window.requestAnimationFrame(resolve));
+const nextFrame = () => new Promise((resolve) => {
+  if (window.requestAnimationFrame) {
+    window.requestAnimationFrame(resolve);
+  } else {
+    window.setTimeout(resolve, 0);
+  }
+});
 
 const loadProductFeatures = () => {
   if (!productFeaturesPromise) {
