@@ -15,9 +15,14 @@
     assign overlay_is_quick_add = true
   endif
   assign overlay_media_position = section.settings.media_position | default: 'left'
+  unless overlay_media_position == 'top' or overlay_media_position == 'left'
+    assign overlay_media_position = 'left'
+  endunless
+  assign overlay_media_format = 'quick-view'
   assign overlay_media_presentation = 'quick-view'
 
   if overlay_is_quick_add
+    assign overlay_media_format = 'quick-add'
     if overlay_media_position == 'top'
       assign overlay_media_presentation = 'quick-add-strip'
     else
@@ -34,6 +39,27 @@
   unless overlay_media_desktop_layout == 'left_thumbnails' or overlay_media_desktop_layout == 'bottom_thumbnails' or overlay_media_desktop_layout == 'grid' or overlay_media_desktop_layout == 'stacked' or overlay_media_desktop_layout == 'stacked_thumbnails' or overlay_media_desktop_layout == 'two_column_grid'
     assign overlay_media_desktop_layout = 'left_thumbnails'
   endunless
+
+  capture overlay_media_desktop_ratio_result
+    render '_overlay-media-ratio', setting: block.settings.desktop_ratio, fallback: 'square', custom_width: block.settings.desktop_ratio_custom_width, custom_height: block.settings.desktop_ratio_custom_height, fallback_ratio: '1'
+  endcapture
+  assign overlay_media_desktop_ratio_parts = overlay_media_desktop_ratio_result | strip | split: '|'
+  assign overlay_media_desktop_ratio_setting = overlay_media_desktop_ratio_parts[0] | default: 'square'
+  assign overlay_media_desktop_ratio = overlay_media_desktop_ratio_parts[1] | default: '1'
+
+  capture overlay_media_mobile_ratio_result
+    render '_overlay-media-ratio', setting: block.settings.mobile_ratio, fallback: 'square', custom_width: block.settings.mobile_ratio_custom_width, custom_height: block.settings.mobile_ratio_custom_height, fallback_ratio: '1'
+  endcapture
+  assign overlay_media_mobile_ratio_parts = overlay_media_mobile_ratio_result | strip | split: '|'
+  assign overlay_media_mobile_ratio_setting = overlay_media_mobile_ratio_parts[0] | default: 'square'
+  assign overlay_media_mobile_ratio = overlay_media_mobile_ratio_parts[1] | default: '1'
+
+  capture overlay_media_thumbnail_ratio_result
+    render '_overlay-media-ratio', setting: block.settings.thumbnail_ratio, fallback: 'auto', custom_width: block.settings.thumbnail_ratio_custom_width, custom_height: block.settings.thumbnail_ratio_custom_height, fallback_ratio: 'auto'
+  endcapture
+  assign overlay_media_thumbnail_ratio_parts = overlay_media_thumbnail_ratio_result | strip | split: '|'
+  assign overlay_media_thumbnail_ratio_setting = overlay_media_thumbnail_ratio_parts[0] | default: 'auto'
+  assign overlay_media_thumbnail_ratio = overlay_media_thumbnail_ratio_parts[1] | default: 'auto'
 
   assign overlay_media_mobile_layout = 'slider'
   assign overlay_media_mobile_show_pagination = true
@@ -124,13 +150,17 @@
 
 <product-media-gallery
   id="{{ overlay_media_gallery_id }}"
-  class="media-gallery product-media-gallery product-media-gallery--overlay product-media-gallery--overlay-{{ overlay_media_presentation }} product-media-gallery--desktop-{{ overlay_media_desktop_layout }} product-media-gallery--mobile-{{ overlay_media_mobile_layout }}"
+  class="media-gallery product-media-gallery product-media-gallery--overlay product-media-gallery--format-{{ overlay_media_format }} product-media-gallery--overlay-{{ overlay_media_presentation }} product-media-gallery--desktop-{{ overlay_media_desktop_layout }} product-media-gallery--mobile-{{ overlay_media_mobile_layout }} product-media-gallery--desktop-ratio-{{ overlay_media_desktop_ratio_setting }} product-media-gallery--mobile-ratio-{{ overlay_media_mobile_ratio_setting }}"
   data-product-media-gallery
   data-overlay-media
+  data-overlay-media-format="{{ overlay_media_format }}"
   data-overlay-presentation="{{ overlay_media_presentation }}"
   data-overlay-media-width="{{ overlay_media_width }}"
   data-desktop-layout="{{ overlay_media_desktop_layout }}"
   data-mobile-layout="{{ overlay_media_mobile_layout }}"
+  data-desktop-ratio="{{ overlay_media_desktop_ratio_setting }}"
+  data-mobile-ratio="{{ overlay_media_mobile_ratio_setting }}"
+  data-thumbnail-ratio="{{ overlay_media_thumbnail_ratio_setting }}"
   data-mobile-show-pagination="{{ overlay_media_mobile_show_pagination }}"
   data-zoom="{{ overlay_media_zoom }}"
   data-block-animations="{{ overlay_media_motion_enabled }}"
@@ -138,7 +168,7 @@
   data-current-variant-media-id="{{ overlay_current_variant.featured_media.id | default: '' }}"
   data-filter-variant-media="{{ settings.variant_picker_only_selected_media }}"
   data-visible-media-count="{{ overlay_visible_media_count }}"
-  style="--product-media-thumbnail-width: {{ overlay_media_thumbnail_width }}px;--product-media-thumbnail-width-mobile: {{ overlay_media_thumbnail_width }}px;--product-media-gap: {{ overlay_media_gap }}px;--product-media-gap-mobile: {{ overlay_media_gap_mobile }}px;--product-media-thumbnail-gap: {{ overlay_media_gap }}px;--product-media-thumbnail-gap-mobile: {{ overlay_media_gap_mobile }}px;"
+  style="--product-media-thumbnail-aspect-ratio: {{ overlay_media_thumbnail_ratio }};--overlay-media-ratio-desktop: {{ overlay_media_desktop_ratio }};--overlay-media-ratio-mobile: {{ overlay_media_mobile_ratio }};--product-media-thumbnail-width: {{ overlay_media_thumbnail_width }}px;--product-media-thumbnail-width-mobile: {{ overlay_media_thumbnail_width }}px;--product-media-gap: {{ overlay_media_gap }}px;--product-media-gap-mobile: {{ overlay_media_gap_mobile }}px;--product-media-thumbnail-gap: {{ overlay_media_gap }}px;--product-media-thumbnail-gap-mobile: {{ overlay_media_gap_mobile }}px;"
   {{ block.shopify_attributes }}
 >
   {% if overlay_media_product != blank and overlay_media_product.media.size > 0 %}
@@ -171,6 +201,7 @@
               class="swiper-slide product-media-gallery__slide"
               data-product-media
               data-media-id="{{ media.id }}"
+              data-media-type="{{ media.media_type }}"
               data-variant-ids="{% for media_variant in media.variants %}{{ media_variant.id }}{% unless forloop.last %},{% endunless %}{% endfor %}"
               {% if overlay_media_hidden %}hidden aria-hidden="true"{% endif %}
             >
@@ -310,6 +341,94 @@
     {
       "type": "header",
       "content": "t:general.media_settings"
+    },
+    {
+      "type": "select",
+      "id": "desktop_ratio",
+      "label": "t:labels.desktop_image_ratio",
+      "options": [
+        { "value": "auto", "label": "t:options.image_ratio.auto" },
+        { "value": "square", "label": "t:options.image_ratio.square" },
+        { "value": "portrait", "label": "t:options.image_ratio.portrait" },
+        { "value": "landscape", "label": "t:options.image_ratio.landscape" },
+        { "value": "wide", "label": "t:options.image_ratio.wide" },
+        { "value": "custom", "label": "t:options.image_ratio.custom" }
+      ],
+      "default": "square"
+    },
+    {
+      "type": "number",
+      "id": "desktop_ratio_custom_width",
+      "label": "W",
+      "default": 1,
+      "visible_if": "{{ block.settings.desktop_ratio == 'custom' }}"
+    },
+    {
+      "type": "number",
+      "id": "desktop_ratio_custom_height",
+      "label": "H",
+      "default": 1,
+      "visible_if": "{{ block.settings.desktop_ratio == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "mobile_ratio",
+      "label": "t:labels.mobile_image_ratio",
+      "options": [
+        { "value": "auto", "label": "t:options.image_ratio.auto" },
+        { "value": "square", "label": "t:options.image_ratio.square" },
+        { "value": "portrait", "label": "t:options.image_ratio.portrait" },
+        { "value": "landscape", "label": "t:options.image_ratio.landscape" },
+        { "value": "wide", "label": "t:options.image_ratio.wide" },
+        { "value": "custom", "label": "t:options.image_ratio.custom" }
+      ],
+      "default": "square"
+    },
+    {
+      "type": "number",
+      "id": "mobile_ratio_custom_width",
+      "label": "W",
+      "default": 1,
+      "visible_if": "{{ block.settings.mobile_ratio == 'custom' }}"
+    },
+    {
+      "type": "number",
+      "id": "mobile_ratio_custom_height",
+      "label": "H",
+      "default": 1,
+      "visible_if": "{{ block.settings.mobile_ratio == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "thumbnail_ratio",
+      "label": "t:labels.thumbnail_aspect_ratio",
+      "options": [
+        { "value": "auto", "label": "t:options.image_ratio.auto" },
+        { "value": "square", "label": "t:options.image_ratio.square" },
+        { "value": "portrait", "label": "t:options.image_ratio.portrait" },
+        { "value": "landscape", "label": "t:options.image_ratio.landscape" },
+        { "value": "wide", "label": "t:options.image_ratio.wide" },
+        { "value": "custom", "label": "t:options.image_ratio.custom" }
+      ],
+      "default": "auto"
+    },
+    {
+      "type": "number",
+      "id": "thumbnail_ratio_custom_width",
+      "label": "W",
+      "default": 1,
+      "visible_if": "{{ block.settings.thumbnail_ratio == 'custom' }}"
+    },
+    {
+      "type": "number",
+      "id": "thumbnail_ratio_custom_height",
+      "label": "H",
+      "default": 1,
+      "visible_if": "{{ block.settings.thumbnail_ratio == 'custom' }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.playback_and_zoom"
     },
     {
       "type": "checkbox",
