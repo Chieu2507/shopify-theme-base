@@ -424,6 +424,7 @@
       </div>`;
     }).join('');
 
+    dots.innerHTML = products.map((product, index) => `<button class="cart-drawer__recommendation-dot" type="button" data-cart-drawer-recommendation-dot data-index="${index}" aria-label="View related product ${index + 1}" aria-current="${index === 0 ? 'true' : 'false'}"></button>`).join('');
     recommendations.hidden = false;
   };
 
