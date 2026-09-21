@@ -58,11 +58,11 @@ class QuickViewController {
   }
 
   get sectionId() {
-    return this.dialog.dataset.quickAddSectionId;
+    return this.dialog.dataset.quickViewSectionId;
   }
 
   productUrl(trigger) {
-    const rawUrl = trigger?.dataset.productCardQuickViewOverlayUrl || trigger?.href;
+    const rawUrl = trigger?.dataset.productCardQuickViewUrl || trigger?.href;
     if (!rawUrl) return null;
 
     try {
@@ -82,7 +82,7 @@ class QuickViewController {
       return;
     }
 
-    const trigger = event.target.closest?.('[data-product-card-quick-view-overlay]');
+    const trigger = event.target.closest?.('[data-product-card-quick-view]');
     if (!trigger) return;
 
     const url = this.productUrl(trigger);
@@ -122,7 +122,7 @@ class QuickViewController {
   }
 
   async fetchContent(url, signal) {
-    if (!this.sectionId) throw new Error('Quick add section is unavailable.');
+    if (!this.sectionId) throw new Error('Quick view section is unavailable.');
 
     url.searchParams.set('section_id', this.sectionId);
     const response = await fetch(url.href, {
@@ -130,13 +130,13 @@ class QuickViewController {
       headers: { Accept: 'text/html' },
       signal,
     });
-    if (!response.ok) throw new Error(`Unable to load quick add (${response.status}).`);
+    if (!response.ok) throw new Error(`Unable to load quick view (${response.status}).`);
 
     const html = await response.text();
     const template = document.createElement('template');
     template.innerHTML = html;
     const content = template.content.querySelector('[data-quick-view-content]');
-    if (!content || content.dataset.quickAddHasProduct !== 'true') {
+    if (!content || content.dataset.quickViewHasProduct !== 'true') {
       throw new Error('The requested product is unavailable.');
     }
 
@@ -149,9 +149,9 @@ class QuickViewController {
 
     const fragment = nextContent.cloneNode(true);
     currentContent.replaceChildren(...fragment.childNodes);
-    currentContent.dataset.quickAddHasProduct = 'true';
-    if (nextContent.dataset.quickAddProductId) {
-      currentContent.dataset.quickAddProductId = nextContent.dataset.quickAddProductId;
+    currentContent.dataset.quickViewHasProduct = 'true';
+    if (nextContent.dataset.quickViewProductId) {
+      currentContent.dataset.quickViewProductId = nextContent.dataset.quickViewProductId;
     }
   }
 
@@ -162,7 +162,7 @@ class QuickViewController {
     try {
       targetUrl = url instanceof URL ? new URL(url.href) : new URL(url, document.baseURI || window.location.href);
     } catch (error) {
-      this.setStatus('error', this.dialog.dataset.quickAddErrorLabel || error.message);
+      this.setStatus('error', this.dialog.dataset.quickViewErrorLabel || error.message);
       return;
     }
 
@@ -188,8 +188,8 @@ class QuickViewController {
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (this.requestController !== requestController) return;
-      console.error('[Spinel] Quick add failed to load product.', error);
-      this.setStatus('error', this.dialog.dataset.quickAddErrorLabel || error.message);
+      console.error('[Spinel] Quick view failed to load product.', error);
+      this.setStatus('error', this.dialog.dataset.quickViewErrorLabel || error.message);
       this.dialog.querySelector('[data-quick-view-retry]')?.focus({ preventScroll: true });
     } finally {
       if (this.requestController === requestController && !requestController.signal.aborted) {
@@ -238,7 +238,7 @@ const destroyQuickViews = (root) => {
   controller?.destroy();
 };
 
-const controllerKey = '__quickAddController';
+const controllerKey = '__quickViewController';
 if (!window[controllerKey]) {
   window[controllerKey] = { initialize: initializeQuickViews };
   document.addEventListener('shopify:section:load', (event) => initializeQuickViews(event.target));
