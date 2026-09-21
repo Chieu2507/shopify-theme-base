@@ -263,6 +263,9 @@ class QuickAddController {
       this.dialog.removeAttribute('aria-busy');
       this.clearTriggerLoading();
       this.overlay.open({ opener, focus: true, defer: true });
+      window.requestAnimationFrame(() => {
+        this.content.querySelectorAll('[data-product-media-gallery]').forEach((gallery) => gallery.refreshGallery?.());
+      });
     } catch (error) {
       if (error.name === 'AbortError') return;
       if (this.requestController !== requestController) return;

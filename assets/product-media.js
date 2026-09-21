@@ -37,6 +37,7 @@ class ProductMediaGallery extends HTMLElement {
     this.handleLightboxDragStart = this.handleLightboxDragStart.bind(this);
     this.handleBreakpoint = this.handleBreakpoint.bind(this);
     this.handleVariantChange = this.handleVariantChange.bind(this);
+    this.scheduleGalleryRefresh = this.scheduleGalleryRefresh.bind(this);
 
     this.addEventListener('click', this.handleClick, { signal: this.signal, capture: true });
     this.addEventListener('keydown', this.handleKeydown, { signal: this.signal });
@@ -52,6 +53,10 @@ class ProductMediaGallery extends HTMLElement {
       this.layoutLightboxImages();
     }, { signal: this.signal });
     this.productInformation?.addEventListener('variant:change', this.handleVariantChange, { signal: this.signal });
+    this.galleryResizeObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(this.scheduleGalleryRefresh)
+      : null;
+    this.galleryResizeObserver?.observe(this);
     this.lightbox?.addEventListener('close', () => this.destroyLightbox(), { signal: this.signal });
     this.lightbox?.addEventListener('cancel', (event) => {
       event.preventDefault();
@@ -74,6 +79,10 @@ class ProductMediaGallery extends HTMLElement {
 
       this.abortController?.abort();
       this.abortController = null;
+      cancelAnimationFrame(this.galleryRefreshFrame);
+      this.galleryRefreshFrame = null;
+      this.galleryResizeObserver?.disconnect();
+      this.galleryResizeObserver = null;
       this.destroyGallery();
       this.destroyLightbox();
     });
@@ -275,6 +284,24 @@ class ProductMediaGallery extends HTMLElement {
   handleBreakpoint() {
     const activeMediaId = this.activeMediaId();
     this.initializeGallery(activeMediaId);
+  }
+
+  scheduleGalleryRefresh() {
+    cancelAnimationFrame(this.galleryRefreshFrame);
+    this.galleryRefreshFrame = requestAnimationFrame(() => {
+      this.galleryRefreshFrame = null;
+      if (!this.isConnected || !this.getClientRects().length) return;
+      this.refreshGallery();
+    });
+  }
+
+  refreshGallery() {
+    const activeMediaId = this.activeMediaId();
+    this.syncThumbnailVisibility();
+    this.syncGalleryOverflow();
+    this.initializeGallery(activeMediaId);
+    this.mainSwiper?.update();
+    this.thumbnailSwiper?.update();
   }
 
   handleVariantChange(event) {
