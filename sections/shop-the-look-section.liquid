@@ -1,8 +1,13 @@
 {% liquid
   assign shop_the_look_section_width = 'page-width'
-  if section.settings.section_width == 'full_width'
-    assign shop_the_look_section_width = 'full-width'
-  endif
+  assign shop_the_look_section_no_padding = false
+  case section.settings.section_width
+    when 'full_width'
+      assign shop_the_look_section_width = 'full-width'
+    when 'full_width_no_padding'
+      assign shop_the_look_section_width = 'full-width'
+      assign shop_the_look_section_no_padding = true
+  endcase
 
   assign shop_the_look_media_position = section.settings.media_position | default: 'right'
   unless shop_the_look_media_position == 'left' or shop_the_look_media_position == 'right'
@@ -59,12 +64,12 @@
 {% assign shop_the_look_style = shop_the_look_style | strip %}
 
 <div
-  class="section-spacing shop-the-look-section section-color-scope {{ shop_the_look_scheme }} shop-the-look-section--media-{{ shop_the_look_media_position }} shop-the-look-section--mobile-media-{{ shop_the_look_mobile_media_position }}"
+  class="section-spacing shop-the-look-section section-color-scope {{ shop_the_look_scheme }} shop-the-look-section--media-{{ shop_the_look_media_position }} shop-the-look-section--mobile-media-{{ shop_the_look_mobile_media_position }}{% if shop_the_look_section_no_padding %} shop-the-look-section--no-padding{% endif %}"
   {% if shop_the_look_style != blank %}style="{{ shop_the_look_style }}"{% endif %}
   data-shop-the-look-image-ratio-desktop="{{ shop_the_look_image_ratio_desktop }}"
   data-shop-the-look-section
 >
-  <div class="container {{ shop_the_look_section_width }} shop-the-look-section__container">
+  <div class="container {{ shop_the_look_section_width }} shop-the-look-section__container{% if shop_the_look_section_no_padding %} shop-the-look-section__container--no-padding{% endif %}">
     <div class="shop-the-look-section__layout">
       <div class="shop-the-look-section__media">
         {% content_for 'block', type: 'image', id: 'image' %}
@@ -92,8 +97,16 @@
     padding-bottom: var(--shop-the-look-padding-bottom, 0px);
   }
 
+  .shop-the-look-section--no-padding {
+    padding-inline: 0;
+  }
+
   .shop-the-look-section__container {
     min-width: 0;
+  }
+
+  .shop-the-look-section .container.shop-the-look-section__container--no-padding {
+    padding-inline: 0;
   }
 
   .shop-the-look-section__layout {
@@ -209,14 +222,19 @@
 
     .shop-the-look-section__media {
       order: 1;
-      width: calc(100% + (var(--page-margin-current) * 2));
-      margin-inline: calc(var(--page-margin-current) * -1);
+      width: 100%;
+      margin-inline: 0;
     }
 
     .shop-the-look-section__content {
       order: 2;
       width: 100%;
       padding: 0;
+      padding-inline: 16px;
+    }
+
+    .shop-the-look-section--no-padding .shop-the-look-section__content {
+      padding-inline: var(--page-margin-current);
     }
 
     .shop-the-look-section__content { min-height: 0; }
@@ -253,7 +271,8 @@
       "label": "t:labels.section_width",
       "options": [
         { "value": "page_width", "label": "t:options.section_width.page_width" },
-        { "value": "full_width", "label": "t:options.section_width.full_width" }
+        { "value": "full_width", "label": "t:options.section_width.full_width" },
+        { "value": "full_width_no_padding", "label": "t:options.section_width.full_width_no_padding" }
       ],
       "default": "full_width"
     },
