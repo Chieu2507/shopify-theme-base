@@ -257,6 +257,7 @@ class ProductMediaGallery extends HTMLElement {
       spaceBetween: gap,
       speed: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300,
       grabCursor: isQuickAddStrip,
+      ...(isQuickAddStrip ? { focusableElements: 'input, select, option, textarea, video, label' } : {}),
       watchOverflow: true,
       controls: {
         scope: this,
