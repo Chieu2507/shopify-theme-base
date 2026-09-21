@@ -132,7 +132,22 @@ class ProductMediaGallery extends HTMLElement {
 
   get galleryMode() {
     if (this.mobileQuery.matches) return 'mobile';
+    if (this.dataset.overlayPresentation === 'quick-add-strip') return 'quick-add-strip';
     return ['left_thumbnails', 'bottom_thumbnails'].includes(this.dataset.desktopLayout) ? 'desktop-carousel' : 'desktop-static';
+  }
+
+  get quickAddStripSlidesPerView() {
+    const visibleMediaCount = this.visibleSlides().length;
+    return visibleMediaCount > 4 ? 4.15 : Math.max(1, visibleMediaCount);
+  }
+
+  syncQuickAddStripSlidesPerView() {
+    if (this.dataset.overlayPresentation !== 'quick-add-strip' || this.mobileQuery?.matches) {
+      this.style.removeProperty('--overlay-media-slides-per-view');
+      return;
+    }
+
+    this.style.setProperty('--overlay-media-slides-per-view', String(this.quickAddStripSlidesPerView));
   }
 
   visibleSlides() {
@@ -199,6 +214,10 @@ class ProductMediaGallery extends HTMLElement {
     }
 
     if (this.mainSwiper && this.activeGalleryMode === mode) {
+      this.syncQuickAddStripSlidesPerView();
+      if (mode === 'quick-add-strip') {
+        this.mainSwiper.params.slidesPerView = this.quickAddStripSlidesPerView;
+      }
       this.thumbnailSwiper?.update();
       this.mainSwiper.update();
       if (preferredMediaId) this.showMedia(preferredMediaId, true);
@@ -208,8 +227,11 @@ class ProductMediaGallery extends HTMLElement {
     this.destroyGallery();
     this.activeGalleryMode = mode;
     const isMobile = mode === 'mobile';
-    const showThumbnails = !isMobile || this.dataset.mobileLayout === 'thumbnails';
+    const isQuickAddStrip = mode === 'quick-add-strip';
+    const showThumbnails = (!isMobile && !isQuickAddStrip) || this.dataset.mobileLayout === 'thumbnails';
     const showPagination = isMobile && this.dataset.mobileLayout === 'slider' && this.dataset.mobileShowPagination === 'true';
+    const slidesPerView = isQuickAddStrip ? this.quickAddStripSlidesPerView : 1;
+    this.syncQuickAddStripSlidesPerView();
     const gapProperty = isMobile ? '--product-media-gap-mobile' : '--product-media-gap';
     const thumbnailGapProperty = isMobile ? '--product-media-thumbnail-gap-mobile' : '--product-media-thumbnail-gap';
     const computedStyle = getComputedStyle(this);
@@ -231,9 +253,10 @@ class ProductMediaGallery extends HTMLElement {
     const pagination = this.querySelector('[data-product-media-pagination]');
     this.mainSwiper = createSwiperCarousel(main, {
       modules: showPagination ? [Pagination, Thumbs] : [Thumbs],
-      slidesPerView: 1,
+      slidesPerView,
       spaceBetween: gap,
       speed: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300,
+      grabCursor: isQuickAddStrip,
       watchOverflow: true,
       controls: {
         scope: this,
@@ -780,6 +803,7 @@ class ProductMediaGallery extends HTMLElement {
     const visibleMediaCount = this.visibleSlides().length;
     const hasOverflow = visibleMediaCount > 1;
     this.dataset.visibleMediaCount = String(visibleMediaCount);
+    this.syncQuickAddStripSlidesPerView();
     this.classList.toggle('product-media-gallery--single-media', !hasOverflow);
 
     this.querySelector('.media-thumbnails__carousel')?.toggleAttribute('hidden', !hasOverflow);
