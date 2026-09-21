@@ -40,6 +40,7 @@ const initialize = (carousel) => {
   const swiper = createSwiperCarousel(carousel, {
     slidesPerView: 1,
     spaceBetween: 0,
+    cssMode: true,
     observer: true,
     observeParents: true,
   });
