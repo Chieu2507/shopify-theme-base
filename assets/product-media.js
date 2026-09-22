@@ -37,6 +37,10 @@ class ProductMediaGallery extends HTMLElement {
     this.handleLightboxDragStart = this.handleLightboxDragStart.bind(this);
     this.handleBreakpoint = this.handleBreakpoint.bind(this);
     this.handleVariantChange = this.handleVariantChange.bind(this);
+    this.scheduleGalleryRefresh = this.scheduleGalleryRefresh.bind(this);
+    this.handleQuickAddStripPointerDown = this.handleQuickAddStripPointerDown.bind(this);
+    this.handleQuickAddStripPointerMove = this.handleQuickAddStripPointerMove.bind(this);
+    this.handleQuickAddStripPointerUp = this.handleQuickAddStripPointerUp.bind(this);
 
     this.addEventListener('click', this.handleClick, { signal: this.signal, capture: true });
     this.addEventListener('keydown', this.handleKeydown, { signal: this.signal });
@@ -52,6 +56,10 @@ class ProductMediaGallery extends HTMLElement {
       this.layoutLightboxImages();
     }, { signal: this.signal });
     this.productInformation?.addEventListener('variant:change', this.handleVariantChange, { signal: this.signal });
+    this.galleryResizeObserver = typeof ResizeObserver === 'function'
+      ? new ResizeObserver(this.scheduleGalleryRefresh)
+      : null;
+    this.galleryResizeObserver?.observe(this);
     this.lightbox?.addEventListener('close', () => this.destroyLightbox(), { signal: this.signal });
     this.lightbox?.addEventListener('cancel', (event) => {
       event.preventDefault();
@@ -63,6 +71,7 @@ class ProductMediaGallery extends HTMLElement {
 
     this.applyVariantMediaFilter(this.dataset.currentVariantId);
     this.syncThumbnailVisibility();
+    this.syncGalleryOverflow();
     this.initializeGallery(preferredMediaId);
     this.initializeShopifyMedia();
   }
@@ -73,6 +82,10 @@ class ProductMediaGallery extends HTMLElement {
 
       this.abortController?.abort();
       this.abortController = null;
+      cancelAnimationFrame(this.galleryRefreshFrame);
+      this.galleryRefreshFrame = null;
+      this.galleryResizeObserver?.disconnect();
+      this.galleryResizeObserver = null;
       this.destroyGallery();
       this.destroyLightbox();
     });
@@ -131,7 +144,22 @@ class ProductMediaGallery extends HTMLElement {
 
   get galleryMode() {
     if (this.mobileQuery.matches) return 'mobile';
+    if (this.dataset.overlayPresentation === 'quick-add-strip') return 'quick-add-strip';
     return ['left_thumbnails', 'bottom_thumbnails'].includes(this.dataset.desktopLayout) ? 'desktop-carousel' : 'desktop-static';
+  }
+
+  get quickAddStripSlidesPerView() {
+    const visibleMediaCount = this.visibleSlides().length;
+    return visibleMediaCount > 4 ? 4 : Math.max(1, visibleMediaCount);
+  }
+
+  syncQuickAddStripSlidesPerView() {
+    if (this.dataset.overlayPresentation !== 'quick-add-strip' || this.mobileQuery?.matches) {
+      this.style.removeProperty('--overlay-media-slides-per-view');
+      return;
+    }
+
+    this.style.setProperty('--overlay-media-slides-per-view', String(this.quickAddStripSlidesPerView));
   }
 
   visibleSlides() {
@@ -160,6 +188,30 @@ class ProductMediaGallery extends HTMLElement {
     element.setAttribute('aria-hidden', String(hidden));
   }
 
+  resetPagination() {
+    const pagination = this.querySelector('[data-product-media-pagination]');
+    if (!pagination) return;
+
+    pagination.replaceChildren();
+    pagination.classList.remove(
+      'swiper-pagination-bullets',
+      'swiper-pagination-clickable',
+      'swiper-pagination-horizontal',
+      'swiper-pagination-vertical',
+      'swiper-pagination-lock',
+      'swiper-pagination-hidden',
+      'swiper-pagination-disabled',
+    );
+  }
+
+  syncPaginationVisibility(shouldShow) {
+    const pagination = this.querySelector('[data-product-media-pagination]');
+    if (!pagination) return;
+
+    const hasOverflow = this.visibleSlides().length > 1;
+    pagination.toggleAttribute('hidden', !(shouldShow && hasOverflow));
+  }
+
   applyVariantMediaFilter(variantId) {
     if (this.dataset.filterVariantMedia !== 'true') return false;
 
@@ -179,14 +231,19 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   destroyGallery() {
+    this.quickAddStripController?.abort();
+    this.quickAddStripController = null;
+    this.quickAddStripDrag = null;
     destroySwiperCarousel(this.mainSwiper);
     destroySwiperCarousel(this.thumbnailSwiper);
     this.mainSwiper = null;
     this.thumbnailSwiper = null;
     this.activeGalleryMode = null;
+    this.resetPagination();
+    this.syncPaginationVisibility(false);
   }
 
-  initializeGallery(preferredMediaId = '') {
+  initializeGallery(preferredMediaId = '', { instant = true } = {}) {
     const main = this.mainElement;
     if (!main) return;
 
@@ -198,17 +255,25 @@ class ProductMediaGallery extends HTMLElement {
     }
 
     if (this.mainSwiper && this.activeGalleryMode === mode) {
+      this.syncQuickAddStripSlidesPerView();
+      if (mode === 'quick-add-strip') {
+        this.mainSwiper.params.slidesPerView = this.quickAddStripSlidesPerView;
+      }
       this.thumbnailSwiper?.update();
       this.mainSwiper.update();
-      if (preferredMediaId) this.showMedia(preferredMediaId, true);
+      if (preferredMediaId) this.showMedia(preferredMediaId, instant);
       return;
     }
 
     this.destroyGallery();
     this.activeGalleryMode = mode;
     const isMobile = mode === 'mobile';
-    const showThumbnails = !isMobile || this.dataset.mobileLayout === 'thumbnails';
+    const isQuickAddStrip = mode === 'quick-add-strip';
+    const showThumbnails = (!isMobile && !isQuickAddStrip) || this.dataset.mobileLayout === 'thumbnails';
     const showPagination = isMobile && this.dataset.mobileLayout === 'slider' && this.dataset.mobileShowPagination === 'true';
+    const slidesPerView = isQuickAddStrip ? this.quickAddStripSlidesPerView : 1;
+    this.syncPaginationVisibility(showPagination);
+    this.syncQuickAddStripSlidesPerView();
     const gapProperty = isMobile ? '--product-media-gap-mobile' : '--product-media-gap';
     const thumbnailGapProperty = isMobile ? '--product-media-thumbnail-gap-mobile' : '--product-media-thumbnail-gap';
     const computedStyle = getComputedStyle(this);
@@ -230,9 +295,12 @@ class ProductMediaGallery extends HTMLElement {
     const pagination = this.querySelector('[data-product-media-pagination]');
     this.mainSwiper = createSwiperCarousel(main, {
       modules: showPagination ? [Pagination, Thumbs] : [Thumbs],
-      slidesPerView: 1,
+      slidesPerView,
+      autoHeight: isMobile,
       spaceBetween: gap,
       speed: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300,
+      grabCursor: isQuickAddStrip,
+      ...(isQuickAddStrip ? { focusableElements: 'input, select, option, textarea, video, label' } : {}),
       watchOverflow: true,
       controls: {
         scope: this,
@@ -244,12 +312,120 @@ class ProductMediaGallery extends HTMLElement {
       a11y: { enabled: true },
     });
 
-    if (preferredMediaId) this.showMedia(preferredMediaId, true);
+    if (isQuickAddStrip) this.bindQuickAddStripDrag(main);
+
+    if (preferredMediaId) this.showMedia(preferredMediaId, instant);
+  }
+
+  bindQuickAddStripDrag(main) {
+    if (!main || this.quickAddStripController) return;
+
+    this.quickAddStripController = new AbortController();
+    const options = { capture: true, signal: this.quickAddStripController.signal };
+    main.addEventListener('pointerdown', this.handleQuickAddStripPointerDown, options);
+    main.addEventListener('pointermove', this.handleQuickAddStripPointerMove, options);
+    main.addEventListener('pointerup', this.handleQuickAddStripPointerUp, options);
+    main.addEventListener('pointercancel', this.handleQuickAddStripPointerUp, options);
+    main.addEventListener('lostpointercapture', this.handleQuickAddStripPointerUp, options);
+  }
+
+  handleQuickAddStripPointerDown(event) {
+    if (this.galleryMode !== 'quick-add-strip' || !this.mainSwiper || !event.isPrimary) return;
+    if (event.pointerType === 'mouse' && event.button !== 0) return;
+    if (event.target.closest?.('button, a, input, select, textarea, video, iframe, model-viewer')) return;
+
+    this.quickAddStripDrag = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startY: event.clientY,
+      axis: null,
+      moved: false,
+    };
+    this.mainSwiper.allowTouchMove = false;
+    event.currentTarget.setPointerCapture?.(event.pointerId);
+    // Swiper's own pointer listeners must not compete with this desktop-only
+    // fallback. A normal click still reaches the gallery click handler.
+    event.stopPropagation();
+  }
+
+  handleQuickAddStripPointerMove(event) {
+    const drag = this.quickAddStripDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - drag.startX;
+    const deltaY = event.clientY - drag.startY;
+    if (!drag.axis) {
+      if (Math.hypot(deltaX, deltaY) < 6) return;
+      if (Math.abs(deltaY) > Math.abs(deltaX)) {
+        this.finishQuickAddStripDrag(event, false);
+        return;
+      }
+      drag.axis = 'horizontal';
+      drag.moved = true;
+    }
+
+    if (drag.axis !== 'horizontal') return;
+    event.preventDefault();
+    event.stopPropagation();
+  }
+
+  handleQuickAddStripPointerUp(event) {
+    const drag = this.quickAddStripDrag;
+    if (!drag || drag.pointerId !== event.pointerId) return;
+
+    const deltaX = event.clientX - drag.startX;
+    const shouldSlide = drag.axis === 'horizontal' && drag.moved;
+    const swiper = this.mainSwiper;
+    if (shouldSlide && swiper && !swiper.destroyed) {
+      const threshold = Math.max(24, (swiper.el.clientWidth || 0) * 0.08);
+      if (Math.abs(deltaX) >= threshold) {
+        const next = swiper.rtlTranslate ? deltaX > 0 : deltaX < 0;
+        next ? swiper.slideNext() : swiper.slidePrev();
+        event.preventDefault();
+      }
+    }
+
+    this.finishQuickAddStripDrag(event, shouldSlide);
+  }
+
+  finishQuickAddStripDrag(event, moved) {
+    const drag = this.quickAddStripDrag;
+    if (!drag) return;
+
+    const swiper = this.mainSwiper;
+    this.quickAddStripDrag = null;
+    event.currentTarget.releasePointerCapture?.(drag.pointerId);
+    if (moved) {
+      event.preventDefault();
+      event.stopPropagation();
+      this.lightboxZoomState.mediaSuppressClickUntil = performance.now() + 300;
+    }
+    window.requestAnimationFrame(() => {
+      if (swiper && !swiper.destroyed) swiper.allowTouchMove = true;
+    });
   }
 
   handleBreakpoint() {
     const activeMediaId = this.activeMediaId();
     this.initializeGallery(activeMediaId);
+  }
+
+  scheduleGalleryRefresh() {
+    cancelAnimationFrame(this.galleryRefreshFrame);
+    this.galleryRefreshFrame = requestAnimationFrame(() => {
+      this.galleryRefreshFrame = null;
+      if (!this.isConnected || !this.getClientRects().length) return;
+      this.refreshGallery();
+    });
+  }
+
+  refreshGallery() {
+    const activeMediaId = this.activeMediaId();
+    this.syncThumbnailVisibility();
+    this.syncGalleryOverflow();
+    this.initializeGallery(activeMediaId);
+    this.mainSwiper?.update();
+    this.thumbnailSwiper?.update();
   }
 
   handleVariantChange(event) {
@@ -259,6 +435,7 @@ class ProductMediaGallery extends HTMLElement {
       this.dataset.currentVariantId = variantId;
       const filtersVariantMedia = this.applyVariantMediaFilter(variantId);
       this.syncThumbnailVisibility();
+      this.syncGalleryOverflow();
       const visibleMediaIds = new Set(this.visibleSlides().map((slide) => String(slide.dataset.mediaId)));
       const mediaId = featuredMediaId && visibleMediaIds.has(String(featuredMediaId))
         ? String(featuredMediaId)
@@ -267,7 +444,7 @@ class ProductMediaGallery extends HTMLElement {
 
       if (filtersVariantMedia) {
         this.destroyGallery();
-        this.initializeGallery(mediaId);
+        this.initializeGallery(mediaId, { instant: false });
         return;
       }
 
@@ -277,7 +454,7 @@ class ProductMediaGallery extends HTMLElement {
       }
       this.mainSwiper?.update();
       this.thumbnailSwiper?.update();
-      if (mediaId) this.showMedia(String(mediaId), true);
+      if (mediaId) this.showMedia(String(mediaId));
     });
   }
 
@@ -512,7 +689,9 @@ class ProductMediaGallery extends HTMLElement {
   }
 
   handleLightboxDragStart(event) {
-    if (event.target?.closest?.('.product-media-lightbox__image')) event.preventDefault();
+    if (event.target?.closest?.('.product-media-lightbox__image, [data-product-media-content]')) {
+      event.preventDefault();
+    }
   }
 
   getLightboxPanBounds(slide) {
@@ -774,6 +953,21 @@ class ProductMediaGallery extends HTMLElement {
     });
   }
 
+  syncGalleryOverflow() {
+    const visibleMediaCount = this.visibleSlides().length;
+    const hasOverflow = visibleMediaCount > 1;
+    this.dataset.visibleMediaCount = String(visibleMediaCount);
+    this.syncQuickAddStripSlidesPerView();
+    this.classList.toggle('product-media-gallery--single-media', !hasOverflow);
+
+    this.querySelector('.media-thumbnails__carousel')?.toggleAttribute('hidden', !hasOverflow);
+    this.querySelector('.media-gallery__controls')?.toggleAttribute('hidden', !hasOverflow);
+    const showPagination = Boolean(this.mobileQuery?.matches)
+      && this.dataset.mobileLayout === 'slider'
+      && this.dataset.mobileShowPagination === 'true';
+    this.syncPaginationVisibility(showPagination);
+  }
+
   showMedia(mediaId, instant = false) {
     const slides = Array.from(this.mainSwiper?.slides || []);
     const index = slides.findIndex((slide) => String(slide.dataset.mediaId) === String(mediaId));
@@ -804,6 +998,10 @@ class ProductMediaGallery extends HTMLElement {
     // previously focused gallery item (pointer activation need not focus it).
     opener?.focus({ preventScroll: true });
     this.lightbox.showModal();
+    // Native <dialog> may autofocus the first control, which is the close
+    // button here. Keep the lightbox open without presenting that control as
+    // the active target; close still restores focus to the media opener.
+    this.lightbox.querySelector('[data-product-lightbox-close]')?.blur?.();
     document.documentElement.classList.add('product-media-lightbox-open');
 
     const viewport = this.querySelector('[data-product-lightbox-swiper]');
@@ -904,7 +1102,8 @@ class ProductMediaGallery extends HTMLElement {
     for (const control of lightbox.querySelectorAll('.product-media-lightbox__toolbar, .product-media-lightbox__navigation, .product-media-lightbox__thumbnails')) {
       animations.push(control.animate({ opacity: opening ? [0, 1] : [1, 0] }, options));
     }
-    animations.push(lightbox.animate({ opacity: opening ? [0, 1] : [1, 0] }, { ...options, pseudoElement: '::backdrop' }));
+    const backdropColor = getComputedStyle(lightbox, '::backdrop').backgroundColor;
+    animations.push(lightbox.animate({ backgroundColor: opening ? ['transparent', backdropColor] : [backdropColor, 'transparent'] }, { ...options, pseudoElement: '::backdrop' }));
     const transition = { clone, source, animations };
     this.lightboxTransition = transition;
     await Promise.all(animations.map((animation) => animation.finished.catch(() => {})));

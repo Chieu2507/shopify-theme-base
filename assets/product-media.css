@@ -60,6 +60,27 @@
   height: auto;
 }
 
+/* Overlay galleries intentionally have their own media contract. The
+   product-page gallery stays natural, while Quick Add and Quick View can use
+   a responsive frame ratio without sharing the page gallery's layout rules. */
+.product-media-gallery--overlay .product-media-gallery__main .product-media {
+  aspect-ratio: var(--overlay-media-ratio-desktop, 1);
+}
+
+.product-media-gallery--overlay .product-media-gallery__main .product-media > :where(img, video, iframe, model-viewer) {
+  height: 100%;
+  object-fit: cover;
+}
+
+.product-media-gallery--overlay[data-desktop-ratio='auto'] .product-media-gallery__main .product-media {
+  aspect-ratio: auto;
+}
+
+.product-media-gallery--overlay[data-desktop-ratio='auto'] .product-media-gallery__main .product-media > :where(img, video, iframe, model-viewer) {
+  height: auto;
+  object-fit: contain;
+}
+
 .product-media--interactive {
   cursor: zoom-in;
 }
@@ -185,18 +206,18 @@
     display: grid;
   }
 
-  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails) .product-media-gallery__main {
+  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails):not(.product-media-gallery--overlay-quick-add-strip) .product-media-gallery__main {
     overflow: visible;
   }
 
-  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails) .product-media-gallery__main > .swiper-wrapper {
+  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails):not(.product-media-gallery--overlay-quick-add-strip) .product-media-gallery__main > .swiper-wrapper {
     display: grid;
     gap: var(--product-media-gap, var(--layout-grid-gap));
     transform: none !important;
   }
 
-  .product-media-gallery--desktop-grid .product-media-gallery__main > .swiper-wrapper,
-  .product-media-gallery--desktop-two_column_grid .product-media-gallery__main > .swiper-wrapper {
+  .product-media-gallery--desktop-grid:not(.product-media-gallery--overlay-quick-add-strip) .product-media-gallery__main > .swiper-wrapper,
+  .product-media-gallery--desktop-two_column_grid:not(.product-media-gallery--overlay-quick-add-strip) .product-media-gallery__main > .swiper-wrapper {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
@@ -209,7 +230,7 @@
     grid-template-columns: minmax(0, 1fr);
   }
 
-  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails) .product-media-gallery__slide {
+  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails):not(.product-media-gallery--overlay-quick-add-strip) .product-media-gallery__slide {
     width: auto !important;
   }
 
@@ -239,13 +260,31 @@
   .product-media-gallery--desktop-grid .media-thumbnails__carousel,
   .product-media-gallery--desktop-stacked .media-thumbnails__carousel,
   .product-media-gallery--desktop-two_column_grid .media-thumbnails__carousel,
-  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails) .product-media-gallery__pagination,
-  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails) .media-gallery__navigation {
+  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails):not(.product-media-gallery--overlay-quick-add-strip) .product-media-gallery__pagination,
+  .product-media-gallery:not(.product-media-gallery--desktop-left_thumbnails):not(.product-media-gallery--desktop-bottom_thumbnails):not(.product-media-gallery--overlay-quick-add-strip) .media-gallery__navigation {
     display: none;
   }
 }
 
 @media (max-width: 767.98px) {
+  .product-media-gallery--overlay .product-media-gallery__main .product-media {
+    aspect-ratio: var(--overlay-media-ratio-mobile, var(--overlay-media-ratio-desktop, 1));
+  }
+
+  .product-media-gallery--overlay .product-media-gallery__main .product-media > :where(img, video, iframe, model-viewer) {
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .product-media-gallery--overlay[data-mobile-ratio='auto'] .product-media-gallery__main .product-media {
+    aspect-ratio: auto;
+  }
+
+  .product-media-gallery--overlay[data-mobile-ratio='auto'] .product-media-gallery__main .product-media > :where(img, video, iframe, model-viewer) {
+    height: auto;
+    object-fit: contain;
+  }
+
   .product-media-gallery__layout {
     gap: var(--product-media-gap-mobile, var(--layout-grid-gap));
   }
@@ -305,11 +344,10 @@
 }
 
 .product-media-lightbox::backdrop {
-  background-color: var(--overlay-color);
-  opacity: calc(var(--overlay-opacity) * (1 - var(--lightbox-dismiss-progress)));
+  background-color: color-mix(in srgb, var(--overlay-backdrop-color) calc(100% * (1 - var(--lightbox-dismiss-progress))), transparent);
   -webkit-backdrop-filter: blur(calc(var(--overlay-backdrop-blur) * (1 - var(--lightbox-dismiss-progress))));
   backdrop-filter: blur(calc(var(--overlay-backdrop-blur) * (1 - var(--lightbox-dismiss-progress))));
-  transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), backdrop-filter var(--motion-duration-standard) var(--motion-ease-standard);
+  transition: background-color var(--motion-duration-standard) var(--motion-ease-standard), backdrop-filter var(--motion-duration-standard) var(--motion-ease-standard);
 }
 
 .product-media-lightbox__panel {
