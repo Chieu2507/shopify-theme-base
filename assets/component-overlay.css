@@ -81,6 +81,36 @@
 .component-overlay[data-state='closing']::backdrop {
   animation: component-overlay-backdrop-exit var(--overlay-backdrop-duration) var(--overlay-backdrop-ease) both;
 }
+custom-cursor.component-overlay__backdrop-cursor {
+  --color-cursor-text: var(--overlay-text-color);
+  --color-cursor-background: var(--overlay-background-color);
+  position: fixed;
+  z-index: 9999;
+  top: var(--cursor-y, -100px);
+  left: var(--cursor-x, -100px);
+  display: flex;
+  width: 0;
+  height: 0;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  border-radius: 50%;
+  color: var(--color-cursor-text);
+  pointer-events: none;
+  background-color: var(--color-cursor-background);
+  transform: translate(-50%, -50%);
+  transition: width .2s ease, height .2s ease;
+  will-change: width, height;
+}
+custom-cursor.component-overlay__backdrop-cursor.active {
+  width: 6.4rem;
+  height: 6.4rem;
+}
+custom-cursor.component-overlay__backdrop-cursor svg {
+  flex: none;
+  width: 2.2rem;
+  height: 2.2rem;
+}
 .overlay-backdrop-pointer {
   --overlay-pointer-size: var(--swiper-nav-size, var(--button-height, var(--overlay-close-size, 4rem)));
   --overlay-pointer-hide-delay: 220ms;
@@ -124,7 +154,7 @@
 @media (hover: hover) and (pointer: fine) {
   html.component-overlay-backdrop-cursor,
   html.component-overlay-backdrop-cursor body,
-  html.component-overlay-backdrop-cursor .component-overlay::backdrop { cursor: none !important; }
+  .component-overlay.cursor-none::backdrop { cursor: none !important; }
 }
 .component-overlay__header { position: relative; display: flex; flex: none; align-items: center; justify-content: space-between; gap: 16px; min-height: 74px; padding: 16px var(--overlay-inset); border-bottom: 1px solid var(--overlay-border-color); }
 .component-overlay__header--untitled { z-index: 1; height: 0; min-height: 0; padding: 0; border-bottom: 0; }
@@ -173,6 +203,7 @@
 @media (prefers-reduced-motion: reduce) {
   .component-overlay,
   .component-overlay::backdrop,
+  custom-cursor.component-overlay__backdrop-cursor,
   .overlay-backdrop-pointer { transition: none; }
   .component-overlay::backdrop { animation: none; }
 }

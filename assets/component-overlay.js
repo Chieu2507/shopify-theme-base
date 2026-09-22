@@ -89,7 +89,7 @@
       this.portaled = false;
       this.portalContextClass = null;
       this.openFrame = null;
-      this.backdropPointer = dialog.querySelector('.overlay-backdrop-pointer');
+      this.backdropCursor = dialog.querySelector('custom-cursor.component-overlay__backdrop-cursor');
       this.portalToBody();
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
@@ -127,13 +127,13 @@
           this.close({ restoreFocus: false });
         }
       }, options);
-      if (this.backdropPointer && document.addEventListener) {
-        document.addEventListener('mousemove', (event) => this.updateBackdropPointer(event), options);
-        document.addEventListener('mouseleave', () => this.hideBackdropPointer(), options);
+      if (this.backdropCursor && document.addEventListener) {
+        document.addEventListener('mousemove', (event) => this.updateBackdropCursor(event), options);
+        document.addEventListener('mouseleave', () => this.hideBackdropCursor(), options);
         window.addEventListener?.('mouseout', (event) => {
-          if (!event.relatedTarget) this.hideBackdropPointer();
+          if (!event.relatedTarget) this.hideBackdropCursor();
         }, options);
-        window.addEventListener?.('blur', () => this.hideBackdropPointer(), options);
+        window.addEventListener?.('blur', () => this.hideBackdropCursor(), options);
       }
       dialog.addEventListener('close', () => {
         // Native close events are queued; a reopened dialog owns the new state.
@@ -142,16 +142,17 @@
       }, options);
     }
 
-    hideBackdropPointer() {
-      this.backdropPointer?.classList.remove('is-visible');
+    hideBackdropCursor() {
+      this.backdropCursor?.classList.remove('active');
+      this.dialog.classList.remove('cursor-none');
       backdropCursorOwners.delete(this);
       document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', backdropCursorOwners.size > 0);
     }
 
-    updateBackdropPointer(event) {
-      const pointer = this.backdropPointer;
-      if (!pointer || !pointerMedia.matches || !this.dialog.open || this.dialog.dataset.state !== 'open') {
-        this.hideBackdropPointer();
+    updateBackdropCursor(event) {
+      const cursor = this.backdropCursor;
+      if (!cursor || !pointerMedia.matches || !this.dialog.open || this.dialog.dataset.state !== 'open') {
+        this.hideBackdropCursor();
         return;
       }
 
@@ -161,13 +162,14 @@
         || event.clientY < rect.top
         || event.clientY > rect.bottom;
       if (!overBackdrop) {
-        this.hideBackdropPointer();
+        this.hideBackdropCursor();
         return;
       }
 
-      pointer.style.setProperty('--overlay-pointer-x', `${event.clientX}px`);
-      pointer.style.setProperty('--overlay-pointer-y', `${event.clientY}px`);
-      pointer.classList.add('is-visible');
+      cursor.style.setProperty('--cursor-x', `${event.clientX}px`);
+      cursor.style.setProperty('--cursor-y', `${event.clientY}px`);
+      cursor.classList.add('active');
+      this.dialog.classList.add('cursor-none');
       backdropCursorOwners.add(this);
       document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', true);
     }
@@ -208,7 +210,7 @@
     finishClose() {
       clearTimeout(this.timer);
       this.cancelOpenFrame();
-      this.hideBackdropPointer();
+      this.hideBackdropCursor();
       this.gesture.reset();
       this.dialog.dataset.state = 'closed';
       const opener = this.opener;
@@ -243,7 +245,7 @@
       clearTimeout(this.timer);
       this.cancelOpenFrame();
       this.gesture.reset();
-      this.hideBackdropPointer();
+      this.hideBackdropCursor();
       if (this.dialog.open && this.dialog.dataset.state === 'open') return;
       this.opener = opener;
       this.restoreFocus = restoreFocus;
@@ -265,7 +267,7 @@
       if (!this.dialog.open) return;
       clearTimeout(this.timer);
       this.cancelOpenFrame();
-      this.hideBackdropPointer();
+      this.hideBackdropCursor();
       this.restoreFocus = restoreFocus;
       if (!fromGesture) this.gesture.reset();
       this.dialog.dataset.state = 'closing';
