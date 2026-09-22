@@ -195,8 +195,10 @@
       this.hideBackdropPointer();
       this.gesture.reset();
       this.dialog.dataset.state = 'closed';
-      this.opener?.setAttribute('aria-expanded', 'false');
-      if (this.restoreFocus && this.opener?.isConnected && !this.opener.hidden) this.opener.focus({ preventScroll: true });
+      const opener = this.opener;
+      opener?.setAttribute('aria-expanded', 'false');
+      if (this.restoreFocus && opener?.isConnected && !opener.hidden) opener.focus({ preventScroll: true });
+      else if (!this.restoreFocus && document.activeElement === opener) opener?.blur?.();
       this.opener = null;
     }
 
@@ -205,14 +207,14 @@
       this.openFrame = null;
     }
 
-    open({ opener = document.activeElement, focus = true, defer = false } = {}) {
+    open({ opener = document.activeElement, focus = true, defer = false, restoreFocus = true } = {}) {
       clearTimeout(this.timer);
       this.cancelOpenFrame();
       this.gesture.reset();
       this.hideBackdropPointer();
       if (this.dialog.open && this.dialog.dataset.state === 'open') return;
       this.opener = opener;
-      this.restoreFocus = true;
+      this.restoreFocus = restoreFocus;
       this.opener?.setAttribute('aria-expanded', 'true');
       if (!this.dialog.open) this.dialog.showModal();
       this.dialog.dataset.state = 'opening';
