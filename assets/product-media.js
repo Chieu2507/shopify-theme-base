@@ -188,6 +188,30 @@ class ProductMediaGallery extends HTMLElement {
     element.setAttribute('aria-hidden', String(hidden));
   }
 
+  resetPagination() {
+    const pagination = this.querySelector('[data-product-media-pagination]');
+    if (!pagination) return;
+
+    pagination.replaceChildren();
+    pagination.classList.remove(
+      'swiper-pagination-bullets',
+      'swiper-pagination-clickable',
+      'swiper-pagination-horizontal',
+      'swiper-pagination-vertical',
+      'swiper-pagination-lock',
+      'swiper-pagination-hidden',
+      'swiper-pagination-disabled',
+    );
+  }
+
+  syncPaginationVisibility(shouldShow) {
+    const pagination = this.querySelector('[data-product-media-pagination]');
+    if (!pagination) return;
+
+    const hasOverflow = this.visibleSlides().length > 1;
+    pagination.toggleAttribute('hidden', !(shouldShow && hasOverflow));
+  }
+
   applyVariantMediaFilter(variantId) {
     if (this.dataset.filterVariantMedia !== 'true') return false;
 
@@ -215,6 +239,8 @@ class ProductMediaGallery extends HTMLElement {
     this.mainSwiper = null;
     this.thumbnailSwiper = null;
     this.activeGalleryMode = null;
+    this.resetPagination();
+    this.syncPaginationVisibility(false);
   }
 
   initializeGallery(preferredMediaId = '', { instant = true } = {}) {
@@ -246,6 +272,7 @@ class ProductMediaGallery extends HTMLElement {
     const showThumbnails = (!isMobile && !isQuickAddStrip) || this.dataset.mobileLayout === 'thumbnails';
     const showPagination = isMobile && this.dataset.mobileLayout === 'slider' && this.dataset.mobileShowPagination === 'true';
     const slidesPerView = isQuickAddStrip ? this.quickAddStripSlidesPerView : 1;
+    this.syncPaginationVisibility(showPagination);
     this.syncQuickAddStripSlidesPerView();
     const gapProperty = isMobile ? '--product-media-gap-mobile' : '--product-media-gap';
     const thumbnailGapProperty = isMobile ? '--product-media-thumbnail-gap-mobile' : '--product-media-thumbnail-gap';
@@ -935,7 +962,10 @@ class ProductMediaGallery extends HTMLElement {
 
     this.querySelector('.media-thumbnails__carousel')?.toggleAttribute('hidden', !hasOverflow);
     this.querySelector('.media-gallery__controls')?.toggleAttribute('hidden', !hasOverflow);
-    this.querySelector('[data-product-media-pagination]')?.toggleAttribute('hidden', !hasOverflow);
+    const showPagination = Boolean(this.mobileQuery?.matches)
+      && this.dataset.mobileLayout === 'slider'
+      && this.dataset.mobileShowPagination === 'true';
+    this.syncPaginationVisibility(showPagination);
   }
 
   showMedia(mediaId, instant = false) {
