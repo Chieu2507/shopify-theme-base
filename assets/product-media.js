@@ -269,6 +269,7 @@ class ProductMediaGallery extends HTMLElement {
     this.mainSwiper = createSwiperCarousel(main, {
       modules: showPagination ? [Pagination, Thumbs] : [Thumbs],
       slidesPerView,
+      autoHeight: isMobile,
       spaceBetween: gap,
       speed: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 0 : 300,
       grabCursor: isQuickAddStrip,
