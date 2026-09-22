@@ -988,10 +988,15 @@ shadow, padding hoặc z-index rời rạc.
 - `overlay_title_size` map về visual token `--font-heading-*` thông qua
   `--overlay-title-size`; setting không thay đổi semantic HTML.
 - `overlay_backdrop_blur` map về `--overlay-backdrop-blur`; `.theme-overlay` và
-  `dialog::backdrop` dùng `backdrop-filter` với fallback nền màu.
+  `dialog::backdrop` dùng `backdrop-filter` với `background-color` dạng
+  `rgba()` từ màu shadow của `overlay_color_scheme` và alpha của
+  `overlay_opacity`.
 - Popover dùng `--overlay-popover-border-width` và
-  `--overlay-popover-shadow`. Drawer dùng padding responsive từ
-  `--overlay-drawer-padding-desktop` và `--overlay-drawer-padding-mobile`.
+  `--overlay-popover-shadow`. Drawer dùng
+  `--overlay-drawer-padding-desktop` và `--overlay-drawer-padding-mobile` làm
+  khoảng inset ngoài panel (top/right/bottom); content padding giữ riêng qua
+  `--overlay-drawer-content-padding-desktop` và
+  `--overlay-drawer-content-padding-mobile`.
 - Radius kế thừa `--media-radius`, `--drawer-radius`, `--bottom-sheet-radius`
   và `--overlay-radius` từ Radius & Shape; không hard-code `border-radius`.
 
@@ -1014,9 +1019,9 @@ radius; reduced-motion policy áp dụng cho animation mở/đóng ở phase Mot
 | overlay_backdrop_blur | range | 0–40, step 1px | 20 | `--overlay-backdrop-blur`; chỉ dùng cho backdrop |
 | overlay_popover_border_width | range | 0–3, step 1px | 0 | `--overlay-popover-border-width`; chỉ áp dụng cho popover |
 | overlay_popover_shadow | select | none, small, medium, large | medium | `--overlay-popover-shadow`; màu lấy từ scheme shadow |
-| overlay_drawer_padding_desktop | checkbox | true/false | true | `--overlay-drawer-padding-desktop`; áp dụng từ 768px |
-| overlay_drawer_padding_mobile | checkbox | true/false | false | `--overlay-drawer-padding-mobile`; áp dụng dưới 767.98px |
-| overlay_opacity | range | 0–80, step 5% | 40 | `--overlay-opacity`; chia 100 thành CSS alpha |
+| overlay_drawer_padding_desktop | checkbox | true/false | true | `--overlay-drawer-padding-desktop`; inset ngoài top/right/bottom từ 768px |
+| overlay_drawer_padding_mobile | checkbox | true/false | false | `--overlay-drawer-padding-mobile`; inset ngoài top/right/bottom dưới 767.98px |
+| overlay_opacity | range | 0–80, step 5% | 40 | `--overlay-opacity` và alpha của `--overlay-backdrop-color`; chia 100 thành CSS alpha |
 | overlay_z_base | range | 0–100, step 1 | 10 | --z-base |
 | overlay_z_drawer | range | 100–900, step 10 | 200 | --z-drawer |
 | overlay_z_modal | range | 1000–2000, step 10 | 1000 | --z-modal |

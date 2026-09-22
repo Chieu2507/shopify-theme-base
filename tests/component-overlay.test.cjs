@@ -9,24 +9,46 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
   const timers = new Map();
   const frames = new Map();
   const nativeEvents = [];
+  const timerDelays = [];
   let id = 0;
   let now = 0;
-  const document = { activeElement: null };
+  const rootClasses = new Set();
+  const document = {
+    activeElement: null,
+    documentElement: {
+      classList: {
+        contains: (name) => rootClasses.has(name),
+        toggle: (name, force) => {
+          if (force === undefined) force = !rootClasses.has(name);
+          if (force) rootClasses.add(name);
+          else rootClasses.delete(name);
+          return force;
+        },
+      },
+    },
+  };
   class Element extends EventTarget {
     constructor() {
       super();
       this.dataset = {};
       this.attributes = {};
-      this.style = { removeProperty(name) { delete this[name]; } };
+      this.style = { setProperty(name, value) { this[name] = value; }, removeProperty(name) { delete this[name]; } };
       const classes = new Set();
-      this.classList = { add: (name) => classes.add(name), remove: (name) => classes.delete(name) };
+      this.classList = {
+        add: (...names) => names.forEach((name) => classes.add(name)),
+        remove: (...names) => names.forEach((name) => classes.delete(name)),
+        contains: (name) => classes.has(name),
+        [Symbol.iterator]: () => classes[Symbol.iterator](),
+      };
       this.offsetHeight = 500;
       this.isConnected = true;
       this.tabIndex = 0;
     }
     hasAttribute(name) { return Object.prototype.hasOwnProperty.call(this.attributes, name); }
     setAttribute(name, value) { this.attributes[name] = value; }
+    removeAttribute(name) { delete this.attributes[name]; }
     focus() { this.focusCount = (this.focusCount || 0) + 1; document.activeElement = this; }
+    blur() { this.blurCount = (this.blurCount || 0) + 1; if (document.activeElement === this) document.activeElement = null; }
     getClientRects() { return [{}]; }
     closest() { return null; }
     setPointerCapture(id) { this.capture = id; }
@@ -35,6 +57,8 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
   }
   const header = new Element();
   const closeButton = new Element();
+  const backdrop = new Element();
+  const backdropCursor = new Element();
   const opener = new Element();
   const lastInput = new Element();
   document.activeElement = opener;
@@ -45,6 +69,7 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
       element.parentElement = this;
     },
   };
+  document.querySelector = (selector) => selector === 'custom-cursor[data-component-overlay-cursor]' ? backdropCursor : null;
   document.body = {
     append(element) {
       element.parentNode = this;
@@ -54,9 +79,14 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
   Object.assign(dialog, {
     open: false,
     dataset: { mobileLayout: 'bottom_sheet', state: 'closed' },
-    querySelector: (selector) => selector === '.component-overlay__header' ? header : closeButton,
+    querySelector: (selector) => {
+      if (selector === '.component-overlay__header') return header;
+      if (selector === '.component-overlay__panel') return dialog;
+      if (selector === '[data-component-overlay-backdrop]') return backdrop;
+      return closeButton;
+    },
     querySelectorAll: () => [closeButton, lastInput],
-    showModal() { this.open = true; },
+    showModal() { this.open = true; document.activeElement = closeButton; },
     close() { this.open = false; nativeEvents.push(() => this.dispatchEvent(new Event('close'))); },
     remove() { this.parentNode = null; this.parentElement = null; },
     getBoundingClientRect: () => ({ left: 0, top: 100, right: 400, bottom: 600 }),
@@ -71,17 +101,19 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
   reducedMedia.matches = reduced;
   const window = { matchMedia: (query) => query.includes('reduced') ? reducedMedia : media };
   vm.runInNewContext(fs.readFileSync(path.join(__dirname, '../assets/component-overlay.js'), 'utf8'), {
-    window, document, AbortController,
+    window, document, AbortController, Event,
     performance: { now: () => now },
-    getComputedStyle: () => ({ transitionDuration: reduced ? '0s' : '0.2s', transitionDelay: '0s' }),
-    setTimeout: (fn) => { timers.set(++id, fn); return id; },
+    getComputedStyle: (element) => element === backdrop
+      ? { transitionDuration: '0s', transitionDelay: '0s', animationDuration: '0.7s', animationDelay: '0s' }
+      : { transitionDuration: reduced ? '0s' : '0.5s', transitionDelay: '0s', animationDuration: '0s', animationDelay: '0s' },
+    setTimeout: (fn, delay = 0) => { timerDelays.push(delay); timers.set(++id, fn); return id; },
     clearTimeout: (key) => timers.delete(key),
     requestAnimationFrame: (fn) => { frames.set(++id, fn); return id; },
     cancelAnimationFrame: (key) => frames.delete(key),
   });
   const flush = (queue) => { const callbacks = [...queue.values()]; queue.clear(); callbacks.forEach((fn) => fn()); };
   return {
-    api: window.ThemeOverlay, dialog, header, opener, closeButton, lastInput, document, media, timers, frames,
+    api: window.ThemeOverlay, dialog, header, opener, closeButton, backdrop, backdropCursor, lastInput, document, media, timers, frames, timerDelays,
     overlay: window.ThemeOverlay.get(dialog),
     tick: (ms) => { now += ms; },
     flushTimers: () => flush(timers), flushFrames: () => flush(frames),
@@ -90,13 +122,14 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
   };
 }
 
-test('one controller per dialog; open, animated close and focus restoration', () => {
+test('one controller per dialog; open without close autofocus and restore focus on close', () => {
   const f = fixture();
   assert.equal(f.api.get(f.dialog), f.overlay);
   f.overlay.open({ opener: f.opener });
   assert.equal(f.dialog.dataset.state, 'open');
   assert.equal(f.opener.attributes['aria-expanded'], 'true');
-  assert.equal(f.closeButton.focusCount, 1);
+  assert.equal(f.closeButton.focusCount, undefined);
+  assert.equal(f.closeButton.blurCount, 1);
   f.overlay.close();
   assert.equal(f.dialog.open, true);
   assert.equal(f.dialog.dataset.state, 'closing');
@@ -105,6 +138,66 @@ test('one controller per dialog; open, animated close and focus restoration', ()
   assert.equal(f.dialog.open, false);
   assert.equal(f.opener.focusCount, 1);
   assert.equal(f.opener.attributes['aria-expanded'], 'false');
+});
+
+test('close waits for the slower panel or backdrop timeline', () => {
+  const f = fixture();
+  f.overlay.open();
+  f.overlay.close();
+  assert.equal(f.timerDelays.at(-1), 716);
+});
+
+test('pointer-triggered close clears native focus without restoring it to the opener', () => {
+  const f = fixture();
+  f.overlay.open({ opener: f.opener, restoreFocus: false });
+  f.overlay.close({ restoreFocus: false });
+  f.document.activeElement = f.opener;
+  f.flushTimers();
+  f.flushNative();
+  assert.equal(f.opener.focusCount, undefined);
+  assert.equal(f.opener.blurCount, 1);
+  assert.equal(f.document.activeElement, null);
+  assert.equal(f.opener.attributes['aria-expanded'], 'false');
+});
+
+test('pointer click on the close action does not restore opener focus', () => {
+  const f = fixture();
+  f.closeButton.closest = (selector) => selector === '[data-overlay-close]' ? f.closeButton : null;
+  f.overlay.open({ opener: f.opener });
+  const event = new Event('click');
+  Object.defineProperty(event, 'target', { value: f.closeButton });
+  Object.defineProperty(event, 'detail', { value: 1 });
+  f.dialog.dispatchEvent(event);
+  f.flushTimers();
+  f.flushNative();
+  assert.equal(f.opener.focusCount, undefined);
+  assert.equal(f.opener.attributes['aria-expanded'], 'false');
+});
+
+test('keyboard click on the close action restores opener focus', () => {
+  const f = fixture();
+  f.closeButton.closest = (selector) => selector === '[data-overlay-close]' ? f.closeButton : null;
+  f.overlay.open({ opener: f.opener });
+  const event = new Event('click');
+  Object.defineProperty(event, 'target', { value: f.closeButton });
+  Object.defineProperty(event, 'detail', { value: 0 });
+  f.dialog.dispatchEvent(event);
+  f.flushTimers();
+  f.flushNative();
+  assert.equal(f.opener.focusCount, 1);
+  assert.equal(f.opener.attributes['aria-expanded'], 'false');
+});
+
+test('deferred opening lets the backdrop lead the panel by one frame', () => {
+  const f = fixture();
+  f.overlay.open({ defer: true });
+  assert.equal(f.dialog.open, true);
+  assert.equal(f.dialog.dataset.state, 'opening');
+  assert.equal(f.closeButton.focusCount, undefined);
+  f.flushFrames();
+  assert.equal(f.dialog.dataset.state, 'open');
+  assert.equal(f.closeButton.focusCount, undefined);
+  assert.equal(f.closeButton.blurCount, 1);
 });
 
 test('reopening cancels pending close and ignores old queued native close event', () => {
@@ -124,7 +217,8 @@ test('reopening cancels pending close and ignores old queued native close event'
 test('Escape uses the animated lifecycle', () => {
   const f = fixture();
   f.overlay.open();
-  const event = new Event('cancel', { cancelable: true });
+  const event = new Event('keydown', { cancelable: true });
+  Object.assign(event, { key: 'Escape' });
   f.dialog.dispatchEvent(event);
   assert.equal(event.defaultPrevented, true);
   assert.equal(f.dialog.dataset.state, 'closing');
@@ -133,6 +227,7 @@ test('Escape uses the animated lifecycle', () => {
 test('Tab and Shift+Tab wrap inside the overlay', () => {
   const f = fixture();
   f.overlay.open();
+  f.document.activeElement = f.closeButton;
   const back = new Event('keydown', { cancelable: true });
   Object.assign(back, { key: 'Tab', shiftKey: true });
   f.dialog.dispatchEvent(back);
@@ -145,18 +240,28 @@ test('Tab and Shift+Tab wrap inside the overlay', () => {
   assert.equal(f.document.activeElement, f.closeButton);
 });
 
-test('dialog padding is not backdrop; outside bounds closes', () => {
+test('HTML backdrop is the only pointer close target', () => {
   const f = fixture();
   f.overlay.open();
-  const click = (x, y) => {
-    const event = new Event('click');
-    Object.assign(event, { clientX: x, clientY: y });
-    f.dialog.dispatchEvent(event);
-  };
-  click(20, 120);
+  f.dialog.dispatchEvent(new Event('click'));
   assert.equal(f.dialog.dataset.state, 'open');
-  click(450, 120);
+  f.backdrop.dispatchEvent(new Event('click'));
   assert.equal(f.dialog.dataset.state, 'closing');
+});
+
+test('backdrop custom cursor follows the pointer and hides inside the panel', () => {
+  const f = fixture();
+  f.overlay.open();
+  const move = new Event('mousemove');
+  Object.assign(move, { clientX: 450, clientY: 120 });
+  f.backdrop.dispatchEvent(move);
+  assert.equal(f.backdropCursor.classList.contains('active'), true);
+  assert.equal(f.dialog.classList.contains('cursor-none'), true);
+  assert.equal(f.backdropCursor.style['--cursor-x'], '450px');
+  assert.equal(f.backdropCursor.style['--cursor-y'], '120px');
+  f.backdrop.dispatchEvent(new Event('mouseleave'));
+  assert.equal(f.backdropCursor.classList.contains('active'), false);
+  assert.equal(f.dialog.classList.contains('cursor-none'), false);
 });
 
 test('short drag snaps back; downward threshold dismisses', () => {

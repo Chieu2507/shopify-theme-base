@@ -2,12 +2,18 @@
 
 ## Ownership
 
-- `snippets/component-overlay.liquid`: native dialog shell, optional title,
-  accessible label, close control, drag handle and scrollable body.
+- `snippets/component-overlay.liquid`: shared HTML dialog shell, optional
+  title, accessible label, HTML backdrop close target, drag handle and
+  scrollable body.
+- `snippets/component-overlay-cursor.liquid`: one global custom-cursor,
+  rendered outside overlay content so it can follow the active backdrop.
 - `assets/component-overlay.css`: popup/drawer/sheet geometry, spacing, radius,
-  backdrop and motion. Uses existing Theme Settings tokens.
+  backdrop, pointer close affordance and motion. Uses existing Theme Settings
+  tokens.
 - `assets/component-overlay.js`: open/close state, Escape/backdrop, focus return,
-  interrupted transitions, reduced motion and reusable `SheetGesture`.
+  pointer close positioning, interrupted transitions, reduced motion and
+  reusable `SheetGesture`. Opening does not autofocus the close control; callers
+  may opt into an explicit focus target only when the interaction requires it.
 - Feature controllers own only content, forms, variants and trigger wiring.
 
 Popup blocks, Pickup availability, back-in-stock Notify and Size chart render
@@ -33,22 +39,51 @@ padding, transitions, backdrop, header, close control or radius.
 ```js
 const overlay = window.ThemeOverlay.get(dialog);
 overlay.open({ opener: trigger });
+// The default open path leaves focus where the trigger interaction placed it;
+// it does not move focus to the close button.
+// Feature controllers can defer the panel reveal by one frame so the backdrop
+// leads the content when a loaded view needs a softer entrance.
+// overlay.open({ opener: trigger, defer: true });
 overlay.close();
 // On section removal:
 overlay.destroy();
 ```
 
-Desktop uses `popup` (scale .95 → 1 + fade) or `drawer` (slide from right).
+Desktop uses a viewport-centered `popup` (scale .95 → 1 + fade) or a
+right-anchored `drawer` (slide from right).
+The loaded Quick View popup intentionally uses a softer `scale .9 → 1` entrance
+over 500ms, with a 700ms backdrop timeline. Its close path reverses the panel
+from `scale(1)` to `scale(.9)` over the same 700ms backdrop timeline, so the
+panel and backdrop finish together; its controller opens only after the product
+DOM and primary media are ready.
+Quick View keeps the overlay body as its only scroll container; the desktop
+media-left layout keeps product details sticky without creating a second column
+scroll area. Mobile layouts remain a single natural document flow.
 Mobile through 767.98px uses `bottom_sheet` (slide from bottom) or `drawer`.
-All modes use the global motion and backdrop tokens. Sheets are content-height
+Drawer padding settings control the panel's outer inset on top, right and
+bottom; they never remove the header/body content padding. An unchecked setting
+keeps those edges flush at `0`.
+All modes use the global motion and backdrop tokens. Backdrop alpha is part of
+`--overlay-backdrop-color` as an `rgba()` background color so the blur remains
+visible while the overlay opacity setting still controls the configured alpha.
+Backdrop color and blur share one keyframe timeline, so they enter and exit
+with the same duration and easing instead of relying on separate paint paths.
+On fine pointers, the HTML backdrop itself receives the hover event and
+activates the global `<custom-cursor>` DOM element. It uses the active overlay
+scheme, expands to 6.4rem with a 2.2rem SVG X, and collapses smoothly when the
+pointer leaves the backdrop. Touch contexts do not show it; reduced-motion
+contexts disable the transition while keeping the backdrop close action
+available.
+Sheets are content-height
 with a viewport cap, common top corner radius, safe-area padding, and a
 scrollable body. Dragging starts only on the header/handle, not form controls.
 
 ## Validation
 
-Run `node --test tests/component-overlay.test.cjs` for controller regressions.
+Run `node --test tests/component-overlay.test.cjs` for controller and pointer
+close regressions.
 `tests/overlay-fixture.html` is a manual native-dialog fixture with the real
-component CSS/JS; its output records opening transforms and backdrop opacity.
+component CSS/JS; its output records opening transforms and backdrop color.
 It does not render Liquid or replace storefront/Theme Editor QA.
 
 Before release verify the actual theme at mobile, 768px and desktop: popup
