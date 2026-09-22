@@ -4,6 +4,7 @@
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
   const pointerMedia = window.matchMedia('(hover: hover) and (pointer: fine)');
   const instances = new WeakMap();
+  const backdropCursorOwners = new Set();
   const transitionBuffer = 16;
   const duration = (element) => {
     const style = getComputedStyle(element);
@@ -122,6 +123,10 @@
       if (this.backdropPointer && document.addEventListener) {
         document.addEventListener('mousemove', (event) => this.updateBackdropPointer(event), options);
         document.addEventListener('mouseleave', () => this.hideBackdropPointer(), options);
+        window.addEventListener?.('mouseout', (event) => {
+          if (!event.relatedTarget) this.hideBackdropPointer();
+        }, options);
+        window.addEventListener?.('blur', () => this.hideBackdropPointer(), options);
       }
       dialog.addEventListener('close', () => {
         // Native close events are queued; a reopened dialog owns the new state.
@@ -132,6 +137,8 @@
 
     hideBackdropPointer() {
       this.backdropPointer?.classList.remove('is-visible');
+      backdropCursorOwners.delete(this);
+      document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', backdropCursorOwners.size > 0);
     }
 
     updateBackdropPointer(event) {
@@ -154,6 +161,8 @@
       pointer.style.setProperty('--overlay-pointer-x', `${event.clientX}px`);
       pointer.style.setProperty('--overlay-pointer-y', `${event.clientY}px`);
       pointer.classList.add('is-visible');
+      backdropCursorOwners.add(this);
+      document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', true);
     }
 
     portalToBody() {
