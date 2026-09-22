@@ -97,7 +97,7 @@
         panel: dialog,
         header: dialog.querySelector('.component-overlay__header'),
         enabled: () => mobile.matches && dialog.dataset.mobileLayout === 'bottom_sheet' && dialog.dataset.state === 'open',
-        close: () => this.close({ fromGesture: true }),
+        close: () => this.close({ fromGesture: true, restoreFocus: false }),
       });
       dialog.addEventListener('cancel', (event) => { event.preventDefault(); this.close(); }, options);
       dialog.addEventListener('keydown', (event) => {
@@ -123,7 +123,9 @@
         }
         if (event.target !== dialog) return;
         const rect = dialog.getBoundingClientRect();
-        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.close();
+        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
+          this.close({ restoreFocus: false });
+        }
       }, options);
       if (this.backdropPointer && document.addEventListener) {
         document.addEventListener('mousemove', (event) => this.updateBackdropPointer(event), options);
