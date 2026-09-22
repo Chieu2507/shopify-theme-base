@@ -1,0 +1,50 @@
+{% liquid
+  assign text_size = block.settings.text_size | default: 'md'
+  unless text_size == 'xs' or text_size == 'sm' or text_size == 'md' or text_size == 'lg' or text_size == 'xl' or text_size == 'xxl'
+    assign text_size = 'md'
+  endunless
+  assign width = block.settings.width | default: 'fit'
+  unless width == 'fit' or width == 'fill' or width == 'custom'
+    assign width = 'fit'
+  endunless
+  assign max_width = block.settings.max_width | default: 640 | plus: 0
+  assign padding_top = block.settings.padding_top | default: 0 | plus: 0
+  assign padding_right = block.settings.padding_right | default: 0 | plus: 0
+  assign padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
+  assign padding_left = block.settings.padding_left | default: 0 | plus: 0
+%}
+
+{% capture text_style %}
+  {% if width == 'fill' %}--text-width: 100%;{% elsif width == 'custom' %}--text-width: 100%;--text-max-width: {{ max_width }}px;{% endif %}
+  {% if padding_top != 0 %}--text-padding-top: {{ padding_top }}px;{% endif %}
+  {% if padding_right != 0 %}--text-padding-right: {{ padding_right }}px;{% endif %}
+  {% if padding_bottom != 0 %}--text-padding-bottom: {{ padding_bottom }}px;{% endif %}
+  {% if padding_left != 0 %}--text-padding-left: {{ padding_left }}px;{% endif %}
+  {% if block.settings.text_color != blank %}--text-block-color: {{ block.settings.text_color | escape }};{% endif %}
+{% endcapture %}
+
+<div class="text-block announcement-text-block motion-block body-text body-{{ text_size }}"{% if text_style != blank %} style="{{ text_style | strip }}"{% endif %} {{ block.shopify_attributes }}>
+  {{ block.settings.text | escape }}
+</div>
+
+{% schema %}
+{
+  "name": "Text",
+  "tag": null,
+  "settings": [
+    { "type": "header", "content": "t:general.content" },
+    { "type": "text", "id": "text", "label": "t:labels.text", "default": "Announcement text" },
+    { "type": "select", "id": "text_size", "label": "t:labels.text_size", "options": [{ "value": "xs", "label": "t:options.text_size.xs" }, { "value": "sm", "label": "t:options.text_size.sm" }, { "value": "md", "label": "t:options.text_size.md" }, { "value": "lg", "label": "t:options.text_size.lg" }, { "value": "xl", "label": "t:options.text_size.xl" }, { "value": "xxl", "label": "t:options.text_size.xxl" }], "default": "md" },
+    { "type": "color", "alpha": true, "id": "text_color", "label": "t:labels.text_color" },
+    { "type": "header", "content": "t:general.size" },
+    { "type": "select", "id": "width", "label": "t:labels.width", "options": [{ "value": "fit", "label": "t:options.width.fit" }, { "value": "fill", "label": "t:options.width.fill" }, { "value": "custom", "label": "t:options.width.custom" }], "default": "fit" },
+    { "type": "range", "id": "max_width", "label": "t:labels.max_width", "min": 320, "max": 1600, "step": 20, "unit": "px", "default": 640, "visible_if": "{{ block.settings.width == 'custom' }}" },
+    { "type": "header", "content": "t:general.padding" },
+    { "type": "range", "id": "padding_top", "label": "t:labels.top_padding", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_right", "label": "t:labels.right_padding", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_bottom", "label": "t:labels.bottom_padding", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
+    { "type": "range", "id": "padding_left", "label": "t:labels.left_padding", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 }
+  ],
+  "presets": [{ "name": "Text" }]
+}
+{% endschema %}
