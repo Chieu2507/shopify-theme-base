@@ -19,6 +19,29 @@
     orderOptionsDrag: null,
   };
 
+  const transitionDuration = (element) => {
+    if (!element) return 0;
+    const style = window.getComputedStyle(element);
+    const milliseconds = (value) => {
+      const normalized = value.trim();
+      const amount = Number.parseFloat(normalized);
+      if (!Number.isFinite(amount)) return 0;
+      return amount * (normalized.endsWith('ms') ? 1 : 1000);
+    };
+    const delays = style.transitionDelay.split(',').map(milliseconds);
+    return Math.max(
+      0,
+      ...style.transitionDuration.split(',').map((value, index) => (
+        milliseconds(value) + (delays[index % delays.length] || 0)
+      )),
+    );
+  };
+
+  const drawerTransitionDuration = (drawer) => Math.max(
+    transitionDuration(drawer),
+    transitionDuration(drawer?.querySelector('[data-drawer]')),
+  );
+
   const getDrawer = (root = document) => {
     if (!root) return null;
     if (root.matches?.('[data-cart-drawer]')) return root;
@@ -537,7 +560,7 @@
     if (!formData.get('id')) return;
     const fallbackError = state.drawer.dataset.cartAddError || 'Unable to add this item';
 
-    open({ focus: false });
+    open();
     setLoading(true);
     setError();
     state.request = fetch(endpoint(state.drawer.dataset.cartAddUrl), {
@@ -704,7 +727,7 @@
     const trigger = drawer.querySelector(`[data-cart-drawer-order-options-open="${name}"]`);
     const title = panel.querySelector('[data-cart-drawer-order-options-title]');
     if (title) title.textContent = trigger?.dataset.cartDrawerOrderOptionsTitle || 'Cart options';
-    window.requestAnimationFrame(() => panel.querySelector(`[data-cart-drawer-order-options-content="${name}"] input, [data-cart-drawer-order-options-content="${name}"] textarea, [data-cart-drawer-order-options-content="${name}"] select, [data-cart-drawer-order-options-close]`)?.focus({ preventScroll: true }));
+    window.requestAnimationFrame(() => panel.querySelector(`[data-cart-drawer-order-options-content="${name}"] input, [data-cart-drawer-order-options-content="${name}"] textarea, [data-cart-drawer-order-options-content="${name}"] select`)?.focus({ preventScroll: true }));
   };
 
   const beginOrderOptionsDrag = (event) => {
@@ -749,7 +772,7 @@
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
   ) || []).filter((element) => !element.hidden && element.offsetParent !== null);
 
-  const open = ({ focus = true } = {}) => {
+  const open = () => {
     const drawer = state.drawer;
     if (!drawer) return;
     const shouldAnimate = !drawer.classList.contains('is-open');
@@ -771,9 +794,6 @@
     document.querySelectorAll('[data-cart-drawer-open]').forEach((trigger) => trigger.setAttribute('aria-expanded', 'true'));
     document.dispatchEvent(new CustomEvent('cart-drawer:open', { detail: { drawer } }));
     refresh().catch(() => {});
-    if (focus) {
-      window.requestAnimationFrame(() => drawer.querySelector('[data-cart-drawer-close]')?.focus());
-    }
   };
 
   const close = ({ force = false } = {}) => {
@@ -788,12 +808,13 @@
     document.querySelectorAll('[data-cart-drawer-open]').forEach((trigger) => trigger.setAttribute('aria-expanded', 'false'));
     document.dispatchEvent(new CustomEvent('cart-drawer:close', { detail: { drawer } }));
     window.clearTimeout(state.closeTimer);
+    const closeDuration = drawerTransitionDuration(drawer);
     state.closeTimer = window.setTimeout(() => {
       if (!drawer.classList.contains('is-open')) {
         drawer.classList.remove('is-closing');
         drawer.hidden = true;
       }
-    }, 350);
+    }, closeDuration + 16);
 
     const restoreTarget = state.previousFocus;
     state.previousFocus = null;
@@ -893,7 +914,7 @@
       }
     });
 
-    if (state.editorSelected) open({ focus: false });
+    if (state.editorSelected) open();
   };
 
   document.addEventListener('click', (event) => {
@@ -953,8 +974,8 @@
       pointer.classList.remove('is-visible');
       return;
     }
-    pointer.style.setProperty('--cart-drawer-pointer-x', `${event.clientX}px`);
-    pointer.style.setProperty('--cart-drawer-pointer-y', `${event.clientY}px`);
+    pointer.style.setProperty('--overlay-pointer-x', `${event.clientX}px`);
+    pointer.style.setProperty('--overlay-pointer-y', `${event.clientY}px`);
     pointer.classList.add('is-visible');
   }, { passive: true });
 
@@ -990,7 +1011,7 @@
     if (nextDrawer) initialize(nextDrawer);
     if (!isDrawerEvent(event)) return;
     state.editorSelected = true;
-    open({ focus: false });
+    open();
   });
 
   document.addEventListener('shopify:section:deselect', (event) => {

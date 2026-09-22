@@ -2,12 +2,27 @@
 (() => {
   const mobile = window.matchMedia('(max-width: 767.98px)');
   const reduced = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const pointerMedia = window.matchMedia('(hover: hover) and (pointer: fine)');
   const instances = new WeakMap();
+  const backdropCursorOwners = new Set();
+  const transitionBuffer = 16;
   const duration = (element) => {
+    if (!element) return 0;
     const style = getComputedStyle(element);
-    const milliseconds = (value) => parseFloat(value) * (value.trim().endsWith('ms') ? 1 : 1000) || 0;
-    const delays = style.transitionDelay.split(',').map(milliseconds);
-    return Math.max(0, ...style.transitionDuration.split(',').map((value, i) => milliseconds(value) + delays[i % delays.length]));
+    const milliseconds = (value) => {
+      const normalized = String(value || '').trim();
+      const amount = parseFloat(normalized);
+      return Number.isFinite(amount) ? amount * (normalized.endsWith('ms') ? 1 : 1000) : 0;
+    };
+    const timedValues = (values, delays) => {
+      const durations = String(values || '0s').split(',').map(milliseconds);
+      const offsets = String(delays || '0s').split(',').map(milliseconds);
+      return Math.max(0, ...durations.map((value, index) => value + (offsets[index % offsets.length] || 0)));
+    };
+    return Math.max(
+      timedValues(style.transitionDuration, style.transitionDelay),
+      timedValues(style.animationDuration, style.animationDelay),
+    );
   };
 
   class SheetGesture {
@@ -53,12 +68,14 @@
       this.drag = null;
       if (this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
-      this.panel.style.transition = reduced.matches ? 'none' : 'transform var(--motion-duration-standard) var(--motion-ease-standard)';
+      this.panel.style.transition = reduced.matches
+        ? 'none'
+        : 'transform var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard))';
       if (dismiss) this.close();
       if (reduced.matches) { this.reset(); return; }
       this.frame = requestAnimationFrame(() => {
         this.panel.style.transform = dismiss ? 'translateY(100%)' : 'translateY(0)';
-        this.timer = setTimeout(() => this.reset(), duration(this.panel) + 50);
+        this.timer = setTimeout(() => this.reset(), duration(this.panel) + transitionBuffer);
       });
     }
 
@@ -83,17 +100,25 @@
       this.originalNextSibling = null;
       this.portaled = false;
       this.portalContextClass = null;
+      this.openFrame = null;
+      this.panel = dialog.querySelector('.component-overlay__panel');
+      this.backdrop = dialog.querySelector('[data-component-overlay-backdrop]');
+      this.backdropCursor = document.querySelector?.('custom-cursor[data-component-overlay-cursor]');
       this.portalToBody();
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
       this.gesture = new SheetGesture({
-        panel: dialog,
+        panel: this.panel,
         header: dialog.querySelector('.component-overlay__header'),
         enabled: () => mobile.matches && dialog.dataset.mobileLayout === 'bottom_sheet' && dialog.dataset.state === 'open',
-        close: () => this.close({ fromGesture: true }),
+        close: () => this.close({ fromGesture: true, restoreFocus: false }),
       });
-      dialog.addEventListener('cancel', (event) => { event.preventDefault(); this.close(); }, options);
       dialog.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          this.close();
+          return;
+        }
         if (event.key !== 'Tab') return;
         const controls = [...dialog.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea, iframe, [tabindex]')]
           .filter((element) => !element.disabled && element.tabIndex >= 0 && !element.closest('[inert]') && element.getClientRects().length);
@@ -108,16 +133,60 @@
         }
       }, options);
       dialog.addEventListener('click', (event) => {
-        if (event.target.closest('[data-overlay-close]')) this.close();
-        if (event.target !== dialog) return;
-        const rect = dialog.getBoundingClientRect();
-        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.close();
+        if (event.target.closest('[data-overlay-close]')) {
+          // Pointer dismissal should not put focus back on a product-card
+          // action. Keyboard activation still returns focus for accessibility.
+          this.close({ restoreFocus: event.detail === 0 });
+          return;
+        }
       }, options);
-      dialog.addEventListener('close', () => {
-        // Native close events are queued; a reopened dialog owns the new state.
-        if (dialog.open) return;
-        this.finishClose();
-      }, options);
+      if (this.backdrop) {
+        this.backdrop.addEventListener('click', () => this.close({ restoreFocus: false }), options);
+      }
+      if (this.backdropCursor && this.backdrop) {
+        this.backdrop.addEventListener('mousemove', (event) => this.updateBackdropCursor(event), options);
+        this.backdrop.addEventListener('mouseleave', () => this.hideBackdropCursor(), options);
+        window.addEventListener?.('mouseout', (event) => {
+          if (!event.relatedTarget) this.hideBackdropCursor();
+        }, options);
+        window.addEventListener?.('blur', () => this.hideBackdropCursor(), options);
+      }
+    }
+
+    isOpen() {
+      return this.dialog.dataset.state !== 'closed' && !this.dialog.hidden;
+    }
+
+    hideBackdropCursor() {
+      this.backdropCursor?.classList.remove('active');
+      this.dialog.classList.remove('cursor-none');
+      backdropCursorOwners.delete(this);
+      document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', backdropCursorOwners.size > 0);
+    }
+
+    updateBackdropCursor(event) {
+      const cursor = this.backdropCursor;
+      if (!cursor || !pointerMedia.matches || !this.isOpen() || this.dialog.dataset.state !== 'open') {
+        this.hideBackdropCursor();
+        return;
+      }
+
+      cursor.style.setProperty('--cursor-x', `${event.clientX}px`);
+      cursor.style.setProperty('--cursor-y', `${event.clientY}px`);
+      const overlayStyle = getComputedStyle(this.dialog);
+      cursor.style.setProperty('--color-cursor-text', overlayStyle.getPropertyValue?.('--overlay-text-color') || '');
+      cursor.style.setProperty('--color-cursor-background', overlayStyle.getPropertyValue?.('--overlay-background-color') || '');
+      const scheme = this.dialog.dataset.overlayColorScheme
+        || Array.from(this.dialog.classList || []).find((className) => /^scheme-[a-z0-9_-]+$/i.test(className));
+      if (this.backdropCursorScheme && this.backdropCursorScheme !== scheme) cursor.classList.remove(this.backdropCursorScheme);
+      if (scheme) {
+        cursor.classList.add('color-scheme', 'section-color-scope', scheme);
+        this.backdropCursorScheme = scheme;
+      }
+      cursor.classList.add('active');
+      this.dialog.classList.add('cursor-none');
+      backdropCursorOwners.add(this);
+      document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', true);
     }
 
     portalToBody() {
@@ -154,41 +223,85 @@
     }
 
     finishClose() {
-        clearTimeout(this.timer);
-        this.gesture.reset();
-        this.dialog.dataset.state = 'closed';
-        this.opener?.setAttribute('aria-expanded', 'false');
-        if (this.restoreFocus && this.opener?.isConnected && !this.opener.hidden) this.opener.focus({ preventScroll: true });
-        this.opener = null;
+      clearTimeout(this.timer);
+      this.cancelOpenFrame();
+      this.hideBackdropCursor();
+      this.gesture.reset();
+      this.dialog.dataset.state = 'closed';
+      this.dialog.open = false;
+      this.dialog.hidden = true;
+      this.dialog.removeAttribute('open');
+      this.dialog.setAttribute('aria-hidden', 'true');
+      this.dialog.dispatchEvent?.(new Event('close'));
+      const opener = this.opener;
+      const restoreFocus = this.restoreFocus;
+      opener?.setAttribute('aria-expanded', 'false');
+      this.opener = null;
+
+      if (restoreFocus && opener?.isConnected && !opener.hidden) {
+        opener.focus({ preventScroll: true });
+        return;
+      }
+
+      if (!restoreFocus) {
+        // Native dialog focus handling can run after close(). Clear the opener
+        // again on the next task so pointer dismissal cannot leave :focus-within
+        // active on the product card.
+        const clearOpenerFocus = () => {
+          if (this.isOpen() || this.opener || document.activeElement !== opener) return;
+          opener?.blur?.();
+        };
+        clearOpenerFocus();
+        setTimeout(clearOpenerFocus, 0);
+      }
     }
 
-    open({ opener = document.activeElement, focus = true } = {}) {
+    cancelOpenFrame() {
+      cancelAnimationFrame(this.openFrame);
+      this.openFrame = null;
+    }
+
+    open({ opener = document.activeElement, focus = false, defer = false, restoreFocus = true } = {}) {
       clearTimeout(this.timer);
+      this.cancelOpenFrame();
       this.gesture.reset();
-      if (this.dialog.open && this.dialog.dataset.state === 'open') return;
+      this.hideBackdropCursor();
+      if (this.isOpen() && this.dialog.dataset.state === 'open') return;
       this.opener = opener;
-      this.restoreFocus = true;
+      this.restoreFocus = restoreFocus;
       this.opener?.setAttribute('aria-expanded', 'true');
+      this.dialog.open = true;
+      this.dialog.hidden = false;
+      this.dialog.setAttribute('open', '');
+      this.dialog.setAttribute('aria-hidden', 'false');
       this.dialog.dataset.state = 'opening';
-      if (!this.dialog.open) this.dialog.showModal();
       void this.dialog.offsetHeight;
-      this.dialog.dataset.state = 'open';
-      if (focus) this.dialog.querySelector('[data-overlay-close]')?.focus({ preventScroll: true });
+      const reveal = () => {
+        this.openFrame = null;
+        if (!this.isOpen() || this.dialog.dataset.state !== 'opening') return;
+        this.dialog.dataset.state = 'open';
+        const close = this.dialog.querySelector('[data-overlay-close]');
+        if (focus) close?.focus({ preventScroll: true });
+        else close?.blur?.();
+      };
+      if (defer && !reduced.matches) this.openFrame = requestAnimationFrame(reveal);
+      else reveal();
     }
 
     close({ restoreFocus = true, immediate = false, fromGesture = false } = {}) {
-      if (!this.dialog.open) return;
+      if (!this.isOpen()) return;
       clearTimeout(this.timer);
+      this.cancelOpenFrame();
+      this.hideBackdropCursor();
       this.restoreFocus = restoreFocus;
       if (!fromGesture) this.gesture.reset();
       this.dialog.dataset.state = 'closing';
       const finish = () => {
-        if (!this.dialog.open) return;
-        this.dialog.close();
+        if (!this.isOpen()) return;
         this.finishClose();
       };
       if (immediate || reduced.matches) finish();
-      else this.timer = setTimeout(finish, duration(this.dialog) + 50);
+      else this.timer = setTimeout(finish, Math.max(duration(this.panel), duration(this.backdrop)) + transitionBuffer);
     }
 
     destroy() {

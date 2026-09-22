@@ -793,11 +793,16 @@
   if settings.overlay_drawer_padding_mobile
     assign overlay_drawer_padding_mobile = '1.5rem'
   endif
+  assign overlay_drawer_content_padding_desktop = '1.5rem'
+  assign overlay_drawer_content_padding_mobile = '1rem'
 
   assign overlay_opacity = settings.overlay_opacity
   if overlay_opacity == blank
     assign overlay_opacity = 40
   endif
+  assign overlay_opacity_value = overlay_opacity | divided_by: 100.0
+  assign overlay_color_rgb = overlay_color | color_to_rgb | remove: 'rgb(' | remove: ')' | strip
+  assign overlay_backdrop_color = 'rgba(' | append: overlay_color_rgb | append: ', ' | append: overlay_opacity_value | append: ')'
   assign overlay_z_base = settings.overlay_z_base
   if overlay_z_base == blank
     assign overlay_z_base = 10
@@ -1144,13 +1149,16 @@
     --overlay-border-color: {{ overlay_border_color }};
     --overlay-shadow-color: {{ overlay_shadow_color }};
     --overlay-color: {{ overlay_color }};
-    --overlay-opacity: {{ overlay_opacity | divided_by: 100.0 }};
+    --overlay-opacity: {{ overlay_opacity_value }};
+    --overlay-backdrop-color: {{ overlay_backdrop_color }};
     --overlay-backdrop-blur: {{ overlay_backdrop_blur }}px;
     --overlay-popover-border-width: {{ overlay_popover_border_width }}px;
     --overlay-popover-shadow: {{ overlay_popover_shadow }};
     --overlay-title-size: {{ overlay_title_size }};
     --overlay-drawer-padding-desktop: {{ overlay_drawer_padding_desktop }};
     --overlay-drawer-padding-mobile: {{ overlay_drawer_padding_mobile }};
+    --overlay-drawer-content-padding-desktop: {{ overlay_drawer_content_padding_desktop }};
+    --overlay-drawer-content-padding-mobile: {{ overlay_drawer_content_padding_mobile }};
     --z-base: {{ overlay_z_base }};
     --z-drawer: {{ overlay_z_drawer }};
     --z-modal: {{ overlay_z_modal }};

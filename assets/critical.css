@@ -29,7 +29,7 @@ body {
   color: var(--body-color);
 }
 
-html:has(dialog[scroll-lock][open], details[scroll-lock][open]) {
+html:has(dialog[scroll-lock][open], .component-overlay[scroll-lock]:not([hidden]), details[scroll-lock][open]) {
   /* Clip the page without creating an overflow scroll container for sticky content. */
   overflow: clip;
 }
@@ -223,20 +223,15 @@ input[type='radio'],
 
 button:focus-visible,
 a:focus-visible,
-textarea:focus-visible,
-select:focus-visible,
-[tabindex]:focus-visible {
+[tabindex]:not(input):not(select):not(textarea):focus-visible {
   outline: 2px solid var(--input-focus-color);
   outline-offset: 3px;
 }
 
-:where(input):focus:not(:focus-visible) {
+/* Form controls opt out of the native outline until a component adds an
+ * intentional focus treatment of its own. */
+:where(input, select, textarea):focus {
   outline: none;
-}
-
-:where(input):focus-visible {
-  outline: 2px solid var(--input-focus-color);
-  outline-offset: -2px;
 }
 
 button:disabled,
@@ -303,7 +298,7 @@ dialog {
   border-radius: var(--drawer-radius);
   background-color: var(--overlay-background-color);
   color: var(--overlay-text-color);
-  padding: var(--overlay-drawer-padding-desktop);
+  padding: var(--overlay-drawer-content-padding-desktop, 1.5rem);
 }
 
 .bottom-sheet,
@@ -325,8 +320,7 @@ dialog {
 }
 
 dialog::backdrop {
-  background-color: var(--overlay-color);
-  opacity: var(--overlay-opacity);
+  background-color: var(--overlay-backdrop-color);
   -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
   backdrop-filter: blur(var(--overlay-backdrop-blur));
 }
@@ -334,8 +328,8 @@ dialog::backdrop {
 /* Shared native overlay motion. Layout-specific dialogs can opt into the
    same contract while keeping their popup, drawer, or bottom-sheet geometry. */
 @keyframes overlay-dialog-backdrop-enter {
-  from { opacity: 0; }
-  to { opacity: var(--overlay-opacity); }
+  from { background-color: transparent; }
+  to { background-color: var(--overlay-backdrop-color); }
 }
 
 @keyframes overlay-dialog-popup-enter {
@@ -405,7 +399,7 @@ dialog[data-overlay-motion='popup'][open]::backdrop {
 @media (max-width: 767.98px) {
   .drawer,
   [data-drawer] {
-    padding: var(--overlay-drawer-padding-mobile);
+    padding: var(--overlay-drawer-content-padding-mobile, 1rem);
   }
 }
 
@@ -1748,11 +1742,6 @@ legend {
   width: 100%;
 }
 
-.variant-picker__control--select:focus-visible {
-  outline: 2px solid var(--input-focus-color);
-  outline-offset: 3px;
-}
-
 .variant-picker__control--select option:disabled {
   color: color-mix(in srgb, var(--input-text-color) 60%, transparent);
 }
@@ -1988,8 +1977,7 @@ legend {
   position: fixed;
   inset: 0;
   z-index: var(--z-drawer);
-  background-color: var(--overlay-color);
-  opacity: var(--overlay-opacity);
+  background-color: var(--overlay-backdrop-color);
   -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
   backdrop-filter: blur(var(--overlay-backdrop-blur));
 }
