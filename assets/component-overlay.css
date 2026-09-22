@@ -39,6 +39,30 @@
   transition-delay: 0ms;
   transition-timing-function: var(--overlay-exit-ease);
 }
+@keyframes component-overlay-backdrop-enter {
+  from {
+    background-color: transparent;
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+  to {
+    background-color: var(--overlay-backdrop-color);
+    -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
+    backdrop-filter: blur(var(--overlay-backdrop-blur));
+  }
+}
+@keyframes component-overlay-backdrop-exit {
+  from {
+    background-color: var(--overlay-backdrop-color);
+    -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
+    backdrop-filter: blur(var(--overlay-backdrop-blur));
+  }
+  to {
+    background-color: transparent;
+    -webkit-backdrop-filter: blur(0);
+    backdrop-filter: blur(0);
+  }
+}
 .component-overlay::backdrop {
   background-color: transparent;
   -webkit-backdrop-filter: blur(0);
@@ -52,6 +76,10 @@
   background-color: var(--overlay-backdrop-color);
   -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
   backdrop-filter: blur(var(--overlay-backdrop-blur));
+  animation: component-overlay-backdrop-enter var(--overlay-backdrop-duration) var(--overlay-backdrop-ease) both;
+}
+.component-overlay[data-state='closing']::backdrop {
+  animation: component-overlay-backdrop-exit var(--overlay-backdrop-duration) var(--overlay-backdrop-ease) both;
 }
 .overlay-backdrop-pointer {
   --overlay-pointer-size: var(--overlay-close-size, 4rem);
@@ -143,4 +171,5 @@
   .component-overlay,
   .component-overlay::backdrop,
   .overlay-backdrop-pointer { transition: none; }
+  .component-overlay::backdrop { animation: none; }
 }
