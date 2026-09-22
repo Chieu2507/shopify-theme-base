@@ -217,7 +217,7 @@ class ProductMediaGallery extends HTMLElement {
     this.activeGalleryMode = null;
   }
 
-  initializeGallery(preferredMediaId = '') {
+  initializeGallery(preferredMediaId = '', { instant = true } = {}) {
     const main = this.mainElement;
     if (!main) return;
 
@@ -235,7 +235,7 @@ class ProductMediaGallery extends HTMLElement {
       }
       this.thumbnailSwiper?.update();
       this.mainSwiper.update();
-      if (preferredMediaId) this.showMedia(preferredMediaId, true);
+      if (preferredMediaId) this.showMedia(preferredMediaId, instant);
       return;
     }
 
@@ -286,7 +286,7 @@ class ProductMediaGallery extends HTMLElement {
 
     if (isQuickAddStrip) this.bindQuickAddStripDrag(main);
 
-    if (preferredMediaId) this.showMedia(preferredMediaId, true);
+    if (preferredMediaId) this.showMedia(preferredMediaId, instant);
   }
 
   bindQuickAddStripDrag(main) {
@@ -416,7 +416,7 @@ class ProductMediaGallery extends HTMLElement {
 
       if (filtersVariantMedia) {
         this.destroyGallery();
-        this.initializeGallery(mediaId);
+        this.initializeGallery(mediaId, { instant: false });
         return;
       }
 
@@ -426,7 +426,7 @@ class ProductMediaGallery extends HTMLElement {
       }
       this.mainSwiper?.update();
       this.thumbnailSwiper?.update();
-      if (mediaId) this.showMedia(String(mediaId), true);
+      if (mediaId) this.showMedia(String(mediaId));
     });
   }
 
