@@ -156,7 +156,7 @@ class QuickAddController {
     if (!url) return;
 
     event.preventDefault();
-    this.open(url, trigger, { restoreFocus: event.detail === 0 });
+    this.open(url, trigger, { restoreFocus: trigger.matches?.(':focus-visible') ?? event.detail === 0 });
   }
 
   handleSubmit(event) {
