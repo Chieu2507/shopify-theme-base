@@ -115,7 +115,12 @@
         }
       }, options);
       dialog.addEventListener('click', (event) => {
-        if (event.target.closest('[data-overlay-close]')) this.close();
+        if (event.target.closest('[data-overlay-close]')) {
+          // Pointer dismissal should not put focus back on a product-card
+          // action. Keyboard activation still returns focus for accessibility.
+          this.close({ restoreFocus: event.detail === 0 });
+          return;
+        }
         if (event.target !== dialog) return;
         const rect = dialog.getBoundingClientRect();
         if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) this.close();
@@ -205,10 +210,26 @@
       this.gesture.reset();
       this.dialog.dataset.state = 'closed';
       const opener = this.opener;
+      const restoreFocus = this.restoreFocus;
       opener?.setAttribute('aria-expanded', 'false');
-      if (this.restoreFocus && opener?.isConnected && !opener.hidden) opener.focus({ preventScroll: true });
-      else if (!this.restoreFocus && document.activeElement === opener) opener?.blur?.();
       this.opener = null;
+
+      if (restoreFocus && opener?.isConnected && !opener.hidden) {
+        opener.focus({ preventScroll: true });
+        return;
+      }
+
+      if (!restoreFocus) {
+        // Native dialog focus handling can run after close(). Clear the opener
+        // again on the next task so pointer dismissal cannot leave :focus-within
+        // active on the product card.
+        const clearOpenerFocus = () => {
+          if (this.dialog.open || this.opener || document.activeElement !== opener) return;
+          opener?.blur?.();
+        };
+        clearOpenerFocus();
+        setTimeout(clearOpenerFocus, 0);
+      }
     }
 
     cancelOpenFrame() {
