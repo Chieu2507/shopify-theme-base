@@ -7,10 +7,22 @@
   const backdropCursorOwners = new Set();
   const transitionBuffer = 16;
   const duration = (element) => {
+    if (!element) return 0;
     const style = getComputedStyle(element);
-    const milliseconds = (value) => parseFloat(value) * (value.trim().endsWith('ms') ? 1 : 1000) || 0;
-    const delays = style.transitionDelay.split(',').map(milliseconds);
-    return Math.max(0, ...style.transitionDuration.split(',').map((value, i) => milliseconds(value) + delays[i % delays.length]));
+    const milliseconds = (value) => {
+      const normalized = String(value || '').trim();
+      const amount = parseFloat(normalized);
+      return Number.isFinite(amount) ? amount * (normalized.endsWith('ms') ? 1 : 1000) : 0;
+    };
+    const timedValues = (values, delays) => {
+      const durations = String(values || '0s').split(',').map(milliseconds);
+      const offsets = String(delays || '0s').split(',').map(milliseconds);
+      return Math.max(0, ...durations.map((value, index) => value + (offsets[index % offsets.length] || 0)));
+    };
+    return Math.max(
+      timedValues(style.transitionDuration, style.transitionDelay),
+      timedValues(style.animationDuration, style.animationDelay),
+    );
   };
 
   class SheetGesture {
@@ -89,18 +101,24 @@
       this.portaled = false;
       this.portalContextClass = null;
       this.openFrame = null;
-      this.backdropCursor = dialog.querySelector('custom-cursor.component-overlay__backdrop-cursor');
+      this.panel = dialog.querySelector('.component-overlay__panel');
+      this.backdrop = dialog.querySelector('[data-component-overlay-backdrop]');
+      this.backdropCursor = document.querySelector?.('custom-cursor[data-component-overlay-cursor]');
       this.portalToBody();
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
       this.gesture = new SheetGesture({
-        panel: dialog,
+        panel: this.panel,
         header: dialog.querySelector('.component-overlay__header'),
         enabled: () => mobile.matches && dialog.dataset.mobileLayout === 'bottom_sheet' && dialog.dataset.state === 'open',
         close: () => this.close({ fromGesture: true, restoreFocus: false }),
       });
-      dialog.addEventListener('cancel', (event) => { event.preventDefault(); this.close(); }, options);
       dialog.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          event.preventDefault();
+          this.close();
+          return;
+        }
         if (event.key !== 'Tab') return;
         const controls = [...dialog.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea, iframe, [tabindex]')]
           .filter((element) => !element.disabled && element.tabIndex >= 0 && !element.closest('[inert]') && element.getClientRects().length);
@@ -121,25 +139,18 @@
           this.close({ restoreFocus: event.detail === 0 });
           return;
         }
-        if (event.target !== dialog) return;
-        const rect = dialog.getBoundingClientRect();
-        if (event.clientX < rect.left || event.clientX > rect.right || event.clientY < rect.top || event.clientY > rect.bottom) {
-          this.close({ restoreFocus: false });
-        }
       }, options);
-      if (this.backdropCursor && document.addEventListener) {
-        document.addEventListener('mousemove', (event) => this.updateBackdropCursor(event), options);
-        document.addEventListener('mouseleave', () => this.hideBackdropCursor(), options);
+      if (this.backdrop) {
+        this.backdrop.addEventListener('click', () => this.close({ restoreFocus: false }), options);
+      }
+      if (this.backdropCursor && this.backdrop) {
+        this.backdrop.addEventListener('mousemove', (event) => this.updateBackdropCursor(event), options);
+        this.backdrop.addEventListener('mouseleave', () => this.hideBackdropCursor(), options);
         window.addEventListener?.('mouseout', (event) => {
           if (!event.relatedTarget) this.hideBackdropCursor();
         }, options);
         window.addEventListener?.('blur', () => this.hideBackdropCursor(), options);
       }
-      dialog.addEventListener('close', () => {
-        // Native close events are queued; a reopened dialog owns the new state.
-        if (dialog.open) return;
-        this.finishClose();
-      }, options);
     }
 
     hideBackdropCursor() {
@@ -156,18 +167,18 @@
         return;
       }
 
-      const rect = this.dialog.getBoundingClientRect();
-      const overBackdrop = event.clientX < rect.left
-        || event.clientX > rect.right
-        || event.clientY < rect.top
-        || event.clientY > rect.bottom;
-      if (!overBackdrop) {
-        this.hideBackdropCursor();
-        return;
-      }
-
       cursor.style.setProperty('--cursor-x', `${event.clientX}px`);
       cursor.style.setProperty('--cursor-y', `${event.clientY}px`);
+      const overlayStyle = getComputedStyle(this.dialog);
+      cursor.style.setProperty('--color-cursor-text', overlayStyle.getPropertyValue?.('--overlay-text-color') || '');
+      cursor.style.setProperty('--color-cursor-background', overlayStyle.getPropertyValue?.('--overlay-background-color') || '');
+      const scheme = this.dialog.dataset.overlayColorScheme
+        || Array.from(this.dialog.classList || []).find((className) => /^scheme-[a-z0-9_-]+$/i.test(className));
+      if (this.backdropCursorScheme && this.backdropCursorScheme !== scheme) cursor.classList.remove(this.backdropCursorScheme);
+      if (scheme) {
+        cursor.classList.add('color-scheme', 'section-color-scope', scheme);
+        this.backdropCursorScheme = scheme;
+      }
       cursor.classList.add('active');
       this.dialog.classList.add('cursor-none');
       backdropCursorOwners.add(this);
@@ -213,6 +224,11 @@
       this.hideBackdropCursor();
       this.gesture.reset();
       this.dialog.dataset.state = 'closed';
+      this.dialog.open = false;
+      this.dialog.hidden = true;
+      this.dialog.removeAttribute('open');
+      this.dialog.setAttribute('aria-hidden', 'true');
+      this.dialog.dispatchEvent?.(new Event('close'));
       const opener = this.opener;
       const restoreFocus = this.restoreFocus;
       opener?.setAttribute('aria-expanded', 'false');
@@ -250,7 +266,10 @@
       this.opener = opener;
       this.restoreFocus = restoreFocus;
       this.opener?.setAttribute('aria-expanded', 'true');
-      if (!this.dialog.open) this.dialog.showModal();
+      this.dialog.open = true;
+      this.dialog.hidden = false;
+      this.dialog.setAttribute('open', '');
+      this.dialog.setAttribute('aria-hidden', 'false');
       this.dialog.dataset.state = 'opening';
       void this.dialog.offsetHeight;
       const reveal = () => {
@@ -275,11 +294,10 @@
       this.dialog.dataset.state = 'closing';
       const finish = () => {
         if (!this.dialog.open) return;
-        this.dialog.close();
         this.finishClose();
       };
       if (immediate || reduced.matches) finish();
-      else this.timer = setTimeout(finish, duration(this.dialog) + transitionBuffer);
+      else this.timer = setTimeout(finish, Math.max(duration(this.panel), duration(this.backdrop)) + transitionBuffer);
     }
 
     destroy() {

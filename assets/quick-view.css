@@ -7,6 +7,7 @@
     --overlay-enter-delay: 0ms;
     --overlay-backdrop-duration: 700ms;
     --overlay-backdrop-ease: cubic-bezier(.7, 0, .2, 1);
+    --overlay-exit-duration: var(--overlay-backdrop-duration);
   }
 
   @keyframes quick-view-popup-in {
@@ -21,8 +22,24 @@
     }
   }
 
-  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup']:is([data-state='opening'], [data-state='open']) {
+  @keyframes quick-view-popup-out {
+    from {
+      opacity: 1;
+      transform: scale(1);
+    }
+
+    to {
+      opacity: 0;
+      transform: scale(.9);
+    }
+  }
+
+  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup']:is([data-state='opening'], [data-state='open']) .component-overlay__panel {
     animation: quick-view-popup-in var(--overlay-motion-duration) var(--overlay-motion-ease) forwards;
+  }
+
+  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup'][data-state='closing'] .component-overlay__panel {
+    animation: quick-view-popup-out var(--overlay-exit-duration) var(--overlay-motion-ease) forwards;
   }
 }
 
@@ -274,7 +291,7 @@
   /* A static stacked gallery can be taller than the popup viewport. Give the
      popup a bounded content area, then let media and details scroll as peers.
      Carousel layouts keep their natural fit-to-content behavior. */
-  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup']:has(.quick-view--media-left .product-media-gallery[data-desktop-layout='stacked']) {
+  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup']:has(.quick-view--media-left .product-media-gallery[data-desktop-layout='stacked']) .component-overlay__panel {
     height: min(900px, calc(100dvh - 32px));
   }
 
@@ -351,7 +368,11 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup']:is([data-state='opening'], [data-state='open']) {
+  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup']:is([data-state='opening'], [data-state='open']) .component-overlay__panel {
+    animation: none;
+  }
+
+  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup'][data-state='closing'] .component-overlay__panel {
     animation: none;
   }
 
