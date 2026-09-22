@@ -123,7 +123,13 @@ class QuickViewController {
   handleSectionSelect(event) {
     if (!this.isSectionEvent(event)) return;
     this.editorSelected = true;
-    if (this.content?.dataset.quickViewHasProduct === 'true') this.setStatus('content');
+    if (this.content?.dataset.quickViewHasProduct === 'true') {
+      this.setStatus('content');
+      this.overlay?.open({ opener: null, restoreFocus: false });
+      return;
+    }
+    if (this.openFirstProduct()) return;
+    this.setStatus('idle');
     this.overlay?.open({ opener: null, restoreFocus: false });
   }
 
@@ -144,6 +150,20 @@ class QuickViewController {
     } catch (error) {
       return null;
     }
+  }
+
+  firstProductTrigger() {
+    return Array.from(document.querySelectorAll('[data-product-card]')).find((card) => {
+      if (card.classList?.contains('product-card--placeholder')) return false;
+      return card.querySelector('[data-product-card-quick-view], a[href*="/products/"]');
+    })?.querySelector('[data-product-card-quick-view], a[href*="/products/"]') || null;
+  }
+
+  openFirstProduct() {
+    const url = this.productUrl(this.firstProductTrigger());
+    if (!url) return false;
+    this.open(url, null, { restoreFocus: false });
+    return true;
   }
 
   setTriggerLoading(trigger, isLoading) {
@@ -324,7 +344,9 @@ class QuickViewController {
     this.requestController = null;
     this.clearTriggerLoading();
     this.dialog.removeAttribute('aria-busy');
-    this.setStatus('loading');
+    this.setStatus(this.editorSelected
+      ? (this.content?.dataset.quickViewHasProduct === 'true' ? 'content' : 'idle')
+      : 'loading');
   }
 
   destroy() {
