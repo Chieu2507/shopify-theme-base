@@ -257,7 +257,9 @@
         this.openFrame = null;
         if (!this.dialog.open || this.dialog.dataset.state !== 'opening') return;
         this.dialog.dataset.state = 'open';
-        if (focus) this.dialog.querySelector('[data-overlay-close]')?.focus({ preventScroll: true });
+        const close = this.dialog.querySelector('[data-overlay-close]');
+        if (focus) close?.focus({ preventScroll: true });
+        else close?.blur?.();
       };
       if (defer && !reduced.matches) this.openFrame = requestAnimationFrame(reveal);
       else reveal();
