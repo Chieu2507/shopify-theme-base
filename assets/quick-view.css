@@ -1,7 +1,28 @@
 /* Product content composition for the shared overlay shell. */
 @media (min-width: 768px) {
   .component-overlay[data-quick-view-overlay][data-desktop-layout='popup'] {
-    --overlay-rest-transform: scale(.985);
+    --overlay-rest-transform: scale(.9);
+    --overlay-motion-duration: 500ms;
+    --overlay-motion-ease: cubic-bezier(.7, 0, .2, 1);
+    --overlay-enter-delay: 0ms;
+    --overlay-backdrop-duration: 700ms;
+    --overlay-backdrop-ease: cubic-bezier(.7, 0, .2, 1);
+  }
+
+  @keyframes quick-view-popup-in {
+    from {
+      opacity: 0;
+      transform: scale(.9);
+    }
+
+    to {
+      opacity: 1;
+      transform: scale(1);
+    }
+  }
+
+  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup']:is([data-state='opening'], [data-state='open']) {
+    animation: quick-view-popup-in var(--overlay-motion-duration) var(--overlay-motion-ease) forwards;
   }
 }
 
@@ -330,6 +351,10 @@
 }
 
 @media (prefers-reduced-motion: reduce) {
+  .component-overlay[data-quick-view-overlay][data-desktop-layout='popup']:is([data-state='opening'], [data-state='open']) {
+    animation: none;
+  }
+
   .component-overlay[data-quick-view-overlay] {
     transition: none;
   }
