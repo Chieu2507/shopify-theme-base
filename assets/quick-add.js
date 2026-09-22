@@ -243,7 +243,7 @@ class QuickAddController {
     }
 
     this.requestController?.abort();
-    if (this.dialog.open) this.overlay.close({ immediate: true, restoreFocus: false });
+    if (this.overlay.isOpen()) this.overlay.close({ immediate: true, restoreFocus: false });
     this.clearTriggerLoading();
 
     this.currentUrl = targetUrl.href;

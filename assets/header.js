@@ -79,14 +79,14 @@
     header.querySelectorAll('.header-localization__details').forEach((details) => {
       if (details === activeDetails) return;
       const dialog = getLocalizationDialog(details);
-      if (!dialog?.open) return;
+      if (!dialog || dialog.dataset.state === 'closed') return;
       window.ThemeOverlay?.get(dialog)?.close({ restoreFocus: false });
     });
   };
 
   const closeLocalizationSheet = (details, { restoreFocus = false } = {}) => {
     const dialog = getLocalizationDialog(details);
-    if (dialog?.open) {
+    if (dialog && dialog.dataset.state !== 'closed') {
       const overlay = window.ThemeOverlay?.get(dialog);
       if (overlay) overlay.close({ restoreFocus });
       else dialog.close();
@@ -654,7 +654,7 @@
         const overlay = dialog ? window.ThemeOverlay?.get(dialog) : null;
         if (!dialog || !overlay) return;
 
-        if (dialog.open) {
+        if (dialog.dataset.state !== 'closed') {
           overlay.close({ restoreFocus: true });
           return;
         }
