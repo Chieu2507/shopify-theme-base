@@ -727,7 +727,7 @@
     const trigger = drawer.querySelector(`[data-cart-drawer-order-options-open="${name}"]`);
     const title = panel.querySelector('[data-cart-drawer-order-options-title]');
     if (title) title.textContent = trigger?.dataset.cartDrawerOrderOptionsTitle || 'Cart options';
-    window.requestAnimationFrame(() => panel.querySelector(`[data-cart-drawer-order-options-content="${name}"] input, [data-cart-drawer-order-options-content="${name}"] textarea, [data-cart-drawer-order-options-content="${name}"] select, [data-cart-drawer-order-options-close]`)?.focus({ preventScroll: true }));
+    window.requestAnimationFrame(() => panel.querySelector(`[data-cart-drawer-order-options-content="${name}"] input, [data-cart-drawer-order-options-content="${name}"] textarea, [data-cart-drawer-order-options-content="${name}"] select`)?.focus({ preventScroll: true }));
   };
 
   const beginOrderOptionsDrag = (event) => {
@@ -772,7 +772,7 @@
     'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
   ) || []).filter((element) => !element.hidden && element.offsetParent !== null);
 
-  const open = ({ focus = true } = {}) => {
+  const open = () => {
     const drawer = state.drawer;
     if (!drawer) return;
     const shouldAnimate = !drawer.classList.contains('is-open');
@@ -794,9 +794,6 @@
     document.querySelectorAll('[data-cart-drawer-open]').forEach((trigger) => trigger.setAttribute('aria-expanded', 'true'));
     document.dispatchEvent(new CustomEvent('cart-drawer:open', { detail: { drawer } }));
     refresh().catch(() => {});
-    if (focus) {
-      window.requestAnimationFrame(() => drawer.querySelector('[data-cart-drawer-close]')?.focus());
-    }
   };
 
   const close = ({ force = false } = {}) => {
@@ -917,7 +914,7 @@
       }
     });
 
-    if (state.editorSelected) open({ focus: false });
+    if (state.editorSelected) open();
   };
 
   document.addEventListener('click', (event) => {
@@ -1014,7 +1011,7 @@
     if (nextDrawer) initialize(nextDrawer);
     if (!isDrawerEvent(event)) return;
     state.editorSelected = true;
-    open({ focus: false });
+    open();
   });
 
   document.addEventListener('shopify:section:deselect', (event) => {

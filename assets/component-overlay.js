@@ -241,7 +241,7 @@
       this.openFrame = null;
     }
 
-    open({ opener = document.activeElement, focus = true, defer = false, restoreFocus = true } = {}) {
+    open({ opener = document.activeElement, focus = false, defer = false, restoreFocus = true } = {}) {
       clearTimeout(this.timer);
       this.cancelOpenFrame();
       this.gesture.reset();

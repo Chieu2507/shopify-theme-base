@@ -273,7 +273,7 @@ class QuickViewController {
 
       this.dialog.removeAttribute('aria-busy');
       this.clearTriggerLoading();
-      this.overlay.open({ opener, focus: true, defer: true, restoreFocus });
+      this.overlay.open({ opener, defer: true, restoreFocus });
       window.requestAnimationFrame(() => {
         this.content.querySelectorAll('[data-product-media-gallery]').forEach((gallery) => gallery.refreshGallery?.());
       });
@@ -284,7 +284,7 @@ class QuickViewController {
       this.setStatus('error', this.dialog.dataset.quickViewErrorLabel || error.message);
       this.dialog.removeAttribute('aria-busy');
       this.clearTriggerLoading();
-      this.overlay.open({ opener, focus: true, defer: true, restoreFocus });
+      this.overlay.open({ opener, defer: true, restoreFocus });
       this.dialog.querySelector('[data-quick-view-retry]')?.focus({ preventScroll: true });
     } finally {
       if (this.requestController === requestController && !requestController.signal.aborted) {
