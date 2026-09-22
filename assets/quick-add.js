@@ -80,6 +80,7 @@ class QuickAddController {
     this.restoreFocus = true;
     this.pointerActivated = false;
     this.loadingTrigger = null;
+    this.editorSelected = false;
     this.signal = this.abortController.signal;
 
     if (!this.overlay) return;
@@ -89,10 +90,14 @@ class QuickAddController {
     this.handleSubmit = this.handleSubmit.bind(this);
     this.handleClose = this.handleClose.bind(this);
     this.handleRetry = this.handleRetry.bind(this);
+    this.handleSectionSelect = this.handleSectionSelect.bind(this);
+    this.handleSectionDeselect = this.handleSectionDeselect.bind(this);
 
     document.addEventListener('click', this.handleClick, { capture: true, signal: this.signal });
     document.addEventListener('pointerdown', this.handlePointerDown, { capture: true, signal: this.signal });
     document.addEventListener('submit', this.handleSubmit, { capture: true, signal: this.signal });
+    document.addEventListener('shopify:section:select', this.handleSectionSelect, { signal: this.signal });
+    document.addEventListener('shopify:section:deselect', this.handleSectionDeselect, { signal: this.signal });
     document.addEventListener('shopify:section:unload', (event) => {
       if (event.target === this.sectionRoot || event.target?.contains?.(this.sectionRoot)) this.destroy();
     }, { signal: this.signal });
@@ -105,6 +110,27 @@ class QuickAddController {
 
   get sectionId() {
     return this.dialog.dataset.quickAddSectionId;
+  }
+
+  isSectionEvent(event) {
+    const target = event.target;
+    return target === this.sectionRoot
+      || target === this.dialog
+      || target?.contains?.(this.dialog)
+      || this.dialog.contains?.(target);
+  }
+
+  handleSectionSelect(event) {
+    if (!this.isSectionEvent(event)) return;
+    this.editorSelected = true;
+    if (this.content?.dataset.quickAddHasProduct === 'true') this.setStatus('content');
+    this.overlay?.open({ opener: null, restoreFocus: false });
+  }
+
+  handleSectionDeselect(event) {
+    if (!this.isSectionEvent(event)) return;
+    this.editorSelected = false;
+    this.overlay?.close({ restoreFocus: false });
   }
 
   productUrl(trigger) {
