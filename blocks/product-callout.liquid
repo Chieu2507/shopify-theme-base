@@ -40,9 +40,46 @@
   endif
   assign product_callout_text_protection_opacity = product_callout_text_protection | divided_by: 100.0
 
-  assign product_callout_heading_size = block.settings.heading_size | default: 'large'
-  unless product_callout_heading_size == 'small' or product_callout_heading_size == 'medium' or product_callout_heading_size == 'large'
-    assign product_callout_heading_size = 'large'
+  assign product_callout_heading_size = block.settings.heading_size | default: 'xl'
+  case product_callout_heading_size
+    when 'large'
+      assign product_callout_heading_size = 'xl'
+    when 'medium'
+      assign product_callout_heading_size = 'lg'
+    when 'small'
+      assign product_callout_heading_size = 'md'
+  endcase
+  unless product_callout_heading_size == 'display' or product_callout_heading_size == 'xl' or product_callout_heading_size == 'lg' or product_callout_heading_size == 'md' or product_callout_heading_size == 'sm' or product_callout_heading_size == 'xs' or product_callout_heading_size == 'custom'
+    assign product_callout_heading_size = 'xl'
+  endunless
+
+  assign product_callout_custom_heading_size = block.settings.custom_heading_size | default: 24 | plus: 0
+  if product_callout_custom_heading_size < 10 or product_callout_custom_heading_size > 100
+    assign product_callout_custom_heading_size = 24
+  endif
+
+  assign product_callout_heading_tag = block.settings.html_tag | default: 'h2'
+  unless product_callout_heading_tag == 'div' or product_callout_heading_tag == 'h1' or product_callout_heading_tag == 'h2' or product_callout_heading_tag == 'h3' or product_callout_heading_tag == 'h4' or product_callout_heading_tag == 'h5' or product_callout_heading_tag == 'h6'
+    assign product_callout_heading_tag = 'h2'
+  endunless
+
+  assign product_callout_text_size = block.settings.text_size | default: 'md'
+  unless product_callout_text_size == 'xs' or product_callout_text_size == 'sm' or product_callout_text_size == 'md' or product_callout_text_size == 'lg' or product_callout_text_size == 'xl' or product_callout_text_size == 'xxl'
+    assign product_callout_text_size = 'md'
+  endunless
+
+  assign product_callout_gap_desktop = block.settings.gap_desktop | default: 12 | plus: 0
+  if product_callout_gap_desktop < 0 or product_callout_gap_desktop > 100
+    assign product_callout_gap_desktop = 12
+  endif
+  assign product_callout_gap_mobile = block.settings.gap_mobile | default: 8 | plus: 0
+  if product_callout_gap_mobile < 0 or product_callout_gap_mobile > 100
+    assign product_callout_gap_mobile = 8
+  endif
+
+  assign product_callout_button_style = block.settings.button_style | default: 'secondary'
+  unless product_callout_button_style == 'primary' or product_callout_button_style == 'secondary' or product_callout_button_style == 'tertiary'
+    assign product_callout_button_style = 'secondary'
   endunless
 
   assign product_callout_text_alignment = block.settings.text_alignment | default: 'left'
@@ -68,18 +105,20 @@
   assign product_callout_image_alt = product_callout_image.alt | default: product_callout_mobile_image.alt | default: product_callout_base_image.alt
   assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
   assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
-  assign product_callout_class = product_callout_class | append: ' product-callout--heading-' | append: product_callout_heading_size
   assign product_callout_class = product_callout_class | append: ' product-callout--desktop-' | append: product_callout_desktop_height
   assign product_callout_class = product_callout_class | append: ' product-callout--mobile-' | append: product_callout_mobile_height
   assign product_callout_class = product_callout_class | append: ' product-callout--icon-' | append: product_callout_hotspot_icon_style
+  assign product_callout_text_class = 'product-callout__text body-text body-' | append: product_callout_text_size | append: ' rte'
 %}
 
 {% capture product_callout_style %}
   --product-callout-ratio: {{ product_callout_desktop_ratio }};
   --product-callout-ratio-mobile: {{ product_callout_mobile_ratio }};
   --product-callout-text-protection: {{ product_callout_text_protection_opacity }};
+  --product-callout-content-gap: {{ product_callout_gap_desktop }}px;
+  --product-callout-content-gap-mobile: {{ product_callout_gap_mobile }}px;
   --product-callout-hotspot-color: {{ block.settings.hotspot_color | default: '#FFFFFF' | escape }};
-  --product-callout-button-color: {{ block.settings.button_color | default: '#FFFFFF' | escape }};
+  {% if product_callout_heading_size == 'custom' %}--heading-block-custom-size: {{ product_callout_custom_heading_size }}px;{% endif %}
 {% endcapture %}
 {% assign product_callout_style = product_callout_style | strip %}
 
@@ -119,11 +158,11 @@
     {% endif %}
 
     {% if block.settings.heading != blank %}
-      <h2 class="product-callout__heading heading-{{ product_callout_heading_size }}">{{ block.settings.heading | escape }}</h2>
+      <{{ product_callout_heading_tag }} class="product-callout__heading heading-block heading-text heading-{{ product_callout_heading_size }}">{{ block.settings.heading | escape }}</{{ product_callout_heading_tag }}>
     {% endif %}
 
     {% if block.settings.text != blank %}
-      <div class="product-callout__text body-text body-lg rte">{{ block.settings.text }}</div>
+      <div class="{{ product_callout_text_class }}">{{ block.settings.text }}</div>
     {% endif %}
 
     {% if block.settings.button_label != blank %}
@@ -131,7 +170,7 @@
         label: block.settings.button_label,
         url: block.settings.button_link,
         open_in_new_tab: block.settings.open_in_new_tab,
-        variant: 'secondary',
+        variant: product_callout_button_style,
         class: 'product-callout__button'
       %}
     {% endif %}
@@ -199,6 +238,7 @@
     inset: 0;
     display: flex;
     flex-direction: column;
+    gap: var(--product-callout-content-gap, 12px);
     align-items: flex-start;
     justify-content: flex-end;
     width: 100%;
@@ -259,28 +299,14 @@
   }
 
   .product-callout__heading {
-    margin-top: 0.5em !important;
-    line-height: 1.05;
-  }
-
-  .product-callout--heading-small .product-callout__heading {
-    font-size: var(--font-heading-md);
-    line-height: var(--font-heading-md-line-height);
-  }
-
-  .product-callout--heading-medium .product-callout__heading {
-    font-size: var(--font-heading-lg);
-    line-height: var(--font-heading-lg-line-height);
-  }
-
-  .product-callout--heading-large .product-callout__heading {
-    font-size: var(--font-heading-xl);
-    line-height: var(--font-heading-xl-line-height);
+    width: min(100%, 64rem);
+    max-width: 100%;
+    padding: 0;
+    color: currentColor;
   }
 
   .product-callout__text {
     --body-color: currentColor;
-    margin-top: 1em !important;
     max-width: 48rem !important;
   }
 
@@ -290,16 +316,6 @@
 
   .product-callout__text :last-child {
     margin-bottom: 0;
-  }
-
-  .product-callout__button {
-    --button-background: transparent;
-    --button-border: var(--product-callout-button-color, currentColor);
-    --button-foreground: var(--product-callout-button-color, currentColor);
-    --button-hover-background: var(--product-callout-button-color, currentColor);
-    --button-hover-border: var(--product-callout-button-color, currentColor);
-    --button-hover-foreground: #000;
-    margin-top: 1.4em;
   }
 
   .product-callout__hotspot {
@@ -510,7 +526,9 @@
     .product-callout__content {
       position: relative;
       inset: auto;
-      display: block;
+      display: flex;
+      flex-direction: column;
+      gap: var(--product-callout-content-gap-mobile, var(--product-callout-content-gap, 8px));
       padding: 2.4rem var(--page-margin-mobile) 2.8rem;
       background: var(--background-color);
       color: var(--body-color);
@@ -518,11 +536,17 @@
     }
 
     .product-callout__content--align-center {
+      align-items: center;
       text-align: center;
     }
 
     .product-callout__content--align-right {
+      align-items: flex-end;
       text-align: right;
+    }
+
+    .product-callout__content--align-left {
+      align-items: flex-start;
     }
 
     .product-callout__popover,
@@ -536,9 +560,6 @@
       width: min(26rem, calc(100vw - (2 * var(--page-margin-mobile, 1.6rem))));
     }
 
-    .product-callout__button {
-      display: inline-flex;
-    }
   }
 
   @media (prefers-reduced-motion: reduce) {
@@ -773,7 +794,7 @@
     {
       "type": "text",
       "id": "preheading",
-      "label": "t:labels.preheading"
+      "label": "t:labels.subheading"
     },
     {
       "type": "text",
@@ -786,17 +807,66 @@
       "id": "heading_size",
       "label": "t:labels.heading_size",
       "options": [
-        { "value": "small", "label": "t:options.product_callout_heading_size.small" },
-        { "value": "medium", "label": "t:options.product_callout_heading_size.medium" },
-        { "value": "large", "label": "t:options.product_callout_heading_size.large" }
+        { "value": "display", "label": "t:options.heading_size.display" },
+        { "value": "xl", "label": "t:options.heading_size.xl" },
+        { "value": "lg", "label": "t:options.heading_size.lg" },
+        { "value": "md", "label": "t:options.heading_size.md" },
+        { "value": "sm", "label": "t:options.heading_size.sm" },
+        { "value": "xs", "label": "t:options.heading_size.xs" },
+        { "value": "custom", "label": "t:options.heading_size.custom" }
       ],
-      "default": "large"
+      "default": "xl"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.heading_size == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "html_tag",
+      "label": "t:labels.html_tag",
+      "info": "t:info.heading_html_tag",
+      "options": [
+        { "value": "div", "label": "t:options.html_tag.paragraph" },
+        { "value": "h1", "label": "t:options.html_tag.h1" },
+        { "value": "h2", "label": "t:options.html_tag.h2" },
+        { "value": "h3", "label": "t:options.html_tag.h3" },
+        { "value": "h4", "label": "t:options.html_tag.h4" },
+        { "value": "h5", "label": "t:options.html_tag.h5" },
+        { "value": "h6", "label": "t:options.html_tag.h6" }
+      ],
+      "default": "h2"
     },
     {
       "type": "richtext",
       "id": "text",
       "label": "t:labels.text",
       "default": "<p>Soft texture, effortless movement, and warm-weather pieces designed to be worn on repeat.</p>"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "t:labels.text_size",
+      "options": [
+        { "value": "xs", "label": "t:options.text_size.xs" },
+        { "value": "sm", "label": "t:options.text_size.sm" },
+        { "value": "md", "label": "t:options.text_size.md" },
+        { "value": "lg", "label": "t:options.text_size.lg" },
+        { "value": "xl", "label": "t:options.text_size.xl" },
+        { "value": "xxl", "label": "t:options.text_size.xxl" }
+      ],
+      "default": "md"
+    },
+    {
+      "type": "header",
+      "content": "t:general.button"
     },
     {
       "type": "text",
@@ -807,14 +877,8 @@
     {
       "type": "url",
       "id": "button_link",
-      "label": "t:labels.button_link",
+      "label": "t:labels.link",
       "default": "/collections/all"
-    },
-    {
-      "type": "color",
-      "id": "button_color",
-      "label": "t:labels.button_color",
-      "default": "#FFFFFF"
     },
     {
       "type": "checkbox",
@@ -822,6 +886,17 @@
       "label": "t:labels.open_in_new_tab",
       "default": false,
       "visible_if": "{{ block.settings.button_link != blank }}"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "t:labels.style",
+      "options": [
+        { "value": "primary", "label": "t:options.button_variant.primary" },
+        { "value": "secondary", "label": "t:options.button_variant.secondary" },
+        { "value": "tertiary", "label": "t:options.button_variant.tertiary" }
+      ],
+      "default": "secondary"
     },
     {
       "type": "text_alignment",
@@ -848,12 +923,36 @@
     },
     {
       "type": "header",
+      "content": "t:general.spacing"
+    },
+    {
+      "type": "range",
+      "id": "gap_desktop",
+      "label": "t:labels.desktop_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "gap_mobile",
+      "label": "t:labels.mobile_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "header",
       "content": "t:general.hotspots"
     },
     {
       "type": "select",
       "id": "hotspot_icon_style",
-      "label": "t:labels.hotspot_icon_style",
+      "label": "t:labels.icon",
       "options": [
         { "value": "dot", "label": "t:options.product_callout_icon_style.dot" },
         { "value": "plus", "label": "t:options.product_callout_icon_style.plus" },
@@ -865,7 +964,7 @@
     {
       "type": "select",
       "id": "hotspot_behavior",
-      "label": "t:labels.hotspot_behavior",
+      "label": "t:labels.behavior",
       "options": [
         { "value": "click", "label": "t:options.dropdown_trigger.click" },
         { "value": "hover", "label": "t:options.dropdown_trigger.hover" }
@@ -875,7 +974,7 @@
     {
       "type": "color",
       "id": "hotspot_color",
-      "label": "t:labels.hotspot_color",
+      "label": "t:labels.color",
       "default": "#FFFFFF"
     }
   ],
@@ -887,12 +986,16 @@
         "desktop_height": "adapt",
         "mobile_height": "adapt",
         "heading": "Easy by design",
-        "heading_size": "large",
+        "heading_size": "xl",
+        "html_tag": "h2",
         "text": "<p>Soft texture, effortless movement, and warm-weather pieces designed to be worn on repeat.</p>",
+        "text_size": "md",
         "button_label": "Shop Linen",
-        "button_color": "#FFFFFF",
+        "button_style": "secondary",
         "text_alignment": "left",
         "text_position": "bottom_left",
+        "gap_desktop": 12,
+        "gap_mobile": 8,
         "hotspot_icon_style": "plus",
         "hotspot_behavior": "click",
         "hotspot_color": "#FFFFFF"
