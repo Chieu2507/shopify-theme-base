@@ -98,12 +98,19 @@
     assign product_callout_hotspot_behavior = 'click'
   endunless
 
+  assign product_callout_content_scheme = block.settings.content_color_scheme | default: 'scheme-1'
+  if block.settings.content_color_scheme.id != blank
+    assign product_callout_content_scheme = block.settings.content_color_scheme.id
+  endif
+  assign product_callout_content_scheme = product_callout_content_scheme | default: 'scheme-1' | handleize
+
   assign product_callout_image_alt = product_callout_image.alt | default: product_callout_mobile_image.alt | default: product_callout_base_image.alt
   assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
   assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
   assign product_callout_class = product_callout_class | append: ' product-callout--desktop-' | append: product_callout_desktop_height
   assign product_callout_class = product_callout_class | append: ' product-callout--mobile-' | append: product_callout_mobile_height
   assign product_callout_class = product_callout_class | append: ' product-callout--icon-' | append: product_callout_hotspot_icon_style
+  assign product_callout_class = product_callout_class | append: ' color-scheme section-color-scope ' | append: product_callout_content_scheme
   assign product_callout_text_class = 'product-callout__text body-text body-' | append: product_callout_text_size | append: ' rte'
 %}
 
@@ -239,7 +246,7 @@
     width: 100%;
     max-width: 100%;
     padding: clamp(2.4rem, 5vw, 6.4rem) clamp(1.6rem, 5vw, 6.4rem);
-    color: #fff;
+    color: var(--body-color);
     pointer-events: none;
   }
 
@@ -791,6 +798,12 @@
       "content": "t:general.content"
     },
     {
+      "type": "color_scheme",
+      "id": "content_color_scheme",
+      "label": "t:labels.content_color_scheme",
+      "default": "scheme-1"
+    },
+    {
       "type": "text",
       "id": "preheading",
       "label": "t:labels.subheading"
@@ -982,6 +995,7 @@
       "name": "t:general.product_callout",
       "settings": {
         "overlay": "#00000033",
+        "content_color_scheme": "scheme-1",
         "desktop_height": "adapt",
         "mobile_height": "adapt",
         "heading": "Easy by design",
