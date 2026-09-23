@@ -89,8 +89,9 @@
   };
 
   class SheetGesture {
-    constructor({ panel, header, enabled, close, delegated = false }) {
-      Object.assign(this, { panel, header, enabled, close });
+    constructor({ panel, header, backdrop, enabled, close, delegated = false }) {
+      Object.assign(this, { panel, header, backdrop, enabled, close });
+      this.resistance = 0.32;
       this.scrollTarget = panel?.querySelector?.('.component-overlay__body') || panel;
       this.activationDistance = 8;
       this.controller = new AbortController();
@@ -105,6 +106,30 @@
 
     isHeaderTarget(target) {
       return target === this.header || Boolean(this.header?.contains?.(target));
+    }
+
+    getDismissDistance() {
+      return Math.min(140, Math.max(1, (this.panel?.offsetHeight || 0) * 0.2));
+    }
+
+    getDragOffset(distance) {
+      const resistanceStart = this.getDismissDistance();
+
+      if (distance <= resistanceStart) return distance;
+
+      return resistanceStart + (distance - resistanceStart) * this.resistance;
+    }
+
+    setDragProgress(progress) {
+      const value = String(Math.min(1, Math.max(0, progress)));
+
+      this.panel?.style.setProperty('--sheet-drag-progress', value);
+      this.backdrop?.style.setProperty('--sheet-drag-progress', value);
+    }
+
+    clearDragProgress() {
+      this.panel?.style.removeProperty('--sheet-drag-progress');
+      this.backdrop?.style.removeProperty('--sheet-drag-progress');
     }
 
     releasePointer(pointerId) {
@@ -124,6 +149,7 @@
         last: event.clientY,
         time: performance.now(),
         distance: 0,
+        offset: 0,
         velocity: 0,
         active: false,
         startScrollTop: this.scrollTarget?.scrollTop || 0,
@@ -151,7 +177,9 @@
         this.panel.style.transform = 'translateY(0)';
       }
       drag.distance = Math.max(0, distance);
-      this.panel.style.transform = `translateY(${drag.distance}px)`;
+      drag.offset = this.getDragOffset(drag.distance);
+      this.panel.style.transform = `translate3d(0, ${drag.offset}px, 0)`;
+      this.setDragProgress(drag.offset / Math.max(1, this.panel.offsetHeight || 0));
       event.preventDefault();
     }
 
@@ -162,17 +190,21 @@
         this.reset();
         return;
       }
-      const dismiss = !cancelled && (drag.distance >= Math.min(140, this.panel.offsetHeight * 0.2) || (drag.distance >= 32 && drag.velocity > 0.55 && performance.now() - drag.time < 100));
+      const dismiss = !cancelled && (drag.distance >= this.getDismissDistance() || (drag.distance >= 32 && drag.velocity > 0.55 && performance.now() - drag.time < 100));
       this.drag = null;
       this.releasePointer(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.transition = reduced.matches
         ? 'none'
-        : 'transform var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard))';
-      if (dismiss) this.close();
+        : 'transform var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard)), opacity var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard))';
+      if (dismiss) {
+        this.setDragProgress(1);
+        this.close();
+      }
       if (reduced.matches) { this.reset(); return; }
       this.frame = requestAnimationFrame(() => {
-        this.panel.style.transform = dismiss ? 'translateY(100%)' : 'translateY(0)';
+        this.panel.style.transform = dismiss ? 'translate3d(0, 100%, 0)' : 'translate3d(0, 0, 0)';
+        if (!dismiss) this.setDragProgress(0);
         this.timer = setTimeout(() => this.reset(), duration(this.panel) + transitionBuffer);
       });
     }
@@ -186,6 +218,7 @@
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.removeProperty('transition');
       this.panel.style.removeProperty('transform');
+      this.clearDragProgress();
     }
 
     destroy() { this.reset(); this.controller.abort(); }
@@ -214,6 +247,7 @@
       this.gesture = new SheetGesture({
         panel: this.panel,
         header: dialog.querySelector('.component-overlay__header'),
+        backdrop: this.backdrop,
         enabled: () => mobile.matches && dialog.dataset.mobileLayout === 'bottom_sheet' && dialog.dataset.state === 'open',
         close: () => this.close({ fromGesture: true, restoreFocus: false }),
       });
