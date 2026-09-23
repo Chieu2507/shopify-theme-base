@@ -10,10 +10,10 @@
 {% enddoc %}
 
 {% liquid
-  assign hotspot_type = block.settings.hotspot_type | default: 'product'
-  unless hotspot_type == 'product' or hotspot_type == 'content'
-    assign hotspot_type = 'product'
-  endunless
+  assign hotspot_type = 'product'
+  if block.settings.use_content
+    assign hotspot_type = 'content'
+  endif
 
   assign hotspot_product = block.settings.product
   assign hotspot_has_product = false
@@ -208,14 +208,10 @@
   "tag": null,
   "settings": [
     {
-      "type": "select",
-      "id": "hotspot_type",
-      "label": "t:labels.type",
-      "options": [
-        { "value": "product", "label": "t:labels.product" },
-        { "value": "content", "label": "t:general.content" }
-      ],
-      "default": "product"
+      "type": "checkbox",
+      "id": "use_content",
+      "label": "t:labels.use_content_for_hotspot",
+      "default": false
     },
     {
       "type": "product",
@@ -227,14 +223,14 @@
       "id": "content_heading",
       "label": "t:labels.heading",
       "default": "Medium Heading",
-      "visible_if": "{{ block.settings.hotspot_type == 'content' }}"
+      "visible_if": "{{ block.settings.use_content }}"
     },
     {
       "type": "richtext",
       "id": "content_text",
       "label": "t:labels.text",
       "default": "<p>Lorem ipsum dolor sit amet, consectetur adipiscing elit. Suspendisse varius enim in eros elementum tristique.</p>",
-      "visible_if": "{{ block.settings.hotspot_type == 'content' }}"
+      "visible_if": "{{ block.settings.use_content }}"
     },
     {
       "type": "header",
@@ -294,7 +290,7 @@
     {
       "name": "t:general.hotspot",
       "settings": {
-        "hotspot_type": "product",
+        "use_content": false,
         "vertical_position": 50,
         "horizontal_position": 50,
         "customize_mobile_position": false,
