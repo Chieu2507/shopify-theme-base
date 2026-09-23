@@ -24,6 +24,26 @@
     assign hotspot_horizontal = 50
   endif
 
+  assign hotspot_popover_horizontal = 'right'
+  if hotspot_horizontal > 60
+    assign hotspot_popover_horizontal = 'left'
+  endif
+
+  assign hotspot_popover_vertical = 'bottom'
+  if hotspot_vertical > 65
+    assign hotspot_popover_vertical = 'top'
+  endif
+
+  assign hotspot_product_category = 'products.category' | t
+  assign hotspot_product_title = 'products.placeholder_title' | t
+  if hotspot_has_product
+    assign hotspot_product_category = hotspot_product.type | default: hotspot_product.vendor | default: hotspot_product_category
+    assign hotspot_product_title = hotspot_product.title
+  endif
+
+  assign hotspot_popover_id = 'product-callout-popover-' | append: block.id
+  assign hotspot_popover_class = 'product-callout__popover product-callout__popover--' | append: hotspot_popover_horizontal | append: ' product-callout__popover--' | append: hotspot_popover_vertical
+
   if hotspot_has_product
     assign hotspot_label = 'accessibility.product_callout_hotspot' | t: product: hotspot_product.title
   else
