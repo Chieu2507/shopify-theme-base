@@ -104,6 +104,12 @@
   endif
   assign product_callout_content_scheme = product_callout_content_scheme | default: 'scheme-1' | handleize
 
+  assign product_callout_hotspot_scheme = block.settings.hotspot_color_scheme | default: 'scheme-1'
+  if block.settings.hotspot_color_scheme.id != blank
+    assign product_callout_hotspot_scheme = block.settings.hotspot_color_scheme.id
+  endif
+  assign product_callout_hotspot_scheme = product_callout_hotspot_scheme | default: 'scheme-1' | handleize
+
   assign product_callout_image_alt = product_callout_image.alt | default: product_callout_mobile_image.alt | default: product_callout_base_image.alt
   assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
   assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
@@ -146,7 +152,7 @@
     {% endif %}
 
     <div
-      class="product-callout__hotspots"
+      class="product-callout__hotspots color-scheme {{ product_callout_hotspot_scheme }}"
       role="group"
       aria-label="{{ 'accessibility.product_callout_hotspots' | t | escape }}"
     >
@@ -217,6 +223,7 @@
     position: absolute;
     z-index: 4;
     inset: 0;
+    color: var(--body-color);
     pointer-events: none;
   }
 
@@ -1038,6 +1045,12 @@
         { "value": "hover", "label": "t:options.dropdown_trigger.hover" }
       ],
       "default": "click"
+    },
+    {
+      "type": "color_scheme",
+      "id": "hotspot_color_scheme",
+      "label": "t:labels.hotspot_color_scheme",
+      "default": "scheme-1"
     }
   ],
   "presets": [
@@ -1045,6 +1058,7 @@
       "name": "t:general.product_callout",
       "settings": {
         "content_color_scheme": "scheme-1",
+        "hotspot_color_scheme": "scheme-1",
         "heading": "Easy by design",
         "heading_size": "xl",
         "html_tag": "h2",
@@ -1060,9 +1074,9 @@
         "hotspot_behavior": "click"
       },
       "blocks": [
-        { "type": "hotspot", "settings": { "vertical_position": 50, "horizontal_position": 22, "mobile_vertical_position": 50, "mobile_horizontal_position": 22 } },
-        { "type": "hotspot", "settings": { "vertical_position": 56, "horizontal_position": 57, "mobile_vertical_position": 56, "mobile_horizontal_position": 57 } },
-        { "type": "hotspot", "settings": { "vertical_position": 73, "horizontal_position": 77, "mobile_vertical_position": 73, "mobile_horizontal_position": 77 } }
+        { "type": "hotspot", "settings": { "vertical_position": 50, "horizontal_position": 22, "customize_mobile_position": false, "mobile_vertical_position": 50, "mobile_horizontal_position": 22 } },
+        { "type": "hotspot", "settings": { "vertical_position": 56, "horizontal_position": 57, "customize_mobile_position": false, "mobile_vertical_position": 56, "mobile_horizontal_position": 57 } },
+        { "type": "hotspot", "settings": { "vertical_position": 73, "horizontal_position": 77, "customize_mobile_position": false, "mobile_vertical_position": 73, "mobile_horizontal_position": 77 } }
       ]
     }
   ]
