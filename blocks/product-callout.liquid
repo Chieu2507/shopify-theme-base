@@ -25,6 +25,15 @@
     assign product_callout_mobile_ratio = product_callout_desktop_ratio
   endif
 
+  assign product_callout_desktop_height = block.settings.desktop_height | default: 'adapt'
+  unless product_callout_desktop_height == 'adapt' or product_callout_desktop_height == 'extra_small' or product_callout_desktop_height == 'small' or product_callout_desktop_height == 'medium' or product_callout_desktop_height == 'large' or product_callout_desktop_height == 'extra_large' or product_callout_desktop_height == 'full_screen'
+    assign product_callout_desktop_height = 'adapt'
+  endunless
+  assign product_callout_mobile_height = block.settings.mobile_height | default: 'adapt'
+  unless product_callout_mobile_height == 'adapt' or product_callout_mobile_height == 'extra_small' or product_callout_mobile_height == 'small' or product_callout_mobile_height == 'medium' or product_callout_mobile_height == 'large' or product_callout_mobile_height == 'extra_large' or product_callout_mobile_height == 'full_screen'
+    assign product_callout_mobile_height = 'adapt'
+  endunless
+
   assign product_callout_text_protection = block.settings.text_protection | default: 20 | plus: 0
   if product_callout_text_protection < 0 or product_callout_text_protection > 100
     assign product_callout_text_protection = 20
@@ -55,6 +64,8 @@
   assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
   assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
   assign product_callout_class = product_callout_class | append: ' product-callout--heading-' | append: product_callout_heading_size
+  assign product_callout_class = product_callout_class | append: ' product-callout--desktop-' | append: product_callout_desktop_height
+  assign product_callout_class = product_callout_class | append: ' product-callout--mobile-' | append: product_callout_mobile_height
   assign product_callout_class = product_callout_class | append: ' product-callout--icon-' | append: product_callout_hotspot_icon_style
 %}
 
@@ -138,6 +149,14 @@
     overflow: visible;
     background: var(--background-color);
   }
+
+  .product-callout--desktop-adapt .product-callout__media { min-height: 0; }
+  .product-callout--desktop-extra_small .product-callout__media { min-height: 42rem; aspect-ratio: auto; }
+  .product-callout--desktop-small .product-callout__media { min-height: 56rem; aspect-ratio: auto; }
+  .product-callout--desktop-medium .product-callout__media { min-height: 72rem; aspect-ratio: auto; }
+  .product-callout--desktop-large .product-callout__media { min-height: 90rem; aspect-ratio: auto; }
+  .product-callout--desktop-extra_large .product-callout__media { min-height: 108rem; aspect-ratio: auto; }
+  .product-callout--desktop-full_screen .product-callout__media { min-height: 100svh; aspect-ratio: auto; }
 
   .product-callout__overlay {
     position: absolute;
@@ -470,9 +489,13 @@
   }
 
   @media (max-width: 767.98px) {
-    .product-callout__media {
-      aspect-ratio: var(--product-callout-ratio-mobile, var(--product-callout-ratio, 2.4));
-    }
+    .product-callout--mobile-adapt .product-callout__media { min-height: 0; aspect-ratio: var(--product-callout-ratio-mobile, var(--product-callout-ratio, 2.4)); }
+    .product-callout--mobile-extra_small .product-callout__media { min-height: 40rem; aspect-ratio: auto; }
+    .product-callout--mobile-small .product-callout__media { min-height: 48rem; aspect-ratio: auto; }
+    .product-callout--mobile-medium .product-callout__media { min-height: 62rem; aspect-ratio: auto; }
+    .product-callout--mobile-large .product-callout__media { min-height: 76rem; aspect-ratio: auto; }
+    .product-callout--mobile-extra_large .product-callout__media { min-height: 90rem; aspect-ratio: auto; }
+    .product-callout--mobile-full_screen .product-callout__media { min-height: 100svh; aspect-ratio: auto; }
 
     .product-callout__overlay {
       display: none;
@@ -629,7 +652,7 @@
   "settings": [
     {
       "type": "header",
-      "content": "t:general.image"
+      "content": "t:general.media"
     },
     {
       "type": "image_picker",
@@ -645,12 +668,46 @@
     {
       "type": "range",
       "id": "text_protection",
-      "label": "t:labels.text_protection_on_desktop",
+      "label": "t:labels.overlay",
       "min": 0,
       "max": 100,
       "step": 1,
       "unit": "%",
       "default": 20
+    },
+    {
+      "type": "header",
+      "content": "t:general.height"
+    },
+    {
+      "type": "select",
+      "id": "desktop_height",
+      "label": "t:options.device.desktop",
+      "options": [
+        { "value": "adapt", "label": "t:options.hero_height.adapt" },
+        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
+        { "value": "small", "label": "t:options.hero_height.small" },
+        { "value": "medium", "label": "t:options.hero_height.medium" },
+        { "value": "large", "label": "t:options.hero_height.large" },
+        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
+        { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "select",
+      "id": "mobile_height",
+      "label": "t:options.device.mobile",
+      "options": [
+        { "value": "adapt", "label": "t:options.hero_height.adapt" },
+        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
+        { "value": "small", "label": "t:options.hero_height.small" },
+        { "value": "medium", "label": "t:options.hero_height.medium" },
+        { "value": "large", "label": "t:options.hero_height.large" },
+        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
+        { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
+      ],
+      "default": "adapt"
     },
     {
       "type": "header",
@@ -760,6 +817,8 @@
       "name": "t:general.product_callout",
       "settings": {
         "text_protection": 20,
+        "desktop_height": "adapt",
+        "mobile_height": "adapt",
         "heading": "Easy by design",
         "heading_size": "large",
         "text": "<p>Soft texture, effortless movement, and warm-weather pieces designed to be worn on repeat.</p>",
