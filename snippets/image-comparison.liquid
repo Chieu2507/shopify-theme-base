@@ -145,7 +145,18 @@
         >
         <div class="image-compare__divider" data-comparison-divider aria-hidden="true">
           <span class="image-compare__handle">
-            {% render 'icon', icon: comparison_handle_icon, bare: true, class: 'image-compare__handle-icon' %}
+            {% if comparison_handle_icon == 'compare' %}
+              <span class="image-compare__handle-icon image-compare__handle-icon--compare" aria-hidden="true">
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+                  <path d="M15 18L9 12L15 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" focusable="false" aria-hidden="true">
+                  <path d="M9 18L15 12L9 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round" />
+                </svg>
+              </span>
+            {% else %}
+              {% render 'icon', icon: comparison_handle_icon, bare: true, class: 'image-compare__handle-icon' %}
+            {% endif %}
           </span>
         </div>
       {% endif %}
@@ -158,6 +169,8 @@
     display: block;
     width: 100%;
     min-width: 0;
+    --image-compare-handle-size: 64px;
+    --image-compare-handle-icon-size: 24px;
   }
 
   .image-compare__root {
@@ -298,7 +311,7 @@
   }
 
   .image-compare__range::-webkit-slider-thumb {
-    width: 4rem;
+    width: var(--image-compare-handle-size, 64px);
     height: 100%;
     border: 0;
     border-radius: 0;
@@ -315,7 +328,7 @@
   }
 
   .image-compare__range::-moz-range-thumb {
-    width: 4rem;
+    width: var(--image-compare-handle-size, 64px);
     height: 100%;
     border: 0;
     border-radius: 0;
@@ -341,10 +354,10 @@
     top: 50%;
     left: 50%;
     display: grid;
-    width: var(--image-compare-handle-size, 5rem);
-    min-width: var(--image-compare-handle-size, 5rem);
-    height: var(--image-compare-handle-size, 5rem);
-    min-height: var(--image-compare-handle-size, 5rem);
+    width: var(--image-compare-handle-size, 64px);
+    min-width: var(--image-compare-handle-size, 64px);
+    height: var(--image-compare-handle-size, 64px);
+    min-height: var(--image-compare-handle-size, 64px);
     place-items: center;
     border-radius: 50%;
     background: var(--image-compare-handle-background, #fff);
@@ -354,8 +367,23 @@
   }
 
   .image-compare__handle-icon {
-    width: 2rem;
-    height: 2rem;
+    display: block;
+    width: var(--image-compare-handle-icon-size, 24px);
+    height: var(--image-compare-handle-icon-size, 24px);
+  }
+
+  .image-compare__handle-icon--compare {
+    display: inline-flex;
+    width: calc(var(--image-compare-handle-icon-size, 24px) * 2);
+    align-items: center;
+    justify-content: center;
+  }
+
+  .image-compare__handle-icon--compare > svg {
+    display: block;
+    flex: 0 0 var(--image-compare-handle-icon-size, 24px);
+    width: var(--image-compare-handle-icon-size, 24px);
+    height: var(--image-compare-handle-icon-size, 24px);
   }
 
   .image-compare-shell--direction-vertical .image-compare__handle-icon {
@@ -444,6 +472,11 @@
   }
 
   @media (max-width: 767.98px) {
+    .image-compare-shell {
+      --image-compare-handle-size: 48px;
+      --image-compare-handle-icon-size: 20px;
+    }
+
     .image-compare__label {
       bottom: 1.2rem;
       max-width: calc(50% - 1.6rem);
