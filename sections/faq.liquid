@@ -24,6 +24,38 @@
   assign faq_padding_bottom = section.settings.padding_bottom | default: 0 | plus: 0
   assign faq_padding_top_mobile = section.settings.padding_top_mobile | default: faq_padding_top | plus: 0
   assign faq_padding_bottom_mobile = section.settings.padding_bottom_mobile | default: faq_padding_bottom | plus: 0
+  assign faq_title_size = section.settings.title_size | default: 'lg'
+  assign faq_title_size_mobile = section.settings.title_size_mobile | default: 'lg'
+  assign faq_title_custom_size = section.settings.custom_title_size | default: 32 | plus: 0
+  assign faq_title_custom_size_mobile = section.settings.custom_title_size_mobile | default: 28 | plus: 0
+  assign faq_description_size = section.settings.description_size | default: 'md'
+  assign faq_description_size_mobile = section.settings.description_size_mobile | default: 'md'
+  assign faq_description_custom_size = section.settings.custom_description_size | default: 16 | plus: 0
+  assign faq_description_custom_size_mobile = section.settings.custom_description_size_mobile | default: 16 | plus: 0
+  unless faq_title_size == 'display' or faq_title_size == 'xl' or faq_title_size == 'lg' or faq_title_size == 'md' or faq_title_size == 'sm' or faq_title_size == 'xs' or faq_title_size == 'custom'
+    assign faq_title_size = 'lg'
+  endunless
+  unless faq_title_size_mobile == 'display' or faq_title_size_mobile == 'xl' or faq_title_size_mobile == 'lg' or faq_title_size_mobile == 'md' or faq_title_size_mobile == 'sm' or faq_title_size_mobile == 'xs' or faq_title_size_mobile == 'custom'
+    assign faq_title_size_mobile = 'lg'
+  endunless
+  unless faq_description_size == 'xs' or faq_description_size == 'sm' or faq_description_size == 'md' or faq_description_size == 'lg' or faq_description_size == 'xl' or faq_description_size == 'xxl' or faq_description_size == 'custom'
+    assign faq_description_size = 'md'
+  endunless
+  unless faq_description_size_mobile == 'xs' or faq_description_size_mobile == 'sm' or faq_description_size_mobile == 'md' or faq_description_size_mobile == 'lg' or faq_description_size_mobile == 'xl' or faq_description_size_mobile == 'xxl' or faq_description_size_mobile == 'custom'
+    assign faq_description_size_mobile = 'md'
+  endunless
+  if faq_title_custom_size < 10 or faq_title_custom_size > 100
+    assign faq_title_custom_size = 32
+  endif
+  if faq_title_custom_size_mobile < 10 or faq_title_custom_size_mobile > 100
+    assign faq_title_custom_size_mobile = 28
+  endif
+  if faq_description_custom_size < 10 or faq_description_custom_size > 60
+    assign faq_description_custom_size = 16
+  endif
+  if faq_description_custom_size_mobile < 10 or faq_description_custom_size_mobile > 60
+    assign faq_description_custom_size_mobile = 16
+  endif
 %}
 
 {% capture faq_style %}
@@ -31,6 +63,10 @@
   --faq-header-text-align: {{ section.settings.alignment | default: 'left' }};
   --faq-padding-top: {{ faq_padding_top }}px;
   --faq-padding-bottom: {{ faq_padding_bottom }}px;
+  --faq-title-size: {% if faq_title_size == 'custom' %}{{ faq_title_custom_size }}px{% else %}var(--font-heading-{{ faq_title_size }}){% endif %};
+  --faq-title-size-mobile: {% if faq_title_size_mobile == 'custom' %}{{ faq_title_custom_size_mobile }}px{% else %}var(--font-heading-{{ faq_title_size_mobile }}){% endif %};
+  --faq-description-size: {% if faq_description_size == 'custom' %}{{ faq_description_custom_size }}px{% else %}var(--font-body-{{ faq_description_size }}){% endif %};
+  --faq-description-size-mobile: {% if faq_description_size_mobile == 'custom' %}{{ faq_description_custom_size_mobile }}px{% else %}var(--font-body-{{ faq_description_size_mobile }}){% endif %};
   {% if section.settings.customize_mobile_padding %}
     --faq-padding-top-mobile: {{ faq_padding_top_mobile }}px;
     --faq-padding-bottom-mobile: {{ faq_padding_bottom_mobile }}px;
@@ -53,10 +89,10 @@
     {% if section.settings.title != blank or section.settings.description != blank %}
       <header class="faq-section__header">
         {% if section.settings.title != blank %}
-          <h2 class="heading-text heading-lg faq-section__title">{{ section.settings.title | escape }}</h2>
+          <h2 class="heading-text heading-{{ faq_title_size }} faq-section__title">{{ section.settings.title | escape }}</h2>
         {% endif %}
         {% if section.settings.description != blank %}
-          <div class="body-text body-md faq-section__description rte">{{ section.settings.description }}</div>
+          <div class="body-text body-{{ faq_description_size }} faq-section__description rte">{{ section.settings.description }}</div>
         {% endif %}
       </header>
     {% endif %}
@@ -95,6 +131,9 @@
     margin: 0;
   }
 
+  .faq-section__title { font-size: var(--faq-title-size); }
+  .faq-section__description { font-size: var(--faq-description-size); }
+
   .faq-section__description {
     max-width: 42rem;
   }
@@ -126,6 +165,9 @@
     .faq-section__header {
       gap: 12px;
     }
+
+    .faq-section__title { font-size: var(--faq-title-size-mobile, var(--faq-title-size)); }
+    .faq-section__description { font-size: var(--faq-description-size-mobile, var(--faq-description-size)); }
   }
 {% endstylesheet %}
 
@@ -146,9 +188,113 @@
       "default": "Frequently asked questions"
     },
     {
+      "type": "select",
+      "id": "title_size",
+      "label": "Title font size (desktop)",
+      "options": [
+        { "value": "display", "label": "t:options.heading_size.display" },
+        { "value": "xl", "label": "t:options.heading_size.xl" },
+        { "value": "lg", "label": "t:options.heading_size.lg" },
+        { "value": "md", "label": "t:options.heading_size.md" },
+        { "value": "sm", "label": "t:options.heading_size.sm" },
+        { "value": "xs", "label": "t:options.heading_size.xs" },
+        { "value": "custom", "label": "t:options.heading_size.custom" }
+      ],
+      "default": "lg"
+    },
+    {
+      "type": "range",
+      "id": "custom_title_size",
+      "label": "Custom size (desktop)",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 32,
+      "visible_if": "{{ section.settings.title_size == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "title_size_mobile",
+      "label": "Title font size (mobile)",
+      "options": [
+        { "value": "display", "label": "t:options.heading_size.display" },
+        { "value": "xl", "label": "t:options.heading_size.xl" },
+        { "value": "lg", "label": "t:options.heading_size.lg" },
+        { "value": "md", "label": "t:options.heading_size.md" },
+        { "value": "sm", "label": "t:options.heading_size.sm" },
+        { "value": "xs", "label": "t:options.heading_size.xs" },
+        { "value": "custom", "label": "t:options.heading_size.custom" }
+      ],
+      "default": "lg"
+    },
+    {
+      "type": "range",
+      "id": "custom_title_size_mobile",
+      "label": "Custom size (mobile)",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 28,
+      "visible_if": "{{ section.settings.title_size_mobile == 'custom' }}"
+    },
+    {
       "type": "richtext",
       "id": "description",
       "label": "t:labels.description"
+    },
+    {
+      "type": "select",
+      "id": "description_size",
+      "label": "Description font size (desktop)",
+      "options": [
+        { "value": "xs", "label": "t:options.text_size.xs" },
+        { "value": "sm", "label": "t:options.text_size.sm" },
+        { "value": "md", "label": "t:options.text_size.md" },
+        { "value": "lg", "label": "t:options.text_size.lg" },
+        { "value": "xl", "label": "t:options.text_size.xl" },
+        { "value": "xxl", "label": "t:options.text_size.xxl" },
+        { "value": "custom", "label": "t:options.heading_size.custom" }
+      ],
+      "default": "md"
+    },
+    {
+      "type": "range",
+      "id": "custom_description_size",
+      "label": "Custom size (desktop)",
+      "min": 10,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "default": 16,
+      "visible_if": "{{ section.settings.description_size == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "description_size_mobile",
+      "label": "Description font size (mobile)",
+      "options": [
+        { "value": "xs", "label": "t:options.text_size.xs" },
+        { "value": "sm", "label": "t:options.text_size.sm" },
+        { "value": "md", "label": "t:options.text_size.md" },
+        { "value": "lg", "label": "t:options.text_size.lg" },
+        { "value": "xl", "label": "t:options.text_size.xl" },
+        { "value": "xxl", "label": "t:options.text_size.xxl" },
+        { "value": "custom", "label": "t:options.heading_size.custom" }
+      ],
+      "default": "md"
+    },
+    {
+      "type": "range",
+      "id": "custom_description_size_mobile",
+      "label": "Custom size (mobile)",
+      "min": 10,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "default": 16,
+      "visible_if": "{{ section.settings.description_size_mobile == 'custom' }}"
     },
     {
       "type": "text_alignment",

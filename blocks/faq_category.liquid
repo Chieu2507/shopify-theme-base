@@ -4,6 +4,18 @@
   unless faq_category_heading_size == 'display' or faq_category_heading_size == 'xl' or faq_category_heading_size == 'lg' or faq_category_heading_size == 'md' or faq_category_heading_size == 'sm' or faq_category_heading_size == 'xs' or faq_category_heading_size == 'custom'
     assign faq_category_heading_size = 'md'
   endunless
+  assign faq_category_heading_size_mobile = block.settings.heading_size_mobile | default: 'md'
+  unless faq_category_heading_size_mobile == 'display' or faq_category_heading_size_mobile == 'xl' or faq_category_heading_size_mobile == 'lg' or faq_category_heading_size_mobile == 'md' or faq_category_heading_size_mobile == 'sm' or faq_category_heading_size_mobile == 'xs' or faq_category_heading_size_mobile == 'custom'
+    assign faq_category_heading_size_mobile = 'md'
+  endunless
+  assign faq_category_custom_heading_size = block.settings.custom_heading_size | default: 24 | plus: 0
+  if faq_category_custom_heading_size < 0 or faq_category_custom_heading_size > 60
+    assign faq_category_custom_heading_size = 24
+  endif
+  assign faq_category_custom_heading_size_mobile = block.settings.custom_heading_size_mobile | default: 20 | plus: 0
+  if faq_category_custom_heading_size_mobile < 0 or faq_category_custom_heading_size_mobile > 60
+    assign faq_category_custom_heading_size_mobile = 20
+  endif
   assign faq_category_tag = block.settings.html_tag | default: 'h4'
   unless faq_category_tag == 'div' or faq_category_tag == 'h1' or faq_category_tag == 'h2' or faq_category_tag == 'h3' or faq_category_tag == 'h4' or faq_category_tag == 'h5' or faq_category_tag == 'h6'
     assign faq_category_tag = 'h4'
@@ -12,7 +24,8 @@
 
 {% capture faq_category_style %}
   {% if block.settings.text_color != blank %}--faq-category-color: {{ block.settings.text_color | escape }};{% endif %}
-  {% if faq_category_heading_size == 'custom' %}--faq-category-heading-size: {{ block.settings.custom_heading_size | default: 24 | plus: 0 }}px;{% endif %}
+  --faq-category-heading-size: {% if faq_category_heading_size == 'custom' %}{{ faq_category_custom_heading_size }}px{% else %}var(--font-heading-{{ faq_category_heading_size }}){% endif %};
+  --faq-category-heading-size-mobile: {% if faq_category_heading_size_mobile == 'custom' %}{{ faq_category_custom_heading_size_mobile }}px{% else %}var(--font-heading-{{ faq_category_heading_size_mobile }}){% endif %};
   --faq-category-padding-top: {{ block.settings.padding_top | default: 0 | plus: 0 }}px;
   --faq-category-padding-right: {{ block.settings.padding_right | default: 0 | plus: 0 }}px;
   --faq-category-padding-bottom: {{ block.settings.padding_bottom | default: 0 | plus: 0 }}px;
@@ -33,9 +46,12 @@
 {% stylesheet %}
   .faq-category { padding: var(--faq-category-padding-top, 0px) var(--faq-category-padding-right, 0px) var(--faq-category-padding-bottom, 0px) var(--faq-category-padding-left, 0px); }
   .faq-category__title { margin: 0 0 0.75rem; padding: 20px 0; color: var(--faq-category-color, var(--heading-color)); }
-  .faq-category__title.heading-custom { font-size: var(--faq-category-heading-size); }
+  .faq-category__title { font-size: var(--faq-category-heading-size); }
   .faq-category__items { border-top: 1px solid var(--border-color); }
   .faq-category__empty { padding: 1rem; border: 1px dashed var(--border-color); color: var(--body-color); }
+  @media (max-width: 767.98px) {
+    .faq-category__title { font-size: var(--faq-category-heading-size-mobile, var(--faq-category-heading-size)); }
+  }
 {% endstylesheet %}
 
 {% schema %}
@@ -48,7 +64,7 @@
     {
       "type": "select",
       "id": "heading_size",
-      "label": "t:labels.heading_size",
+      "label": "Font size (desktop)",
       "options": [
         { "value": "display", "label": "t:options.heading_size.display" },
         { "value": "xl", "label": "t:options.heading_size.xl" },
@@ -63,13 +79,39 @@
     {
       "type": "range",
       "id": "custom_heading_size",
-      "label": "t:labels.font_size_desktop",
+      "label": "Custom size (desktop)",
       "min": 0,
       "max": 60,
       "step": 1,
       "unit": "px",
       "default": 24,
       "visible_if": "{{ block.settings.heading_size == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "heading_size_mobile",
+      "label": "Font size (mobile)",
+      "options": [
+        { "value": "display", "label": "t:options.heading_size.display" },
+        { "value": "xl", "label": "t:options.heading_size.xl" },
+        { "value": "lg", "label": "t:options.heading_size.lg" },
+        { "value": "md", "label": "t:options.heading_size.md" },
+        { "value": "sm", "label": "t:options.heading_size.sm" },
+        { "value": "xs", "label": "t:options.heading_size.xs" },
+        { "value": "custom", "label": "t:options.heading_size.custom" }
+      ],
+      "default": "md"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size_mobile",
+      "label": "Custom size (mobile)",
+      "min": 0,
+      "max": 60,
+      "step": 1,
+      "unit": "px",
+      "default": 20,
+      "visible_if": "{{ block.settings.heading_size_mobile == 'custom' }}"
     },
     {
       "type": "select",
