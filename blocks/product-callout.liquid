@@ -8,8 +8,8 @@
 {% enddoc %}
 
 {% liquid
-  assign product_callout_image = block.settings.image
-  assign product_callout_mobile_image = block.settings.mobile_image
+  assign product_callout_image = section.settings.image
+  assign product_callout_mobile_image = section.settings.mobile_image
   assign product_callout_base_image = product_callout_image
   if product_callout_base_image == blank
     assign product_callout_base_image = product_callout_mobile_image
@@ -25,16 +25,16 @@
     assign product_callout_mobile_ratio = product_callout_desktop_ratio
   endif
 
-  assign product_callout_desktop_height = block.settings.desktop_height | default: 'adapt'
+  assign product_callout_desktop_height = section.settings.desktop_height | default: 'adapt'
   unless product_callout_desktop_height == 'adapt' or product_callout_desktop_height == 'extra_small' or product_callout_desktop_height == 'small' or product_callout_desktop_height == 'medium' or product_callout_desktop_height == 'large' or product_callout_desktop_height == 'extra_large' or product_callout_desktop_height == 'full_screen'
     assign product_callout_desktop_height = 'adapt'
   endunless
-  assign product_callout_mobile_height = block.settings.mobile_height | default: 'adapt'
+  assign product_callout_mobile_height = section.settings.mobile_height | default: 'adapt'
   unless product_callout_mobile_height == 'adapt' or product_callout_mobile_height == 'extra_small' or product_callout_mobile_height == 'small' or product_callout_mobile_height == 'medium' or product_callout_mobile_height == 'large' or product_callout_mobile_height == 'extra_large' or product_callout_mobile_height == 'full_screen'
     assign product_callout_mobile_height = 'adapt'
   endunless
 
-  assign product_callout_overlay = block.settings.overlay
+  assign product_callout_overlay = section.settings.overlay
 
   assign product_callout_heading_size = block.settings.heading_size | default: 'xl'
   case product_callout_heading_size
@@ -227,6 +227,13 @@
     inset-inline-start: var(--product-callout-hotspot-x, 50%);
     pointer-events: auto;
     transform: translate(-50%, -50%);
+  }
+
+  @media (max-width: 767.98px) {
+    .product-callout__hotspot-wrap {
+      inset-block-start: var(--product-callout-hotspot-y-mobile, var(--product-callout-hotspot-y, 50%));
+      inset-inline-start: var(--product-callout-hotspot-x-mobile, var(--product-callout-hotspot-x, 50%));
+    }
   }
 
   .product-callout__hotspot-wrap--active {
@@ -776,63 +783,6 @@
   "settings": [
     {
       "type": "header",
-      "content": "t:general.media"
-    },
-    {
-      "type": "image_picker",
-      "id": "image",
-      "label": "t:labels.image"
-    },
-    {
-      "type": "image_picker",
-      "id": "mobile_image",
-      "label": "t:labels.mobile_image",
-      "info": "t:info.mobile_image_optional",
-      "visible_if": "{{ block.settings.image != blank }}"
-    },
-    {
-      "type": "color",
-      "id": "overlay",
-      "label": "t:labels.overlay",
-      "alpha": true,
-      "default": "#00000033"
-    },
-    {
-      "type": "header",
-      "content": "t:general.height"
-    },
-    {
-      "type": "select",
-      "id": "desktop_height",
-      "label": "t:options.device.desktop",
-      "options": [
-        { "value": "adapt", "label": "t:options.hero_height.adapt" },
-        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
-        { "value": "small", "label": "t:options.hero_height.small" },
-        { "value": "medium", "label": "t:options.hero_height.medium" },
-        { "value": "large", "label": "t:options.hero_height.large" },
-        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
-        { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
-      ],
-      "default": "adapt"
-    },
-    {
-      "type": "select",
-      "id": "mobile_height",
-      "label": "t:options.device.mobile",
-      "options": [
-        { "value": "adapt", "label": "t:options.hero_height.adapt" },
-        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
-        { "value": "small", "label": "t:options.hero_height.small" },
-        { "value": "medium", "label": "t:options.hero_height.medium" },
-        { "value": "large", "label": "t:options.hero_height.large" },
-        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
-        { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
-      ],
-      "default": "adapt"
-    },
-    {
-      "type": "header",
       "content": "t:general.content"
     },
     {
@@ -1026,10 +976,7 @@
     {
       "name": "t:general.product_callout",
       "settings": {
-        "overlay": "#00000033",
         "content_color_scheme": "scheme-1",
-        "desktop_height": "adapt",
-        "mobile_height": "adapt",
         "heading": "Easy by design",
         "heading_size": "xl",
         "html_tag": "h2",
@@ -1045,9 +992,9 @@
         "hotspot_behavior": "click"
       },
       "blocks": [
-        { "type": "hotspot", "settings": { "vertical_position": 50, "horizontal_position": 22 } },
-        { "type": "hotspot", "settings": { "vertical_position": 56, "horizontal_position": 57 } },
-        { "type": "hotspot", "settings": { "vertical_position": 73, "horizontal_position": 77 } }
+        { "type": "hotspot", "settings": { "vertical_position": 50, "horizontal_position": 22, "mobile_vertical_position": 50, "mobile_horizontal_position": 22 } },
+        { "type": "hotspot", "settings": { "vertical_position": 56, "horizontal_position": 57, "mobile_vertical_position": 56, "mobile_horizontal_position": 57 } },
+        { "type": "hotspot", "settings": { "vertical_position": 73, "horizontal_position": 77, "mobile_vertical_position": 73, "mobile_horizontal_position": 77 } }
       ]
     }
   ]
