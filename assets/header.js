@@ -5,7 +5,6 @@
   const submenuCloseTimers = new WeakMap();
   const menuToggleButtons = new WeakSet();
   const megaMenuBackdropControls = new WeakSet();
-  const backdropCursorBindings = new WeakMap();
   const accountElements = new WeakSet();
   const localizationSheetDetails = new WeakSet();
   const footerLocalizationStates = new WeakMap();
@@ -16,17 +15,12 @@
 
   const getHeaderRoot = (headerTop) => headerTop.closest('.shopify-section') || headerTop;
 
-  const setHeaderMenuState = (header, isOpen, { opener = null, restoreFocus = true, syncOverlay = true } = {}) => {
+  const setHeaderMenuState = (header, isOpen) => {
     const container = header.querySelector('.header-top') || header;
     const drawer = container.querySelector('[data-header-mobile-drawer]');
-    const overlay = drawer ? window.ThemeOverlay?.get(drawer) : null;
     container.classList.toggle('header-top--menu-open', isOpen);
+    document.body.classList.toggle('header-menu-open', isOpen && window.innerWidth <= 767);
     drawer?.setAttribute('aria-hidden', String(!isOpen));
-
-    if (syncOverlay) {
-      if (isOpen) overlay?.open({ opener: opener || document.activeElement, restoreFocus: true });
-      else overlay?.close({ restoreFocus });
-    }
 
     if (!isOpen) {
       closeLocalizationDialogs(header);
@@ -53,7 +47,6 @@
       toggle.setAttribute('aria-expanded', String(isOpen));
       toggle.setAttribute('aria-label', isOpen ? 'Close menu' : 'Open menu');
     });
-    scheduleUpdate();
   };
 
   const closeSearchOverlay = () => {
@@ -134,7 +127,7 @@
       closeHeaderDetails(details);
     });
 
-    if (!active.menu) setHeaderMenuState(header, false, { restoreFocus: false });
+    if (!active.menu) setHeaderMenuState(header, false);
     if (!active.search) closeSearchOverlay();
     if (!active.cart) closeCartDrawer();
     header.querySelectorAll('shopify-account').forEach((account) => {
@@ -219,14 +212,15 @@
       const isCartOpen = header.classList.contains('header--cart-open');
       const headerTop = header.querySelector('.header-top');
       if (window.innerWidth >= 1150 && headerTop?.classList.contains('header-top--menu-open')) {
-        setHeaderMenuState(header, false, { restoreFocus: false });
+        setHeaderMenuState(header, false);
+      } else if (window.innerWidth > 767) {
+        document.body.classList.remove('header-menu-open');
       }
       header.classList.toggle('header--is-scrolled', isScrolled);
       header.classList.toggle('header--submenu-open', isSubmenuOpen);
       header.classList.toggle('header--mega-menu-open', isMegaMenuOpen);
       header.querySelectorAll('[data-header-mega-menu-backdrop]').forEach((backdrop) => {
         backdrop.setAttribute('aria-hidden', String(!isMegaMenuOpen));
-        if (!isMegaMenuOpen) backdropCursorBindings.get(backdrop)?.hide();
       });
       synchronizeHeaderColorScheme(header, isScrolled || isSubmenuOpen || isSearchOpen || isCartOpen);
 
@@ -470,15 +464,6 @@
       if (megaMenuBackdropControls.has(backdrop)) return;
       megaMenuBackdropControls.add(backdrop);
 
-      const cursorBinding = window.ThemeOverlay?.bindBackdropCursor({
-        backdrop,
-        owner: backdrop,
-        root: header,
-        colorSource: header,
-        isOpen: () => window.innerWidth >= 1150 && hasOpenMegaMenu(header),
-      });
-      if (cursorBinding) backdropCursorBindings.set(backdrop, cursorBinding);
-
       backdrop.addEventListener('click', () => {
         closeHeaderSurfaces(header);
         scheduleUpdate();
@@ -492,13 +477,20 @@
 
       menuToggleButtons.add(toggle);
       const container = toggle.closest('.header-top') || header;
+      const drawer = container.querySelector('[data-header-mobile-drawer]');
 
-      toggle.addEventListener('click', (event) => {
+      toggle.addEventListener('click', () => {
         const isOpen = !container.classList.contains('header-top--menu-open');
         if (isOpen) closeHeaderSurfaces(header, { menu: true });
-        setHeaderMenuState(header, isOpen, { restoreFocus: isOpen || event.detail === 0 });
+        setHeaderMenuState(header, isOpen);
       });
 
+      drawer?.addEventListener('keydown', (event) => {
+        if (event.key === 'Escape') {
+          setHeaderMenuState(header, false);
+          toggle.focus();
+        }
+      });
     });
   };
 
@@ -507,17 +499,6 @@
     const drawer = container.querySelector('[data-header-mobile-drawer]');
     if (!drawer || drawer.dataset.ready === 'true') return;
     drawer.dataset.ready = 'true';
-    window.ThemeOverlay?.get(drawer);
-    drawer.addEventListener('close', () => setHeaderMenuState(header, false, { syncOverlay: false }));
-
-    const cursorBinding = window.ThemeOverlay?.bindBackdropCursor({
-      backdrop: drawer.querySelector('[data-header-menu-backdrop]'),
-      owner: drawer,
-      root: drawer,
-      colorSource: drawer,
-      isOpen: () => window.innerWidth <= 767 && drawer.dataset.state === 'open',
-    });
-    if (cursorBinding) backdropCursorBindings.set(drawer, cursorBinding);
 
     const setBackLabel = (title) => {
       drawer.querySelectorAll('[data-header-menu-back]').forEach((back) => { back.hidden = false; });
@@ -631,6 +612,9 @@
     drawer.querySelectorAll('[data-header-menu-back]').forEach((back) => {
       back.addEventListener('click', backToParentSubmenu);
     });
+    drawer.querySelectorAll('[data-header-menu-backdrop]').forEach((backdrop) => {
+      backdrop.addEventListener('click', () => setHeaderMenuState(header, false));
+    });
     drawer.addEventListener('click', (event) => {
       const link = event.target.closest?.('a[href]');
       if (!link) return;
@@ -638,7 +622,7 @@
       // Let the anchor's default navigation run before collapsing the drawer.
       // Closing the active <details> during the same click event can remove the
       // active submenu before the browser activates a real child-link URL.
-      window.setTimeout(() => setHeaderMenuState(header, false, { restoreFocus: false }), 0);
+      window.setTimeout(() => setHeaderMenuState(header, false), 0);
     });
   };
 
@@ -806,15 +790,6 @@
 
     root.querySelectorAll?.(HEADER_SELECTOR).forEach((headerTop) => headers.push(getHeaderRoot(headerTop)));
     headers.forEach((header) => {
-      header.querySelectorAll('[data-header-mega-menu-backdrop]').forEach((backdrop) => {
-        backdropCursorBindings.get(backdrop)?.destroy();
-        backdropCursorBindings.delete(backdrop);
-      });
-      header.querySelectorAll('[data-header-mobile-drawer]').forEach((drawer) => {
-        window.ThemeOverlay?.get(drawer)?.destroy();
-        backdropCursorBindings.get(drawer)?.destroy();
-        backdropCursorBindings.delete(drawer);
-      });
       headerStates.delete(header);
       headerResizeObservers.get(header)?.disconnect();
       headerResizeObservers.delete(header);
