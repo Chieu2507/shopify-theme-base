@@ -413,7 +413,8 @@ const initialize = (root) => {
   const loop = root.dataset.carouselLoop === 'true';
   const options = {
     loop,
-    speed: prefersReducedMotion() ? 0 : 300,
+    preventInteractionOnTransition: true,
+    speed: prefersReducedMotion() ? 0 : 600,
     slidesPerView: number(root.dataset.swiperColumnsMobile, 1),
     spaceBetween: number(root.dataset.swiperGapMobile, 12),
     breakpoints: { [desktopBreakpoint]: { slidesPerView: number(root.dataset.swiperColumnsDesktop, 4), spaceBetween: number(root.dataset.swiperGapDesktop, 16) } },
@@ -497,9 +498,19 @@ const destroy = (root) => {
   instances.delete(root);
 };
 
-const initializeRoot = (root = document) => {
-  if (root.matches?.('[data-carousel-block]')) initialize(root);
-  root.querySelectorAll?.('[data-carousel-block]').forEach(initialize);
+const initializeRoot = (root = document, refreshExisting = false) => {
+  const initializeOrRefresh = (carouselRoot) => {
+    if (!refreshExisting || !instances.has(carouselRoot)) {
+      initialize(carouselRoot);
+      return;
+    }
+
+    const state = instances.get(carouselRoot);
+    if (state?.swiper && !state.swiper.destroyed) state.swiper.update();
+  };
+
+  if (root.matches?.('[data-carousel-block]')) initializeOrRefresh(root);
+  root.querySelectorAll?.('[data-carousel-block]').forEach(initializeOrRefresh);
 };
 const destroyRoot = (root) => {
   if (root.matches?.('[data-carousel-block]')) destroy(root);
@@ -507,7 +518,7 @@ const destroyRoot = (root) => {
 };
 
 document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
-document.addEventListener('shopify:section:select', (event) => initializeRoot(event.target));
+document.addEventListener('shopify:section:select', (event) => initializeRoot(event.target, true));
 document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
 document.addEventListener('shopify:block:select', (event) => {
   const target = event.target instanceof Element ? event.target : null;
