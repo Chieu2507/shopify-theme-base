@@ -208,29 +208,41 @@
         </div>
       {% else %}
         <div class="product-callout__product-card">
-          <div class="product-callout__product-card-media">
+          {% if hotspot_show_product_image %}
             {% if hotspot_has_product and hotspot_product.featured_image != blank %}
-              {{ hotspot_product.featured_image | image_url: width: 180 | image_tag: widths: '90, 180', sizes: '5.5rem', alt: hotspot_product.title, loading: 'lazy' }}
-            {% else %}
-              {{ 'product-1' | placeholder_svg_tag: 'product-callout__product-card-placeholder' }}
+              <div class="product-callout__product-card-media">
+                {{ hotspot_product.featured_image | image_url: width: 180 | image_tag: widths: '90, 180', sizes: '5.5rem', alt: hotspot_product.title, loading: 'lazy' }}
+              </div>
+            {% elsif request.design_mode %}
+              <div class="product-callout__product-card-media">
+                {{ 'product-1' | placeholder_svg_tag: 'product-callout__product-card-placeholder' }}
+              </div>
             {% endif %}
-          </div>
+          {% endif %}
 
           <div class="product-callout__product-card-details">
-            <span class="product-callout__product-card-category">{{ hotspot_product_category | escape }}</span>
+            {% if hotspot_show_product_type and hotspot_product_category != blank %}
+              <span class="product-callout__product-card-category">{{ hotspot_product_category | escape }}</span>
+            {% endif %}
             <span class="product-callout__product-card-title">{{ hotspot_product_title | escape }}</span>
             {% if hotspot_has_product %}
-              <span class="product-callout__product-card-price">{{ hotspot_product.price | money }}</span>
-              <a
-                class="product-callout__product-card-action"
-                href="{{ hotspot_product.url | escape }}"
-                data-product-card-quick-view
-                data-product-card-quick-view-url="{{ hotspot_product.url | escape }}"
-                aria-haspopup="dialog"
-                aria-expanded="false"
-              >{{ 'products.quick_view' | t }}</a>
+              {% if hotspot_show_price %}
+                {% render 'price', item: hotspot_product, context: 'product-card', class: 'product-callout__product-card-price' %}
+              {% endif %}
+              {% if hotspot_is_carousel %}
+                <a class="product-callout__product-card-action" href="{{ hotspot_product.url | escape }}">{{ hotspot_product_link_label | escape }}</a>
+              {% else %}
+                <a
+                  class="product-callout__product-card-action"
+                  href="{{ hotspot_product.url | escape }}"
+                  data-product-card-quick-view
+                  data-product-card-quick-view-url="{{ hotspot_product.url | escape }}"
+                  aria-haspopup="dialog"
+                  aria-expanded="false"
+                >{{ hotspot_product_link_label | escape }}</a>
+              {% endif %}
             {% else %}
-              <span class="product-callout__product-card-action product-callout__product-card-action--disabled" aria-disabled="true">{{ 'products.quick_view' | t }}</span>
+              <span class="product-callout__product-card-action product-callout__product-card-action--disabled" aria-disabled="true">{{ hotspot_product_link_label | escape }}</span>
             {% endif %}
           </div>
         </div>
