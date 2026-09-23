@@ -186,7 +186,7 @@
 {% endcapture %}
 {% assign product_callout_style = product_callout_style | strip %}
 
-{% if product_callout_has_media or request.design_mode %}
+{% if product_callout_has_media or request.design_mode or product_callout_is_carousel == false %}
   <article
     class="{{ product_callout_class }}"
     style="{{ product_callout_style }}"
@@ -983,6 +983,16 @@
           if (event.key !== 'Escape' || !state.active) return;
           event.preventDefault();
           closeActive(state, true);
+        },
+        { signal: controller.signal },
+      );
+
+      document.addEventListener(
+        'theme:carousel:slidechange',
+        (event) => {
+          const carouselRoot = event.detail?.root;
+          if (!carouselRoot?.contains?.(callout)) return;
+          closeActive(state, false, true);
         },
         { signal: controller.signal },
       );
