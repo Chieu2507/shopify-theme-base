@@ -8,6 +8,11 @@
 {% enddoc %}
 
 {% liquid
+  assign product_callout_is_carousel = false
+  if section.type == 'hotspot-full-width-carousel'
+    assign product_callout_is_carousel = true
+  endif
+
   assign product_callout_image = block.settings.image
   assign product_callout_mobile_image = block.settings.mobile_image
   assign product_callout_base_image = product_callout_image
@@ -26,15 +31,42 @@
   endif
 
   assign product_callout_desktop_height = block.settings.desktop_height | default: 'adapt'
-  unless product_callout_desktop_height == 'adapt' or product_callout_desktop_height == 'extra_small' or product_callout_desktop_height == 'small' or product_callout_desktop_height == 'medium' or product_callout_desktop_height == 'large' or product_callout_desktop_height == 'extra_large' or product_callout_desktop_height == 'full_screen'
-    assign product_callout_desktop_height = 'adapt'
-  endunless
   assign product_callout_mobile_height = block.settings.mobile_height | default: 'adapt'
-  unless product_callout_mobile_height == 'adapt' or product_callout_mobile_height == 'extra_small' or product_callout_mobile_height == 'small' or product_callout_mobile_height == 'medium' or product_callout_mobile_height == 'large' or product_callout_mobile_height == 'extra_large' or product_callout_mobile_height == 'full_screen'
-    assign product_callout_mobile_height = 'adapt'
-  endunless
+  assign product_callout_desktop_height_value = blank
+  assign product_callout_mobile_height_value = blank
+
+  if product_callout_is_carousel
+    assign product_callout_desktop_height_value = section.settings.desktop_height | default: 560 | plus: 0
+    assign product_callout_mobile_height_value = section.settings.mobile_height | default: 420 | plus: 0
+    if product_callout_desktop_height_value < 320 or product_callout_desktop_height_value > 900
+      assign product_callout_desktop_height_value = 560
+    endif
+    if product_callout_mobile_height_value < 300 or product_callout_mobile_height_value > 700
+      assign product_callout_mobile_height_value = 420
+    endif
+  else
+    unless product_callout_desktop_height == 'adapt' or product_callout_desktop_height == 'extra_small' or product_callout_desktop_height == 'small' or product_callout_desktop_height == 'medium' or product_callout_desktop_height == 'large' or product_callout_desktop_height == 'extra_large' or product_callout_desktop_height == 'full_screen'
+      assign product_callout_desktop_height = 'adapt'
+    endunless
+    unless product_callout_mobile_height == 'adapt' or product_callout_mobile_height == 'extra_small' or product_callout_mobile_height == 'small' or product_callout_mobile_height == 'medium' or product_callout_mobile_height == 'large' or product_callout_mobile_height == 'extra_large' or product_callout_mobile_height == 'full_screen'
+      assign product_callout_mobile_height = 'adapt'
+    endunless
+  endif
 
   assign product_callout_overlay = block.settings.overlay
+  if product_callout_is_carousel
+    assign product_callout_overlay = blank
+  endif
+
+  assign product_callout_image_position_desktop = block.settings.desktop_image_position | default: 'center center'
+  assign product_callout_image_position_mobile = block.settings.mobile_image_position | default: product_callout_image_position_desktop
+  assign product_callout_image_position_values = 'top left|top center|top right|center left|center center|center right|bottom left|bottom center|bottom right'
+  unless product_callout_image_position_values contains product_callout_image_position_desktop
+    assign product_callout_image_position_desktop = 'center center'
+  endunless
+  unless product_callout_image_position_values contains product_callout_image_position_mobile
+    assign product_callout_image_position_mobile = product_callout_image_position_desktop
+  endunless
 
   assign product_callout_heading_size = block.settings.heading_size | default: 'xl'
   case product_callout_heading_size
@@ -110,80 +142,110 @@
   endif
   assign product_callout_hotspot_scheme = product_callout_hotspot_scheme | default: 'scheme-1' | handleize
 
+  if product_callout_is_carousel
+    assign product_callout_content_scheme = section.settings.color_scheme | default: 'scheme-1'
+    if section.settings.color_scheme.id != blank
+      assign product_callout_content_scheme = section.settings.color_scheme.id
+    endif
+    assign product_callout_content_scheme = product_callout_content_scheme | default: 'scheme-1' | handleize
+    assign product_callout_hotspot_scheme = product_callout_content_scheme
+  endif
+
   assign product_callout_image_alt = product_callout_image.alt | default: product_callout_mobile_image.alt | default: product_callout_base_image.alt
   assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
   assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
-  assign product_callout_class = product_callout_class | append: ' product-callout--desktop-' | append: product_callout_desktop_height
-  assign product_callout_class = product_callout_class | append: ' product-callout--mobile-' | append: product_callout_mobile_height
+  if product_callout_is_carousel
+    assign product_callout_class = product_callout_class | append: ' product-callout--carousel product-callout--desktop-fixed product-callout--mobile-fixed swiper-slide'
+  else
+    assign product_callout_class = product_callout_class | append: ' product-callout--desktop-' | append: product_callout_desktop_height
+    assign product_callout_class = product_callout_class | append: ' product-callout--mobile-' | append: product_callout_mobile_height
+  endif
   assign product_callout_class = product_callout_class | append: ' product-callout--icon-' | append: product_callout_hotspot_icon_style
   assign product_callout_class = product_callout_class | append: ' color-scheme section-color-scope ' | append: product_callout_content_scheme
   assign product_callout_text_class = 'product-callout__text body-text body-' | append: product_callout_text_size | append: ' rte'
+
+  assign product_callout_has_media = false
+  if product_callout_base_image != blank
+    assign product_callout_has_media = true
+  endif
 %}
 
 {% capture product_callout_style %}
   --product-callout-ratio: {{ product_callout_desktop_ratio }};
   --product-callout-ratio-mobile: {{ product_callout_mobile_ratio }};
+  --product-callout-image-position: {{ product_callout_image_position_desktop | escape }};
+  --product-callout-image-position-mobile: {{ product_callout_image_position_mobile | escape }};
   {% if product_callout_overlay != blank %}--product-callout-overlay-color: {{ product_callout_overlay | escape }};{% endif %}
   --product-callout-content-gap: {{ product_callout_gap_desktop }}px;
   --product-callout-content-gap-mobile: {{ product_callout_gap_mobile }}px;
+  {% if product_callout_is_carousel %}
+    --product-callout-height-desktop: {{ product_callout_desktop_height_value }}px;
+    --product-callout-height-mobile: {{ product_callout_mobile_height_value }}px;
+  {% endif %}
   {% if product_callout_heading_size == 'custom' %}--heading-block-custom-size: {{ product_callout_custom_heading_size }}px;{% endif %}
 {% endcapture %}
 {% assign product_callout_style = product_callout_style | strip %}
 
-<article
-  class="{{ product_callout_class }}"
-  style="{{ product_callout_style }}"
-  data-product-callout
-  data-product-callout-hotspot-behavior="{{ product_callout_hotspot_behavior }}"
-  {{ block.shopify_attributes }}
->
-  <div class="product-callout__media">
-    {% render 'media-background',
-      media_type: 'image',
-      image: product_callout_base_image,
-      mobile_image: product_callout_mobile_image,
-      alt: product_callout_image_alt,
-      placeholder: 'lifestyle-1',
-      sizes: '100vw'
-    %}
-
-    {% if product_callout_overlay != blank %}
-      <span class="product-callout__overlay" aria-hidden="true"></span>
-    {% endif %}
-
-    <div
-      class="product-callout__hotspots color-scheme {{ product_callout_hotspot_scheme }}"
-      role="group"
-      aria-label="{{ 'accessibility.product_callout_hotspots' | t | escape }}"
-    >
-      {% content_for 'blocks' %}
-    </div>
-  </div>
-
-  <div class="product-callout__content product-callout__content--{{ product_callout_text_position }} product-callout__content--align-{{ product_callout_text_alignment }}">
-    {% if block.settings.preheading != blank %}
-      <p class="product-callout__preheading eyebrow-text">{{ block.settings.preheading | escape }}</p>
-    {% endif %}
-
-    {% if block.settings.heading != blank %}
-      <{{ product_callout_heading_tag }} class="product-callout__heading heading-block heading-text heading-{{ product_callout_heading_size }}">{{ block.settings.heading | escape }}</{{ product_callout_heading_tag }}>
-    {% endif %}
-
-    {% if block.settings.text != blank %}
-      <div class="{{ product_callout_text_class }}">{{ block.settings.text }}</div>
-    {% endif %}
-
-    {% if block.settings.button_label != blank %}
-      {% render 'theme-button',
-        label: block.settings.button_label,
-        url: block.settings.button_link,
-        open_in_new_tab: block.settings.open_in_new_tab,
-        variant: product_callout_button_style,
-        class: 'product-callout__button'
+{% if product_callout_has_media or request.design_mode %}
+  <article
+    class="{{ product_callout_class }}"
+    style="{{ product_callout_style }}"
+    data-product-callout
+    data-product-callout-carousel="{{ product_callout_is_carousel }}"
+    data-product-callout-hotspot-behavior="{{ product_callout_hotspot_behavior }}"
+    {% if block.settings.editor_title != blank %}data-carousel-slide-label="{{ block.settings.editor_title | escape }}"{% endif %}
+    {{ block.shopify_attributes }}
+  >
+    <div class="product-callout__media">
+      {% render 'media-background',
+        media_type: 'image',
+        image: product_callout_base_image,
+        mobile_image: product_callout_mobile_image,
+        alt: product_callout_image_alt,
+        placeholder: 'lifestyle-1',
+        sizes: '100vw'
       %}
-    {% endif %}
-  </div>
-</article>
+
+      {% if product_callout_overlay != blank %}
+        <span class="product-callout__overlay" aria-hidden="true"></span>
+      {% endif %}
+
+      <div
+        class="product-callout__hotspots color-scheme {{ product_callout_hotspot_scheme }}"
+        role="group"
+        aria-label="{{ 'accessibility.product_callout_hotspots' | t | escape }}"
+      >
+        {% content_for 'blocks' %}
+      </div>
+    </div>
+
+    {% unless product_callout_is_carousel %}
+      <div class="product-callout__content product-callout__content--{{ product_callout_text_position }} product-callout__content--align-{{ product_callout_text_alignment }}">
+        {% if block.settings.preheading != blank %}
+          <p class="product-callout__preheading eyebrow-text">{{ block.settings.preheading | escape }}</p>
+        {% endif %}
+
+        {% if block.settings.heading != blank %}
+          <{{ product_callout_heading_tag }} class="product-callout__heading heading-block heading-text heading-{{ product_callout_heading_size }}">{{ block.settings.heading | escape }}</{{ product_callout_heading_tag }}>
+        {% endif %}
+
+        {% if block.settings.text != blank %}
+          <div class="{{ product_callout_text_class }}">{{ block.settings.text }}</div>
+        {% endif %}
+
+        {% if block.settings.button_label != blank %}
+          {% render 'theme-button',
+            label: block.settings.button_label,
+            url: block.settings.button_link,
+            open_in_new_tab: block.settings.open_in_new_tab,
+            variant: product_callout_button_style,
+            class: 'product-callout__button'
+          %}
+        {% endif %}
+      </div>
+    {% endunless %}
+  </article>
+{% endif %}
 
 {% stylesheet %}
   .product-callout {
