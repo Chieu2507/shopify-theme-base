@@ -609,9 +609,11 @@
 
       const closeForHover = (event) => {
         if (state.hotspotBehavior !== 'hover') return;
+        const wrapper = event.currentTarget.closest?.('[data-product-callout-hotspot-wrap]');
+        if (!wrapper) return;
         const nextTarget = event.relatedTarget;
-        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
-        if (state.active?.wrapper === event.currentTarget) closeActive(state);
+        if (nextTarget instanceof Node && wrapper.contains(nextTarget)) return;
+        if (state.active?.wrapper === wrapper) closeActive(state);
       };
 
       const openForFocus = (event) => {
@@ -634,6 +636,7 @@
         wrapper.addEventListener('pointerleave', closeForHover, { signal: controller.signal });
         wrapper.addEventListener('focusin', openForFocus, { signal: controller.signal });
         wrapper.addEventListener('focusout', closeForFocus, { signal: controller.signal });
+        wrapper.querySelector('[data-product-callout-popover]')?.addEventListener('pointerleave', closeForHover, { signal: controller.signal });
       });
 
       callout.addEventListener(
