@@ -150,7 +150,7 @@
 
   .product-callout__hotspots {
     position: absolute;
-    z-index: 2;
+    z-index: 4;
     inset: 0;
     pointer-events: none;
   }
@@ -519,6 +519,105 @@
     }
   }
 {% endstylesheet %}
+
+{% javascript %}
+  (() => {
+    const instances = new WeakMap();
+
+    const closeActive = (state, restoreFocus = false) => {
+      const active = state.active;
+      if (!active) return;
+
+      active.popover.hidden = true;
+      active.wrapper.classList.remove('product-callout__hotspot-wrap--active');
+      active.trigger.setAttribute('aria-expanded', 'false');
+      state.active = null;
+
+      if (restoreFocus) active.trigger.focus({ preventScroll: true });
+    };
+
+    const openPopover = (state, trigger) => {
+      const wrapper = trigger.closest('[data-product-callout-hotspot-wrap]');
+      const popover = wrapper?.querySelector('[data-product-callout-popover]');
+      if (!wrapper || !popover) return;
+
+      const isActive = state.active?.trigger === trigger;
+      closeActive(state);
+      if (isActive) return;
+
+      popover.hidden = false;
+      wrapper.classList.add('product-callout__hotspot-wrap--active');
+      trigger.setAttribute('aria-expanded', 'true');
+      state.active = { trigger, wrapper, popover };
+    };
+
+    const initialize = (callout) => {
+      if (!callout || instances.has(callout)) return;
+
+      const controller = new AbortController();
+      const state = { callout, controller, active: null };
+      instances.set(callout, state);
+
+      callout.addEventListener(
+        'click',
+        (event) => {
+          const trigger = event.target.closest?.('[data-product-callout-hotspot]');
+          if (!trigger || !callout.contains(trigger)) return;
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+          event.preventDefault();
+          openPopover(state, trigger);
+        },
+        { signal: controller.signal },
+      );
+
+      document.addEventListener(
+        'click',
+        (event) => {
+          if (state.active && !callout.contains(event.target)) closeActive(state);
+        },
+        { signal: controller.signal },
+      );
+
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (event.key !== 'Escape' || !state.active) return;
+          event.preventDefault();
+          closeActive(state, true);
+        },
+        { signal: controller.signal },
+      );
+    };
+
+    const destroy = (callout) => {
+      const state = instances.get(callout);
+      if (!state) return;
+      closeActive(state);
+      state.controller.abort();
+      instances.delete(callout);
+    };
+
+    const initializeRoot = (root = document) => {
+      if (root.matches?.('[data-product-callout]')) initialize(root);
+      root.querySelectorAll?.('[data-product-callout]').forEach(initialize);
+    };
+
+    const destroyRoot = (root) => {
+      if (root.matches?.('[data-product-callout]')) destroy(root);
+      root.querySelectorAll?.('[data-product-callout]').forEach(destroy);
+    };
+
+    document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
+    document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => initializeRoot(), { once: true });
+    } else {
+      initializeRoot();
+    }
+  })();
+{% endjavascript %}
 
 {% schema %}
 {
