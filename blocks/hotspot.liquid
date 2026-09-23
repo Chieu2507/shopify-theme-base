@@ -10,8 +10,13 @@
 {% enddoc %}
 
 {% liquid
+  assign hotspot_is_carousel = false
+  if section.type == 'hotspot-full-width-carousel'
+    assign hotspot_is_carousel = true
+  endif
+
   assign hotspot_type = 'product'
-  if block.settings.use_content
+  if block.settings.use_content and hotspot_is_carousel == false
     assign hotspot_type = 'content'
   endif
 
@@ -69,7 +74,39 @@
     assign hotspot_product_title = hotspot_product.title
   endif
 
+  assign hotspot_show_product_type = true
+  assign hotspot_show_product_image = true
+  assign hotspot_show_price = true
+  assign hotspot_product_link_label = 'products.quick_view' | t
+  if hotspot_is_carousel
+    assign hotspot_show_product_type = section.settings.show_product_type
+    assign hotspot_show_product_image = section.settings.show_product_image
+    assign hotspot_show_price = section.settings.show_price
+    if section.settings.product_link_label != blank
+      assign hotspot_product_link_label = section.settings.product_link_label
+    else
+      assign hotspot_product_link_label = 'products.view_product' | t
+    endif
+    if hotspot_has_product
+      assign hotspot_product_category = hotspot_product.type
+    endif
+  endif
+
+  assign hotspot_card_placement = block.settings.card_placement | default: 'auto'
+  unless hotspot_card_placement == 'auto' or hotspot_card_placement == 'top' or hotspot_card_placement == 'right' or hotspot_card_placement == 'bottom' or hotspot_card_placement == 'left'
+    assign hotspot_card_placement = 'auto'
+  endunless
+
   assign hotspot_popover_id = 'product-callout-popover-' | append: block.id
+  if hotspot_card_placement == 'left'
+    assign hotspot_popover_horizontal = 'left'
+  elsif hotspot_card_placement == 'right'
+    assign hotspot_popover_horizontal = 'right'
+  elsif hotspot_card_placement == 'top'
+    assign hotspot_popover_vertical = 'top'
+  elsif hotspot_card_placement == 'bottom'
+    assign hotspot_popover_vertical = 'bottom'
+  endif
   assign hotspot_popover_class = 'product-callout__popover product-callout__popover--' | append: hotspot_popover_horizontal | append: ' product-callout__popover--' | append: hotspot_popover_vertical
   assign hotspot_popover_label = hotspot_product_title
   if hotspot_type == 'content'
