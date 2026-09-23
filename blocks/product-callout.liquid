@@ -60,6 +60,11 @@
     assign product_callout_hotspot_icon_style = 'plus'
   endunless
 
+  assign product_callout_hotspot_behavior = block.settings.hotspot_behavior | default: 'click'
+  unless product_callout_hotspot_behavior == 'click' or product_callout_hotspot_behavior == 'hover'
+    assign product_callout_hotspot_behavior = 'click'
+  endunless
+
   assign product_callout_image_alt = product_callout_image.alt | default: product_callout_mobile_image.alt | default: product_callout_base_image.alt
   assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
   assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
@@ -82,6 +87,7 @@
   class="{{ product_callout_class }}"
   style="{{ product_callout_style }}"
   data-product-callout
+  data-product-callout-hotspot-behavior="{{ product_callout_hotspot_behavior }}"
   {{ block.shopify_attributes }}
 >
   <div class="product-callout__media">
@@ -565,8 +571,12 @@
       if (!wrapper || !popover) return;
 
       const isActive = state.active?.trigger === trigger;
+      if (isActive) {
+        if (state.toggleOnClick) closeActive(state);
+        return;
+      }
+
       closeActive(state);
-      if (isActive) return;
 
       popover.hidden = false;
       wrapper.classList.add('product-callout__hotspot-wrap--active');
@@ -578,8 +588,53 @@
       if (!callout || instances.has(callout)) return;
 
       const controller = new AbortController();
-      const state = { callout, controller, active: null };
+      const state = {
+        callout,
+        controller,
+        active: null,
+        hotspotBehavior: callout.dataset.productCalloutHotspotBehavior === 'hover' ? 'hover' : 'click',
+        toggleOnClick: true,
+      };
       instances.set(callout, state);
+
+      const openForHover = (event) => {
+        if (state.hotspotBehavior !== 'hover' || event.pointerType === 'touch') return;
+        const trigger = event.currentTarget.querySelector('[data-product-callout-hotspot]');
+        if (!trigger) return;
+
+        state.toggleOnClick = false;
+        openPopover(state, trigger);
+        state.toggleOnClick = true;
+      };
+
+      const closeForHover = (event) => {
+        if (state.hotspotBehavior !== 'hover') return;
+        const nextTarget = event.relatedTarget;
+        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+        if (state.active?.wrapper === event.currentTarget) closeActive(state);
+      };
+
+      const openForFocus = (event) => {
+        if (state.hotspotBehavior !== 'hover' || event.target !== event.currentTarget.querySelector('[data-product-callout-hotspot]')) return;
+
+        state.toggleOnClick = false;
+        openPopover(state, event.target);
+        state.toggleOnClick = true;
+      };
+
+      const closeForFocus = (event) => {
+        if (state.hotspotBehavior !== 'hover') return;
+        const nextTarget = event.relatedTarget;
+        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+        if (state.active?.wrapper === event.currentTarget) closeActive(state, true);
+      };
+
+      callout.querySelectorAll('[data-product-callout-hotspot-wrap]').forEach((wrapper) => {
+        wrapper.addEventListener('pointerenter', openForHover, { signal: controller.signal });
+        wrapper.addEventListener('pointerleave', closeForHover, { signal: controller.signal });
+        wrapper.addEventListener('focusin', openForFocus, { signal: controller.signal });
+        wrapper.addEventListener('focusout', closeForFocus, { signal: controller.signal });
+      });
 
       callout.addEventListener(
         'click',
@@ -589,6 +644,7 @@
           if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
 
           event.preventDefault();
+          state.toggleOnClick = true;
           openPopover(state, trigger);
         },
         { signal: controller.signal },
@@ -806,6 +862,16 @@
       "default": "plus"
     },
     {
+      "type": "select",
+      "id": "hotspot_behavior",
+      "label": "t:labels.hotspot_behavior",
+      "options": [
+        { "value": "click", "label": "t:options.dropdown_trigger.click" },
+        { "value": "hover", "label": "t:options.dropdown_trigger.hover" }
+      ],
+      "default": "click"
+    },
+    {
       "type": "color",
       "id": "hotspot_color",
       "label": "t:labels.hotspot_color",
@@ -827,6 +893,7 @@
         "text_alignment": "left",
         "text_position": "bottom_left",
         "hotspot_icon_style": "plus",
+        "hotspot_behavior": "click",
         "hotspot_color": "#FFFFFF"
       },
       "blocks": [
