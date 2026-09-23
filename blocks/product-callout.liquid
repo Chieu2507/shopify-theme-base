@@ -247,6 +247,10 @@
     z-index: 5;
   }
 
+  .product-callout__hotspot-wrap--closing {
+    z-index: 5;
+  }
+
   .product-callout__content {
     position: absolute;
     z-index: 3;
@@ -448,12 +452,36 @@
   }
 
   .product-callout__popover {
+    --product-callout-popover-duration: var(--motion-duration-standard, 280ms);
+    --product-callout-popover-easing: var(--motion-ease-standard, cubic-bezier(0.2, 0.8, 0.2, 1));
     position: absolute;
     z-index: 1;
     inset-block-start: calc(100% + 0.8rem);
     inset-inline-start: calc(100% + 0.8rem);
     width: min(24rem, calc(100vw - 3.2rem));
+    opacity: 0;
+    pointer-events: none;
+    scale: 0.96;
+    translate: 0 0.5rem;
+    visibility: hidden;
+    transition:
+      opacity var(--product-callout-popover-duration) var(--product-callout-popover-easing),
+      scale var(--product-callout-popover-duration) var(--product-callout-popover-easing),
+      translate var(--product-callout-popover-duration) var(--product-callout-popover-easing),
+      visibility 0s linear var(--product-callout-popover-duration);
+  }
+
+  .product-callout__popover--visible {
+    opacity: 1;
     pointer-events: auto;
+    scale: 1;
+    translate: 0 0;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .product-callout__popover:not(.product-callout__popover--visible) {
+    pointer-events: none;
   }
 
   .product-callout__popover--left {
@@ -680,6 +708,10 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
+    .product-callout__popover {
+      transition: none;
+    }
+
     .product-callout__hotspot,
     .product-callout__button {
       transition: none;
@@ -698,14 +730,69 @@
   (() => {
     const instances = new WeakMap();
 
-    const closeActive = (state, restoreFocus = false) => {
+    const transitionDuration = (element) => {
+      const style = getComputedStyle(element);
+      const toMilliseconds = (value) => {
+        const normalized = String(value || '').trim();
+        const amount = Number.parseFloat(normalized);
+        return Number.isFinite(amount) ? amount * (normalized.endsWith('ms') ? 1 : 1000) : 0;
+      };
+      const durations = String(style.transitionDuration || '0s').split(',').map(toMilliseconds);
+      const delays = String(style.transitionDelay || '0s').split(',').map(toMilliseconds);
+
+      return Math.max(0, ...durations.map((duration, index) => duration + (delays[index % delays.length] || 0)));
+    };
+
+    const cancelPopoverClose = (state, popover) => {
+      const closing = state.closing.get(popover);
+      if (!closing) return;
+
+      clearTimeout(closing.timer);
+      state.closing.delete(popover);
+      closing.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+      popover.hidden = false;
+      popover.inert = false;
+      popover.removeAttribute('aria-hidden');
+      popover.removeAttribute('inert');
+    };
+
+    const closeActive = (state, restoreFocus = false, immediate = false) => {
       const active = state.active;
       if (!active) return;
 
-      active.popover.hidden = true;
+      active.popover.classList.remove('product-callout__popover--visible');
+      active.popover.inert = true;
+      active.popover.setAttribute('aria-hidden', 'true');
+      active.popover.setAttribute('inert', '');
       active.wrapper.classList.remove('product-callout__hotspot-wrap--active');
       active.trigger.setAttribute('aria-expanded', 'false');
       state.active = null;
+
+      const finishClose = () => {
+        const closing = state.closing.get(active.popover);
+        if (closing?.record !== active) return;
+
+        clearTimeout(closing.timer);
+        state.closing.delete(active.popover);
+        active.popover.hidden = true;
+        active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+      };
+
+      if (immediate) {
+        active.popover.hidden = true;
+        active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+      } else {
+        active.wrapper.classList.add('product-callout__hotspot-wrap--closing');
+        const duration = transitionDuration(active.popover);
+        if (duration === 0) {
+          active.popover.hidden = true;
+          active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+        } else {
+          const closing = { record: active, timer: null };
+          closing.timer = window.setTimeout(finishClose, duration + 20);
+          state.closing.set(active.popover, closing);
+        }
+      }
 
       if (restoreFocus) active.trigger.focus({ preventScroll: true });
     };
@@ -722,11 +809,25 @@
       }
 
       closeActive(state);
+      cancelPopoverClose(state, popover);
 
       popover.hidden = false;
+      popover.inert = false;
+      popover.removeAttribute('aria-hidden');
+      popover.removeAttribute('inert');
+      popover.classList.remove('product-callout__popover--visible');
       wrapper.classList.add('product-callout__hotspot-wrap--active');
       trigger.setAttribute('aria-expanded', 'true');
       state.active = { trigger, wrapper, popover };
+
+      // Establish the hidden visual state before transitioning to open. This
+      // keeps click and hover entrances consistent despite the native hidden attribute.
+      void popover.offsetWidth;
+      window.requestAnimationFrame(() => {
+        if (state.active?.popover === popover && popover.isConnected) {
+          popover.classList.add('product-callout__popover--visible');
+        }
+      });
     };
 
     const initialize = (callout) => {
@@ -737,6 +838,7 @@
         callout,
         controller,
         active: null,
+        closing: new Map(),
         hotspotBehavior: callout.dataset.productCalloutHotspotBehavior === 'hover' ? 'hover' : 'click',
         toggleOnClick: true,
       };
@@ -822,7 +924,14 @@
     const destroy = (callout) => {
       const state = instances.get(callout);
       if (!state) return;
-      closeActive(state);
+      closeActive(state, false, true);
+      state.closing.forEach((closing, popover) => {
+        clearTimeout(closing.timer);
+        popover.hidden = true;
+        popover.classList.remove('product-callout__popover--visible');
+        closing.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+      });
+      state.closing.clear();
       state.controller.abort();
       instances.delete(callout);
     };
