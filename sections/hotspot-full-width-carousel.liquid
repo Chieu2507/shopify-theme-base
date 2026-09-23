@@ -153,7 +153,7 @@
           pagination: hotspot_carousel_pagination
         %}
 
-        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_arrows %}
+        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_arrows and hotspot_carousel_use_fraction == false %}
           {% render 'swiper-navigation',
             show: true,
             style: hotspot_carousel_navigation_style,
@@ -167,6 +167,24 @@
             next_label: hotspot_carousel_next_label,
             centered: true
           %}
+        {% endif %}
+
+        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination and hotspot_carousel_use_fraction %}
+          <div class="hotspot-full-width-carousel__fraction-controls hotspot-full-width-carousel__fraction-controls--desktop-{{ hotspot_carousel_pagination_position_desktop }} hotspot-full-width-carousel__fraction-controls--mobile-{{ hotspot_carousel_pagination_position_mobile }}">
+            {% if hotspot_carousel_show_arrows %}
+              <button class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__fraction-button" type="button" data-carousel-fraction-previous aria-label="{{ hotspot_carousel_previous_label | escape }}">
+                {% render 'carousel-navigation-icon', icon: hotspot_carousel_navigation_icon, direction: 'previous' %}
+              </button>
+            {% endif %}
+            <span class="hotspot-full-width-carousel__fraction" aria-live="polite">
+              <span data-carousel-fraction-current>1</span>/<span data-carousel-fraction-total>{{ hotspot_carousel_slide_count }}</span>
+            </span>
+            {% if hotspot_carousel_show_arrows %}
+              <button class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__fraction-button" type="button" data-carousel-fraction-next aria-label="{{ hotspot_carousel_next_label | escape }}">
+                {% render 'carousel-navigation-icon', icon: hotspot_carousel_navigation_icon, direction: 'next' %}
+              </button>
+            {% endif %}
+          </div>
         {% endif %}
       </div>
     {% elsif request.design_mode %}
