@@ -38,7 +38,13 @@
 
 <div
   id="SearchOverlay"
-  class="{{ search_overlay_class }}"
+  class="component-overlay {{ search_overlay_class }}"
+  data-component-overlay
+  data-append-to-body
+  data-desktop-layout="popup"
+  data-mobile-layout="drawer"
+  data-state="closed"
+  scroll-lock
   role="dialog"
   aria-modal="true"
   aria-label="{{ 'search.title' | t }}"
@@ -62,8 +68,8 @@
   data-view-all-label="{{ 'search.view_all_results' | t | escape }}"
   data-no-results-label="{{ 'search.no_results' | t | escape }}"
 >
-  <button class="search-overlay__backdrop" type="button" aria-label="{{ 'search.close' | t }}" data-search-overlay-backdrop></button>
-  <div class="search-overlay__panel">
+  <button class="component-overlay__backdrop search-overlay__backdrop" type="button" tabindex="-1" aria-label="{{ 'search.close' | t }}" data-component-overlay-backdrop data-search-overlay-backdrop></button>
+  <div class="component-overlay__panel search-overlay__panel">
     <div class="container page-width search-overlay__container">
       <form class="search-overlay__form body-text body-xl body-mobile-lg" action="{{ routes.search_url }}" method="get" role="search" data-search-overlay-form>
         <span class="search-overlay__icon" aria-hidden="true">
@@ -71,7 +77,7 @@
         </span>
         <label class="visually-hidden" for="SearchOverlayInput">{{ 'search.title' | t }}</label>
         <input id="SearchOverlayInput" class="search-overlay__input form__control form__control--input" name="q" type="search" autocomplete="off" placeholder="{{ search_overlay_placeholder | escape }}" role="combobox" aria-autocomplete="list" aria-controls="SearchOverlayResults" aria-expanded="false" data-search-overlay-input>
-        <button class="overlay-close search-overlay__close" type="button" aria-label="{{ 'search.close' | t }}" data-search-overlay-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button>
+        <button class="overlay-close search-overlay__close" type="button" aria-label="{{ 'search.close' | t }}" data-overlay-close data-search-overlay-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button>
       </form>
 
       <div id="SearchOverlayResults" class="search-overlay__results" data-search-overlay-results aria-live="polite" hidden></div>
@@ -81,40 +87,37 @@
 
 {% stylesheet %}
   .search-overlay {
-    position: fixed;
-    z-index: var(--z-drawer);
-    inset-inline: 0;
-    top: var(--search-overlay-top, 0px);
-    bottom: 0;
-    overflow: visible;
-    padding: 0;
-    background: transparent;
+    --overlay-rest-transform: translateY(-0.5rem);
+    --overlay-motion-duration: var(--motion-duration-standard);
+    --overlay-motion-ease: var(--motion-ease-standard);
+    --overlay-exit-duration: var(--overlay-motion-duration);
+    --overlay-backdrop-duration: var(--motion-duration-standard);
+    --overlay-backdrop-ease: var(--motion-ease-standard);
     color: var(--overlay-text-color);
-    opacity: 0;
-    transform: translateY(-0.5rem);
-    transition: opacity var(--motion-duration-standard) var(--motion-ease-standard), transform var(--motion-duration-standard) var(--motion-ease-standard);
   }
 
-  .search-overlay:not([hidden]) { opacity: 1; transform: translateY(0); }
+  .search-overlay__panel {
+    position: absolute;
+    inset: var(--search-overlay-top, 0px) 0 auto;
+    width: 100%;
+    max-width: none;
+    max-height: calc(100dvh - var(--search-overlay-top, 0px));
+    margin: 0;
+    overflow-y: auto;
+    border: 0;
+    border-radius: 0;
+    box-shadow: none;
+    transform: translateY(-0.5rem);
+  }
+
   .search-overlay__results[hidden] { display: none; }
-  html.search-overlay-open,
-  body.search-overlay-open { overflow: clip; }
   body:has(.section-header .header__container.full-width) .search-overlay__container { max-width: none; }
   .search-overlay--scheme { color: var(--body-color); }
   .search-overlay__backdrop {
-    position: absolute;
-    z-index: 0;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    padding: 0;
-    border: 0;
-    background-color: var(--overlay-backdrop-color);
-    cursor: pointer;
-    -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
-    backdrop-filter: blur(var(--overlay-backdrop-blur));
+    background-color: transparent;
   }
-  .search-overlay__panel { position: relative; z-index: 1; min-height: 0; padding-block: 1rem; background: var(--overlay-background-color); }
+  .search-overlay__container { padding-block: 1rem; }
+  .search-overlay__panel { background: var(--overlay-background-color); }
   .search-overlay--has-results .search-overlay__panel {
     background: var(--overlay-background-color);
     border-bottom: 1px solid color-mix(in srgb, var(--border-color) 55%, transparent);
@@ -122,6 +125,19 @@
   }
   .search-overlay--scheme.search-overlay--has-results .search-overlay__panel { background: var(--background-color); }
   .search-overlay--scheme .search-overlay__panel { background: var(--background-color); }
+
+  /* Search sits below the header stack so the announcement bar and header stay
+   * visible and unblurred. Keep this elevation scoped to Search; other overlays
+   * retain the normal modal stacking contract. */
+  body:has(.search-overlay:is([data-state='opening'], [data-state='open'], [data-state='closing'])) .shopify-section.section-header,
+  body:has(.search-overlay:is([data-state='opening'], [data-state='open'], [data-state='closing'])) .shopify-section.section-announcement-bar {
+    z-index: calc(var(--z-modal) + 1);
+  }
+
+  body:has(.search-overlay:is([data-state='opening'], [data-state='open'], [data-state='closing'])) .shopify-section.section-announcement-bar {
+    position: relative;
+  }
+
   .search-overlay__form { position: relative; display: flex; align-items: center; width: calc(100% - 3.5rem); padding-inline: 0; border: 0; border-radius: var(--input-radius); background: var(--overlay-background-color); color: var(--overlay-text-color); }
   .search-overlay__icon { position: absolute; z-index: 2; top: 50%; inset-inline-start: 0.875rem; display: inline-flex; width: var(--icon-size-small); height: var(--icon-size-small); color: var(--input-text-color); pointer-events: none; transform: translateY(-50%); }
   .search-overlay__icon svg { width: 100%; height: 100%; }
@@ -164,6 +180,15 @@
       padding-block-start: var(--search-overlay-padding-block-start, 0.75rem);
       padding-block-end: var(--search-overlay-padding-block-end, 0.75rem);
     }
+    .search-overlay[data-mobile-layout='drawer'] .search-overlay__panel {
+      --overlay-rest-transform: translateY(-0.5rem);
+      inset: var(--search-overlay-top, 0px) 0 auto;
+      width: 100%;
+      height: fit-content;
+      max-height: calc(100dvh - var(--search-overlay-top, 0px));
+      margin: 0;
+      border-radius: 0;
+    }
     .search-overlay__form { gap: 0.75rem; }
     .search-overlay__results { grid-template-columns: 1fr; gap: 1.5rem; padding-block: 1.25rem 2rem; }
     .search-overlay__suggestions { display: none; }
@@ -182,6 +207,7 @@
 
   const state = {
     overlay: null,
+    presentation: null,
     input: null,
     form: null,
     results: null,
@@ -190,6 +216,7 @@
     timer: null,
     controller: null,
     placeholderTimer: null,
+    opener: null,
   };
 
   const getOverlay = (root = document) => {
@@ -262,15 +289,8 @@
     overlay.style.setProperty('--search-overlay-padding-block-end', headerStyles.paddingBottom);
   };
 
-  const close = ({ force = false } = {}) => {
-    if (!state.overlay) return;
-    // Selecting the Search section in the Theme Editor may open the overlay for
-    // inspection, but an explicit close must always take precedence. Releasing
-    // this flag also prevents a subsequent editor refresh from reopening it.
-    if (!force) state.editorSelected = false;
+  const resetSearchState = () => {
     stopPlaceholderRotation();
-    state.overlay.setAttribute('hidden', '');
-    state.overlay.setAttribute('aria-hidden', 'true');
     if (state.input) state.input.value = '';
     resetPlaceholder(state.input);
     if (state.results) {
@@ -278,30 +298,37 @@
       state.results.hidden = true;
       state.results.classList.remove('search-overlay__results--has-suggestions');
     }
-    state.overlay.classList.remove('search-overlay--has-results');
+    state.overlay?.classList.remove('search-overlay--has-results');
     state.input?.setAttribute('aria-expanded', 'false');
     window.clearTimeout(state.timer);
     state.controller?.abort();
     state.timer = null;
     state.controller = null;
-    document.documentElement.classList.remove('search-overlay-open');
-    document.body.classList.remove('search-overlay-open');
     document.dispatchEvent(new CustomEvent('search-overlay:close'));
+    state.opener = null;
+  };
+
+  const close = ({ force = false } = {}) => {
+    const presentation = state.presentation || (state.overlay && window.ThemeOverlay?.get(state.overlay));
+    state.presentation = presentation;
+    if (!state.overlay || !presentation?.isOpen()) return;
+    // Selecting the Search section in the Theme Editor may open the overlay for
+    // inspection, but an explicit close must always take precedence.
+    if (!force) state.editorSelected = false;
+    presentation.close({ restoreFocus: !force, immediate: force });
   };
 
   const open = ({ focus = true } = {}) => {
     const { overlay, input } = state;
     if (!overlay || !input) return;
+    const presentation = state.presentation || (window.ThemeOverlay ? window.ThemeOverlay.get(overlay) : null);
+    state.presentation = presentation;
     const header = document.querySelector('.shopify-section.header');
     overlay.style.setProperty('--search-overlay-top', `${Math.max(0, header?.getBoundingClientRect().bottom || 0)}px`);
     synchronizePanelPadding(header, overlay);
-    overlay.removeAttribute('hidden');
-    overlay.setAttribute('aria-hidden', 'false');
+    presentation?.open({ opener: state.editorSelected ? null : state.opener || document.activeElement, focus, restoreFocus: !state.editorSelected });
     startPlaceholderRotation();
-    document.documentElement.classList.add('search-overlay-open');
-    document.body.classList.add('search-overlay-open');
     document.dispatchEvent(new CustomEvent('search-overlay:open', { detail: { header } }));
-    if (focus) window.requestAnimationFrame(() => input.focus());
   };
 
   const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
@@ -383,6 +410,7 @@
     const wasEditorSelected = state.editorSelected;
     if (state.overlay && state.overlay !== nextOverlay) close({ force: true });
     state.overlay = nextOverlay;
+    state.presentation = window.ThemeOverlay?.get(nextOverlay) || null;
     state.input = nextInput;
     state.form = nextForm;
     state.results = nextResults;
@@ -391,6 +419,8 @@
     nextInput.dataset.searchOverlayDefaultPlaceholder = nextOverlay.dataset.placeholder || nextInput.getAttribute('placeholder') || '';
     resetPlaceholder(nextInput);
     nextOverlay.dataset.searchOverlayReady = 'true';
+
+    nextOverlay.addEventListener('close', resetSearchState);
 
     nextInput.addEventListener('input', () => {
       const query = nextInput.value.trim();
@@ -433,8 +463,6 @@
     });
 
     nextForm.addEventListener('submit', (event) => { if (!nextInput.value.trim()) event.preventDefault(); });
-    nextClose.addEventListener('click', () => close());
-    nextBackdrop.addEventListener('click', () => close());
     if (state.editorSelected) open({ focus: false });
   };
 
@@ -442,11 +470,12 @@
     if (!event.target.closest?.('[data-search-overlay-open]')) return;
     event.preventDefault();
     initializeOverlay(getOverlay());
+    state.opener = event.target.closest('[data-search-overlay-open]');
     open({ focus: false });
   });
 
   document.addEventListener('keydown', (event) => {
-    if (event.key === 'Escape' && state.overlay && !state.overlay.hasAttribute('hidden')) close();
+    if (event.key === 'Escape' && state.presentation?.isOpen()) close();
   });
 
   document.addEventListener('shopify:section:load', (event) => {
@@ -459,11 +488,14 @@
     const target = event.target;
     if (target === state.sectionRoot || target?.contains?.(state.overlay)) {
       close({ force: true });
+      state.presentation?.destroy();
       state.overlay = null;
+      state.presentation = null;
       state.input = null;
       state.form = null;
       state.results = null;
       state.sectionRoot = null;
+      state.opener = null;
       state.editorSelected = false;
     }
   });

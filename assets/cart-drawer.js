@@ -8,9 +8,8 @@
   const state = {
     drawer: null,
     sectionRoot: null,
+    overlay: null,
     opener: null,
-    previousFocus: null,
-    closeTimer: null,
     request: null,
     cart: null,
     editorSelected: false,
@@ -18,29 +17,6 @@
     variantComparePrices: new Map(),
     orderOptionsDrag: null,
   };
-
-  const transitionDuration = (element) => {
-    if (!element) return 0;
-    const style = window.getComputedStyle(element);
-    const milliseconds = (value) => {
-      const normalized = value.trim();
-      const amount = Number.parseFloat(normalized);
-      if (!Number.isFinite(amount)) return 0;
-      return amount * (normalized.endsWith('ms') ? 1 : 1000);
-    };
-    const delays = style.transitionDelay.split(',').map(milliseconds);
-    return Math.max(
-      0,
-      ...style.transitionDuration.split(',').map((value, index) => (
-        milliseconds(value) + (delays[index % delays.length] || 0)
-      )),
-    );
-  };
-
-  const drawerTransitionDuration = (drawer) => Math.max(
-    transitionDuration(drawer),
-    transitionDuration(drawer?.querySelector('[data-drawer]')),
-  );
 
   const getDrawer = (root = document) => {
     if (!root) return null;
@@ -768,30 +744,15 @@
     }
   };
 
-  const getFocusable = () => Array.from(state.drawer?.querySelectorAll(
-    'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
-  ) || []).filter((element) => !element.hidden && element.offsetParent !== null);
-
   const open = () => {
     const drawer = state.drawer;
     if (!drawer) return;
-    const shouldAnimate = !drawer.classList.contains('is-open');
-    window.clearTimeout(state.closeTimer);
-    state.closeTimer = null;
-    if (shouldAnimate) {
-      state.previousFocus = document.activeElement;
-    }
-    drawer.hidden = false;
-    drawer.setAttribute('aria-hidden', 'false');
+    const shouldOpen = !state.overlay?.isOpen();
+    if (!shouldOpen) return;
+    const opener = state.editorSelected ? null : (state.opener || document.activeElement);
     drawer.classList.remove('is-closing');
-    if (shouldAnimate) {
-      drawer.classList.remove('is-open');
-      drawer.querySelector('[data-drawer]')?.getBoundingClientRect();
-    }
     drawer.classList.add('is-open');
-    document.documentElement.classList.add('cart-drawer-open');
-    document.body.classList.add('cart-drawer-open');
-    document.querySelectorAll('[data-cart-drawer-open]').forEach((trigger) => trigger.setAttribute('aria-expanded', 'true'));
+    state.overlay?.open({ opener, restoreFocus: !state.editorSelected });
     document.dispatchEvent(new CustomEvent('cart-drawer:open', { detail: { drawer } }));
     refresh().catch(() => {});
   };
@@ -800,25 +761,10 @@
     const drawer = state.drawer;
     if (!drawer || (state.editorSelected && !force)) return;
     setOrderOptionsOpen();
+    if (!state.overlay?.isOpen()) return;
     drawer.classList.remove('is-open');
     drawer.classList.add('is-closing');
-    drawer.setAttribute('aria-hidden', 'true');
-    document.documentElement.classList.remove('cart-drawer-open');
-    document.body.classList.remove('cart-drawer-open');
-    document.querySelectorAll('[data-cart-drawer-open]').forEach((trigger) => trigger.setAttribute('aria-expanded', 'false'));
-    document.dispatchEvent(new CustomEvent('cart-drawer:close', { detail: { drawer } }));
-    window.clearTimeout(state.closeTimer);
-    const closeDuration = drawerTransitionDuration(drawer);
-    state.closeTimer = window.setTimeout(() => {
-      if (!drawer.classList.contains('is-open')) {
-        drawer.classList.remove('is-closing');
-        drawer.hidden = true;
-      }
-    }, closeDuration + 16);
-
-    const restoreTarget = state.previousFocus;
-    state.previousFocus = null;
-    if (restoreTarget?.isConnected && !restoreTarget.hidden) restoreTarget.focus();
+    state.overlay.close({ restoreFocus: !state.editorSelected });
   };
 
   const initialize = (nextDrawer) => {
@@ -826,18 +772,20 @@
     if (state.drawer && state.drawer !== nextDrawer) close({ force: true });
     state.drawer = nextDrawer;
     state.sectionRoot = nextDrawer.closest('.shopify-section') || nextDrawer;
+    state.overlay = window.ThemeOverlay?.get(nextDrawer) || null;
     nextDrawer.dataset.cartDrawerReady = 'true';
     seedVariantComparePrices();
+
+    nextDrawer.addEventListener('close', () => {
+      nextDrawer.classList.remove('is-open', 'is-closing');
+      document.querySelectorAll('[data-cart-drawer-open]').forEach((trigger) => trigger.setAttribute('aria-expanded', 'false'));
+      document.dispatchEvent(new CustomEvent('cart-drawer:close', { detail: { drawer: nextDrawer } }));
+      state.opener = null;
+    });
 
     nextDrawer.querySelector('[data-cart-drawer-order-options-sheet-header]')?.addEventListener('pointerdown', beginOrderOptionsDrag);
 
     nextDrawer.addEventListener('click', (event) => {
-      if (event.target.closest('[data-cart-drawer-close]')) {
-        event.preventDefault();
-        close({ force: true });
-        return;
-      }
-
       const orderOptionsTrigger = event.target.closest('[data-cart-drawer-order-options-open]');
       if (orderOptionsTrigger) {
         event.preventDefault();
@@ -936,52 +884,12 @@
 
   document.addEventListener('keydown', (event) => {
     const drawer = state.drawer;
-    if (!drawer || drawer.hidden || !drawer.classList.contains('is-open')) return;
-    if (event.key === 'Escape') {
-      event.preventDefault();
-      if (drawer.classList.contains('is-order-options-open')) {
-        setOrderOptionsOpen();
-        return;
-      }
-      close({ force: true });
-      return;
-    }
-    if (event.key !== 'Tab') return;
-    const focusable = getFocusable();
-    if (!focusable.length) return;
-    const first = focusable[0];
-    const last = focusable[focusable.length - 1];
-    if (event.shiftKey && document.activeElement === first) {
-      event.preventDefault();
-      last.focus();
-    } else if (!event.shiftKey && document.activeElement === last) {
-      event.preventDefault();
-      first.focus();
-    }
-  });
-
-  document.addEventListener('mousemove', (event) => {
-    const drawer = state.drawer;
-    const pointer = drawer?.querySelector('.cart-drawer__backdrop-pointer');
-    const panel = drawer?.querySelector('[data-drawer]');
-    if (!drawer?.classList.contains('is-open') || drawer.classList.contains('is-closing') || !pointer || !panel || !window.matchMedia('(hover: hover) and (pointer: fine)').matches) {
-      pointer?.classList.remove('is-visible');
-      return;
-    }
-    const panelRect = panel.getBoundingClientRect();
-    const overBackdrop = event.clientX < panelRect.left || event.clientX > panelRect.right || event.clientY < panelRect.top || event.clientY > panelRect.bottom;
-    if (!overBackdrop) {
-      pointer.classList.remove('is-visible');
-      return;
-    }
-    pointer.style.setProperty('--overlay-pointer-x', `${event.clientX}px`);
-    pointer.style.setProperty('--overlay-pointer-y', `${event.clientY}px`);
-    pointer.classList.add('is-visible');
-  }, { passive: true });
-
-  document.addEventListener('mouseleave', () => {
-    state.drawer?.querySelector('.cart-drawer__backdrop-pointer')?.classList.remove('is-visible');
-  });
+    if (!drawer || drawer.hidden || !drawer.classList.contains('is-open') || event.key !== 'Escape') return;
+    if (!drawer.classList.contains('is-order-options-open')) return;
+    event.preventDefault();
+    event.stopPropagation();
+    setOrderOptionsOpen();
+  }, true);
 
   document.addEventListener('shopify:section:load', (event) => {
     const nextDrawer = getDrawer(event.target);
@@ -995,8 +903,11 @@
       close({ force: true });
       state.orderOptionsDrag?.destroy();
       state.orderOptionsDrag = null;
+      state.overlay?.destroy();
       state.drawer = null;
       state.sectionRoot = null;
+      state.overlay = null;
+      state.opener = null;
       state.editorSelected = false;
     }
   });

@@ -25,6 +25,69 @@
     );
   };
 
+  const hideBackdropCursor = ({ cursor, owner, root }) => {
+    root?.classList.remove('cursor-none');
+    backdropCursorOwners.delete(owner);
+    if (backdropCursorOwners.size > 0) return;
+    cursor?.classList.remove('active');
+    document.documentElement?.classList?.toggle?.('component-overlay-backdrop-cursor', false);
+    const scheme = cursor?.dataset?.backdropCursorScheme;
+    if (scheme) cursor.classList.remove(scheme);
+    cursor?.classList.remove('color-scheme', 'section-color-scope');
+    if (cursor?.dataset) delete cursor.dataset.backdropCursorScheme;
+  };
+
+  const updateBackdropCursor = ({ cursor, owner, root, colorSource, isOpen, event }) => {
+    if (!cursor || !pointerMedia.matches || !isOpen()) {
+      hideBackdropCursor({ cursor, owner, root });
+      return;
+    }
+
+    cursor.style.setProperty('--cursor-x', `${event.clientX}px`);
+    cursor.style.setProperty('--cursor-y', `${event.clientY}px`);
+    const source = typeof colorSource === 'function' ? colorSource() : colorSource;
+    const overlayStyle = getComputedStyle(source || root);
+    cursor.style.setProperty('--color-cursor-text', overlayStyle.getPropertyValue?.('--overlay-text-color') || '');
+    cursor.style.setProperty('--color-cursor-background', overlayStyle.getPropertyValue?.('--overlay-background-color') || '');
+    const scheme = root?.dataset.overlayColorScheme
+      || Array.from(root?.classList || []).find((className) => /^scheme-[a-z0-9_-]+$/i.test(className));
+    if (cursor.dataset.backdropCursorScheme && cursor.dataset.backdropCursorScheme !== scheme) {
+      cursor.classList.remove(cursor.dataset.backdropCursorScheme);
+    }
+    if (scheme) {
+      cursor.classList.add('color-scheme', 'section-color-scope', scheme);
+      cursor.dataset.backdropCursorScheme = scheme;
+    }
+    cursor.classList.add('active');
+    root?.classList.add('cursor-none');
+    backdropCursorOwners.add(owner);
+    document.documentElement?.classList?.toggle?.('component-overlay-backdrop-cursor', true);
+  };
+
+  const bindBackdropCursor = ({ backdrop, owner = backdrop, root = backdrop, colorSource = root, isOpen = () => true }) => {
+    const cursor = document.querySelector?.('custom-cursor[data-component-overlay-cursor]');
+    if (!backdrop || !cursor) return null;
+
+    const controller = new AbortController();
+    const options = { signal: controller.signal };
+    const update = (event) => updateBackdropCursor({ cursor, owner, root, colorSource, isOpen, event });
+    const hide = () => hideBackdropCursor({ cursor, owner, root });
+    backdrop.addEventListener('mousemove', update, options);
+    backdrop.addEventListener('mouseleave', hide, options);
+    window.addEventListener?.('mouseout', (event) => {
+      if (!event.relatedTarget) hide();
+    }, options);
+    window.addEventListener?.('blur', hide, options);
+
+    return {
+      hide,
+      destroy() {
+        hide();
+        controller.abort();
+      },
+    };
+  };
+
   class SheetGesture {
     constructor({ panel, header, enabled, close, delegated = false }) {
       Object.assign(this, { panel, header, enabled, close });
@@ -103,7 +166,13 @@
       this.openFrame = null;
       this.panel = dialog.querySelector('.component-overlay__panel');
       this.backdrop = dialog.querySelector('[data-component-overlay-backdrop]');
-      this.backdropCursor = document.querySelector?.('custom-cursor[data-component-overlay-cursor]');
+      this.backdropCursorBinding = bindBackdropCursor({
+        backdrop: this.backdrop,
+        owner: this,
+        root: this.dialog,
+        colorSource: this.dialog,
+        isOpen: () => this.isOpen() && this.dialog.dataset.state === 'open',
+      });
       this.portalToBody();
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
@@ -143,14 +212,6 @@
       if (this.backdrop) {
         this.backdrop.addEventListener('click', () => this.close({ restoreFocus: false }), options);
       }
-      if (this.backdropCursor && this.backdrop) {
-        this.backdrop.addEventListener('mousemove', (event) => this.updateBackdropCursor(event), options);
-        this.backdrop.addEventListener('mouseleave', () => this.hideBackdropCursor(), options);
-        window.addEventListener?.('mouseout', (event) => {
-          if (!event.relatedTarget) this.hideBackdropCursor();
-        }, options);
-        window.addEventListener?.('blur', () => this.hideBackdropCursor(), options);
-      }
     }
 
     isOpen() {
@@ -158,35 +219,20 @@
     }
 
     hideBackdropCursor() {
-      this.backdropCursor?.classList.remove('active');
-      this.dialog.classList.remove('cursor-none');
-      backdropCursorOwners.delete(this);
-      document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', backdropCursorOwners.size > 0);
+      this.backdropCursorBinding?.hide();
     }
 
     updateBackdropCursor(event) {
-      const cursor = this.backdropCursor;
-      if (!cursor || !pointerMedia.matches || !this.isOpen() || this.dialog.dataset.state !== 'open') {
-        this.hideBackdropCursor();
-        return;
-      }
-
-      cursor.style.setProperty('--cursor-x', `${event.clientX}px`);
-      cursor.style.setProperty('--cursor-y', `${event.clientY}px`);
-      const overlayStyle = getComputedStyle(this.dialog);
-      cursor.style.setProperty('--color-cursor-text', overlayStyle.getPropertyValue?.('--overlay-text-color') || '');
-      cursor.style.setProperty('--color-cursor-background', overlayStyle.getPropertyValue?.('--overlay-background-color') || '');
-      const scheme = this.dialog.dataset.overlayColorScheme
-        || Array.from(this.dialog.classList || []).find((className) => /^scheme-[a-z0-9_-]+$/i.test(className));
-      if (this.backdropCursorScheme && this.backdropCursorScheme !== scheme) cursor.classList.remove(this.backdropCursorScheme);
-      if (scheme) {
-        cursor.classList.add('color-scheme', 'section-color-scope', scheme);
-        this.backdropCursorScheme = scheme;
-      }
-      cursor.classList.add('active');
-      this.dialog.classList.add('cursor-none');
-      backdropCursorOwners.add(this);
-      document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', true);
+      if (!this.backdropCursorBinding) return;
+      const cursor = document.querySelector?.('custom-cursor[data-component-overlay-cursor]');
+      updateBackdropCursor({
+        cursor,
+        owner: this,
+        root: this.dialog,
+        colorSource: this.dialog,
+        isOpen: () => this.isOpen() && this.dialog.dataset.state === 'open',
+        event,
+      });
     }
 
     portalToBody() {
@@ -280,6 +326,7 @@
         this.openFrame = null;
         if (!this.isOpen() || this.dialog.dataset.state !== 'opening') return;
         this.dialog.dataset.state = 'open';
+        this.dialog.dispatchEvent?.(new Event('open'));
         const close = this.dialog.querySelector('[data-overlay-close]');
         if (focus) close?.focus({ preventScroll: true });
         else close?.blur?.();
@@ -307,6 +354,7 @@
     destroy() {
       this.close({ immediate: true, restoreFocus: false });
       this.gesture.destroy();
+      this.backdropCursorBinding?.destroy();
       this.controller.abort();
       instances.delete(this.dialog);
       this.restoreFromBody();
@@ -316,6 +364,7 @@
   window.ThemeOverlay = {
     mobile,
     SheetGesture,
+    bindBackdropCursor,
     get(dialog) {
       if (!dialog) return null;
       if (!instances.has(dialog)) instances.set(dialog, new Overlay(dialog));

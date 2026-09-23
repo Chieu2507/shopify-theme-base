@@ -16,6 +16,7 @@ class ProductMediaGallery extends HTMLElement {
     this.abortController = new AbortController();
     this.signal = this.abortController.signal;
     this.mobileQuery = window.matchMedia('(max-width: 767.98px)');
+    this.desktopLeftThumbnailQuery = window.matchMedia('(min-width: 992px)');
     this.productInformation = this.closest('[data-product-information]');
     const variantPicker = this.productInformation?.querySelector('[data-product-variant-picker]');
     const currentVariantId = variantPicker?.dataset.currentVariantId || this.dataset.currentVariantId;
@@ -50,6 +51,7 @@ class ProductMediaGallery extends HTMLElement {
     this.addEventListener('pointercancel', this.handleLightboxPointerUp, { signal: this.signal, capture: true });
     this.addEventListener('dragstart', this.handleLightboxDragStart, { signal: this.signal, capture: true });
     this.mobileQuery.addEventListener('change', this.handleBreakpoint, { signal: this.signal });
+    this.desktopLeftThumbnailQuery.addEventListener('change', this.handleBreakpoint, { signal: this.signal });
     window.addEventListener('resize', () => {
       if (!this.lightbox?.open) return;
       this.resetLightboxZoom();
@@ -145,7 +147,11 @@ class ProductMediaGallery extends HTMLElement {
   get galleryMode() {
     if (this.mobileQuery.matches) return 'mobile';
     if (this.dataset.overlayPresentation === 'quick-add-strip') return 'quick-add-strip';
-    return ['left_thumbnails', 'bottom_thumbnails'].includes(this.dataset.desktopLayout) ? 'desktop-carousel' : 'desktop-static';
+    if (!['left_thumbnails', 'bottom_thumbnails'].includes(this.dataset.desktopLayout)) return 'desktop-static';
+
+    const useLeftThumbnails = this.dataset.desktopLayout === 'left_thumbnails'
+      && (this.desktopLeftThumbnailQuery?.matches ?? true);
+    return useLeftThumbnails ? 'desktop-carousel-left' : 'desktop-carousel-bottom';
   }
 
   get quickAddStripSlidesPerView() {
@@ -286,7 +292,7 @@ class ProductMediaGallery extends HTMLElement {
       this.thumbnailSwiper = createSwiperCarousel(this.thumbnailElement, {
         slidesPerView: 'auto',
         spaceBetween: thumbnailGap,
-        direction: !isMobile && this.dataset.desktopLayout === 'left_thumbnails' ? 'vertical' : 'horizontal',
+        direction: mode === 'desktop-carousel-left' ? 'vertical' : 'horizontal',
         watchSlidesProgress: true,
         a11y: { enabled: true },
       });
