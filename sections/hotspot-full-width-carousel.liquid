@@ -1,0 +1,393 @@
+{% liquid
+  assign hotspot_carousel_scheme = section.settings.color_scheme | default: 'scheme-1'
+  if section.settings.color_scheme.id != blank
+    assign hotspot_carousel_scheme = section.settings.color_scheme.id
+  endif
+  assign hotspot_carousel_scheme = hotspot_carousel_scheme | default: 'scheme-1' | handleize
+
+  assign hotspot_carousel_padding_top = section.settings.padding_top | default: 0 | plus: 0
+  assign hotspot_carousel_padding_bottom = section.settings.padding_bottom | default: 0 | plus: 0
+
+  assign hotspot_carousel_valid_slide_count = 0
+  for hotspot_carousel_block in section.blocks
+    if hotspot_carousel_block.type == 'product-callout'
+      assign hotspot_carousel_block_image = hotspot_carousel_block.settings.image
+      assign hotspot_carousel_block_mobile_image = hotspot_carousel_block.settings.mobile_image
+      if hotspot_carousel_block_image != blank or hotspot_carousel_block_mobile_image != blank
+        assign hotspot_carousel_valid_slide_count = hotspot_carousel_valid_slide_count | plus: 1
+      endif
+    endif
+  endfor
+
+  assign hotspot_carousel_render = false
+  if hotspot_carousel_valid_slide_count > 0 or request.design_mode and section.blocks.size > 0
+    assign hotspot_carousel_render = true
+  endif
+
+  assign hotspot_carousel_slide_count = hotspot_carousel_valid_slide_count
+  if request.design_mode and section.blocks.size > hotspot_carousel_slide_count
+    assign hotspot_carousel_slide_count = section.blocks.size
+  endif
+
+  assign hotspot_carousel_has_multiple_slides = false
+  if hotspot_carousel_slide_count > 1
+    assign hotspot_carousel_has_multiple_slides = true
+  endif
+
+  assign hotspot_carousel_show_arrows = true
+  if section.settings.show_arrows == false
+    assign hotspot_carousel_show_arrows = false
+  endif
+
+  assign hotspot_carousel_show_counter = true
+  if section.settings.show_slide_counter == false
+    assign hotspot_carousel_show_counter = false
+  endif
+
+  assign hotspot_carousel_id = 'HotspotCarousel-' | append: section.id
+  assign hotspot_carousel_previous_label = 'collection_tabs.previous' | t
+  assign hotspot_carousel_next_label = 'collection_tabs.next' | t
+  assign hotspot_carousel_aria_label = 'accessibility.hotspot_carousel' | t
+%}
+
+{% if hotspot_carousel_render %}
+  {% render 'swiper-stylesheet' %}
+  <script type="module" src="{{ 'carousel-block.js' | asset_url }}"></script>
+
+  <div
+    class="hotspot-full-width-carousel section-color-scope color-scheme {{ hotspot_carousel_scheme }}"
+    style="
+      --hotspot-carousel-padding-top: {{ hotspot_carousel_padding_top }}px;
+      --hotspot-carousel-padding-bottom: {{ hotspot_carousel_padding_bottom }}px;
+      {% if section.settings.background_color != blank %}
+        --hotspot-carousel-background: {{ section.settings.background_color | escape }};
+      {% endif %}
+    "
+    data-hotspot-full-width-carousel
+    data-carousel-block
+    data-swiper-columns-desktop="1"
+    data-swiper-columns-mobile="1"
+    data-swiper-gap-desktop="0"
+    data-swiper-gap-mobile="0"
+    data-swiper-pagination-type="bullets"
+    data-swiper-pagination-desktop="false"
+    data-swiper-pagination-mobile="false"
+    data-carousel-controls-style="fraction"
+    data-carousel-loop="{{ section.settings.loop_slides }}"
+    data-swiper-autoplay="false"
+    data-swiper-autoplay-pause-on-hover="true"
+    data-swiper-autoplay-delay="4000"
+  >
+    {% if section.blocks.size > 0 %}
+      {% capture hotspot_carousel_slides %}{% content_for 'blocks' %}{% endcapture %}
+
+      <div class="hotspot-full-width-carousel__container swiper-carousel__container">
+        {% render 'swiper-carousel',
+          id: hotspot_carousel_id,
+          content: hotspot_carousel_slides,
+          root_class: 'hotspot-full-width-carousel__viewport',
+          aria_label: hotspot_carousel_aria_label
+        %}
+
+        {% if hotspot_carousel_has_multiple_slides %}
+          {% if hotspot_carousel_show_arrows or hotspot_carousel_show_counter %}
+            <div class="hotspot-full-width-carousel__controls" data-carousel-navigation>
+              {% if hotspot_carousel_show_arrows %}
+                <button
+                  class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__control"
+                  type="button"
+                  data-carousel-fraction-previous
+                  aria-label="{{ hotspot_carousel_previous_label | escape }}"
+                >
+                  {% render 'carousel-navigation-icon', icon: 'chevron', direction: 'previous' %}
+                </button>
+              {% endif %}
+
+              {% if hotspot_carousel_show_counter %}
+                <span class="hotspot-full-width-carousel__fraction" aria-live="polite">
+                  <span data-carousel-fraction-current>1</span>/<span data-carousel-fraction-total>{{ hotspot_carousel_slide_count }}</span>
+                </span>
+              {% endif %}
+
+              {% if hotspot_carousel_show_arrows %}
+                <button
+                  class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__control"
+                  type="button"
+                  data-carousel-fraction-next
+                  aria-label="{{ hotspot_carousel_next_label | escape }}"
+                >
+                  {% render 'carousel-navigation-icon', icon: 'chevron', direction: 'next' %}
+                </button>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endif %}
+      </div>
+    {% elsif request.design_mode %}
+      <div class="hotspot-full-width-carousel__empty-state">
+        <p>{{ 'accessibility.hotspot_carousel_empty' | t }}</p>
+      </div>
+    {% endif %}
+  </div>
+{% endif %}
+
+{% stylesheet %}
+  .hotspot-full-width-carousel {
+    position: relative;
+    isolation: isolate;
+    width: 100%;
+    min-width: 0;
+    overflow: clip;
+    padding-block: var(--hotspot-carousel-padding-top, 0px) var(--hotspot-carousel-padding-bottom, 0px);
+    background: var(--hotspot-carousel-background, var(--background-color));
+  }
+
+  .hotspot-full-width-carousel__container {
+    position: relative;
+    min-width: 0;
+  }
+
+  .hotspot-full-width-carousel__viewport {
+    width: 100%;
+  }
+
+  .hotspot-full-width-carousel__viewport > .swiper-wrapper {
+    align-items: stretch;
+  }
+
+  .hotspot-full-width-carousel__controls {
+    position: absolute;
+    z-index: 7;
+    inset-inline: 0;
+    bottom: 1.2rem;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.8rem;
+    color: var(--body-color);
+    pointer-events: none;
+  }
+
+  .hotspot-full-width-carousel__controls > * {
+    pointer-events: auto;
+  }
+
+  .hotspot-full-width-carousel__control {
+    --swiper-nav-size: 2.4rem;
+    color: inherit;
+  }
+
+  .hotspot-full-width-carousel__fraction {
+    min-width: 2.8rem;
+    font-size: var(--font-body-xs);
+    line-height: 2.4rem;
+    text-align: center;
+  }
+
+  .hotspot-full-width-carousel__empty-state {
+    display: grid;
+    min-height: min(28rem, 60vw);
+    place-items: center;
+    padding: 3rem;
+    border: 1px dashed currentColor;
+    color: var(--body-color);
+    text-align: center;
+  }
+
+  .hotspot-full-width-carousel__empty-state p {
+    margin: 0;
+  }
+
+  .hotspot-full-width-carousel.carousel-block--locked .hotspot-full-width-carousel__controls {
+    display: none;
+  }
+
+  @media (min-width: 768px) and (max-width: 1149.98px) {
+    .hotspot-full-width-carousel {
+      padding-block: calc(var(--hotspot-carousel-padding-top, 0px) * 0.75) calc(var(--hotspot-carousel-padding-bottom, 0px) * 0.75);
+    }
+  }
+
+  @media (max-width: 767.98px) {
+    .hotspot-full-width-carousel {
+      padding-block: calc(var(--hotspot-carousel-padding-top, 0px) * 0.5) calc(var(--hotspot-carousel-padding-bottom, 0px) * 0.5);
+    }
+
+    .hotspot-full-width-carousel__controls {
+      bottom: 0.8rem;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.hotspot_carousel",
+  "class": "section-hotspot-full-width-carousel",
+  "enabled_on": { "templates": ["index"] },
+  "max_blocks": 8,
+  "blocks": [
+    { "type": "product-callout" }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "range",
+      "id": "desktop_height",
+      "label": "t:labels.desktop_height",
+      "min": 320,
+      "max": 900,
+      "step": 20,
+      "unit": "px",
+      "default": 560
+    },
+    {
+      "type": "range",
+      "id": "mobile_height",
+      "label": "t:labels.mobile_height",
+      "min": 300,
+      "max": 700,
+      "step": 20,
+      "unit": "px",
+      "default": 420
+    },
+    {
+      "type": "header",
+      "content": "t:general.navigation"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_arrows",
+      "label": "t:labels.show_arrows",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_slide_counter",
+      "label": "t:labels.show_slide_counter",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "loop_slides",
+      "label": "t:labels.loop_slides",
+      "default": false
+    },
+    {
+      "type": "header",
+      "content": "t:general.product_card"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_type",
+      "label": "t:labels.show_product_type",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_image",
+      "label": "t:labels.show_product_image",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "t:labels.show_price",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "product_link_label",
+      "label": "t:labels.product_link_label",
+      "default": "View product"
+    },
+    {
+      "type": "header",
+      "content": "t:general.appearance"
+    },
+    {
+      "type": "color_scheme",
+      "id": "color_scheme",
+      "label": "t:labels.color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "alpha": true,
+      "id": "background_color",
+      "label": "t:labels.background_color"
+    },
+    {
+      "type": "header",
+      "content": "t:general.padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:labels.top_padding",
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:labels.bottom_padding",
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 0
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.hotspot_carousel",
+      "category": "t:general.banners",
+      "settings": {
+        "desktop_height": 560,
+        "mobile_height": 420,
+        "show_arrows": true,
+        "show_slide_counter": true,
+        "loop_slides": false,
+        "show_product_type": true,
+        "show_product_image": true,
+        "show_price": true,
+        "product_link_label": "View product",
+        "color_scheme": "scheme-1",
+        "padding_top": 0,
+        "padding_bottom": 0
+      },
+      "blocks": [
+        {
+          "type": "product-callout",
+          "settings": {
+            "editor_title": "Product callout",
+            "desktop_image_position": "center center",
+            "mobile_image_position": "center center",
+            "hotspot_icon_style": "dot",
+            "hotspot_behavior": "click"
+          },
+          "blocks": [
+            {
+              "type": "hotspot",
+              "settings": {
+                "vertical_position": 50,
+                "horizontal_position": 50,
+                "customize_mobile_position": false,
+                "mobile_vertical_position": 50,
+                "mobile_horizontal_position": 50,
+                "card_placement": "auto"
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
