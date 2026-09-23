@@ -541,7 +541,16 @@ document.addEventListener('shopify:block:select', (event) => {
 
   if (!slide) return;
   const index = Array.from(state.swiper?.slides || []).indexOf(slide);
-  if (index >= 0) state.swiper.slideTo(index, 0);
+  if (index < 0 || !state.swiper || state.swiper.destroyed) return;
+
+  const duration = event.detail?.load || prefersReducedMotion() ? 0 : state.swiper.params.speed;
+  if (state.swiper.params.loop && typeof state.swiper.slideToLoop === 'function') {
+    const realIndex = number(slide.dataset.swiperSlideIndex, index);
+    state.swiper.slideToLoop(realIndex, duration);
+    return;
+  }
+
+  state.swiper.slideTo(index, duration);
 });
 
 if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', () => initializeRoot(), { once: true });
