@@ -34,11 +34,7 @@
     assign product_callout_mobile_height = 'adapt'
   endunless
 
-  assign product_callout_text_protection = block.settings.text_protection | default: 20 | plus: 0
-  if product_callout_text_protection < 0 or product_callout_text_protection > 100
-    assign product_callout_text_protection = 20
-  endif
-  assign product_callout_text_protection_opacity = product_callout_text_protection | divided_by: 100.0
+  assign product_callout_overlay = block.settings.overlay
 
   assign product_callout_heading_size = block.settings.heading_size | default: 'xl'
   case product_callout_heading_size
@@ -114,7 +110,7 @@
 {% capture product_callout_style %}
   --product-callout-ratio: {{ product_callout_desktop_ratio }};
   --product-callout-ratio-mobile: {{ product_callout_mobile_ratio }};
-  --product-callout-text-protection: {{ product_callout_text_protection_opacity }};
+  {% if product_callout_overlay != blank %}--product-callout-overlay-color: {{ product_callout_overlay | escape }};{% endif %}
   --product-callout-content-gap: {{ product_callout_gap_desktop }}px;
   --product-callout-content-gap-mobile: {{ product_callout_gap_mobile }}px;
   --product-callout-hotspot-color: {{ block.settings.hotspot_color | default: '#FFFFFF' | escape }};
@@ -139,7 +135,7 @@
       sizes: '100vw'
     %}
 
-    {% if product_callout_text_protection > 0 %}
+    {% if product_callout_overlay != blank %}
       <span class="product-callout__overlay" aria-hidden="true"></span>
     {% endif %}
 
@@ -207,8 +203,7 @@
     position: absolute;
     z-index: 1;
     inset: 0;
-    background: #000;
-    opacity: var(--product-callout-text-protection, 0.2);
+    background: var(--product-callout-overlay-color);
     pointer-events: none;
   }
 
@@ -748,14 +743,11 @@
       "visible_if": "{{ block.settings.image != blank }}"
     },
     {
-      "type": "range",
-      "id": "text_protection",
+      "type": "color",
+      "id": "overlay",
       "label": "t:labels.overlay",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "%",
-      "default": 20
+      "alpha": true,
+      "default": "#00000033"
     },
     {
       "type": "header",
@@ -986,7 +978,7 @@
     {
       "name": "t:general.product_callout",
       "settings": {
-        "text_protection": 20,
+        "overlay": "#00000033",
         "desktop_height": "adapt",
         "mobile_height": "adapt",
         "heading": "Easy by design",
