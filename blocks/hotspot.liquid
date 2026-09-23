@@ -58,42 +58,85 @@
 {% assign hotspot_style = hotspot_style | strip %}
 
 {% if hotspot_has_product or request.design_mode %}
-  {% if hotspot_has_product %}
-    <a
-      class="product-callout__hotspot"
-      href="{{ hotspot_product.url | escape }}"
-      style="{{ hotspot_style }}"
-      aria-label="{{ hotspot_label | escape }}"
-      data-product-callout-hotspot
-      data-product-id="{{ hotspot_product.id }}"
-      {{ block.shopify_attributes }}
+  <div
+    class="product-callout__hotspot-wrap"
+    style="{{ hotspot_style }}"
+    data-product-callout-hotspot-wrap
+    {{ block.shopify_attributes }}
+  >
+    {% if hotspot_has_product %}
+      <a
+        class="product-callout__hotspot"
+        href="{{ hotspot_product.url | escape }}"
+        aria-label="{{ hotspot_label | escape }}"
+        aria-controls="{{ hotspot_popover_id }}"
+        aria-expanded="false"
+        data-product-callout-hotspot
+        data-product-id="{{ hotspot_product.id }}"
+      >
+    {% else %}
+      <button
+        class="product-callout__hotspot product-callout__hotspot--placeholder"
+        type="button"
+        aria-label="{{ hotspot_label | escape }}"
+        aria-controls="{{ hotspot_popover_id }}"
+        aria-expanded="false"
+        data-product-callout-hotspot
+      >
+    {% endif %}
+        <span class="product-callout__hotspot-icon product-callout__hotspot-icon--dot" aria-hidden="true"></span>
+        <span class="product-callout__hotspot-icon product-callout__hotspot-icon--plus" aria-hidden="true">
+          {% render 'icon', icon: 'plus', bare: true %}
+        </span>
+        <span class="product-callout__hotspot-icon product-callout__hotspot-icon--tag" aria-hidden="true">
+          {% render 'icon', icon: 'tag', bare: true %}
+        </span>
+        <span class="product-callout__hotspot-icon product-callout__hotspot-icon--bag" aria-hidden="true">
+          {% render 'icon', icon: 'shopping-bag', bare: true %}
+        </span>
+    {% if hotspot_has_product %}
+      </a>
+    {% else %}
+      </button>
+    {% endif %}
+
+    <div
+      id="{{ hotspot_popover_id }}"
+      class="{{ hotspot_popover_class }}"
+      data-product-callout-popover
+      role="dialog"
+      aria-label="{{ hotspot_product_title | escape }}"
+      hidden
     >
-  {% else %}
-    <button
-      class="product-callout__hotspot product-callout__hotspot--placeholder"
-      type="button"
-      style="{{ hotspot_style }}"
-      aria-label="{{ hotspot_label | escape }}"
-      aria-disabled="true"
-      data-product-callout-hotspot
-      {{ block.shopify_attributes }}
-    >
-  {% endif %}
-      <span class="product-callout__hotspot-icon product-callout__hotspot-icon--dot" aria-hidden="true"></span>
-      <span class="product-callout__hotspot-icon product-callout__hotspot-icon--plus" aria-hidden="true">
-        {% render 'icon', icon: 'plus', bare: true %}
-      </span>
-      <span class="product-callout__hotspot-icon product-callout__hotspot-icon--tag" aria-hidden="true">
-        {% render 'icon', icon: 'tag', bare: true %}
-      </span>
-      <span class="product-callout__hotspot-icon product-callout__hotspot-icon--bag" aria-hidden="true">
-        {% render 'icon', icon: 'shopping-bag', bare: true %}
-      </span>
-  {% if hotspot_has_product %}
-    </a>
-  {% else %}
-    </button>
-  {% endif %}
+      <div class="product-callout__product-card">
+        <div class="product-callout__product-card-media">
+          {% if hotspot_has_product and hotspot_product.featured_image != blank %}
+            {{ hotspot_product.featured_image | image_url: width: 180 | image_tag: widths: '90, 180', sizes: '5.5rem', alt: hotspot_product.title, loading: 'lazy' }}
+          {% else %}
+            {{ 'product-1' | placeholder_svg_tag: 'product-callout__product-card-placeholder' }}
+          {% endif %}
+        </div>
+
+        <div class="product-callout__product-card-details">
+          <span class="product-callout__product-card-category">{{ hotspot_product_category | escape }}</span>
+          <span class="product-callout__product-card-title">{{ hotspot_product_title | escape }}</span>
+          {% if hotspot_has_product %}
+            <span class="product-callout__product-card-price">{{ hotspot_product.price | money }}</span>
+            <a
+              class="product-callout__product-card-action"
+              href="{{ hotspot_product.url | escape }}"
+              data-product-card-quick-view
+              data-product-card-quick-view-url="{{ hotspot_product.url | escape }}"
+              aria-haspopup="dialog"
+              aria-expanded="false"
+            >{{ 'products.quick_view' | t }}</a>
+          {% else %}
+            <span class="product-callout__product-card-action product-callout__product-card-action--disabled" aria-disabled="true">{{ 'products.quick_view' | t }}</span>
+          {% endif %}
+        </div>
+      </div>
+    </div>
+  </div>
 {% endif %}
 
 {% schema %}
