@@ -17,11 +17,19 @@
 
   assign hotspot_vertical = block.settings.vertical_position | default: 50 | plus: 0
   assign hotspot_horizontal = block.settings.horizontal_position | default: 50 | plus: 0
+  assign hotspot_mobile_vertical = block.settings.mobile_vertical_position | default: hotspot_vertical | plus: 0
+  assign hotspot_mobile_horizontal = block.settings.mobile_horizontal_position | default: hotspot_horizontal | plus: 0
   if hotspot_vertical < 0 or hotspot_vertical > 100
     assign hotspot_vertical = 50
   endif
   if hotspot_horizontal < 0 or hotspot_horizontal > 100
     assign hotspot_horizontal = 50
+  endif
+  if hotspot_mobile_vertical < 0 or hotspot_mobile_vertical > 100
+    assign hotspot_mobile_vertical = hotspot_vertical
+  endif
+  if hotspot_mobile_horizontal < 0 or hotspot_mobile_horizontal > 100
+    assign hotspot_mobile_horizontal = hotspot_horizontal
   endif
 
   assign hotspot_popover_horizontal = 'right'
@@ -54,6 +62,8 @@
 {% capture hotspot_style %}
   --product-callout-hotspot-x: {{ hotspot_horizontal }}%;
   --product-callout-hotspot-y: {{ hotspot_vertical }}%;
+  --product-callout-hotspot-x-mobile: {{ hotspot_mobile_horizontal }}%;
+  --product-callout-hotspot-y-mobile: {{ hotspot_mobile_vertical }}%;
 {% endcapture %}
 {% assign hotspot_style = hotspot_style | strip %}
 
@@ -168,6 +178,33 @@
       "step": 1,
       "unit": "%",
       "default": 50
+    },
+    {
+      "type": "header",
+      "content": "t:labels.mobile_image_position",
+      "visible_if": "{{ section.settings.mobile_image != blank }}"
+    },
+    {
+      "type": "range",
+      "id": "mobile_vertical_position",
+      "label": "t:labels.vertical_mobile",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 50,
+      "visible_if": "{{ section.settings.mobile_image != blank }}"
+    },
+    {
+      "type": "range",
+      "id": "mobile_horizontal_position",
+      "label": "t:labels.horizontal_mobile",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 50,
+      "visible_if": "{{ section.settings.mobile_image != blank }}"
     }
   ],
   "presets": [
