@@ -32,6 +32,19 @@
   style="{{ hotspot_section_style }}"
   data-hotspot-section
 >
+  {% if section.settings.background_media != 'none' %}
+    {% render 'media-background',
+      media_type: section.settings.background_media,
+      image: section.settings.background_image,
+      video: section.settings.background_video,
+      alt: '',
+      placeholder: 'image',
+      sizes: '100vw',
+      aria_hidden: true,
+      class: 'hotspot-section__background'
+    %}
+  {% endif %}
+
   <div class="hotspot-section__header container page-width">
     {% content_for 'blocks' %}
   </div>
@@ -43,11 +56,18 @@
 
 {% stylesheet %}
   .hotspot-section {
+    position: relative;
+    isolation: isolate;
     width: 100%;
     min-width: 0;
     padding-top: var(--hotspot-section-padding-top, 0px);
     padding-bottom: var(--hotspot-section-padding-bottom, 0px);
-    background: var(--hotspot-section-background, var(--background-color));
+    background-color: var(--hotspot-section-background, var(--background-color));
+  }
+
+  .hotspot-section__background {
+    z-index: -1;
+    pointer-events: none;
   }
 
   .hotspot-section__header,
@@ -124,6 +144,29 @@
     {
       "type": "header",
       "content": "t:general.appearance"
+    },
+    {
+      "type": "select",
+      "id": "background_media",
+      "label": "t:general.media",
+      "options": [
+        { "value": "none", "label": "t:options.background_media.none" },
+        { "value": "image", "label": "t:general.image" },
+        { "value": "video", "label": "t:general.video" }
+      ],
+      "default": "none"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "t:labels.background_image",
+      "visible_if": "{{ section.settings.background_media == 'image' }}"
+    },
+    {
+      "type": "video",
+      "id": "background_video",
+      "label": "t:labels.background_video",
+      "visible_if": "{{ section.settings.background_media == 'video' }}"
     },
     {
       "type": "color_scheme",
