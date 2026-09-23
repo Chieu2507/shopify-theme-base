@@ -4,6 +4,13 @@
     assign hotspot_section_width = 'full_width_no_padding'
   endunless
 
+  assign hotspot_section_header_class = 'hotspot-section__header container page-width'
+  if hotspot_section_width == 'full_width'
+    assign hotspot_section_header_class = 'hotspot-section__header container full-width'
+  elsif hotspot_section_width == 'full_width_no_padding'
+    assign hotspot_section_header_class = 'hotspot-section__header hotspot-section__header--full-width-no-padding'
+  endif
+
   assign hotspot_section_scheme = section.settings.color_scheme | default: 'scheme-1'
   if section.settings.color_scheme.id != blank
     assign hotspot_section_scheme = section.settings.color_scheme.id
@@ -45,7 +52,7 @@
     %}
   {% endif %}
 
-  <div class="hotspot-section__header container page-width">
+  <div class="{{ hotspot_section_header_class }}">
     {% content_for 'blocks' %}
   </div>
 
@@ -79,6 +86,13 @@
     width: 100%;
   }
 
+  .hotspot-section__header--full-width-no-padding {
+    width: 100%;
+    max-width: none;
+    margin-inline: 0;
+    padding-inline: 0;
+  }
+
   .hotspot-section--width-page_width .hotspot-section__callout {
     width: 100%;
     max-width: var(--page-width);
@@ -86,19 +100,23 @@
     margin-inline: auto;
   }
 
-  .hotspot-section--width-full .hotspot-section__callout {
+  .hotspot-section--width-full_width .hotspot-section__callout {
     width: 100%;
+    max-width: none;
     padding-inline: var(--page-margin-current, var(--page-margin-desktop));
     margin-inline: auto;
   }
 
   .hotspot-section--width-full_width_no_padding .hotspot-section__callout {
     width: 100%;
+    max-width: none;
+    padding-inline: 0;
+    margin-inline: 0;
   }
 
   @media (min-width: 768px) and (max-width: 1149.98px) {
     .hotspot-section--width-page_width .hotspot-section__callout,
-    .hotspot-section--width-full .hotspot-section__callout {
+    .hotspot-section--width-full_width .hotspot-section__callout {
       --page-margin-current: var(--page-margin-tablet);
     }
   }
@@ -110,7 +128,7 @@
     }
 
     .hotspot-section--width-page_width .hotspot-section__callout,
-    .hotspot-section--width-full .hotspot-section__callout {
+    .hotspot-section--width-full_width .hotspot-section__callout {
       --page-margin-current: var(--page-margin-mobile);
     }
   }
