@@ -413,6 +413,7 @@ const initialize = (root) => {
   const loop = root.dataset.carouselLoop === 'true';
   const options = {
     loop,
+    speed: prefersReducedMotion() ? 0 : 300,
     slidesPerView: number(root.dataset.swiperColumnsMobile, 1),
     spaceBetween: number(root.dataset.swiperGapMobile, 12),
     breakpoints: { [desktopBreakpoint]: { slidesPerView: number(root.dataset.swiperColumnsDesktop, 4), spaceBetween: number(root.dataset.swiperGapDesktop, 16) } },
