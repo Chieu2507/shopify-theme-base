@@ -1,4 +1,9 @@
 {% liquid
+  assign hotspot_carousel_width = section.settings.width | default: 'full_bleed'
+  unless hotspot_carousel_width == 'page' or hotspot_carousel_width == 'full' or hotspot_carousel_width == 'full_bleed'
+    assign hotspot_carousel_width = 'full_bleed'
+  endunless
+
   assign hotspot_carousel_scheme = section.settings.color_scheme | default: 'scheme-1'
   if section.settings.color_scheme.id != blank
     assign hotspot_carousel_scheme = section.settings.color_scheme.id
@@ -7,6 +12,14 @@
 
   assign hotspot_carousel_padding_top = section.settings.padding_top | default: 0 | plus: 0
   assign hotspot_carousel_padding_bottom = section.settings.padding_bottom | default: 0 | plus: 0
+  assign hotspot_carousel_padding_top_mobile = section.settings.padding_top_mobile | default: hotspot_carousel_padding_top | plus: 0
+  assign hotspot_carousel_padding_bottom_mobile = section.settings.padding_bottom_mobile | default: hotspot_carousel_padding_bottom | plus: 0
+  if hotspot_carousel_width == 'full_bleed'
+    assign hotspot_carousel_padding_top = 0
+    assign hotspot_carousel_padding_bottom = 0
+    assign hotspot_carousel_padding_top_mobile = 0
+    assign hotspot_carousel_padding_bottom_mobile = 0
+  endif
 
   assign hotspot_carousel_valid_slide_count = 0
   for hotspot_carousel_block in section.blocks
@@ -49,6 +62,16 @@
     assign hotspot_carousel_pagination_type = 'bullets'
   endunless
 
+  assign hotspot_carousel_pagination_position_desktop = section.settings.pagination_position_desktop | default: 'left'
+  unless hotspot_carousel_pagination_position_desktop == 'left' or hotspot_carousel_pagination_position_desktop == 'center' or hotspot_carousel_pagination_position_desktop == 'right'
+    assign hotspot_carousel_pagination_position_desktop = 'left'
+  endunless
+
+  assign hotspot_carousel_pagination_position_mobile = section.settings.pagination_position_mobile | default: 'center'
+  unless hotspot_carousel_pagination_position_mobile == 'left' or hotspot_carousel_pagination_position_mobile == 'center' or hotspot_carousel_pagination_position_mobile == 'right'
+    assign hotspot_carousel_pagination_position_mobile = 'center'
+  endunless
+
   assign hotspot_carousel_navigation_style = section.settings.navigation_style | default: 'primary'
   unless hotspot_carousel_navigation_style == 'primary' or hotspot_carousel_navigation_style == 'secondary'
     assign hotspot_carousel_navigation_style = 'primary'
@@ -68,6 +91,11 @@
   assign hotspot_carousel_previous_label = 'collection_tabs.previous' | t
   assign hotspot_carousel_next_label = 'collection_tabs.next' | t
   assign hotspot_carousel_aria_label = 'accessibility.hotspot_carousel' | t
+  if section.settings.aria_label != blank
+    assign hotspot_carousel_aria_label = section.settings.aria_label
+  endif
+
+  assign hotspot_carousel_pagination_class = 'hotspot-full-width-carousel__pagination hotspot-full-width-carousel__pagination--desktop-' | append: hotspot_carousel_pagination_position_desktop | append: ' hotspot-full-width-carousel__pagination--mobile-' | append: hotspot_carousel_pagination_position_mobile
 %}
 
 {% if hotspot_carousel_render %}
@@ -75,10 +103,12 @@
   <script type="module" src="{{ 'carousel-block.js' | asset_url }}"></script>
 
   <div
-    class="hotspot-full-width-carousel section-color-scope color-scheme {{ hotspot_carousel_scheme }}"
+    class="hotspot-full-width-carousel hotspot-full-width-carousel--width-{{ hotspot_carousel_width }} section-color-scope color-scheme {{ hotspot_carousel_scheme }}"
     style="
       --hotspot-carousel-padding-top: {{ hotspot_carousel_padding_top }}px;
       --hotspot-carousel-padding-bottom: {{ hotspot_carousel_padding_bottom }}px;
+      {% if section.settings.customize_mobile_padding and hotspot_carousel_padding_top_mobile != hotspot_carousel_padding_top %}--hotspot-carousel-padding-top-mobile: {{ hotspot_carousel_padding_top_mobile }}px;{% endif %}
+      {% if section.settings.customize_mobile_padding and hotspot_carousel_padding_bottom_mobile != hotspot_carousel_padding_bottom %}--hotspot-carousel-padding-bottom-mobile: {{ hotspot_carousel_padding_bottom_mobile }}px;{% endif %}
       {% if section.settings.background_color != blank %}
         --hotspot-carousel-background: {{ section.settings.background_color | escape }};
       {% endif %}
@@ -100,11 +130,11 @@
     {% if section.blocks.size > 0 %}
       {% capture hotspot_carousel_slides %}{% content_for 'blocks' %}{% endcapture %}
       {% capture hotspot_carousel_pagination %}
-        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination %}
+          {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination %}
           {% render 'swiper-pagination',
             show: true,
             type: hotspot_carousel_pagination_type,
-            class: 'hotspot-full-width-carousel__pagination'
+            class: hotspot_carousel_pagination_class
           %}
         {% endif %}
       {% endcapture %}
