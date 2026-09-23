@@ -707,8 +707,8 @@
   };
 
   const beginOrderOptionsDrag = (event) => {
-    const header = event.target.closest?.('[data-cart-drawer-order-options-sheet-header]');
-    const panel = header?.closest('[data-cart-drawer-order-options]');
+    const panel = event.target.closest?.('[data-cart-drawer-order-options]');
+    const header = panel?.querySelector('[data-cart-drawer-order-options-sheet-header]');
     if (!panel || !window.ThemeOverlay.mobile.matches) return;
     state.orderOptionsDrag?.destroy();
     state.orderOptionsDrag = new window.ThemeOverlay.SheetGesture({
@@ -783,7 +783,7 @@
       state.opener = null;
     });
 
-    nextDrawer.querySelector('[data-cart-drawer-order-options-sheet-header]')?.addEventListener('pointerdown', beginOrderOptionsDrag);
+    nextDrawer.querySelector('[data-cart-drawer-order-options]')?.addEventListener('pointerdown', beginOrderOptionsDrag);
 
     nextDrawer.addEventListener('click', (event) => {
       const orderOptionsTrigger = event.target.closest('[data-cart-drawer-order-options-open]');

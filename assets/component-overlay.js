@@ -91,25 +91,44 @@
   class SheetGesture {
     constructor({ panel, header, enabled, close, delegated = false }) {
       Object.assign(this, { panel, header, enabled, close });
+      this.scrollTarget = panel?.querySelector?.('.component-overlay__body') || panel;
+      this.activationDistance = 8;
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
-      if (!delegated) header?.addEventListener('pointerdown', (event) => this.start(event), options);
-      header?.addEventListener('pointermove', (event) => this.move(event), options);
-      header?.addEventListener('pointerup', (event) => this.end(event), options);
-      header?.addEventListener('pointercancel', (event) => this.end(event, true), options);
-      header?.addEventListener('lostpointercapture', () => { if (this.drag) this.reset(); }, options);
+      if (!delegated) panel?.addEventListener('pointerdown', (event) => this.start(event), options);
+      panel?.addEventListener('pointermove', (event) => this.move(event), options);
+      panel?.addEventListener('pointerup', (event) => this.end(event), options);
+      panel?.addEventListener('pointercancel', (event) => this.end(event, true), options);
+      panel?.addEventListener('lostpointercapture', () => { if (this.drag) this.reset(); }, options);
       mobile.addEventListener('change', () => this.reset(), options);
     }
 
+    isHeaderTarget(target) {
+      return target === this.header || Boolean(this.header?.contains?.(target));
+    }
+
+    releasePointer(pointerId) {
+      if (pointerId === undefined || pointerId === null || !this.panel?.hasPointerCapture?.(pointerId)) return;
+      this.panel.releasePointerCapture(pointerId);
+    }
+
     start(event) {
-      if (!this.enabled() || !event.isPrimary || event.button !== 0 || event.target.closest('button, a, input, select, textarea')) return;
+      const target = event.target;
+      const interactiveTarget = target?.closest?.('button, a, input, select, textarea, summary, iframe, [contenteditable="true"], [role="button"], [draggable="true"], [data-no-sheet-drag]');
+      if (!this.enabled() || !event.isPrimary || event.button !== 0 || interactiveTarget) return;
+      if (!this.isHeaderTarget(target) && (this.scrollTarget?.scrollTop || 0) > 0) return;
       this.reset();
-      this.drag = { id: event.pointerId, start: event.clientY, last: event.clientY, time: performance.now(), distance: 0, velocity: 0 };
-      this.panel.classList.add('is-sheet-dragging');
-      this.panel.style.transition = 'none';
-      this.panel.style.transform = 'translateY(0)';
-      this.header.setPointerCapture(event.pointerId);
-      event.preventDefault();
+      this.drag = {
+        id: event.pointerId,
+        start: event.clientY,
+        last: event.clientY,
+        time: performance.now(),
+        distance: 0,
+        velocity: 0,
+        active: false,
+        startScrollTop: this.scrollTarget?.scrollTop || 0,
+      };
+      this.panel?.setPointerCapture?.(event.pointerId);
     }
 
     move(event) {
@@ -119,7 +138,19 @@
       drag.velocity = (event.clientY - drag.last) / Math.max(1, now - drag.time);
       drag.last = event.clientY;
       drag.time = now;
-      drag.distance = Math.max(0, event.clientY - drag.start);
+      const distance = event.clientY - drag.start;
+      if (!drag.active) {
+        if (distance <= -this.activationDistance || (this.scrollTarget?.scrollTop || 0) > drag.startScrollTop) {
+          this.reset();
+          return;
+        }
+        if (distance < this.activationDistance) return;
+        drag.active = true;
+        this.panel.classList.add('is-sheet-dragging');
+        this.panel.style.transition = 'none';
+        this.panel.style.transform = 'translateY(0)';
+      }
+      drag.distance = Math.max(0, distance);
       this.panel.style.transform = `translateY(${drag.distance}px)`;
       event.preventDefault();
     }
@@ -127,9 +158,13 @@
     end(event, cancelled = false) {
       const drag = this.drag;
       if (!drag || drag.id !== event.pointerId) return;
+      if (!drag.active) {
+        this.reset();
+        return;
+      }
       const dismiss = !cancelled && (drag.distance >= Math.min(140, this.panel.offsetHeight * 0.2) || (drag.distance >= 32 && drag.velocity > 0.55 && performance.now() - drag.time < 100));
       this.drag = null;
-      if (this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
+      this.releasePointer(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.transition = reduced.matches
         ? 'none'
@@ -147,7 +182,7 @@
       cancelAnimationFrame(this.frame);
       const drag = this.drag;
       this.drag = null;
-      if (drag && this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
+      if (drag) this.releasePointer(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.removeProperty('transition');
       this.panel.style.removeProperty('transform');
