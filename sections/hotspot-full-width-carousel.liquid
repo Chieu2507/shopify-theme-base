@@ -58,9 +58,13 @@
   endif
 
   assign hotspot_carousel_pagination_type = section.settings.pagination_type | default: 'bullets'
-  unless hotspot_carousel_pagination_type == 'bullets' or hotspot_carousel_pagination_type == 'progress_bar'
+  unless hotspot_carousel_pagination_type == 'bullets' or hotspot_carousel_pagination_type == 'progress_bar' or hotspot_carousel_pagination_type == 'numbers'
     assign hotspot_carousel_pagination_type = 'bullets'
   endunless
+  assign hotspot_carousel_use_fraction = false
+  if hotspot_carousel_pagination_type == 'numbers'
+    assign hotspot_carousel_use_fraction = true
+  endif
 
   assign hotspot_carousel_pagination_position_desktop = section.settings.pagination_position_desktop | default: 'left'
   unless hotspot_carousel_pagination_position_desktop == 'left' or hotspot_carousel_pagination_position_desktop == 'center' or hotspot_carousel_pagination_position_desktop == 'right'
@@ -122,6 +126,7 @@
     data-swiper-pagination-type="{{ hotspot_carousel_pagination_type }}"
     data-swiper-pagination-desktop="{{ hotspot_carousel_show_pagination }}"
     data-swiper-pagination-mobile="{{ hotspot_carousel_show_pagination }}"
+    {% if hotspot_carousel_use_fraction %}data-carousel-controls-style="fraction"{% endif %}
     data-carousel-loop="{{ section.settings.loop_slides }}"
     data-swiper-autoplay="false"
     data-swiper-autoplay-pause-on-hover="true"
@@ -130,7 +135,7 @@
     {% if section.blocks.size > 0 %}
       {% capture hotspot_carousel_slides %}{% content_for 'blocks' %}{% endcapture %}
       {% capture hotspot_carousel_pagination %}
-          {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination %}
+        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination and hotspot_carousel_use_fraction == false %}
           {% render 'swiper-pagination',
             show: true,
             type: hotspot_carousel_pagination_type,
@@ -645,6 +650,7 @@
       "name": "t:general.hotspot_carousel",
       "category": "t:general.banners",
       "settings": {
+        "width": "full_bleed",
         "desktop_height": 560,
         "mobile_height": 420,
         "show_arrows": true,
@@ -653,6 +659,9 @@
         "navigation_behavior": "show_on_hover",
         "show_pagination": true,
         "pagination_type": "bullets",
+        "pagination_position_desktop": "left",
+        "pagination_position_mobile": "center",
+        "aria_label": "Hotspot carousel",
         "loop_slides": false,
         "show_product_type": true,
         "show_product_image": true,
@@ -660,7 +669,10 @@
         "product_link_label": "View product",
         "color_scheme": "scheme-1",
         "padding_top": 0,
-        "padding_bottom": 0
+        "padding_bottom": 0,
+        "customize_mobile_padding": false,
+        "padding_top_mobile": 0,
+        "padding_bottom_mobile": 0
       },
       "blocks": [
         {
