@@ -1,0 +1,541 @@
+{% doc %}
+  Renders an image-led product callout with responsive media and nested product
+  hotspot blocks. Desktop content sits over the image; on mobile it follows the
+  image so the copy remains readable without relying on an overlay.
+
+  @example
+  {% content_for 'block', type: 'product-callout', id: 'product-callout' %}
+{% enddoc %}
+
+{% liquid
+  assign product_callout_image = block.settings.image
+  assign product_callout_mobile_image = block.settings.mobile_image
+  assign product_callout_base_image = product_callout_image
+  if product_callout_base_image == blank
+    assign product_callout_base_image = product_callout_mobile_image
+    assign product_callout_mobile_image = blank
+  endif
+
+  assign product_callout_desktop_ratio = product_callout_base_image.aspect_ratio | default: 2.4
+  assign product_callout_mobile_ratio = product_callout_mobile_image.aspect_ratio | default: product_callout_desktop_ratio
+  if product_callout_desktop_ratio < 0.25 or product_callout_desktop_ratio > 3
+    assign product_callout_desktop_ratio = 2.4
+  endif
+  if product_callout_mobile_ratio < 0.25 or product_callout_mobile_ratio > 3
+    assign product_callout_mobile_ratio = product_callout_desktop_ratio
+  endif
+
+  assign product_callout_text_protection = block.settings.text_protection | default: 20 | plus: 0
+  if product_callout_text_protection < 0 or product_callout_text_protection > 100
+    assign product_callout_text_protection = 20
+  endif
+  assign product_callout_text_protection_opacity = product_callout_text_protection | divided_by: 100.0
+
+  assign product_callout_heading_size = block.settings.heading_size | default: 'large'
+  unless product_callout_heading_size == 'small' or product_callout_heading_size == 'medium' or product_callout_heading_size == 'large'
+    assign product_callout_heading_size = 'large'
+  endunless
+
+  assign product_callout_text_alignment = block.settings.text_alignment | default: 'left'
+  unless product_callout_text_alignment == 'left' or product_callout_text_alignment == 'center' or product_callout_text_alignment == 'right'
+    assign product_callout_text_alignment = 'left'
+  endunless
+
+  assign product_callout_text_position = block.settings.text_position | default: 'bottom_left'
+  unless product_callout_text_position == 'top_left' or product_callout_text_position == 'top_center' or product_callout_text_position == 'top_right' or product_callout_text_position == 'center_left' or product_callout_text_position == 'center_center' or product_callout_text_position == 'center_right' or product_callout_text_position == 'bottom_left' or product_callout_text_position == 'bottom_center' or product_callout_text_position == 'bottom_right'
+    assign product_callout_text_position = 'bottom_left'
+  endunless
+
+  assign product_callout_hotspot_icon_style = block.settings.hotspot_icon_style | default: 'plus'
+  unless product_callout_hotspot_icon_style == 'dot' or product_callout_hotspot_icon_style == 'plus' or product_callout_hotspot_icon_style == 'tag' or product_callout_hotspot_icon_style == 'bag'
+    assign product_callout_hotspot_icon_style = 'plus'
+  endunless
+
+  assign product_callout_image_alt = product_callout_image.alt | default: product_callout_mobile_image.alt | default: product_callout_base_image.alt
+  assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
+  assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
+  assign product_callout_class = product_callout_class | append: ' product-callout--heading-' | append: product_callout_heading_size
+  assign product_callout_class = product_callout_class | append: ' product-callout--icon-' | append: product_callout_hotspot_icon_style
+%}
+
+{% capture product_callout_style %}
+  --product-callout-ratio: {{ product_callout_desktop_ratio }};
+  --product-callout-ratio-mobile: {{ product_callout_mobile_ratio }};
+  --product-callout-text-protection: {{ product_callout_text_protection_opacity }};
+  --product-callout-hotspot-color: {{ block.settings.hotspot_color | default: '#FFFFFF' | escape }};
+  --product-callout-button-color: {{ block.settings.button_color | default: '#FFFFFF' | escape }};
+{% endcapture %}
+{% assign product_callout_style = product_callout_style | strip %}
+
+<article
+  class="{{ product_callout_class }}"
+  style="{{ product_callout_style }}"
+  data-product-callout
+  {{ block.shopify_attributes }}
+>
+  <div class="product-callout__media">
+    {% render 'media-background',
+      media_type: 'image',
+      image: product_callout_base_image,
+      mobile_image: product_callout_mobile_image,
+      alt: product_callout_image_alt,
+      sizes: '100vw'
+    %}
+
+    {% if product_callout_text_protection > 0 %}
+      <span class="product-callout__overlay" aria-hidden="true"></span>
+    {% endif %}
+
+    <div
+      class="product-callout__hotspots"
+      role="group"
+      aria-label="{{ 'accessibility.product_callout_hotspots' | t | escape }}"
+    >
+      {% content_for 'blocks' %}
+    </div>
+  </div>
+
+  <div class="product-callout__content product-callout__content--{{ product_callout_text_position }} product-callout__content--align-{{ product_callout_text_alignment }}">
+    {% if block.settings.preheading != blank %}
+      <p class="product-callout__preheading eyebrow-text">{{ block.settings.preheading | escape }}</p>
+    {% endif %}
+
+    {% if block.settings.heading != blank %}
+      <h2 class="product-callout__heading heading-{{ product_callout_heading_size }}">{{ block.settings.heading | escape }}</h2>
+    {% endif %}
+
+    {% if block.settings.text != blank %}
+      <div class="product-callout__text body-text body-lg rte">{{ block.settings.text }}</div>
+    {% endif %}
+
+    {% if block.settings.button_label != blank %}
+      {% render 'theme-button',
+        label: block.settings.button_label,
+        url: block.settings.button_link,
+        open_in_new_tab: block.settings.open_in_new_tab,
+        variant: 'secondary',
+        class: 'product-callout__button'
+      %}
+    {% endif %}
+  </div>
+</article>
+
+{% stylesheet %}
+  .product-callout {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    color: var(--body-color);
+    isolation: isolate;
+  }
+
+  .product-callout__media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--product-callout-ratio, 2.4);
+    overflow: hidden;
+    background: var(--background-color);
+  }
+
+  .product-callout__overlay {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    background: #000;
+    opacity: var(--product-callout-text-protection, 0.2);
+    pointer-events: none;
+  }
+
+  .product-callout__hotspots {
+    position: absolute;
+    z-index: 2;
+    inset: 0;
+    pointer-events: none;
+  }
+
+  .product-callout__content {
+    position: absolute;
+    z-index: 3;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: flex-end;
+    width: 100%;
+    max-width: 100%;
+    padding: clamp(2.4rem, 5vw, 6.4rem) clamp(1.6rem, 5vw, 6.4rem);
+    color: #fff;
+    pointer-events: none;
+  }
+
+  .product-callout__content > * {
+    pointer-events: auto;
+  }
+
+  .product-callout__content--top_left,
+  .product-callout__content--top_center,
+  .product-callout__content--top_right {
+    justify-content: flex-start;
+  }
+
+  .product-callout__content--center_left,
+  .product-callout__content--center_center,
+  .product-callout__content--center_right {
+    justify-content: center;
+  }
+
+  .product-callout__content--top_center,
+  .product-callout__content--center_center,
+  .product-callout__content--bottom_center {
+    align-items: center;
+  }
+
+  .product-callout__content--top_right,
+  .product-callout__content--center_right,
+  .product-callout__content--bottom_right {
+    align-items: flex-end;
+  }
+
+  .product-callout__content--align-left {
+    text-align: left;
+  }
+
+  .product-callout__content--align-center {
+    text-align: center;
+  }
+
+  .product-callout__content--align-right {
+    text-align: right;
+  }
+
+  .product-callout__content :where(.product-callout__preheading, .product-callout__heading, .product-callout__text) {
+    width: min(100%, 64rem);
+    margin: 0;
+    color: currentColor;
+  }
+
+  .product-callout__preheading {
+    font-size: var(--font-body-sm);
+  }
+
+  .product-callout__heading {
+    margin-top: 0.5em !important;
+    line-height: 1.05;
+  }
+
+  .product-callout--heading-small .product-callout__heading {
+    font-size: var(--font-heading-md);
+    line-height: var(--font-heading-md-line-height);
+  }
+
+  .product-callout--heading-medium .product-callout__heading {
+    font-size: var(--font-heading-lg);
+    line-height: var(--font-heading-lg-line-height);
+  }
+
+  .product-callout--heading-large .product-callout__heading {
+    font-size: var(--font-heading-xl);
+    line-height: var(--font-heading-xl-line-height);
+  }
+
+  .product-callout__text {
+    --body-color: currentColor;
+    margin-top: 1em !important;
+    max-width: 48rem !important;
+  }
+
+  .product-callout__text :first-child {
+    margin-top: 0;
+  }
+
+  .product-callout__text :last-child {
+    margin-bottom: 0;
+  }
+
+  .product-callout__button {
+    --button-background: transparent;
+    --button-border: var(--product-callout-button-color, currentColor);
+    --button-foreground: var(--product-callout-button-color, currentColor);
+    --button-hover-background: var(--product-callout-button-color, currentColor);
+    --button-hover-border: var(--product-callout-button-color, currentColor);
+    --button-hover-foreground: #000;
+    margin-top: 1.4em;
+  }
+
+  .product-callout__hotspot {
+    position: absolute;
+    inset-block-start: var(--product-callout-hotspot-y, 50%);
+    inset-inline-start: var(--product-callout-hotspot-x, 50%);
+    display: grid;
+    width: clamp(3rem, 3.2vw, 4rem);
+    height: clamp(3rem, 3.2vw, 4rem);
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: #000;
+    cursor: pointer;
+    font: inherit;
+    text-decoration: none;
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .product-callout__hotspot:is(:hover, :focus-visible) {
+    transform: translate(-50%, -50%) scale(1.08);
+  }
+
+  .product-callout__hotspot:focus-visible {
+    outline: 2px solid var(--product-callout-hotspot-color, #fff);
+    outline-offset: 4px;
+  }
+
+  .product-callout__hotspot[aria-disabled='true'] {
+    cursor: default;
+  }
+
+  .product-callout__hotspot-icon {
+    display: none;
+    color: var(--product-callout-hotspot-color, #fff);
+  }
+
+  .product-callout--icon-dot .product-callout__hotspot-icon--dot,
+  .product-callout--icon-plus .product-callout__hotspot-icon--plus,
+  .product-callout--icon-tag .product-callout__hotspot-icon--tag,
+  .product-callout--icon-bag .product-callout__hotspot-icon--bag {
+    display: grid;
+    place-items: center;
+  }
+
+  .product-callout__hotspot-icon--dot {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 0.1rem solid var(--product-callout-hotspot-color, #fff);
+    border-radius: 50%;
+    background: var(--product-callout-hotspot-color, #fff);
+    box-shadow: 0 0 1.5rem rgb(0 0 0 / 28%);
+  }
+
+  .product-callout__hotspot-icon--plus,
+  .product-callout__hotspot-icon--tag,
+  .product-callout__hotspot-icon--bag {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--product-callout-hotspot-color, #fff);
+    box-shadow: 0 0 1.5rem rgb(0 0 0 / 28%);
+  }
+
+  .product-callout__hotspot-icon--plus svg,
+  .product-callout__hotspot-icon--tag svg,
+  .product-callout__hotspot-icon--bag svg {
+    width: 42%;
+    height: 42%;
+  }
+
+  .product-callout__hotspot--placeholder .product-callout__hotspot-icon--dot,
+  .product-callout__hotspot--placeholder .product-callout__hotspot-icon--plus,
+  .product-callout__hotspot--placeholder .product-callout__hotspot-icon--tag,
+  .product-callout__hotspot--placeholder .product-callout__hotspot-icon--bag {
+    opacity: 0.88;
+  }
+
+  @media (max-width: 767.98px) {
+    .product-callout__media {
+      aspect-ratio: var(--product-callout-ratio-mobile, var(--product-callout-ratio, 2.4));
+    }
+
+    .product-callout__overlay {
+      display: none;
+    }
+
+    .product-callout__content {
+      position: relative;
+      inset: auto;
+      display: block;
+      padding: 2.4rem var(--page-margin-mobile) 2.8rem;
+      background: var(--background-color);
+      color: var(--body-color);
+      pointer-events: auto;
+    }
+
+    .product-callout__content--align-center {
+      text-align: center;
+    }
+
+    .product-callout__content--align-right {
+      text-align: right;
+    }
+
+    .product-callout__button {
+      display: inline-flex;
+    }
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-callout__hotspot,
+    .product-callout__button {
+      transition: none;
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.product_callout",
+  "tag": null,
+  "blocks": [
+    { "type": "hotspot" }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:general.image"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:labels.image"
+    },
+    {
+      "type": "image_picker",
+      "id": "mobile_image",
+      "label": "t:labels.mobile_image",
+      "info": "t:info.mobile_image_optional"
+    },
+    {
+      "type": "range",
+      "id": "text_protection",
+      "label": "t:labels.text_protection_on_desktop",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 20
+    },
+    {
+      "type": "header",
+      "content": "t:general.content"
+    },
+    {
+      "type": "text",
+      "id": "preheading",
+      "label": "t:labels.preheading"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:labels.heading"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "t:labels.heading_size",
+      "options": [
+        { "value": "small", "label": "t:options.product_callout_heading_size.small" },
+        { "value": "medium", "label": "t:options.product_callout_heading_size.medium" },
+        { "value": "large", "label": "t:options.product_callout_heading_size.large" }
+      ],
+      "default": "large"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "t:labels.button_label"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "t:labels.button_link"
+    },
+    {
+      "type": "color",
+      "id": "button_color",
+      "label": "t:labels.button_color",
+      "default": "#FFFFFF"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "t:labels.open_in_new_tab",
+      "default": false,
+      "visible_if": "{{ block.settings.button_link != blank }}"
+    },
+    {
+      "type": "text_alignment",
+      "id": "text_alignment",
+      "label": "t:labels.text_alignment",
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "text_position",
+      "label": "t:labels.text_position",
+      "options": [
+        { "value": "top_left", "label": "t:options.image_card_position.top_left" },
+        { "value": "top_center", "label": "t:options.image_card_position.top_center" },
+        { "value": "top_right", "label": "t:options.image_card_position.top_right" },
+        { "value": "center_left", "label": "t:options.image_card_position.center_left" },
+        { "value": "center_center", "label": "t:options.image_card_position.center_center" },
+        { "value": "center_right", "label": "t:options.image_card_position.center_right" },
+        { "value": "bottom_left", "label": "t:options.image_card_position.bottom_left" },
+        { "value": "bottom_center", "label": "t:options.image_card_position.bottom_center" },
+        { "value": "bottom_right", "label": "t:options.image_card_position.bottom_right" }
+      ],
+      "default": "bottom_left"
+    },
+    {
+      "type": "header",
+      "content": "t:general.hotspots"
+    },
+    {
+      "type": "select",
+      "id": "hotspot_icon_style",
+      "label": "t:labels.hotspot_icon_style",
+      "options": [
+        { "value": "dot", "label": "t:options.product_callout_icon_style.dot" },
+        { "value": "plus", "label": "t:options.product_callout_icon_style.plus" },
+        { "value": "tag", "label": "t:options.product_callout_icon_style.tag" },
+        { "value": "bag", "label": "t:options.product_callout_icon_style.bag" }
+      ],
+      "default": "plus"
+    },
+    {
+      "type": "color",
+      "id": "hotspot_color",
+      "label": "t:labels.hotspot_color",
+      "default": "#FFFFFF"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.product_callout",
+      "settings": {
+        "text_protection": 20,
+        "heading": "Easy by design",
+        "heading_size": "large",
+        "text": "<p>Soft texture, effortless movement, and warm-weather pieces designed to be worn on repeat.</p>",
+        "button_label": "Shop Linen",
+        "button_color": "#FFFFFF",
+        "text_alignment": "left",
+        "text_position": "bottom_left",
+        "hotspot_icon_style": "plus",
+        "hotspot_color": "#FFFFFF"
+      },
+      "blocks": [
+        { "type": "hotspot", "settings": { "vertical_position": 50, "horizontal_position": 22 } },
+        { "type": "hotspot", "settings": { "vertical_position": 56, "horizontal_position": 57 } },
+        { "type": "hotspot", "settings": { "vertical_position": 73, "horizontal_position": 77 } }
+      ]
+    }
+  ]
+}
+{% endschema %}
