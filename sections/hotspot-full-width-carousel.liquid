@@ -39,10 +39,30 @@
     assign hotspot_carousel_show_arrows = false
   endif
 
-  assign hotspot_carousel_show_counter = true
-  if section.settings.show_slide_counter == false
-    assign hotspot_carousel_show_counter = false
+  assign hotspot_carousel_show_pagination = true
+  if section.settings.show_pagination == false
+    assign hotspot_carousel_show_pagination = false
   endif
+
+  assign hotspot_carousel_pagination_type = section.settings.pagination_type | default: 'bullets'
+  unless hotspot_carousel_pagination_type == 'bullets' or hotspot_carousel_pagination_type == 'progress_bar'
+    assign hotspot_carousel_pagination_type = 'bullets'
+  endunless
+
+  assign hotspot_carousel_navigation_style = section.settings.navigation_style | default: 'primary'
+  unless hotspot_carousel_navigation_style == 'primary' or hotspot_carousel_navigation_style == 'secondary'
+    assign hotspot_carousel_navigation_style = 'primary'
+  endunless
+
+  assign hotspot_carousel_navigation_icon = section.settings.navigation_icon | default: 'arrow'
+  unless hotspot_carousel_navigation_icon == 'chevron' or hotspot_carousel_navigation_icon == 'arrow' or hotspot_carousel_navigation_icon == 'long_arrow'
+    assign hotspot_carousel_navigation_icon = 'arrow'
+  endunless
+
+  assign hotspot_carousel_navigation_behavior = section.settings.navigation_behavior | default: 'show_on_hover'
+  unless hotspot_carousel_navigation_behavior == 'show_on_hover' or hotspot_carousel_navigation_behavior == 'always'
+    assign hotspot_carousel_navigation_behavior = 'show_on_hover'
+  endunless
 
   assign hotspot_carousel_id = 'HotspotCarousel-' | append: section.id
   assign hotspot_carousel_previous_label = 'collection_tabs.previous' | t
@@ -69,10 +89,9 @@
     data-swiper-columns-mobile="1"
     data-swiper-gap-desktop="0"
     data-swiper-gap-mobile="0"
-    data-swiper-pagination-type="bullets"
-    data-swiper-pagination-desktop="false"
-    data-swiper-pagination-mobile="false"
-    data-carousel-controls-style="fraction"
+    data-swiper-pagination-type="{{ hotspot_carousel_pagination_type }}"
+    data-swiper-pagination-desktop="{{ hotspot_carousel_show_pagination }}"
+    data-swiper-pagination-mobile="{{ hotspot_carousel_show_pagination }}"
     data-carousel-loop="{{ section.settings.loop_slides }}"
     data-swiper-autoplay="false"
     data-swiper-autoplay-pause-on-hover="true"
@@ -80,47 +99,39 @@
   >
     {% if section.blocks.size > 0 %}
       {% capture hotspot_carousel_slides %}{% content_for 'blocks' %}{% endcapture %}
+      {% capture hotspot_carousel_pagination %}
+        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination %}
+          {% render 'swiper-pagination',
+            show: true,
+            type: hotspot_carousel_pagination_type,
+            class: 'hotspot-full-width-carousel__pagination'
+          %}
+        {% endif %}
+      {% endcapture %}
 
       <div class="hotspot-full-width-carousel__container swiper-carousel__container">
         {% render 'swiper-carousel',
           id: hotspot_carousel_id,
           content: hotspot_carousel_slides,
           root_class: 'hotspot-full-width-carousel__viewport',
-          aria_label: hotspot_carousel_aria_label
+          aria_label: hotspot_carousel_aria_label,
+          pagination: hotspot_carousel_pagination
         %}
 
-        {% if hotspot_carousel_has_multiple_slides %}
-          {% if hotspot_carousel_show_arrows or hotspot_carousel_show_counter %}
-            <div class="hotspot-full-width-carousel__controls" data-carousel-navigation>
-              {% if hotspot_carousel_show_arrows %}
-                <button
-                  class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__control"
-                  type="button"
-                  data-carousel-fraction-previous
-                  aria-label="{{ hotspot_carousel_previous_label | escape }}"
-                >
-                  {% render 'carousel-navigation-icon', icon: 'chevron', direction: 'previous' %}
-                </button>
-              {% endif %}
-
-              {% if hotspot_carousel_show_counter %}
-                <span class="hotspot-full-width-carousel__fraction" aria-live="polite">
-                  <span data-carousel-fraction-current>1</span>/<span data-carousel-fraction-total>{{ hotspot_carousel_slide_count }}</span>
-                </span>
-              {% endif %}
-
-              {% if hotspot_carousel_show_arrows %}
-                <button
-                  class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__control"
-                  type="button"
-                  data-carousel-fraction-next
-                  aria-label="{{ hotspot_carousel_next_label | escape }}"
-                >
-                  {% render 'carousel-navigation-icon', icon: 'chevron', direction: 'next' %}
-                </button>
-              {% endif %}
-            </div>
-          {% endif %}
+        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_arrows %}
+          {% render 'swiper-navigation',
+            show: true,
+            style: hotspot_carousel_navigation_style,
+            icon: hotspot_carousel_navigation_icon,
+            behavior: hotspot_carousel_navigation_behavior,
+            wrapper_class: 'hotspot-full-width-carousel__navigation',
+            wrapper_attributes: 'aria-label="Hotspot carousel controls"',
+            previous_attribute: 'data-carousel-previous',
+            next_attribute: 'data-carousel-next',
+            previous_label: hotspot_carousel_previous_label,
+            next_label: hotspot_carousel_next_label,
+            centered: true
+          %}
         {% endif %}
       </div>
     {% elsif request.design_mode %}
@@ -148,40 +159,82 @@
   }
 
   .hotspot-full-width-carousel__viewport {
+    position: relative;
     width: 100%;
+    overflow: hidden;
   }
 
   .hotspot-full-width-carousel__viewport > .swiper-wrapper {
+    display: flex;
+    width: 100%;
     align-items: stretch;
   }
 
-  .hotspot-full-width-carousel__controls {
-    position: absolute;
-    z-index: 7;
-    inset-inline: 0;
-    bottom: 1.2rem;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: 0.8rem;
-    color: var(--body-color);
-    pointer-events: none;
+  .hotspot-full-width-carousel__viewport > .swiper-wrapper > .swiper-slide {
+    flex: 0 0 100%;
+    width: 100%;
+    min-width: 0;
   }
 
-  .hotspot-full-width-carousel__controls > * {
+  .hotspot-full-width-carousel__navigation {
+    position: absolute;
+    z-index: 5;
+    inset-inline: 0;
+    top: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 1.6rem;
+    pointer-events: none;
+    color: var(--heading-color);
+    transform: translateY(-50%);
+  }
+
+  .hotspot-full-width-carousel__navigation .swiper-nav-button {
     pointer-events: auto;
   }
 
-  .hotspot-full-width-carousel__control {
-    --swiper-nav-size: 2.4rem;
-    color: inherit;
+  .hotspot-full-width-carousel__navigation.swiper-carousel__navigation--show_on_hover {
+    transition: opacity var(--motion-duration-standard) var(--motion-ease-standard);
   }
 
-  .hotspot-full-width-carousel__fraction {
-    min-width: 2.8rem;
-    font-size: var(--font-body-xs);
-    line-height: 2.4rem;
-    text-align: center;
+  .hotspot-full-width-carousel__pagination {
+    position: absolute !important;
+    z-index: 4;
+    inset-block-end: 0 !important;
+    inset-inline: 0 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 2.4rem var(--page-margin-desktop);
+    color: var(--heading-color);
+    --swiper-pagination-color: var(--heading-color);
+    --swiper-pagination-progressbar-bg-color: color-mix(in srgb, var(--heading-color) 30%, transparent);
+    --swiper-pagination-bullet-inactive-color: color-mix(in srgb, var(--heading-color) 30%, transparent);
+    --swiper-pagination-bullet-horizontal-gap: 0px;
+  }
+
+  .hotspot-full-width-carousel__pagination[data-pagination-type='bullets'] {
+    width: auto !important;
+    padding-inline: 0;
+  }
+
+  .hotspot-full-width-carousel__pagination .swiper-pagination-bullet {
+    width: 0.8rem;
+    height: 0.8rem;
+    margin: 0;
+    opacity: 0.55;
+    background: currentColor;
+    transition: width var(--motion-duration-standard) var(--motion-ease-standard), opacity var(--motion-duration-standard) var(--motion-ease-standard);
+  }
+
+  .hotspot-full-width-carousel__pagination .swiper-pagination-bullet-active {
+    width: 3.2rem;
+    opacity: 1;
+  }
+
+  .hotspot-full-width-carousel.carousel-block--locked .hotspot-full-width-carousel__navigation,
+  .hotspot-full-width-carousel.carousel-block--locked .hotspot-full-width-carousel__pagination {
+    display: none;
   }
 
   .hotspot-full-width-carousel__empty-state {
@@ -198,10 +251,6 @@
     margin: 0;
   }
 
-  .hotspot-full-width-carousel.carousel-block--locked .hotspot-full-width-carousel__controls {
-    display: none;
-  }
-
   @media (min-width: 768px) and (max-width: 1149.98px) {
     .hotspot-full-width-carousel {
       padding-block: calc(var(--hotspot-carousel-padding-top, 0px) * 0.75) calc(var(--hotspot-carousel-padding-bottom, 0px) * 0.75);
@@ -213,8 +262,16 @@
       padding-block: calc(var(--hotspot-carousel-padding-top, 0px) * 0.5) calc(var(--hotspot-carousel-padding-bottom, 0px) * 0.5);
     }
 
-    .hotspot-full-width-carousel__controls {
-      bottom: 0.8rem;
+    .hotspot-full-width-carousel__navigation {
+      display: none;
+    }
+
+    .hotspot-full-width-carousel__pagination {
+      padding-block: 1.6rem;
+    }
+
+    .hotspot-full-width-carousel__pagination[data-pagination-type='bullets'] {
+      padding-inline: 0;
     }
   }
 {% endstylesheet %}
@@ -264,10 +321,55 @@
       "default": true
     },
     {
+      "type": "select",
+      "id": "navigation_style",
+      "label": "t:labels.style",
+      "options": [
+        { "value": "primary", "label": "t:options.button_variant.primary" },
+        { "value": "secondary", "label": "t:options.button_variant.secondary" }
+      ],
+      "default": "primary",
+      "visible_if": "{{ section.settings.show_arrows }}"
+    },
+    {
+      "type": "select",
+      "id": "navigation_icon",
+      "label": "t:labels.icon",
+      "options": [
+        { "value": "chevron", "label": "t:options.collection_navigation_icon.chevron" },
+        { "value": "arrow", "label": "t:options.collection_navigation_icon.arrow" },
+        { "value": "long_arrow", "label": "t:options.collection_navigation_icon.long_arrow" }
+      ],
+      "default": "arrow",
+      "visible_if": "{{ section.settings.show_arrows }}"
+    },
+    {
+      "type": "select",
+      "id": "navigation_behavior",
+      "label": "t:labels.behavior",
+      "options": [
+        { "value": "show_on_hover", "label": "t:options.collection_navigation_behavior.show_on_hover" },
+        { "value": "always", "label": "t:options.collection_navigation_behavior.always" }
+      ],
+      "default": "show_on_hover",
+      "visible_if": "{{ section.settings.show_arrows }}"
+    },
+    {
       "type": "checkbox",
-      "id": "show_slide_counter",
-      "label": "t:labels.show_slide_counter",
+      "id": "show_pagination",
+      "label": "t:labels.show_pagination",
       "default": true
+    },
+    {
+      "type": "select",
+      "id": "pagination_type",
+      "label": "t:labels.type",
+      "options": [
+        { "value": "bullets", "label": "t:options.collection_pagination.bullets" },
+        { "value": "progress_bar", "label": "t:options.collection_pagination.progress_bar" }
+      ],
+      "default": "bullets",
+      "visible_if": "{{ section.settings.show_pagination }}"
     },
     {
       "type": "checkbox",
@@ -352,7 +454,11 @@
         "desktop_height": 560,
         "mobile_height": 420,
         "show_arrows": true,
-        "show_slide_counter": true,
+        "navigation_style": "primary",
+        "navigation_icon": "arrow",
+        "navigation_behavior": "show_on_hover",
+        "show_pagination": true,
+        "pagination_type": "bullets",
         "loop_slides": false,
         "show_product_type": true,
         "show_product_image": true,
