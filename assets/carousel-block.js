@@ -686,6 +686,13 @@ const initializeRoot = (root = document, refreshExisting = false) => {
     }
 
     const state = instances.get(carouselRoot);
+    const manualLoopRequested = carouselRoot.dataset.carouselManualLoop === 'true';
+    if (state?.manualLoop || manualLoopRequested) {
+      destroy(carouselRoot);
+      initialize(carouselRoot);
+      return;
+    }
+
     if (state?.swiper && !state.swiper.destroyed) state.swiper.update();
   };
 
