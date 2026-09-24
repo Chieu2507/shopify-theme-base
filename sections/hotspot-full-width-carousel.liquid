@@ -58,6 +58,18 @@
   endif
   assign hotspot_carousel_scheme = hotspot_carousel_scheme | default: 'scheme-1' | handleize
 
+  assign hotspot_carousel_content_scheme = 'scheme-3'
+  for hotspot_carousel_scheme_block in section.blocks
+    if hotspot_carousel_scheme_block.type == 'product-callout' or hotspot_carousel_scheme_block.id contains 'product-callout'
+      assign hotspot_carousel_content_scheme = hotspot_carousel_scheme_block.settings.content_color_scheme | default: 'scheme-3'
+      if hotspot_carousel_scheme_block.settings.content_color_scheme.id != blank
+        assign hotspot_carousel_content_scheme = hotspot_carousel_scheme_block.settings.content_color_scheme.id
+      endif
+      assign hotspot_carousel_content_scheme = hotspot_carousel_content_scheme | default: 'scheme-3' | handleize
+      break
+    endif
+  endfor
+
   assign hotspot_carousel_padding_top = section.settings.padding_top | default: 40 | plus: 0
   assign hotspot_carousel_padding_bottom = section.settings.padding_bottom | default: 40 | plus: 0
   assign hotspot_carousel_padding_top_mobile = section.settings.padding_top_mobile | default: hotspot_carousel_padding_top | plus: 0
@@ -154,7 +166,9 @@
     assign hotspot_carousel_aria_label = section.settings.aria_label
   endif
 
-  assign hotspot_carousel_pagination_class = 'hotspot-full-width-carousel__pagination hotspot-full-width-carousel__pagination--desktop-' | append: hotspot_carousel_pagination_position_desktop | append: ' hotspot-full-width-carousel__pagination--mobile-' | append: hotspot_carousel_pagination_position_mobile
+  assign hotspot_carousel_controls_scheme_class = 'color-scheme ' | append: hotspot_carousel_content_scheme
+  assign hotspot_carousel_navigation_class = 'hotspot-full-width-carousel__navigation ' | append: hotspot_carousel_controls_scheme_class
+  assign hotspot_carousel_pagination_class = 'hotspot-full-width-carousel__pagination hotspot-full-width-carousel__pagination--desktop-' | append: hotspot_carousel_pagination_position_desktop | append: ' hotspot-full-width-carousel__pagination--mobile-' | append: hotspot_carousel_pagination_position_mobile | append: ' ' | append: hotspot_carousel_controls_scheme_class
 %}
 
 {% if hotspot_carousel_render %}
@@ -193,6 +207,19 @@
     data-swiper-autoplay-pause-on-hover="true"
     data-swiper-autoplay-delay="4000"
   >
+    {% if section.settings.background_media != 'none' %}
+      {% render 'media-background',
+        media_type: section.settings.background_media,
+        image: section.settings.background_image,
+        video: section.settings.background_video,
+        alt: '',
+        placeholder: 'image',
+        sizes: '100vw',
+        aria_hidden: true,
+        class: 'hotspot-full-width-carousel__background'
+      %}
+    {% endif %}
+
     {% if section.blocks.size > 0 %}
       {% capture hotspot_carousel_header %}
         {% for hotspot_carousel_block in section.blocks %}
@@ -244,7 +271,7 @@
               style: hotspot_carousel_navigation_style,
               icon: hotspot_carousel_navigation_icon,
               behavior: hotspot_carousel_navigation_behavior,
-              wrapper_class: 'hotspot-full-width-carousel__navigation',
+              wrapper_class: hotspot_carousel_navigation_class,
               wrapper_attributes: 'aria-label="Hotspot carousel controls"',
               previous_attribute: 'data-carousel-previous',
               next_attribute: 'data-carousel-next',
@@ -255,7 +282,7 @@
           {% endif %}
 
           {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination and hotspot_carousel_use_fraction %}
-            <div class="hotspot-full-width-carousel__fraction-controls hotspot-full-width-carousel__fraction-controls--desktop-{{ hotspot_carousel_pagination_position_desktop }} hotspot-full-width-carousel__fraction-controls--mobile-{{ hotspot_carousel_pagination_position_mobile }}">
+            <div class="hotspot-full-width-carousel__fraction-controls hotspot-full-width-carousel__fraction-controls--desktop-{{ hotspot_carousel_pagination_position_desktop }} hotspot-full-width-carousel__fraction-controls--mobile-{{ hotspot_carousel_pagination_position_mobile }} {{ hotspot_carousel_controls_scheme_class }}">
               {% if hotspot_carousel_show_arrows %}
                 <button class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__fraction-button" type="button" data-carousel-fraction-previous aria-label="{{ hotspot_carousel_previous_label | escape }}">
                   {% render 'carousel-navigation-icon', icon: hotspot_carousel_navigation_icon, direction: 'previous' %}
@@ -296,6 +323,11 @@
     background: var(--hotspot-carousel-background, var(--background-color));
     --page-margin-current: var(--page-margin-desktop);
     --hotspot-carousel-content-inline-padding: var(--page-margin-current);
+  }
+
+  .hotspot-full-width-carousel__background {
+    z-index: -1;
+    pointer-events: none;
   }
 
   .hotspot-full-width-carousel__container {
@@ -864,19 +896,46 @@
     },
     {
       "type": "header",
-      "content": "t:general.appearance"
+      "content": "t:general.appearance",
+      "visible_if": "{{ section.settings.width != 'full_bleed' }}"
+    },
+    {
+      "type": "select",
+      "id": "background_media",
+      "label": "t:general.media",
+      "options": [
+        { "value": "none", "label": "t:options.background_media.none" },
+        { "value": "image", "label": "t:general.image" },
+        { "value": "video", "label": "t:general.video" }
+      ],
+      "default": "none",
+      "visible_if": "{{ section.settings.width != 'full_bleed' }}"
+    },
+    {
+      "type": "image_picker",
+      "id": "background_image",
+      "label": "t:labels.background_image",
+      "visible_if": "{{ section.settings.width != 'full_bleed' and section.settings.background_media == 'image' }}"
+    },
+    {
+      "type": "video",
+      "id": "background_video",
+      "label": "t:labels.background_video",
+      "visible_if": "{{ section.settings.width != 'full_bleed' and section.settings.background_media == 'video' }}"
     },
     {
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "t:labels.color_scheme",
-      "default": "scheme-1"
+      "default": "scheme-1",
+      "visible_if": "{{ section.settings.width != 'full_bleed' }}"
     },
     {
       "type": "color",
       "alpha": true,
       "id": "background_color",
-      "label": "t:labels.background_color"
+      "label": "t:labels.background_color",
+      "visible_if": "{{ section.settings.width != 'full_bleed' }}"
     },
     {
       "type": "header",
