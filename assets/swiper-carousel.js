@@ -94,7 +94,7 @@ export const bindSwiperControls = (swiper, controls = {}) => {
     if (swiper.destroyed) return;
 
     const isLocked = Boolean(swiper.isLocked);
-    const isLooping = Boolean(swiper.params.loop);
+    const isLooping = Boolean(swiper.params.loop || controlOptions.loop);
     const previousDisabled = isLocked || (!isLooping && swiper.isBeginning);
     const nextDisabled = isLocked || (!isLooping && swiper.isEnd);
 

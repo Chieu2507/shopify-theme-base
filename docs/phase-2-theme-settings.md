@@ -1053,7 +1053,9 @@ profile URL.
 
 - Settings: config/settings_schema.json.
 - Markup: snippets/social-links.liquid.
-- Consumer: sections/footer.liquid.
+- Consumer: blocks/social-links.liquid, allowed by blocks/_column.liquid and used
+  by the active Footer group/preset in sections/footer-group.json and
+  sections/footer.liquid.
 - CSS/accessibility: assets/critical.css.
 
 ### Responsive, accessibility và fallback
@@ -1087,8 +1089,10 @@ thêm rel=noopener noreferrer.
 - Theme Editor hiển thị đủ 16 nhóm theo dependency order.
 - Mọi setting contract ở trên có ID/type/default/value mapping khớp
   config/settings_schema.json.
-- snippets/css-variables.liquid phát ra fallback token cho theme data cũ.
+- snippets/css-variables.liquid normalize từng scheme token trước khi phát ra
+  CSS, nên theme data cũ thiếu key vẫn có giá trị fallback.
 - assets/critical.css có responsive breakpoints, focus-visible và reduced-motion.
 - Existing header/footer/product/collection/search/cart render không có lỗi
-  Liquid/Theme Check.
+  mới trong scope thay đổi; toàn bộ Theme Check output và blocker có sẵn được
+  ghi trong QA report.
 - git diff --check sạch; không có credential/secret trong diff.

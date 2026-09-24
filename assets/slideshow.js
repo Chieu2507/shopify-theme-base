@@ -413,21 +413,22 @@ const init = (root) => {
   const carousel = root.querySelector('[data-slideshow-swiper]');
   if (!carousel) return;
   const pageWidth = root.classList.contains('slideshow--width-page');
+  const showNextSlidePreview = pageWidth && root.dataset.showNextSlidePreviewOnDesktop === 'true';
   const slideCount = carousel.querySelectorAll(`.swiper-wrapper > ${slideSelector}`).length;
-  const pageWidthLoop = pageWidth && slideCount > 1;
+  const pageWidthLoop = showNextSlidePreview && slideCount > 1;
   const manualLoop = pageWidthLoop ? createPageWidthLoop(carousel, slideCount) : null;
-  // Page layout exposes adjacent slides, which requires Swiper's slide effect.
-  const fade = !pageWidth && root.dataset.transition === 'fade';
+  // Adjacent page-width slides require Swiper's slide effect.
+  const fade = !showNextSlidePreview && root.dataset.transition === 'fade';
   const autoplay = root.dataset.autoplay === 'true' && !reducedMotion();
   const paginationType = root.querySelector('[data-slideshow-pagination]')?.dataset.paginationType;
   const paginationModules = paginationType === 'progress_bar' || paginationType === 'numbers' ? [] : [Pagination];
   const options = {
     modules: manualLoop ? [] : (fade ? [EffectFade, ...paginationModules] : paginationModules),
     slidesPerView: 1,
-    // Keep page-width slides visually separate while letting Swiper include the
-    // gap in its translate, drag, loop, and pagination calculations.
-    spaceBetween: pageWidth && !fade ? 24 : 0,
-    centeredSlides: pageWidth,
+    // Keep preview slides visually separate while letting Swiper include the gap
+    // in its translate, drag, loop, and pagination calculations.
+    spaceBetween: showNextSlidePreview ? 24 : 0,
+    centeredSlides: showNextSlidePreview,
     loop: !manualLoop && slideCount > 1,
     initialSlide: manualLoop?.initialSlide || 0,
     // Finish the transition and clone reset before accepting another move.
