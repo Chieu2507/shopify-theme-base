@@ -2,8 +2,8 @@
   Renders Product callout media, content, and nested product hotspots. Media,
   content layout, and height settings belong to this block. Below keeps the
   content over the media on desktop and stacks it after the media on mobile;
-  Split places content beside the media on desktop and follows the selected
-  order when stacked on mobile.
+  Split places content beside the media on desktop, with its selected order
+  applying only on desktop. Mobile always stacks media before content.
 
   @example
   {% content_for 'block', type: 'product-callout', id: 'product-callout' %}
@@ -356,6 +356,19 @@
   }
 
   @media (max-width: 767.98px) {
+    .product-callout--layout-split {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .product-callout--layout-split .product-callout__media {
+      order: 0;
+    }
+
+    .product-callout--layout-split .product-callout__content {
+      order: 1;
+    }
+
     .product-callout__hotspot-wrap {
       inset-block-start: var(--product-callout-hotspot-y-mobile, var(--product-callout-hotspot-y, 50%));
       inset-inline-start: var(--product-callout-hotspot-x-mobile, var(--product-callout-hotspot-x, 50%));
@@ -1458,7 +1471,6 @@
       "type": "select",
       "id": "content_layout",
       "label": "t:labels.content_layout",
-      "info": "t:info.product_callout_content_layout",
       "options": [
         { "value": "below", "label": "t:options.product_callout_content_layout.below" },
         { "value": "split", "label": "t:options.product_callout_content_layout.split" }
@@ -1469,7 +1481,6 @@
       "type": "select",
       "id": "content_position",
       "label": "t:labels.content_position",
-      "info": "t:info.product_callout_content_position",
       "options": [
         { "value": "first", "label": "t:options.product_callout_content_position.first" },
         { "value": "last", "label": "t:options.product_callout_content_position.last" }
@@ -1481,7 +1492,6 @@
       "type": "range",
       "id": "content_panel_width",
       "label": "t:labels.content_width",
-      "info": "t:info.product_callout_content_width",
       "min": 20,
       "max": 50,
       "step": 1,
