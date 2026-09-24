@@ -3,6 +3,10 @@
   unless slideshow_width == 'page' or slideshow_width == 'full' or slideshow_width == 'full_bleed'
     assign slideshow_width = 'full_bleed'
   endunless
+  assign slideshow_show_next_slide_preview_on_desktop = false
+  if slideshow_width == 'page' and section.settings.show_next_slide_preview_on_desktop
+    assign slideshow_show_next_slide_preview_on_desktop = true
+  endif
   assign slideshow_transition = section.settings.transition_style | default: 'slide'
   unless slideshow_transition == 'slide' or slideshow_transition == 'fade'
     assign slideshow_transition = 'slide'
@@ -58,6 +62,7 @@
   class="slideshow slideshow--width-{{ slideshow_width }} slideshow--desktop-{{ slideshow_desktop_height }} slideshow--mobile-{{ slideshow_mobile_height }} color-scheme section-color-scope {{ slideshow_scheme }}"
   data-slideshow
   data-transition="{{ slideshow_transition }}"
+  data-show-next-slide-preview-on-desktop="{{ slideshow_show_next_slide_preview_on_desktop }}"
   data-autoplay="{{ section.settings.autoplay }}"
   data-autoplay-delay="{{ slideshow_autoplay_delay }}"
   data-pause-on-hover="{{ section.settings.pause_on_hover }}"
@@ -151,7 +156,7 @@
   .slideshow--single-slide .slideshow__navigation, .slideshow--single-slide .slideshow__pagination { display: none; }
   .slideshow[data-full-width-content='true'] .slideshow-slide__content-inner { width: 100%; max-width: none; }
   @media (min-width: 768px) {
-    .slideshow--width-page .slideshow__swiper { overflow: visible; }
+    .slideshow--width-page[data-show-next-slide-preview-on-desktop='true'] .slideshow__swiper { overflow: visible; }
   }
   @media (min-width: 768px) and (max-width: 1149.98px) { .slideshow { --slideshow-content-inline-padding: var(--page-margin-tablet); }.slideshow--width-page .slideshow__container { --page-margin-current: var(--page-margin-tablet); }.slideshow--width-full .slideshow__container { width: calc(100% - (var(--page-margin-tablet) * 2)); } }
   @media (max-width: 767.98px) {
@@ -186,7 +191,8 @@
   "settings": [
     { "type": "header", "content": "Layout" },
     { "type": "select", "id": "width", "label": "Section width", "options": [{ "value": "page", "label": "Page" }, { "value": "full", "label": "Full" }, { "value": "full_bleed", "label": "Full (no padding)" }], "default": "full_bleed" },
-    { "type": "select", "id": "transition_style", "label": "Transition style", "options": [{ "value": "slide", "label": "Slide" }, { "value": "fade", "label": "Fade" }], "default": "slide", "visible_if": "{{ section.settings.width != 'page' }}" },
+    { "type": "checkbox", "id": "show_next_slide_preview_on_desktop", "label": "t:labels.show_next_slide_preview_on_desktop", "default": false, "visible_if": "{{ section.settings.width == 'page' }}" },
+    { "type": "select", "id": "transition_style", "label": "Transition style", "options": [{ "value": "slide", "label": "Slide" }, { "value": "fade", "label": "Fade" }], "default": "slide", "visible_if": "{{ section.settings.width != 'page' or section.settings.show_next_slide_preview_on_desktop == false }}" },
     { "type": "checkbox", "id": "full_width_content", "label": "Full-width content", "default": false },
     { "type": "header", "content": "Height" },
     { "type": "select", "id": "desktop_height", "label": "Desktop height", "options": [{ "value": "adapt", "label": "Adapt" }, { "value": "extra_small", "label": "Extra small" }, { "value": "small", "label": "Small" }, { "value": "medium", "label": "Medium" }, { "value": "large", "label": "Large" }, { "value": "extra_large", "label": "Extra large" }, { "value": "full_screen", "label": "Full screen" }], "default": "medium" },

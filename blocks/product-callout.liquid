@@ -1,0 +1,1412 @@
+{% doc %}
+  Renders Product callout media, content, and nested product hotspots. Media
+  and height settings belong to this block. Static callouts move content below
+  the image on mobile; carousel slides keep content over the image inside the
+  fixed slide viewport.
+
+  @example
+  {% content_for 'block', type: 'product-callout', id: 'product-callout' %}
+{% enddoc %}
+
+{% liquid
+  assign product_callout_is_carousel = false
+  assign product_callout_section_type = section.type | handleize
+  if product_callout_section_type == 'hotspot-full-width-carousel' or section.settings.desktop_height != blank and section.settings.mobile_height != blank
+    assign product_callout_is_carousel = true
+  endif
+
+  assign product_callout_image = block.settings.image
+  assign product_callout_mobile_image = block.settings.mobile_image
+  assign product_callout_base_image = product_callout_image
+  if product_callout_base_image == blank
+    assign product_callout_base_image = product_callout_mobile_image
+    assign product_callout_mobile_image = blank
+  endif
+
+  assign product_callout_desktop_ratio = product_callout_base_image.aspect_ratio | default: 2.4
+  assign product_callout_mobile_ratio = product_callout_mobile_image.aspect_ratio | default: product_callout_desktop_ratio
+  if product_callout_desktop_ratio < 0.25 or product_callout_desktop_ratio > 3
+    assign product_callout_desktop_ratio = 2.4
+  endif
+  if product_callout_mobile_ratio < 0.25 or product_callout_mobile_ratio > 3
+    assign product_callout_mobile_ratio = product_callout_desktop_ratio
+  endif
+
+  assign product_callout_desktop_height = block.settings.desktop_height | default: 'adapt'
+  assign product_callout_mobile_height = block.settings.mobile_height | default: 'adapt'
+
+  if product_callout_is_carousel
+    assign product_callout_desktop_height = section.settings.desktop_height | default: 'medium'
+    assign product_callout_desktop_height_number = product_callout_desktop_height | plus: 0
+    if product_callout_desktop_height_number > 0
+      if product_callout_desktop_height_number <= 480
+        assign product_callout_desktop_height = 'extra_small'
+      elsif product_callout_desktop_height_number <= 600
+        assign product_callout_desktop_height = 'small'
+      elsif product_callout_desktop_height_number <= 800
+        assign product_callout_desktop_height = 'medium'
+      elsif product_callout_desktop_height_number <= 960
+        assign product_callout_desktop_height = 'large'
+      else
+        assign product_callout_desktop_height = 'extra_large'
+      endif
+    endif
+    unless product_callout_desktop_height == 'adapt' or product_callout_desktop_height == 'extra_small' or product_callout_desktop_height == 'small' or product_callout_desktop_height == 'medium' or product_callout_desktop_height == 'large' or product_callout_desktop_height == 'extra_large' or product_callout_desktop_height == 'full_screen'
+      assign product_callout_desktop_height = 'medium'
+    endunless
+
+    assign product_callout_mobile_height = section.settings.mobile_height | default: 'small'
+    assign product_callout_mobile_height_number = product_callout_mobile_height | plus: 0
+    if product_callout_mobile_height_number > 0
+      if product_callout_mobile_height_number <= 360
+        assign product_callout_mobile_height = 'extra_small'
+      elsif product_callout_mobile_height_number <= 480
+        assign product_callout_mobile_height = 'small'
+      elsif product_callout_mobile_height_number <= 600
+        assign product_callout_mobile_height = 'medium'
+      elsif product_callout_mobile_height_number <= 760
+        assign product_callout_mobile_height = 'large'
+      else
+        assign product_callout_mobile_height = 'extra_large'
+      endif
+    endif
+    unless product_callout_mobile_height == 'adapt' or product_callout_mobile_height == 'extra_small' or product_callout_mobile_height == 'small' or product_callout_mobile_height == 'medium' or product_callout_mobile_height == 'large' or product_callout_mobile_height == 'extra_large' or product_callout_mobile_height == 'full_screen'
+      assign product_callout_mobile_height = 'small'
+    endunless
+  else
+    unless product_callout_desktop_height == 'adapt' or product_callout_desktop_height == 'extra_small' or product_callout_desktop_height == 'small' or product_callout_desktop_height == 'medium' or product_callout_desktop_height == 'large' or product_callout_desktop_height == 'extra_large' or product_callout_desktop_height == 'full_screen'
+      assign product_callout_desktop_height = 'adapt'
+    endunless
+    unless product_callout_mobile_height == 'adapt' or product_callout_mobile_height == 'extra_small' or product_callout_mobile_height == 'small' or product_callout_mobile_height == 'medium' or product_callout_mobile_height == 'large' or product_callout_mobile_height == 'extra_large' or product_callout_mobile_height == 'full_screen'
+      assign product_callout_mobile_height = 'adapt'
+    endunless
+  endif
+
+  assign product_callout_overlay = block.settings.overlay
+  if product_callout_is_carousel
+    assign product_callout_overlay = blank
+  endif
+
+  assign product_callout_image_position_desktop = block.settings.desktop_image_position | default: 'center center'
+  assign product_callout_image_position_mobile = block.settings.mobile_image_position | default: product_callout_image_position_desktop
+  assign product_callout_image_position_values = 'top left|top center|top right|center left|center center|center right|bottom left|bottom center|bottom right'
+  unless product_callout_image_position_values contains product_callout_image_position_desktop
+    assign product_callout_image_position_desktop = 'center center'
+  endunless
+  unless product_callout_image_position_values contains product_callout_image_position_mobile
+    assign product_callout_image_position_mobile = product_callout_image_position_desktop
+  endunless
+
+  assign product_callout_heading_size = block.settings.heading_size | default: 'xl'
+  case product_callout_heading_size
+    when 'large'
+      assign product_callout_heading_size = 'xl'
+    when 'medium'
+      assign product_callout_heading_size = 'lg'
+    when 'small'
+      assign product_callout_heading_size = 'md'
+  endcase
+  unless product_callout_heading_size == 'display' or product_callout_heading_size == 'xl' or product_callout_heading_size == 'lg' or product_callout_heading_size == 'md' or product_callout_heading_size == 'sm' or product_callout_heading_size == 'xs' or product_callout_heading_size == 'custom'
+    assign product_callout_heading_size = 'xl'
+  endunless
+
+  assign product_callout_custom_heading_size = block.settings.custom_heading_size | default: 24 | plus: 0
+  if product_callout_custom_heading_size < 10 or product_callout_custom_heading_size > 100
+    assign product_callout_custom_heading_size = 24
+  endif
+
+  assign product_callout_heading_tag = block.settings.html_tag | default: 'h2'
+  unless product_callout_heading_tag == 'div' or product_callout_heading_tag == 'h1' or product_callout_heading_tag == 'h2' or product_callout_heading_tag == 'h3' or product_callout_heading_tag == 'h4' or product_callout_heading_tag == 'h5' or product_callout_heading_tag == 'h6'
+    assign product_callout_heading_tag = 'h2'
+  endunless
+
+  assign product_callout_text_size = block.settings.text_size | default: 'lg'
+  unless product_callout_text_size == 'xs' or product_callout_text_size == 'sm' or product_callout_text_size == 'md' or product_callout_text_size == 'lg' or product_callout_text_size == 'xl' or product_callout_text_size == 'xxl'
+    assign product_callout_text_size = 'lg'
+  endunless
+
+  assign product_callout_gap_desktop = block.settings.gap_desktop | default: 12 | plus: 0
+  if product_callout_gap_desktop < 0 or product_callout_gap_desktop > 100
+    assign product_callout_gap_desktop = 12
+  endif
+  assign product_callout_gap_mobile = block.settings.gap_mobile | default: 8 | plus: 0
+  if product_callout_gap_mobile < 0 or product_callout_gap_mobile > 100
+    assign product_callout_gap_mobile = 8
+  endif
+
+  assign product_callout_button_style = block.settings.button_style | default: 'secondary'
+  unless product_callout_button_style == 'primary' or product_callout_button_style == 'secondary' or product_callout_button_style == 'tertiary'
+    assign product_callout_button_style = 'secondary'
+  endunless
+
+  assign product_callout_text_alignment = block.settings.text_alignment | default: 'left'
+  unless product_callout_text_alignment == 'left' or product_callout_text_alignment == 'center' or product_callout_text_alignment == 'right'
+    assign product_callout_text_alignment = 'left'
+  endunless
+
+  assign product_callout_text_position = block.settings.text_position | default: 'bottom_left'
+  unless product_callout_text_position == 'top_left' or product_callout_text_position == 'top_center' or product_callout_text_position == 'top_right' or product_callout_text_position == 'center_left' or product_callout_text_position == 'center_center' or product_callout_text_position == 'center_right' or product_callout_text_position == 'bottom_left' or product_callout_text_position == 'bottom_center' or product_callout_text_position == 'bottom_right'
+    assign product_callout_text_position = 'bottom_left'
+  endunless
+
+  assign product_callout_hotspot_icon_style = block.settings.hotspot_icon_style | default: 'plus'
+  unless product_callout_hotspot_icon_style == 'dot' or product_callout_hotspot_icon_style == 'plus' or product_callout_hotspot_icon_style == 'tag' or product_callout_hotspot_icon_style == 'bag'
+    assign product_callout_hotspot_icon_style = 'plus'
+  endunless
+
+  assign product_callout_hotspot_behavior = block.settings.hotspot_behavior | default: 'click'
+  unless product_callout_hotspot_behavior == 'click' or product_callout_hotspot_behavior == 'hover'
+    assign product_callout_hotspot_behavior = 'click'
+  endunless
+
+  assign product_callout_content_scheme = block.settings.content_color_scheme | default: 'scheme-1'
+  if block.settings.content_color_scheme.id != blank
+    assign product_callout_content_scheme = block.settings.content_color_scheme.id
+  endif
+  assign product_callout_content_scheme = product_callout_content_scheme | default: 'scheme-1' | handleize
+
+  assign product_callout_hotspot_scheme = block.settings.hotspot_color_scheme | default: 'scheme-1'
+  if block.settings.hotspot_color_scheme.id != blank
+    assign product_callout_hotspot_scheme = block.settings.hotspot_color_scheme.id
+  endif
+  assign product_callout_hotspot_scheme = product_callout_hotspot_scheme | default: 'scheme-1' | handleize
+
+  if product_callout_is_carousel
+    assign product_callout_content_scheme = section.settings.color_scheme | default: 'scheme-1'
+    if section.settings.color_scheme.id != blank
+      assign product_callout_content_scheme = section.settings.color_scheme.id
+    endif
+    assign product_callout_content_scheme = product_callout_content_scheme | default: 'scheme-1' | handleize
+    assign product_callout_hotspot_scheme = product_callout_content_scheme
+  endif
+
+  assign product_callout_image_alt = product_callout_image.alt | default: product_callout_mobile_image.alt | default: product_callout_base_image.alt
+  assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
+  assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
+  if product_callout_is_carousel
+    assign product_callout_class = product_callout_class | append: ' product-callout--carousel product-callout--desktop-' | append: product_callout_desktop_height | append: ' product-callout--mobile-' | append: product_callout_mobile_height | append: ' swiper-slide'
+  else
+    assign product_callout_class = product_callout_class | append: ' product-callout--desktop-' | append: product_callout_desktop_height
+    assign product_callout_class = product_callout_class | append: ' product-callout--mobile-' | append: product_callout_mobile_height
+  endif
+  assign product_callout_class = product_callout_class | append: ' product-callout--icon-' | append: product_callout_hotspot_icon_style
+  assign product_callout_class = product_callout_class | append: ' color-scheme section-color-scope ' | append: product_callout_content_scheme
+  assign product_callout_text_class = 'product-callout__text body-text body-' | append: product_callout_text_size | append: ' rte'
+
+  assign product_callout_has_media = false
+  if product_callout_base_image != blank
+    assign product_callout_has_media = true
+  endif
+%}
+
+{% capture product_callout_style %}
+  --product-callout-ratio: {{ product_callout_desktop_ratio }};
+  --product-callout-ratio-mobile: {{ product_callout_mobile_ratio }};
+  --product-callout-image-position: {{ product_callout_image_position_desktop | escape }};
+  --product-callout-image-position-mobile: {{ product_callout_image_position_mobile | escape }};
+  {% if product_callout_overlay != blank %}--product-callout-overlay-color: {{ product_callout_overlay | escape }};{% endif %}
+  --product-callout-content-gap: {{ product_callout_gap_desktop }}px;
+  --product-callout-content-gap-mobile: {{ product_callout_gap_mobile }}px;
+  {% if product_callout_heading_size == 'custom' %}--heading-block-custom-size: {{ product_callout_custom_heading_size }}px;{% endif %}
+{% endcapture %}
+{% assign product_callout_style = product_callout_style | strip %}
+
+{% if product_callout_has_media or request.design_mode or product_callout_is_carousel == false %}
+  <article
+    class="{{ product_callout_class }}"
+    style="{{ product_callout_style }}"
+    data-product-callout
+    data-product-callout-carousel="{{ product_callout_is_carousel }}"
+    data-product-callout-hotspot-behavior="{{ product_callout_hotspot_behavior }}"
+    {% if block.settings.editor_title != blank %}data-carousel-slide-label="{{ block.settings.editor_title | escape }}"{% endif %}
+    {{ block.shopify_attributes }}
+  >
+    <div class="product-callout__media">
+      {% render 'media-background',
+        media_type: 'image',
+        image: product_callout_base_image,
+        mobile_image: product_callout_mobile_image,
+        alt: product_callout_image_alt,
+        placeholder: 'lifestyle-1',
+        sizes: '100vw'
+      %}
+
+      {% if product_callout_overlay != blank %}
+        <span class="product-callout__overlay" aria-hidden="true"></span>
+      {% endif %}
+
+      <div
+        class="product-callout__hotspots color-scheme {{ product_callout_hotspot_scheme }}"
+        role="group"
+        aria-label="{{ 'accessibility.product_callout_hotspots' | t | escape }}"
+      >
+        {% content_for 'blocks' %}
+      </div>
+    </div>
+
+    <div class="product-callout__content product-callout__content--{{ product_callout_text_position }} product-callout__content--align-{{ product_callout_text_alignment }}">
+      {% if block.settings.preheading != blank %}
+        <p class="product-callout__preheading eyebrow-text">{{ block.settings.preheading | escape }}</p>
+      {% endif %}
+
+      {% if block.settings.heading != blank %}
+        <{{ product_callout_heading_tag }} class="product-callout__heading heading-block heading-text heading-{{ product_callout_heading_size }}">{{ block.settings.heading | escape }}</{{ product_callout_heading_tag }}>
+      {% endif %}
+
+      {% if block.settings.text != blank %}
+        <div class="{{ product_callout_text_class }}">{{ block.settings.text }}</div>
+      {% endif %}
+
+      {% if block.settings.button_label != blank %}
+        {% render 'theme-button',
+          label: block.settings.button_label,
+          url: block.settings.button_link,
+          open_in_new_tab: block.settings.open_in_new_tab,
+          variant: product_callout_button_style,
+          class: 'product-callout__button'
+        %}
+      {% endif %}
+    </div>
+  </article>
+{% endif %}
+
+{% stylesheet %}
+  .product-callout {
+    position: relative;
+    display: block;
+    width: 100%;
+    min-width: 0;
+    color: var(--body-color);
+    isolation: isolate;
+  }
+
+  .product-callout--carousel {
+    height: 100%;
+  }
+
+  .product-callout__media {
+    position: relative;
+    width: 100%;
+    aspect-ratio: var(--product-callout-ratio, 2.4);
+    overflow: visible;
+    background: var(--background-color);
+  }
+
+  .product-callout--desktop-adapt .product-callout__media { min-height: 0; }
+  .product-callout--desktop-extra_small .product-callout__media { min-height: 42rem; aspect-ratio: auto; }
+  .product-callout--desktop-small .product-callout__media { min-height: 56rem; aspect-ratio: auto; }
+  .product-callout--desktop-medium .product-callout__media { min-height: 72rem; aspect-ratio: auto; }
+  .product-callout--desktop-large .product-callout__media { min-height: 90rem; aspect-ratio: auto; }
+  .product-callout--desktop-extra_large .product-callout__media { min-height: 108rem; aspect-ratio: auto; }
+  .product-callout--desktop-full_screen .product-callout__media { min-height: 100svh; aspect-ratio: auto; }
+  .product-callout--carousel .product-callout__media {
+    height: 100%;
+    min-height: 100%;
+    aspect-ratio: auto;
+  }
+  .product-callout--carousel.product-callout--desktop-adapt .product-callout__media { height: auto; min-height: 0; aspect-ratio: var(--product-callout-ratio, 2.4); }
+
+  .product-callout__media .background-media__image > img,
+  .product-callout__media .background-media__image > picture > img {
+    object-position: var(--product-callout-image-position, center center);
+  }
+
+  .product-callout__overlay {
+    position: absolute;
+    z-index: 1;
+    inset: 0;
+    background: var(--product-callout-overlay-color);
+    pointer-events: none;
+  }
+
+  .product-callout__hotspots {
+    position: absolute;
+    z-index: 4;
+    inset: 0;
+    color: var(--body-color);
+    pointer-events: none;
+  }
+
+  .product-callout__hotspot-wrap {
+    position: absolute;
+    z-index: 1;
+    inset-block-start: var(--product-callout-hotspot-y, 50%);
+    inset-inline-start: var(--product-callout-hotspot-x, 50%);
+    pointer-events: auto;
+    transform: translate(-50%, -50%);
+  }
+
+  @media (max-width: 767.98px) {
+    .product-callout__hotspot-wrap {
+      inset-block-start: var(--product-callout-hotspot-y-mobile, var(--product-callout-hotspot-y, 50%));
+      inset-inline-start: var(--product-callout-hotspot-x-mobile, var(--product-callout-hotspot-x, 50%));
+    }
+  }
+
+  .product-callout__hotspot-wrap--active {
+    z-index: 5;
+  }
+
+  .product-callout__hotspot-wrap--closing {
+    z-index: 5;
+  }
+
+  .product-callout__content {
+    position: absolute;
+    z-index: 3;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--product-callout-content-gap, 12px);
+    align-items: flex-start;
+    justify-content: flex-end;
+    width: 100%;
+    max-width: 100%;
+    padding-block: clamp(2.4rem, 5vw, 6.4rem);
+    padding-inline: var(--page-margin-current, var(--page-margin-desktop));
+    color: var(--body-color);
+    pointer-events: none;
+  }
+
+  .product-callout__content > * {
+    pointer-events: auto;
+  }
+
+  .product-callout__content--top_left,
+  .product-callout__content--top_center,
+  .product-callout__content--top_right {
+    justify-content: flex-start;
+  }
+
+  .product-callout__content--center_left,
+  .product-callout__content--center_center,
+  .product-callout__content--center_right {
+    justify-content: center;
+  }
+
+  .product-callout__content--top_center,
+  .product-callout__content--center_center,
+  .product-callout__content--bottom_center {
+    align-items: center;
+  }
+
+  .product-callout__content--top_right,
+  .product-callout__content--center_right,
+  .product-callout__content--bottom_right {
+    align-items: flex-end;
+  }
+
+  .product-callout__content--align-left {
+    text-align: left;
+  }
+
+  .product-callout__content--align-center {
+    text-align: center;
+  }
+
+  .product-callout__content--align-right {
+    text-align: right;
+  }
+
+  .product-callout__content :where(.product-callout__preheading, .product-callout__heading, .product-callout__text) {
+    width: min(100%, 64rem);
+    margin: 0;
+    color: currentColor;
+  }
+
+  .product-callout__preheading {
+    font-size: var(--font-body-sm);
+  }
+
+  .product-callout__content .product-callout__heading {
+    width: min(100%, 64rem);
+    max-width: 100%;
+    padding: 0;
+  }
+
+  .product-callout__content .product-callout__heading.heading-text {
+    color: var(--heading-color);
+  }
+
+  .product-callout__text {
+    --body-color: currentColor;
+    max-width: 48rem !important;
+  }
+
+  .product-callout__text :first-child {
+    margin-top: 0;
+  }
+
+  .product-callout__text :last-child {
+    margin-bottom: 0;
+  }
+
+  .product-callout__hotspot {
+    position: relative;
+    isolation: isolate;
+    display: grid;
+    width: clamp(3rem, 3.2vw, 4rem);
+    height: clamp(3rem, 3.2vw, 4rem);
+    place-items: center;
+    padding: 0;
+    border: 0;
+    border-radius: 50%;
+    background: transparent;
+    color: var(--background-color);
+    cursor: pointer;
+    font: inherit;
+    text-decoration: none;
+    pointer-events: auto;
+    transform: scale(1);
+    transition: transform var(--motion-duration-fast) var(--motion-ease-standard), box-shadow var(--motion-duration-fast) var(--motion-ease-standard);
+  }
+
+  .product-callout__hotspot::before,
+  .product-callout__hotspot::after {
+    position: absolute;
+    z-index: 0;
+    inset: 10%;
+    border: 1px solid currentColor;
+    border-radius: 50%;
+    content: '';
+    opacity: 0;
+    pointer-events: none;
+    animation: product-callout-hotspot-ring 2.4s ease-out infinite;
+  }
+
+  .product-callout__hotspot::after {
+    animation-delay: 1.2s;
+  }
+
+  .product-callout__hotspot:is(:hover, :focus-visible) {
+    transform: scale(1.08);
+  }
+
+  .product-callout__hotspot:focus-visible {
+    outline: 2px solid var(--heading-color);
+    outline-offset: 4px;
+  }
+
+  .product-callout__hotspot[aria-disabled='true'] {
+    cursor: default;
+  }
+
+  .product-callout__hotspot-icon {
+    position: relative;
+    z-index: 1;
+    display: none;
+    color: var(--heading-color);
+  }
+
+  .product-callout--icon-dot .product-callout__hotspot-icon--dot,
+  .product-callout--icon-plus .product-callout__hotspot-icon--plus,
+  .product-callout--icon-tag .product-callout__hotspot-icon--tag,
+  .product-callout--icon-bag .product-callout__hotspot-icon--bag {
+    display: grid;
+    place-items: center;
+  }
+
+  .product-callout__hotspot-icon--dot {
+    width: 1.25rem;
+    height: 1.25rem;
+    border: 0.1rem solid var(--heading-color);
+    border-radius: 50%;
+    background: var(--background-color);
+    box-shadow: 0 0 1.5rem rgb(0 0 0 / 28%);
+  }
+
+  .product-callout__hotspot-icon--plus,
+  .product-callout__hotspot-icon--tag,
+  .product-callout__hotspot-icon--bag {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: var(--background-color);
+    color: var(--heading-color);
+    box-shadow: 0 0 1.5rem rgb(0 0 0 / 28%);
+  }
+
+  .product-callout__hotspot-icon--plus svg,
+  .product-callout__hotspot-icon--tag svg,
+  .product-callout__hotspot-icon--bag svg {
+    width: 42%;
+    height: 42%;
+  }
+
+  .product-callout__hotspot--placeholder .product-callout__hotspot-icon--dot,
+  .product-callout__hotspot--placeholder .product-callout__hotspot-icon--plus,
+  .product-callout__hotspot--placeholder .product-callout__hotspot-icon--tag,
+  .product-callout__hotspot--placeholder .product-callout__hotspot-icon--bag {
+    opacity: 0.88;
+  }
+
+  @keyframes product-callout-hotspot-ring {
+    0% {
+      opacity: 0.55;
+      transform: scale(0.85);
+    }
+
+    100% {
+      opacity: 0;
+      transform: scale(2);
+    }
+  }
+
+  .product-callout__popover {
+    --product-callout-popover-duration: var(--motion-duration-standard, 280ms);
+    --product-callout-popover-easing: var(--motion-ease-standard, cubic-bezier(0.2, 0.8, 0.2, 1));
+    position: absolute;
+    z-index: 1;
+    inset-block-start: calc(100% + 0.8rem);
+    inset-inline-start: calc(100% + 0.8rem);
+    width: min(24rem, calc(100vw - 3.2rem));
+    opacity: 0;
+    pointer-events: none;
+    scale: 0.96;
+    translate: 0 0.5rem;
+    visibility: hidden;
+    transition:
+      opacity var(--product-callout-popover-duration) var(--product-callout-popover-easing),
+      scale var(--product-callout-popover-duration) var(--product-callout-popover-easing),
+      translate var(--product-callout-popover-duration) var(--product-callout-popover-easing),
+      visibility 0s linear var(--product-callout-popover-duration);
+  }
+
+  .product-callout__popover--visible {
+    opacity: 1;
+    pointer-events: auto;
+    scale: 1;
+    translate: 0 0;
+    visibility: visible;
+    transition-delay: 0s;
+  }
+
+  .product-callout__popover:not(.product-callout__popover--visible) {
+    pointer-events: none;
+  }
+
+  .product-callout__popover--left {
+    inset-inline-start: auto;
+    inset-inline-end: calc(100% + 0.8rem);
+  }
+
+  .product-callout__popover--top {
+    inset-block-start: auto;
+    inset-block-end: calc(100% + 0.8rem);
+  }
+
+  .product-callout__popover--content {
+    inset-inline-start: 50%;
+    inset-inline-end: auto;
+    width: min(20rem, calc(100vw - 3.2rem));
+    transform: translateX(-50%);
+  }
+
+  .product-callout__popover[hidden] {
+    display: none;
+  }
+
+  .product-callout__product-card,
+  .product-callout__content-card {
+    width: 100%;
+    padding: 0.8rem;
+    border: 1px solid rgb(0 0 0 / 10%);
+    border-radius: var(--radius-square, 0);
+    background: var(--background-color, #fff);
+    color: var(--body-color, #1d2835);
+    box-shadow: 0 0.8rem 2.4rem rgb(0 0 0 / 18%);
+  }
+
+  .product-callout__product-card {
+    display: flex;
+    gap: 1rem;
+  }
+
+  .product-callout__content-card {
+    --text-align-default: center;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 1rem 1.2rem;
+    text-align: center;
+  }
+
+  .product-callout__content-card-heading {
+    width: 100%;
+    margin: 0;
+  }
+
+  .product-callout__content-card-text {
+    width: 100%;
+  }
+
+  .product-callout__content-card-text :first-child {
+    margin-top: 0;
+  }
+
+  .product-callout__content-card-text :last-child {
+    margin-bottom: 0;
+  }
+
+  .product-callout__content-card-placeholder {
+    font-size: var(--font-body-sm);
+    opacity: 0.7;
+  }
+
+  .product-callout__product-card-media {
+    flex: 0 0 5.6rem;
+    width: 5.6rem;
+    height: 5.6rem;
+    overflow: hidden;
+    background: var(--background-color, #f3f3f3);
+  }
+
+  .product-callout__product-card-media img,
+  .product-callout__product-card-placeholder {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+  }
+
+  .product-callout__product-card-placeholder {
+    color: var(--border-color, #cfcfcf);
+  }
+
+  .product-callout__product-card-details {
+    display: flex;
+    flex: 1 1 auto;
+    min-width: 0;
+    flex-direction: column;
+    align-items: flex-start;
+    justify-content: center;
+  }
+
+  .product-callout__product-card-category,
+  .product-callout__product-card-action {
+    font-size: var(--font-body-xs);
+    letter-spacing: 0.12em;
+    line-height: 1.2;
+    text-transform: uppercase;
+  }
+
+  .product-callout__product-card-category {
+    color: var(--secondary-color, var(--body-color));
+    opacity: 0.7;
+  }
+
+  .product-callout__product-card-title,
+  .product-callout__product-card-price {
+    display: block;
+    max-width: 100%;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .product-callout__product-card-title {
+    margin-top: 0.25rem;
+    font-size: var(--font-body-sm);
+  }
+
+  .product-callout__product-card-price {
+    margin-top: 0.1rem;
+    font-size: var(--font-body-xs);
+  }
+
+  .product-callout__product-card-action {
+    margin-top: 0.45rem;
+    color: currentColor;
+    text-decoration: underline;
+    text-underline-offset: 0.25em;
+  }
+
+  .product-callout__product-card-action:hover,
+  .product-callout__product-card-action:focus-visible {
+    opacity: 0.65;
+  }
+
+  .product-callout__product-card-action--disabled {
+    cursor: default;
+    opacity: 0.55;
+    text-decoration: none;
+  }
+
+  @media (max-width: 767.98px) {
+    .product-callout--mobile-adapt .product-callout__media { min-height: 0; aspect-ratio: var(--product-callout-ratio-mobile, var(--product-callout-ratio, 2.4)); }
+    .product-callout--mobile-extra_small .product-callout__media { min-height: 40rem; aspect-ratio: auto; }
+    .product-callout--mobile-small .product-callout__media { min-height: 48rem; aspect-ratio: auto; }
+    .product-callout--mobile-medium .product-callout__media { min-height: 62rem; aspect-ratio: auto; }
+    .product-callout--mobile-large .product-callout__media { min-height: 76rem; aspect-ratio: auto; }
+    .product-callout--mobile-extra_large .product-callout__media { min-height: 90rem; aspect-ratio: auto; }
+    .product-callout--mobile-full_screen .product-callout__media { min-height: 100svh; aspect-ratio: auto; }
+    .product-callout--carousel .product-callout__media {
+      height: 100%;
+      min-height: 100%;
+      aspect-ratio: auto;
+    }
+    .product-callout--carousel.product-callout--mobile-adapt .product-callout__media { height: auto; min-height: 0; aspect-ratio: var(--product-callout-ratio-mobile, var(--product-callout-ratio, 2.4)); }
+
+    .product-callout__media .background-media__image > img,
+    .product-callout__media .background-media__image > picture > img {
+      object-position: var(--product-callout-image-position-mobile, var(--product-callout-image-position, center center));
+    }
+
+    .product-callout__overlay {
+      display: none;
+    }
+
+    .product-callout__content {
+      position: relative;
+      inset: auto;
+      display: flex;
+      flex-direction: column;
+      gap: var(--product-callout-content-gap-mobile, var(--product-callout-content-gap, 8px));
+      padding: 2.4rem var(--page-margin-current, var(--page-margin-mobile)) 2.8rem;
+      background: var(--background-color);
+      color: var(--body-color);
+      pointer-events: auto;
+    }
+
+    /* Carousel slides keep the Slideshow-style fixed height on mobile, so
+       their content must remain inside the slide instead of overflowing below
+       the media and being clipped by the carousel viewport. */
+    .product-callout--carousel .product-callout__content {
+      position: absolute;
+      inset: 0;
+      padding: 2.4rem var(--page-margin-current, var(--page-margin-mobile)) 7.2rem;
+      background: transparent;
+      pointer-events: none;
+    }
+
+    .product-callout--carousel .product-callout__content > * {
+      pointer-events: auto;
+    }
+
+    .product-callout__content--align-center {
+      align-items: center;
+      text-align: center;
+    }
+
+    .product-callout__content--align-right {
+      align-items: flex-end;
+      text-align: right;
+    }
+
+    .product-callout__content--align-left {
+      align-items: flex-start;
+    }
+
+    .product-callout__popover,
+    .product-callout__popover--left,
+    .product-callout__popover--top {
+      inset-block-start: calc(100% + 0.8rem);
+      inset-block-end: auto;
+      inset-inline-start: 50%;
+      inset-inline-end: auto;
+      transform: translateX(-50%);
+      width: min(26rem, calc(100vw - (2 * var(--page-margin-mobile, 1.6rem))));
+    }
+
+    .product-callout__popover--content {
+      width: min(20rem, calc(100vw - (2 * var(--page-margin-mobile, 1.6rem))));
+    }
+
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .product-callout__popover {
+      transition: none;
+    }
+
+    .product-callout__hotspot,
+    .product-callout__button {
+      transition: none;
+    }
+
+    .product-callout__hotspot::before,
+    .product-callout__hotspot::after {
+      animation: none;
+      opacity: 0.24;
+      transform: scale(1.6);
+    }
+  }
+{% endstylesheet %}
+
+{% javascript %}
+  (() => {
+    const instances = new WeakMap();
+
+    const transitionDuration = (element) => {
+      const style = getComputedStyle(element);
+      const toMilliseconds = (value) => {
+        const normalized = String(value || '').trim();
+        const amount = Number.parseFloat(normalized);
+        return Number.isFinite(amount) ? amount * (normalized.endsWith('ms') ? 1 : 1000) : 0;
+      };
+      const durations = String(style.transitionDuration || '0s').split(',').map(toMilliseconds);
+      const delays = String(style.transitionDelay || '0s').split(',').map(toMilliseconds);
+
+      return Math.max(0, ...durations.map((duration, index) => duration + (delays[index % delays.length] || 0)));
+    };
+
+    const cancelPopoverClose = (state, popover) => {
+      const closing = state.closing.get(popover);
+      if (!closing) return;
+
+      clearTimeout(closing.timer);
+      state.closing.delete(popover);
+      closing.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+      popover.hidden = false;
+      popover.inert = false;
+      popover.removeAttribute('aria-hidden');
+      popover.removeAttribute('inert');
+    };
+
+    const closeActive = (state, restoreFocus = false, immediate = false) => {
+      const active = state.active;
+      if (!active) return;
+
+      active.popover.classList.remove('product-callout__popover--visible');
+      active.popover.inert = true;
+      active.popover.setAttribute('aria-hidden', 'true');
+      active.popover.setAttribute('inert', '');
+      active.wrapper.classList.remove('product-callout__hotspot-wrap--active');
+      active.trigger.setAttribute('aria-expanded', 'false');
+      state.active = null;
+
+      const finishClose = () => {
+        const closing = state.closing.get(active.popover);
+        if (closing?.record !== active) return;
+
+        clearTimeout(closing.timer);
+        state.closing.delete(active.popover);
+        active.popover.hidden = true;
+        active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+      };
+
+      if (immediate) {
+        active.popover.hidden = true;
+        active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+      } else {
+        active.wrapper.classList.add('product-callout__hotspot-wrap--closing');
+        const duration = transitionDuration(active.popover);
+        if (duration === 0) {
+          active.popover.hidden = true;
+          active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+        } else {
+          const closing = { record: active, timer: null };
+          closing.timer = window.setTimeout(finishClose, duration + 20);
+          state.closing.set(active.popover, closing);
+        }
+      }
+
+      if (restoreFocus) active.trigger.focus({ preventScroll: true });
+    };
+
+    const openPopover = (state, trigger) => {
+      const wrapper = trigger.closest('[data-product-callout-hotspot-wrap]');
+      const popover = wrapper?.querySelector('[data-product-callout-popover]');
+      if (!wrapper || !popover) return;
+
+      const isActive = state.active?.trigger === trigger;
+      if (isActive) {
+        if (state.toggleOnClick) closeActive(state);
+        return;
+      }
+
+      closeActive(state);
+      cancelPopoverClose(state, popover);
+
+      popover.hidden = false;
+      popover.inert = false;
+      popover.removeAttribute('aria-hidden');
+      popover.removeAttribute('inert');
+      popover.classList.remove('product-callout__popover--visible');
+      wrapper.classList.add('product-callout__hotspot-wrap--active');
+      trigger.setAttribute('aria-expanded', 'true');
+      state.active = { trigger, wrapper, popover };
+
+      // Establish the hidden visual state before transitioning to open. This
+      // keeps click and hover entrances consistent despite the native hidden attribute.
+      void popover.offsetWidth;
+      window.requestAnimationFrame(() => {
+        if (state.active?.popover === popover && popover.isConnected) {
+          popover.classList.add('product-callout__popover--visible');
+        }
+      });
+    };
+
+    const initialize = (callout) => {
+      if (!callout || instances.has(callout)) return;
+
+      const controller = new AbortController();
+      const state = {
+        callout,
+        controller,
+        active: null,
+        closing: new Map(),
+        hotspotBehavior: callout.dataset.productCalloutHotspotBehavior === 'hover' ? 'hover' : 'click',
+        toggleOnClick: true,
+      };
+      instances.set(callout, state);
+
+      const openForHover = (event) => {
+        if (state.hotspotBehavior !== 'hover' || event.pointerType === 'touch') return;
+        const trigger = event.currentTarget.querySelector('[data-product-callout-hotspot]');
+        if (!trigger) return;
+
+        state.toggleOnClick = false;
+        openPopover(state, trigger);
+        state.toggleOnClick = true;
+      };
+
+      const closeForHover = (event) => {
+        if (state.hotspotBehavior !== 'hover') return;
+        const nextTarget = event.relatedTarget;
+        if (nextTarget instanceof Node && callout.contains(nextTarget)) return;
+        closeActive(state);
+      };
+
+      const openForFocus = (event) => {
+        if (state.hotspotBehavior !== 'hover' || event.target !== event.currentTarget.querySelector('[data-product-callout-hotspot]')) return;
+
+        state.toggleOnClick = false;
+        openPopover(state, event.target);
+        state.toggleOnClick = true;
+      };
+
+      const closeForFocus = (event) => {
+        if (state.hotspotBehavior !== 'hover') return;
+        const nextTarget = event.relatedTarget;
+        if (nextTarget instanceof Node && event.currentTarget.contains(nextTarget)) return;
+        if (state.active?.wrapper === event.currentTarget) closeActive(state);
+      };
+
+      callout.querySelectorAll('[data-product-callout-hotspot-wrap]').forEach((wrapper) => {
+        wrapper.addEventListener('pointerenter', openForHover, { signal: controller.signal });
+        wrapper.addEventListener('focusin', openForFocus, { signal: controller.signal });
+        wrapper.addEventListener('focusout', closeForFocus, { signal: controller.signal });
+      });
+
+      callout.addEventListener('pointerleave', closeForHover, { signal: controller.signal });
+
+      callout.addEventListener(
+        'click',
+        (event) => {
+          const trigger = event.target.closest?.('[data-product-callout-hotspot]');
+          if (!trigger || !callout.contains(trigger)) {
+            const clickedPopover = event.target instanceof Node && state.active?.popover.contains(event.target);
+            if (!clickedPopover) closeActive(state);
+            return;
+          }
+          if (event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+
+          event.preventDefault();
+          state.toggleOnClick = true;
+          openPopover(state, trigger);
+        },
+        { signal: controller.signal },
+      );
+
+      document.addEventListener(
+        'click',
+        (event) => {
+          if (state.active && !callout.contains(event.target)) closeActive(state);
+        },
+        { signal: controller.signal },
+      );
+
+      document.addEventListener(
+        'keydown',
+        (event) => {
+          if (event.key !== 'Escape' || !state.active) return;
+          event.preventDefault();
+          closeActive(state, true);
+        },
+        { signal: controller.signal },
+      );
+
+      document.addEventListener(
+        'theme:carousel:slidechange',
+        (event) => {
+          const carouselRoot = event.detail?.root;
+          if (!carouselRoot?.contains?.(callout)) return;
+          closeActive(state, false, true);
+        },
+        { signal: controller.signal },
+      );
+    };
+
+    const destroy = (callout) => {
+      const state = instances.get(callout);
+      if (!state) return;
+      closeActive(state, false, true);
+      state.closing.forEach((closing, popover) => {
+        clearTimeout(closing.timer);
+        popover.hidden = true;
+        popover.classList.remove('product-callout__popover--visible');
+        closing.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
+      });
+      state.closing.clear();
+      state.controller.abort();
+      instances.delete(callout);
+    };
+
+    const initializeRoot = (root = document) => {
+      if (root.matches?.('[data-product-callout]')) initialize(root);
+      root.querySelectorAll?.('[data-product-callout]').forEach(initialize);
+    };
+
+    const destroyRoot = (root) => {
+      if (root.matches?.('[data-product-callout]')) destroy(root);
+      root.querySelectorAll?.('[data-product-callout]').forEach(destroy);
+    };
+
+    document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
+    document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => initializeRoot(), { once: true });
+    } else {
+      initializeRoot();
+    }
+  })();
+{% endjavascript %}
+
+{% schema %}
+{
+  "name": "t:general.product_callout",
+  "tag": null,
+  "blocks": [
+    { "type": "hotspot" }
+  ],
+  "settings": [
+    {
+      "type": "text",
+      "id": "editor_title",
+      "label": "t:labels.editor_title",
+      "info": "t:info.editor_title"
+    },
+    {
+      "type": "header",
+      "content": "t:general.media"
+    },
+    {
+      "type": "image_picker",
+      "id": "image",
+      "label": "t:labels.image"
+    },
+    {
+      "type": "image_picker",
+      "id": "mobile_image",
+      "label": "t:labels.mobile_image",
+      "info": "t:info.mobile_image_optional",
+      "visible_if": "{{ block.settings.image != blank }}"
+    },
+    {
+      "type": "select",
+      "id": "desktop_image_position",
+      "label": "t:labels.desktop_image_position",
+      "options": [
+        { "value": "top left", "label": "t:options.image_card_position.top_left" },
+        { "value": "top center", "label": "t:options.image_card_position.top_center" },
+        { "value": "top right", "label": "t:options.image_card_position.top_right" },
+        { "value": "center left", "label": "t:options.image_card_position.center_left" },
+        { "value": "center center", "label": "t:options.image_card_position.center_center" },
+        { "value": "center right", "label": "t:options.image_card_position.center_right" },
+        { "value": "bottom left", "label": "t:options.image_card_position.bottom_left" },
+        { "value": "bottom center", "label": "t:options.image_card_position.bottom_center" },
+        { "value": "bottom right", "label": "t:options.image_card_position.bottom_right" }
+      ],
+      "default": "center center"
+    },
+    {
+      "type": "select",
+      "id": "mobile_image_position",
+      "label": "t:labels.mobile_image_position",
+      "options": [
+        { "value": "top left", "label": "t:options.image_card_position.top_left" },
+        { "value": "top center", "label": "t:options.image_card_position.top_center" },
+        { "value": "top right", "label": "t:options.image_card_position.top_right" },
+        { "value": "center left", "label": "t:options.image_card_position.center_left" },
+        { "value": "center center", "label": "t:options.image_card_position.center_center" },
+        { "value": "center right", "label": "t:options.image_card_position.center_right" },
+        { "value": "bottom left", "label": "t:options.image_card_position.bottom_left" },
+        { "value": "bottom center", "label": "t:options.image_card_position.bottom_center" },
+        { "value": "bottom right", "label": "t:options.image_card_position.bottom_right" }
+      ],
+      "default": "center center",
+      "visible_if": "{{ block.settings.mobile_image != blank }}"
+    },
+    {
+      "type": "color",
+      "id": "overlay",
+      "label": "t:labels.overlay",
+      "alpha": true,
+      "default": "#00000033"
+    },
+    {
+      "type": "header",
+      "content": "t:general.height"
+    },
+    {
+      "type": "select",
+      "id": "desktop_height",
+      "label": "t:options.device.desktop",
+      "options": [
+        { "value": "adapt", "label": "t:options.hero_height.adapt" },
+        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
+        { "value": "small", "label": "t:options.hero_height.small" },
+        { "value": "medium", "label": "t:options.hero_height.medium" },
+        { "value": "large", "label": "t:options.hero_height.large" },
+        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
+        { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "select",
+      "id": "mobile_height",
+      "label": "t:options.device.mobile",
+      "options": [
+        { "value": "adapt", "label": "t:options.hero_height.adapt" },
+        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
+        { "value": "small", "label": "t:options.hero_height.small" },
+        { "value": "medium", "label": "t:options.hero_height.medium" },
+        { "value": "large", "label": "t:options.hero_height.large" },
+        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
+        { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
+      ],
+      "default": "adapt"
+    },
+    {
+      "type": "header",
+      "content": "t:general.content"
+    },
+    {
+      "type": "text",
+      "id": "preheading",
+      "label": "t:labels.subheading"
+    },
+    {
+      "type": "text",
+      "id": "heading",
+      "label": "t:labels.heading",
+      "default": "Easy by design"
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "t:labels.heading_size",
+      "options": [
+        { "value": "display", "label": "t:options.heading_size.display" },
+        { "value": "xl", "label": "t:options.heading_size.xl" },
+        { "value": "lg", "label": "t:options.heading_size.lg" },
+        { "value": "md", "label": "t:options.heading_size.md" },
+        { "value": "sm", "label": "t:options.heading_size.sm" },
+        { "value": "xs", "label": "t:options.heading_size.xs" },
+        { "value": "custom", "label": "t:options.heading_size.custom" }
+      ],
+      "default": "xl"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.heading_size == 'custom' }}"
+    },
+    {
+      "type": "select",
+      "id": "html_tag",
+      "label": "t:labels.html_tag",
+      "info": "t:info.heading_html_tag",
+      "options": [
+        { "value": "div", "label": "t:options.html_tag.paragraph" },
+        { "value": "h1", "label": "t:options.html_tag.h1" },
+        { "value": "h2", "label": "t:options.html_tag.h2" },
+        { "value": "h3", "label": "t:options.html_tag.h3" },
+        { "value": "h4", "label": "t:options.html_tag.h4" },
+        { "value": "h5", "label": "t:options.html_tag.h5" },
+        { "value": "h6", "label": "t:options.html_tag.h6" }
+      ],
+      "default": "h2"
+    },
+    {
+      "type": "richtext",
+      "id": "text",
+      "label": "t:labels.text",
+      "default": "<p>Soft texture, effortless movement, and warm-weather pieces designed to be worn on repeat.</p>"
+    },
+    {
+      "type": "select",
+      "id": "text_size",
+      "label": "t:labels.text_size",
+      "options": [
+        { "value": "xs", "label": "t:options.text_size.xs" },
+        { "value": "sm", "label": "t:options.text_size.sm" },
+        { "value": "md", "label": "t:options.text_size.md" },
+        { "value": "lg", "label": "t:options.text_size.lg" },
+        { "value": "xl", "label": "t:options.text_size.xl" },
+        { "value": "xxl", "label": "t:options.text_size.xxl" }
+      ],
+      "default": "lg"
+    },
+    {
+      "type": "color_scheme",
+      "id": "content_color_scheme",
+      "label": "t:labels.content_color_scheme",
+      "default": "scheme-1"
+    },
+    {
+      "type": "header",
+      "content": "t:general.button"
+    },
+    {
+      "type": "text",
+      "id": "button_label",
+      "label": "t:labels.button_label",
+      "default": "Shop Linen"
+    },
+    {
+      "type": "url",
+      "id": "button_link",
+      "label": "t:labels.link",
+      "default": "/collections/all"
+    },
+    {
+      "type": "checkbox",
+      "id": "open_in_new_tab",
+      "label": "t:labels.open_in_new_tab",
+      "default": false,
+      "visible_if": "{{ block.settings.button_link != blank }}"
+    },
+    {
+      "type": "select",
+      "id": "button_style",
+      "label": "t:labels.style",
+      "options": [
+        { "value": "primary", "label": "t:options.button_variant.primary" },
+        { "value": "secondary", "label": "t:options.button_variant.secondary" },
+        { "value": "tertiary", "label": "t:options.button_variant.tertiary" }
+      ],
+      "default": "secondary"
+    },
+    {
+      "type": "text_alignment",
+      "id": "text_alignment",
+      "label": "t:labels.text_alignment",
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "text_position",
+      "label": "t:labels.text_position",
+      "options": [
+        { "value": "top_left", "label": "t:options.image_card_position.top_left" },
+        { "value": "top_center", "label": "t:options.image_card_position.top_center" },
+        { "value": "top_right", "label": "t:options.image_card_position.top_right" },
+        { "value": "center_left", "label": "t:options.image_card_position.center_left" },
+        { "value": "center_center", "label": "t:options.image_card_position.center_center" },
+        { "value": "center_right", "label": "t:options.image_card_position.center_right" },
+        { "value": "bottom_left", "label": "t:options.image_card_position.bottom_left" },
+        { "value": "bottom_center", "label": "t:options.image_card_position.bottom_center" },
+        { "value": "bottom_right", "label": "t:options.image_card_position.bottom_right" }
+      ],
+      "default": "bottom_left"
+    },
+    {
+      "type": "header",
+      "content": "t:general.gap"
+    },
+    {
+      "type": "range",
+      "id": "gap_desktop",
+      "label": "t:labels.desktop_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "gap_mobile",
+      "label": "t:labels.mobile_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 8
+    },
+    {
+      "type": "header",
+      "content": "t:general.hotspots"
+    },
+    {
+      "type": "select",
+      "id": "hotspot_icon_style",
+      "label": "t:labels.icon",
+      "options": [
+        { "value": "dot", "label": "t:options.product_callout_icon_style.dot" },
+        { "value": "plus", "label": "t:options.product_callout_icon_style.plus" },
+        { "value": "tag", "label": "t:options.product_callout_icon_style.tag" },
+        { "value": "bag", "label": "t:options.product_callout_icon_style.bag" }
+      ],
+      "default": "plus"
+    },
+    {
+      "type": "select",
+      "id": "hotspot_behavior",
+      "label": "t:labels.behavior",
+      "options": [
+        { "value": "click", "label": "t:options.dropdown_trigger.click" },
+        { "value": "hover", "label": "t:options.dropdown_trigger.hover" }
+      ],
+      "default": "click"
+    },
+    {
+      "type": "color_scheme",
+      "id": "hotspot_color_scheme",
+      "label": "t:labels.hotspot_color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.product_callout",
+      "settings": {
+        "overlay": "#00000033",
+        "desktop_height": "adapt",
+        "mobile_height": "adapt",
+        "content_color_scheme": "scheme-1",
+        "hotspot_color_scheme": "scheme-1",
+        "heading": "Easy by design",
+        "heading_size": "xl",
+        "html_tag": "h2",
+        "text": "<p>Soft texture, effortless movement, and warm-weather pieces designed to be worn on repeat.</p>",
+        "text_size": "lg",
+        "button_label": "Shop Linen",
+        "button_style": "secondary",
+        "text_alignment": "left",
+        "text_position": "bottom_left",
+        "gap_desktop": 12,
+        "gap_mobile": 8,
+        "hotspot_icon_style": "plus",
+        "hotspot_behavior": "click"
+      },
+      "blocks": [
+        { "type": "hotspot", "settings": { "vertical_position": 50, "horizontal_position": 22, "customize_mobile_position": false, "mobile_vertical_position": 50, "mobile_horizontal_position": 22 } },
+        { "type": "hotspot", "settings": { "vertical_position": 56, "horizontal_position": 57, "customize_mobile_position": false, "mobile_vertical_position": 56, "mobile_horizontal_position": 57 } },
+        { "type": "hotspot", "settings": { "vertical_position": 73, "horizontal_position": 77, "customize_mobile_position": false, "mobile_vertical_position": 73, "mobile_horizontal_position": 77 } }
+      ]
+    }
+  ]
+}
+{% endschema %}
