@@ -709,10 +709,11 @@
   const beginOrderOptionsDrag = (event) => {
     const panel = event.target.closest?.('[data-cart-drawer-order-options]');
     const header = panel?.querySelector('[data-cart-drawer-order-options-sheet-header]');
+    const backdrop = panel?.closest?.('[data-cart-drawer]')?.querySelector('[data-cart-drawer-order-options-backdrop]');
     if (!panel || !window.ThemeOverlay.mobile.matches) return;
     state.orderOptionsDrag?.destroy();
     state.orderOptionsDrag = new window.ThemeOverlay.SheetGesture({
-      panel, header, delegated: true,
+      panel, header, backdrop, delegated: true,
       enabled: () => state.drawer?.classList.contains('is-order-options-open') && window.ThemeOverlay.mobile.matches,
       close: () => setOrderOptionsOpen(),
     });
