@@ -1,8 +1,8 @@
 {% doc %}
-  Renders Product callout media, content, and nested product hotspots. Media
-  and height settings belong to this block. Static callouts and carousel slides
-  move content below the image on mobile; carousel slides keep content over the
-  image on desktop.
+  Renders Product callout media, content, and nested product hotspots. Media,
+  content layout, and height settings belong to this block. Below stacks the
+  content after the media; Split places the content beside the media on desktop
+  and stacks both in the selected order on mobile.
 
   @example
   {% content_for 'block', type: 'product-callout', id: 'product-callout' %}
@@ -144,10 +144,14 @@
     assign product_callout_text_alignment = 'left'
   endunless
 
-  assign product_callout_text_position = block.settings.text_position | default: 'bottom_left'
+  assign product_callout_text_position = block.settings.text_position | default: 'top_left'
   unless product_callout_text_position == 'top_left' or product_callout_text_position == 'top_center' or product_callout_text_position == 'top_right' or product_callout_text_position == 'center_left' or product_callout_text_position == 'center_center' or product_callout_text_position == 'center_right' or product_callout_text_position == 'bottom_left' or product_callout_text_position == 'bottom_center' or product_callout_text_position == 'bottom_right'
-    assign product_callout_text_position = 'bottom_left'
+    assign product_callout_text_position = 'top_left'
   endunless
+
+  assign product_callout_content_layout = block.settings.content_layout | default: 'below'
+
+  assign product_callout_content_position = block.settings.content_position | default: 'last'
 
   assign product_callout_hotspot_icon_style = block.settings.hotspot_icon_style | default: 'plus'
   unless product_callout_hotspot_icon_style == 'dot' or product_callout_hotspot_icon_style == 'plus' or product_callout_hotspot_icon_style == 'tag' or product_callout_hotspot_icon_style == 'bag'
@@ -174,6 +178,8 @@
   assign product_callout_image_alt = product_callout_image.alt | default: product_callout_mobile_image.alt | default: product_callout_base_image.alt
   assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
   assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
+  assign product_callout_class = product_callout_class | append: ' product-callout--layout-' | append: product_callout_content_layout
+  assign product_callout_class = product_callout_class | append: ' product-callout--content-position-' | append: product_callout_content_position
   if product_callout_is_carousel
     assign product_callout_class = product_callout_class | append: ' product-callout--carousel product-callout--desktop-' | append: product_callout_desktop_height | append: ' product-callout--mobile-' | append: product_callout_mobile_height | append: ' swiper-slide'
   else
@@ -203,15 +209,7 @@
 {% assign product_callout_style = product_callout_style | strip %}
 
 {% if product_callout_has_media or request.design_mode or product_callout_is_carousel == false %}
-  <article
-    class="{{ product_callout_class }}"
-    style="{{ product_callout_style }}"
-    data-product-callout
-    data-product-callout-carousel="{{ product_callout_is_carousel }}"
-    data-product-callout-hotspot-behavior="{{ product_callout_hotspot_behavior }}"
-    {% if block.settings.editor_title != blank %}data-carousel-slide-label="{{ block.settings.editor_title | escape }}"{% endif %}
-    {{ block.shopify_attributes }}
-  >
+  {% capture product_callout_media_markup %}
     <div class="product-callout__media">
       {% render 'media-background',
         media_type: 'image',
@@ -234,7 +232,9 @@
         {% content_for 'blocks' %}
       </div>
     </div>
+  {% endcapture %}
 
+  {% capture product_callout_content_markup %}
     <div class="product-callout__content product-callout__content--{{ product_callout_text_position }} product-callout__content--align-{{ product_callout_text_alignment }}">
       {% if block.settings.preheading != blank %}
         <p class="product-callout__preheading eyebrow-text">{{ block.settings.preheading | escape }}</p>
@@ -258,6 +258,24 @@
         %}
       {% endif %}
     </div>
+  {% endcapture %}
+
+  <article
+    class="{{ product_callout_class }}"
+    style="{{ product_callout_style }}"
+    data-product-callout
+    data-product-callout-carousel="{{ product_callout_is_carousel }}"
+    data-product-callout-hotspot-behavior="{{ product_callout_hotspot_behavior }}"
+    {% if block.settings.editor_title != blank %}data-carousel-slide-label="{{ block.settings.editor_title | escape }}"{% endif %}
+    {{ block.shopify_attributes }}
+  >
+    {% if product_callout_content_layout == 'split' and product_callout_content_position == 'first' %}
+      {{ product_callout_content_markup }}
+      {{ product_callout_media_markup }}
+    {% else %}
+      {{ product_callout_media_markup }}
+      {{ product_callout_content_markup }}
+    {% endif %}
   </article>
 {% endif %}
 
@@ -269,6 +287,11 @@
     min-width: 0;
     color: var(--body-color);
     isolation: isolate;
+  }
+
+  .product-callout--layout-below {
+    display: flex;
+    flex-direction: column;
   }
 
   .product-callout__media {
@@ -368,6 +391,19 @@
     pointer-events: none;
   }
 
+  .product-callout--layout-below .product-callout__content {
+    position: relative;
+    inset: auto;
+    width: min(100%, 64rem);
+    max-width: 64rem;
+    margin-inline: auto;
+    transform: none;
+    justify-content: flex-start;
+    padding: clamp(2.4rem, 5vw, 6.4rem) var(--product-callout-content-page-margin);
+    background: var(--background-color);
+    pointer-events: auto;
+  }
+
   .product-callout__content > * {
     pointer-events: auto;
   }
@@ -397,6 +433,69 @@
   .product-callout__content--bottom_right {
     inset-inline-start: auto;
     inset-inline-end: var(--product-callout-content-page-margin);
+  }
+
+  @media (min-width: 768px) {
+    .product-callout--layout-split {
+      display: grid;
+      align-items: stretch;
+      height: auto;
+    }
+
+    .product-callout--layout-split.product-callout--content-position-last {
+      grid-template-columns: minmax(0, 2.12fr) minmax(0, 1fr);
+    }
+
+    .product-callout--layout-split.product-callout--content-position-first {
+      grid-template-columns: minmax(0, 1fr) minmax(0, 2.12fr);
+    }
+
+    .product-callout--layout-split .product-callout__media {
+      grid-row: 1;
+      height: auto;
+      min-height: 0;
+      aspect-ratio: var(--product-callout-ratio, 2.4);
+    }
+
+    .product-callout--layout-split .product-callout__content {
+      position: relative;
+      inset: auto;
+      grid-row: 1;
+      width: auto;
+      max-width: none;
+      min-width: 0;
+      margin: 0;
+      transform: none;
+      padding: clamp(2.4rem, 4vw, 6.4rem);
+      background: var(--background-color);
+      pointer-events: auto;
+    }
+
+    .product-callout--carousel.product-callout--layout-below {
+      height: auto;
+    }
+
+    .product-callout--carousel.product-callout--layout-below .product-callout__media {
+      height: var(--hotspot-carousel-height, auto);
+      min-height: var(--hotspot-carousel-height, auto);
+      aspect-ratio: auto;
+    }
+
+    .product-callout--carousel.product-callout--layout-split {
+      height: var(--hotspot-carousel-height, auto);
+    }
+
+    .product-callout--carousel.product-callout--layout-split .product-callout__media {
+      height: 100%;
+      min-height: 100%;
+      aspect-ratio: auto;
+    }
+
+    .product-callout--carousel.product-callout--layout-split.product-callout--desktop-adapt .product-callout__media {
+      height: auto;
+      min-height: 0;
+      aspect-ratio: var(--product-callout-ratio, 2.4);
+    }
   }
 
   .product-callout__content--align-left {
@@ -767,6 +866,19 @@
       padding: 2.4rem var(--page-margin-current, var(--page-margin-mobile)) 2.8rem;
       background: var(--background-color);
       color: var(--body-color);
+      pointer-events: auto;
+    }
+
+    .product-callout--layout-below .product-callout__content,
+    .product-callout--layout-split .product-callout__content {
+      position: relative;
+      inset: auto;
+      width: 100%;
+      max-width: none;
+      margin-inline: 0;
+      transform: none;
+      padding: 2.4rem var(--page-margin-current, var(--page-margin-mobile)) 2.8rem;
+      background: var(--background-color);
       pointer-events: auto;
     }
 
@@ -1368,6 +1480,27 @@
       "content": "t:general.content"
     },
     {
+      "type": "select",
+      "id": "content_layout",
+      "label": "t:labels.content_layout",
+      "options": [
+        { "value": "below", "label": "t:options.product_callout_content_layout.below" },
+        { "value": "split", "label": "t:options.product_callout_content_layout.split" }
+      ],
+      "default": "below"
+    },
+    {
+      "type": "select",
+      "id": "content_position",
+      "label": "t:labels.content_position",
+      "options": [
+        { "value": "first", "label": "t:options.product_callout_content_position.first" },
+        { "value": "last", "label": "t:options.product_callout_content_position.last" }
+      ],
+      "default": "last",
+      "visible_if": "{{ block.settings.content_layout == 'split' }}"
+    },
+    {
       "type": "text",
       "id": "preheading",
       "label": "t:labels.subheading"
@@ -1467,7 +1600,8 @@
         { "value": "bottom_center", "label": "t:options.image_card_position.bottom_center" },
         { "value": "bottom_right", "label": "t:options.image_card_position.bottom_right" }
       ],
-      "default": "bottom_left"
+      "default": "top_left",
+      "visible_if": "{{ block.settings.content_layout == 'split' }}"
     },
     {
       "type": "header",
@@ -1568,6 +1702,8 @@
         "desktop_height": "adapt",
         "mobile_height": "adapt",
         "content_color_scheme": "scheme-3",
+        "content_layout": "below",
+        "content_position": "last",
         "hotspot_color_scheme": "scheme-1",
         "heading": "Heading",
         "heading_size": "xl",
@@ -1577,7 +1713,7 @@
         "button_label": "Button label",
         "button_style": "primary",
         "text_alignment": "left",
-        "text_position": "bottom_left",
+        "text_position": "top_left",
         "gap_desktop": 12,
         "gap_mobile": 8,
         "hotspot_icon_style": "plus",
