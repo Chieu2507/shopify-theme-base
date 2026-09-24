@@ -51,9 +51,10 @@
       badge.setAttribute('aria-label', String(count));
     });
     document.querySelectorAll('[data-cart-count]').forEach((badge) => {
+      const isTextCount = badge.classList.contains('header-cart__count--text');
       badge.textContent = count > 99 ? '99+' : String(count);
       badge.setAttribute('aria-label', String(count));
-      badge.hidden = count === 0;
+      badge.hidden = !isTextCount && count === 0;
     });
     document.querySelectorAll('[data-cart-drawer-open]').forEach((trigger) => {
       const label = trigger.dataset.cartLabel || 'Cart';
