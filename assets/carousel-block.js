@@ -9,6 +9,148 @@ const number = (value, fallback) => {
   return Number.isFinite(parsed) ? parsed : fallback;
 };
 
+const normalizeLoopIndex = (index, slideCount) => {
+  const numericIndex = number(index, 0);
+  if (slideCount < 1) return 0;
+  return ((numericIndex % slideCount) + slideCount) % slideCount;
+};
+
+const createCarouselSlideClone = (slide, sourceIndex, position) => {
+  const clone = slide.cloneNode(true);
+  clone.removeAttribute('id');
+  clone.removeAttribute('data-product-callout');
+  clone.removeAttribute('data-product-callout-carousel');
+  clone.removeAttribute('data-carousel-slide-label');
+  clone.removeAttribute('data-shopify-editor-block');
+  clone.removeAttribute('data-shopify-editor-block-id');
+  clone.removeAttribute('data-shopify-editor-block-type');
+  clone.setAttribute('aria-hidden', 'true');
+  clone.setAttribute('data-carousel-loop-clone', position);
+  clone.setAttribute('data-carousel-loop-source', String(sourceIndex));
+  clone.classList.remove('swiper-slide-active', 'swiper-slide-next', 'swiper-slide-prev', 'swiper-slide-visible', 'swiper-slide-fully-visible');
+  clone.classList.add('swiper-slide-clone');
+  clone.querySelectorAll('[id], [data-shopify-editor-block], [data-shopify-editor-block-id], [data-shopify-editor-block-type]').forEach((element) => {
+    element.removeAttribute('id');
+    element.removeAttribute('data-shopify-editor-block');
+    element.removeAttribute('data-shopify-editor-block-id');
+    element.removeAttribute('data-shopify-editor-block-type');
+  });
+  clone.querySelectorAll('a, button, input, select, textarea, summary, video').forEach((element) => {
+    element.setAttribute('tabindex', '-1');
+    element.setAttribute('aria-hidden', 'true');
+  });
+  if ('inert' in clone) clone.inert = true;
+  return clone;
+};
+
+const createManualLoop = (viewport) => {
+  const wrapper = viewport.querySelector('.swiper-wrapper');
+  const slides = wrapper ? [...wrapper.querySelectorAll(':scope > .swiper-slide')] : [];
+  const slideCount = slides.length;
+  if (!wrapper || slideCount < 2) return null;
+
+  // Keep a complete cycle at both ends: A' B' C' | A B C | A' B' C'.
+  // This mirrors Slideshow's page-width preview loop and prevents a blank
+  // viewport while Swiper crosses either edge of the real slide set.
+  const before = slides.map((slide, index) => createCarouselSlideClone(slide, index, 'previous'));
+  const after = slides.map((slide, index) => createCarouselSlideClone(slide, index, 'next'));
+  wrapper.prepend(...before);
+  wrapper.append(...after);
+  let resetSlide = null;
+
+  return {
+    slideCount,
+    initialSlide: slideCount,
+    logicalIndex: (activeIndex) => normalizeLoopIndex(activeIndex, slideCount),
+    originalIndex: (logicalIndex) => normalizeLoopIndex(logicalIndex, slideCount) + slideCount,
+    restore(swiper) {
+      if (swiper.destroyed) return;
+
+      const activeIndex = swiper.activeIndex;
+      if (activeIndex >= slideCount && activeIndex < slideCount * 2) return;
+
+      const targetIndex = slideCount + normalizeLoopIndex(activeIndex, slideCount);
+      resetSlide = swiper.slides[targetIndex];
+      resetSlide?.classList.add('carousel-slide--loop-reset');
+      swiper.slideTo(targetIndex, 0, false);
+    },
+    clearReset() {
+      if (resetSlide?.classList.contains('swiper-slide-active')) return;
+      resetSlide?.classList.remove('carousel-slide--loop-reset');
+      resetSlide = null;
+    },
+    destroy() {
+      resetSlide?.classList.remove('carousel-slide--loop-reset');
+      [...before, ...after].forEach((clone) => clone.remove());
+    },
+  };
+};
+
+const createManualPagination = (pagination, swiper, manualLoop) => {
+  if (!pagination || !manualLoop) return null;
+
+  const type = pagination.dataset.paginationType;
+  if (type !== 'bullets' && type !== 'progress_bar') return null;
+
+  const controller = new AbortController();
+  const controlsId = swiper.el.id;
+  const getCurrentIndex = () => manualLoop.logicalIndex(swiper.activeIndex);
+  const update = () => {
+    if (swiper.destroyed) return;
+
+    const currentIndex = getCurrentIndex();
+    if (type === 'progress_bar') {
+      const fill = pagination.querySelector('.swiper-pagination-progressbar-fill');
+      if (fill) fill.style.transform = `scaleX(${(currentIndex + 1) / manualLoop.slideCount})`;
+      return;
+    }
+
+    pagination.querySelectorAll('[data-carousel-pagination-index]').forEach((bullet) => {
+      const isCurrent = Number(bullet.dataset.carouselPaginationIndex) === currentIndex;
+      bullet.classList.toggle('swiper-pagination-bullet-active', isCurrent);
+      bullet.setAttribute('aria-current', String(isCurrent));
+    });
+  };
+
+  if (type === 'progress_bar') {
+    pagination.classList.add('swiper-pagination-progressbar', 'swiper-pagination-horizontal');
+    const fill = document.createElement('span');
+    fill.className = 'swiper-pagination-progressbar-fill';
+    fill.setAttribute('aria-hidden', 'true');
+    pagination.replaceChildren(fill);
+  } else {
+    pagination.classList.add('swiper-pagination-bullets', 'swiper-pagination-horizontal', 'swiper-pagination-clickable');
+    const message = swiper.params.a11y?.paginationBulletMessage || 'Go to slide {{index}}';
+    const bullets = Array.from({ length: manualLoop.slideCount }, (_, index) => {
+      const bullet = document.createElement('button');
+      bullet.className = 'swiper-pagination-bullet';
+      bullet.type = 'button';
+      bullet.dataset.carouselPaginationIndex = String(index);
+      bullet.setAttribute('aria-label', message.replace('{{index}}', String(index + 1)));
+      if (controlsId) bullet.setAttribute('aria-controls', controlsId);
+      return bullet;
+    });
+    pagination.replaceChildren(...bullets);
+    pagination.addEventListener('click', (event) => {
+      const bullet = event.target.closest('[data-carousel-pagination-index]');
+      if (!bullet || !pagination.contains(bullet)) return;
+      event.preventDefault();
+      if (swiper.destroyed || swiper.animating) return;
+      swiper.slideTo(manualLoop.originalIndex(bullet.dataset.carouselPaginationIndex), swiper.params.speed);
+    }, { signal: controller.signal });
+  }
+
+  swiper.on('activeIndexChange slideChangeTransitionEnd', update);
+  update();
+
+  return () => {
+    controller.abort();
+    swiper.off('activeIndexChange slideChangeTransitionEnd', update);
+    pagination.classList.remove('swiper-pagination-progressbar', 'swiper-pagination-horizontal', 'swiper-pagination-bullets', 'swiper-pagination-clickable');
+    pagination.replaceChildren();
+  };
+};
+
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&
   typeof window.matchMedia === 'function' &&
@@ -411,13 +553,16 @@ const initialize = (root) => {
   const autoplay = root.dataset.swiperAutoplay === 'true';
   const fractionControls = root.dataset.carouselControlsStyle === 'fraction';
   const loop = root.dataset.carouselLoop === 'true';
+  const manualLoopRequested = root.dataset.carouselManualLoop === 'true';
   const showNextSlidePreview = viewport.dataset.swiperNextSlidePreview === 'true';
   const transition = root.dataset.transition === 'fade' ? 'fade' : 'slide';
   const fade = transition === 'fade' && !showNextSlidePreview;
-  const paginationModules = pagination ? [Pagination] : [];
+  const manualLoop = manualLoopRequested && loop ? createManualLoop(viewport) : null;
+  const paginationModules = pagination && !manualLoop ? [Pagination] : [];
   const modules = fade ? [EffectFade, ...paginationModules] : paginationModules;
   const options = {
-    loop,
+    loop: loop && !manualLoop,
+    initialSlide: manualLoop?.initialSlide || 0,
     effect: fade ? 'fade' : 'slide',
     ...(fade ? { fadeEffect: { crossFade: true } } : {}),
     preventInteractionOnTransition: true,
@@ -434,14 +579,20 @@ const initialize = (root) => {
     controls: {
       scope: root,
       previous: fractionControls ? '[data-carousel-fraction-previous]' : '[data-carousel-previous]',
-      next: fractionControls ? '[data-carousel-fraction-next]' : '[data-carousel-next]'
+      next: fractionControls ? '[data-carousel-fraction-next]' : '[data-carousel-next]',
+      loop: Boolean(manualLoop)
     },
     ...(modules.length ? { modules } : {}),
-    ...(pagination ? { pagination: { el: pagination, type: paginationType, clickable: paginationType === 'bullets' } } : {})
+    ...(pagination && !manualLoop ? { pagination: { el: pagination, type: paginationType, clickable: paginationType === 'bullets' } } : {})
   };
 
   const swiper = createSwiperCarousel(viewport, options);
   if (!swiper) return;
+  const manualPaginationCleanup = createManualPagination(pagination, swiper, manualLoop);
+  if (manualLoop) {
+    swiper.on('slideChangeTransitionEnd', manualLoop.restore);
+    swiper.on('slideChangeTransitionStart', manualLoop.clearReset);
+  }
   const testimonialItem = root.querySelector('.testimonial-item');
   let testimonialGapCleanup = null;
   if (testimonialItem) {
@@ -471,9 +622,13 @@ const initialize = (root) => {
     const total = root.querySelector('[data-carousel-fraction-total]');
     const updateFraction = () => {
       if (swiper.destroyed) return;
-      const realSlides = swiper.slides.filter((slide) => !slide.classList.contains('swiper-slide-duplicate'));
-      const slideCount = loop ? realSlides.length : swiper.slides.length;
-      const currentIndex = loop ? swiper.realIndex + 1 : swiper.activeIndex + 1;
+      const realSlides = swiper.slides.filter((slide) => !slide.classList.contains('swiper-slide-duplicate') && !slide.classList.contains('swiper-slide-clone'));
+      const slideCount = manualLoop?.slideCount || (loop ? realSlides.length : swiper.slides.length);
+      const currentIndex = manualLoop
+        ? manualLoop.logicalIndex(swiper.activeIndex) + 1
+        : loop
+          ? swiper.realIndex + 1
+          : swiper.activeIndex + 1;
       if (current) current.textContent = String(currentIndex);
       if (total) total.textContent = String(slideCount);
     };
@@ -487,6 +642,8 @@ const initialize = (root) => {
     lockedCleanup,
     slideChangeCleanup,
     fractionCleanup,
+    manualLoop,
+    manualPaginationCleanup,
     autoplayCleanup: autoplay
       ? bindCarouselAutoplay(
           swiper,
@@ -507,7 +664,13 @@ const destroy = (root) => {
   state.lockedCleanup?.();
   state.slideChangeCleanup?.();
   state.fractionCleanup?.();
+  state.manualPaginationCleanup?.();
   state.revealCleanup?.();
+  if (state.manualLoop) {
+    state.swiper.off('slideChangeTransitionEnd', state.manualLoop.restore);
+    state.swiper.off('slideChangeTransitionStart', state.manualLoop.clearReset);
+    state.manualLoop.destroy();
+  }
   if (state.swiper) destroySwiperCarousel(state.swiper);
   instances.delete(root);
 };
@@ -558,6 +721,12 @@ document.addEventListener('shopify:block:select', (event) => {
   if (index < 0 || !state.swiper || state.swiper.destroyed) return;
 
   const duration = event.detail?.load || prefersReducedMotion() ? 0 : state.swiper.params.speed;
+  if (state.manualLoop) {
+    const realIndex = number(slide.dataset.swiperSlideIndex, state.manualLoop.logicalIndex(index));
+    state.swiper.slideTo(state.manualLoop.originalIndex(realIndex), duration);
+    return;
+  }
+
   if (state.swiper.params.loop && typeof state.swiper.slideToLoop === 'function') {
     const realIndex = number(slide.dataset.swiperSlideIndex, index);
     state.swiper.slideToLoop(realIndex, duration);
