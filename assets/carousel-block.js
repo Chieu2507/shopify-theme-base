@@ -587,7 +587,10 @@ const initialize = (root) => {
   };
 
   const swiper = createSwiperCarousel(viewport, options);
-  if (!swiper) return;
+  if (!swiper) {
+    manualLoop?.destroy();
+    return;
+  }
   const manualPaginationCleanup = createManualPagination(pagination, swiper, manualLoop);
   if (manualLoop) {
     swiper.on('slideChangeTransitionEnd', manualLoop.restore);
