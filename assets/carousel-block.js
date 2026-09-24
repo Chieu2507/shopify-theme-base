@@ -555,8 +555,12 @@ const initialize = (root) => {
   const loop = root.dataset.carouselLoop === 'true';
   const manualLoopRequested = root.dataset.carouselManualLoop === 'true';
   const showNextSlidePreview = viewport.dataset.swiperNextSlidePreview === 'true';
+  const desktopColumns = number(root.dataset.swiperColumnsDesktop, 4);
+  const slideCount = Array.from(wrapper.children).filter((slide) => slide.classList.contains('swiper-slide')).length;
+  const previewEnabled = showNextSlidePreview && slideCount > desktopColumns;
+  viewport.dataset.swiperNextSlidePreview = String(previewEnabled);
   const transition = root.dataset.transition === 'fade' ? 'fade' : 'slide';
-  const fade = transition === 'fade' && !showNextSlidePreview;
+  const fade = transition === 'fade' && !previewEnabled;
   const manualLoop = manualLoopRequested && loop ? createManualLoop(viewport) : null;
   const paginationModules = pagination && !manualLoop ? [Pagination] : [];
   const modules = fade ? [EffectFade, ...paginationModules] : paginationModules;
@@ -571,9 +575,9 @@ const initialize = (root) => {
     spaceBetween: number(root.dataset.swiperGapMobile, 12),
     breakpoints: {
       [desktopBreakpoint]: {
-        slidesPerView: number(root.dataset.swiperColumnsDesktop, 4),
+        slidesPerView: desktopColumns,
         spaceBetween: number(root.dataset.swiperGapDesktop, 16),
-        ...(showNextSlidePreview ? { centeredSlides: true, spaceBetween: 24 } : {})
+        ...(previewEnabled ? { centeredSlides: true, centeredSlidesBounds: !loop, spaceBetween: 24 } : {})
       }
     },
     controls: {
