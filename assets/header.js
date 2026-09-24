@@ -243,7 +243,10 @@
   const hasOpenMegaMenu = (header) => Array.from(
     header.querySelectorAll('.header-menu__details--mega'),
   ).some((details) => {
-    if (details.open || details.classList.contains('is-submenu-closing')) return true;
+    // Release the backdrop as soon as the close animation starts. The details
+    // element remains open briefly so its surface can animate out.
+    if (details.classList.contains('is-submenu-closing')) return false;
+    if (details.open) return true;
 
     // Hover/focus only opens a mega menu when this menu is configured to use
     // the hover trigger. In click mode, these states must not activate the
@@ -791,6 +794,7 @@
           clearCloseTimer();
           details.classList.remove('is-submenu-closing');
           details.open = true;
+          scheduleUpdate();
         };
         const closeOnLeave = () => {
           if (window.innerWidth <= 767 || details.dataset.headerSubmenuTrigger !== 'hover' || !details.open) return;
