@@ -69,9 +69,11 @@
     assign hotspot_carousel_padding_bottom_mobile = 0
   endif
 
+  assign hotspot_carousel_product_callout_count = 0
   assign hotspot_carousel_valid_slide_count = 0
   for hotspot_carousel_block in section.blocks
     if hotspot_carousel_block.type == 'product-callout'
+      assign hotspot_carousel_product_callout_count = hotspot_carousel_product_callout_count | plus: 1
       assign hotspot_carousel_block_image = hotspot_carousel_block.settings.image
       assign hotspot_carousel_block_mobile_image = hotspot_carousel_block.settings.mobile_image
       if hotspot_carousel_block_image != blank or hotspot_carousel_block_mobile_image != blank
@@ -86,8 +88,8 @@
   endif
 
   assign hotspot_carousel_slide_count = hotspot_carousel_valid_slide_count
-  if request.design_mode and section.blocks.size > hotspot_carousel_slide_count
-    assign hotspot_carousel_slide_count = section.blocks.size
+  if request.design_mode and hotspot_carousel_product_callout_count > hotspot_carousel_slide_count
+    assign hotspot_carousel_slide_count = hotspot_carousel_product_callout_count
   endif
 
   assign hotspot_carousel_has_multiple_slides = false
@@ -186,7 +188,23 @@
     data-swiper-autoplay-delay="4000"
   >
     {% if section.blocks.size > 0 %}
-      {% capture hotspot_carousel_slides %}{% content_for 'blocks' %}{% endcapture %}
+      {% capture hotspot_carousel_header %}
+        {% for hotspot_carousel_block in section.blocks %}
+          {% if hotspot_carousel_block.type == 'header' %}
+            {% render hotspot_carousel_block %}
+          {% endif %}
+        {% endfor %}
+      {% endcapture %}
+      {% assign hotspot_carousel_header = hotspot_carousel_header | strip %}
+
+      {% capture hotspot_carousel_slides %}
+        {% for hotspot_carousel_block in section.blocks %}
+          {% if hotspot_carousel_block.type == 'product-callout' %}
+            {% render hotspot_carousel_block %}
+          {% endif %}
+        {% endfor %}
+      {% endcapture %}
+
       {% capture hotspot_carousel_pagination %}
         {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination and hotspot_carousel_use_fraction == false %}
           {% render 'swiper-pagination',
@@ -198,46 +216,58 @@
       {% endcapture %}
 
       <div class="hotspot-full-width-carousel__container swiper-carousel__container">
-        {% render 'swiper-carousel',
-          id: hotspot_carousel_id,
-          content: hotspot_carousel_slides,
-          root_class: 'hotspot-full-width-carousel__viewport',
-          aria_label: hotspot_carousel_aria_label,
-          pagination: hotspot_carousel_pagination,
-          show_next_slide_preview: hotspot_carousel_show_next_slide_preview
-        %}
-
-        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_arrows and hotspot_carousel_use_fraction == false %}
-          {% render 'swiper-navigation',
-            show: true,
-            style: hotspot_carousel_navigation_style,
-            icon: hotspot_carousel_navigation_icon,
-            behavior: hotspot_carousel_navigation_behavior,
-            wrapper_class: 'hotspot-full-width-carousel__navigation',
-            wrapper_attributes: 'aria-label="Hotspot carousel controls"',
-            previous_attribute: 'data-carousel-previous',
-            next_attribute: 'data-carousel-next',
-            previous_label: hotspot_carousel_previous_label,
-            next_label: hotspot_carousel_next_label,
-            centered: true
-          %}
+        {% if hotspot_carousel_header != blank %}
+          <div class="hotspot-full-width-carousel__header">
+            {{ hotspot_carousel_header }}
+          </div>
         {% endif %}
 
-        {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination and hotspot_carousel_use_fraction %}
-          <div class="hotspot-full-width-carousel__fraction-controls hotspot-full-width-carousel__fraction-controls--desktop-{{ hotspot_carousel_pagination_position_desktop }} hotspot-full-width-carousel__fraction-controls--mobile-{{ hotspot_carousel_pagination_position_mobile }}">
-            {% if hotspot_carousel_show_arrows %}
-              <button class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__fraction-button" type="button" data-carousel-fraction-previous aria-label="{{ hotspot_carousel_previous_label | escape }}">
-                {% render 'carousel-navigation-icon', icon: hotspot_carousel_navigation_icon, direction: 'previous' %}
-              </button>
-            {% endif %}
-            <span class="hotspot-full-width-carousel__fraction" aria-live="polite">
-              <span data-carousel-fraction-current>1</span>/<span data-carousel-fraction-total>{{ hotspot_carousel_slide_count }}</span>
-            </span>
-            {% if hotspot_carousel_show_arrows %}
-              <button class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__fraction-button" type="button" data-carousel-fraction-next aria-label="{{ hotspot_carousel_next_label | escape }}">
-                {% render 'carousel-navigation-icon', icon: hotspot_carousel_navigation_icon, direction: 'next' %}
-              </button>
-            {% endif %}
+        {% if hotspot_carousel_product_callout_count > 0 %}
+          {% render 'swiper-carousel',
+            id: hotspot_carousel_id,
+            content: hotspot_carousel_slides,
+            root_class: 'hotspot-full-width-carousel__viewport',
+            aria_label: hotspot_carousel_aria_label,
+            pagination: hotspot_carousel_pagination,
+            show_next_slide_preview: hotspot_carousel_show_next_slide_preview
+          %}
+
+          {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_arrows and hotspot_carousel_use_fraction == false %}
+            {% render 'swiper-navigation',
+              show: true,
+              style: hotspot_carousel_navigation_style,
+              icon: hotspot_carousel_navigation_icon,
+              behavior: hotspot_carousel_navigation_behavior,
+              wrapper_class: 'hotspot-full-width-carousel__navigation',
+              wrapper_attributes: 'aria-label="Hotspot carousel controls"',
+              previous_attribute: 'data-carousel-previous',
+              next_attribute: 'data-carousel-next',
+              previous_label: hotspot_carousel_previous_label,
+              next_label: hotspot_carousel_next_label,
+              centered: true
+            %}
+          {% endif %}
+
+          {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_pagination and hotspot_carousel_use_fraction %}
+            <div class="hotspot-full-width-carousel__fraction-controls hotspot-full-width-carousel__fraction-controls--desktop-{{ hotspot_carousel_pagination_position_desktop }} hotspot-full-width-carousel__fraction-controls--mobile-{{ hotspot_carousel_pagination_position_mobile }}">
+              {% if hotspot_carousel_show_arrows %}
+                <button class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__fraction-button" type="button" data-carousel-fraction-previous aria-label="{{ hotspot_carousel_previous_label | escape }}">
+                  {% render 'carousel-navigation-icon', icon: hotspot_carousel_navigation_icon, direction: 'previous' %}
+                </button>
+              {% endif %}
+              <span class="hotspot-full-width-carousel__fraction" aria-live="polite">
+                <span data-carousel-fraction-current>1</span>/<span data-carousel-fraction-total>{{ hotspot_carousel_slide_count }}</span>
+              </span>
+              {% if hotspot_carousel_show_arrows %}
+                <button class="btn btn--unstyled btn--icon swiper-nav-button hotspot-full-width-carousel__fraction-button" type="button" data-carousel-fraction-next aria-label="{{ hotspot_carousel_next_label | escape }}">
+                  {% render 'carousel-navigation-icon', icon: hotspot_carousel_navigation_icon, direction: 'next' %}
+                </button>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% elsif request.design_mode %}
+          <div class="hotspot-full-width-carousel__empty-state">
+            <p>{{ 'accessibility.hotspot_carousel_empty' | t }}</p>
           </div>
         {% endif %}
       </div>
@@ -265,6 +295,14 @@
   .hotspot-full-width-carousel__container {
     position: relative;
     min-width: 0;
+  }
+
+  .hotspot-full-width-carousel__header {
+    min-width: 0;
+  }
+
+  .hotspot-full-width-carousel__header > .block-header {
+    width: 100%;
   }
 
   .hotspot-full-width-carousel--width-page .hotspot-full-width-carousel__container {
@@ -615,8 +653,9 @@
   "name": "t:general.hotspot_carousel",
   "class": "section-hotspot-full-width-carousel",
   "enabled_on": { "templates": ["index"] },
-  "max_blocks": 8,
+  "max_blocks": 9,
   "blocks": [
+    { "type": "header" },
     { "type": "product-callout" }
   ],
   "settings": [
@@ -922,6 +961,31 @@
         "padding_bottom_mobile": 0
       },
       "blocks": [
+        {
+          "type": "header",
+          "settings": {
+            "width": "fit",
+            "alignment": "center",
+            "gap_desktop": 8,
+            "gap_mobile": 8
+          },
+          "blocks": [
+            {
+              "type": "eyebrow",
+              "settings": {
+                "text": "<p>SUBHEADING</p>"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "text": "<p>Hotspot carousel</p>",
+                "heading_size": "lg",
+                "html_tag": "h2"
+              }
+            }
+          ]
+        },
         {
           "type": "product-callout",
           "settings": {
