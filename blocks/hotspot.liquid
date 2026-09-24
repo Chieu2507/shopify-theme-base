@@ -3,7 +3,8 @@
 
   The parent block owns the icon style and a Hotspot color scheme that is
   independent of the callout Content scheme. This child owns its content source
-  and desktop/mobile position.
+  and desktop/mobile position. When rendered by a Product callout section, it
+  also reads the section-level Product card settings.
 
   @example
   {% content_for 'block', type: 'hotspot', id: 'hotspot-1' %}
@@ -79,7 +80,11 @@
   assign hotspot_show_product_image = true
   assign hotspot_show_price = true
   assign hotspot_product_link_label = 'products.quick_view' | t
-  if hotspot_is_carousel or hotspot_section_type == 'hotspot'
+  assign hotspot_has_section_product_card_settings = false
+  if section.settings.show_product_type == true or section.settings.show_product_type == false
+    assign hotspot_has_section_product_card_settings = true
+  endif
+  if hotspot_is_carousel or hotspot_has_section_product_card_settings
     assign hotspot_show_product_type = section.settings.show_product_type
     assign hotspot_show_product_image = section.settings.show_product_image
     assign hotspot_show_price = section.settings.show_price
