@@ -153,7 +153,7 @@
   assign product_callout_content_layout = block.settings.content_layout | default: 'below'
 
   assign product_callout_content_position = block.settings.content_position | default: 'last'
-  assign product_callout_content_panel_width = block.settings.content_panel_width | default: 32 | plus: 0
+  assign product_callout_content_panel_width = block.settings.content_panel_width | default: 30 | plus: 0
 
   assign product_callout_hotspot_icon_style = block.settings.hotspot_icon_style | default: 'plus'
   unless product_callout_hotspot_icon_style == 'dot' or product_callout_hotspot_icon_style == 'plus' or product_callout_hotspot_icon_style == 'tag' or product_callout_hotspot_icon_style == 'bag'
@@ -356,7 +356,7 @@
   }
 
   @media (max-width: 767.98px) {
-    .product-callout--layout-split {
+    .product-callout.product-callout--layout-split {
       display: flex;
       flex-direction: column;
     }
@@ -434,25 +434,23 @@
   }
 
   @media (min-width: 768px) {
-    .product-callout--layout-split {
+    .product-callout.product-callout--layout-split {
       display: grid;
       align-items: stretch;
       height: auto;
     }
 
     .product-callout--layout-split.product-callout--content-position-last {
-      grid-template-columns: minmax(0, 1fr) minmax(0, var(--product-callout-content-panel-width, 32%));
+      grid-template-columns: minmax(0, 1fr) minmax(0, var(--product-callout-content-panel-width, 30%));
     }
 
     .product-callout--layout-split.product-callout--content-position-first {
-      grid-template-columns: minmax(0, var(--product-callout-content-panel-width, 32%)) minmax(0, 1fr);
+      grid-template-columns: minmax(0, var(--product-callout-content-panel-width, 30%)) minmax(0, 1fr);
     }
 
     .product-callout--layout-split .product-callout__media {
       grid-row: 1;
       height: auto;
-      min-height: 0;
-      aspect-ratio: var(--product-callout-ratio, 2.4);
     }
 
     .product-callout--layout-split .product-callout__content {
@@ -1489,14 +1487,16 @@
       "visible_if": "{{ block.settings.content_layout == 'split' }}"
     },
     {
-      "type": "range",
+      "type": "select",
       "id": "content_panel_width",
       "label": "t:labels.content_width",
-      "min": 20,
-      "max": 50,
-      "step": 1,
-      "unit": "%",
-      "default": 32,
+      "options": [
+        { "value": "30", "label": "t:options.hero_height.small" },
+        { "value": "40", "label": "t:options.hero_height.medium" },
+        { "value": "50", "label": "t:options.hero_height.large" },
+        { "value": "60", "label": "t:options.hero_height.extra_large" }
+      ],
+      "default": "30",
       "visible_if": "{{ block.settings.content_layout == 'split' }}"
     },
     {
