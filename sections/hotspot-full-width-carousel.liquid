@@ -4,6 +4,16 @@
     assign hotspot_carousel_width = 'full_bleed'
   endunless
 
+  assign hotspot_carousel_show_next_slide_preview = false
+  if hotspot_carousel_width == 'page' and section.settings.show_next_slide_preview_on_desktop
+    assign hotspot_carousel_show_next_slide_preview = true
+  endif
+
+  assign hotspot_carousel_transition = section.settings.transition_style | default: 'slide'
+  unless hotspot_carousel_transition == 'slide' or hotspot_carousel_transition == 'fade'
+    assign hotspot_carousel_transition = 'slide'
+  endunless
+
   assign hotspot_carousel_desktop_height = section.settings.desktop_height | default: 'medium'
   assign hotspot_carousel_desktop_height_number = hotspot_carousel_desktop_height | plus: 0
   if hotspot_carousel_desktop_height_number > 0
@@ -142,6 +152,9 @@
 
 {% if hotspot_carousel_render %}
   {% render 'swiper-stylesheet' %}
+  {% if hotspot_carousel_transition == 'fade' and hotspot_carousel_show_next_slide_preview == false %}
+    <link rel="stylesheet" href="{{ 'swiper-12.2.0-effect-fade.min.css' | asset_url }}">
+  {% endif %}
   <script type="module" src="{{ 'carousel-block.js' | asset_url }}"></script>
 
   <div
@@ -157,6 +170,8 @@
     "
     data-hotspot-full-width-carousel
     data-carousel-block
+    data-transition="{{ hotspot_carousel_transition }}"
+    data-show-next-slide-preview-on-desktop="{{ hotspot_carousel_show_next_slide_preview }}"
     data-swiper-columns-desktop="1"
     data-swiper-columns-mobile="1"
     data-swiper-gap-desktop="0"
@@ -188,7 +203,8 @@
           content: hotspot_carousel_slides,
           root_class: 'hotspot-full-width-carousel__viewport',
           aria_label: hotspot_carousel_aria_label,
-          pagination: hotspot_carousel_pagination
+          pagination: hotspot_carousel_pagination,
+          show_next_slide_preview: hotspot_carousel_show_next_slide_preview
         %}
 
         {% if hotspot_carousel_has_multiple_slides and hotspot_carousel_show_arrows and hotspot_carousel_use_fraction == false %}
@@ -618,6 +634,24 @@
         { "value": "full_bleed", "label": "Full (no padding)" }
       ],
       "default": "full_bleed"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_next_slide_preview_on_desktop",
+      "label": "t:labels.show_next_slide_preview_on_desktop",
+      "default": false,
+      "visible_if": "{{ section.settings.width == 'page' }}"
+    },
+    {
+      "type": "select",
+      "id": "transition_style",
+      "label": "Transition style",
+      "options": [
+        { "value": "slide", "label": "Slide" },
+        { "value": "fade", "label": "Fade" }
+      ],
+      "default": "slide",
+      "visible_if": "{{ section.settings.width != 'page' or section.settings.show_next_slide_preview_on_desktop == false }}"
     },
     {
       "type": "header",

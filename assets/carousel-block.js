@@ -1,4 +1,4 @@
-import { Pagination } from './swiper-loader.js';
+import { EffectFade, Pagination } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
 const instances = new WeakMap();
@@ -411,19 +411,33 @@ const initialize = (root) => {
   const autoplay = root.dataset.swiperAutoplay === 'true';
   const fractionControls = root.dataset.carouselControlsStyle === 'fraction';
   const loop = root.dataset.carouselLoop === 'true';
+  const showNextSlidePreview = viewport.dataset.swiperNextSlidePreview === 'true';
+  const transition = root.dataset.transition === 'fade' ? 'fade' : 'slide';
+  const fade = transition === 'fade' && !showNextSlidePreview;
+  const paginationModules = pagination ? [Pagination] : [];
+  const modules = fade ? [EffectFade, ...paginationModules] : paginationModules;
   const options = {
     loop,
+    effect: fade ? 'fade' : 'slide',
+    ...(fade ? { fadeEffect: { crossFade: true } } : {}),
     preventInteractionOnTransition: true,
     speed: prefersReducedMotion() ? 0 : 600,
     slidesPerView: number(root.dataset.swiperColumnsMobile, 1),
     spaceBetween: number(root.dataset.swiperGapMobile, 12),
-    breakpoints: { [desktopBreakpoint]: { slidesPerView: number(root.dataset.swiperColumnsDesktop, 4), spaceBetween: number(root.dataset.swiperGapDesktop, 16) } },
+    breakpoints: {
+      [desktopBreakpoint]: {
+        slidesPerView: number(root.dataset.swiperColumnsDesktop, 4),
+        spaceBetween: number(root.dataset.swiperGapDesktop, 16),
+        ...(showNextSlidePreview ? { centeredSlides: true, spaceBetween: 24 } : {})
+      }
+    },
     controls: {
       scope: root,
       previous: fractionControls ? '[data-carousel-fraction-previous]' : '[data-carousel-previous]',
       next: fractionControls ? '[data-carousel-fraction-next]' : '[data-carousel-next]'
     },
-    ...(pagination ? { modules: [Pagination], pagination: { el: pagination, type: paginationType, clickable: paginationType === 'bullets' } } : {})
+    ...(modules.length ? { modules } : {}),
+    ...(pagination ? { pagination: { el: pagination, type: paginationType, clickable: paginationType === 'bullets' } } : {})
   };
 
   const swiper = createSwiperCarousel(viewport, options);
