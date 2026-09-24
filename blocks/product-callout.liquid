@@ -1,8 +1,9 @@
 {% doc %}
   Renders Product callout media, content, and nested product hotspots. Media,
-  content layout, and height settings belong to this block. Below stacks the
-  content after the media; Split places the content beside the media on desktop
-  and stacks both in the selected order on mobile.
+  content layout, and height settings belong to this block. Below keeps the
+  content over the media on desktop and stacks it after the media on mobile;
+  Split places content beside the media on desktop and follows the selected
+  order when stacked on mobile.
 
   @example
   {% content_for 'block', type: 'product-callout', id: 'product-callout' %}
@@ -144,14 +145,15 @@
     assign product_callout_text_alignment = 'left'
   endunless
 
-  assign product_callout_text_position = block.settings.text_position | default: 'top_left'
+  assign product_callout_text_position = block.settings.text_position | default: 'bottom_left'
   unless product_callout_text_position == 'top_left' or product_callout_text_position == 'top_center' or product_callout_text_position == 'top_right' or product_callout_text_position == 'center_left' or product_callout_text_position == 'center_center' or product_callout_text_position == 'center_right' or product_callout_text_position == 'bottom_left' or product_callout_text_position == 'bottom_center' or product_callout_text_position == 'bottom_right'
-    assign product_callout_text_position = 'top_left'
+    assign product_callout_text_position = 'bottom_left'
   endunless
 
   assign product_callout_content_layout = block.settings.content_layout | default: 'below'
 
   assign product_callout_content_position = block.settings.content_position | default: 'last'
+  assign product_callout_content_panel_width = block.settings.content_panel_width | default: 32 | plus: 0
 
   assign product_callout_hotspot_icon_style = block.settings.hotspot_icon_style | default: 'plus'
   unless product_callout_hotspot_icon_style == 'dot' or product_callout_hotspot_icon_style == 'plus' or product_callout_hotspot_icon_style == 'tag' or product_callout_hotspot_icon_style == 'bag'
@@ -204,6 +206,7 @@
   {% if product_callout_overlay != blank %}--product-callout-overlay-color: {{ product_callout_overlay | escape }};{% endif %}
   --product-callout-content-gap: {{ product_callout_gap_desktop }}px;
   --product-callout-content-gap-mobile: {{ product_callout_gap_mobile }}px;
+  --product-callout-content-panel-width: {{ product_callout_content_panel_width }}%;
   {% if product_callout_heading_size == 'custom' %}--heading-block-custom-size: {{ product_callout_custom_heading_size }}px;{% endif %}
 {% endcapture %}
 {% assign product_callout_style = product_callout_style | strip %}
@@ -287,11 +290,6 @@
     min-width: 0;
     color: var(--body-color);
     isolation: isolate;
-  }
-
-  .product-callout--layout-below {
-    display: flex;
-    flex-direction: column;
   }
 
   .product-callout__media {
@@ -391,19 +389,6 @@
     pointer-events: none;
   }
 
-  .product-callout--layout-below .product-callout__content {
-    position: relative;
-    inset: auto;
-    width: min(100%, 64rem);
-    max-width: 64rem;
-    margin-inline: auto;
-    transform: none;
-    justify-content: flex-start;
-    padding: clamp(2.4rem, 5vw, 6.4rem) var(--product-callout-content-page-margin);
-    background: var(--background-color);
-    pointer-events: auto;
-  }
-
   .product-callout__content > * {
     pointer-events: auto;
   }
@@ -443,11 +428,11 @@
     }
 
     .product-callout--layout-split.product-callout--content-position-last {
-      grid-template-columns: minmax(0, 2.12fr) minmax(0, 1fr);
+      grid-template-columns: minmax(0, 1fr) minmax(0, var(--product-callout-content-panel-width, 32%));
     }
 
     .product-callout--layout-split.product-callout--content-position-first {
-      grid-template-columns: minmax(0, 1fr) minmax(0, 2.12fr);
+      grid-template-columns: minmax(0, var(--product-callout-content-panel-width, 32%)) minmax(0, 1fr);
     }
 
     .product-callout--layout-split .product-callout__media {
@@ -466,19 +451,10 @@
       min-width: 0;
       margin: 0;
       transform: none;
+      justify-content: center;
       padding: clamp(2.4rem, 4vw, 6.4rem);
       background: var(--background-color);
       pointer-events: auto;
-    }
-
-    .product-callout--carousel.product-callout--layout-below {
-      height: auto;
-    }
-
-    .product-callout--carousel.product-callout--layout-below .product-callout__media {
-      height: var(--hotspot-carousel-height, auto);
-      min-height: var(--hotspot-carousel-height, auto);
-      aspect-ratio: auto;
     }
 
     .product-callout--carousel.product-callout--layout-split {
@@ -869,7 +845,6 @@
       pointer-events: auto;
     }
 
-    .product-callout--layout-below .product-callout__content,
     .product-callout--layout-split .product-callout__content {
       position: relative;
       inset: auto;
@@ -1483,6 +1458,7 @@
       "type": "select",
       "id": "content_layout",
       "label": "t:labels.content_layout",
+      "info": "t:info.product_callout_content_layout",
       "options": [
         { "value": "below", "label": "t:options.product_callout_content_layout.below" },
         { "value": "split", "label": "t:options.product_callout_content_layout.split" }
@@ -1493,11 +1469,24 @@
       "type": "select",
       "id": "content_position",
       "label": "t:labels.content_position",
+      "info": "t:info.product_callout_content_position",
       "options": [
         { "value": "first", "label": "t:options.product_callout_content_position.first" },
         { "value": "last", "label": "t:options.product_callout_content_position.last" }
       ],
       "default": "last",
+      "visible_if": "{{ block.settings.content_layout == 'split' }}"
+    },
+    {
+      "type": "range",
+      "id": "content_panel_width",
+      "label": "t:labels.content_width",
+      "info": "t:info.product_callout_content_width",
+      "min": 20,
+      "max": 50,
+      "step": 1,
+      "unit": "%",
+      "default": 32,
       "visible_if": "{{ block.settings.content_layout == 'split' }}"
     },
     {
@@ -1600,8 +1589,8 @@
         { "value": "bottom_center", "label": "t:options.image_card_position.bottom_center" },
         { "value": "bottom_right", "label": "t:options.image_card_position.bottom_right" }
       ],
-      "default": "top_left",
-      "visible_if": "{{ block.settings.content_layout == 'split' }}"
+      "default": "bottom_left",
+      "visible_if": "{{ block.settings.content_layout == 'below' }}"
     },
     {
       "type": "header",
@@ -1713,7 +1702,7 @@
         "button_label": "Button label",
         "button_style": "primary",
         "text_alignment": "left",
-        "text_position": "top_left",
+        "text_position": "bottom_left",
         "gap_desktop": 12,
         "gap_mobile": 8,
         "hotspot_icon_style": "plus",
