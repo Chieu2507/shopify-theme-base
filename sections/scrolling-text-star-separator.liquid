@@ -1,4 +1,11 @@
 {% liquid
+  assign section_container_width = 'page-width'
+  if section.settings.section_width == 'full_width'
+    assign section_container_width = 'full-width'
+  elsif section.settings.section_width == 'full_width_no_padding'
+    assign section_container_width = 'full-width full-width--no-padding'
+  endif
+
   assign section_direction = section.settings.direction | default: 'vertical'
   unless section_direction == 'horizontal' or section_direction == 'vertical'
     assign section_direction = 'vertical'
@@ -75,11 +82,14 @@
 
 <div class="text-marquee-custom color-scheme {{ color_scheme }} text-marquee-custom--{{ section_direction }} text-marquee-custom--align-{{ section_alignment }} text-marquee-custom--position-{{ section_position }}{% if section_direction == 'horizontal' and section.settings.customize_mobile_alignment %} text-marquee-custom--mobile-vertical{% endif %}"{% if section_style != blank %} style="{{ section_style }}"{% endif %}>
   {% if section.settings.background_image != blank %}<div class="text-marquee-custom__background" aria-hidden="true"></div>{% endif %}
-  <div class="text-marquee-custom__content">{% content_for 'blocks' %}</div>
+  <div class="container {{ section_container_width }} text-marquee-custom__container"><div class="text-marquee-custom__content">{% content_for 'blocks' %}</div></div>
 </div>
 
 {% stylesheet %}
   .text-marquee-custom { position: relative; display: flex; flex-direction: column; align-items: var(--text-marquee-custom-align, flex-start); justify-content: var(--text-marquee-custom-position, flex-start); gap: var(--text-marquee-custom-gap, 16px); min-width: 0; width: 100%; overflow: hidden; padding-top: var(--text-marquee-custom-padding-top, 0px); padding-right: var(--text-marquee-custom-padding-right, 0px); padding-bottom: var(--text-marquee-custom-padding-bottom, 0px); padding-left: var(--text-marquee-custom-padding-left, 0px); background-color: var(--text-marquee-custom-background, var(--background-color)); background-image: var(--text-marquee-custom-background-image, none); background-position: center; background-repeat: no-repeat; background-size: cover; }
+  .text-marquee-custom .container.full-width--no-padding { padding-inline: 0; }
+  .text-marquee-custom__container { min-width: 0; }
+  .text-marquee-custom__content > .marquee .container.full-width { padding-inline: 0; }
   .text-marquee-custom--horizontal { flex-direction: row; justify-content: var(--text-marquee-custom-justify, flex-start); }
   .text-marquee-custom--align-left { --text-marquee-custom-align: flex-start; --text-marquee-custom-justify: flex-start; }
   .text-marquee-custom--align-center { --text-marquee-custom-align: center; --text-marquee-custom-justify: center; }
@@ -109,6 +119,7 @@
   ],
   "settings": [
     { "type": "header", "content": "t:general.layout" },
+    { "type": "select", "id": "section_width", "label": "t:labels.section_width", "options": [{ "value": "page_width", "label": "t:options.section_width.page_width" }, { "value": "full_width", "label": "t:options.section_width.full_width" }, { "value": "full_width_no_padding", "label": "t:options.section_width.full_width_no_padding" }], "default": "full_width" },
     { "type": "select", "id": "direction", "label": "t:labels.direction", "options": [{ "value": "horizontal", "label": "t:options.direction.horizontal" }, { "value": "vertical", "label": "t:options.direction.vertical" }], "default": "vertical" },
     { "type": "select", "id": "position", "label": "t:labels.position", "options": [{ "value": "top", "label": "t:options.position.top" }, { "value": "center", "label": "t:options.alignment.center" }, { "value": "bottom", "label": "t:options.position.bottom" }], "default": "top", "visible_if": "{{ section.settings.direction == 'horizontal' }}" },
     { "type": "select", "id": "position_vertical", "label": "t:labels.position", "options": [{ "value": "left", "label": "t:options.alignment.left" }, { "value": "center", "label": "t:options.alignment.center" }, { "value": "right", "label": "t:options.alignment.right" }], "default": "left", "visible_if": "{{ section.settings.direction == 'vertical' }}" },
