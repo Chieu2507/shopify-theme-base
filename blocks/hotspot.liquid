@@ -3,15 +3,17 @@
 
   The parent block owns the icon style and a Hotspot color scheme that is
   independent of the callout Content scheme. This child owns its content source
-  and desktop/mobile position.
+  and desktop/mobile position. When rendered by a Product callout section, it
+  also reads the section-level Product card settings.
 
   @example
   {% content_for 'block', type: 'hotspot', id: 'hotspot-1' %}
 {% enddoc %}
 
 {% liquid
+  assign hotspot_section_type = section.type | handleize
   assign hotspot_is_carousel = false
-  if section.type == 'hotspot-full-width-carousel'
+  if hotspot_section_type == 'hotspot-full-width-carousel' or section.settings.desktop_height != blank and section.settings.mobile_height != blank
     assign hotspot_is_carousel = true
   endif
 
@@ -57,11 +59,6 @@
     assign hotspot_mobile_horizontal = hotspot_horizontal
   endif
 
-  assign hotspot_popover_horizontal = 'right'
-  if hotspot_horizontal > 60
-    assign hotspot_popover_horizontal = 'left'
-  endif
-
   assign hotspot_popover_vertical = 'bottom'
   if hotspot_vertical > 65
     assign hotspot_popover_vertical = 'top'
@@ -78,7 +75,11 @@
   assign hotspot_show_product_image = true
   assign hotspot_show_price = true
   assign hotspot_product_link_label = 'products.quick_view' | t
-  if hotspot_is_carousel
+  assign hotspot_has_section_product_card_settings = false
+  if section.settings.show_product_type == true or section.settings.show_product_type == false
+    assign hotspot_has_section_product_card_settings = true
+  endif
+  if hotspot_is_carousel or hotspot_has_section_product_card_settings
     assign hotspot_show_product_type = section.settings.show_product_type
     assign hotspot_show_product_image = section.settings.show_product_image
     assign hotspot_show_price = section.settings.show_price
@@ -92,22 +93,8 @@
     endif
   endif
 
-  assign hotspot_card_placement = block.settings.card_placement | default: 'auto'
-  unless hotspot_card_placement == 'auto' or hotspot_card_placement == 'top' or hotspot_card_placement == 'right' or hotspot_card_placement == 'bottom' or hotspot_card_placement == 'left'
-    assign hotspot_card_placement = 'auto'
-  endunless
-
   assign hotspot_popover_id = 'product-callout-popover-' | append: block.id
-  if hotspot_card_placement == 'left'
-    assign hotspot_popover_horizontal = 'left'
-  elsif hotspot_card_placement == 'right'
-    assign hotspot_popover_horizontal = 'right'
-  elsif hotspot_card_placement == 'top'
-    assign hotspot_popover_vertical = 'top'
-  elsif hotspot_card_placement == 'bottom'
-    assign hotspot_popover_vertical = 'bottom'
-  endif
-  assign hotspot_popover_class = 'product-callout__popover product-callout__popover--' | append: hotspot_popover_horizontal | append: ' product-callout__popover--' | append: hotspot_popover_vertical
+  assign hotspot_popover_class = 'product-callout__popover product-callout__popover--' | append: hotspot_popover_vertical
   assign hotspot_popover_label = hotspot_product_title
   if hotspot_type == 'content'
     assign hotspot_popover_class = hotspot_popover_class | append: ' product-callout__popover--content'
@@ -333,19 +320,6 @@
       "unit": "%",
       "default": 50,
       "visible_if": "{{ block.settings.customize_mobile_position }}"
-    },
-    {
-      "type": "select",
-      "id": "card_placement",
-      "label": "t:labels.product_card_placement",
-      "options": [
-        { "value": "auto", "label": "t:options.product_card_placement.auto" },
-        { "value": "top", "label": "t:options.product_card_placement.top" },
-        { "value": "right", "label": "t:options.product_card_placement.right" },
-        { "value": "bottom", "label": "t:options.product_card_placement.bottom" },
-        { "value": "left", "label": "t:options.product_card_placement.left" }
-      ],
-      "default": "auto"
     }
   ],
   "presets": [

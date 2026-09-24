@@ -555,16 +555,24 @@
   .product-callout__popover {
     --product-callout-popover-duration: var(--motion-duration-standard, 280ms);
     --product-callout-popover-easing: var(--motion-ease-standard, cubic-bezier(0.2, 0.8, 0.2, 1));
+    --product-callout-popover-viewport-margin: var(--page-margin-current, var(--page-margin-desktop, 1.6rem));
+    --product-callout-popover-gap: 0.8rem;
+    --product-callout-popover-max-inline-size: 24rem;
+    --product-callout-popover-min-inline-size: 0px;
     position: absolute;
     z-index: 1;
-    inset-block-start: calc(100% + 0.8rem);
-    inset-inline-start: calc(100% + 0.8rem);
-    width: min(24rem, calc(100vw - 3.2rem));
+    inset-block-start: calc(100% + var(--product-callout-popover-gap));
+    inset-inline-start: 50%;
+    inline-size: min(var(--product-callout-popover-max-inline-size), calc(100vw - (2 * var(--product-callout-popover-viewport-margin))));
+    min-inline-size: min(var(--product-callout-popover-min-inline-size), calc(100vw - (2 * var(--product-callout-popover-viewport-margin))));
+    max-inline-size: calc(100vw - (2 * var(--product-callout-popover-viewport-margin)));
+    box-sizing: border-box;
     opacity: 0;
     pointer-events: none;
     scale: 0.96;
     translate: 0 0.5rem;
     visibility: hidden;
+    transform: translateX(-50%);
     transition:
       opacity var(--product-callout-popover-duration) var(--product-callout-popover-easing),
       scale var(--product-callout-popover-duration) var(--product-callout-popover-easing),
@@ -585,21 +593,14 @@
     pointer-events: none;
   }
 
-  .product-callout__popover--left {
-    inset-inline-start: auto;
-    inset-inline-end: calc(100% + 0.8rem);
-  }
-
   .product-callout__popover--top {
     inset-block-start: auto;
-    inset-block-end: calc(100% + 0.8rem);
+    inset-block-end: calc(100% + var(--product-callout-popover-gap));
   }
 
   .product-callout__popover--content {
-    inset-inline-start: 50%;
-    inset-inline-end: auto;
-    width: min(20rem, calc(100vw - 3.2rem));
-    transform: translateX(-50%);
+    --product-callout-popover-max-inline-size: clamp(18rem, 23vw, 32rem);
+    --product-callout-popover-min-inline-size: 18rem;
   }
 
   .product-callout__popover[hidden] {
@@ -799,18 +800,20 @@
     }
 
     .product-callout__popover,
-    .product-callout__popover--left,
     .product-callout__popover--top {
-      inset-block-start: calc(100% + 0.8rem);
+      --product-callout-popover-viewport-margin: var(--page-margin-current, var(--page-margin-mobile, 1.6rem));
+      --product-callout-popover-max-inline-size: 26rem;
+      --product-callout-popover-min-inline-size: 0px;
+      inset-block-start: calc(100% + var(--product-callout-popover-gap));
       inset-block-end: auto;
       inset-inline-start: 50%;
       inset-inline-end: auto;
       transform: translateX(-50%);
-      width: min(26rem, calc(100vw - (2 * var(--page-margin-mobile, 1.6rem))));
     }
 
     .product-callout__popover--content {
-      width: min(20rem, calc(100vw - (2 * var(--page-margin-mobile, 1.6rem))));
+      --product-callout-popover-max-inline-size: 20rem;
+      --product-callout-popover-min-inline-size: 0px;
     }
 
   }
@@ -851,6 +854,154 @@
       return Math.max(0, ...durations.map((duration, index) => duration + (delays[index % delays.length] || 0)));
     };
 
+    const parseCssLength = (value, fallback, element) => {
+      const normalized = String(value || '').trim();
+      const amount = Number.parseFloat(normalized);
+      if (!Number.isFinite(amount)) return fallback;
+
+      if (!normalized || normalized.endsWith('px')) return amount;
+      if (normalized.endsWith('vw')) return (window.innerWidth * amount) / 100;
+      if (normalized.endsWith('vh')) return (window.innerHeight * amount) / 100;
+
+      const rootFontSize = Number.parseFloat(getComputedStyle(document.documentElement).fontSize) || 16;
+      if (normalized.endsWith('rem')) return rootFontSize * amount;
+      if (normalized.endsWith('em')) {
+        const fontSize = Number.parseFloat(getComputedStyle(element || document.documentElement).fontSize) || rootFontSize;
+        return fontSize * amount;
+      }
+
+      return fallback;
+    };
+
+    const clamp = (value, minimum, maximum) => {
+      if (maximum < minimum) return minimum;
+      return Math.min(Math.max(value, minimum), maximum);
+    };
+
+    const getPopoverBounds = (state, popover) => {
+      const media = state.callout.querySelector('.product-callout__media') || state.callout;
+      const mediaRect = media.getBoundingClientRect();
+      const style = getComputedStyle(popover);
+      const margin = Math.max(0, parseCssLength(style.getPropertyValue('--product-callout-popover-viewport-margin'), 16, popover));
+      const viewport = {
+        // The horizontal edge belongs to the media, not the page margin. A
+        // hotspot at either edge should let its card meet that edge instead
+        // of leaving a second, unrelated gutter inside the media.
+        left: 0,
+        top: margin,
+        right: window.innerWidth,
+        bottom: Math.max(margin, window.innerHeight - margin),
+      };
+
+      const bounds = {
+        left: Math.max(viewport.left, mediaRect.left),
+        top: Math.max(viewport.top, mediaRect.top),
+        right: Math.min(viewport.right, mediaRect.right),
+        bottom: Math.min(viewport.bottom, mediaRect.bottom),
+      };
+
+      if (bounds.right <= bounds.left || bounds.bottom <= bounds.top) return viewport;
+      return bounds;
+    };
+
+    const setAnchorProperties = (popover, triggerRect) => {
+      const properties = {
+        '--product-callout-popover-anchor-top': `${triggerRect.top}px`,
+        '--product-callout-popover-anchor-right': `${Math.max(0, window.innerWidth - triggerRect.right)}px`,
+        '--product-callout-popover-anchor-bottom': `${Math.max(0, window.innerHeight - triggerRect.bottom)}px`,
+        '--product-callout-popover-anchor-left': `${triggerRect.left}px`,
+        '--product-callout-popover-anchor-width': `${triggerRect.width}px`,
+        '--product-callout-popover-anchor-height': `${triggerRect.height}px`,
+      };
+
+      Object.entries(properties).forEach(([property, value]) => popover.style.setProperty(property, value));
+    };
+
+    const clearPopoverPosition = (popover) => {
+      [
+        'inset',
+        'inset-block-start',
+        'inset-block-end',
+        'inset-inline-start',
+        'inset-inline-end',
+        'top',
+        'right',
+        'bottom',
+        'left',
+        'inline-size',
+        'min-inline-size',
+        'max-inline-size',
+        'transform',
+      ].forEach((property) => popover.style.removeProperty(property));
+
+      [
+        '--product-callout-popover-anchor-top',
+        '--product-callout-popover-anchor-right',
+        '--product-callout-popover-anchor-bottom',
+        '--product-callout-popover-anchor-left',
+        '--product-callout-popover-anchor-width',
+        '--product-callout-popover-anchor-height',
+      ].forEach((property) => popover.style.removeProperty(property));
+    };
+
+    const getVerticalCandidate = (vertical, triggerRect, width, height, gap) => ({
+      left: triggerRect.left + (triggerRect.width - width) / 2,
+      top: vertical === 'top' ? triggerRect.top - gap - height : triggerRect.bottom + gap,
+    });
+
+    const getOverflow = (candidate, width, height, bounds) => {
+      return (
+        Math.max(0, bounds.left - candidate.left) +
+        Math.max(0, candidate.left + width - bounds.right) +
+        Math.max(0, bounds.top - candidate.top) +
+        Math.max(0, candidate.top + height - bounds.bottom)
+      );
+    };
+
+    const positionPopover = (state, record) => {
+      const { wrapper, trigger, popover } = record;
+      if (!wrapper.isConnected || !trigger.isConnected || !popover.isConnected) return;
+
+      const bounds = getPopoverBounds(state, popover);
+      const triggerRect = trigger.getBoundingClientRect();
+      const wrapperRect = wrapper.getBoundingClientRect();
+      const style = getComputedStyle(popover);
+      const gap = Math.max(0, parseCssLength(style.getPropertyValue('--product-callout-popover-gap'), 8, popover));
+
+      setAnchorProperties(popover, triggerRect);
+      popover.style.removeProperty('inline-size');
+
+      let width = popover.offsetWidth;
+      if (width > bounds.right - bounds.left) {
+        popover.style.inlineSize = `${Math.max(1, bounds.right - bounds.left)}px`;
+        width = popover.offsetWidth;
+      }
+
+      const height = popover.offsetHeight;
+      const preferredVertical = popover.classList.contains('product-callout__popover--top') ? 'top' : 'bottom';
+      const oppositeVertical = preferredVertical === 'top' ? 'bottom' : 'top';
+
+      const candidates = [preferredVertical, oppositeVertical].map((vertical) => getVerticalCandidate(vertical, triggerRect, width, height, gap));
+      let candidate = candidates.find((item) => getOverflow(item, width, height, bounds) === 0);
+      if (!candidate) {
+        candidate = candidates.reduce((best, item) => {
+          if (!best) return item;
+          return getOverflow(item, width, height, bounds) < getOverflow(best, width, height, bounds) ? item : best;
+        }, null);
+      }
+
+      candidate.left = clamp(candidate.left, bounds.left, bounds.right - width);
+
+      candidate.top = clamp(candidate.top, bounds.top, bounds.bottom - height);
+
+      popover.style.setProperty('inset', 'auto');
+      popover.style.setProperty('left', `${candidate.left - wrapperRect.left}px`);
+      popover.style.setProperty('top', `${candidate.top - wrapperRect.top}px`);
+      popover.style.setProperty('right', 'auto');
+      popover.style.setProperty('bottom', 'auto');
+      popover.style.setProperty('transform', 'none');
+    };
+
     const cancelPopoverClose = (state, popover) => {
       const closing = state.closing.get(popover);
       if (!closing) return;
@@ -883,17 +1034,20 @@
         clearTimeout(closing.timer);
         state.closing.delete(active.popover);
         active.popover.hidden = true;
+        clearPopoverPosition(active.popover);
         active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
       };
 
       if (immediate) {
         active.popover.hidden = true;
+        clearPopoverPosition(active.popover);
         active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
       } else {
         active.wrapper.classList.add('product-callout__hotspot-wrap--closing');
         const duration = transitionDuration(active.popover);
         if (duration === 0) {
           active.popover.hidden = true;
+          clearPopoverPosition(active.popover);
           active.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
         } else {
           const closing = { record: active, timer: null };
@@ -918,6 +1072,7 @@
 
       closeActive(state);
       cancelPopoverClose(state, popover);
+      clearPopoverPosition(popover);
 
       popover.hidden = false;
       popover.inert = false;
@@ -927,6 +1082,7 @@
       wrapper.classList.add('product-callout__hotspot-wrap--active');
       trigger.setAttribute('aria-expanded', 'true');
       state.active = { trigger, wrapper, popover };
+      positionPopover(state, state.active);
 
       // Establish the hidden visual state before transitioning to open. This
       // keeps click and hover entrances consistent despite the native hidden attribute.
@@ -947,10 +1103,36 @@
         controller,
         active: null,
         closing: new Map(),
+        positionFrame: null,
+        resizeObserver: null,
         hotspotBehavior: callout.dataset.productCalloutHotspotBehavior === 'hover' ? 'hover' : 'click',
         toggleOnClick: true,
       };
       instances.set(callout, state);
+
+      const schedulePosition = () => {
+        if (!state.active || state.positionFrame !== null) return;
+
+        state.positionFrame = window.requestAnimationFrame(() => {
+          state.positionFrame = null;
+          if (state.active) positionPopover(state, state.active);
+        });
+      };
+
+      window.addEventListener('resize', schedulePosition, { signal: controller.signal });
+
+      const closeForScroll = () => {
+        if (state.active) closeActive(state, false, true);
+      };
+
+      window.addEventListener('scroll', closeForScroll, { passive: true, signal: controller.signal });
+      document.addEventListener('scroll', closeForScroll, { capture: true, passive: true, signal: controller.signal });
+
+      if (typeof window.ResizeObserver === 'function') {
+        state.resizeObserver = new window.ResizeObserver(schedulePosition);
+        state.resizeObserver.observe(callout);
+        callout.querySelectorAll('[data-product-callout-popover]').forEach((popover) => state.resizeObserver.observe(popover));
+      }
 
       const openForHover = (event) => {
         if (state.hotspotBehavior !== 'hover' || event.pointerType === 'touch') return;
@@ -1042,14 +1224,19 @@
     const destroy = (callout) => {
       const state = instances.get(callout);
       if (!state) return;
+      if (state.positionFrame !== null) window.cancelAnimationFrame(state.positionFrame);
+      state.positionFrame = null;
+      state.resizeObserver?.disconnect();
       closeActive(state, false, true);
       state.closing.forEach((closing, popover) => {
         clearTimeout(closing.timer);
         popover.hidden = true;
+        clearPopoverPosition(popover);
         popover.classList.remove('product-callout__popover--visible');
         closing.wrapper.classList.remove('product-callout__hotspot-wrap--closing');
       });
       state.closing.clear();
+      callout.querySelectorAll('[data-product-callout-popover]').forEach(clearPopoverPosition);
       state.controller.abort();
       instances.delete(callout);
     };
