@@ -1,5 +1,9 @@
 {% liquid
   assign faq_category_title = block.settings.title | default: 'FAQ category'
+  assign faq_category_show_title = block.settings.show_title
+  if faq_category_show_title == nil
+    assign faq_category_show_title = true
+  endif
   assign faq_category_heading_size = block.settings.heading_size | default: 'md'
   unless faq_category_heading_size == 'display' or faq_category_heading_size == 'xl' or faq_category_heading_size == 'lg' or faq_category_heading_size == 'md' or faq_category_heading_size == 'sm' or faq_category_heading_size == 'xs' or faq_category_heading_size == 'custom'
     assign faq_category_heading_size = 'md'
@@ -23,9 +27,12 @@
 %}
 
 {% capture faq_category_style %}
-  {% if block.settings.text_color != blank %}--faq-category-color: {{ block.settings.text_color | escape }};{% endif %}
-  --faq-category-heading-size: {% if faq_category_heading_size == 'custom' %}{{ faq_category_custom_heading_size }}px{% else %}var(--font-heading-{{ faq_category_heading_size }}){% endif %};
-  --faq-category-heading-size-mobile: {% if faq_category_heading_size_mobile == 'custom' %}{{ faq_category_custom_heading_size_mobile }}px{% else %}var(--font-heading-{{ faq_category_heading_size_mobile }}){% endif %};
+  {% if faq_category_show_title %}
+    {% if block.settings.text_color != blank %}--faq-category-color: {{ block.settings.text_color | escape }};{% endif %}
+    --faq-category-title-align: {{ block.settings.title_alignment | default: 'left' }};
+    --faq-category-heading-size: {% if faq_category_heading_size == 'custom' %}{{ faq_category_custom_heading_size }}px{% else %}var(--font-heading-{{ faq_category_heading_size }}){% endif %};
+    --faq-category-heading-size-mobile: {% if faq_category_heading_size_mobile == 'custom' %}{{ faq_category_custom_heading_size_mobile }}px{% else %}var(--font-heading-{{ faq_category_heading_size_mobile }}){% endif %};
+  {% endif %}
   --faq-category-padding-top: {{ block.settings.padding_top | default: 0 | plus: 0 }}px;
   --faq-category-padding-right: {{ block.settings.padding_right | default: 0 | plus: 0 }}px;
   --faq-category-padding-bottom: {{ block.settings.padding_bottom | default: 0 | plus: 0 }}px;
@@ -33,7 +40,7 @@
 {% endcapture %}
 
 <section class="faq-category" style="{{ faq_category_style | strip }}" {{ block.shopify_attributes }}>
-  {% if faq_category_title != blank %}
+  {% if faq_category_show_title and faq_category_title != blank %}
     <{{ faq_category_tag }} class="heading-text heading-{{ faq_category_heading_size }} faq-category__title">{{ faq_category_title | escape }}</{{ faq_category_tag }}>
   {% endif %}
   {% if block.blocks.size > 0 %}
@@ -45,9 +52,9 @@
 
 {% stylesheet %}
   .faq-category { padding: var(--faq-category-padding-top, 0px) var(--faq-category-padding-right, 0px) var(--faq-category-padding-bottom, 0px) var(--faq-category-padding-left, 0px); }
-  .faq-category__title { margin: 0 0 0.75rem; padding: 20px 0; color: var(--faq-category-color, var(--heading-color)); }
+  .faq-category__title { margin: 0 0 0.75rem; padding: 20px 0; color: var(--faq-category-color, var(--heading-color)); text-align: var(--faq-category-title-align, left); }
   .faq-category__title { font-size: var(--faq-category-heading-size); }
-  .faq-category__items { border-top: 1px solid var(--border-color); }
+  .faq-category__items { display: grid; border-top: 1px solid var(--border-color); }
   .faq-category__empty { padding: 1rem; border: 1px dashed var(--border-color); color: var(--body-color); }
   @media (max-width: 767.98px) {
     .faq-category__title { font-size: var(--faq-category-heading-size-mobile, var(--faq-category-heading-size)); }
@@ -60,7 +67,9 @@
   "tag": null,
   "blocks": [{ "type": "faq_item" }],
   "settings": [
-    { "type": "text", "id": "title", "label": "t:labels.title", "default": "FAQ category" },
+    { "type": "checkbox", "id": "show_title", "label": "Show title on storefront", "default": true },
+    { "type": "text", "id": "title", "label": "t:labels.title", "default": "FAQ category", "visible_if": "{{ block.settings.show_title }}" },
+    { "type": "text_alignment", "id": "title_alignment", "label": "Title alignment", "default": "left", "visible_if": "{{ block.settings.show_title }}" },
     {
       "type": "select",
       "id": "heading_size",
@@ -74,7 +83,8 @@
         { "value": "xs", "label": "t:options.heading_size.xs" },
         { "value": "custom", "label": "t:options.heading_size.custom" }
       ],
-      "default": "md"
+      "default": "md",
+      "visible_if": "{{ block.settings.show_title }}"
     },
     {
       "type": "range",
@@ -85,7 +95,7 @@
       "step": 1,
       "unit": "px",
       "default": 24,
-      "visible_if": "{{ block.settings.heading_size == 'custom' }}"
+      "visible_if": "{{ block.settings.show_title and block.settings.heading_size == 'custom' }}"
     },
     {
       "type": "select",
@@ -100,7 +110,8 @@
         { "value": "xs", "label": "t:options.heading_size.xs" },
         { "value": "custom", "label": "t:options.heading_size.custom" }
       ],
-      "default": "md"
+      "default": "md",
+      "visible_if": "{{ block.settings.show_title }}"
     },
     {
       "type": "range",
@@ -111,7 +122,7 @@
       "step": 1,
       "unit": "px",
       "default": 20,
-      "visible_if": "{{ block.settings.heading_size_mobile == 'custom' }}"
+      "visible_if": "{{ block.settings.show_title and block.settings.heading_size_mobile == 'custom' }}"
     },
     {
       "type": "select",
@@ -126,9 +137,10 @@
         { "value": "h5", "label": "t:options.html_tag.h5" },
         { "value": "h6", "label": "t:options.html_tag.h6" }
       ],
-      "default": "h4"
+      "default": "h4",
+      "visible_if": "{{ block.settings.show_title }}"
     },
-    { "type": "color", "alpha": true, "id": "text_color", "label": "t:labels.text_color" },
+    { "type": "color", "alpha": true, "id": "text_color", "label": "t:labels.text_color", "visible_if": "{{ block.settings.show_title }}" },
     { "type": "header", "content": "t:general.padding" },
     { "type": "range", "id": "padding_top", "label": "t:labels.top_padding", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
     { "type": "range", "id": "padding_right", "label": "t:labels.right_padding", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
@@ -139,6 +151,7 @@
     {
       "name": "t:general.faq_category",
       "settings": {
+        "show_title": true,
         "title": "FAQ category",
         "heading_size": "md",
         "html_tag": "h4"
