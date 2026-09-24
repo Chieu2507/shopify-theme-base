@@ -4,6 +4,44 @@
     assign hotspot_carousel_width = 'full_bleed'
   endunless
 
+  assign hotspot_carousel_desktop_height = section.settings.desktop_height | default: 'medium'
+  assign hotspot_carousel_desktop_height_number = hotspot_carousel_desktop_height | plus: 0
+  if hotspot_carousel_desktop_height_number > 0
+    if hotspot_carousel_desktop_height_number <= 480
+      assign hotspot_carousel_desktop_height = 'extra_small'
+    elsif hotspot_carousel_desktop_height_number <= 600
+      assign hotspot_carousel_desktop_height = 'small'
+    elsif hotspot_carousel_desktop_height_number <= 800
+      assign hotspot_carousel_desktop_height = 'medium'
+    elsif hotspot_carousel_desktop_height_number <= 960
+      assign hotspot_carousel_desktop_height = 'large'
+    else
+      assign hotspot_carousel_desktop_height = 'extra_large'
+    endif
+  endif
+  unless hotspot_carousel_desktop_height == 'adapt' or hotspot_carousel_desktop_height == 'extra_small' or hotspot_carousel_desktop_height == 'small' or hotspot_carousel_desktop_height == 'medium' or hotspot_carousel_desktop_height == 'large' or hotspot_carousel_desktop_height == 'extra_large' or hotspot_carousel_desktop_height == 'full_screen'
+    assign hotspot_carousel_desktop_height = 'medium'
+  endunless
+
+  assign hotspot_carousel_mobile_height = section.settings.mobile_height | default: 'small'
+  assign hotspot_carousel_mobile_height_number = hotspot_carousel_mobile_height | plus: 0
+  if hotspot_carousel_mobile_height_number > 0
+    if hotspot_carousel_mobile_height_number <= 360
+      assign hotspot_carousel_mobile_height = 'extra_small'
+    elsif hotspot_carousel_mobile_height_number <= 480
+      assign hotspot_carousel_mobile_height = 'small'
+    elsif hotspot_carousel_mobile_height_number <= 600
+      assign hotspot_carousel_mobile_height = 'medium'
+    elsif hotspot_carousel_mobile_height_number <= 760
+      assign hotspot_carousel_mobile_height = 'large'
+    else
+      assign hotspot_carousel_mobile_height = 'extra_large'
+    endif
+  endif
+  unless hotspot_carousel_mobile_height == 'adapt' or hotspot_carousel_mobile_height == 'extra_small' or hotspot_carousel_mobile_height == 'small' or hotspot_carousel_mobile_height == 'medium' or hotspot_carousel_mobile_height == 'large' or hotspot_carousel_mobile_height == 'extra_large' or hotspot_carousel_mobile_height == 'full_screen'
+    assign hotspot_carousel_mobile_height = 'small'
+  endunless
+
   assign hotspot_carousel_scheme = section.settings.color_scheme | default: 'scheme-1'
   if section.settings.color_scheme.id != blank
     assign hotspot_carousel_scheme = section.settings.color_scheme.id
@@ -107,7 +145,7 @@
   <script type="module" src="{{ 'carousel-block.js' | asset_url }}"></script>
 
   <div
-    class="hotspot-full-width-carousel hotspot-full-width-carousel--width-{{ hotspot_carousel_width }} section-color-scope color-scheme {{ hotspot_carousel_scheme }}"
+    class="hotspot-full-width-carousel hotspot-full-width-carousel--width-{{ hotspot_carousel_width }} hotspot-full-width-carousel--desktop-{{ hotspot_carousel_desktop_height }} hotspot-full-width-carousel--mobile-{{ hotspot_carousel_mobile_height }} section-color-scope color-scheme {{ hotspot_carousel_scheme }}"
     style="
       --hotspot-carousel-padding-top: {{ hotspot_carousel_padding_top }}px;
       --hotspot-carousel-padding-bottom: {{ hotspot_carousel_padding_bottom }}px;
@@ -227,12 +265,42 @@
   .hotspot-full-width-carousel__viewport {
     position: relative;
     width: 100%;
+    height: var(--hotspot-carousel-height, auto);
     overflow: hidden;
+  }
+
+  .hotspot-full-width-carousel--desktop-adapt {
+    --hotspot-carousel-height: auto;
+  }
+
+  .hotspot-full-width-carousel--desktop-extra_small {
+    --hotspot-carousel-height: 42rem;
+  }
+
+  .hotspot-full-width-carousel--desktop-small {
+    --hotspot-carousel-height: 56rem;
+  }
+
+  .hotspot-full-width-carousel--desktop-medium {
+    --hotspot-carousel-height: 64rem;
+  }
+
+  .hotspot-full-width-carousel--desktop-large {
+    --hotspot-carousel-height: 90rem;
+  }
+
+  .hotspot-full-width-carousel--desktop-extra_large {
+    --hotspot-carousel-height: 108rem;
+  }
+
+  .hotspot-full-width-carousel--desktop-full_screen {
+    --hotspot-carousel-height: 100svh;
   }
 
   .hotspot-full-width-carousel__viewport > .swiper-wrapper {
     display: flex;
     width: 100%;
+    height: 100%;
     align-items: stretch;
   }
 
@@ -240,6 +308,12 @@
     flex: 0 0 100%;
     width: 100%;
     min-width: 0;
+    height: 100%;
+  }
+
+  .hotspot-full-width-carousel--desktop-adapt .hotspot-full-width-carousel__viewport > .swiper-wrapper,
+  .hotspot-full-width-carousel--desktop-adapt .hotspot-full-width-carousel__viewport > .swiper-wrapper > .swiper-slide {
+    height: auto;
   }
 
   .hotspot-full-width-carousel__navigation {
@@ -435,6 +509,39 @@
       width: calc(100% - (var(--page-margin-mobile) * 2));
     }
 
+    .hotspot-full-width-carousel--mobile-adapt {
+      --hotspot-carousel-height: auto;
+    }
+
+    .hotspot-full-width-carousel--mobile-extra_small {
+      --hotspot-carousel-height: 32rem;
+    }
+
+    .hotspot-full-width-carousel--mobile-small {
+      --hotspot-carousel-height: 44rem;
+    }
+
+    .hotspot-full-width-carousel--mobile-medium {
+      --hotspot-carousel-height: 56rem;
+    }
+
+    .hotspot-full-width-carousel--mobile-large {
+      --hotspot-carousel-height: 68rem;
+    }
+
+    .hotspot-full-width-carousel--mobile-extra_large {
+      --hotspot-carousel-height: 82rem;
+    }
+
+    .hotspot-full-width-carousel--mobile-full_screen {
+      --hotspot-carousel-height: 100svh;
+    }
+
+    .hotspot-full-width-carousel--mobile-adapt .hotspot-full-width-carousel__viewport > .swiper-wrapper,
+    .hotspot-full-width-carousel--mobile-adapt .hotspot-full-width-carousel__viewport > .swiper-wrapper > .swiper-slide {
+      height: auto;
+    }
+
     .hotspot-full-width-carousel__navigation {
       display: none;
     }
@@ -514,24 +621,34 @@
       "content": "t:general.height"
     },
     {
-      "type": "range",
+      "type": "select",
       "id": "desktop_height",
       "label": "t:labels.desktop_height",
-      "min": 320,
-      "max": 900,
-      "step": 20,
-      "unit": "px",
-      "default": 560
+      "options": [
+        { "value": "adapt", "label": "t:options.hero_height.adapt" },
+        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
+        { "value": "small", "label": "t:options.hero_height.small" },
+        { "value": "medium", "label": "t:options.hero_height.medium" },
+        { "value": "large", "label": "t:options.hero_height.large" },
+        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
+        { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
+      ],
+      "default": "medium"
     },
     {
-      "type": "range",
+      "type": "select",
       "id": "mobile_height",
       "label": "t:labels.mobile_height",
-      "min": 300,
-      "max": 700,
-      "step": 20,
-      "unit": "px",
-      "default": 420
+      "options": [
+        { "value": "adapt", "label": "t:options.hero_height.adapt" },
+        { "value": "extra_small", "label": "t:options.hero_height.extra_small" },
+        { "value": "small", "label": "t:options.hero_height.small" },
+        { "value": "medium", "label": "t:options.hero_height.medium" },
+        { "value": "large", "label": "t:options.hero_height.large" },
+        { "value": "extra_large", "label": "t:options.hero_height.extra_large" },
+        { "value": "full_screen", "label": "t:options.hero_height.full_screen" }
+      ],
+      "default": "small"
     },
     {
       "type": "header",
@@ -742,8 +859,8 @@
       "category": "t:general.banners",
       "settings": {
         "width": "full_bleed",
-        "desktop_height": 560,
-        "mobile_height": 420,
+        "desktop_height": "medium",
+        "mobile_height": "small",
         "show_arrows": true,
         "navigation_style": "primary",
         "navigation_icon": "arrow",
