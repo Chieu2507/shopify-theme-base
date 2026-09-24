@@ -1,7 +1,8 @@
 {% doc %}
   Renders a responsive product collection using one static Product Card theme
-  block for every product. The block owns the collection query, item count,
-  grid/carousel layout, columns, and gaps; Product Card owns presentation.
+  block for every product and optional Promo Card child blocks. The block owns
+  the collection query, item count, grid/carousel layout, columns, and gaps;
+  child blocks own item presentation.
 
   @example
   {% content_for 'block', type: 'product-list', id: 'product-list' %}
@@ -162,6 +163,7 @@
       </div>
     {% endfor %}
   {% endif %}
+  {% content_for 'blocks' %}
 {% endcapture %}
 
 {% capture product_list_pagination_style %}
@@ -208,8 +210,8 @@
 
 {% if product_list_layout == 'carousel' %}
   {% render 'swiper-stylesheet' %}
-  <script type="module" src="{{ 'product-collection-carousel.js' | asset_url }}"></script>
 {% endif %}
+<script type="module" src="{{ 'product-collection-carousel.js' | asset_url }}"></script>
 
 <div
   class="product-list"
@@ -219,6 +221,11 @@
   {{ block.shopify_attributes }}
 >
   {% if product_list_navigation_position == 'top' %}{{ product_list_navigation_markup }}{% endif %}
+  <div
+    class="product-list__promo-mobile"
+    data-product-list-promo-mobile
+    hidden
+  ></div>
   <div class="product-list__carousel swiper-carousel__container" data-product-list-carousel>
     {% render 'product-collection-grid',
       collection: product_list_collection,
@@ -267,6 +274,10 @@
     min-width: 0;
   }
 
+  .product-list__promo-mobile {
+    display: none;
+  }
+
   .product-list__navigation {
     position: absolute;
     z-index: 1;
@@ -307,6 +318,18 @@
   }
 
   @media (max-width: 767.98px) {
+    .product-list__promo-mobile:not([hidden]) {
+      display: grid;
+      gap: var(--product-collection-grid-gap-vertical-mobile, 4px);
+      width: 100%;
+      margin-block-end: 2rem;
+    }
+
+    .product-list__promo-mobile > .promo-card-block {
+      width: 100% !important;
+      max-width: 100%;
+    }
+
     .product-list__navigation,
     .product-list__navigation.product-list__navigation--top {
       display: none;
@@ -320,7 +343,7 @@
   "name": "t:general.product_list",
   "tag": null,
   "blocks": [
-    { "type": "product-card" }
+    { "type": "promo-card" }
   ],
   "settings": [
     {

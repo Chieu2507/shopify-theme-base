@@ -1,7 +1,7 @@
 {% doc %}
-  Renders one or more optional promotional items inside a Collection Tab
-  product list. The block is intentionally only allow-listed by collection-tab
-  and is rendered as a grid item or carousel slide alongside Product Card items.
+  Renders one optional promotional item inside a Collection Tab or Product
+  List. The block is allow-listed by those parent blocks and is rendered as a
+  grid item or carousel slide alongside Product Card items.
 
   @example
   {% content_for 'block', type: 'promo-card', id: 'promo-card' %}
@@ -112,13 +112,14 @@
 {% assign promo_card_style = promo_card_style | strip %}
 
 <div
-  class="collection-tab-promo-block promo-card-slide product-collection-grid__item{% if promo_card_layout == 'carousel' %} swiper-slide{% endif %}"
+  class="promo-card-block collection-tab-promo-block promo-card-slide product-collection-grid__item{% if promo_card_layout == 'carousel' %} swiper-slide{% endif %}"
   data-collection-tab-promo-item
   {{ block.shopify_attributes }}
 >
   <article
     class="product-grid__item promo-card relative promo-card--position-{{ promo_card_content_position }} promo-card--align-{{ promo_card_alignment }}{% if block.settings.show_on_top_mobile %} promo-card-top-mobile{% endif %}{% if block.settings.show_overlay %} promo-card--has-overlay{% endif %} color-scheme section-color-scope {{ promo_card_scheme }}"
     data-collection-tab-promo
+    data-product-list-promo
     data-promo-card-position="{{ promo_card_position }}"
     data-promo-card-show-on-top-mobile="{{ block.settings.show_on_top_mobile }}"
     {% if promo_card_style != blank %}style="{{ promo_card_style }}"{% endif %}
@@ -180,6 +181,20 @@
 </div>
 
 {% stylesheet %}
+  .promo-card-block {
+    display: flex;
+    flex-direction: column;
+    width: 100%;
+    max-width: 100%;
+    min-width: 0;
+  }
+
+  .promo-card-block > .promo-card {
+    flex: 1 1 auto;
+    width: 100%;
+    height: 100%;
+  }
+
   .promo-card {
     position: relative;
     display: flex;

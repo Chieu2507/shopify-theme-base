@@ -559,8 +559,11 @@ const initialize = (root) => {
   const slideCount = Array.from(wrapper.children).filter((slide) => slide.classList.contains('swiper-slide')).length;
   const previewEnabled = showNextSlidePreview && slideCount > desktopColumns;
   viewport.dataset.swiperNextSlidePreview = String(previewEnabled);
+  // The shared Swiper preview attribute is a CSS-only overflow hook. Sections
+  // that require centered-slide runtime must opt in explicitly on their root.
+  const useCenteredSlidePreview = root.dataset.showNextSlidePreviewOnDesktop === 'true';
   const transition = root.dataset.transition === 'fade' ? 'fade' : 'slide';
-  const fade = transition === 'fade' && !previewEnabled;
+  const fade = transition === 'fade' && !useCenteredSlidePreview;
   const manualLoop = manualLoopRequested && loop ? createManualLoop(viewport) : null;
   const paginationModules = pagination && !manualLoop ? [Pagination] : [];
   const modules = fade ? [EffectFade, ...paginationModules] : paginationModules;
@@ -577,7 +580,7 @@ const initialize = (root) => {
       [desktopBreakpoint]: {
         slidesPerView: desktopColumns,
         spaceBetween: number(root.dataset.swiperGapDesktop, 16),
-        ...(previewEnabled ? { centeredSlides: true, centeredSlidesBounds: !loop, spaceBetween: 24 } : {})
+        ...(useCenteredSlidePreview ? { centeredSlides: true, spaceBetween: 24 } : {})
       }
     },
     controls: {

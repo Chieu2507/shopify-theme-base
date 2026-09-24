@@ -53,15 +53,7 @@
   {% endif %}
 
   <div class="{{ hotspot_section_header_class }}">
-    {% comment %}
-      Shopify exposes theme blocks as @theme, so the stable block ID suffix is
-      used to keep the static section's header separate from its fixed callout.
-    {% endcomment %}
-    {% for hotspot_section_block in section.blocks %}
-      {% if hotspot_section_block.id contains '__header' or hotspot_section_block.id == 'header' %}
-        {% render hotspot_section_block %}
-      {% endif %}
-    {% endfor %}
+    {% content_for 'block', type: 'header', id: 'header' %}
   </div>
 
   <div class="hotspot-section__callout">
@@ -175,6 +167,34 @@
     },
     {
       "type": "header",
+      "content": "t:general.product_card"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_type",
+      "label": "t:labels.show_product_type",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_product_image",
+      "label": "t:labels.show_product_image",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "show_price",
+      "label": "t:labels.show_price",
+      "default": true
+    },
+    {
+      "type": "text",
+      "id": "product_link_label",
+      "label": "t:labels.product_link_label",
+      "default": "View product"
+    },
+    {
+      "type": "header",
       "content": "t:general.appearance"
     },
     {
@@ -271,6 +291,10 @@
       "category": "t:general.banners",
       "settings": {
         "section_width": "full_width_no_padding",
+        "show_product_type": true,
+        "show_product_image": true,
+        "show_price": true,
+        "product_link_label": "View product",
         "color_scheme": "scheme-1",
         "padding_top": 0,
         "padding_bottom": 0,
@@ -281,6 +305,8 @@
       "blocks": [
         {
           "type": "header",
+          "id": "header",
+          "static": true,
           "settings": {
             "width": "fit",
             "alignment": "center",

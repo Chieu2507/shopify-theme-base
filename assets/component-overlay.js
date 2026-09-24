@@ -25,28 +25,136 @@
     );
   };
 
+  const hideBackdropCursor = ({ cursor, owner, root }) => {
+    root?.classList.remove('cursor-none');
+    backdropCursorOwners.delete(owner);
+    if (backdropCursorOwners.size > 0) return;
+    cursor?.classList.remove('active');
+    document.documentElement?.classList?.toggle?.('component-overlay-backdrop-cursor', false);
+    const scheme = cursor?.dataset?.backdropCursorScheme;
+    if (scheme) cursor.classList.remove(scheme);
+    cursor?.classList.remove('color-scheme', 'section-color-scope');
+    if (cursor?.dataset) delete cursor.dataset.backdropCursorScheme;
+  };
+
+  const updateBackdropCursor = ({ cursor, owner, root, colorSource, isOpen, event }) => {
+    if (!cursor || !pointerMedia.matches || !isOpen()) {
+      hideBackdropCursor({ cursor, owner, root });
+      return;
+    }
+
+    cursor.style.setProperty('--cursor-x', `${event.clientX}px`);
+    cursor.style.setProperty('--cursor-y', `${event.clientY}px`);
+    const source = typeof colorSource === 'function' ? colorSource() : colorSource;
+    const overlayStyle = getComputedStyle(source || root);
+    cursor.style.setProperty('--color-cursor-text', overlayStyle.getPropertyValue?.('--overlay-text-color') || '');
+    cursor.style.setProperty('--color-cursor-background', overlayStyle.getPropertyValue?.('--overlay-background-color') || '');
+    const scheme = root?.dataset.overlayColorScheme
+      || Array.from(root?.classList || []).find((className) => /^scheme-[a-z0-9_-]+$/i.test(className));
+    if (cursor.dataset.backdropCursorScheme && cursor.dataset.backdropCursorScheme !== scheme) {
+      cursor.classList.remove(cursor.dataset.backdropCursorScheme);
+    }
+    if (scheme) {
+      cursor.classList.add('color-scheme', 'section-color-scope', scheme);
+      cursor.dataset.backdropCursorScheme = scheme;
+    }
+    cursor.classList.add('active');
+    root?.classList.add('cursor-none');
+    backdropCursorOwners.add(owner);
+    document.documentElement?.classList?.toggle?.('component-overlay-backdrop-cursor', true);
+  };
+
+  const bindBackdropCursor = ({ backdrop, owner = backdrop, root = backdrop, colorSource = root, isOpen = () => true }) => {
+    const cursor = document.querySelector?.('custom-cursor[data-component-overlay-cursor]');
+    if (!backdrop || !cursor) return null;
+
+    const controller = new AbortController();
+    const options = { signal: controller.signal };
+    const update = (event) => updateBackdropCursor({ cursor, owner, root, colorSource, isOpen, event });
+    const hide = () => hideBackdropCursor({ cursor, owner, root });
+    backdrop.addEventListener('mousemove', update, options);
+    backdrop.addEventListener('mouseleave', hide, options);
+    window.addEventListener?.('mouseout', (event) => {
+      if (!event.relatedTarget) hide();
+    }, options);
+    window.addEventListener?.('blur', hide, options);
+
+    return {
+      hide,
+      destroy() {
+        hide();
+        controller.abort();
+      },
+    };
+  };
+
   class SheetGesture {
-    constructor({ panel, header, enabled, close, delegated = false }) {
-      Object.assign(this, { panel, header, enabled, close });
+    constructor({ panel, header, backdrop, enabled, close, delegated = false }) {
+      Object.assign(this, { panel, header, backdrop, enabled, close });
+      this.resistance = 0.32;
+      this.scrollTarget = panel?.querySelector?.('.component-overlay__body') || panel;
+      this.activationDistance = 8;
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
-      if (!delegated) header?.addEventListener('pointerdown', (event) => this.start(event), options);
-      header?.addEventListener('pointermove', (event) => this.move(event), options);
-      header?.addEventListener('pointerup', (event) => this.end(event), options);
-      header?.addEventListener('pointercancel', (event) => this.end(event, true), options);
-      header?.addEventListener('lostpointercapture', () => { if (this.drag) this.reset(); }, options);
+      if (!delegated) panel?.addEventListener('pointerdown', (event) => this.start(event), options);
+      panel?.addEventListener('pointermove', (event) => this.move(event), options);
+      panel?.addEventListener('pointerup', (event) => this.end(event), options);
+      panel?.addEventListener('pointercancel', (event) => this.end(event, true), options);
+      panel?.addEventListener('lostpointercapture', () => { if (this.drag) this.reset(); }, options);
       mobile.addEventListener('change', () => this.reset(), options);
     }
 
+    isHeaderTarget(target) {
+      return target === this.header || Boolean(this.header?.contains?.(target));
+    }
+
+    getDismissDistance() {
+      return Math.min(140, Math.max(1, (this.panel?.offsetHeight || 0) * 0.2));
+    }
+
+    getDragOffset(distance) {
+      const resistanceStart = this.getDismissDistance();
+
+      if (distance <= resistanceStart) return distance;
+
+      return resistanceStart + (distance - resistanceStart) * this.resistance;
+    }
+
+    setDragProgress(progress) {
+      const value = String(Math.min(1, Math.max(0, progress)));
+
+      this.panel?.style.setProperty('--sheet-drag-progress', value);
+      this.backdrop?.style.setProperty('--sheet-drag-progress', value);
+    }
+
+    clearDragProgress() {
+      this.panel?.style.removeProperty('--sheet-drag-progress');
+      this.backdrop?.style.removeProperty('--sheet-drag-progress');
+    }
+
+    releasePointer(pointerId) {
+      if (pointerId === undefined || pointerId === null || !this.panel?.hasPointerCapture?.(pointerId)) return;
+      this.panel.releasePointerCapture(pointerId);
+    }
+
     start(event) {
-      if (!this.enabled() || !event.isPrimary || event.button !== 0 || event.target.closest('button, a, input, select, textarea')) return;
+      const target = event.target;
+      const interactiveTarget = target?.closest?.('button, a, input, select, textarea, summary, iframe, [contenteditable="true"], [role="button"], [draggable="true"], [data-no-sheet-drag]');
+      if (!this.enabled() || !event.isPrimary || event.button !== 0 || interactiveTarget) return;
+      if (!this.isHeaderTarget(target) && (this.scrollTarget?.scrollTop || 0) > 0) return;
       this.reset();
-      this.drag = { id: event.pointerId, start: event.clientY, last: event.clientY, time: performance.now(), distance: 0, velocity: 0 };
-      this.panel.classList.add('is-sheet-dragging');
-      this.panel.style.transition = 'none';
-      this.panel.style.transform = 'translateY(0)';
-      this.header.setPointerCapture(event.pointerId);
-      event.preventDefault();
+      this.drag = {
+        id: event.pointerId,
+        start: event.clientY,
+        last: event.clientY,
+        time: performance.now(),
+        distance: 0,
+        offset: 0,
+        velocity: 0,
+        active: false,
+        startScrollTop: this.scrollTarget?.scrollTop || 0,
+      };
+      this.panel?.setPointerCapture?.(event.pointerId);
     }
 
     move(event) {
@@ -56,25 +164,47 @@
       drag.velocity = (event.clientY - drag.last) / Math.max(1, now - drag.time);
       drag.last = event.clientY;
       drag.time = now;
-      drag.distance = Math.max(0, event.clientY - drag.start);
-      this.panel.style.transform = `translateY(${drag.distance}px)`;
+      const distance = event.clientY - drag.start;
+      if (!drag.active) {
+        if (distance <= -this.activationDistance || (this.scrollTarget?.scrollTop || 0) > drag.startScrollTop) {
+          this.reset();
+          return;
+        }
+        if (distance < this.activationDistance) return;
+        drag.active = true;
+        this.panel.classList.add('is-sheet-dragging');
+        this.panel.style.transition = 'none';
+        this.panel.style.transform = 'translateY(0)';
+      }
+      drag.distance = Math.max(0, distance);
+      drag.offset = this.getDragOffset(drag.distance);
+      this.panel.style.transform = `translate3d(0, ${drag.offset}px, 0)`;
+      this.setDragProgress(drag.offset / Math.max(1, this.panel.offsetHeight || 0));
       event.preventDefault();
     }
 
     end(event, cancelled = false) {
       const drag = this.drag;
       if (!drag || drag.id !== event.pointerId) return;
-      const dismiss = !cancelled && (drag.distance >= Math.min(140, this.panel.offsetHeight * 0.2) || (drag.distance >= 32 && drag.velocity > 0.55 && performance.now() - drag.time < 100));
+      if (!drag.active) {
+        this.reset();
+        return;
+      }
+      const dismiss = !cancelled && (drag.distance >= this.getDismissDistance() || (drag.distance >= 32 && drag.velocity > 0.55 && performance.now() - drag.time < 100));
       this.drag = null;
-      if (this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
+      this.releasePointer(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.transition = reduced.matches
         ? 'none'
-        : 'transform var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard))';
-      if (dismiss) this.close();
+        : 'transform var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard)), opacity var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard))';
+      if (dismiss) {
+        this.setDragProgress(1);
+        this.close();
+      }
       if (reduced.matches) { this.reset(); return; }
       this.frame = requestAnimationFrame(() => {
-        this.panel.style.transform = dismiss ? 'translateY(100%)' : 'translateY(0)';
+        this.panel.style.transform = dismiss ? 'translate3d(0, 100%, 0)' : 'translate3d(0, 0, 0)';
+        if (!dismiss) this.setDragProgress(0);
         this.timer = setTimeout(() => this.reset(), duration(this.panel) + transitionBuffer);
       });
     }
@@ -84,10 +214,11 @@
       cancelAnimationFrame(this.frame);
       const drag = this.drag;
       this.drag = null;
-      if (drag && this.header.hasPointerCapture(drag.id)) this.header.releasePointerCapture(drag.id);
+      if (drag) this.releasePointer(drag.id);
       this.panel.classList.remove('is-sheet-dragging');
       this.panel.style.removeProperty('transition');
       this.panel.style.removeProperty('transform');
+      this.clearDragProgress();
     }
 
     destroy() { this.reset(); this.controller.abort(); }
@@ -103,13 +234,20 @@
       this.openFrame = null;
       this.panel = dialog.querySelector('.component-overlay__panel');
       this.backdrop = dialog.querySelector('[data-component-overlay-backdrop]');
-      this.backdropCursor = document.querySelector?.('custom-cursor[data-component-overlay-cursor]');
+      this.backdropCursorBinding = bindBackdropCursor({
+        backdrop: this.backdrop,
+        owner: this,
+        root: this.dialog,
+        colorSource: this.dialog,
+        isOpen: () => this.isOpen() && this.dialog.dataset.state === 'open',
+      });
       this.portalToBody();
       this.controller = new AbortController();
       const options = { signal: this.controller.signal };
       this.gesture = new SheetGesture({
         panel: this.panel,
         header: dialog.querySelector('.component-overlay__header'),
+        backdrop: this.backdrop,
         enabled: () => mobile.matches && dialog.dataset.mobileLayout === 'bottom_sheet' && dialog.dataset.state === 'open',
         close: () => this.close({ fromGesture: true, restoreFocus: false }),
       });
@@ -143,14 +281,6 @@
       if (this.backdrop) {
         this.backdrop.addEventListener('click', () => this.close({ restoreFocus: false }), options);
       }
-      if (this.backdropCursor && this.backdrop) {
-        this.backdrop.addEventListener('mousemove', (event) => this.updateBackdropCursor(event), options);
-        this.backdrop.addEventListener('mouseleave', () => this.hideBackdropCursor(), options);
-        window.addEventListener?.('mouseout', (event) => {
-          if (!event.relatedTarget) this.hideBackdropCursor();
-        }, options);
-        window.addEventListener?.('blur', () => this.hideBackdropCursor(), options);
-      }
     }
 
     isOpen() {
@@ -158,35 +288,20 @@
     }
 
     hideBackdropCursor() {
-      this.backdropCursor?.classList.remove('active');
-      this.dialog.classList.remove('cursor-none');
-      backdropCursorOwners.delete(this);
-      document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', backdropCursorOwners.size > 0);
+      this.backdropCursorBinding?.hide();
     }
 
     updateBackdropCursor(event) {
-      const cursor = this.backdropCursor;
-      if (!cursor || !pointerMedia.matches || !this.isOpen() || this.dialog.dataset.state !== 'open') {
-        this.hideBackdropCursor();
-        return;
-      }
-
-      cursor.style.setProperty('--cursor-x', `${event.clientX}px`);
-      cursor.style.setProperty('--cursor-y', `${event.clientY}px`);
-      const overlayStyle = getComputedStyle(this.dialog);
-      cursor.style.setProperty('--color-cursor-text', overlayStyle.getPropertyValue?.('--overlay-text-color') || '');
-      cursor.style.setProperty('--color-cursor-background', overlayStyle.getPropertyValue?.('--overlay-background-color') || '');
-      const scheme = this.dialog.dataset.overlayColorScheme
-        || Array.from(this.dialog.classList || []).find((className) => /^scheme-[a-z0-9_-]+$/i.test(className));
-      if (this.backdropCursorScheme && this.backdropCursorScheme !== scheme) cursor.classList.remove(this.backdropCursorScheme);
-      if (scheme) {
-        cursor.classList.add('color-scheme', 'section-color-scope', scheme);
-        this.backdropCursorScheme = scheme;
-      }
-      cursor.classList.add('active');
-      this.dialog.classList.add('cursor-none');
-      backdropCursorOwners.add(this);
-      document.documentElement?.classList?.toggle('component-overlay-backdrop-cursor', true);
+      if (!this.backdropCursorBinding) return;
+      const cursor = document.querySelector?.('custom-cursor[data-component-overlay-cursor]');
+      updateBackdropCursor({
+        cursor,
+        owner: this,
+        root: this.dialog,
+        colorSource: this.dialog,
+        isOpen: () => this.isOpen() && this.dialog.dataset.state === 'open',
+        event,
+      });
     }
 
     portalToBody() {
@@ -280,6 +395,7 @@
         this.openFrame = null;
         if (!this.isOpen() || this.dialog.dataset.state !== 'opening') return;
         this.dialog.dataset.state = 'open';
+        this.dialog.dispatchEvent?.(new Event('open'));
         const close = this.dialog.querySelector('[data-overlay-close]');
         if (focus) close?.focus({ preventScroll: true });
         else close?.blur?.();
@@ -307,6 +423,7 @@
     destroy() {
       this.close({ immediate: true, restoreFocus: false });
       this.gesture.destroy();
+      this.backdropCursorBinding?.destroy();
       this.controller.abort();
       instances.delete(this.dialog);
       this.restoreFromBody();
@@ -316,6 +433,7 @@
   window.ThemeOverlay = {
     mobile,
     SheetGesture,
+    bindBackdropCursor,
     get(dialog) {
       if (!dialog) return null;
       if (!instances.has(dialog)) instances.set(dialog, new Overlay(dialog));

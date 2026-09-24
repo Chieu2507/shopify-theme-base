@@ -24,9 +24,13 @@ controller remembers the original location and restores it during teardown.
 
 Cart order options and Localization retain their existing commerce/navigation
 shells. They consume the shared sheet radius/header classes and `SheetGesture`
-through adapters; their existing open/close and focus controllers remain.
-The main Cart drawer, Search and product media viewer are not native-shell
-migrations in this change. Do not describe them as migrated to the new snippet.
+through adapters; their nested commerce/navigation state remains feature-owned.
+The main Cart drawer, Search and mobile header drawer now use the same
+`component-overlay` lifecycle directly while preserving their feature markup.
+The desktop mega menu remains a native `details` dropdown because its hover and
+focus semantics are different from a modal; its backdrop and custom cursor use
+the shared overlay tokens/helper. Product media remains a specialized native
+`dialog` because zoom, pan and gallery navigation own its lifecycle.
 
 ## Contract
 
@@ -76,7 +80,12 @@ contexts disable the transition while keeping the backdrop close action
 available.
 Sheets are content-height
 with a viewport cap, common top corner radius, safe-area padding, and a
-scrollable body. Dragging starts only on the header/handle, not form controls.
+scrollable body. On mobile, dragging can start from any non-interactive panel
+surface while the sheet body is at scroll-top, so the panel can be dismissed
+without reaching the header. The panel follows the finger until the dismiss
+threshold, then applies resistance while the backdrop fades with drag progress.
+A header drag remains available even when the body is scrolled; form controls,
+links and other interactive targets retain their native behavior.
 
 ## Validation
 

@@ -41,6 +41,7 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
         [Symbol.iterator]: () => classes[Symbol.iterator](),
       };
       this.offsetHeight = 500;
+      this.scrollTop = 0;
       this.isConnected = true;
       this.tabIndex = 0;
     }
@@ -58,6 +59,8 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
   const header = new Element();
   const closeButton = new Element();
   const backdrop = new Element();
+  const panel = new Element();
+  const body = new Element();
   const backdropCursor = new Element();
   const opener = new Element();
   const lastInput = new Element();
@@ -76,12 +79,13 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
       element.parentElement = this;
     },
   };
+  panel.querySelector = (selector) => selector === '.component-overlay__body' ? body : null;
   Object.assign(dialog, {
     open: false,
     dataset: { mobileLayout: 'bottom_sheet', state: 'closed' },
     querySelector: (selector) => {
       if (selector === '.component-overlay__header') return header;
-      if (selector === '.component-overlay__panel') return dialog;
+      if (selector === '.component-overlay__panel') return panel;
       if (selector === '[data-component-overlay-backdrop]') return backdrop;
       return closeButton;
     },
@@ -113,7 +117,7 @@ function fixture({ mobile = true, reduced = false, portal = false } = {}) {
   });
   const flush = (queue) => { const callbacks = [...queue.values()]; queue.clear(); callbacks.forEach((fn) => fn()); };
   return {
-    api: window.ThemeOverlay, dialog, header, opener, closeButton, backdrop, backdropCursor, lastInput, document, media, timers, frames, timerDelays,
+    api: window.ThemeOverlay, dialog, header, panel, body, opener, closeButton, backdrop, backdropCursor, lastInput, document, media, timers, frames, timerDelays,
     overlay: window.ThemeOverlay.get(dialog),
     tick: (ms) => { now += ms; },
     flushTimers: () => flush(timers), flushFrames: () => flush(frames),
@@ -285,6 +289,50 @@ test('short drag snaps back; downward threshold dismisses', () => {
   assert.equal(f.dialog.open, false);
 });
 
+test('drag resistance and backdrop progress follow the panel movement', () => {
+  const f = fixture();
+  f.overlay.open();
+  f.overlay.gesture.start(f.pointer(0, f.panel));
+  f.tick(100);
+  f.overlay.gesture.move(f.pointer(180, f.panel));
+  const offset = Number.parseFloat(f.panel.style.transform.match(/, ([\d.]+)px/)[1]);
+  assert.ok(offset > 100 && offset < 180);
+  assert.equal(f.panel.style['--sheet-drag-progress'], String(offset / f.panel.offsetHeight));
+  assert.equal(f.backdrop.style['--sheet-drag-progress'], f.panel.style['--sheet-drag-progress']);
+  f.overlay.gesture.end(f.pointer(180, f.panel));
+  assert.match(f.panel.style.transition, /opacity/);
+  assert.equal(f.backdrop.style['--sheet-drag-progress'], '1');
+  f.flushFrames();
+  f.flushTimers();
+  assert.equal(f.panel.style['--sheet-drag-progress'], undefined);
+  assert.equal(f.backdrop.style['--sheet-drag-progress'], undefined);
+});
+
+test('panel surface drag dismisses while the sheet body is at scroll-top', () => {
+  const f = fixture();
+  f.overlay.open();
+  f.overlay.gesture.start(f.pointer(0, f.panel));
+  f.tick(100);
+  f.overlay.gesture.move(f.pointer(180, f.panel));
+  f.overlay.gesture.end(f.pointer(180, f.panel));
+  assert.equal(f.dialog.dataset.state, 'closing');
+});
+
+test('sheet body scroll is preserved away from scroll-top and on upward drags', () => {
+  const f = fixture();
+  f.overlay.open();
+  f.body.scrollTop = 24;
+  f.overlay.gesture.start(f.pointer(0, f.body));
+  assert.equal(f.overlay.gesture.drag, null);
+
+  f.body.scrollTop = 0;
+  f.overlay.gesture.start(f.pointer(100, f.body));
+  f.tick(100);
+  f.overlay.gesture.move(f.pointer(70, f.body));
+  assert.equal(f.overlay.gesture.drag, null);
+  assert.equal(f.dialog.dataset.state, 'open');
+});
+
 test('cancelled gesture and viewport change release capture without closing', () => {
   const f = fixture();
   f.overlay.open();
@@ -297,7 +345,7 @@ test('cancelled gesture and viewport change release capture without closing', ()
   f.overlay.gesture.start(f.pointer(0));
   f.media.matches = false;
   f.media.dispatchEvent(new Event('change'));
-  assert.equal(f.header.capture, null);
+  assert.equal(f.panel.capture, null);
   assert.equal(f.dialog.style.transform, undefined);
 });
 
