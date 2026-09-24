@@ -3,6 +3,9 @@
   const headerStates = new Map();
   const headerResizeObservers = new Map();
   const submenuCloseTimers = new WeakMap();
+  const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
+  const submenuCloseGrace = 100;
+  const submenuTransitionBuffer = 16;
   const menuToggleButtons = new WeakSet();
   const megaMenuBackdropControls = new WeakSet();
   const backdropCursorBindings = new WeakMap();
@@ -108,6 +111,43 @@
     scheduleUpdate();
   };
 
+  const parseCssTime = (value) => {
+    const normalized = String(value || '').trim();
+    const amount = parseFloat(normalized);
+    if (!Number.isFinite(amount)) return 0;
+    return normalized.endsWith('ms') ? amount : amount * 1000;
+  };
+
+  const getMaxTimedValue = (durations, delays) => {
+    const durationValues = String(durations || '0s').split(',').map(parseCssTime);
+    const delayValues = String(delays || '0s').split(',').map(parseCssTime);
+    return Math.max(
+      0,
+      ...durationValues.map((duration, index) => duration + (delayValues[index % delayValues.length] || 0)),
+    );
+  };
+
+  const getHeaderSubmenuSurface = (details) => details?.querySelector(
+    ':scope > .header-menu__submenu, :scope > .header-mega-menu, :scope > .header-localization__panel',
+  );
+
+  const getHeaderSubmenuMotionDuration = (details) => {
+    const surface = getHeaderSubmenuSurface(details);
+    if (!surface) return 0;
+    const style = getComputedStyle(surface);
+    return Math.max(
+      getMaxTimedValue(style.transitionDuration, style.transitionDelay),
+      getMaxTimedValue(style.animationDuration, style.animationDelay),
+    );
+  };
+
+  const clearSubmenuClose = (details) => {
+    const timer = submenuCloseTimers.get(details);
+    if (timer) window.clearTimeout(timer);
+    submenuCloseTimers.delete(details);
+    details?.classList.remove('is-submenu-closing');
+  };
+
   const releaseHoverSubmenuFocus = (details) => {
     if (details?.dataset.headerSubmenuTrigger !== 'hover') return;
 
@@ -118,9 +158,31 @@
   };
 
   const closeHeaderDetails = (details) => {
-    details.removeAttribute('open');
-    details.classList.remove('is-submenu-closing');
-    releaseHoverSubmenuFocus(details);
+    if (!details?.open && !details?.classList.contains('is-submenu-closing')) return;
+
+    clearSubmenuClose(details);
+    const finish = () => {
+      details.removeAttribute('open');
+      details.classList.remove('is-submenu-closing');
+      releaseHoverSubmenuFocus(details);
+      scheduleUpdate();
+    };
+
+    if (window.innerWidth <= 767 || reducedMotion.matches) {
+      finish();
+      return;
+    }
+
+    details.classList.add('is-submenu-closing');
+    const duration = getHeaderSubmenuMotionDuration(details);
+    let timer;
+    timer = window.setTimeout(() => {
+      if (submenuCloseTimers.get(details) !== timer) return;
+      submenuCloseTimers.delete(details);
+      finish();
+    }, duration + submenuTransitionBuffer);
+    submenuCloseTimers.set(details, timer);
+    scheduleUpdate();
   };
 
   const closeHeaderSurfaces = (header, active = {}) => {
@@ -128,7 +190,8 @@
     header.querySelectorAll('details[open], details.is-submenu-closing').forEach((details) => {
       if (details === active.details) return;
       if (details.classList.contains('header-localization__details')) {
-        closeLocalizationSheet(details);
+        if (window.innerWidth <= 767 || getLocalizationDialog(details)?.dataset.state !== 'closed') closeLocalizationSheet(details);
+        else closeHeaderDetails(details);
         return;
       }
       closeHeaderDetails(details);
@@ -353,28 +416,29 @@
   };
 
   const initializeHeaderSubmenus = (header) => {
-    const clearSubmenuClose = (details) => {
-      const timer = submenuCloseTimers.get(details);
-      if (timer) window.clearTimeout(timer);
-      submenuCloseTimers.delete(details);
-      details.classList.remove('is-submenu-closing');
-    };
-
     const scheduleSubmenuClose = (details) => {
       clearSubmenuClose(details);
       if (window.innerWidth <= 767) return;
       if (!details.open) return;
       const trigger = details.dataset.headerSubmenuTrigger || 'click';
       details.classList.add('is-submenu-closing');
-      const timer = window.setTimeout(() => {
+      const duration = getHeaderSubmenuMotionDuration(details);
+      let timer;
+      timer = window.setTimeout(() => {
+        if (submenuCloseTimers.get(details) !== timer) return;
+        submenuCloseTimers.delete(details);
         const keepFocusOpen =
           details.matches(':focus-within') &&
           (trigger === 'click' || details.querySelector(':scope > summary')?.matches(':focus-visible'));
         if (!details.dataset.editorSelected && !details.matches(':hover') && !keepFocusOpen) {
-          closeHeaderDetails(details);
-          scheduleUpdate();
+          details.removeAttribute('open');
+          details.classList.remove('is-submenu-closing');
+          releaseHoverSubmenuFocus(details);
+        } else {
+          details.classList.remove('is-submenu-closing');
         }
-      }, 100);
+        scheduleUpdate();
+      }, submenuCloseGrace + duration + submenuTransitionBuffer);
       submenuCloseTimers.set(details, timer);
     };
 
@@ -430,6 +494,12 @@
           scheduleUpdate();
         });
       }
+
+      summary?.addEventListener('click', (event) => {
+        if (window.innerWidth <= 767 || trigger === 'hover' || !details.open) return;
+        event.preventDefault();
+        closeHeaderDetails(details);
+      });
 
       summary?.addEventListener('click', (event) => {
         if (window.innerWidth > 767) return;
@@ -702,13 +772,19 @@
         };
         const scheduleClose = () => {
           clearCloseTimer();
+          if (!details.open) return;
+          details.classList.add('is-submenu-closing');
+          const duration = getHeaderSubmenuMotionDuration(details);
           state.closeTimer = window.setTimeout(() => {
             state.closeTimer = 0;
             if (!details.matches(':hover') && !details.matches(':focus-within')) {
               details.removeAttribute('open');
               details.classList.remove('is-submenu-closing');
+            } else {
+              details.classList.remove('is-submenu-closing');
             }
-          }, 100);
+            scheduleUpdate();
+          }, submenuCloseGrace + duration + submenuTransitionBuffer);
         };
         const openOnHover = () => {
           if (window.innerWidth <= 767 || details.dataset.headerSubmenuTrigger !== 'hover') return;
@@ -726,6 +802,11 @@
         details.addEventListener('pointerleave', closeOnLeave, { signal: controller.signal });
         details.addEventListener('focusin', openOnHover, { signal: controller.signal });
         details.addEventListener('focusout', closeOnLeave, { signal: controller.signal });
+        details.querySelector(':scope > summary')?.addEventListener('click', (event) => {
+          if (window.innerWidth <= 767 || details.dataset.headerSubmenuTrigger === 'hover' || !details.open) return;
+          event.preventDefault();
+          closeHeaderDetails(details);
+        }, { signal: controller.signal });
         details.addEventListener('toggle', () => {
           if (details.open) {
             clearCloseTimer();
