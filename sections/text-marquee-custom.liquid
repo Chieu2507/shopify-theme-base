@@ -1,4 +1,11 @@
 {% liquid
+  assign section_container_width = 'page-width'
+  if section.settings.section_width == 'full_width'
+    assign section_container_width = 'full-width'
+  elsif section.settings.section_width == 'full_width_no_padding'
+    assign section_container_width = 'full-width full-width--no-padding'
+  endif
+
   assign section_direction = section.settings.direction | default: 'vertical'
   unless section_direction == 'horizontal' or section_direction == 'vertical'
     assign section_direction = 'vertical'
@@ -80,8 +87,10 @@
   {% if section.settings.background_image != blank %}
     <div class="text-marquee-custom__background" aria-hidden="true"></div>
   {% endif %}
-  <div class="text-marquee-custom__content">
-    {% content_for 'blocks' %}
+  <div class="container {{ section_container_width }} text-marquee-custom__container">
+    <div class="text-marquee-custom__content">
+      {% content_for 'blocks' %}
+    </div>
   </div>
 </div>
 
@@ -106,6 +115,9 @@
     background-repeat: no-repeat;
     background-size: cover;
   }
+  .text-marquee-custom .container.full-width--no-padding { padding-inline: 0; }
+  .text-marquee-custom__container { min-width: 0; }
+  .text-marquee-custom__content > .marquee .container.full-width { padding-inline: 0; }
 
   .text-marquee-custom--horizontal {
     flex-direction: row;
@@ -187,7 +199,7 @@
 
 {% schema %}
 {
-  "name": "Text marquee (custom)",
+  "name": "Scrolling Text Images",
   "class": "section-text-marquee-custom",
   "enabled_on": { "templates": ["*"] },
   "blocks": [
@@ -209,6 +221,17 @@
     {
       "type": "header",
       "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:labels.section_width",
+      "options": [
+        { "value": "page_width", "label": "t:options.section_width.page_width" },
+        { "value": "full_width", "label": "t:options.section_width.full_width" },
+        { "value": "full_width_no_padding", "label": "t:options.section_width.full_width_no_padding" }
+      ],
+      "default": "full_width"
     },
     {
       "type": "select",
@@ -419,7 +442,7 @@
   ],
   "presets": [
     {
-      "name": "Text marquee (custom)",
+      "name": "Scrolling Text Images",
       "category": "t:general.content",
       "blocks": [
         {
@@ -427,7 +450,6 @@
           "settings": {
                 "animation_direction": "backward",
                 "animation_speed": 1,
-                "color_scheme": "scheme-1",
                 "gap_desktop": 48,
                 "gap_mobile": 32,
                 "padding_top": 24,

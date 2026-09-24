@@ -873,7 +873,7 @@
     --sale-price-color: {{ default_sale_price }};
     --color-background: var(--background-color);
     --color-foreground: var(--body-color);
-    --color-foreground-rgb: {{ default_body | color_to_rgb | remove: 'rgb(' | remove: ')' | replace: ',', '' }};
+    --color-foreground-rgb: {{ default_body_rgb }};
     --color-accent: var(--accent-color);
     --color-border: var(--border-color);
     --color-surface: color-mix(in srgb, var(--background-color) 94%, var(--body-color));
@@ -1187,40 +1187,66 @@
   }
 
   {% for scheme in settings.color_schemes %}
+    {%- comment -%}
+      Normalize every scheme token before emitting CSS. Older theme data can
+      omit settings that were added later; a direct scheme.settings.* output
+      would otherwise leave an invalid empty custom property behind.
+    {%- endcomment -%}
+    {% assign scheme_background = scheme.settings.background | default: default_background %}
+    {% assign scheme_heading = scheme.settings.heading | default: default_heading %}
+    {% assign scheme_heading_highlight = scheme.settings.heading_highlight | default: default_heading_highlight %}
     {% assign scheme_body = scheme.settings.text | default: default_body %}
+    {% assign scheme_accent = scheme.settings.accent | default: default_accent %}
+    {% assign scheme_border = scheme.settings.border | default: default_border %}
+    {% assign scheme_shadow = scheme.settings.shadow | default: default_shadow %}
+    {% assign scheme_sale_price = scheme.settings.sale_price | default: default_sale_price %}
+    {% assign scheme_primary_background = scheme.settings.button_primary_background | default: default_primary_background %}
+    {% assign scheme_primary_text = scheme.settings.button_primary_text | default: default_primary_text %}
+    {% assign scheme_primary_border = scheme.settings.button_primary_border | default: default_primary_border %}
+    {% assign scheme_primary_hover_background = scheme.settings.button_primary_hover_background | default: 'transparent' %}
+    {% assign scheme_primary_hover_text = scheme.settings.button_primary_hover_text | default: default_primary_hover_text %}
+    {% assign scheme_primary_hover_border = scheme.settings.button_primary_hover_border | default: default_primary_hover_border %}
+    {% assign scheme_secondary_background = scheme.settings.button_secondary_background | default: default_secondary_background %}
+    {% assign scheme_secondary_text = scheme.settings.button_secondary_text | default: default_secondary_text %}
+    {% assign scheme_secondary_border = scheme.settings.button_secondary_border | default: default_secondary_border %}
+    {% assign scheme_secondary_hover_background = scheme.settings.button_secondary_hover_background | default: 'transparent' %}
+    {% assign scheme_secondary_hover_text = scheme.settings.button_secondary_hover_text | default: default_secondary_hover_text %}
+    {% assign scheme_secondary_hover_border = scheme.settings.button_secondary_hover_border | default: default_secondary_hover_border %}
+    {% assign scheme_tertiary_text = scheme.settings.button_tertiary_text | default: default_tertiary_text %}
+    {% assign scheme_tertiary_hover_text = scheme.settings.button_tertiary_hover_text | default: default_tertiary_hover_text %}
     {% assign scheme_body_rgb = scheme_body | color_to_rgb | remove: 'rgb(' | remove: ')' | replace: ',', ' ' | strip %}
     .{{ scheme.id }} {
-      --background-color: {{ scheme.settings.background }};
-      --heading-color: {{ scheme.settings.heading }};
-      --heading-highlight-color: {{ scheme.settings.heading_highlight }};
-      --body-color: {{ scheme.settings.text }};
+      --background-color: {{ scheme_background }};
+      --heading-color: {{ scheme_heading }};
+      --heading-highlight-color: {{ scheme_heading_highlight }};
+      --body-color: {{ scheme_body }};
       --color-foreground-rgb: {{ scheme_body_rgb }};
-      --accent-color: {{ scheme.settings.accent }};
-      --border-color: {{ scheme.settings.border }};
-      --shadow-color: {{ scheme.settings.shadow }};
-      --sale-price-color: {{ scheme.settings.sale_price }};
-      --button-primary-background: {{ scheme.settings.button_primary_background }};
-      --button-primary-text: {{ scheme.settings.button_primary_text }};
-      --button-primary-border: {{ scheme.settings.button_primary_border }};
-      --button-primary-hover-background: {% if scheme.settings.button_primary_hover_background != blank %}{{ scheme.settings.button_primary_hover_background }}{% else %}transparent{% endif %};
-      --button-primary-hover-text: {{ scheme.settings.button_primary_hover_text }};
-      --button-primary-hover-border: {{ scheme.settings.button_primary_hover_border }};
-      --button-secondary-background: {{ scheme.settings.button_secondary_background }};
-      --button-secondary-text: {{ scheme.settings.button_secondary_text }};
-      --button-secondary-border: {{ scheme.settings.button_secondary_border }};
-      --button-secondary-hover-background: {% if scheme.settings.button_secondary_hover_background != blank %}{{ scheme.settings.button_secondary_hover_background }}{% else %}transparent{% endif %};
-      --button-secondary-hover-text: {{ scheme.settings.button_secondary_hover_text }};
-      --button-secondary-hover-border: {{ scheme.settings.button_secondary_hover_border }};
+      --accent-color: {{ scheme_accent }};
+      --border-color: {{ scheme_border }};
+      --shadow-color: {{ scheme_shadow }};
+      --sale-price-color: {{ scheme_sale_price }};
+      --button-primary-background: {{ scheme_primary_background }};
+      --button-primary-text: {{ scheme_primary_text }};
+      --button-primary-border: {{ scheme_primary_border }};
+      --button-primary-hover-background: {{ scheme_primary_hover_background }};
+      --button-primary-hover-text: {{ scheme_primary_hover_text }};
+      --button-primary-hover-border: {{ scheme_primary_hover_border }};
+      --button-secondary-background: {{ scheme_secondary_background }};
+      --button-secondary-text: {{ scheme_secondary_text }};
+      --button-secondary-border: {{ scheme_secondary_border }};
+      --button-secondary-hover-background: {{ scheme_secondary_hover_background }};
+      --button-secondary-hover-text: {{ scheme_secondary_hover_text }};
+      --button-secondary-hover-border: {{ scheme_secondary_hover_border }};
       --button-tertiary-background: transparent;
-      --button-tertiary-text: {{ scheme.settings.button_tertiary_text }};
+      --button-tertiary-text: {{ scheme_tertiary_text }};
       --button-tertiary-border: transparent;
       --button-tertiary-hover-background: transparent;
-      --button-tertiary-hover-text: {{ scheme.settings.button_tertiary_hover_text }};
+      --button-tertiary-hover-text: {{ scheme_tertiary_hover_text }};
       --button-tertiary-hover-border: transparent;
 
       --color-background: var(--background-color);
       --color-foreground: var(--body-color);
-      --color-foreground-rgb: {{ scheme.settings.text | color_to_rgb | remove: 'rgb(' | remove: ')' | replace: ',', '' }};
+      --color-foreground-rgb: {{ scheme_body_rgb }};
       --color-accent: var(--accent-color);
       --color-border: var(--border-color);
       --color-surface: color-mix(in srgb, var(--background-color) 94%, var(--body-color));

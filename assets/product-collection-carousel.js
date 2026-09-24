@@ -2,12 +2,18 @@ import { Pagination } from './swiper-loader.js';
 import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
 const instances = new WeakMap();
-const collectionTabStates = new WeakMap();
+const promoListStates = new WeakMap();
+const editorSelections = new WeakMap();
 const carouselSelector = '[data-product-carousel][data-layout="carousel"]';
 const collectionTabSelector = '[data-collection-tab]';
-const promoSelector = '[data-collection-tab-promo]';
-const promoMobileSlotSelector = '[data-collection-tab-promo-mobile]';
+const productListSelector = '[data-product-list]';
+const promoOwnerSelector = `${collectionTabSelector}, ${productListSelector}`;
+const collectionTabsRootSelector = '[data-collection-tabs]';
+const promoSelector = '[data-collection-tab-promo], [data-product-list-promo]';
+const promoMobileSlotSelector = '[data-collection-tab-promo-mobile], [data-product-list-promo-mobile]';
+const promoItemSelector = '.promo-card-block, .collection-tab-promo-block';
 const desktopBreakpoint = 768;
+const promoListRefreshDelay = 120;
 
 const toNumber = (value, fallback) => {
   const number = Number(value);
@@ -24,23 +30,54 @@ const isMobileViewport = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia(`(max-width: ${desktopBreakpoint - 0.02}px)`).matches;
 
-const isVisible = (element) => element.getClientRects().length > 0;
+const isVisible = (element) => Boolean(element?.getClientRects?.().length);
 
-const getCollectionTab = (element) => element?.closest?.(collectionTabSelector) || null;
-
-const getCollectionTabPanel = (state) =>
-  state?.collectionTab?.querySelector('[data-collection-tab-panel]') || null;
-
-const getCollectionTabItemsRoot = (collectionTab) =>
-  collectionTab?.querySelector('[data-collection-tab-products]') || null;
-
-const getCollectionTabItemsContainer = (itemsRoot) => {
-  const firstChild = itemsRoot?.firstElementChild;
-  return firstChild?.classList.contains('swiper-wrapper') ? firstChild : itemsRoot;
+const hasLayoutBox = (element) => {
+  if (!isVisible(element)) return false;
+  const rect = element.getBoundingClientRect();
+  return rect.width > 0;
 };
 
-const getCollectionTabPromoMobileSlot = (collectionTab) =>
-  collectionTab?.querySelector(promoMobileSlotSelector) || null;
+const getCollectionTab = (element) => element?.closest?.(collectionTabSelector) || null;
+const getProductList = (element) => element?.closest?.(productListSelector) || null;
+const getPromoOwner = (element) => getCollectionTab(element) || getProductList(element);
+
+const getEditorBlockElement = (element) => {
+  if (element?.matches?.('[data-shopify-editor-block]')) return element;
+
+  return element?.closest?.('[data-shopify-editor-block]') ||
+    element?.querySelector?.('[data-shopify-editor-block]') ||
+    null;
+};
+
+const getEditorBlockId = (element) => {
+  const blockElement = getEditorBlockElement(element);
+  const rawValue = blockElement?.getAttribute('data-shopify-editor-block');
+  if (!rawValue) return null;
+
+  try {
+    return JSON.parse(rawValue).id || null;
+  } catch {
+    return rawValue;
+  }
+};
+
+const getPromoPanel = (state) =>
+  state?.promoOwner?.querySelector('[data-collection-tab-panel]') || null;
+
+const getPromoItemsRoot = (promoOwner) =>
+  promoOwner?.querySelector('[data-collection-tab-products], [data-product-list-items]') || null;
+
+const getCollectionTabItemsContainer = (itemsRoot) => {
+  if (!itemsRoot) return null;
+
+  return Array.from(itemsRoot.children).find((child) =>
+    child.classList.contains('swiper-wrapper'),
+  ) || itemsRoot;
+};
+
+const getPromoMobileSlot = (promoOwner) =>
+  promoOwner?.querySelector(promoMobileSlotSelector) || null;
 
 const getPromoElement = (item) => {
   if (!item) return null;
@@ -48,14 +85,42 @@ const getPromoElement = (item) => {
   return item.querySelector?.(promoSelector) || null;
 };
 
-const getCollectionTabPromoItems = (collectionTab) => {
+const getPromoItem = (element) => {
+  if (!element) return null;
+
+  const promoElement = element.matches?.(promoSelector)
+    ? element
+    : element.querySelector?.(promoSelector);
+  if (!promoElement) return null;
+
+  const promoItem = promoElement.closest(promoItemSelector);
+  if (!promoItem) return promoElement.parentElement;
+
+  const editorWrapper = promoItem.parentElement;
+  return editorWrapper?.classList.contains('shopify-block') ? editorWrapper : promoItem;
+};
+
+const getPromoItems = (promoOwner) => {
   const promoItems = [];
-  collectionTab?.querySelectorAll(promoSelector).forEach((promoElement) => {
-    const promoItem = promoElement.closest('.collection-tab-promo-block') || promoElement.parentElement;
+  promoOwner?.querySelectorAll(promoSelector).forEach((promoElement) => {
+    const promoItem = getPromoItem(promoElement);
     if (!promoItem || promoItems.includes(promoItem)) return;
     promoItems.push(promoItem);
   });
   return promoItems;
+};
+
+const getEditorSelectionFromEvent = (event) => {
+  const target = event.target;
+  const blockElement = getEditorBlockElement(target);
+  if (!blockElement) return null;
+
+  const promoItem = getPromoItem(target);
+
+  return {
+    element: promoItem || blockElement,
+    blockId: event.detail?.blockId || getEditorBlockId(blockElement),
+  };
 };
 
 const getCollectionTabItems = (itemsContainer) =>
@@ -85,13 +150,22 @@ const getDesiredCollectionTabItemOrder = (productItems, promoItems) => {
 };
 
 const normalizePromoItem = (promoItem) => {
-  promoItem.classList.add('collection-tab-promo-block', 'promo-card-slide', 'product-collection-grid__item');
+  promoItem.classList.add('promo-card-block', 'collection-tab-promo-block', 'promo-card-slide', 'product-collection-grid__item');
+
+  // Shopify wraps dynamic theme blocks in .shopify-block in the editor. The
+  // wrapper is the real Swiper item; leave only it as a slide so the nested
+  // block cannot be counted or styled as a second slide.
+  const nestedPromoItem = promoItem.querySelector?.(promoItemSelector);
+  if (nestedPromoItem && nestedPromoItem !== promoItem) {
+    nestedPromoItem.classList.remove('swiper-slide');
+  }
 };
 
-const isCollectionTabPanelVisible = (state) => {
-  const panel = getCollectionTabPanel(state);
-  const collectionTab = state?.collectionTab;
-  const itemsRoot = getCollectionTabItemsRoot(state?.collectionTab);
+const isPromoOwnerVisible = (state) => {
+  const panel = getPromoPanel(state);
+  const promoOwner = state?.promoOwner;
+  const collectionTab = getCollectionTab(promoOwner);
+  const itemsRoot = getPromoItemsRoot(promoOwner);
   const tabsRoot = collectionTab?.closest('[data-collection-tabs]');
   const tabLayout = tabsRoot?.querySelector('[data-tab-layout]');
   const isTabLayoutReady = !tabLayout || tabsRoot?.dataset.collectionTabsReady === 'true';
@@ -101,7 +175,7 @@ const isCollectionTabPanelVisible = (state) => {
     isTabLayoutReady &&
     isActiveTab &&
     (!panel || !panel.hidden) &&
-    (!itemsRoot || isVisible(itemsRoot))
+    (!itemsRoot || hasLayoutBox(itemsRoot))
   );
 };
 
@@ -117,36 +191,87 @@ const getCarouselLayoutStyle = (carousel) => {
   return customProperties || styleAttribute;
 };
 
-const scheduleCollectionTabSwiperUpdate = (state) => {
-  if (!state) return;
-  if (state.layoutFrame !== null) window.cancelAnimationFrame(state.layoutFrame);
+const findSelectedPromoItem = (state) => {
+  const selection = state?.editorSelection;
+  if (!selection || !state.promoOwner) return null;
 
-  state.layoutFrame = window.requestAnimationFrame(() => {
-    state.layoutFrame = null;
-    if (!state.swiper || state.swiper.destroyed || !isCollectionTabPanelVisible(state)) return;
-    state.swiper.update();
+  let selectedBlock = selection.element;
+  if (
+    !selectedBlock?.isConnected ||
+    getPromoOwner(selectedBlock) !== state.promoOwner
+  ) {
+    selectedBlock = null;
+  }
+
+  if (!selectedBlock && selection.blockId) {
+    selectedBlock = Array.from(
+      state.promoOwner.querySelectorAll('[data-shopify-editor-block]'),
+    ).find((element) => String(getEditorBlockId(element)) === String(selection.blockId)) || null;
+  }
+
+  return getPromoItem(selectedBlock);
+};
+
+const revealSelectedPromoItem = (state) => {
+  const promoItem = findSelectedPromoItem(state);
+  if (!promoItem) return;
+
+  const promoMobileSlot = getPromoMobileSlot(state.promoOwner);
+  if (promoMobileSlot?.contains(promoItem)) return;
+
+  const swiper = state.swiper;
+  if (!swiper || swiper.destroyed) return;
+
+  const slideIndex = Array.from(swiper.slides || []).indexOf(promoItem);
+  if (slideIndex < 0) return;
+
+  const dynamicSlidesPerView = typeof swiper.slidesPerViewDynamic === 'function'
+    ? swiper.slidesPerViewDynamic()
+    : Number(swiper.params.slidesPerView);
+  const visibleSlides = Number.isFinite(dynamicSlidesPerView)
+    ? Math.max(1, Math.ceil(dynamicSlidesPerView))
+    : 1;
+  const activeIndex = Number.isFinite(swiper.activeIndex) ? swiper.activeIndex : 0;
+  const lastVisibleIndex = activeIndex + visibleSlides - 1;
+
+  if (slideIndex < activeIndex || slideIndex > lastVisibleIndex) {
+    swiper.slideTo(slideIndex, 0, false, true);
+  }
+};
+
+const schedulePromoSwiperUpdate = (state) => {
+  if (!state) return;
+  if (state.updateFrame !== null) window.cancelAnimationFrame(state.updateFrame);
+
+  state.updateFrame = window.requestAnimationFrame(() => {
+    state.updateFrame = window.requestAnimationFrame(() => {
+      state.updateFrame = null;
+      if (!state.swiper || state.swiper.destroyed || !isPromoOwnerVisible(state)) return;
+      state.swiper.update();
+      revealSelectedPromoItem(state);
+    });
   });
 };
 
-const syncCollectionTabPromo = (state) => {
-  const itemsRoot = getCollectionTabItemsRoot(state.collectionTab);
+const syncPromoList = (state) => {
+  const itemsRoot = getPromoItemsRoot(state.promoOwner);
   const itemsContainer = getCollectionTabItemsContainer(itemsRoot);
-  const promoMobileSlot = getCollectionTabPromoMobileSlot(state.collectionTab);
+  const promoMobileSlot = getPromoMobileSlot(state.promoOwner);
   if (!itemsRoot || !itemsContainer || !promoMobileSlot) return false;
 
-  const promoItems = getCollectionTabPromoItems(state.collectionTab);
+  const promoItems = getPromoItems(state.promoOwner);
   const isCarousel = itemsRoot.matches(carouselSelector);
   const nextCarousel = isCarousel ? itemsRoot : null;
   const carouselChanged = state.carousel !== nextCarousel;
   if (carouselChanged) {
     const previousCarousel = state.carousel;
     if (previousCarousel) {
-      destroyCollectionTabSwiper(state);
+      destroyPromoSwiper(state);
       instances.delete(previousCarousel);
     }
 
     state.carousel = nextCarousel;
-    state.scope = nextCarousel ? getCarouselScope(nextCarousel) : state.collectionTab;
+    state.scope = nextCarousel ? getCarouselScope(nextCarousel) : state.promoOwner;
     state.carouselStyle = getCarouselLayoutStyle(nextCarousel);
     if (nextCarousel) instances.set(nextCarousel, state);
 
@@ -177,7 +302,7 @@ const syncCollectionTabPromo = (state) => {
   const existingSwiper = state.swiper || itemsRoot.swiper;
   if (isCarousel && structureChanged && existingSwiper && !existingSwiper.destroyed) {
     state.swiper = existingSwiper;
-    destroyCollectionTabSwiper(state);
+    destroyPromoSwiper(state);
   }
 
   promoItems.forEach(normalizePromoItem);
@@ -193,30 +318,52 @@ const syncCollectionTabPromo = (state) => {
   if (
     isCarousel &&
     desiredListItems.length > 0 &&
-    isCollectionTabPanelVisible(state) &&
+    isPromoOwnerVisible(state) &&
     (!state.swiper || state.swiper.destroyed)
   ) {
-    createCollectionTabSwiper(state);
-  } else if (state.swiper && !state.swiper.destroyed) {
+    createPromoSwiper(state);
+  } else if (state.swiper && !state.swiper.destroyed && isPromoOwnerVisible(state)) {
     state.swiper.update();
+  } else if (state.swiper && (!isCarousel || desiredListItems.length === 0)) {
+    destroyPromoSwiper(state);
   }
 
-  if (state.swiper && !state.swiper.destroyed) scheduleCollectionTabSwiperUpdate(state);
+  // Theme Editor selects a newly added block immediately. If that block is
+  // inserted before the current slide or after the last visible slide, keep
+  // the editor selection visible after the DOM transaction has settled.
+  revealSelectedPromoItem(state);
+  schedulePromoSwiperUpdate(state);
   return structureChanged;
 };
 
-const refreshCollectionTabPromo = (state) => {
-  if (!state?.collectionTab) return false;
-  return syncCollectionTabPromo(state);
+const refreshPromoList = (state) => {
+  if (!state?.promoOwner) return false;
+  return syncPromoList(state);
 };
 
-const scheduleCollectionTabPromoRefresh = (state) => {
-  if (!state || state.syncFrame !== null) return;
+const schedulePromoListRefresh = (state) => {
+  if (!state) return;
 
-  state.syncFrame = window.requestAnimationFrame(() => {
-    state.syncFrame = null;
-    refreshCollectionTabPromo(state);
-  });
+  // Reset the settle window when Shopify continues mutating the nested block.
+  // Theme Editor can insert the block, apply editor attributes, and update its
+  // settings in separate DOM transactions. Do not let Swiper measure any of
+  // those intermediate states.
+  if (state.settleTimer !== null) window.clearTimeout(state.settleTimer);
+  if (state.syncFrame !== null) window.cancelAnimationFrame(state.syncFrame);
+  if (state.layoutFrame !== null) window.cancelAnimationFrame(state.layoutFrame);
+
+  state.settleTimer = window.setTimeout(() => {
+    state.settleTimer = null;
+    state.syncFrame = window.requestAnimationFrame(() => {
+      state.syncFrame = null;
+      // Allow the browser to commit the final DOM and layout before Swiper
+      // reads the wrapper dimensions and slide list.
+      state.layoutFrame = window.requestAnimationFrame(() => {
+        state.layoutFrame = null;
+        refreshPromoList(state);
+      });
+    });
+  }, promoListRefreshDelay);
 };
 
 const getCarouselScope = (carousel) =>
@@ -272,8 +419,6 @@ const buildOptions = (carousel, scope) => {
   const options = {
     slidesPerView: getMobileSlidesPerView(carousel),
     spaceBetween: toNumber(carousel.dataset.swiperGapMobile, 0),
-    observer: true,
-    observeParents: true,
     breakpoints: {
       [desktopBreakpoint]: {
         slidesPerView: getSlidesPerView(carousel.dataset.swiperColumnsDesktop),
@@ -282,6 +427,14 @@ const buildOptions = (carousel, scope) => {
     },
     controls: getControls(carousel, scope),
   };
+
+  // Promo-enabled lists own their DOM reconciliation. Letting Swiper
+  // observe the same wrapper causes an update before the promo transaction
+  // can disable transitions and preserve the active slide.
+  if (!getPromoOwner(carousel)) {
+    options.observer = true;
+    options.observeParents = true;
+  }
 
   if (pagination) {
     options.modules = [Pagination];
@@ -310,7 +463,7 @@ const restoreCarouselStyle = (state) => {
   }
 };
 
-const destroyCollectionTabSwiper = (state) => {
+const destroyPromoSwiper = (state) => {
   const swiper = state?.swiper || state?.carousel?.swiper;
   if (!swiper || swiper.destroyed) {
     if (state) {
@@ -326,7 +479,7 @@ const destroyCollectionTabSwiper = (state) => {
   restoreCarouselStyle(state);
 };
 
-const createCollectionTabSwiper = (state) => {
+const createPromoSwiper = (state) => {
   if (!state?.carousel || !state.carousel.matches(carouselSelector)) return null;
   if (state.swiper && !state.swiper.destroyed) return state.swiper;
 
@@ -384,21 +537,21 @@ const startAutoplay = (state) => {
 };
 
 const observeVisibility = (state) => {
-  const panel = getCollectionTabPanel(state) || state.carousel?.closest('[data-collection-tab-panel]');
-  if (!panel || typeof MutationObserver === 'undefined') return;
-  const collectionTab = state.collectionTab;
+  const panel = getPromoPanel(state) || state.carousel?.closest('[data-collection-tab-panel]');
+  if (typeof MutationObserver === 'undefined') return;
+  const collectionTab = getCollectionTab(state.promoOwner);
   const tabsRoot = collectionTab?.closest('[data-collection-tabs]');
 
   const refreshVisibleState = () => {
-    if (panel.hidden || !isCollectionTabPanelVisible(state)) return;
-    refreshCollectionTabPromo(state);
-    if (state.swiper && !state.swiper.destroyed) state.swiper.update();
+    if (panel?.hidden || !isPromoOwnerVisible(state)) return;
+    if (state.promoOwner) schedulePromoListRefresh(state);
+    else if (state.swiper && !state.swiper.destroyed) state.swiper.update();
   };
 
   state.visibilityObserver = new MutationObserver(() => {
     window.requestAnimationFrame(refreshVisibleState);
   });
-  state.visibilityObserver.observe(panel, { attributes: true, attributeFilter: ['hidden'] });
+  if (panel) state.visibilityObserver.observe(panel, { attributes: true, attributeFilter: ['hidden'] });
   if (collectionTab) {
     state.visibilityObserver.observe(collectionTab, {
       attributes: true,
@@ -417,23 +570,30 @@ const observeVisibility = (state) => {
 const observeSize = (state) => {
   if (typeof ResizeObserver === 'undefined') return;
 
-  const observedElement = state.carousel || getCollectionTabItemsRoot(state.collectionTab);
-  if (!observedElement) return;
+  const observedElements = [
+    state.carousel,
+    getPromoItemsRoot(state.promoOwner),
+    getPromoPanel(state),
+  ].filter((element, index, elements) => element && elements.indexOf(element) === index);
+  if (!observedElements.length) return;
 
   state.resizeObserver = new ResizeObserver(() => {
-    if (!isVisible(observedElement)) return;
-    if (state.collectionTab) refreshCollectionTabPromo(state);
-    if (state.swiper && !state.swiper.destroyed) state.swiper.update();
+    if (state.promoOwner) {
+      if (!isPromoOwnerVisible(state)) return;
+      schedulePromoListRefresh(state);
+    } else if (state.swiper && !state.swiper.destroyed && observedElements.some(isVisible)) {
+      state.swiper.update();
+    }
   });
-  state.resizeObserver.observe(observedElement);
+  observedElements.forEach((element) => state.resizeObserver.observe(element));
 };
 
-const observeCollectionTabPromo = (state) => {
-  if (!state.collectionTab || typeof MutationObserver === 'undefined') return;
+const observePromoList = (state) => {
+  if (!state.promoOwner || typeof MutationObserver === 'undefined') return;
 
   state.promoObserver = new MutationObserver((mutations) => {
-    const itemsContainer = getCollectionTabItemsContainer(getCollectionTabItemsRoot(state.collectionTab));
-    const promoMobileSlot = getCollectionTabPromoMobileSlot(state.collectionTab);
+    const itemsContainer = getCollectionTabItemsContainer(getPromoItemsRoot(state.promoOwner));
+    const promoMobileSlot = getPromoMobileSlot(state.promoOwner);
     const containsPromo = (node) =>
       node?.nodeType === 1 && (node.matches?.(promoSelector) || node.querySelector?.(promoSelector));
     const hasRelevantMutation = mutations.some((mutation) => {
@@ -442,10 +602,10 @@ const observeCollectionTabPromo = (state) => {
       if (mutation.target.closest?.(promoSelector)) return true;
       return [...mutation.addedNodes, ...mutation.removedNodes].some(containsPromo);
     });
-    if (hasRelevantMutation) scheduleCollectionTabPromoRefresh(state);
+    if (hasRelevantMutation) schedulePromoListRefresh(state);
   });
 
-  state.promoObserver.observe(state.collectionTab, {
+  state.promoObserver.observe(state.promoOwner, {
     attributes: true,
     attributeFilter: ['data-promo-card-position', 'data-promo-card-show-on-top-mobile'],
     childList: true,
@@ -453,11 +613,11 @@ const observeCollectionTabPromo = (state) => {
   });
 };
 
-const observeCollectionTabViewport = (state) => {
-  if (!state.collectionTab || typeof window.matchMedia !== 'function') return;
+const observePromoViewport = (state) => {
+  if (!state.promoOwner || typeof window.matchMedia !== 'function') return;
 
   const mediaQuery = window.matchMedia(`(max-width: ${desktopBreakpoint - 0.02}px)`);
-  const handleViewportChange = () => scheduleCollectionTabPromoRefresh(state);
+  const handleViewportChange = () => schedulePromoListRefresh(state);
   if (typeof mediaQuery.addEventListener === 'function') {
     mediaQuery.addEventListener('change', handleViewportChange);
   } else if (typeof mediaQuery.addListener === 'function') {
@@ -469,10 +629,10 @@ const observeCollectionTabViewport = (state) => {
   state.viewportResizeListener = handleViewportChange;
 };
 
-const createCollectionTabState = (collectionTab, carousel = null, scope = collectionTab) => {
+const createPromoListState = (promoOwner, carousel = null, scope = promoOwner) => {
   const state = {
     carousel,
-    collectionTab,
+    promoOwner,
     scope,
     carouselStyle: getCarouselLayoutStyle(carousel),
     swiper: null,
@@ -483,11 +643,14 @@ const createCollectionTabState = (collectionTab, carousel = null, scope = collec
     mediaQuery: null,
     mediaQueryListener: null,
     viewportResizeListener: null,
+    settleTimer: null,
     syncFrame: null,
     layoutFrame: null,
+    updateFrame: null,
     slideItems: null,
+    editorSelection: editorSelections.get(promoOwner) || null,
   };
-  collectionTabStates.set(collectionTab, state);
+  promoListStates.set(promoOwner, state);
   return state;
 };
 
@@ -496,20 +659,23 @@ const initialize = (carousel) => {
 
   const existingState = instances.get(carousel);
   if (existingState) {
-    if (existingState.collectionTab) refreshCollectionTabPromo(existingState);
-    if (existingState.swiper && !existingState.swiper.destroyed) existingState.swiper.update();
+    if (existingState.promoOwner) {
+      schedulePromoListRefresh(existingState);
+    } else if (existingState.swiper && !existingState.swiper.destroyed) {
+      existingState.swiper.update();
+    }
     return;
   }
 
-  const collectionTab = getCollectionTab(carousel);
-  if (collectionTab && collectionTabStates.has(collectionTab)) return;
+  const promoOwner = getPromoOwner(carousel);
+  if (promoOwner && promoListStates.has(promoOwner)) return;
 
   const scope = getCarouselScope(carousel);
-  const state = collectionTab
-    ? createCollectionTabState(collectionTab, carousel, scope)
+  const state = promoOwner
+    ? createPromoListState(promoOwner, carousel, scope)
     : {
       carousel,
-      collectionTab: null,
+      promoOwner: null,
       scope,
       carouselStyle: null,
       swiper: null,
@@ -520,20 +686,25 @@ const initialize = (carousel) => {
       mediaQuery: null,
       mediaQueryListener: null,
       viewportResizeListener: null,
+      settleTimer: null,
       syncFrame: null,
       layoutFrame: null,
+      updateFrame: null,
       slideItems: null,
+      editorSelection: null,
     };
 
   instances.set(carousel, state);
 
-  if (collectionTab) {
-    refreshCollectionTabPromo(state);
+  if (promoOwner) {
+    // Defer the first reconciliation until the owner and its nested blocks
+    // have finished inserting the complete slide tree.
+    schedulePromoListRefresh(state);
   } else {
     state.swiper = createSwiperCarousel(carousel, buildOptions(carousel, scope));
   }
 
-  if (!state.swiper && !collectionTab) {
+  if (!state.swiper && !promoOwner) {
     instances.delete(carousel);
     return;
   }
@@ -541,34 +712,50 @@ const initialize = (carousel) => {
   startAutoplay(state);
   observeSize(state);
   observeVisibility(state);
-  observeCollectionTabPromo(state);
-  observeCollectionTabViewport(state);
+  observePromoList(state);
+  observePromoViewport(state);
 };
 
-const initializeCollectionTab = (collectionTab) => {
-  if (!collectionTab || collectionTabStates.has(collectionTab)) return;
+const initializePromoOwner = (promoOwner) => {
+  if (!promoOwner || promoListStates.has(promoOwner)) return;
 
-  const carousel = collectionTab.querySelector(carouselSelector);
+  const carousel = promoOwner.querySelector(carouselSelector);
   if (carousel) {
     initialize(carousel);
     return;
   }
 
-  if (!getCollectionTabItemsRoot(collectionTab)) return;
+  if (!getPromoItemsRoot(promoOwner)) return;
 
-  const state = createCollectionTabState(collectionTab);
-  refreshCollectionTabPromo(state);
+  const state = createPromoListState(promoOwner);
+  schedulePromoListRefresh(state);
   observeSize(state);
-  observeCollectionTabPromo(state);
-  observeCollectionTabViewport(state);
+  observePromoList(state);
+  observePromoViewport(state);
 };
 
 const initializeRoot = (root = document) => {
   if (root.matches?.(carouselSelector)) initialize(root);
   root.querySelectorAll?.(carouselSelector).forEach(initialize);
 
-  if (root.matches?.(collectionTabSelector)) initializeCollectionTab(root);
-  root.querySelectorAll?.(collectionTabSelector).forEach(initializeCollectionTab);
+  if (root.matches?.(promoOwnerSelector)) initializePromoOwner(root);
+  root.querySelectorAll?.(promoOwnerSelector).forEach(initializePromoOwner);
+};
+
+const getPromoOwners = (root = document) => {
+  const owners = [];
+  if (root.matches?.(promoOwnerSelector)) owners.push(root);
+  root.querySelectorAll?.(promoOwnerSelector).forEach((element) => owners.push(element));
+  return owners;
+};
+
+const refreshPromoOwners = (root = document) => {
+  initializeRoot(root);
+
+  getPromoOwners(root).forEach((promoOwner) => {
+    const state = promoListStates.get(promoOwner);
+    if (state) schedulePromoListRefresh(state);
+  });
 };
 
 const scheduleInitializeRoot = (root = document) => {
@@ -579,13 +766,23 @@ const scheduleInitializeRoot = (root = document) => {
   });
 };
 
+const schedulePromoOwnersRefresh = (root = document) => {
+  if (!root) return;
+
+  window.requestAnimationFrame(() => {
+    window.requestAnimationFrame(() => refreshPromoOwners(root));
+  });
+};
+
 const destroy = (carousel) => {
   const state = instances.get(carousel);
   if (!state) return;
 
   stopAutoplay(state);
+  if (state.settleTimer !== null) window.clearTimeout(state.settleTimer);
   if (state.syncFrame !== null) window.cancelAnimationFrame(state.syncFrame);
   if (state.layoutFrame !== null) window.cancelAnimationFrame(state.layoutFrame);
+  if (state.updateFrame !== null) window.cancelAnimationFrame(state.updateFrame);
   state.resizeObserver?.disconnect();
   state.visibilityObserver?.disconnect();
   state.promoObserver?.disconnect();
@@ -598,15 +795,15 @@ const destroy = (carousel) => {
   }
   if (state.viewportResizeListener) window.removeEventListener('resize', state.viewportResizeListener);
   destroySwiperCarousel(state.swiper || state.carousel?.swiper);
-  if (state.collectionTab) {
+  if (state.promoOwner) {
     restoreCarouselStyle(state);
   }
   instances.delete(carousel);
-  if (state.collectionTab) collectionTabStates.delete(state.collectionTab);
+  if (state.promoOwner) promoListStates.delete(state.promoOwner);
 };
 
-const destroyCollectionTab = (collectionTab) => {
-  const state = collectionTabStates.get(collectionTab);
+const destroyPromoOwner = (promoOwner) => {
+  const state = promoListStates.get(promoOwner);
   if (!state) return;
 
   if (state.carousel) {
@@ -615,7 +812,9 @@ const destroyCollectionTab = (collectionTab) => {
   }
 
   if (state.syncFrame !== null) window.cancelAnimationFrame(state.syncFrame);
+  if (state.settleTimer !== null) window.clearTimeout(state.settleTimer);
   if (state.layoutFrame !== null) window.cancelAnimationFrame(state.layoutFrame);
+  if (state.updateFrame !== null) window.cancelAnimationFrame(state.updateFrame);
   state.resizeObserver?.disconnect();
   state.promoObserver?.disconnect();
   if (state.mediaQuery && state.mediaQueryListener) {
@@ -626,7 +825,7 @@ const destroyCollectionTab = (collectionTab) => {
     }
   }
   if (state.viewportResizeListener) window.removeEventListener('resize', state.viewportResizeListener);
-  collectionTabStates.delete(collectionTab);
+  promoListStates.delete(promoOwner);
 };
 
 const destroyRoot = (root) => {
@@ -635,22 +834,60 @@ const destroyRoot = (root) => {
   root.querySelectorAll?.(carouselSelector).forEach((carousel) => carousels.push(carousel));
   carousels.forEach(destroy);
 
-  const collectionTabs = [];
-  if (root.matches?.(collectionTabSelector)) collectionTabs.push(root);
-  root.querySelectorAll?.(collectionTabSelector).forEach((collectionTab) => collectionTabs.push(collectionTab));
-  collectionTabs.forEach(destroyCollectionTab);
+  getPromoOwners(root).forEach(destroyPromoOwner);
 };
 
-const refreshCollectionTabFromEditorEvent = (event) => {
-  const collectionTab = getCollectionTab(event.target);
-  if (!collectionTab) return;
+const isPromoOwnerMutation = (node) => {
+  if (node?.nodeType !== 1) return false;
 
-  if (!collectionTabStates.has(collectionTab)) {
-    scheduleInitializeRoot(collectionTab);
+  const relevantSelector = `${collectionTabsRootSelector}, ${promoOwnerSelector}, ${carouselSelector}, ${promoSelector}`;
+  return node.matches?.(relevantSelector) || Boolean(node.querySelector?.(relevantSelector));
+};
+
+const observePromoOwnerDom = () => {
+  if (typeof MutationObserver === 'undefined' || !document.documentElement) return;
+
+  const observer = new MutationObserver((mutations) => {
+    const roots = new Set();
+
+    mutations.forEach((mutation) => {
+      [...mutation.addedNodes].forEach((node) => {
+        if (!isPromoOwnerMutation(node)) return;
+
+        const root = node.matches?.(collectionTabsRootSelector)
+          ? node
+          : node.closest?.(collectionTabsRootSelector) ||
+            node.closest?.(promoOwnerSelector) ||
+            node.querySelector?.(collectionTabsRootSelector) ||
+            node.querySelector?.(promoOwnerSelector);
+        if (root) roots.add(root);
+      });
+    });
+
+    roots.forEach((root) => refreshPromoOwners(root));
+  });
+
+  observer.observe(document.documentElement, { childList: true, subtree: true });
+};
+
+const refreshPromoOwnerFromEditorEvent = (event) => {
+  const promoOwner = getPromoOwner(event.target);
+  if (!promoOwner) return;
+
+  const selection = event.type === 'shopify:block:select'
+    ? getEditorSelectionFromEvent(event)
+    : null;
+  editorSelections.set(promoOwner, selection);
+
+  if (!promoListStates.has(promoOwner)) {
+    scheduleInitializeRoot(promoOwner);
     return;
   }
-  const state = collectionTabStates.get(collectionTab);
-  if (state) scheduleCollectionTabPromoRefresh(state);
+  const state = promoListStates.get(promoOwner);
+  if (state) {
+    state.editorSelection = selection;
+    schedulePromoListRefresh(state);
+  }
 };
 
 document.addEventListener('shopify:section:load', (event) => {
@@ -659,11 +896,25 @@ document.addEventListener('shopify:section:load', (event) => {
 });
 document.addEventListener('shopify:section:select', (event) => scheduleInitializeRoot(event.target));
 document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
-document.addEventListener('shopify:block:select', refreshCollectionTabFromEditorEvent);
-document.addEventListener('shopify:block:deselect', refreshCollectionTabFromEditorEvent);
+document.addEventListener('shopify:block:select', refreshPromoOwnerFromEditorEvent);
+document.addEventListener('shopify:block:deselect', refreshPromoOwnerFromEditorEvent);
+
+observePromoOwnerDom();
+
+const scheduleFinalPromoOwnersRefresh = () => schedulePromoOwnersRefresh();
 
 if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => scheduleInitializeRoot(), { once: true });
+  document.addEventListener('DOMContentLoaded', scheduleFinalPromoOwnersRefresh, { once: true });
 } else {
-  scheduleInitializeRoot();
+  scheduleFinalPromoOwnersRefresh();
+}
+
+if (document.readyState === 'complete') {
+  scheduleFinalPromoOwnersRefresh();
+} else {
+  window.addEventListener('load', scheduleFinalPromoOwnersRefresh, { once: true });
+}
+
+if (document.fonts?.ready) {
+  document.fonts.ready.then(scheduleFinalPromoOwnersRefresh).catch(() => {});
 }
