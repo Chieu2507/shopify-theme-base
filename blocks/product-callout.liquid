@@ -134,9 +134,9 @@
     assign product_callout_gap_mobile = 8
   endif
 
-  assign product_callout_button_style = block.settings.button_style | default: 'secondary'
+  assign product_callout_button_style = block.settings.button_style | default: 'primary'
   unless product_callout_button_style == 'primary' or product_callout_button_style == 'secondary' or product_callout_button_style == 'tertiary'
-    assign product_callout_button_style = 'secondary'
+    assign product_callout_button_style = 'primary'
   endunless
 
   assign product_callout_text_alignment = block.settings.text_alignment | default: 'left'
@@ -354,18 +354,20 @@
   }
 
   .product-callout__content {
+    --product-callout-content-page-margin: var(--page-margin-current, var(--page-margin-desktop));
     position: absolute;
     z-index: 3;
-    inset: 0;
+    inset-block: 0;
+    inset-inline-start: var(--product-callout-content-page-margin);
     display: flex;
     flex-direction: column;
     gap: var(--product-callout-content-gap, 12px);
     align-items: flex-start;
     justify-content: flex-end;
-    width: 100%;
-    max-width: 100%;
+    width: min(calc(100% - var(--product-callout-content-page-margin) - var(--product-callout-content-page-margin)), 64rem);
+    max-width: 64rem;
     padding-block: clamp(2.4rem, 5vw, 6.4rem);
-    padding-inline: var(--page-margin-current, var(--page-margin-desktop));
+    padding-inline: 0;
     color: var(--body-color);
     pointer-events: none;
   }
@@ -389,29 +391,35 @@
   .product-callout__content--top_center,
   .product-callout__content--center_center,
   .product-callout__content--bottom_center {
-    align-items: center;
+    inset-inline-start: 50%;
+    inset-inline-end: auto;
+    transform: translateX(-50%);
   }
 
   .product-callout__content--top_right,
   .product-callout__content--center_right,
   .product-callout__content--bottom_right {
-    align-items: flex-end;
+    inset-inline-start: auto;
+    inset-inline-end: var(--product-callout-content-page-margin);
   }
 
   .product-callout__content--align-left {
+    align-items: flex-start;
     text-align: left;
   }
 
   .product-callout__content--align-center {
+    align-items: center;
     text-align: center;
   }
 
   .product-callout__content--align-right {
+    align-items: flex-end;
     text-align: right;
   }
 
   .product-callout__content :where(.product-callout__preheading, .product-callout__heading, .product-callout__text) {
-    width: min(100%, 64rem);
+    width: 100%;
     margin: 0;
     color: currentColor;
   }
@@ -421,8 +429,6 @@
   }
 
   .product-callout__content .product-callout__heading {
-    width: min(100%, 64rem);
-    max-width: 100%;
     padding: 0;
   }
 
@@ -432,7 +438,6 @@
 
   .product-callout__text {
     --body-color: currentColor;
-    max-width: 48rem !important;
   }
 
   .product-callout__text :first-child {
@@ -759,10 +764,24 @@
       display: flex;
       flex-direction: column;
       gap: var(--product-callout-content-gap-mobile, var(--product-callout-content-gap, 8px));
+      width: 100%;
+      max-width: 64rem;
+      margin-inline: auto;
+      transform: none;
       padding: 2.4rem var(--page-margin-current, var(--page-margin-mobile)) 2.8rem;
       background: var(--background-color);
       color: var(--body-color);
       pointer-events: auto;
+    }
+
+    .product-callout__content--top_center,
+    .product-callout__content--center_center,
+    .product-callout__content--bottom_center,
+    .product-callout__content--top_right,
+    .product-callout__content--center_right,
+    .product-callout__content--bottom_right {
+      inset-inline: auto;
+      transform: none;
     }
 
     .product-callout__content--align-center {
@@ -1361,7 +1380,7 @@
       "type": "text",
       "id": "heading",
       "label": "t:labels.heading",
-      "default": "Easy by design"
+      "default": "Heading"
     },
     {
       "type": "select",
@@ -1409,7 +1428,7 @@
       "type": "richtext",
       "id": "text",
       "label": "t:labels.text",
-      "default": "<p>Soft texture, effortless movement, and warm-weather pieces designed to be worn on repeat.</p>"
+      "default": "<p>Add text here.</p>"
     },
     {
       "type": "select",
@@ -1432,6 +1451,29 @@
       "default": "scheme-3"
     },
     {
+      "type": "text_alignment",
+      "id": "text_alignment",
+      "label": "t:labels.alignment",
+      "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "text_position",
+      "label": "t:labels.position",
+      "options": [
+        { "value": "top_left", "label": "t:options.image_card_position.top_left" },
+        { "value": "top_center", "label": "t:options.image_card_position.top_center" },
+        { "value": "top_right", "label": "t:options.image_card_position.top_right" },
+        { "value": "center_left", "label": "t:options.image_card_position.center_left" },
+        { "value": "center_center", "label": "t:options.image_card_position.center_center" },
+        { "value": "center_right", "label": "t:options.image_card_position.center_right" },
+        { "value": "bottom_left", "label": "t:options.image_card_position.bottom_left" },
+        { "value": "bottom_center", "label": "t:options.image_card_position.bottom_center" },
+        { "value": "bottom_right", "label": "t:options.image_card_position.bottom_right" }
+      ],
+      "default": "bottom_left"
+    },
+    {
       "type": "header",
       "content": "t:general.button"
     },
@@ -1439,7 +1481,7 @@
       "type": "text",
       "id": "button_label",
       "label": "t:labels.button_label",
-      "default": "Shop Linen"
+      "default": "Button label"
     },
     {
       "type": "url",
@@ -1463,30 +1505,7 @@
         { "value": "secondary", "label": "t:options.button_variant.secondary" },
         { "value": "tertiary", "label": "t:options.button_variant.tertiary" }
       ],
-      "default": "secondary"
-    },
-    {
-      "type": "text_alignment",
-      "id": "text_alignment",
-      "label": "t:labels.text_alignment",
-      "default": "left"
-    },
-    {
-      "type": "select",
-      "id": "text_position",
-      "label": "t:labels.text_position",
-      "options": [
-        { "value": "top_left", "label": "t:options.image_card_position.top_left" },
-        { "value": "top_center", "label": "t:options.image_card_position.top_center" },
-        { "value": "top_right", "label": "t:options.image_card_position.top_right" },
-        { "value": "center_left", "label": "t:options.image_card_position.center_left" },
-        { "value": "center_center", "label": "t:options.image_card_position.center_center" },
-        { "value": "center_right", "label": "t:options.image_card_position.center_right" },
-        { "value": "bottom_left", "label": "t:options.image_card_position.bottom_left" },
-        { "value": "bottom_center", "label": "t:options.image_card_position.bottom_center" },
-        { "value": "bottom_right", "label": "t:options.image_card_position.bottom_right" }
-      ],
-      "default": "bottom_left"
+      "default": "primary"
     },
     {
       "type": "header",
@@ -1554,13 +1573,13 @@
         "mobile_height": "adapt",
         "content_color_scheme": "scheme-3",
         "hotspot_color_scheme": "scheme-1",
-        "heading": "Easy by design",
+        "heading": "Heading",
         "heading_size": "xl",
         "html_tag": "h2",
-        "text": "<p>Soft texture, effortless movement, and warm-weather pieces designed to be worn on repeat.</p>",
+        "text": "<p>Add text here.</p>",
         "text_size": "lg",
-        "button_label": "Shop Linen",
-        "button_style": "secondary",
+        "button_label": "Button label",
+        "button_style": "primary",
         "text_alignment": "left",
         "text_position": "bottom_left",
         "gap_desktop": 12,
