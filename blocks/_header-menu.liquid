@@ -141,12 +141,12 @@
     {% endif %}
   </nav>
 
-  <aside class="{{ mobile_drawer_class }} {{ menu_typography_class }}" id="HeaderMobileDrawer-{{ section.id }}" aria-label="{{ 'accessibility.menu' | t }}" aria-hidden="true" data-header-mobile-drawer{% if menu_style != blank %} style="{{ menu_style | strip }}"{% endif %}>
-    <button class="header__mobile-drawer-backdrop" type="button" aria-label="Close menu" data-header-menu-backdrop></button>
-    <div class="header__mobile-drawer-surface">
-      <header class="header__mobile-drawer-header">
-        <span class="header__mobile-drawer-title heading-text heading-sm">{{ shop.name | escape }}</span>
-        <button class="overlay-close header__mobile-drawer-close" type="button" aria-label="Close menu" aria-controls="HeaderMobileDrawer-{{ section.id }}" data-header-menu-toggle>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button>
+  <aside class="component-overlay section-color-scope {{ mobile_drawer_class }} {{ menu_typography_class }}" id="HeaderMobileDrawer-{{ section.id }}" aria-label="{{ 'accessibility.menu' | t }}" aria-labelledby="HeaderMobileDrawerHeading-{{ section.id }}" aria-hidden="true" aria-modal="true" role="dialog" data-component-overlay data-desktop-layout="drawer" data-mobile-layout="drawer" data-state="closed" scroll-lock hidden data-header-mobile-drawer{% if menu_style != blank %} style="{{ menu_style | strip }}"{% endif %}>
+    <button class="component-overlay__backdrop header__mobile-drawer-backdrop" type="button" tabindex="-1" aria-label="Close menu" data-component-overlay-backdrop data-header-menu-backdrop></button>
+    <div class="component-overlay__panel header__mobile-drawer-surface">
+      <header class="component-overlay__header header__mobile-drawer-header">
+        <span class="header__mobile-drawer-title heading-text heading-sm" id="HeaderMobileDrawerHeading-{{ section.id }}">{{ shop.name | escape }}</span>
+        <button class="overlay-close component-overlay__close header__mobile-drawer-close" type="button" aria-label="Close menu" aria-controls="HeaderMobileDrawer-{{ section.id }}" data-overlay-close data-header-menu-toggle>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button>
         <button class="header__mobile-drawer-back heading-text heading-sm" type="button" hidden data-header-menu-back>
           {% render 'icon', icon: 'chevron-left', class: 'header__mobile-drawer-back-icon' %}<span data-header-menu-back-label data-header-menu-back-default-label="{{ 'accessibility.menu' | t }}">{{ 'accessibility.menu' | t }}</span>
         </button>
@@ -733,12 +733,21 @@
       display: block;
       visibility: hidden;
       pointer-events: none;
-      transition: visibility 0s linear var(--motion-duration-standard);
+      transition: visibility 0s linear var(--overlay-exit-duration, var(--motion-duration-standard));
     }
 
-    .header-top--menu-open .header__mobile-drawer {
+    .header__mobile-drawer[data-state='closing'],
+    .header__mobile-drawer:is([data-state='opening'], [data-state='open']) {
       visibility: visible;
+    }
+
+    .header__mobile-drawer:is([data-state='opening'], [data-state='open']) {
       pointer-events: auto;
+      transition-delay: 0s;
+    }
+
+    .header__mobile-drawer[data-state='closing'] {
+      pointer-events: none;
       transition-delay: 0s;
     }
 
@@ -750,9 +759,13 @@
       padding: 0;
       border: 0;
       background-color: transparent;
-      -webkit-backdrop-filter: blur(var(--overlay-backdrop-blur));
-      backdrop-filter: blur(var(--overlay-backdrop-blur));
-      transition: background-color var(--motion-duration-standard) var(--motion-ease-standard);
+      -webkit-backdrop-filter: blur(0);
+      backdrop-filter: blur(0);
+      transition:
+        background-color var(--overlay-backdrop-duration, var(--motion-duration-standard)) var(--overlay-backdrop-ease, var(--motion-ease-standard)),
+        opacity var(--overlay-backdrop-duration, var(--motion-duration-standard)) var(--overlay-backdrop-ease, var(--motion-ease-standard)),
+        -webkit-backdrop-filter var(--overlay-backdrop-duration, var(--motion-duration-standard)) var(--overlay-backdrop-ease, var(--motion-ease-standard)),
+        backdrop-filter var(--overlay-backdrop-duration, var(--motion-duration-standard)) var(--overlay-backdrop-ease, var(--motion-ease-standard));
     }
 
     .header-top--menu-open .header__mobile-drawer-backdrop {
@@ -771,6 +784,33 @@
       background: var(--background-color);
       flex-direction: column;
       transition: inset-inline-start var(--motion-duration-standard) var(--motion-ease-standard);
+    }
+
+    .header__mobile-drawer.component-overlay[data-mobile-layout='drawer'] .header__mobile-drawer-surface {
+      --overlay-rest-transform: translateX(-100%);
+      inset: 0 auto 0 0;
+      width: 100%;
+      max-width: 100vw;
+      height: 100dvh;
+      max-height: 100dvh;
+      margin: 0;
+      border: var(--overlay-popover-border-width) solid var(--overlay-border-color);
+      border-radius: 0 var(--drawer-radius) var(--drawer-radius) 0;
+      background: var(--background-color);
+      color: var(--header-menu-color, var(--body-color));
+      transform: var(--overlay-rest-transform);
+      transition: transform var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard));
+    }
+
+    .header__mobile-drawer.component-overlay[data-state='open'] .header__mobile-drawer-surface,
+    .header__mobile-drawer.component-overlay[data-state='opening'] .header__mobile-drawer-surface {
+      transform: none;
+    }
+
+    .header__mobile-drawer.component-overlay[data-state='closing'] .header__mobile-drawer-surface {
+      transform: var(--overlay-rest-transform);
+      transition-duration: var(--overlay-exit-duration, var(--motion-duration-standard));
+      transition-timing-function: var(--overlay-exit-ease, var(--motion-ease-standard));
     }
 
     .header-top--menu-open .header__mobile-drawer-surface {
