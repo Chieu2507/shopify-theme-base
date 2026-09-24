@@ -63,12 +63,23 @@
     assign carousel_show_navigation = false
   endif
 
+  assign carousel_navigation_position = block.settings.navigation_position | default: 'inside'
+  unless carousel_navigation_position == 'inside' or carousel_navigation_position == 'outside'
+    assign carousel_navigation_position = 'inside'
+  endunless
+
   assign carousel_pagination_type = block.settings.pagination_type | default: 'progress_bar'
   unless carousel_pagination_type == 'progress_bar' or carousel_pagination_type == 'bullets'
     assign carousel_pagination_type = 'progress_bar'
   endunless
-  assign carousel_pagination_desktop = block.settings.show_pagination_on_desktop
-  assign carousel_pagination_mobile = block.settings.show_pagination_on_mobile
+  assign carousel_pagination_desktop = true
+  if block.settings.show_pagination_on_desktop == false or block.settings.show_pagination_on_desktop == 'false'
+    assign carousel_pagination_desktop = false
+  endif
+  assign carousel_pagination_mobile = true
+  if block.settings.show_pagination_on_mobile == false or block.settings.show_pagination_on_mobile == 'false'
+    assign carousel_pagination_mobile = false
+  endif
   assign carousel_pagination_padding_desktop = block.settings.pagination_padding_desktop | default: 40 | plus: 0
   assign carousel_pagination_padding_mobile = block.settings.pagination_padding_mobile | default: 40 | plus: 0
   assign carousel_pagination_max_width = block.settings.pagination_max_width | default: 260 | plus: 0
@@ -119,6 +130,8 @@
         class="swiper-pagination swiper-pagination--below carousel-block__pagination carousel-block__pagination--{{ carousel_pagination_type }}{% if carousel_pagination_limit_width %} carousel-block__pagination--limited{% endif %}"
         data-carousel-pagination
         data-pagination-type="{{ carousel_pagination_type }}"
+        data-pagination-visible-desktop="{{ carousel_pagination_desktop }}"
+        data-pagination-visible-mobile="{{ carousel_pagination_mobile }}"
         {% if carousel_pagination_limit_width %}style="--carousel-pagination-max-width: {{ carousel_pagination_max_width }}px; --swiper-pagination-width: {{ carousel_pagination_max_width }}px;"{% endif %}
       ></div>
     {% endif %}
@@ -173,7 +186,7 @@
     {% if carousel_has_multiple_items and carousel_controls_style == 'standard' %}
       {% render 'swiper-navigation',
         show: carousel_show_navigation,
-        position: 'inside',
+        position: carousel_navigation_position,
         style: carousel_navigation_style,
         icon: carousel_navigation_icon,
         behavior: carousel_navigation_behavior,
@@ -208,6 +221,9 @@
   .carousel-block__viewport { width: 100%; }
   .carousel-block__viewport > .swiper-wrapper { column-gap: 0; }
   .carousel-block__navigation { position: absolute; z-index: 2; inset: 50% 0 auto; display: flex; justify-content: space-between; padding-inline: 0.5rem; transform: translateY(-50%); pointer-events: none; }
+  .carousel-block__navigation.swiper-carousel__navigation--outside { padding-inline: 0; }
+  .carousel-block__navigation.swiper-carousel__navigation--outside .swiper-nav-button--prev { margin-inline-start: calc(-1 * var(--swiper-nav-size) / 2); }
+  .carousel-block__navigation.swiper-carousel__navigation--outside .swiper-nav-button--next { margin-inline-end: calc(-1 * var(--swiper-nav-size) / 2); }
   .carousel-block__navigation .swiper-nav-button { pointer-events: auto; }
   .carousel-block__navigation .swiper-nav-button.swiper-button-disabled { pointer-events: none; }
   .carousel-block__fraction-controls { display: flex; align-items: center; gap: 1rem; margin-top: 1rem; }
@@ -305,6 +321,12 @@
       "default": "1"
     },
     {
+      "type": "checkbox",
+      "id": "loop",
+      "label": "Loop slides",
+      "default": false
+    },
+    {
       "type": "header",
       "content": "t:general.gap"
     },
@@ -371,6 +393,17 @@
     },
     {
       "type": "select",
+      "id": "navigation_position",
+      "label": "t:labels.position",
+      "options": [
+        { "value": "outside", "label": "t:options.collection_navigation_position.outside" },
+        { "value": "inside", "label": "t:options.collection_navigation_position.inside" }
+      ],
+      "default": "inside",
+      "visible_if": "{{ block.settings.show_navigation_on_desktop }}"
+    },
+    {
+      "type": "select",
       "id": "navigation_style",
       "label": "t:labels.style",
       "options": [
@@ -429,6 +462,26 @@
       "visible_if": "{{ block.settings.show_navigation_on_desktop }}"
     },
     {
+      "type": "header",
+      "content": "t:general.pagination"
+    },
+    {
+      "type": "select",
+      "id": "pagination_type",
+      "label": "t:labels.type",
+      "options": [
+        {
+          "value": "progress_bar",
+          "label": "t:options.collection_pagination.progress_bar"
+        },
+        {
+          "value": "bullets",
+          "label": "t:options.collection_pagination.bullets"
+        }
+      ],
+      "default": "progress_bar"
+    },
+    {
       "type": "select",
       "id": "controls_style",
       "label": "Controls style",
@@ -439,8 +492,8 @@
       "default": "standard"
     },
     {
-    "type": "select",
-    "id": "controls_alignment",
+      "type": "select",
+      "id": "controls_alignment",
       "label": "Controls alignment",
       "options": [
         { "value": "left", "label": "Left" },
@@ -461,32 +514,6 @@
       ],
       "default": "center",
       "visible_if": "{{ block.settings.controls_style == 'fraction' }}"
-    },
-    {
-      "type": "checkbox",
-      "id": "loop",
-      "label": "Loop slides",
-      "default": false
-    },
-    {
-      "type": "header",
-      "content": "t:general.pagination"
-    },
-    {
-      "type": "select",
-      "id": "pagination_type",
-      "label": "t:labels.type",
-      "options": [
-        {
-          "value": "progress_bar",
-          "label": "t:options.collection_pagination.progress_bar"
-        },
-        {
-          "value": "bullets",
-          "label": "t:options.collection_pagination.bullets"
-        }
-      ],
-      "default": "progress_bar"
     },
     {
       "type": "checkbox",
