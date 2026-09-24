@@ -33,18 +33,45 @@
 
   assign product_callout_desktop_height = block.settings.desktop_height | default: 'adapt'
   assign product_callout_mobile_height = block.settings.mobile_height | default: 'adapt'
-  assign product_callout_desktop_height_value = blank
-  assign product_callout_mobile_height_value = blank
 
   if product_callout_is_carousel
-    assign product_callout_desktop_height_value = section.settings.desktop_height | default: 560 | plus: 0
-    assign product_callout_mobile_height_value = section.settings.mobile_height | default: 420 | plus: 0
-    if product_callout_desktop_height_value < 320 or product_callout_desktop_height_value > 900
-      assign product_callout_desktop_height_value = 560
+    assign product_callout_desktop_height = section.settings.desktop_height | default: 'medium'
+    assign product_callout_desktop_height_number = product_callout_desktop_height | plus: 0
+    if product_callout_desktop_height_number > 0
+      if product_callout_desktop_height_number <= 480
+        assign product_callout_desktop_height = 'extra_small'
+      elsif product_callout_desktop_height_number <= 600
+        assign product_callout_desktop_height = 'small'
+      elsif product_callout_desktop_height_number <= 800
+        assign product_callout_desktop_height = 'medium'
+      elsif product_callout_desktop_height_number <= 960
+        assign product_callout_desktop_height = 'large'
+      else
+        assign product_callout_desktop_height = 'extra_large'
+      endif
     endif
-    if product_callout_mobile_height_value < 300 or product_callout_mobile_height_value > 700
-      assign product_callout_mobile_height_value = 420
+    unless product_callout_desktop_height == 'adapt' or product_callout_desktop_height == 'extra_small' or product_callout_desktop_height == 'small' or product_callout_desktop_height == 'medium' or product_callout_desktop_height == 'large' or product_callout_desktop_height == 'extra_large' or product_callout_desktop_height == 'full_screen'
+      assign product_callout_desktop_height = 'medium'
+    endunless
+
+    assign product_callout_mobile_height = section.settings.mobile_height | default: 'small'
+    assign product_callout_mobile_height_number = product_callout_mobile_height | plus: 0
+    if product_callout_mobile_height_number > 0
+      if product_callout_mobile_height_number <= 360
+        assign product_callout_mobile_height = 'extra_small'
+      elsif product_callout_mobile_height_number <= 480
+        assign product_callout_mobile_height = 'small'
+      elsif product_callout_mobile_height_number <= 600
+        assign product_callout_mobile_height = 'medium'
+      elsif product_callout_mobile_height_number <= 760
+        assign product_callout_mobile_height = 'large'
+      else
+        assign product_callout_mobile_height = 'extra_large'
+      endif
     endif
+    unless product_callout_mobile_height == 'adapt' or product_callout_mobile_height == 'extra_small' or product_callout_mobile_height == 'small' or product_callout_mobile_height == 'medium' or product_callout_mobile_height == 'large' or product_callout_mobile_height == 'extra_large' or product_callout_mobile_height == 'full_screen'
+      assign product_callout_mobile_height = 'small'
+    endunless
   else
     unless product_callout_desktop_height == 'adapt' or product_callout_desktop_height == 'extra_small' or product_callout_desktop_height == 'small' or product_callout_desktop_height == 'medium' or product_callout_desktop_height == 'large' or product_callout_desktop_height == 'extra_large' or product_callout_desktop_height == 'full_screen'
       assign product_callout_desktop_height = 'adapt'
@@ -156,7 +183,7 @@
   assign product_callout_class = 'product-callout product-callout--position-' | append: product_callout_text_position
   assign product_callout_class = product_callout_class | append: ' product-callout--align-' | append: product_callout_text_alignment
   if product_callout_is_carousel
-    assign product_callout_class = product_callout_class | append: ' product-callout--carousel product-callout--desktop-fixed product-callout--mobile-fixed swiper-slide'
+    assign product_callout_class = product_callout_class | append: ' product-callout--carousel product-callout--desktop-' | append: product_callout_desktop_height | append: ' product-callout--mobile-' | append: product_callout_mobile_height | append: ' swiper-slide'
   else
     assign product_callout_class = product_callout_class | append: ' product-callout--desktop-' | append: product_callout_desktop_height
     assign product_callout_class = product_callout_class | append: ' product-callout--mobile-' | append: product_callout_mobile_height
@@ -179,10 +206,6 @@
   {% if product_callout_overlay != blank %}--product-callout-overlay-color: {{ product_callout_overlay | escape }};{% endif %}
   --product-callout-content-gap: {{ product_callout_gap_desktop }}px;
   --product-callout-content-gap-mobile: {{ product_callout_gap_mobile }}px;
-  {% if product_callout_is_carousel %}
-    --product-callout-height-desktop: {{ product_callout_desktop_height_value }}px;
-    --product-callout-height-mobile: {{ product_callout_mobile_height_value }}px;
-  {% endif %}
   {% if product_callout_heading_size == 'custom' %}--heading-block-custom-size: {{ product_callout_custom_heading_size }}px;{% endif %}
 {% endcapture %}
 {% assign product_callout_style = product_callout_style | strip %}
@@ -275,11 +298,12 @@
   .product-callout--desktop-large .product-callout__media { min-height: 90rem; aspect-ratio: auto; }
   .product-callout--desktop-extra_large .product-callout__media { min-height: 108rem; aspect-ratio: auto; }
   .product-callout--desktop-full_screen .product-callout__media { min-height: 100svh; aspect-ratio: auto; }
-  .product-callout--desktop-fixed .product-callout__media {
-    height: var(--product-callout-height-desktop);
-    min-height: var(--product-callout-height-desktop);
+  .product-callout--carousel .product-callout__media {
+    height: 100%;
+    min-height: 100%;
     aspect-ratio: auto;
   }
+  .product-callout--carousel.product-callout--desktop-adapt .product-callout__media { height: auto; min-height: 0; aspect-ratio: var(--product-callout-ratio, 2.4); }
 
   .product-callout__media .background-media__image > img,
   .product-callout__media .background-media__image > picture > img {
@@ -715,11 +739,12 @@
     .product-callout--mobile-large .product-callout__media { min-height: 76rem; aspect-ratio: auto; }
     .product-callout--mobile-extra_large .product-callout__media { min-height: 90rem; aspect-ratio: auto; }
     .product-callout--mobile-full_screen .product-callout__media { min-height: 100svh; aspect-ratio: auto; }
-    .product-callout--mobile-fixed .product-callout__media {
-      height: var(--product-callout-height-mobile);
-      min-height: var(--product-callout-height-mobile);
+    .product-callout--carousel .product-callout__media {
+      height: 100%;
+      min-height: 100%;
       aspect-ratio: auto;
     }
+    .product-callout--carousel.product-callout--mobile-adapt .product-callout__media { height: auto; min-height: 0; aspect-ratio: var(--product-callout-ratio-mobile, var(--product-callout-ratio, 2.4)); }
 
     .product-callout__media .background-media__image > img,
     .product-callout__media .background-media__image > picture > img {
