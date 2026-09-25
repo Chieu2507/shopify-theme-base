@@ -598,6 +598,34 @@ const initialize = (root) => {
     manualLoop?.destroy();
     return;
   }
+  let hotspotContentSchemeCleanup = null;
+  if (root.hasAttribute('data-hotspot-full-width-carousel')) {
+    const controls = root.querySelectorAll(
+      '.hotspot-full-width-carousel__navigation, .hotspot-full-width-carousel__pagination, .hotspot-full-width-carousel__fraction-controls'
+    );
+    const syncHotspotContentScheme = () => {
+      if (swiper.destroyed) return;
+      const activeSlide = swiper.slides[swiper.activeIndex];
+      const productCallout = activeSlide?.matches('.product-callout.color-scheme')
+        ? activeSlide
+        : activeSlide?.querySelector('.product-callout.color-scheme');
+      const scheme = [...(productCallout?.classList || [])].find((className) => className.startsWith('scheme-'));
+      if (!scheme) return;
+
+      controls.forEach((control) => {
+        const currentScheme = control.dataset.carouselContentScheme
+          || [...control.classList].find((className) => className.startsWith('scheme-'));
+        if (currentScheme !== scheme) {
+          if (currentScheme) control.classList.remove(currentScheme);
+          control.classList.add(scheme);
+          control.dataset.carouselContentScheme = scheme;
+        }
+      });
+    };
+    swiper.on('init slideChange', syncHotspotContentScheme);
+    syncHotspotContentScheme();
+    hotspotContentSchemeCleanup = () => swiper.off('init slideChange', syncHotspotContentScheme);
+  }
   const manualPaginationCleanup = createManualPagination(pagination, swiper, manualLoop);
   if (manualLoop) {
     swiper.on('slideChangeTransitionEnd', manualLoop.restore);
@@ -649,6 +677,7 @@ const initialize = (root) => {
   const state = {
     swiper,
     testimonialGapCleanup,
+    hotspotContentSchemeCleanup,
     lockedCleanup,
     slideChangeCleanup,
     fractionCleanup,
@@ -671,6 +700,7 @@ const destroy = (root) => {
   if (!state) return;
   state.autoplayCleanup?.();
   state.testimonialGapCleanup?.();
+  state.hotspotContentSchemeCleanup?.();
   state.lockedCleanup?.();
   state.slideChangeCleanup?.();
   state.fractionCleanup?.();
