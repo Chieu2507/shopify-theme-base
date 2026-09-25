@@ -554,6 +554,11 @@ const initialize = (root) => {
   const fractionControls = root.dataset.carouselControlsStyle === 'fraction';
   const loop = root.dataset.carouselLoop === 'true';
   const manualLoopRequested = root.dataset.carouselManualLoop === 'true';
+  const showNextSlidePreview = viewport.dataset.swiperNextSlidePreview === 'true';
+  const desktopColumns = number(root.dataset.swiperColumnsDesktop, 4);
+  const slideCount = Array.from(wrapper.children).filter((slide) => slide.classList.contains('swiper-slide')).length;
+  const previewEnabled = showNextSlidePreview && slideCount > desktopColumns;
+  viewport.dataset.swiperNextSlidePreview = String(previewEnabled);
   // The shared Swiper preview attribute is a CSS-only overflow hook. Sections
   // that require centered-slide runtime must opt in explicitly on their root.
   const useCenteredSlidePreview = root.dataset.showNextSlidePreviewOnDesktop === 'true';
@@ -573,7 +578,7 @@ const initialize = (root) => {
     spaceBetween: number(root.dataset.swiperGapMobile, 12),
     breakpoints: {
       [desktopBreakpoint]: {
-        slidesPerView: number(root.dataset.swiperColumnsDesktop, 4),
+        slidesPerView: desktopColumns,
         spaceBetween: number(root.dataset.swiperGapDesktop, 16),
         ...(useCenteredSlidePreview ? { centeredSlides: true, spaceBetween: 24 } : {})
       }
