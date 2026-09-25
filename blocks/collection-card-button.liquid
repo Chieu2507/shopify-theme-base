@@ -90,6 +90,12 @@
 
   assign collection_card_button_class = 'collection-card-button collection-card-button--width-' | append: collection_card_button_width
   assign collection_card_button_class = collection_card_button_class | append: ' collection-card-button--width-mobile-' | append: collection_card_button_width_mobile
+  assign collection_card_button_should_render = false
+  if collection_card_button_collection.url != blank and collection_card_button_label != blank
+    assign collection_card_button_should_render = true
+  elsif request.design_mode
+    assign collection_card_button_should_render = true
+  endif
   if collection_card_button_label == blank
     assign collection_card_button_class = collection_card_button_class | append: ' collection-card-button--empty'
   endif
@@ -109,7 +115,7 @@
 {% endcapture %}
 {% assign collection_card_button_style_attribute = collection_card_button_style_attribute | strip %}
 
-{% if collection_card_button_label != blank or request.design_mode %}
+{% if collection_card_button_should_render %}
   <div
     class="{{ collection_card_button_class }}"
     {% if collection_card_button_style_attribute != blank %}style="{{ collection_card_button_style_attribute }}"{% endif %}

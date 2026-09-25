@@ -22,7 +22,7 @@
   assign blog_list_is_placeholder = false
   if blog_list_source != blank and blog_list_source.articles != blank
     assign blog_list_items = blog_list_source.articles
-  else
+  elsif request.design_mode
     assign blog_list_placeholder_count = blog_list_max_posts
     assign blog_list_items = (1..blog_list_placeholder_count)
     assign blog_list_item_limit = blog_list_placeholder_count
@@ -250,6 +250,7 @@
 {% endcapture %}
 {% assign blog_list_carousel_attributes = blog_list_carousel_attributes | strip %}
 
+{% if blog_list_items != blank %}
 {% render 'swiper-stylesheet' %}
 {% if blog_list_layout == 'carousel' %}
   <script type="module" src="{{ 'product-collection-carousel.js' | asset_url }}"></script>
@@ -282,6 +283,7 @@
     {% if blog_list_navigation_position != 'top' %}{{ blog_list_navigation }}{% endif %}
   </div>
 </div>
+{% endif %}
 
 {% stylesheet %}
   .blog-list {

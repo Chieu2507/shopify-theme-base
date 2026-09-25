@@ -3,6 +3,13 @@
   assign faq_content_id = faq_item_id | append: '-content'
   assign faq_question = block.settings.question | default: 'Frequently asked question'
   assign faq_question_icon = block.settings.question_icon | default: 'check'
+  assign faq_has_nested_answer = false
+  for faq_answer_block in block.blocks
+    if faq_answer_block.settings.text != blank
+      assign faq_has_nested_answer = true
+      break
+    endif
+  endfor
   assign faq_question_icon_gap = block.settings.question_icon_gap | default: 8 | plus: 0
   assign faq_question_icon_size = block.settings.question_icon_size | default: 20 | plus: 0
   if faq_question_icon_gap < 0 or faq_question_icon_gap > 100
@@ -18,7 +25,7 @@
     {% content_for 'blocks' %}
   {% elsif block.settings.answer != blank %}
     {{ block.settings.answer }}
-  {% else %}
+  {% elsif request.design_mode %}
     <p>Share the answer to this question here.</p>
   {% endif %}
 {% endcapture %}
@@ -39,7 +46,9 @@
   </span>
 {% endcapture %}
 
-{% render 'accordion-details', id: faq_item_id, content_id: faq_content_id, class: 'faq-item', summary_class: 'faq-item__summary', content_class: 'faq-item__content', content_inner_class: 'faq-item__content-inner', summary: faq_summary, content: faq_answer, initially_open: block.settings.initially_open, attributes: block.shopify_attributes %}
+{% if faq_has_nested_answer or block.settings.answer != blank or request.design_mode %}
+  {% render 'accordion-details', id: faq_item_id, content_id: faq_content_id, class: 'faq-item', summary_class: 'faq-item__summary', content_class: 'faq-item__content', content_inner_class: 'faq-item__content-inner', summary: faq_summary, content: faq_answer, initially_open: block.settings.initially_open, attributes: block.shopify_attributes %}
+{% endif %}
 
 {% stylesheet %}
   .faq-item { min-width: 0; }
@@ -81,10 +90,7 @@
         "show_question_icon": true,
         "question_icon": "circle",
         "initially_open": false
-      },
-      "blocks": [
-        { "type": "faq_answer_text", "settings": { "text": "<p>Share the answer to this question here.</p>" } }
-      ]
+      }
     }
   ]
 }
