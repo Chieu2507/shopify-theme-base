@@ -21,6 +21,10 @@
   unless blog_card_ratio_setting == 'original' or blog_card_ratio_setting == 'square' or blog_card_ratio_setting == 'portrait' or blog_card_ratio_setting == 'landscape' or blog_card_ratio_setting == 'wide'
     assign blog_card_ratio_setting = 'original'
   endunless
+  assign blog_card_media_layout = block.settings.media_layout | default: 'stacked'
+  unless blog_card_media_layout == 'stacked' or blog_card_media_layout == 'horizontal'
+    assign blog_card_media_layout = 'stacked'
+  endunless
   assign blog_card_ratio = 'auto'
   case blog_card_ratio_setting
     when 'square'
@@ -43,6 +47,10 @@
   elsif blog_card_alignment == 'right'
     assign blog_card_alignment_flex = 'flex-end'
   endif
+  assign blog_card_position = block.settings.position | default: 'space-between'
+  unless blog_card_position == 'flex-start' or blog_card_position == 'center' or blog_card_position == 'flex-end' or blog_card_position == 'space-between'
+    assign blog_card_position = 'space-between'
+  endunless
 
   assign blog_card_gap_desktop = block.settings.desktop_gap | default: 8 | plus: 0
   assign blog_card_gap_mobile = block.settings.mobile_gap | default: 8 | plus: 0
@@ -111,6 +119,7 @@
   endif
 
   assign blog_card_class = 'blog-card blog-card--ratio-' | append: blog_card_ratio_setting
+  assign blog_card_class = blog_card_class | append: ' blog-card--layout-' | append: blog_card_media_layout
   if blog_card_color_type == 'color_scheme'
     assign blog_card_class = blog_card_class | append: ' color-scheme section-color-scope ' | append: blog_card_scheme
   endif
@@ -120,6 +129,7 @@
   --blog-card-ratio: {{ blog_card_ratio }};
   --blog-card-align: {{ blog_card_alignment }};
   --blog-card-align-flex: {{ blog_card_alignment_flex }};
+  --blog-card-position: {{ blog_card_position }};
   --blog-card-gap: {{ blog_card_gap_desktop }}px;
   --blog-card-gap-mobile: {{ blog_card_gap_mobile }}px;
   --blog-card-border: {{ block.settings.border_thickness | default: 0 }}px;
@@ -205,10 +215,68 @@
     height: auto;
   }
 
+  .blog-card--layout-horizontal {
+    display: grid;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  }
+
+  .blog-card--layout-horizontal .blog-card__media {
+    align-self: center;
+    border-radius: 0;
+  }
+
+  .blog-card--layout-horizontal .blog-card__media > .image,
+  .blog-card--layout-horizontal .blog-card__media > .image > img,
+  .blog-card--layout-horizontal .blog-card__media > .image > picture,
+  .blog-card--layout-horizontal .blog-card__media > .image > .image__placeholder {
+    height: 100%;
+  }
+
+  .blog-card--layout-horizontal .blog-card__media > .image > img,
+  .blog-card--layout-horizontal .blog-card__media > .image > picture,
+  .blog-card--layout-horizontal .blog-card__media > .image > picture > img,
+  .blog-card--layout-horizontal .blog-card__media > .image > .image__placeholder {
+    object-fit: cover;
+  }
+
+  .blog-card--layout-horizontal .blog-card__media > .image > picture > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .blog-card--ratio-original.blog-card--layout-horizontal {
+    position: relative;
+  }
+
+  .blog-card--ratio-original.blog-card--layout-horizontal > .blog-card__media {
+    position: absolute;
+    inset-block: 0;
+    left: 0;
+    width: 50%;
+    height: auto;
+    aspect-ratio: auto;
+    align-self: stretch;
+  }
+
+  .blog-card--ratio-original.blog-card--layout-horizontal > .blog-card__content {
+    grid-column: 2;
+  }
+
+  .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image,
+  .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image > img,
+  .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image > picture,
+  .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image > picture > img,
+  .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image > .image__placeholder {
+    height: 100%;
+    object-fit: cover;
+  }
+
   .blog-card__content {
     display: flex;
     flex-direction: column;
     align-items: var(--blog-card-align-flex, flex-start);
+    justify-content: var(--blog-card-position, flex-start);
     gap: var(--blog-card-gap, 8px);
     padding: var(--blog-card-padding-top, 12px) var(--blog-card-padding-right, 0px) var(--blog-card-padding-bottom, 0px) var(--blog-card-padding-left, 0px);
     text-align: var(--blog-card-align, left);
@@ -223,6 +291,35 @@
       gap: var(--blog-card-gap-mobile, var(--blog-card-gap, 8px));
       padding: var(--blog-card-padding-top-mobile, var(--blog-card-padding-top, 12px)) var(--blog-card-padding-right-mobile, var(--blog-card-padding-right, 0px)) var(--blog-card-padding-bottom-mobile, var(--blog-card-padding-bottom, 0px)) var(--blog-card-padding-left-mobile, var(--blog-card-padding-left, 0px));
     }
+
+    .blog-card--layout-horizontal {
+      grid-template-columns: minmax(0, 1fr);
+      height: auto;
+    }
+
+    .blog-card--layout-horizontal .blog-card__media {
+      height: auto;
+    }
+
+    .blog-card--ratio-original.blog-card--layout-horizontal > .blog-card__media {
+      position: relative;
+      inset: auto;
+      width: 100%;
+      height: auto;
+      align-self: auto;
+    }
+
+    .blog-card--ratio-original.blog-card--layout-horizontal > .blog-card__content {
+      grid-column: auto;
+    }
+
+    .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image,
+    .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image > img,
+    .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image > picture,
+    .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image > picture > img,
+    .blog-card--ratio-original.blog-card--layout-horizontal .blog-card__media > .image > .image__placeholder {
+      height: auto;
+    }
   }
 {% endstylesheet %}
 
@@ -232,10 +329,10 @@
   "tag": null,
   "blocks": [
     { "type": "@theme" },
-    { "type": "blog-card-title" },
-    { "type": "blog-card-meta" },
     { "type": "blog-card-tag" },
+    { "type": "blog-card-title" },
     { "type": "blog-card-description" },
+    { "type": "blog-card-meta" },
     { "type": "blog-card-button" }
   ],
   "settings": [
@@ -248,7 +345,7 @@
       "id": "ratio",
       "label": "Ratio",
       "options": [
-        { "value": "original", "label": "Original" },
+        { "value": "original", "label": "Auto" },
         { "value": "square", "label": "Square" },
         { "value": "portrait", "label": "Portrait" },
         { "value": "landscape", "label": "Landscape" },
@@ -257,14 +354,42 @@
       "default": "original"
     },
     {
+      "type": "select",
+      "id": "media_layout",
+      "label": "Media layout",
+      "options": [
+        { "value": "stacked", "label": "Stacked" },
+        { "value": "horizontal", "label": "Horizontal" }
+      ],
+      "default": "stacked"
+    },
+    {
       "type": "header",
       "content": "t:general.content"
     },
     {
-      "type": "text_alignment",
+      "type": "select",
       "id": "alignment",
       "label": "t:labels.alignment",
+      "options": [
+        { "value": "left", "label": "Left" },
+        { "value": "center", "label": "Center" },
+        { "value": "right", "label": "Right" }
+      ],
       "default": "left"
+    },
+    {
+      "type": "select",
+      "id": "position",
+      "label": "t:labels.position",
+      "options": [
+        { "value": "flex-start", "label": "Start" },
+        { "value": "center", "label": "Center" },
+        { "value": "flex-end", "label": "End" },
+        { "value": "space-between", "label": "Space between" }
+      ],
+      "default": "space-between",
+      "visible_if": "{{ block.settings.media_layout == 'horizontal' }}"
     },
     {
       "type": "range",
@@ -442,11 +567,47 @@
     {
       "name": "Blog card",
       "category": "Blog",
+      "settings": {
+        "padding_top": 20
+      },
       "blocks": [
+        {
+          "type": "blog-card-tag",
+          "settings": {
+            "text_case": "uppercase",
+            "padding_top": 0
+          }
+        },
         { "type": "blog-card-title" },
-        { "type": "blog-card-meta" },
         { "type": "blog-card-description" },
-        { "type": "blog-card-button" }
+        {
+          "type": "blog-card-meta",
+          "settings": {
+            "show_date": true,
+            "show_author": true,
+            "show_comment_count": false,
+            "details_order": "date_author_comment",
+            "author_display_type": "text",
+            "author_prefix": "by",
+            "show_date_icon": true,
+            "date_icon": "calendar",
+            "date_format": "long",
+            "show_comment_icon": true,
+            "comment_icon": "comment",
+            "separator_icon": "vertical-rule",
+            "layout": "horizontal",
+            "gap": 12,
+            "icon_size": 18,
+            "icon_gap": 6,
+            "size": "xs"
+          }
+        },
+        {
+          "type": "blog-card-button",
+          "settings": {
+            "padding_top": 12
+          }
+        }
       ]
     }
   ]
