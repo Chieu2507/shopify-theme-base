@@ -9,6 +9,20 @@
 {% enddoc %}
 
 {% liquid
+  assign gallery_layout = block.settings.layout_type | default: 'grid'
+  unless gallery_layout == 'grid' or gallery_layout == 'carousel'
+    assign gallery_layout = 'grid'
+  endunless
+
+  assign gallery_columns_desktop = block.settings.columns_desktop | default: 2 | plus: 0
+  if gallery_columns_desktop < 1 or gallery_columns_desktop > 6
+    assign gallery_columns_desktop = 2
+  endif
+  assign gallery_columns_mobile = block.settings.columns_mobile | default: 1 | plus: 0
+  if gallery_columns_mobile < 1 or gallery_columns_mobile > 2
+    assign gallery_columns_mobile = 1
+  endif
+
   assign gallery_ratio = block.settings.image_ratio | default: '0.8'
   unless gallery_ratio == '0.8' or gallery_ratio == '1' or gallery_ratio == '1.333333'
     assign gallery_ratio = '0.8'
@@ -18,33 +32,253 @@
     assign gallery_icon = 'dot'
   endunless
   assign gallery_scheme = block.settings.hotspot_color_scheme.id | default: block.settings.hotspot_color_scheme | default: 'scheme-1'
+
+  assign gallery_gap_desktop = block.settings.gap_desktop | default: 20 | plus: 0
+  if gallery_gap_desktop < 0 or gallery_gap_desktop > 100
+    assign gallery_gap_desktop = 20
+  endif
+  assign gallery_gap_mobile = block.settings.gap_mobile | default: 24 | plus: 0
+  if gallery_gap_mobile < 0 or gallery_gap_mobile > 100
+    assign gallery_gap_mobile = 24
+  endif
+
+  assign gallery_show_preview = false
+  if gallery_layout == 'carousel' and block.settings.show_next_slide_preview_on_desktop
+    assign gallery_show_preview = true
+  endif
+
+  assign gallery_show_navigation = false
+  if gallery_layout == 'carousel' and block.settings.show_navigation_on_desktop
+    assign gallery_show_navigation = true
+  endif
+  assign gallery_navigation_position = block.settings.navigation_position | default: 'inside'
+  unless gallery_navigation_position == 'inside' or gallery_navigation_position == 'outside' or gallery_navigation_position == 'top'
+    assign gallery_navigation_position = 'inside'
+  endunless
+  assign gallery_navigation_behavior = block.settings.navigation_behavior | default: 'show_on_hover'
+  unless gallery_navigation_behavior == 'show_on_hover' or gallery_navigation_behavior == 'always'
+    assign gallery_navigation_behavior = 'show_on_hover'
+  endunless
+  assign gallery_navigation_centered = true
+  if gallery_navigation_position == 'top'
+    assign gallery_navigation_centered = false
+  endif
+
+  assign gallery_show_pagination = false
+  if gallery_layout == 'carousel' and block.settings.show_pagination_on_desktop
+    assign gallery_show_pagination = true
+  endif
+  assign gallery_pagination_type = block.settings.pagination_type | default: 'progress_bar'
+  unless gallery_pagination_type == 'progress_bar' or gallery_pagination_type == 'bullets'
+    assign gallery_pagination_type = 'progress_bar'
+  endunless
+  assign gallery_pagination_padding_desktop = block.settings.pagination_top_padding_desktop | default: 40 | plus: 0
+  if gallery_pagination_padding_desktop < 0 or gallery_pagination_padding_desktop > 100
+    assign gallery_pagination_padding_desktop = 40
+  endif
+  assign gallery_pagination_padding_mobile = block.settings.pagination_top_padding_mobile | default: 24 | plus: 0
+  if gallery_pagination_padding_mobile < 0 or gallery_pagination_padding_mobile > 100
+    assign gallery_pagination_padding_mobile = 24
+  endif
+  assign gallery_pagination_max_width = block.settings.pagination_max_width | default: 260 | plus: 0
+  if gallery_pagination_max_width < 100 or gallery_pagination_max_width > 600
+    assign gallery_pagination_max_width = 260
+  endif
+
+  assign gallery_navigation_label = 'accessibility.hotspot_carousel' | t
+  assign gallery_carousel_id = 'HotspotGalleryCarousel-' | append: block.id
+  assign gallery_pagination_class = 'swiper-pagination--below product-callout-gallery__pagination product-callout-gallery__pagination--' | append: gallery_pagination_type
 %}
 
 {% render 'product-callout-runtime' %}
 
+{% capture gallery_items %}
+  {% content_for 'blocks' %}
+{% endcapture %}
+
+{% capture gallery_pagination_style %}
+  {% if gallery_show_pagination %}
+    --swiper-pagination-spacing: {{ gallery_pagination_padding_desktop }}px;
+    --swiper-pagination-spacing-mobile: {{ gallery_pagination_padding_mobile }}px;
+    {% if block.settings.pagination_limit_width %}--swiper-pagination-width: min(100%, {{ gallery_pagination_max_width }}px);{% endif %}
+  {% endif %}
+{% endcapture %}
+{% assign gallery_pagination_style = gallery_pagination_style | strip %}
+
+{% capture gallery_pagination %}
+  {% if gallery_show_pagination %}
+    {% render 'swiper-pagination',
+      show: true,
+      type: gallery_pagination_type,
+      class: gallery_pagination_class,
+      style: gallery_pagination_style
+    %}
+  {% endif %}
+{% endcapture %}
+{% assign gallery_pagination = gallery_pagination | strip %}
+
+{% capture gallery_navigation %}
+  {% if gallery_show_navigation %}
+    {% render 'swiper-navigation',
+      show: true,
+      position: gallery_navigation_position,
+      style: block.settings.navigation_style,
+      icon: block.settings.navigation_icon,
+      behavior: gallery_navigation_behavior,
+      wrapper_class: 'product-callout-gallery__navigation',
+      wrapper_attributes: 'aria-label="Hotspot Gallery controls"',
+      previous_attribute: 'data-carousel-previous',
+      next_attribute: 'data-carousel-next',
+      previous_label: 'Previous hotspot image',
+      next_label: 'Next hotspot image',
+      centered: gallery_navigation_centered
+    %}
+  {% endif %}
+{% endcapture %}
+{% assign gallery_navigation = gallery_navigation | strip %}
+
+{% if gallery_layout == 'carousel' %}
+  {% render 'swiper-stylesheet' %}
+  <script type="module" src="{{ 'carousel-block.js' | asset_url }}"></script>
+{% endif %}
+
 <div
-  class="product-callout-gallery product-callout--icon-{{ gallery_icon }} color-scheme {{ gallery_scheme | handleize }}"
+  class="product-callout-gallery product-callout-gallery--{{ gallery_layout }} product-callout--icon-{{ gallery_icon }} color-scheme {{ gallery_scheme | handleize }}"
+  data-layout="{{ gallery_layout }}"
   data-product-callout-hotspot-behavior="{{ block.settings.hotspot_behavior | default: 'click' }}"
-  style="--hotspot-gallery-image-ratio: {{ gallery_ratio }}; --hotspot-gallery-gap: {{ block.settings.gap_desktop | default: 20 }}px; --hotspot-gallery-gap-mobile: {{ block.settings.gap_mobile | default: 24 }}px;"
+  {% if gallery_layout == 'carousel' %}
+    data-carousel-block
+    data-swiper-columns-desktop="{{ gallery_columns_desktop }}"
+    data-swiper-columns-mobile="{{ gallery_columns_mobile }}"
+    data-swiper-gap-desktop="{{ gallery_gap_desktop }}"
+    data-swiper-gap-mobile="{{ gallery_gap_mobile }}"
+    data-swiper-pagination-type="{{ gallery_pagination_type }}"
+    data-swiper-pagination-desktop="{{ gallery_show_pagination }}"
+    data-swiper-pagination-mobile="{{ gallery_show_pagination }}"
+    data-swiper-autoplay="false"
+    data-swiper-autoplay-pause-on-hover="true"
+    data-swiper-autoplay-delay="4000"
+  {% endif %}
+  style="--hotspot-gallery-image-ratio: {{ gallery_ratio }}; --hotspot-gallery-gap: {{ gallery_gap_desktop }}px; --hotspot-gallery-gap-mobile: {{ gallery_gap_mobile }}px; --hotspot-gallery-columns-desktop: {{ gallery_columns_desktop }}; --hotspot-gallery-columns-mobile: {{ gallery_columns_mobile }};"
   {{ block.shopify_attributes }}
 >
-  {% content_for 'blocks' %}
+  {% if gallery_layout == 'carousel' %}
+    <div class="product-callout-gallery__carousel-wrap swiper-carousel__container">
+      {% if gallery_navigation_position == 'top' %}{{ gallery_navigation }}{% endif %}
+      {% render 'swiper-carousel',
+        id: gallery_carousel_id,
+        content: gallery_items,
+        root_class: 'product-callout-gallery__viewport',
+        aria_label: gallery_navigation_label,
+        pagination: gallery_pagination,
+        show_next_slide_preview: gallery_show_preview
+      %}
+      {% if gallery_navigation_position != 'top' %}{{ gallery_navigation }}{% endif %}
+    </div>
+  {% else %}
+    {{ gallery_items }}
+  {% endif %}
 </div>
 
 {% stylesheet %}
-  .product-callout-gallery {
+  .product-callout-gallery--grid {
     display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--hotspot-gallery-columns-desktop, 2), minmax(0, 1fr));
     align-items: start;
     gap: var(--hotspot-gallery-gap, 20px);
     min-width: 0;
     width: 100%;
   }
 
+  .product-callout-gallery__carousel-wrap {
+    position: relative;
+    min-width: 0;
+    width: 100%;
+  }
+
+  .product-callout-gallery__viewport {
+    width: 100%;
+    min-width: 0;
+  }
+
+  .product-callout-gallery__viewport > .swiper-wrapper > .swiper-slide {
+    height: auto;
+  }
+
+  .product-callout-gallery__navigation {
+    position: absolute;
+    z-index: 1;
+    right: 0;
+    left: 0;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding-inline: 0.5rem;
+    pointer-events: none;
+    transform: translateY(-50%);
+  }
+
+  .product-callout-gallery__navigation--outside {
+    padding-inline: 0;
+  }
+
+  .product-callout-gallery__navigation.product-callout-gallery__navigation--top {
+    position: relative;
+    inset: auto;
+    width: max-content;
+    max-width: 100%;
+    gap: 0.5rem;
+    padding-inline: 0;
+    margin-block-end: 1rem;
+    transform: none;
+  }
+
+  .product-callout-gallery__navigation--outside .swiper-nav-button--prev {
+    margin-inline-start: calc(-1 * var(--swiper-nav-size) / 2);
+  }
+
+  .product-callout-gallery__navigation--outside .swiper-nav-button--next {
+    margin-inline-end: calc(-1 * var(--swiper-nav-size) / 2);
+  }
+
+  .product-callout-gallery__navigation .swiper-nav-button {
+    pointer-events: auto;
+  }
+
+  .product-callout-gallery__pagination {
+    --swiper-pagination-progressbar-bg-color: color-mix(in srgb, var(--body-color) 20%, transparent);
+    --swiper-pagination-color: var(--body-color);
+    --swiper-pagination-bullet-size: 0.5rem;
+    --swiper-pagination-bullet-horizontal-gap: 0;
+    --swiper-pagination-bullet-inactive-color: color-mix(in srgb, var(--body-color) 30%, transparent);
+    --swiper-pagination-bullet-inactive-opacity: 1;
+  }
+
+  .product-callout-gallery__pagination--bullets.swiper-pagination-bullets {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+
+  .product-callout-gallery__pagination--bullets .swiper-pagination-bullet {
+    flex: 0 0 auto;
+    margin: 0;
+  }
+
+  .product-callout-gallery__pagination--bullets .swiper-pagination-bullet-active {
+    --swiper-pagination-bullet-width: 2rem;
+    border-radius: 999px;
+  }
+
   @media (max-width: 767.98px) {
-    .product-callout-gallery {
-      grid-template-columns: minmax(0, 1fr);
+    .product-callout-gallery--grid {
+      grid-template-columns: repeat(var(--hotspot-gallery-columns-mobile, 1), minmax(0, 1fr));
       gap: var(--hotspot-gallery-gap-mobile, var(--hotspot-gallery-gap, 24px));
+    }
+
+    .product-callout-gallery__navigation {
+      display: none;
     }
   }
 {% endstylesheet %}
