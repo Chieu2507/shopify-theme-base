@@ -181,7 +181,10 @@ class ProductStickyAddToCart extends HTMLElement {
       this.prices?.classList.toggle('is-sale', Boolean(comparePrice));
       if (this.variantText) this.variantText.textContent = template.dataset.title || '';
       if (this.variantSelect) this.variantSelect.value = String(variantId || '');
-      if (this.image) this.image.src = template.dataset.imageSrc || this.image.dataset.fallbackSrc || this.image.src;
+      if (this.image) {
+        this.image.removeAttribute('srcset');
+        this.image.src = template.dataset.imageSrc || this.image.dataset.fallbackSrc || this.image.src;
+      }
     }
     const enabled = Boolean(variantId && (template ? template.dataset.available === 'true' : available));
     this.button.disabled = !enabled;

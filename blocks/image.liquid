@@ -175,10 +175,12 @@
   --image-block-padding-bottom: {{ padding_bottom }}px;
   --image-block-padding-left: {{ padding_left }}px;
   --image-block-padding-right: {{ padding_right }}px;
-  --image-block-padding-top-mobile: {{ padding_top_mobile }}px;
-  --image-block-padding-bottom-mobile: {{ padding_bottom_mobile }}px;
-  --image-block-padding-left-mobile: {{ padding_left_mobile }}px;
-  --image-block-padding-right-mobile: {{ padding_right_mobile }}px;
+  {% if block.settings.customize_mobile_padding %}
+    --image-block-padding-top-mobile: {{ padding_top_mobile }}px;
+    --image-block-padding-bottom-mobile: {{ padding_bottom_mobile }}px;
+    --image-block-padding-left-mobile: {{ padding_left_mobile }}px;
+    --image-block-padding-right-mobile: {{ padding_right_mobile }}px;
+  {% endif %}
   --image-block-radius: {{ image_corner_radius }}px;
 {% endcapture %}
 {% assign image_style = image_style | strip | replace: '\n', ' ' %}
@@ -234,11 +236,11 @@
     object-fit: cover;
   }
 
-  .image-block--first-mobile {
-    order: -1;
-  }
-
   @media (max-width: 767.98px) {
+    .image-block--first-mobile {
+      order: -1;
+    }
+
     .image-block {
       width: var(--image-block-width-mobile, var(--image-block-width, fit-content));
       max-width: min(var(--image-block-max-width-mobile, 100%), 100%);

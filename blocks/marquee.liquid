@@ -70,7 +70,7 @@
 {% endcapture %}
 {% assign marquee_style = marquee_style | strip | replace: '\n', ' ' %}
 
-{% assign marquee_class = 'section-spacing marquee marquee--' | append: marquee_direction | append: ' section-color-scope' %}
+{% assign marquee_class = 'section-spacing marquee marquee--block marquee--' | append: marquee_direction | append: ' section-color-scope' %}
 {% if marquee_speed == 0 %}
   {% assign marquee_class = marquee_class | append: ' marquee--static' %}
 {% endif %}
@@ -90,7 +90,7 @@
 </div>
 
 {% stylesheet %}
-  .marquee {
+  .marquee--block {
     --marquee-duration: 28s;
     --marquee-loop-distance: 0px;
     width: 100%;
@@ -100,18 +100,18 @@
     padding-bottom: var(--marquee-padding-bottom, 24px);
   }
 
-  .container.full-width.marquee__container {
+  .marquee--block .container.full-width.marquee__container {
     min-width: 0;
     padding-right: var(--marquee-padding-right, 0px);
     padding-left: var(--marquee-padding-left, 0px);
   }
 
-  .marquee__viewport {
+  .marquee--block .marquee__viewport {
     width: 100%;
     overflow: hidden;
   }
 
-  .marquee__track {
+  .marquee--block .marquee__track {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
@@ -124,55 +124,55 @@
     will-change: transform;
   }
 
-  .marquee--ready .marquee__track {
+  .marquee--block.marquee--ready .marquee__track {
     animation: marquee-scroll-left var(--marquee-duration) linear infinite;
   }
 
-  .marquee--forward .marquee__track {
+  .marquee--block.marquee--forward .marquee__track {
     animation-name: marquee-scroll-right;
   }
 
-  .marquee--backward .marquee__track {
+  .marquee--block.marquee--backward .marquee__track {
     animation-name: marquee-scroll-left;
   }
 
-  .marquee--static .marquee__track {
+  .marquee--block.marquee--static .marquee__track {
     animation: none;
     transform: none;
   }
 
   @media (max-width: 767.98px) {
-    .marquee__track {
+    .marquee--block .marquee__track {
       gap: var(--marquee-gap-mobile, var(--marquee-gap, 48px));
     }
   }
 
-  .marquee__track > * {
+  .marquee--block .marquee__track > * {
     flex: 0 0 auto;
   }
 
-  .marquee__track > .marquee-item-layout {
+  .marquee--block .marquee__track > .marquee-item-layout {
     width: fit-content;
     max-width: max-content;
   }
 
-  .marquee__track > .marquee-item-layout--horizontal {
+  .marquee--block .marquee__track > .marquee-item-layout--horizontal {
     flex-wrap: nowrap;
   }
 
   /* Percentage widths are circular inside a fit-content horizontal item. */
-  .marquee__track > .marquee-item-layout--horizontal > * {
+  .marquee--block .marquee__track > .marquee-item-layout--horizontal > * {
     width: fit-content;
     flex: 0 0 auto;
   }
 
   /* Marquee items are transparent by default; an Item background setting can override this. */
-  .marquee__track > .marquee-item-layout {
+  .marquee--block .marquee__track > .marquee-item-layout {
     --group-background-color: transparent;
   }
 
-  .marquee:hover .marquee__track,
-  .marquee:focus-within .marquee__track {
+  .marquee--block:hover .marquee__track,
+  .marquee--block:focus-within .marquee__track {
     animation-play-state: paused;
   }
 
@@ -187,7 +187,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .marquee__track {
+    .marquee--block.marquee--ready .marquee__track {
       animation: none;
       transform: none;
     }
@@ -197,7 +197,8 @@
 {% javascript %}
   (() => {
     const instances = new WeakMap();
-    const selector = '.marquee';
+    const selector = '.marquee--block';
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const setFocusableState = (element) => {
       element.setAttribute('aria-hidden', 'true');
@@ -207,7 +208,7 @@
     };
 
     const initialize = (marquee) => {
-      if (!marquee || instances.has(marquee)) return;
+      if (!marquee || instances.has(marquee) || reducedMotion.matches) return;
 
       const track = marquee.querySelector('.marquee__track');
       const viewport = marquee.querySelector('.marquee__viewport');
@@ -266,7 +267,10 @@
             if (mutation.attributeName.startsWith('data-shopify-editor')) return false;
           }
           return !mutation.target.closest?.('[data-marquee-clone]');
-        })) syncClones();
+        })) {
+          syncClones();
+          updateDistance();
+        }
       });
 
       syncClones();
@@ -308,6 +312,11 @@
       if (root.matches?.(selector)) destroy(root);
       root.querySelectorAll?.(selector).forEach(destroy);
     };
+
+    reducedMotion.addEventListener('change', () => {
+      if (reducedMotion.matches) destroyRoot(document);
+      else initializeRoot();
+    });
 
     document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
     document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));

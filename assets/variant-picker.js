@@ -312,51 +312,53 @@ class VariantPicker extends HTMLElement {
     }
   }
 
-  priceContainer() {
+  priceContainers() {
     const sectionId = this.dataset.sectionId;
 
-    return Array.from(this.sectionRoot?.querySelectorAll('[data-product-price-container]') || []).find(
+    return Array.from(this.sectionRoot?.querySelectorAll('[data-product-price-container]') || []).filter(
       (container) => container.dataset.sectionId === sectionId,
     );
   }
 
   updatePrice(variant) {
-    const container = this.priceContainer();
-    const currentPrice = container?.querySelector('[data-price-component]');
+    this.priceContainers().forEach((container) => {
+      const currentPrice = container?.querySelector('[data-price-component]');
 
-    if (!container || !currentPrice) {
-      return;
-    }
+      if (!container || !currentPrice) {
+        return;
+      }
 
-    const variantId = variant?.id ? String(variant.id) : '';
-    const template = Array.from(container.querySelectorAll('[data-variant-price-template]')).find(
-      (priceTemplate) => priceTemplate.dataset.variantPriceTemplate === variantId,
-    );
-    const nextPrice = template?.content.querySelector('[data-price-component]');
+      const variantId = variant?.id ? String(variant.id) : '';
+      const template = Array.from(container.querySelectorAll('[data-variant-price-template]')).find(
+        (priceTemplate) => priceTemplate.dataset.variantPriceTemplate === variantId,
+      );
+      const nextPrice = template?.content.querySelector('[data-price-component]');
 
-    if (!nextPrice) {
-      currentPrice.hidden = true;
-      currentPrice.setAttribute('aria-hidden', 'true');
-      return;
-    }
+      if (!nextPrice) {
+        currentPrice.hidden = true;
+        currentPrice.setAttribute('aria-hidden', 'true');
+        return;
+      }
 
-    currentPrice.replaceWith(nextPrice.cloneNode(true));
+      currentPrice.replaceWith(nextPrice.cloneNode(true));
+    });
   }
 
   updateSaleBadge(variant) {
-    const price = this.priceContainer();
-    const container = price?.querySelector('[data-variant-sale-badge-container]');
+    this.priceContainers().forEach((price) => {
+      const container = price?.querySelector('[data-variant-sale-badge-container]');
 
-    if (!price || !container) {
-      return;
-    }
+      if (!price || !container) {
+        return;
+      }
 
-    const variantId = variant?.id ? String(variant.id) : '';
-    const template = Array.from(price.querySelectorAll('[data-variant-sale-badge-template]')).find(
-      (badgeTemplate) => badgeTemplate.dataset.variantSaleBadgeTemplate === variantId,
-    );
+      const variantId = variant?.id ? String(variant.id) : '';
+      const template = Array.from(price.querySelectorAll('[data-variant-sale-badge-template]')).find(
+        (badgeTemplate) => badgeTemplate.dataset.variantSaleBadgeTemplate === variantId,
+      );
 
-    container.replaceChildren(template?.content.cloneNode(true) || document.createDocumentFragment());
+      container.replaceChildren(template?.content.cloneNode(true) || document.createDocumentFragment());
+    });
   }
 
   updateLegacyMedia(variantId) {
@@ -412,6 +414,7 @@ class VariantPicker extends HTMLElement {
   }
 
   updateUrl(variantId) {
+    if (this.sectionRoot?.hasAttribute('data-featured-product')) return;
     if (window.Shopify?.designMode || !window.history?.replaceState) return;
 
     const url = new URL(window.location.href);
@@ -432,6 +435,7 @@ class VariantPicker extends HTMLElement {
   }
 
   applyUrlVariant() {
+    if (this.sectionRoot?.hasAttribute('data-featured-product')) return;
     if (window.Shopify?.designMode) return;
 
     const url = new URL(window.location.href);
@@ -528,6 +532,7 @@ class VariantPicker extends HTMLElement {
   }
 
   handlePopState() {
+    if (this.sectionRoot?.hasAttribute('data-featured-product')) return;
     if (window.Shopify?.designMode) return;
 
     const url = new URL(window.location.href);
