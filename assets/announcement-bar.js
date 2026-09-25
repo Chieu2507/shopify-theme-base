@@ -227,7 +227,14 @@ const init = (root) => {
   const sliderState = root.dataset.announcementType === 'slider' ? initSlider(root, slides, track) : { previous: null, next: null, onPrevious: null, onNext: null };
   const scrollingState = root.dataset.announcementType === 'scrolling' ? initScrolling(root, track) : { clones: [], resizeObserver: null, mutationObserver: null };
   const copyState = initCopyInteraction(root);
-  states.set(root, { track, ...sliderState, ...scrollingState, ...copyState });
+  states.set(root, {
+    track,
+    ...sliderState,
+    ...scrollingState,
+    ...copyState,
+    sliderResizeObserver: sliderState.resizeObserver,
+    scrollingResizeObserver: scrollingState.resizeObserver,
+  });
 };
 
 const destroy = (root) => {
@@ -238,7 +245,7 @@ const destroy = (root) => {
   state.onClick && root.removeEventListener('click', state.onClick);
   state.clearCopyTimer?.();
   state.stop?.();
-  state.resizeObserver?.disconnect();
+  state.sliderResizeObserver?.disconnect();
   state.firstClone?.remove();
   if (state.pauseOnHover) {
     root.removeEventListener('mouseenter', state.pause);
@@ -246,7 +253,7 @@ const destroy = (root) => {
     root.removeEventListener('focusin', state.pause);
     root.removeEventListener('focusout', state.resume);
   }
-  state.resizeObserver?.disconnect();
+  state.scrollingResizeObserver?.disconnect();
   state.mutationObserver?.disconnect();
   state.clones?.forEach((clone) => clone.remove());
   root.classList.remove('announcement-bar--ready', 'announcement-bar--single');

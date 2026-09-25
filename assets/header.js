@@ -455,7 +455,7 @@
       details.addEventListener('pointerenter', () => {
         if (window.innerWidth <= 767) return;
         if (trigger === 'hover') {
-          closeHeaderSurfaces(header, { details });
+          closeHeaderSurfaces(header, { details, menu: window.innerWidth < 1150 });
           details.open = true;
         }
         clearSubmenuClose(details);
@@ -471,7 +471,7 @@
       details.addEventListener('focusin', () => {
         if (window.innerWidth <= 767) return;
         if (trigger === 'hover') {
-          closeHeaderSurfaces(header, { details });
+          closeHeaderSurfaces(header, { details, menu: window.innerWidth < 1150 });
           details.open = true;
         }
         clearSubmenuClose(details);
@@ -491,7 +491,7 @@
           // Keep the hover-mode dropdown open while the pointer remains inside;
           // otherwise the native details toggle would immediately close it.
           event.preventDefault();
-          closeHeaderSurfaces(header, { details });
+          closeHeaderSurfaces(header, { details, menu: window.innerWidth < 1150 });
           details.open = true;
           clearSubmenuClose(details);
           scheduleUpdate();
@@ -529,7 +529,7 @@
 
       details.addEventListener('toggle', () => {
         if (details.open) {
-          closeHeaderSurfaces(header, window.innerWidth <= 767 ? { details, menu: true } : { details });
+          closeHeaderSurfaces(header, window.innerWidth < 1150 ? { details, menu: true } : { details });
         }
         scheduleUpdate();
       });
