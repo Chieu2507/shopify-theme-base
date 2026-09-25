@@ -68,7 +68,17 @@ class ProductMediaGallery extends HTMLElement {
       this.closeLightbox();
     }, { signal: this.signal });
     this.lightbox?.addEventListener('click', (event) => {
-      if (event.target === this.lightbox) this.closeLightbox();
+      const target = event.target;
+      if (target === this.lightbox) {
+        this.closeLightbox();
+        return;
+      }
+
+      const panel = target.closest?.('.product-media-lightbox__panel');
+      const protectedContent = target.closest?.(
+        '.product-media-lightbox__toolbar, .product-media-lightbox__thumbnails, .product-media-lightbox__slide, [data-product-lightbox-previous], [data-product-lightbox-next]',
+      );
+      if (panel && !protectedContent) this.closeLightbox();
     }, { signal: this.signal });
 
     this.applyVariantMediaFilter(this.dataset.currentVariantId);
@@ -1004,10 +1014,7 @@ class ProductMediaGallery extends HTMLElement {
     // previously focused gallery item (pointer activation need not focus it).
     opener?.focus({ preventScroll: true });
     this.lightbox.showModal();
-    // Native <dialog> may autofocus the first control, which is the close
-    // button here. Keep the lightbox open without presenting that control as
-    // the active target; close still restores focus to the media opener.
-    this.lightbox.querySelector('[data-product-lightbox-close]')?.blur?.();
+    this.lightbox.querySelector('[data-product-lightbox-close]')?.focus({ preventScroll: true });
     document.documentElement.classList.add('product-media-lightbox-open');
 
     const viewport = this.querySelector('[data-product-lightbox-swiper]');

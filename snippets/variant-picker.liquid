@@ -44,7 +44,7 @@
 
   assign picker_scope = section_id | default: product.id
   assign product_form_id = form_id
-  if product_form_id == blank
+  if product_form_id == blank and block_id == blank
     assign product_form_id = 'ProductForm-' | append: picker_scope
   endif
   assign picker_id = 'VariantPicker-' | append: picker_scope
@@ -120,7 +120,7 @@
   data-swatch-style="{{ swatch_style }}"
   style="--product-swatch-width: {{ swatch_width_desktop }}px; --product-swatch-width-mobile: var(--swatch-width-mobile);"
 >
-  {% if form_id == blank %}
+  {% if form_id == blank and block_id == blank %}
     <input type="hidden" name="id" value="{{ current_variant_id }}" data-variant-id data-variant-id-input>
   {% else %}
     <input type="hidden" value="{{ current_variant_id }}" data-variant-id data-variant-id-input>
@@ -183,8 +183,8 @@
         <select
           class="variant-picker__control variant-picker__control--select form__control"
           id="{{ option_id }}"
-          name="options[{{ product_option.name | escape }}]"
-          form="{{ product_form_id }}"
+          name="options[{{ picker_id }}-{{ product_option.name | escape }}]"
+          {% if product_form_id != blank %}form="{{ product_form_id }}"{% endif %}
           data-option-control
           data-option-index="{{ option_index }}"
           aria-labelledby="{{ option_id }}-label"
@@ -264,8 +264,8 @@
                 id="{{ value_input_id }}"
                 class="variant-picker__control variant-picker__control--radio{% if option_uses_swatches %} swatch__input{% endif %}"
                 type="radio"
-                name="options[{{ product_option.name | escape }}]"
-                form="{{ product_form_id }}"
+                name="options[{{ picker_id }}-{{ product_option.name | escape }}]"
+                {% if product_form_id != blank %}form="{{ product_form_id }}"{% endif %}
                 value="{{ option_value.name | escape }}"
                 data-option-value-id="{{ option_value_id }}"
                 data-option-available="{{ option_value.available }}"

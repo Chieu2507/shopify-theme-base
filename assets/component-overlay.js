@@ -259,7 +259,7 @@
         }
         if (event.key !== 'Tab') return;
         const controls = [...dialog.querySelectorAll('button, a[href], input:not([type="hidden"]), select, textarea, iframe, [tabindex]')]
-          .filter((element) => !element.disabled && element.tabIndex >= 0 && !element.closest('[inert]') && element.getClientRects().length);
+          .filter((element) => !element.disabled && element.tabIndex >= 0 && !element.closest('[inert], [hidden], [aria-hidden="true"]') && element.getClientRects().length);
         const first = controls[0];
         const last = controls[controls.length - 1];
         if (event.shiftKey && document.activeElement === first) {
@@ -376,7 +376,7 @@
       this.openFrame = null;
     }
 
-    open({ opener = document.activeElement, focus = false, defer = false, restoreFocus = true } = {}) {
+    open({ opener = document.activeElement, focus = true, defer = false, restoreFocus = true } = {}) {
       clearTimeout(this.timer);
       this.cancelOpenFrame();
       this.gesture.reset();
