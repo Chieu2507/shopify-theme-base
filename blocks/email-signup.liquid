@@ -18,13 +18,13 @@
     assign form_layout = 'horizontal'
   endunless
 
-  assign gap_desktop = block.settings.gap_desktop | default: 0 | plus: 0
+  assign gap_desktop = block.settings.gap_desktop | default: 12 | plus: 0
   if gap_desktop < 0 or gap_desktop > 100
-    assign gap_desktop = 0
+    assign gap_desktop = 12
   endif
-  assign gap_mobile = block.settings.gap_mobile | default: 0 | plus: 0
+  assign gap_mobile = block.settings.gap_mobile | default: 12 | plus: 0
   if gap_mobile < 0 or gap_mobile > 100
-    assign gap_mobile = 0
+    assign gap_mobile = 12
   endif
 
   assign width_desktop = block.settings.width_desktop | default: 'fill'
@@ -95,6 +95,11 @@
   assign button_label = block.settings.button_label | default: '' | strip
   if button_label == blank
     assign button_label = 'email_signup.submit' | t
+  endif
+
+  assign input_placeholder = block.settings.input_placeholder | default: '' | strip
+  if input_placeholder == blank
+    assign input_placeholder = 'email_signup.placeholder' | t
   endif
 
   assign button_style = block.settings.button_style | default: 'primary'
@@ -336,7 +341,7 @@
               {% elsif form.posted_successfully? %}
                 aria-describedby="{{ email_signup_success_id }}"
               {% endif %}
-              placeholder="{{ 'email_signup.placeholder' | t | escape }}"
+              placeholder="{{ input_placeholder | escape }}"
               required
             >
             {% if form_layout == 'input_with_button' %}
@@ -394,6 +399,11 @@
     gap: var(--email-signup-gap-desktop, 0px);
     width: 100%;
     min-width: 0;
+  }
+
+  .email-signup-block .form__control--input,
+  .email-signup-block--layout-input_with_button .email-signup-block__input-wrap {
+    border-radius: 0 !important;
   }
 
   .email-signup-block--layout-horizontal .form__fields {
@@ -594,7 +604,7 @@
       flex-flow: var(--layout-flow-direction-mobile, row) var(--layout-flow-wrap-mobile, nowrap);
       align-items: var(--layout-flow-align-items-mobile, stretch);
       justify-content: var(--layout-flow-justify-content-mobile, flex-start);
-      gap: var(--layout-flow-gap-mobile, var(--email-signup-gap-mobile, var(--email-signup-gap-desktop, 0px)));
+      gap: var(--email-signup-gap-mobile, var(--email-signup-gap-desktop, 0px));
     }
 
     .email-signup-block .form__fields.layout-flow--mobile .email-signup-block__field {
@@ -735,7 +745,7 @@
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 0
+      "default": 12
     },
     {
       "type": "range",
@@ -745,7 +755,7 @@
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 0
+      "default": 12
     },
     {
       "type": "header",
@@ -844,6 +854,11 @@
     {
       "type": "header",
       "content": "t:general.button"
+    },
+    {
+      "type": "text",
+      "id": "input_placeholder",
+      "label": "t:labels.placeholder"
     },
     {
       "type": "text",
@@ -1021,8 +1036,8 @@
         "subscription_preferences_option_3": "Option 3",
         "subscription_preferences_option_4": "Option 4",
         "subscription_preferences_option_5": "Option 5",
-        "gap_desktop": 0,
-        "gap_mobile": 0,
+        "gap_desktop": 12,
+        "gap_mobile": 12,
         "width_desktop": "fill",
         "width_custom_desktop": 100,
         "limit_width_desktop": true,

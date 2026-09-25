@@ -44,7 +44,7 @@
       assign group_alignment = 'start'
   endcase
 
-  assign group_position_name = block.settings.position | default: 'top'
+  assign group_position_name = block.settings.position | default: 'center'
   case group_position_name
     when 'center'
       assign group_position_name = 'center'
@@ -153,26 +153,26 @@
     assign group_backdrop_blur = 0
   endif
 
-  assign padding_top = block.settings.padding_top | default: 0 | plus: 0
-  assign padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
-  assign padding_left = block.settings.padding_left | default: 0 | plus: 0
-  assign padding_right = block.settings.padding_right | default: 0 | plus: 0
+  assign padding_top = block.settings.padding_top | default: 20 | plus: 0
+  assign padding_bottom = block.settings.padding_bottom | default: 20 | plus: 0
+  assign padding_left = block.settings.padding_left | default: 20 | plus: 0
+  assign padding_right = block.settings.padding_right | default: 20 | plus: 0
   assign padding_top_mobile = block.settings.padding_top_mobile | default: 0 | plus: 0
   assign padding_bottom_mobile = block.settings.padding_bottom_mobile | default: 0 | plus: 0
   assign padding_left_mobile = block.settings.padding_left_mobile | default: 0 | plus: 0
   assign padding_right_mobile = block.settings.padding_right_mobile | default: 0 | plus: 0
 
   if padding_top < 0 or padding_top > 100
-    assign padding_top = 0
+    assign padding_top = 20
   endif
   if padding_bottom < 0 or padding_bottom > 100
-    assign padding_bottom = 0
+    assign padding_bottom = 20
   endif
   if padding_left < 0 or padding_left > 100
-    assign padding_left = 0
+    assign padding_left = 20
   endif
   if padding_right < 0 or padding_right > 100
-    assign padding_right = 0
+    assign padding_right = 20
   endif
   if padding_top_mobile < 0 or padding_top_mobile > 100
     assign padding_top_mobile = 0
@@ -471,8 +471,8 @@
         { "value": "center", "label": "t:options.alignment.center" },
         { "value": "bottom", "label": "t:options.position.bottom" }
       ],
-      "default": "top",
-      "visible_if": "{{ block.settings.direction == 'horizontal' }}"
+      "default": "center",
+      "visible_if": "{{ block.settings.direction == 'horizontal' or block.settings.direction == 'vertical' }}"
     },
     {
       "type": "select",
@@ -504,7 +504,7 @@
         { "value": "right", "label": "t:options.alignment.right" }
       ],
       "default": "left",
-      "visible_if": "{{ block.settings.direction == 'vertical' }}"
+      "visible_if": "{{ block.settings.direction == 'horizontal' and block.settings.direction == 'vertical' }}"
     },
     {
       "type": "select",
@@ -707,7 +707,7 @@
       "max": 40,
       "step": 1,
       "unit": "px",
-      "default": 0
+      "default": 20
     },
     {
       "type": "header",
@@ -721,7 +721,7 @@
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 0
+      "default": 20
     },
     {
       "type": "range",
@@ -731,7 +731,7 @@
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 0
+      "default": 20
     },
     {
       "type": "range",
@@ -741,7 +741,7 @@
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 0
+      "default": 20
     },
     {
       "type": "range",
@@ -751,7 +751,7 @@
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 0
+      "default": 20
     },
     {
       "type": "checkbox",
@@ -810,9 +810,8 @@
       "category": "t:general.layout",
       "settings": {
         "direction": "vertical",
-        "position": "top",
+        "position": "center",
         "horizontal_alignment": "left",
-        "alignment": "left",
         "customize_mobile_alignment": false,
         "alignment_mobile": "left",
         "gap_desktop": 16,
