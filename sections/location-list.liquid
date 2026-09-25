@@ -63,43 +63,6 @@
   </div>
 </div>
 
-<script>
-  (() => {
-    const script = document.currentScript;
-    const root = script?.previousElementSibling;
-    if (!root?.matches('[data-location-list]') || root.dataset.locationListInitialized === 'true') return;
-
-    const triggers = [...root.querySelectorAll('[data-location-list-trigger]')];
-    const media = root.querySelector('[data-location-list-media]');
-    if (!triggers.length || !media) return;
-
-    const activate = (trigger) => {
-      triggers.forEach((item) => {
-        const active = item === trigger;
-        item.setAttribute('aria-pressed', active ? 'true' : 'false');
-      });
-
-      const template = trigger.closest('[data-location-list-item]')?.querySelector('[data-location-list-image]');
-      if (!template) {
-        media.replaceChildren();
-        return;
-      }
-
-      media.replaceChildren(template.content.cloneNode(true));
-    };
-
-    triggers.forEach((trigger) => trigger.addEventListener('click', () => activate(trigger)));
-    document.addEventListener('shopify:block:select', (event) => {
-      const block = event.target.closest?.('[data-location-list-item]');
-      if (!block || !root.contains(block)) return;
-      const trigger = block.querySelector('[data-location-list-trigger]');
-      if (trigger) activate(trigger);
-    });
-    root.dataset.locationListInitialized = 'true';
-    activate(triggers[0]);
-  })();
-</script>
-
 {% stylesheet %}
   .location-list {
     width: 100%;
@@ -186,6 +149,62 @@
     }
   }
 {% endstylesheet %}
+
+{% javascript %}
+  (() => {
+    const selector = '[data-location-list]';
+
+    const initializeRoot = (scope = document) => {
+      const roots = [];
+      if (scope.matches?.(selector)) roots.push(scope);
+      scope.querySelectorAll?.(selector).forEach((root) => roots.push(root));
+
+      roots.forEach((root) => {
+        if (root.dataset.locationListInitialized === 'true') return;
+
+        const triggers = [...root.querySelectorAll('[data-location-list-trigger]')];
+        const media = root.querySelector('[data-location-list-media]');
+        if (!triggers.length || !media) return;
+
+        const activate = (trigger) => {
+          triggers.forEach((item) => {
+            item.setAttribute('aria-pressed', item === trigger ? 'true' : 'false');
+          });
+
+          const template = trigger.closest('[data-location-list-item]')?.querySelector('[data-location-list-image]');
+          media.replaceChildren(...(template ? [template.content.cloneNode(true)] : []));
+        };
+
+        triggers.forEach((trigger) => {
+          trigger.addEventListener('click', () => activate(trigger));
+          trigger.addEventListener('keydown', (event) => {
+            if (event.key !== 'Enter' && event.key !== ' ') return;
+            event.preventDefault();
+            activate(trigger);
+          });
+        });
+
+        root.locationListActivate = activate;
+        root.dataset.locationListInitialized = 'true';
+        activate(triggers[0]);
+      });
+    };
+
+    document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
+    document.addEventListener('shopify:block:select', (event) => {
+      const block = event.target.closest?.('[data-location-list-item]');
+      const root = block?.closest(selector);
+      const trigger = block?.querySelector('[data-location-list-trigger]');
+      if (root && trigger) root.locationListActivate?.(trigger);
+    });
+
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', () => initializeRoot(), { once: true });
+    } else {
+      initializeRoot();
+    }
+  })();
+{% endjavascript %}
 
 {% schema %}
 {
