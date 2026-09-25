@@ -19,10 +19,19 @@
     assign icon_name = 'arrow-right'
   endunless
 
-  assign icon_label = blank
+  assign icon_label = block.settings.accessible_label
   if icon_source == 'library'
-    assign icon_label_key = 'accessibility.icon_' | append: icon_name
-    assign icon_label = icon_label_key | t
+    if icon_label == blank
+      assign icon_label_key = 'accessibility.icon_' | append: icon_name | replace: '-', '_'
+      if icon_name == 'four-stars' or icon_name == 'five-stars'
+        assign icon_label_key = 'accessibility.icon_' | append: icon_name
+      endif
+      assign icon_label = icon_label_key | t
+    endif
+  endif
+  assign icon_url = block.settings.icon_link
+  if icon_source == 'custom' and icon_label == blank and icon_url != blank
+    assign icon_label = 'accessibility.icon_link' | t
   endif
 
   assign icon_width = block.settings.icon_width | default: 24 | plus: 0
@@ -71,10 +80,12 @@
   --icon-block-padding-bottom: {{ padding_bottom }}px;
   --icon-block-padding-left: {{ padding_left }}px;
   --icon-block-padding-right: {{ padding_right }}px;
-  --icon-block-padding-top-mobile: {{ padding_top_mobile }}px;
-  --icon-block-padding-bottom-mobile: {{ padding_bottom_mobile }}px;
-  --icon-block-padding-left-mobile: {{ padding_left_mobile }}px;
-  --icon-block-padding-right-mobile: {{ padding_right_mobile }}px;
+  {% if block.settings.customize_mobile_padding %}
+    --icon-block-padding-top-mobile: {{ padding_top_mobile }}px;
+    --icon-block-padding-bottom-mobile: {{ padding_bottom_mobile }}px;
+    --icon-block-padding-left-mobile: {{ padding_left_mobile }}px;
+    --icon-block-padding-right-mobile: {{ padding_right_mobile }}px;
+  {% endif %}
 {% endcapture %}
 {% assign icon_style = icon_style | strip | replace: '\n', ' ' %}
 
@@ -87,7 +98,7 @@
     icon: icon_name,
     source: icon_source,
     custom_icon: block.settings.custom_icon,
-    url: block.settings.icon_link,
+    url: icon_url,
     label: icon_label,
     open_in_new_tab: block.settings.open_in_new_tab,
     class: 'icon-block__icon'
@@ -195,6 +206,12 @@
       "type": "url",
       "id": "icon_link",
       "label": "t:labels.link"
+    },
+    {
+      "type": "text",
+      "id": "accessible_label",
+      "label": "t:labels.icon_accessible_label",
+      "visible_if": "{{ block.settings.icon_link != blank }}"
     },
     {
       "type": "checkbox",
