@@ -13,6 +13,11 @@
     assign show_option_names = false
   endif
 
+  assign color_option_display = block.settings.color_option_display | default: 'color'
+  unless color_option_display == 'text'
+    assign color_option_display = 'color'
+  endunless
+
   assign size_chart_option_name = block.settings.size_chart_option_name | default: 'Size' | strip
   assign size_chart_desktop_layout = block.settings.size_chart_desktop_layout | default: 'modal'
   unless size_chart_desktop_layout == 'modal' or size_chart_desktop_layout == 'drawer'
@@ -84,6 +89,7 @@
       media_gallery_id: media_gallery_id,
       block_id: block.id,
       show_option_names: show_option_names,
+      color_option_display: color_option_display,
       size_chart_option_name: size_chart_option_name,
       size_chart_page: block.settings.size_chart_page,
       size_chart_desktop_layout: size_chart_desktop_layout,
@@ -114,6 +120,21 @@
     },
     {
       "type": "header",
+      "content": "t:general.swatches"
+    },
+    {
+      "type": "select",
+      "id": "color_option_display",
+      "label": "t:labels.color_option_display",
+      "options": [
+        { "value": "text", "label": "t:options.color_option_display.text" },
+        { "value": "color", "label": "t:options.color_option_display.color" }
+      ],
+      "default": "color",
+      "info": "t:info.color_option_display"
+    },
+    {
+      "type": "header",
       "content": "t:general.size_guide"
     },
     {
@@ -132,7 +153,8 @@
     },
     {
       "type": "header",
-      "content": "t:general.size_guide_layout"
+      "content": "t:general.size_guide_layout",
+      "visible_if": "{{ block.settings.size_chart_page != blank }}"
     },
     {
       "type": "select",
