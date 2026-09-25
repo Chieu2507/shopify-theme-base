@@ -10,21 +10,31 @@
   if block.settings.image == blank
     assign gallery_mobile_image = blank
   endif
+
+  assign gallery_item_ratio = gallery_image.aspect_ratio | default: 0.8 | plus: 0
+  if gallery_item_ratio < 0.25 or gallery_item_ratio > 3
+    assign gallery_item_ratio = 0.8
+  endif
+  assign gallery_item_mobile_ratio = gallery_mobile_image.aspect_ratio | default: gallery_item_ratio | plus: 0
+  if gallery_item_mobile_ratio < 0.25 or gallery_item_mobile_ratio > 3
+    assign gallery_item_mobile_ratio = gallery_item_ratio
+  endif
 %}
 
 {% if gallery_image != blank or request.design_mode %}
   <article
-    class="swiper-slide hotspot-gallery-item product-callout"
+    class="swiper-slide hotspot-gallery-item product-callout product-callout--desktop-adapt product-callout--mobile-adapt"
     data-product-callout
     data-hotspot-gallery-item
     {{ block.shopify_attributes }}
   >
-    <div class="product-callout__media" style="--product-callout-ratio: var(--hotspot-gallery-image-ratio, 0.8);">
+    <div class="product-callout__media" style="--product-callout-ratio: var(--hotspot-gallery-image-ratio, {{ gallery_item_ratio }}); --product-callout-ratio-mobile: var(--hotspot-gallery-image-ratio-mobile, {{ gallery_item_mobile_ratio }});">
       {% render 'media-background',
         media_type: 'image',
         image: gallery_image,
         mobile_image: gallery_mobile_image,
         alt: gallery_image.alt,
+        placeholder: 'image',
         sizes: '(min-width: 768px) 38vw, 100vw'
       %}
       <div class="product-callout__hotspots" role="group" aria-label="{{ 'accessibility.product_callout_hotspots' | t | escape }}">

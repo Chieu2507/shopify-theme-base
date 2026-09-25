@@ -23,10 +23,35 @@
     assign gallery_columns_mobile = 1
   endif
 
-  assign gallery_ratio = block.settings.image_ratio | default: '0.8'
-  unless gallery_ratio == '0.8' or gallery_ratio == '1' or gallery_ratio == '1.333333'
-    assign gallery_ratio = '0.8'
-  endunless
+  assign gallery_ratio_setting = block.settings.image_ratio | default: 'portrait'
+  assign gallery_ratio = blank
+  case gallery_ratio_setting
+    when 'auto'
+      assign gallery_ratio = blank
+    when 'square', '1'
+      assign gallery_ratio = '1'
+    when 'landscape', '1.333333'
+      assign gallery_ratio = '1.3333'
+    when 'wide'
+      assign gallery_ratio = '1.7778'
+    when 'custom'
+      assign gallery_ratio_custom_width = block.settings.image_ratio_custom_width | default: 16 | plus: 0
+      assign gallery_ratio_custom_height = block.settings.image_ratio_custom_height | default: 9 | plus: 0
+      if gallery_ratio_custom_width < 1 or gallery_ratio_custom_width > 100
+        assign gallery_ratio_custom_width = 16
+      endif
+      if gallery_ratio_custom_height < 1 or gallery_ratio_custom_height > 100
+        assign gallery_ratio_custom_height = 9
+      endif
+      assign gallery_ratio = gallery_ratio_custom_width | times: 1.0 | divided_by: gallery_ratio_custom_height
+      if gallery_ratio < 0.25 or gallery_ratio > 3
+        assign gallery_ratio = 16 | divided_by: 9.0
+      endif
+    when '0.8', 'portrait'
+      assign gallery_ratio = '0.8'
+    else
+      assign gallery_ratio = '0.8'
+  endcase
   assign gallery_icon = block.settings.hotspot_icon_style | default: 'dot'
   unless gallery_icon == 'dot' or gallery_icon == 'plus' or gallery_icon == 'tag' or gallery_icon == 'bag'
     assign gallery_icon = 'dot'
@@ -161,7 +186,7 @@
     data-swiper-autoplay-pause-on-hover="true"
     data-swiper-autoplay-delay="4000"
   {% endif %}
-  style="--hotspot-gallery-image-ratio: {{ gallery_ratio }}; --hotspot-gallery-gap: {{ gallery_gap_desktop }}px; --hotspot-gallery-gap-mobile: {{ gallery_gap_mobile }}px; --hotspot-gallery-columns-desktop: {{ gallery_columns_desktop }}; --hotspot-gallery-columns-mobile: {{ gallery_columns_mobile }};"
+  style="{% unless gallery_ratio_setting == 'auto' %}--hotspot-gallery-image-ratio: {{ gallery_ratio }}; --hotspot-gallery-image-ratio-mobile: {{ gallery_ratio }};{% endunless %} --hotspot-gallery-gap: {{ gallery_gap_desktop }}px; --hotspot-gallery-gap-mobile: {{ gallery_gap_mobile }}px; --hotspot-gallery-columns-desktop: {{ gallery_columns_desktop }}; --hotspot-gallery-columns-mobile: {{ gallery_columns_mobile }};"
   {{ block.shopify_attributes }}
 >
   {% if gallery_layout == 'carousel' %}
@@ -350,20 +375,28 @@
       "id": "image_ratio",
       "label": "t:labels.image_ratio",
       "options": [
-        {
-          "value": "0.8",
-          "label": "t:options.image_ratio.portrait"
-        },
-        {
-          "value": "1",
-          "label": "t:options.image_ratio.square"
-        },
-        {
-          "value": "1.333333",
-          "label": "t:options.image_ratio.landscape"
-        }
+        { "value": "auto", "label": "t:options.image_ratio.auto" },
+        { "value": "square", "label": "t:options.image_ratio.square" },
+        { "value": "portrait", "label": "t:options.image_ratio.portrait" },
+        { "value": "landscape", "label": "t:options.image_ratio.landscape" },
+        { "value": "wide", "label": "t:options.image_ratio.wide" },
+        { "value": "custom", "label": "t:options.image_ratio.custom" }
       ],
-      "default": "0.8"
+      "default": "portrait"
+    },
+    {
+      "type": "number",
+      "id": "image_ratio_custom_width",
+      "label": "W",
+      "default": 16,
+      "visible_if": "{{ block.settings.image_ratio == 'custom' }}"
+    },
+    {
+      "type": "number",
+      "id": "image_ratio_custom_height",
+      "label": "H",
+      "default": 9,
+      "visible_if": "{{ block.settings.image_ratio == 'custom' }}"
     },
     {
       "type": "header",

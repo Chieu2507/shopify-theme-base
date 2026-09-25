@@ -18,6 +18,7 @@
   @param {string} [crop] - The crop position of the image
   @param {string} [widths] - Optional responsive image widths
   @param {string} [sizes] - Optional responsive image sizes
+  @param {string} [placeholder] - Optional Shopify placeholder name when no image is selected
 
   @example
   {% render 'image', image: product.featured_image %}
@@ -60,10 +61,12 @@
   else
     assign wrapper = 'div'
   endif
+
+  assign image_placeholder = placeholder | default: 'product-1'
 %}
 
 <{{ wrapper }}
-  class="image {{ class }}"
+  class="image{% if image == blank %} placeholder-image{% endif %} {{ class }}"
   {% if url != blank %}
     href="{{ url | escape }}"
     {% if open_in_new_tab %}
@@ -110,7 +113,7 @@
       {% endif %}
     {% endif %}
   {% else %}
-    {{ 'product-1' | placeholder_svg_tag: 'image__placeholder' }}
+    {{ image_placeholder | placeholder_svg_tag: 'image__placeholder' }}
   {% endif %}
 </{{ wrapper }}>
 
