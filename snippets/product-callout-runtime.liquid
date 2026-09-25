@@ -989,6 +989,17 @@
 
       callout.addEventListener('pointerleave', closeForHover, { signal: controller.signal });
 
+      if (callout.hasAttribute('data-hotspot-gallery-item')) {
+        callout.addEventListener('shopify:block:select', () => {
+          const trigger = callout.querySelector('[data-product-callout-hotspot]');
+          if (!trigger) return;
+          state.toggleOnClick = false;
+          openPopover(state, trigger);
+          state.toggleOnClick = true;
+        }, { signal: controller.signal });
+        callout.addEventListener('shopify:block:deselect', () => closeActive(state, false, true), { signal: controller.signal });
+      }
+
       callout.addEventListener(
         'click',
         (event) => {
