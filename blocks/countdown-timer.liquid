@@ -109,8 +109,10 @@
 
   assign countdown_end_timestamp = 0
   if countdown_type == 'fixed_time'
-    assign countdown_end_time = block.settings.end_time | default: '2026-12-25 12:00'
-    assign countdown_end_timestamp = countdown_end_time | date: '%s' | plus: 0
+    assign countdown_end_time = block.settings.end_time
+    if countdown_end_time != blank
+      assign countdown_end_timestamp = countdown_end_time | date: '%s' | plus: 0
+    endif
   endif
   assign countdown_now_timestamp = 'now' | date: '%s' | plus: 0
 
@@ -304,7 +306,7 @@
     data-countdown-type="{{ countdown_type }}"
     data-countdown-end-time="{{ countdown_end_timestamp }}"
     data-countdown-duration="{{ countdown_duration_seconds }}"
-    data-countdown-start-time="{{ countdown_now_timestamp }}"
+    data-countdown-key="{{ section.id }}-{{ block.id }}"
     data-countdown-hide-when-expired="{{ countdown_hide_when_expired }}"
     data-countdown-design-mode="{{ request.design_mode }}"
     data-countdown-expired-label="{{ 'countdown.expired' | t | escape }}"
@@ -589,10 +591,17 @@
           const duration = Number(this.dataset.countdownDuration) * SECOND;
           if (!Number.isFinite(duration) || duration <= 0) return null;
 
-          const configuredStart = Number(this.dataset.countdownStartTime) * SECOND;
-          const start = Number.isFinite(configuredStart) && configuredStart > 0 ? configuredStart : now;
+          // A visitor's recurring cycle survives page renders/reloads. If storage is
+          // unavailable, retain the anchor on this element for its lifetime.
+          if (!this.recurringStart) {
+            const key = `theme-countdown:${this.dataset.countdownKey}:${duration}`;
+            let savedStart;
+            try { savedStart = Number(localStorage.getItem(key)); } catch (_) {}
+            this.recurringStart = Number.isFinite(savedStart) && savedStart > 0 && savedStart <= now ? savedStart : now;
+            try { localStorage.setItem(key, String(this.recurringStart)); } catch (_) {}
+          }
+          const start = this.recurringStart;
           const elapsed = Math.max(0, now - start);
-          if (this.dataset.countdownHideWhenExpired === 'true') return start + duration;
           return start + (Math.floor(elapsed / duration) + 1) * duration;
         }
 
@@ -604,7 +613,7 @@
       update() {
         const now = Date.now();
         const target = this.getTargetTime(now);
-        const shouldHideWhenExpired = this.dataset.countdownHideWhenExpired === 'true';
+        const shouldHideWhenExpired = this.dataset.countdownType !== 'recurring' && this.dataset.countdownHideWhenExpired === 'true';
         const isDesignMode = this.dataset.countdownDesignMode === 'true';
 
         if (!target) {
@@ -702,6 +711,7 @@
       "label": "t:labels.style",
       "options": [
         { "value": "with_labels", "label": "t:options.countdown_style.with_labels" },
+        { "value": "numbers_only", "label": "t:options.countdown_style.numbers_only" },
         { "value": "inline", "label": "t:options.countdown_style.inline" },
         { "value": "inline_superscript", "label": "t:options.countdown_style.inline_superscript" }
       ],
@@ -775,7 +785,8 @@
       "type": "checkbox",
       "id": "hide_when_expired",
       "label": "t:labels.hide_when_timer_ends",
-      "default": true
+      "default": true,
+      "visible_if": "{{ block.settings.type == 'fixed_time' }}"
     },
     {
       "type": "header",

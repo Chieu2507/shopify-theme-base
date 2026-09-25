@@ -37,7 +37,7 @@
 {% endcapture %}
 {% assign marquee_style = marquee_style | strip | replace: '\n', ' ' %}
 
-{% assign marquee_class = 'section-spacing marquee marquee--' | append: marquee_direction | append: ' color-scheme section-color-scope ' | append: marquee_scheme %}
+{% assign marquee_class = 'section-spacing marquee marquee--section marquee--' | append: marquee_direction | append: ' color-scheme section-color-scope ' | append: marquee_scheme %}
 {% if marquee_speed == 0 %}
   {% assign marquee_class = marquee_class | append: ' marquee--static' %}
 {% endif %}
@@ -56,7 +56,7 @@
 </div>
 
 {% stylesheet %}
-  .marquee {
+  .marquee--section {
     --marquee-duration: 28s;
     --marquee-loop-distance: 0px;
     width: 100%;
@@ -66,18 +66,18 @@
     padding-bottom: var(--marquee-padding-bottom, 24px);
   }
 
-  .container.full-width.marquee__container {
+  .marquee--section .container.full-width.marquee__container {
     min-width: 0;
     padding-right: var(--marquee-padding-right, 0px);
     padding-left: var(--marquee-padding-left, 0px);
   }
 
-  .marquee__viewport {
+  .marquee--section .marquee__viewport {
     width: 100%;
     overflow: hidden;
   }
 
-  .marquee__track {
+  .marquee--section .marquee__track {
     display: flex;
     flex-wrap: nowrap;
     align-items: center;
@@ -89,34 +89,34 @@
     will-change: transform;
   }
 
-  .marquee--ready .marquee__track {
+  .marquee--section.marquee--ready .marquee__track {
     animation: marquee-scroll-left var(--marquee-duration) linear infinite;
   }
 
-  .marquee--forward .marquee__track {
+  .marquee--section.marquee--forward .marquee__track {
     animation-name: marquee-scroll-right;
   }
 
-  .marquee--backward .marquee__track {
+  .marquee--section.marquee--backward .marquee__track {
     animation-name: marquee-scroll-left;
   }
 
-  .marquee--static .marquee__track {
+  .marquee--section.marquee--static .marquee__track {
     animation: none;
     transform: none;
   }
 
-  .marquee__track > * {
+  .marquee--section .marquee__track > * {
     flex: 0 0 auto;
   }
 
   /* Marquee items are transparent by default; an Item background setting can override this. */
-  .marquee__track > .group {
+  .marquee--section .marquee__track > .group {
     --group-background-color: transparent;
   }
 
-  .marquee:hover .marquee__track,
-  .marquee:focus-within .marquee__track {
+  .marquee--section:hover .marquee__track,
+  .marquee--section:focus-within .marquee__track {
     animation-play-state: paused;
   }
 
@@ -131,7 +131,7 @@
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .marquee__track {
+    .marquee--section.marquee--ready .marquee__track {
       animation: none;
       transform: none;
     }
@@ -141,7 +141,8 @@
 {% javascript %}
   (() => {
     const instances = new WeakMap();
-    const selector = '.marquee';
+    const selector = '.marquee--section';
+    const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
     const removeEditorAttributes = (element) => {
       if (element.nodeType !== Node.ELEMENT_NODE) return;
@@ -159,7 +160,7 @@
     };
 
     const initialize = (marquee) => {
-      if (!marquee || instances.has(marquee)) return;
+      if (!marquee || instances.has(marquee) || reducedMotion.matches) return;
 
       const track = marquee.querySelector('.marquee__track');
       if (!track || track.children.length === 0) return;
@@ -207,6 +208,11 @@
       if (root.matches?.(selector)) destroy(root);
       root.querySelectorAll?.(selector).forEach(destroy);
     };
+
+    reducedMotion.addEventListener('change', () => {
+      if (reducedMotion.matches) destroyRoot(document);
+      else initializeRoot();
+    });
 
     document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
     document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
