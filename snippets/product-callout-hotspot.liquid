@@ -27,17 +27,6 @@
 
   assign hotspot_content_heading = block.settings.content_heading
   assign hotspot_content_text = block.settings.content_text
-  assign hotspot_has_content = false
-  if hotspot_type == 'content'
-    if hotspot_content_heading != blank or hotspot_content_text != blank
-      assign hotspot_has_content = true
-    endif
-  endif
-
-  assign hotspot_should_render = false
-  if hotspot_has_product or hotspot_has_content or request.design_mode
-    assign hotspot_should_render = true
-  endif
 
   assign hotspot_vertical = block.settings.vertical_position | default: 50 | plus: 0
   assign hotspot_horizontal = block.settings.horizontal_position | default: 50 | plus: 0
@@ -90,7 +79,7 @@
     endif
   endif
 
-  assign hotspot_popover_id = 'product-callout-popover-' | append: block.id
+  assign hotspot_popover_id = 'product-callout-popover-' | append: section.id | append: '-' | append: block.id
   assign hotspot_popover_class = 'product-callout__popover product-callout__popover--' | append: hotspot_popover_vertical
   assign hotspot_popover_label = hotspot_product_title
   if hotspot_type == 'content'
@@ -125,7 +114,6 @@
 {% endcapture %}
 {% assign hotspot_style = hotspot_style | strip %}
 
-{% if hotspot_should_render %}
   <div
     class="product-callout__hotspot-wrap"
     style="{{ hotspot_style }}"
@@ -185,7 +173,7 @@
           {% if hotspot_content_text != blank %}
             <div class="product-callout__content-card-text text-block body-text body-sm rte">{{ hotspot_content_text }}</div>
           {% else %}
-            {% if hotspot_content_heading == blank and request.design_mode %}
+            {% if hotspot_content_heading == blank %}
               <span class="product-callout__content-card-placeholder">{{ 'accessibility.product_callout_hotspot_content_fallback' | t }}</span>
             {% endif %}
           {% endif %}
@@ -197,7 +185,7 @@
               <div class="product-callout__product-card-media">
                 {{ hotspot_product.featured_image | image_url: width: 180 | image_tag: widths: '90, 180', sizes: '5.5rem', alt: hotspot_product.title, loading: 'lazy' }}
               </div>
-            {% elsif request.design_mode %}
+            {% else %}
               <div class="product-callout__product-card-media placeholder-image" aria-hidden="true">
                 {{ 'product-1' | placeholder_svg_tag: 'product-callout__product-card-placeholder' }}
               </div>
@@ -233,4 +221,3 @@
       {% endif %}
     </div>
   </div>
-{% endif %}
