@@ -172,7 +172,6 @@
   .search-overlay__result-title { line-height: 1.35; }
   .search-overlay__price { color: color-mix(in srgb, currentColor 65%, transparent); }
   .search-overlay__view-all { display: flex; justify-content: center; margin-top: 2.5rem; }
-  .search-overlay__view-all .btn:not(.btn--tertiary) { min-height: 2.75rem; }
   .search-overlay__empty { margin: 0; }
 
   @media (max-width: 767.98px) {
@@ -332,7 +331,7 @@
   };
 
   const escapeHtml = (value = '') => String(value).replace(/[&<>'"]/g, (character) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', "'": '&#39;', '"': '&quot;' })[character]);
-  const money = (amount) => new Intl.NumberFormat(document.documentElement.lang || 'en', { style: 'currency', currency: window.Shopify?.currency?.active || 'USD' }).format(Number(amount || 0) / 100);
+  const money = (amount) => new Intl.NumberFormat(document.documentElement.lang || 'en', { style: 'currency', currency: window.Shopify?.currency?.active || 'USD' }).format(Number(amount || 0));
   const imageUrl = (item) => item?.featured_image?.url || item?.featured_image || item?.image?.url || item?.image || item?.featured_media?.preview_image?.url || '';
   const card = (item, showPrice = false) => {
     const image = imageUrl(item);
@@ -369,7 +368,7 @@
     if (products.length) panels.push(['products', labels.productsLabel, `<div class="search-overlay__product-grid">${products.slice(0, previewLimit('products')).map((item) => card(item, true)).join('')}</div>`]);
     if (collections.length) panels.push(['collections', labels.collectionsLabel, `<div class="search-overlay__collection-grid">${collections.slice(0, previewLimit('collections')).map((item) => card(item)).join('')}</div>`]);
     if (articles.length) panels.push(['articles', labels.blogPostsLabel, `<div class="search-overlay__article-grid">${articles.slice(0, previewLimit('articles')).map((item) => card(item)).join('')}</div>`]);
-    if (pages.length) panels.push(['pages', labels.pagesLabel, `<ul class="search-overlay__page-list body-text body-sm">${pages.slice(0, previewLimit('pages')).map((item) => `<li><a href="${escapeHtml(item.url)}">${escapeHtml(item.title)}</a></li>`).join('')}</ul>`]);
+    if (pages.length) panels.push(['pages', labels.pagesLabel, `<ul class="search-overlay__page-list body-text body-sm">${pages.slice(0, previewLimit('pages')).map((item) => `<li><a class="link-underline" href="${escapeHtml(item.url)}">${escapeHtml(item.title)}</a></li>`).join('')}</ul>`]);
     if (!panels.length) {
       targetResults.innerHTML = `<p class="search-overlay__empty body-text body-sm">${escapeHtml(labels.noResultsLabel)}</p>`;
       targetResults.hidden = false;
