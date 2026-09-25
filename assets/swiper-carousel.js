@@ -134,6 +134,76 @@ export const bindSwiperControls = (swiper, controls = {}) => {
   };
 };
 
+/**
+ * Binds a scoped set of buttons to individual Swiper slides. The caller owns
+ * the button markup and supplies each target index through a data attribute.
+ */
+export const bindSwiperSlideControls = (swiper, controls = {}) => {
+  if (!swiper || swiper.destroyed) return () => {};
+
+  const controlOptions = controls && controls !== true ? controls : {};
+  const scope = controlOptions.scope || swiper.el;
+  const selector = controlOptions.selector || '[data-swiper-slide-index]';
+  const indexAttribute = controlOptions.indexAttribute || 'data-swiper-slide-index';
+  const activeClass = controlOptions.activeClass || 'is-active';
+  const currentValue = controlOptions.currentValue || 'true';
+  const scrollActiveIntoView = Boolean(controlOptions.scrollActiveIntoView);
+  const controller = new AbortController();
+  let previousActiveIndex = null;
+
+  const getControls = () => Array.from(scope.querySelectorAll(selector));
+  const getControlIndex = (control) => {
+    const value = control.getAttribute(indexAttribute);
+    return value === null ? Number.NaN : Number(value);
+  };
+  const update = () => {
+    if (swiper.destroyed) return;
+
+    const activeIndex = Number.isInteger(swiper.realIndex) ? swiper.realIndex : swiper.activeIndex;
+    const activeControl = getControls().find((control) => getControlIndex(control) === activeIndex);
+    getControls().forEach((control) => {
+      const isActive = control === activeControl;
+      if (activeClass) control.classList.toggle(activeClass, isActive);
+      if (isActive) control.setAttribute('aria-current', currentValue);
+      else control.removeAttribute('aria-current');
+    });
+
+    if (scrollActiveIntoView && activeControl && previousActiveIndex !== null && activeIndex !== previousActiveIndex) {
+      activeControl.scrollIntoView?.({
+        block: 'nearest',
+        inline: 'nearest',
+        behavior: prefersReducedMotion() ? 'auto' : 'smooth',
+      });
+    }
+    previousActiveIndex = activeIndex;
+  };
+
+  scope.addEventListener('click', (event) => {
+    const control = event.target.closest?.(selector);
+    if (!control || !scope.contains(control)) return;
+
+    const index = getControlIndex(control);
+    if (!Number.isInteger(index) || index < 0 || index >= swiper.slides.length) return;
+    event.preventDefault();
+    if (index !== swiper.realIndex) {
+      if (swiper.params.loop && typeof swiper.slideToLoop === 'function') {
+        swiper.slideToLoop(index, swiper.params.speed);
+      } else {
+        swiper.slideTo(index, swiper.params.speed);
+      }
+    }
+  }, { signal: controller.signal });
+
+  const updateEvents = ['activeIndexChange', 'slideChangeTransitionEnd', 'slidesUpdated', 'update'];
+  updateEvents.forEach((eventName) => swiper.on(eventName, update));
+  update();
+
+  return () => {
+    controller.abort();
+    updateEvents.forEach((eventName) => swiper.off(eventName, update));
+  };
+};
+
 export const createSwiperCarousel = (element, options = {}) => {
   if (!isElement(element) || element.dataset.swiperLayout === 'grid') return null;
 

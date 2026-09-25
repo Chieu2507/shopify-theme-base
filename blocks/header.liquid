@@ -2,8 +2,8 @@
   Renders a compound header block that stacks optional Eyebrow, Heading, and
   Text child blocks.
 
-  This block owns its child flow, alignment, optional max width, gaps, and
-  padding without overriding child typography.
+  This block owns its child flow, optional max width, gaps, and padding without
+  overriding child typography. Alignment can inherit from the parent layout.
 
   @example
   {% content_for 'block', type: 'header', id: 'header' %}
@@ -61,6 +61,7 @@
     assign header_gap_mobile = 8
   endif
 
+  assign header_inherit_alignment = block.settings.inherit_alignment
   assign header_alignment = 'start'
   assign header_text_alignment = 'left'
   case block.settings.alignment
@@ -142,10 +143,12 @@
       --header-max-width-mobile: 100%;
     {% endif %}
   {% endif %}
-  --header-align: {{ header_alignment }};
-  --header-text-align: {{ header_text_alignment }};
-  {% if block.settings.customize_mobile_alignment %}--header-align-mobile: {{ header_alignment_mobile }};{% endif %}
-  {% if block.settings.customize_mobile_alignment %}--header-text-align-mobile: {{ header_text_alignment_mobile }};{% endif %}
+  {% unless header_inherit_alignment %}
+    --header-align: {{ header_alignment }};
+    --header-text-align: {{ header_text_alignment }};
+    {% if block.settings.customize_mobile_alignment %}--header-align-mobile: {{ header_alignment_mobile }};{% endif %}
+    {% if block.settings.customize_mobile_alignment %}--header-text-align-mobile: {{ header_text_alignment_mobile }};{% endif %}
+  {% endunless %}
   {% if padding_top != 0 %}--header-padding-top: {{ padding_top }}px;{% endif %}
   {% if padding_bottom != 0 %}--header-padding-bottom: {{ padding_bottom }}px;{% endif %}
   {% if padding_left != 0 %}--header-padding-left: {{ padding_left }}px;{% endif %}
@@ -172,7 +175,7 @@
     width: var(--header-width, fit-content);
     max-width: var(--header-max-width, 100%);
     min-width: 0;
-    text-align: var(--header-text-align, left);
+    text-align: var(--header-text-align, var(--text-align-default, inherit));
     padding-top: var(--header-padding-top, 0px);
     padding-right: var(--header-padding-right, 0px);
     padding-bottom: var(--header-padding-bottom, 0px);
@@ -187,7 +190,7 @@
     .block-header {
       width: var(--header-width-mobile, var(--header-width, fit-content));
       max-width: var(--header-max-width-mobile, var(--header-max-width, 100%));
-      text-align: var(--header-text-align-mobile, var(--header-text-align, left));
+      text-align: var(--header-text-align-mobile, var(--header-text-align, var(--text-align-default, inherit)));
       padding-top: var(--header-padding-top-mobile, var(--header-padding-top, 0px));
       padding-right: var(--header-padding-right-mobile, var(--header-padding-right, 0px));
       padding-bottom: var(--header-padding-bottom-mobile, var(--header-padding-bottom, 0px));
@@ -264,26 +267,35 @@
     },
     {
       "type": "header",
-      "content": "t:labels.alignment"
+      "content": "t:labels.alignment",
+      "visible_if": "{{ block.settings.inherit_alignment == false }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "inherit_alignment",
+      "label": "t:labels.inherit_alignment",
+      "default": false
     },
     {
       "type": "text_alignment",
       "id": "alignment",
       "label": "t:labels.alignment",
-      "default": "left"
+      "default": "left",
+      "visible_if": "{{ block.settings.inherit_alignment == false }}"
     },
     {
       "type": "checkbox",
       "id": "customize_mobile_alignment",
       "label": "t:labels.customize_mobile_alignment",
-      "default": false
+      "default": false,
+      "visible_if": "{{ block.settings.inherit_alignment == false }}"
     },
     {
       "type": "text_alignment",
       "id": "alignment_mobile",
       "label": "t:labels.mobile_alignment",
       "default": "left",
-      "visible_if": "{{ block.settings.customize_mobile_alignment }}"
+      "visible_if": "{{ block.settings.customize_mobile_alignment and block.settings.inherit_alignment == false }}"
     },
     {
       "type": "header",

@@ -97,7 +97,7 @@ Use the shared factory from a section or feature module:
 
 ```js
 import { Pagination } from './swiper-loader.js';
-import { bindSwiperControls, createSwiperCarousel } from './swiper-carousel.js';
+import { bindSwiperControls, bindSwiperSlideControls, createSwiperCarousel } from './swiper-carousel.js';
 
 const root = document.querySelector('[data-content-list]');
 const swiper = createSwiperCarousel(root.querySelector('[data-swiper-carousel]'), {
@@ -113,6 +113,14 @@ bindSwiperControls(swiper, {
   previous: '[data-swiper-previous]',
   next: '[data-swiper-next]'
 });
+
+bindSwiperSlideControls(swiper, {
+  scope: root.querySelector('[data-slide-navigation]'),
+  selector: '[data-swiper-slide-index]',
+  activeClass: 'is-active',
+  currentValue: 'step',
+  scrollActiveIntoView: true
+});
 ```
 
 `createSwiperCarousel` adds the shared A11y module, enables `watchOverflow`,
@@ -120,3 +128,10 @@ deduplicates modules, and is idempotent per element. Use
 `destroySwiperCarousel` during section unload or component disconnect. The
 factory returns the native Swiper instance so existing product/media behavior
 can keep using `slideTo`, `slidePrev`, `slideNext`, `update`, and Swiper events.
+
+`bindSwiperSlideControls` provides a reusable indexed-control contract for
+year rails, step navigation, or other controls that target a specific slide.
+Each button supplies a numeric `data-swiper-slide-index`; the binder delegates
+clicks within the supplied scope, updates an optional active class and
+`aria-current`, and returns cleanup for editor unloads. `scrollActiveIntoView`
+is opt-in and respects reduced-motion preferences.
