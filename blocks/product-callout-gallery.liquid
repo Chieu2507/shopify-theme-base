@@ -1,0 +1,179 @@
+{% doc %}
+  The fixed Product callout slot in Hotspot Gallery. Its repeatable Hotspot
+  children each own an image and Product/custom content; the parent owns the
+  two-column layout, shared image ratio, icon, interaction and color scheme.
+  Two children are supplied by default; extra children continue in grid rows.
+
+  @example
+  {% content_for 'block', type: 'product-callout-gallery', id: 'product-callout' %}
+{% enddoc %}
+
+{% liquid
+  assign gallery_ratio = block.settings.image_ratio | default: '0.8'
+  unless gallery_ratio == '0.8' or gallery_ratio == '1' or gallery_ratio == '1.333333'
+    assign gallery_ratio = '0.8'
+  endunless
+  assign gallery_icon = block.settings.hotspot_icon_style | default: 'dot'
+  unless gallery_icon == 'dot' or gallery_icon == 'plus' or gallery_icon == 'tag' or gallery_icon == 'bag'
+    assign gallery_icon = 'dot'
+  endunless
+  assign gallery_scheme = block.settings.hotspot_color_scheme.id | default: block.settings.hotspot_color_scheme | default: 'scheme-1'
+%}
+
+{% render 'product-callout-runtime' %}
+
+<div
+  class="product-callout-gallery product-callout--icon-{{ gallery_icon }} color-scheme {{ gallery_scheme | handleize }}"
+  data-product-callout-hotspot-behavior="{{ block.settings.hotspot_behavior | default: 'click' }}"
+  style="--hotspot-gallery-image-ratio: {{ gallery_ratio }}; --hotspot-gallery-gap: {{ block.settings.gap_desktop | default: 20 }}px; --hotspot-gallery-gap-mobile: {{ block.settings.gap_mobile | default: 24 }}px;"
+  {{ block.shopify_attributes }}
+>
+  {% content_for 'blocks' %}
+</div>
+
+{% stylesheet %}
+  .product-callout-gallery {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    align-items: start;
+    gap: var(--hotspot-gallery-gap, 20px);
+    min-width: 0;
+    width: 100%;
+  }
+
+  @media (max-width: 767.98px) {
+    .product-callout-gallery {
+      grid-template-columns: minmax(0, 1fr);
+      gap: var(--hotspot-gallery-gap-mobile, var(--hotspot-gallery-gap, 24px));
+    }
+  }
+{% endstylesheet %}
+
+{% schema %}
+{
+  "name": "t:general.product_callout",
+  "tag": null,
+  "blocks": [
+    {
+      "type": "gallery-hotspot"
+    }
+  ],
+  "settings": [
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "image_ratio",
+      "label": "t:labels.image_ratio",
+      "options": [
+        {
+          "value": "0.8",
+          "label": "t:options.image_ratio.portrait"
+        },
+        {
+          "value": "1",
+          "label": "t:options.image_ratio.square"
+        },
+        {
+          "value": "1.333333",
+          "label": "t:options.image_ratio.landscape"
+        }
+      ],
+      "default": "0.8"
+    },
+    {
+      "type": "range",
+      "id": "gap_desktop",
+      "label": "t:labels.desktop_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "gap_mobile",
+      "label": "t:labels.mobile_gap",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24
+    },
+    {
+      "type": "header",
+      "content": "t:general.hotspots"
+    },
+    {
+      "type": "select",
+      "id": "hotspot_icon_style",
+      "label": "t:labels.icon",
+      "options": [
+        {
+          "value": "dot",
+          "label": "t:options.product_callout_icon_style.dot"
+        },
+        {
+          "value": "plus",
+          "label": "t:options.product_callout_icon_style.plus"
+        },
+        {
+          "value": "tag",
+          "label": "t:options.product_callout_icon_style.tag"
+        },
+        {
+          "value": "bag",
+          "label": "t:options.product_callout_icon_style.bag"
+        }
+      ],
+      "default": "dot"
+    },
+    {
+      "type": "select",
+      "id": "hotspot_behavior",
+      "label": "t:labels.behavior",
+      "options": [
+        {
+          "value": "click",
+          "label": "t:options.dropdown_trigger.click"
+        },
+        {
+          "value": "hover",
+          "label": "t:options.dropdown_trigger.hover"
+        }
+      ],
+      "default": "click"
+    },
+    {
+      "type": "color_scheme",
+      "id": "hotspot_color_scheme",
+      "label": "t:labels.hotspot_color_scheme",
+      "default": "scheme-1"
+    }
+  ],
+  "presets": [
+    {
+      "name": "t:general.product_callout",
+      "blocks": [
+        {
+          "type": "gallery-hotspot",
+          "settings": {
+            "vertical_position": 67,
+            "horizontal_position": 50
+          }
+        },
+        {
+          "type": "gallery-hotspot",
+          "settings": {
+            "vertical_position": 34,
+            "horizontal_position": 70
+          }
+        }
+      ]
+    }
+  ]
+}
+{% endschema %}
