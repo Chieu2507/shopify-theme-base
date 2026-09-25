@@ -10,11 +10,9 @@
   assign logo_image = settings.logo
   assign logo_class = 'header-logo site-logo header-logo--' | append: logo_position
 
-  if section.settings.header_overlay
-    assign logo_class = logo_class | append: ' site-logo--transparent'
-    if settings.logo_transparent != blank
-      assign logo_image = settings.logo_transparent
-    endif
+  assign logo_has_overlay_image = false
+  if template.name == 'index' and section.settings.header_overlay and settings.logo_transparent != blank
+    assign logo_has_overlay_image = true
   endif
 %}
 
@@ -24,6 +22,9 @@
   aria-label="{{ shop.name | escape }}"
   {{ block.shopify_attributes }}
 >
+  {% if logo_has_overlay_image %}
+    {{ settings.logo_transparent | image_url: width: logo_width | image_tag: widths: '80, 120, 140, 180, 240, 320, 400', sizes: logo_sizes, class: 'site-logo__image site-logo__image--overlay', alt: shop.name }}
+  {% endif %}
   {% if logo_image != blank %}
     {{
       logo_image
@@ -31,7 +32,7 @@
       | image_tag:
         widths: '80, 120, 140, 180, 240, 320, 400',
         sizes: logo_sizes,
-        class: 'site-logo__image',
+        class: 'site-logo__image site-logo__image--base',
         alt: shop.name
     }}
   {% else %}
@@ -56,6 +57,10 @@
     color: var(--body-color);
     text-decoration: none;
   }
+
+  .site-logo .site-logo__image--overlay { display: none; }
+  .header-top--transparent-scheme .site-logo:has(.site-logo__image--overlay) > :is(.site-logo__image--base, .site-logo__fallback) { display: none; }
+  .header-top--transparent-scheme .site-logo .site-logo__image--overlay { display: block; }
 
   .site-logo__image {
     display: block;

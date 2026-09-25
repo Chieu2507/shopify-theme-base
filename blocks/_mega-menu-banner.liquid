@@ -52,18 +52,18 @@
 {% endcapture %}
 {% assign banner_style = banner_style | strip %}
 <article class="header-mega-menu__banner header-mega-menu__banner--{{ block.settings.layout | default: 'content_on_image' }} section-color-scope {{ banner_scheme }}{% if block.settings.limit_width %} header-mega-menu__banner--limited{% endif %}{% if block.settings.overlay %} header-mega-menu__banner--overlay{% endif %}"{% if banner_style != blank %} style="{{ banner_style }}"{% endif %} {{ block.shopify_attributes }}>
-  <a class="header-mega-menu__banner-media{% if block.settings.image == blank %} placeholder-image{% endif %}" href="{{ block.settings.link | default: '#' }}" target="{{ banner_target }}">
+  <{% if block.settings.link != blank %}a{% else %}div{% endif %} class="header-mega-menu__banner-media{% if block.settings.image == blank %} placeholder-image{% endif %}" {% if block.settings.link != blank %}href="{{ block.settings.link | escape }}" target="{{ banner_target }}"{% if block.settings.open_new_tab %} rel="noopener noreferrer"{% endif %}{% endif %}>
     {% if block.settings.image != blank %}
       {{ block.settings.image | image_url: width: 1000 | image_tag: class: 'header-mega-menu__banner-image', widths: '240, 360, 480, 720, 1000', alt: banner_heading }}
     {% else %}
       {{ 'image' | placeholder_svg_tag: 'header-mega-menu__banner-image' }}
     {% endif %}
-  </a>
+  </{% if block.settings.link != blank %}a{% else %}div{% endif %}>
   <div class="header-mega-menu__banner-content header-mega-menu__banner-content--{{ block.settings.alignment | default: 'left' }} header-mega-menu__banner-content--{{ block.settings.content_position | default: 'bottom' }}">
     {% if banner_subheading != blank %}<div class="header-mega-menu__banner-subheading">{{ banner_subheading }}</div>{% endif %}
   {% if banner_heading != blank %}<div class="header-mega-menu__banner-title {{ banner_heading_class }}">{{ banner_heading }}</div>{% endif %}
   {% if banner_text != blank %}<div class="header-mega-menu__banner-text {{ banner_text_class }}">{{ banner_text }}</div>{% endif %}
-    {% if block.settings.label != blank %}<a class="btn btn--{{ block.settings.button_style | default: 'primary' }}{% if block.settings.button_style == 'tertiary' %} link-underline{% endif %} header-mega-menu__banner-button{% if block.settings.full_width %} header-mega-menu__banner-button--full-width{% endif %}"{% if block.settings.button_style == 'tertiary' %} data-underline="persistent" data-underline-target="text"{% endif %} href="{{ block.settings.link | default: '#' }}" target="{{ banner_target }}">{% if block.settings.show_icon and block.settings.icon_position == 'left' %}{% render 'icon', icon: 'arrow-left', bare: true, class: 'header-mega-menu__banner-button-icon' %}{% endif %}<span class="btn__text">{{ block.settings.label | escape }}</span>{% if block.settings.show_icon and block.settings.icon_position == 'right' %}{% render 'icon', icon: 'arrow-right', bare: true, class: 'header-mega-menu__banner-button-icon' %}{% endif %}</a>{% endif %}
+    {% if block.settings.label != blank and block.settings.link != blank %}<a class="btn btn--{{ block.settings.button_style | default: 'primary' }}{% if block.settings.button_style == 'tertiary' %} link-underline{% endif %} header-mega-menu__banner-button{% if block.settings.full_width %} header-mega-menu__banner-button--full-width{% endif %}"{% if block.settings.button_style == 'tertiary' %} data-underline="persistent" data-underline-target="text"{% endif %} href="{{ block.settings.link | escape }}" target="{{ banner_target }}"{% if block.settings.open_new_tab %} rel="noopener noreferrer"{% endif %}>{% if block.settings.show_icon and block.settings.icon_position == 'left' %}{% render 'icon', icon: 'arrow-left', bare: true, class: 'header-mega-menu__banner-button-icon' %}{% endif %}<span class="btn__text">{{ block.settings.label | escape }}</span>{% if block.settings.show_icon and block.settings.icon_position == 'right' %}{% render 'icon', icon: 'arrow-right', bare: true, class: 'header-mega-menu__banner-button-icon' %}{% endif %}</a>{% endif %}
   </div>
 </article>
 {% stylesheet %}
@@ -101,7 +101,7 @@
     { "type": "range", "id": "custom_heading_size", "label": "Custom size", "min": 10, "max": 100, "step": 1, "unit": "px", "default": 24, "visible_if": "{{ block.settings.heading_size == 'custom' }}" },
     { "type": "select", "id": "text_size", "label": "t:labels.text_size", "options": [{ "value": "xs", "label": "t:options.text_size.xs" }, { "value": "sm", "label": "t:options.text_size.sm" }, { "value": "md", "label": "t:options.text_size.md" }, { "value": "lg", "label": "t:options.text_size.lg" }, { "value": "xl", "label": "t:options.text_size.xl" }, { "value": "xxl", "label": "t:options.text_size.xxl" }], "default": "md" },
     { "type": "header", "content": "t:general.button" },
-    { "type": "text", "id": "label", "label": "t:labels.button_label", "default": "Shop now" },
+    { "type": "text", "id": "label", "label": "t:labels.button_label" },
     { "type": "select", "id": "button_style", "label": "t:labels.style", "options": [{ "value": "primary", "label": "t:options.button_variant.primary" }, { "value": "secondary", "label": "t:options.button_variant.secondary" }, { "value": "tertiary", "label": "t:options.button_variant.tertiary" }], "default": "primary" },
     { "type": "checkbox", "id": "show_icon", "label": "t:labels.show_icon", "default": false },
     { "type": "select", "id": "icon_position", "label": "t:labels.icon_position", "options": [{ "value": "left", "label": "Before label" }, { "value": "right", "label": "After label" }], "default": "right", "visible_if": "{{ block.settings.show_icon }}" },
