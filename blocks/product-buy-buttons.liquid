@@ -16,21 +16,6 @@
   assign unavailable_label = 'products.unavailable' | t
   assign variant_selection_unavailable_label = 'products.variant_selection_unavailable' | t
 
-  assign buy_button_style = block.settings.button_style | default: 'primary'
-  unless buy_button_style == 'primary' or buy_button_style == 'secondary' or buy_button_style == 'tertiary'
-    assign buy_button_style = 'primary'
-  endunless
-
-  assign show_quantity = true
-  if block.settings.show_quantity == false
-    assign show_quantity = false
-  endif
-
-  assign show_accelerated_checkout = true
-  if block.settings.show_accelerated_checkout == false
-    assign show_accelerated_checkout = false
-  endif
-
   assign show_back_in_stock_button = true
   if block.settings.show_back_in_stock_button == false
     assign show_back_in_stock_button = false
@@ -50,11 +35,6 @@
     assign render_recipient_form = true
   endif
 
-  # Payment buttons do not carry recipient properties. The runtime hides the
-  # accelerated checkout only while a customer has opted into recipient
-  # fields, so the default gift-card path can still use accelerated checkout.
-  assign render_accelerated_checkout = show_accelerated_checkout
-
   assign buy_gap_desktop = block.settings.gap_desktop | default: 12 | plus: 0
   assign buy_gap_mobile = block.settings.gap_mobile | default: 12 | plus: 0
   if buy_gap_desktop < 0 or buy_gap_desktop > 48
@@ -63,41 +43,6 @@
   if buy_gap_mobile < 0 or buy_gap_mobile > 48
     assign buy_gap_mobile = 12
   endif
-
-  assign buy_height_desktop = block.settings.button_height_desktop | default: 'medium'
-  assign buy_height_mobile = block.settings.button_height_mobile | default: 'small'
-  assign buy_height_desktop_value = blank
-  assign buy_height_mobile_value = blank
-  case buy_height_desktop
-    when 'extra_small'
-      assign buy_height_desktop_value = '40px'
-    when 'small'
-      assign buy_height_desktop_value = '44px'
-    when 'medium'
-      assign buy_height_desktop_value = '48px'
-    when 'large'
-      assign buy_height_desktop_value = '56px'
-    when 'extra_large'
-      assign buy_height_desktop_value = '64px'
-    else
-      assign buy_height_desktop = 'medium'
-      assign buy_height_desktop_value = '48px'
-  endcase
-  case buy_height_mobile
-    when 'extra_small'
-      assign buy_height_mobile_value = '40px'
-    when 'small'
-      assign buy_height_mobile_value = '44px'
-    when 'medium'
-      assign buy_height_mobile_value = '48px'
-    when 'large'
-      assign buy_height_mobile_value = '56px'
-    when 'extra_large'
-      assign buy_height_mobile_value = '64px'
-    else
-      assign buy_height_mobile = 'small'
-      assign buy_height_mobile_value = '44px'
-  endcase
 
   assign buy_padding_top = block.settings.padding_top | default: 0 | plus: 0
   assign buy_padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
@@ -219,8 +164,6 @@
 {% capture buy_style %}
   {% if buy_gap_desktop != 12 %}--product-buy-buttons-gap: {{ buy_gap_desktop }}px;{% endif %}
   {% if buy_gap_mobile != buy_gap_desktop %}--product-buy-buttons-gap-mobile: {{ buy_gap_mobile }}px;{% endif %}
-  {% if buy_height_desktop_value != blank %}--product-buy-button-height: {{ buy_height_desktop_value }};{% endif %}
-  {% if buy_height_mobile_value != blank %}--product-buy-button-height-mobile: {{ buy_height_mobile_value }};{% endif %}
   {% if buy_padding_top != 0 %}--product-buy-buttons-padding-top: {{ buy_padding_top }}px;{% endif %}
   {% if buy_padding_bottom != 0 %}--product-buy-buttons-padding-bottom: {{ buy_padding_bottom }}px;{% endif %}
   {% if buy_padding_left != 0 %}--product-buy-buttons-padding-left: {{ buy_padding_left }}px;{% endif %}
@@ -237,18 +180,15 @@
 {% if buy_product != blank or request.design_mode %}
   <product-buy-buttons
     id="ProductBuyButtons-{{ section.id }}-{{ block.id }}"
-    class="product-buy-buttons{% unless show_quantity %} product-buy-buttons--without-quantity{% endunless %}"
+    class="product-buy-buttons"
     data-product-buy-buttons
     data-section-id="{{ section.id }}"
     data-current-variant-id="{{ current_variant_id }}"
     data-current-variant-title="{% if current_variant != blank and current_variant.title != 'Default Title' %}{{ current_variant.title | escape }}{% endif %}"
     data-variant-available="{% if product_unavailable %}false{% else %}true{% endif %}"
-    data-show-quantity="{{ show_quantity }}"
     data-quantity-min="{{ quantity_min }}"
     data-quantity-step="{{ quantity_step }}"
     {% if quantity_max != blank %}data-quantity-max="{{ quantity_max }}"{% endif %}
-    data-show-accelerated-checkout="{{ show_accelerated_checkout }}"
-    data-render-accelerated-checkout="{{ render_accelerated_checkout }}"
     data-back-in-stock-alert="{{ back_in_stock_enabled }}"
     data-back-in-stock-show-name="{{ back_in_stock_show_name }}"
     data-back-in-stock-show-phone="{{ back_in_stock_show_phone }}"
@@ -347,71 +287,11 @@
           </fieldset>
         {% endif %}
 
-        {% if show_quantity %}
-          <div class="product-buy-buttons__purchase">
-            <div class="product-buy-buttons__quantity form__field" data-buy-quantity>
-              <label class="form__label visually-hidden" for="{{ form_id }}-quantity">{{ 'accessibility.quantity' | t }}</label>
-              <div class="product-buy-buttons__quantity-control">
-                <button
-                  class="product-buy-buttons__quantity-button"
-                  type="button"
-                  aria-label="{{ 'cart.decrease' | t | escape }}"
-                  aria-controls="{{ form_id }}-quantity"
-                  data-quantity-decrease
-                >
-                  {% render 'icon', icon: 'minus', bare: true %}
-                </button>
-                <input
-                  id="{{ form_id }}-quantity"
-                  class="form__control form__control--input"
-                  type="number"
-                  name="quantity"
-                  value="{{ quantity_min }}"
-                  min="{{ quantity_min }}"
-                  step="{{ quantity_step }}"
-                  inputmode="numeric"
-                  autocomplete="off"
-                  {% if quantity_max != blank %}max="{{ quantity_max }}"{% endif %}
-                  data-quantity-input
-                >
-                <button
-                  class="product-buy-buttons__quantity-button"
-                  type="button"
-                  aria-label="{{ 'cart.increase' | t | escape }}"
-                  aria-controls="{{ form_id }}-quantity"
-                  data-quantity-increase
-                >
-                  {% render 'icon', icon: 'plus', bare: true %}
-                </button>
-              </div>
-            </div>
-            {% render 'theme-button',
-              label: add_to_cart_label_with_price,
-              type: 'submit',
-              class: 'product-form__submit',
-              disabled: product_unavailable,
-              variant: buy_button_style,
-              attributes: 'name="add" data-add-to-cart-button'
-            %}
-          </div>
-        {% else %}
-          <div class="product-buy-buttons__purchase">
-            {% render 'theme-button',
-              label: add_to_cart_label_with_price,
-              type: 'submit',
-              class: 'product-form__submit',
-              disabled: product_unavailable,
-              variant: buy_button_style,
-              attributes: 'name="add" data-add-to-cart-button'
-            %}
-          </div>
-        {% endif %}
-
-        {% if render_accelerated_checkout %}
-          <div class="product-buy-buttons__accelerated-checkout" data-accelerated-checkout-wrapper{% if product_unavailable and request.design_mode == false %} hidden{% endif %}>
-            {{ form | payment_button }}
-          </div>
-        {% endif %}
+        <div class="product-buy-buttons__purchase">
+          {% content_for 'block', type: 'product-buy-quantity', id: 'quantity', form_id: form_id, quantity_min: quantity_min, quantity_step: quantity_step, quantity_max: quantity_max %}
+          {% content_for 'block', type: 'product-buy-add-to-cart', id: 'add-to-cart', label: add_to_cart_label_with_price, product_unavailable: product_unavailable %}
+        </div>
+        {% content_for 'block', type: 'product-buy-accelerated-checkout', id: 'accelerated-checkout', form: form, product_unavailable: product_unavailable %}
 
         {% if show_price %}
           <div hidden data-add-to-cart-label-templates aria-hidden="true">
@@ -506,20 +386,6 @@
     },
     {
       "type": "checkbox",
-      "id": "show_quantity",
-      "label": "t:labels.show_quantity_control",
-      "info": "t:info.product_quantity_rules",
-      "default": true
-    },
-    {
-      "type": "checkbox",
-      "id": "show_accelerated_checkout",
-      "label": "t:labels.show_accelerated_checkout",
-      "info": "t:info.accelerated_checkout",
-      "default": true
-    },
-    {
-      "type": "checkbox",
       "id": "show_back_in_stock_button",
       "label": "t:labels.show_back_in_stock_button",
       "info": "t:info.product_back_in_stock_button",
@@ -535,52 +401,6 @@
       "label": "t:labels.show_gift_card_recipient",
       "info": "t:info.gift_card_recipient",
       "default": true
-    },
-    {
-      "type": "header",
-      "content": "t:general.button"
-    },
-    {
-      "type": "select",
-      "id": "button_style",
-      "label": "t:labels.purchase_button_style",
-      "info": "t:info.product_buy_button_style",
-      "options": [
-        { "value": "primary", "label": "t:options.button_variant.primary" },
-        { "value": "secondary", "label": "t:options.button_variant.secondary" },
-        { "value": "tertiary", "label": "t:options.button_variant.tertiary" }
-      ],
-      "default": "primary"
-    },
-    {
-      "type": "header",
-      "content": "t:general.button_height"
-    },
-    {
-      "type": "select",
-      "id": "button_height_desktop",
-      "label": "t:labels.button_height_desktop",
-      "options": [
-        { "value": "extra_small", "label": "t:options.product_button_height.extra_small" },
-        { "value": "small", "label": "t:options.product_button_height.small" },
-        { "value": "medium", "label": "t:options.product_button_height.medium" },
-        { "value": "large", "label": "t:options.product_button_height.large" },
-        { "value": "extra_large", "label": "t:options.product_button_height.extra_large" }
-      ],
-      "default": "medium"
-    },
-    {
-      "type": "select",
-      "id": "button_height_mobile",
-      "label": "t:labels.button_height_mobile",
-      "options": [
-        { "value": "extra_small", "label": "t:options.product_button_height.extra_small" },
-        { "value": "small", "label": "t:options.product_button_height.small" },
-        { "value": "medium", "label": "t:options.product_button_height.medium" },
-        { "value": "large", "label": "t:options.product_button_height.large" },
-        { "value": "extra_large", "label": "t:options.product_button_height.extra_large" }
-      ],
-      "default": "small"
     },
     {
       "type": "header",

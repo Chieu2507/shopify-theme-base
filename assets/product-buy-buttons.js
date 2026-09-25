@@ -142,13 +142,17 @@ class ProductBuyButtons extends HTMLElement {
     const label = this.addButton?.querySelector('.btn__text');
     if (!label) return;
 
+    const showPrice = this.form?.dataset.addToCartShowPrice !== 'false'
+      && this.addButton?.closest('[data-add-to-cart-show-price]')?.dataset.addToCartShowPrice !== 'false';
     let nextLabel = this.dataset.unavailableLabel || '';
     if (variantId && !isAvailable) {
       nextLabel = this.dataset.soldOutLabel || nextLabel;
     } else if (variantId && isAvailable) {
-      const template = Array.from(this.form?.querySelectorAll('[data-add-to-cart-label-template]') || []).find(
-        (candidate) => String(candidate.dataset.addToCartLabelTemplate) === String(variantId),
-      );
+      const template = showPrice
+        ? Array.from(this.form?.querySelectorAll('[data-add-to-cart-label-template]') || []).find(
+          (candidate) => String(candidate.dataset.addToCartLabelTemplate) === String(variantId),
+        )
+        : null;
       nextLabel = template?.content.textContent.trim() || this.dataset.addToCartLabel || nextLabel;
     }
 
@@ -234,9 +238,9 @@ class ProductBuyButtons extends HTMLElement {
 
     const value = Number(this.quantityInput.value || this.quantityInput.min || 1);
     const min = Number(this.quantityInput.min || 1);
-    const max = Number(this.quantityInput.max);
+    const max = this.quantityInput.max === '' ? null : Number(this.quantityInput.max);
     if (this.quantityDecrease) this.quantityDecrease.disabled = value <= min;
-    if (this.quantityIncrease) this.quantityIncrease.disabled = Number.isFinite(max) && value >= max;
+    if (this.quantityIncrease) this.quantityIncrease.disabled = max !== null && Number.isFinite(max) && value >= max;
   }
 
   syncGiftCardRecipient() {
