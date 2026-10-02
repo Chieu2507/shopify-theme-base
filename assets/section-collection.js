@@ -653,7 +653,8 @@ if (!customElements.get('collection-facets')) {
       }
       const generation = this.requestGeneration || 0;
       const observer = new IntersectionObserver(entries => {
-        if (this.paginationObserver === observer && (this.requestGeneration || 0) === generation && entries.some(entry => entry.isIntersecting)) this.loadMore(link);
+        if (this.paginationObserver !== observer || (this.requestGeneration || 0) !== generation) return;
+        if (entries.some(entry => entry.isIntersecting)) this.loadMore(link);
       }, { rootMargin: '300px' });
       this.paginationObserver = observer;
       observer.observe(sentinel);
@@ -672,11 +673,16 @@ if (!customElements.get('collection-facets')) {
     async loadMore(link) {
       const pagination = this.querySelector('.collection-pagination-block');
       if (!this.isConnected || this.loadingMore || this.requestController || pagination?.querySelector('[data-collection-load-more]') !== link) return;
+      const grid = this.querySelector('.main-collection__grid');
       const generation = this.requestGeneration || 0;
       const controller = new AbortController();
       this.paginationController = controller;
       this.paginationLink = link;
-      const isCurrent = () => this.isConnected && !controller.signal.aborted && this.paginationController === controller && (this.requestGeneration || 0) === generation;
+      // Abort is advisory once a response has arrived. Only this generation may
+      // update the grid and pagination that originally started the request.
+      const isCurrent = () => this.isConnected && !controller.signal.aborted && this.paginationController === controller &&
+        (this.requestGeneration || 0) === generation && this.querySelector('.main-collection__grid') === grid &&
+        this.querySelector('.collection-pagination-block') === pagination;
       this.loadingMore = true;
       link.setAttribute('aria-busy', 'true');
       const status = pagination.querySelector('[data-collection-pagination-status]');
@@ -691,8 +697,8 @@ if (!customElements.get('collection-facets')) {
         const text = await response.text();
         if (!isCurrent()) return;
         const html = new DOMParser().parseFromString(text, 'text/html');
-        const next = html.querySelector('collection-facets');
-        const grid = this.querySelector('.main-collection__grid');
+        const next = html.querySelector(`collection-facets[data-section-id="${this.sectionId}"]`);
+        if (!next || !grid) throw new Error('Collection response was missing pagination content');
         const offset = grid.querySelectorAll('.main-collection__product').length;
         next.querySelectorAll('.main-collection__product').forEach((item, index) => {
           item.style.order = (offset + index + 1) * 10;
