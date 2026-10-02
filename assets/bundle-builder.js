@@ -52,6 +52,23 @@ function getVariantImage(card, variant) {
   };
 }
 
+function getVariantImageSnapshot(card, variant) {
+  const image = getVariantImage(card, variant);
+  const imageUrl = image?.src || '';
+  const width = Number(image?.width || card.dataset.productImageDefaultWidth);
+  const height = Number(image?.height || card.dataset.productImageDefaultHeight);
+  const ratio = Number(image?.aspect_ratio)
+    || (width > 0 && height > 0 ? width / height : 0)
+    || Number(card.dataset.productImageDefaultRatio);
+
+  return {
+    src: imageUrl
+      ? image.thumb_src || getSizedImageUrl(imageUrl, 160)
+      : card.dataset.productImageDefault || '',
+    ratio: Number.isFinite(ratio) && ratio > 0 ? String(ratio) : '',
+  };
+}
+
 function updateProductImage(card, variant) {
   const variantImage = getVariantImage(card, variant);
   const variantImageUrl = variantImage?.src || '';
@@ -284,9 +301,10 @@ function saveEditorSelection(key, selection) {
 }
 
 function updateItemSnapshot(item, card, variant) {
+  const imageSnapshot = getVariantImageSnapshot(card, variant);
   item.productTitle = card.dataset.productTitle || '';
-  item.productImage = card.dataset.productImage || '';
-  item.productImageRatio = card.dataset.productImageRatio || '';
+  item.productImage = imageSnapshot.src;
+  item.productImageRatio = imageSnapshot.ratio;
   item.variant = {
     id: variant.id,
     title: variant.title,
@@ -467,8 +485,8 @@ function initialize(root) {
       if (card) updateItemSnapshot(item, card, variant);
 
       const productTitle = card?.dataset.productTitle || item.productTitle || '';
-      const productImage = card?.dataset.productImage || item.productImage || '';
-      const productImageRatio = Number(card?.dataset.productImageRatio || item.productImageRatio);
+      const productImage = item.productImage || card?.dataset.productImage || '';
+      const productImageRatio = Number(item.productImageRatio || card?.dataset.productImageRatio);
 
       const quantity = normalizeQuantity(item.quantity, variant);
       item.quantity = quantity;
@@ -687,11 +705,7 @@ function initialize(root) {
     saveSelection();
   };
 
-  const handleVariantChange = (event) => {
-    const card = event.target.closest('[data-bundle-product]');
-    if (!card || !root.contains(card)) return;
-
-    const variant = event.detail?.variant;
+  const updateCardVariant = (card, variant) => {
     card.dataset.currentVariantId = variant?.id ? String(variant.id) : '';
     card.dataset.currentVariantAvailable = String(Boolean(variant?.available));
     updateProductImage(card, variant);
@@ -701,6 +715,12 @@ function initialize(root) {
 
     renderProductButton(card);
     render();
+  };
+
+  const handleVariantChange = (event) => {
+    const card = event.target.closest('[data-bundle-product]');
+    if (!card || !root.contains(card)) return;
+    updateCardVariant(card, event.detail?.variant);
   };
 
   const handleClick = (event) => {
@@ -770,6 +790,30 @@ function initialize(root) {
           source: 'bundle-dropdown',
         },
       }));
+      return;
+    }
+
+    const optionControl = event.target.closest('[data-option-control]');
+    const picker = optionControl?.closest('variant-picker');
+    if (picker && root.contains(picker)) {
+      const card = picker.closest('[data-bundle-product]');
+      const selectedOptions = Array.from(picker.querySelectorAll('.variant-picker__option[data-option-index]'))
+        .map((group) => {
+          const control = group.querySelector('select[data-option-control], input[data-option-control]:checked')
+            || group.querySelector('[data-option-control]');
+          return control?.value || '';
+        });
+      const variant = card
+        ? getVariantData(card).find((candidate) => {
+          const options = getVariantOptionValues(candidate);
+          return options.length === selectedOptions.length
+            && options.every((value, index) => String(value) === String(selectedOptions[index]));
+        }) || null
+        : null;
+
+      if (card && String(card.dataset.currentVariantId || '') !== String(variant?.id || '')) {
+        updateCardVariant(card, variant);
+      }
       return;
     }
 
