@@ -104,9 +104,11 @@
 
   {% if block.blocks.size > 0 or block.settings.row_mode == 'dynamic' %}
     {% for comparison_row in block.blocks %}
-      <!-- qa-raw row {{ comparison_row.id }} label={{ comparison_row.settings.label }} type={{ comparison_row.type }} -->
-      {% capture comparison_row_native %}{% render comparison_row %}{% endcapture %}<!-- qa-native {{ comparison_row_native | escape }} -->
-      {% render 'comparison-table-row-content', block: comparison_row, comparison_table_dom_id: comparison_table_dom_id, comparison_row_index: forloop.index %}
+      {% capture comparison_row_native %}{% render comparison_row %}{% endcapture %}
+      {% assign comparison_row_feature = comparison_row_native | split: '<!-- comparison-feature-end -->' | first %}
+      {% assign comparison_row_index = forloop.index | append: '' %}
+      {% assign comparison_row_aria_index = forloop.index | plus: 1 | append: '' %}
+      {{ comparison_row_feature | replace: '__TABLE_NAMESPACE__', comparison_table_dom_id | replace: '__ROW_INDEX__', comparison_row_index | replace: '__ARIA_ROW_INDEX__', comparison_row_aria_index }}
     {% endfor %}
   {% else %}
   {% assign comparison_feature_row_count = 1 %}
@@ -152,11 +154,31 @@
 {% endcapture %}
 {% assign comparison_feature_dynamic_rows = false %}
 {% if block.settings.row_mode == 'dynamic' %}{% assign comparison_feature_dynamic_rows = true %}{% endif %}
-<!-- qa-cols {{ comparison_table_columns.size }} {% for qa_col in comparison_table_columns %}{{ qa_col.id }}:{{ qa_col.type }}{% endfor %} -->
 {% capture comparison_product_columns %}
   {% for comparison_column in comparison_table_columns %}
-    {% if comparison_column.type == 'comparison-table-column' %}
-      {% render 'comparison-table-column-content', block: comparison_column, comparison_table_dom_id: comparison_table_dom_id, comparison_table_rows: block.blocks, comparison_table_dynamic_rows: comparison_feature_dynamic_rows %}
+    {% capture comparison_column_native %}{% render comparison_column %}{% endcapture %}
+    {% if comparison_feature_dynamic_rows or block.blocks.size > 0 %}
+      {% assign comparison_column_header = comparison_column_native | split: '<!-- comparison-column-rows -->' | first %}
+      {% assign comparison_column_key = comparison_column_header | split: 'data-comparison-column-key="' | last | split: '"' | first %}
+      {% assign comparison_column_product_id = 'comparison-product-' | append: comparison_table_dom_id | append: '-' | append: comparison_column.id %}
+      {{ comparison_column_header | replace: '__TABLE_NAMESPACE__', comparison_table_dom_id }}
+      {% for comparison_row in block.blocks %}
+        {% capture comparison_row_native %}{% render comparison_row %}{% endcapture %}
+        {% assign comparison_value_marker = '<template data-comparison-value-key="' | append: comparison_column_key | append: '">' %}
+        {% assign comparison_feature_id = 'comparison-feature-' | append: comparison_table_dom_id | append: '-' | append: comparison_row.id %}
+        {% assign comparison_value_id = 'comparison-value-' | append: comparison_table_dom_id | append: '-' | append: comparison_column.id | append: '-' | append: comparison_row.id %}
+        <div class="comparison-table__row" role="row" aria-rowindex="{{ forloop.index | plus: 1 }}" data-comparison-table-row="{{ forloop.index }}">
+          {% if comparison_row_native contains comparison_value_marker %}
+            {% assign comparison_value_content = comparison_row_native | split: comparison_value_marker | last | split: '</template>' | first %}
+            {{ comparison_value_content | replace: '__FEATURE_ID__', comparison_feature_id | replace: '__PRODUCT_ID__', comparison_column_product_id | replace: '__VALUE_ID__', comparison_value_id }}
+          {% else %}
+            {% render 'comparison-table-value', type: 'none', feature_id: comparison_feature_id, product_id: comparison_column_product_id, value_id: comparison_value_id %}
+          {% endif %}
+        </div>
+      {% endfor %}
+      </div>
+    {% else %}
+      {{ comparison_column_native | replace: '__TABLE_NAMESPACE__', comparison_table_dom_id }}
     {% endif %}
   {% endfor %}
 {% endcapture %}

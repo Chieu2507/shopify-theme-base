@@ -9,6 +9,7 @@
 {% enddoc %}
 
 {% liquid
+  assign comparison_table_dom_id = comparison_table_dom_id | default: '__TABLE_NAMESPACE__'
   assign comparison_column_border_width = block.settings.border_thickness | default: 0 | plus: 0
   if comparison_column_border_width < 0 or comparison_column_border_width > 10
     assign comparison_column_border_width = 0
@@ -79,6 +80,7 @@
 
 <div
   class="comparison-table__col grid comparison-table__col--data{{ comparison_column_scheme_class }}"
+  data-comparison-column-key="{{ comparison_column_key | escape }}"
   data-column-shadow="{{ comparison_column_shadow }}"
   {% if comparison_column_style != blank %}style="{{ comparison_column_style }}"{% endif %}
   role="rowgroup"
@@ -121,6 +123,7 @@
     </div>
   </div>
 
+  <!-- comparison-column-rows -->
   {% if comparison_table_rows.size > 0 or comparison_table_dynamic_rows %}
     {% for comparison_row in comparison_table_rows %}
       {% assign feature_id = 'comparison-feature-' | append: comparison_table_dom_id | append: '-' | append: comparison_row.id %}
