@@ -7,12 +7,18 @@
 
   An empty blog renders the same placeholder cards in the editor and storefront.
 
+  @param {boolean} [use_section_blog] - Use the supplied section blog, including an intentionally blank selection
+
   @example
   {% content_for 'block', type: 'blog-list', id: 'blog-list' %}
 {% enddoc %}
 
 {% liquid
-  assign blog_list_source = closest.blog | default: block.settings.blog | default: blog
+  if use_section_blog
+    assign blog_list_source = section.settings.blog
+  else
+    assign blog_list_source = closest.blog | default: block.settings.blog | default: blog
+  endif
 
   assign blog_list_max_posts = block.settings.max_posts | default: 4 | plus: 0
   if blog_list_max_posts < 1 or blog_list_max_posts > 24
@@ -397,7 +403,8 @@
     {
       "type": "blog",
       "id": "blog",
-      "label": "Blog"
+      "label": "Blog",
+      "info": "Blog posts and Featured blog posts use the section Blog setting. This picker is used in other compositions."
     },
     {
       "type": "range",

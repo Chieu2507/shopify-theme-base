@@ -2,7 +2,8 @@
   Renders the standard View all button block.
 
   This action accepts an explicit destination and falls back to the closest
-  resource URL when a compatible section supplies one. Desktop and mobile
+  typed blog or collection resource URL when a compatible section supplies one.
+  An explicit merchant URL always wins. Desktop and mobile
   presentation are configured independently while both controls retain the
   same accessible link target.
 
@@ -14,9 +15,13 @@
   assign collection_list_view_all_fallback_label = 'collection_tabs.view_all' | t
   assign collection_list_view_all_url = block.settings.button_link
   assign collection_list_view_all_is_dynamic = false
-  if collection_list_view_all_url == blank and closest.collection != blank
-    assign collection_list_view_all_url = closest.collection.url
-    assign collection_list_view_all_is_dynamic = true
+  if collection_list_view_all_url == blank
+    if closest.blog != blank
+      assign collection_list_view_all_url = closest.blog.url
+    elsif closest.collection != blank
+      assign collection_list_view_all_url = closest.collection.url
+      assign collection_list_view_all_is_dynamic = true
+    endif
   endif
   assign collection_list_view_all_attributes = 'data-view-all-button'
   if collection_list_view_all_is_dynamic
