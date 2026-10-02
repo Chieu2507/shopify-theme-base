@@ -104,6 +104,8 @@
 
   {% if block.blocks.size > 0 or block.settings.row_mode == 'dynamic' %}
     {% for comparison_row in block.blocks %}
+      <!-- qa-raw row {{ comparison_row.id }} label={{ comparison_row.settings.label }} type={{ comparison_row.type }} -->
+      {% capture comparison_row_native %}{% render comparison_row %}{% endcapture %}<!-- qa-native {{ comparison_row_native | escape }} -->
       {% render 'comparison-table-row-content', block: comparison_row, comparison_table_dom_id: comparison_table_dom_id, comparison_row_index: forloop.index %}
     {% endfor %}
   {% else %}
@@ -150,6 +152,7 @@
 {% endcapture %}
 {% assign comparison_feature_dynamic_rows = false %}
 {% if block.settings.row_mode == 'dynamic' %}{% assign comparison_feature_dynamic_rows = true %}{% endif %}
+<!-- qa-cols {{ comparison_table_columns.size }} {% for qa_col in comparison_table_columns %}{{ qa_col.id }}:{{ qa_col.type }}{% endfor %} -->
 {% capture comparison_product_columns %}
   {% for comparison_column in comparison_table_columns %}
     {% if comparison_column.type == 'comparison-table-column' %}
