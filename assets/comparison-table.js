@@ -55,6 +55,7 @@
 
       // Keep authored slot alignment, but do not reserve unused trailing tracks.
       this.style.setProperty('--comparison-table-track-count', String(lastFeatureRow + 1));
+      table.style.setProperty('--comparison-table-track-count', String(lastFeatureRow + 1));
       table.setAttribute('aria-rowcount', String(lastFeatureRow + 1));
       table.querySelectorAll(rowSelector).forEach((row) => {
         const index = Number(row.dataset.comparisonTableRow);
