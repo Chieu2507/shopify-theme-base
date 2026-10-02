@@ -97,9 +97,13 @@
   assign comparison_table_boxed_padding_horizontal_mobile = block.settings.boxed_padding_horizontal_mobile | default: 16 | plus: 0
   assign comparison_table_dom_id = 'comparison-table-' | append: section.id | append: '-' | append: block.id
   assign comparison_table_rows = blank
+  assign comparison_table_dynamic_rows = false
   for comparison_table_child in block.blocks
     if comparison_table_child.type == '_comparison-table-features'
       assign comparison_table_rows = comparison_table_child.blocks
+      if comparison_table_child.settings.row_mode == 'dynamic'
+        assign comparison_table_dynamic_rows = true
+      endif
     endif
   endfor
   assign comparison_table_column_count = 0
@@ -179,7 +183,7 @@
 {% capture comparison_table_columns %}
   {% for comparison_table_child in block.blocks %}
     {% unless comparison_table_child.id == 'features' or comparison_table_child.type == '_comparison-table-features' %}
-      {% render comparison_table_child, comparison_table_dom_id: comparison_table_dom_id, comparison_table_rows: comparison_table_rows %}
+      {% render comparison_table_child, comparison_table_dom_id: comparison_table_dom_id, comparison_table_rows: comparison_table_rows, comparison_table_dynamic_rows: comparison_table_dynamic_rows %}
     {% endunless %}
   {% endfor %}
 {% endcapture %}
