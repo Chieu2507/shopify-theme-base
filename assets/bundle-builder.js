@@ -1,4 +1,5 @@
 import { formatShopifyMoney } from './money-format.js';
+import { setButtonLoadingState } from './button-loading.js';
 
 const instances = new WeakMap();
 const editorSelections = new Map();
@@ -446,7 +447,7 @@ function initialize(root) {
     button.setAttribute('aria-label', selected
       ? `${label || ''}: ${productTitle}`.trim()
       : button.dataset.bundleAriaAdd || `${label || ''}: ${productTitle}`.trim());
-    button.disabled = !available || selected;
+    button.disabled = state.isSubmitting || !available || selected;
   };
 
   const getCurrent = (card) => {
@@ -544,8 +545,9 @@ function initialize(root) {
         quantityInput.setAttribute('aria-label', `${quantityInput.getAttribute('aria-label')}: ${productTitle}`);
         const decreaseButton = itemNode.querySelector('[data-bundle-quantity-decrease]');
         const increaseButton = itemNode.querySelector('[data-bundle-quantity-increase]');
-        if (decreaseButton) decreaseButton.disabled = quantity <= rule.min;
-        if (increaseButton) increaseButton.disabled = rule.max != null && quantity >= rule.max;
+        quantityInput.disabled = state.isSubmitting;
+        if (decreaseButton) decreaseButton.disabled = state.isSubmitting || quantity <= rule.min;
+        if (increaseButton) increaseButton.disabled = state.isSubmitting || (rule.max != null && quantity >= rule.max);
       }
       if (state.summary.dataset.showQuantity === 'true') {
         if (staticQuantity) staticQuantity.hidden = true;
@@ -564,6 +566,7 @@ function initialize(root) {
       if (removeButton) {
         removeButton.dataset.productId = productId;
         removeButton.dataset.variantId = variantId;
+        removeButton.disabled = state.isSubmitting;
         removeButton.setAttribute('aria-label', `${removeButton.textContent.trim()}: ${productTitle}`);
       }
       itemNode.querySelectorAll('[data-bundle-quantity-decrease], [data-bundle-quantity-increase]').forEach((button) => {
@@ -620,7 +623,18 @@ function initialize(root) {
     state.canSubmitBundle = state.selected.size > 0 && (!firstGoal || firstGoal.complete);
 
     list?.replaceChildren(fragment);
-    if (submitButton) submitButton.disabled = !state.canSubmitBundle || state.isSubmitting;
+    if (submitButton) {
+      submitButton.disabled = !state.canSubmitBundle || state.isSubmitting;
+      setButtonLoadingState(submitButton, state.isSubmitting, {
+        buttonStateKey: 'bundleLoading',
+      });
+    }
+    if (productList) {
+      productList.inert = state.isSubmitting;
+      if (state.isSubmitting) productList.setAttribute('aria-busy', 'true');
+      else productList.removeAttribute('aria-busy');
+    }
+    if (mobileSummaryItems) mobileSummaryItems.inert = state.isSubmitting;
     root.querySelectorAll('[data-bundle-product]').forEach(renderProductButton);
 
     const progress = summary.querySelector('[data-bundle-progress]');
@@ -719,30 +733,34 @@ function initialize(root) {
 
   const handleVariantChange = (event) => {
     const card = event.target.closest('[data-bundle-product]');
-    if (!card || !root.contains(card)) return;
+    if (state.isSubmitting || !card || !root.contains(card)) return;
     updateCardVariant(card, event.detail?.variant);
   };
 
+  const handleBundleToggle = (event) => {
+    const toggle = event.currentTarget;
+    if (state.isSubmitting || !(toggle instanceof HTMLButtonElement) || toggle.disabled) return;
+    const card = toggle.closest('[data-bundle-product]');
+    if (!card || !root.contains(card)) return;
+    const current = getCurrent(card);
+    if (!current || state.selected.has(current.variantId)) return;
+    state.selected.set(current.variantId, {
+      productId: String(card.dataset.productId || ''),
+      variantId: current.variantId,
+      quantity: quantityRule(current.variant).min,
+    });
+    updateItemSnapshot(state.selected.get(current.variantId), card, current.variant);
+    render();
+  };
+
+  root.querySelectorAll('[data-bundle-toggle]').forEach((toggle) => {
+    toggle.addEventListener('click', handleBundleToggle, { signal });
+  });
+
   const handleClick = (event) => {
-    const toggle = event.target.closest('[data-bundle-toggle]');
-    if (toggle && root.contains(toggle)) {
-      const card = toggle.closest('[data-bundle-product]');
-      if (!card) return;
-      const current = getCurrent(card);
-      if (!current || state.selected.has(current.variantId)) return;
-      state.selected.set(current.variantId, {
-        productId: String(card.dataset.productId || ''),
-        variantId: current.variantId,
-        quantity: quantityRule(current.variant).min,
-      });
-      updateItemSnapshot(state.selected.get(current.variantId), card, current.variant);
-
-      render();
-      return;
-    }
-
     const remove = event.target.closest('[data-bundle-remove]');
     if (remove && root.contains(remove)) {
+      if (state.isSubmitting) return;
       state.selected.delete(String(remove.dataset.variantId || ''));
       render();
       return;
@@ -751,6 +769,7 @@ function initialize(root) {
     const decrement = event.target.closest('[data-bundle-quantity-decrease]');
     const increment = event.target.closest('[data-bundle-quantity-increase]');
     if ((decrement || increment) && root.contains(event.target)) {
+      if (state.isSubmitting) return;
       const variantId = String((decrement || increment).dataset.variantId || '');
       const item = state.selected.get(variantId);
       const card = item
@@ -774,6 +793,8 @@ function initialize(root) {
   };
 
   const handleChange = (event) => {
+    if (state.isSubmitting) return;
+
     const variantSelect = event.target.closest('[data-bundle-variant-select]');
     if (variantSelect && root.contains(variantSelect)) {
       const card = variantSelect.closest('[data-bundle-product]');
@@ -843,10 +864,9 @@ function initialize(root) {
     }
 
     state.isSubmitting = true;
-    submit.setAttribute('aria-busy', 'true');
-    render();
-
     try {
+      render();
+
       const rootPath = window.Shopify?.routes?.root || '/';
       const response = await fetch(`${rootPath.replace(/\/$/, '')}/cart/add.js`, {
         method: 'POST',
@@ -870,7 +890,6 @@ function initialize(root) {
       // Keep the selection available for another attempt.
     } finally {
       state.isSubmitting = false;
-      submit.removeAttribute('aria-busy');
       render();
     }
   };
