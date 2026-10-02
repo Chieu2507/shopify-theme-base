@@ -56,6 +56,7 @@
     assign comparison_column_button_disabled = true
   endif
   assign comparison_column_image_width = 280
+  assign comparison_column_key = block.settings.column_key | default: block.id
   assign comparison_column_product_id = 'comparison-product-' | append: comparison_table_dom_id | append: '-' | append: block.id
 %}
 
@@ -110,6 +111,25 @@
     </div>
   </div>
 
+  {% if comparison_table_rows.size > 0 %}
+    {% for comparison_row in comparison_table_rows %}
+      {% assign feature_id = 'comparison-feature-' | append: comparison_table_dom_id | append: '-' | append: comparison_row.id %}
+      {% assign value_id = 'comparison-value-' | append: comparison_table_dom_id | append: '-' | append: block.id | append: '-' | append: comparison_row.id %}
+      <div class="comparison-table__row" role="row" aria-rowindex="{{ forloop.index | plus: 1 }}" data-comparison-table-row="{{ forloop.index }}">
+        {% assign comparison_row_has_value = false %}
+        {% for comparison_value in comparison_row.blocks %}
+          {% if comparison_value.settings.column_key == comparison_column_key %}
+            {% render comparison_value, feature_id: feature_id, product_id: comparison_column_product_id, value_id: value_id %}
+            {% assign comparison_row_has_value = true %}
+            {% break %}
+          {% endif %}
+        {% endfor %}
+        {% unless comparison_row_has_value %}
+          {% render 'comparison-table-value', type: 'none', feature_id: feature_id, product_id: comparison_column_product_id, value_id: value_id %}
+        {% endunless %}
+      </div>
+    {% endfor %}
+  {% else %}
   {% assign comparison_column_row_count = 1 %}
   {% for feature_index in (1..16) %}
     {% assign value_type_key = 'value_' | append: feature_index | append: '_type' %}
@@ -137,6 +157,7 @@
       %}
     </div>
   {% endfor %}
+  {% endif %}
 </div>
 
 {% schema %}
@@ -144,6 +165,7 @@
   "name": "t:general.column",
   "tag": null,
   "settings": [
+    { "type": "text", "id": "column_key", "label": "Column key", "info": "Use the same key in row values to connect them to this column. Keep it unchanged when renaming or reordering the column." },
     {
       "type": "header",
       "content": "Header"

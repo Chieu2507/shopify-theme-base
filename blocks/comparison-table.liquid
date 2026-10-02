@@ -95,7 +95,13 @@
   assign comparison_table_boxed_padding_top_mobile = block.settings.boxed_padding_top_mobile | default: 10 | plus: 0
   assign comparison_table_boxed_padding_bottom_mobile = block.settings.boxed_padding_bottom_mobile | default: 20 | plus: 0
   assign comparison_table_boxed_padding_horizontal_mobile = block.settings.boxed_padding_horizontal_mobile | default: 16 | plus: 0
-  assign comparison_table_dom_id = 'comparison-table-' | append: block.id
+  assign comparison_table_dom_id = 'comparison-table-' | append: section.id | append: '-' | append: block.id
+  assign comparison_table_rows = blank
+  for comparison_table_child in block.blocks
+    if comparison_table_child.type == '_comparison-table-features'
+      assign comparison_table_rows = comparison_table_child.blocks
+    endif
+  endfor
   assign comparison_table_column_count = 0
   for comparison_table_child in block.blocks
     if comparison_table_child.type == 'comparison-table-column'
@@ -173,13 +179,13 @@
 {% capture comparison_table_columns %}
   {% for comparison_table_child in block.blocks %}
     {% unless comparison_table_child.id == 'features' or comparison_table_child.type == '_comparison-table-features' %}
-      {% render comparison_table_child %}
+      {% render comparison_table_child, comparison_table_dom_id: comparison_table_dom_id, comparison_table_rows: comparison_table_rows %}
     {% endunless %}
   {% endfor %}
 {% endcapture %}
 
 <div class="comparison-table__block comparison-table-block size-style{% if block.settings.boxed_layout %} comparison-table-block--boxed{% endif %}"{% if comparison_table_style != blank or comparison_table_block_spacing != blank %} style="{{ comparison_table_style }}{% if comparison_table_block_spacing != blank %} {{ comparison_table_block_spacing }}{% endif %}"{% endif %} {{ block.shopify_attributes }}>
-  <div
+  <comparison-table-rows
     id="{{ comparison_table_dom_id }}"
     class="comparison-table comparison-table--heading-{{ comparison_table_heading_font }}{% if block.settings.show_column_dividers %} comparison-table--dividers{% endif %}{{ comparison_table_scheme_class }}"
     data-row-style="{{ comparison_table_row_style }}"
@@ -215,7 +221,7 @@
         {{ comparison_table_columns }}
       </div>
     {% endif %}
-  </div>
+  </comparison-table-rows>
 </div>
 
 {% stylesheet %}
@@ -224,6 +230,7 @@
   }
 
   .comparison-table {
+    display: block;
     width: 100%;
     min-width: 0;
   }
@@ -254,7 +261,7 @@
     display: grid;
     grid-auto-flow: column;
     grid-auto-columns: minmax(auto, 1fr);
-    grid-template-rows: repeat(17, auto);
+    grid-template-rows: repeat(var(--comparison-table-track-count, 17), auto);
     width: 100%;
     min-width: 0;
     padding-bottom: 2px;
@@ -271,7 +278,7 @@
   .comparison-table__layout--feature-fixed {
     display: grid;
     grid-template-columns: var(--comparison-table-feature-width-fixed, minmax(auto, 1fr)) minmax(0, 1fr);
-    grid-template-rows: repeat(17, auto);
+    grid-template-rows: repeat(var(--comparison-table-track-count, 17), auto);
     width: 100%;
     min-width: 0;
     color: var(--body-color);

@@ -93,6 +93,11 @@
     </div>
   </div>
 
+  {% if block.blocks.size > 0 %}
+    {% for comparison_row in block.blocks %}
+      {% render comparison_row, comparison_table_dom_id: comparison_table_dom_id, comparison_row_index: forloop.index %}
+    {% endfor %}
+  {% else %}
   {% assign comparison_feature_row_count = 1 %}
   {% for feature_index in (1..16) %}
     {% assign feature_label_key = 'feature_' | append: feature_index | append: '_label' %}
@@ -130,12 +135,14 @@
       </div>
     </div>
   {% endfor %}
+  {% endif %}
 </div>
 
 {% schema %}
 {
   "name": "t:general.feature",
   "tag": null,
+  "blocks": [{ "type": "comparison-table-row" }],
   "settings": [
     {
       "type": "header",
