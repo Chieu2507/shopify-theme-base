@@ -1,3 +1,5 @@
+import { setButtonLoadingState } from './button-loading.js';
+
 const productFeatureModules = [
   './variant-picker.js',
   './product-buy-buttons.js',
@@ -176,37 +178,31 @@ class QuickAddController {
     if (isLoading) {
       if (this.loadingTrigger && this.loadingTrigger !== trigger) this.setTriggerLoading(this.loadingTrigger, false);
       this.loadingTrigger = trigger;
-      trigger.dataset.quickAddLoading = 'true';
-      trigger.setAttribute('aria-busy', 'true');
       if (!isSwatchMoreButton) {
         this.triggerDisabledState = trigger.getAttribute('aria-disabled');
         trigger.setAttribute('aria-disabled', 'true');
       }
-      if (isSwatchMoreButton) trigger.classList.add('btn--loading');
-      if (dots) {
-        if (!isSwatchMoreButton) {
-          dots.hidden = false;
-          dots.classList.remove('hidden');
-        }
-      }
-      if (wrapper) wrapper.dataset.quickAddLoading = 'true';
+      setButtonLoadingState(trigger, true, {
+        buttonStateKey: 'quickAddLoading',
+        wrapper,
+        wrapperStateKey: 'quickAddLoading',
+        showDots: !isSwatchMoreButton,
+        hideLabel: Boolean(dots),
+      });
       return;
     }
 
-    delete trigger.dataset.quickAddLoading;
-    trigger.removeAttribute('aria-busy');
     if (!isSwatchMoreButton) {
       if (this.triggerDisabledState == null) trigger.removeAttribute('aria-disabled');
       else trigger.setAttribute('aria-disabled', this.triggerDisabledState);
     }
-    if (isSwatchMoreButton) trigger.classList.remove('btn--loading');
-    if (dots) {
-      if (!isSwatchMoreButton) {
-        dots.hidden = true;
-        dots.classList.add('hidden');
-      }
-    }
-    if (wrapper) delete wrapper.dataset.quickAddLoading;
+    setButtonLoadingState(trigger, false, {
+      buttonStateKey: 'quickAddLoading',
+      wrapper,
+      wrapperStateKey: 'quickAddLoading',
+      showDots: !isSwatchMoreButton,
+      hideLabel: Boolean(dots),
+    });
     if (this.loadingTrigger === trigger) this.loadingTrigger = null;
   }
 
