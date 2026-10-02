@@ -1,3 +1,5 @@
+import { setButtonLoadingState } from './button-loading.js';
+
 const productFeatureModules = [
   './variant-picker.js',
   './product-buy-buttons.js',
@@ -174,23 +176,21 @@ class QuickViewController {
     if (isLoading) {
       if (this.loadingTrigger && this.loadingTrigger !== trigger) this.setTriggerLoading(this.loadingTrigger, false);
       this.loadingTrigger = trigger;
-      trigger.dataset.quickViewLoading = 'true';
-      trigger.setAttribute('aria-busy', 'true');
-      if (dots) {
-        dots.hidden = false;
-        dots.classList.remove('hidden');
-      }
-      if (wrapper) wrapper.dataset.quickViewLoading = 'true';
+      setButtonLoadingState(trigger, true, {
+        buttonStateKey: 'quickViewLoading',
+        wrapper,
+        wrapperStateKey: 'quickViewLoading',
+        hideLabel: Boolean(dots),
+      });
       return;
     }
 
-    delete trigger.dataset.quickViewLoading;
-    trigger.removeAttribute('aria-busy');
-    if (dots) {
-      dots.hidden = true;
-      dots.classList.add('hidden');
-    }
-    if (wrapper) delete wrapper.dataset.quickViewLoading;
+    setButtonLoadingState(trigger, false, {
+      buttonStateKey: 'quickViewLoading',
+      wrapper,
+      wrapperStateKey: 'quickViewLoading',
+      hideLabel: Boolean(dots),
+    });
     if (this.loadingTrigger === trigger) this.loadingTrigger = null;
   }
 
