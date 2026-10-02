@@ -398,8 +398,8 @@ svg {
   }
 }
 
-/* Shared treatment for Shopify media fallbacks. The placeholder derives its
- * colors from the inherited scheme so nested media stays in sync. */
+/* Shared treatment for Shopify media fallbacks. Keep the neutral canvas and
+ * foreground tint layers while deriving colors from the inherited scheme. */
 .placeholder-image {
   --placeholder-background-color: color-mix(in srgb, var(--background-color) 92%, var(--body-color));
   --placeholder-fill-color: color-mix(in srgb, var(--body-color) 30%, transparent);
@@ -407,6 +407,23 @@ svg {
   isolation: isolate;
   overflow: hidden;
   background-color: var(--placeholder-background-color);
+}
+
+.placeholder-image::before,
+.placeholder-image::after {
+  position: absolute;
+  inset: 0;
+  content: '';
+  pointer-events: none;
+}
+
+.placeholder-image::before {
+  background-color: #fff6;
+}
+
+.placeholder-image::after {
+  z-index: 1;
+  background-color: color-mix(in srgb, var(--body-color) 8%, transparent);
 }
 
 .placeholder-image > svg {
