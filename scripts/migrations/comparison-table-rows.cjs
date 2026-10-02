@@ -7,7 +7,8 @@ const newId = () => randomUUID().replaceAll('-', '').slice(0, 12);
 // stay stored for rollback, but row_mode prevents resurrection after deletion.
 function migrateTable(table) {
   const children = Array.isArray(table.blocks) ? table.blocks : (table.block_order || Object.keys(table.blocks || {})).map((key) => table.blocks[key]).filter(Boolean);
-  const features = children.find((block) => block.type === '_comparison-table-features');
+  // Static blocks may be omitted from block_order; only columns use that order.
+  const features = Object.values(table.blocks || {}).find((block) => block?.type === '_comparison-table-features');
   if (!features || features.settings?.row_mode === 'dynamic') return false;
   const columns = children.filter((block) => block.type === 'comparison-table-column');
   const keyed = !Array.isArray(table.blocks);

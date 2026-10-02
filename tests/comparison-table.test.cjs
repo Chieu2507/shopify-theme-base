@@ -93,6 +93,40 @@ test('migration preserves stable column mapping and legacy data and is idempoten
   assert.equal(features.settings.row_mode, 'dynamic');
 });
 
+test('migration finds static features outside block_order and retains ordered columns', () => {
+  const features = { type: '_comparison-table-features', id: 'static-features', static: true,
+    settings: { feature_1_label: 'Speed', feature_3_label: 'Price', feature_3_tooltip: 'Details', heading: 'Features' } };
+  const table = { type: 'comparison-table', block_order: ['second', 'missing', 'first'], blocks: {
+    first: { type: 'comparison-table-column', settings: { value_1_type: 'text', value_1_text: '10', value_3_type: 'no' } },
+    features,
+    second: { type: 'comparison-table-column', settings: { column_key: 'saved-second', value_1_type: 'yes', value_3_type: 'text', value_3_text: '$20' } },
+    unordered: { type: 'comparison-table-column', settings: { value_1_type: 'text', value_1_text: 'Not rendered' } },
+  } };
+  const document = { sections: { comparison: { blocks: { table } } } };
+  assert.equal(migrate(document), 1);
+  assert.equal(table.blocks.features, features);
+  assert.equal(features.id, 'static-features');
+  assert.equal(features.static, true);
+  assert.equal(features.settings.heading, 'Features');
+  assert.equal(features.settings.feature_1_label, 'Speed');
+  assert.equal(features.settings.row_mode, 'dynamic');
+  assert.deepEqual(table.block_order, ['second', 'missing', 'first']);
+  const rows = features.block_order.map((key) => features.blocks[key]);
+  assert.deepEqual(rows.map((row) => row.settings), [
+    { label: 'Speed', tooltip: '' }, { label: '', tooltip: '' }, { label: 'Price', tooltip: 'Details' },
+  ]);
+  const values = rows.map((row) => row.block_order.map((key) => row.blocks[key].settings));
+  assert.deepEqual(values, [
+    [{ column_key: 'saved-second', type: 'yes', text: '' }, { column_key: 'first', type: 'text', text: '10' }],
+    [{ column_key: 'saved-second', type: 'none', text: '' }, { column_key: 'first', type: 'none', text: '' }],
+    [{ column_key: 'saved-second', type: 'text', text: '$20' }, { column_key: 'first', type: 'no', text: '' }],
+  ]);
+  assert.equal(table.blocks.unordered.settings.column_key, undefined);
+  const saved = JSON.stringify(document);
+  assert.equal(migrate(document), 0);
+  assert.equal(JSON.stringify(document), saved);
+});
+
 test('shipped presets use dynamic rows and every value maps to a declared column', () => {
   for (const filename of ['blocks/comparison-table.liquid', 'sections/comparison-table-custom.liquid']) {
     const liquid = fs.readFileSync(require.resolve(`../${filename}`), 'utf8');
