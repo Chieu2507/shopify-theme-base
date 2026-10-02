@@ -457,6 +457,8 @@ if (!customElements.get('collection-facets')) {
     }
 
     disconnectedCallback() {
+      this.requestGeneration = (this.requestGeneration || 0) + 1;
+      this.cancelPaginationRequest();
       this.finishSidebarTransition();
       this.destroySidebarSticky();
       cancelAnimationFrame(this.collectionScrollFrame);
@@ -649,23 +651,46 @@ if (!customElements.get('collection-facets')) {
         link.dataset.paginationFallback = 'true';
         return;
       }
-      this.paginationObserver = new IntersectionObserver(entries => {
-        if (entries.some(entry => entry.isIntersecting)) this.loadMore(link);
+      const generation = this.requestGeneration || 0;
+      const observer = new IntersectionObserver(entries => {
+        if (this.paginationObserver === observer && (this.requestGeneration || 0) === generation && entries.some(entry => entry.isIntersecting)) this.loadMore(link);
       }, { rootMargin: '300px' });
-      this.paginationObserver.observe(sentinel);
+      this.paginationObserver = observer;
+      observer.observe(sentinel);
+    }
+
+    cancelPaginationRequest() {
+      this.paginationController?.abort();
+      this.paginationController = null;
+      this.paginationLink?.removeAttribute('aria-busy');
+      if (this.paginationStatus) this.paginationStatus.hidden = true;
+      this.paginationLink = null;
+      this.paginationStatus = null;
+      this.loadingMore = false;
     }
 
     async loadMore(link) {
-      if (this.loadingMore || this.requestController) return;
+      const pagination = this.querySelector('.collection-pagination-block');
+      if (!this.isConnected || this.loadingMore || this.requestController || pagination?.querySelector('[data-collection-load-more]') !== link) return;
+      const generation = this.requestGeneration || 0;
+      const controller = new AbortController();
+      this.paginationController = controller;
+      this.paginationLink = link;
+      const isCurrent = () => this.isConnected && !controller.signal.aborted && this.paginationController === controller && (this.requestGeneration || 0) === generation;
       this.loadingMore = true;
       link.setAttribute('aria-busy', 'true');
-      const status = link.closest('.collection-pagination-block')?.querySelector('[data-collection-pagination-status]');
+      const status = pagination.querySelector('[data-collection-pagination-status]');
+      this.paginationStatus = status;
       if (status) status.hidden = false;
       this.paginationObserver?.disconnect();
       try {
         const url = new URL(link.href); url.searchParams.set('section_id', this.sectionId);
-        const response = await fetch(url); if (!response.ok) throw new Error('Pagination request failed');
-        const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const response = await fetch(url, { signal: controller.signal });
+        if (!isCurrent()) return;
+        if (!response.ok) throw new Error('Pagination request failed');
+        const text = await response.text();
+        if (!isCurrent()) return;
+        const html = new DOMParser().parseFromString(text, 'text/html');
         const next = html.querySelector('collection-facets');
         const grid = this.querySelector('.main-collection__grid');
         const offset = grid.querySelectorAll('.main-collection__product').length;
@@ -673,17 +698,18 @@ if (!customElements.get('collection-facets')) {
           item.style.order = (offset + index + 1) * 10;
           grid.append(item);
         });
-        const pagination = this.querySelector('.collection-pagination-block');
         const nextPagination = next.querySelector('.collection-pagination-block');
         if (nextPagination?.querySelector('[data-collection-load-more]')) pagination.replaceWith(nextPagination);
         else pagination.remove();
         grid.dispatchEvent(new CustomEvent('collection:products-loaded', { bubbles: true }));
-      } catch (_) { window.location.assign(link.href); }
+      } catch (error) {
+        if (isCurrent() && error.name !== 'AbortError') window.location.assign(link.href);
+      }
       finally {
-        link.removeAttribute('aria-busy');
-        this.querySelectorAll('[data-collection-pagination-status]').forEach(item => { item.hidden = true; });
-        this.loadingMore = false;
-        this.observePagination();
+        if (this.paginationController === controller) {
+          this.cancelPaginationRequest();
+          this.observePagination();
+        }
       }
     }
 
@@ -817,29 +843,36 @@ if (!customElements.get('collection-facets')) {
       const closePromise = options.closeDialog ? this.closeDialog() : Promise.resolve();
 
       this.requestController?.abort();
+      const generation = (this.requestGeneration || 0) + 1;
+      this.requestGeneration = generation;
+      this.cancelPaginationRequest();
       const requestController = new AbortController();
       this.requestController = requestController;
       this.paginationObserver?.disconnect();
       this.setAttribute('aria-busy', 'true');
+      const isCurrent = () => this.isConnected && !requestController.signal.aborted && this.requestController === requestController && this.requestGeneration === generation;
 
       try {
         const response = await fetch(requestUrl, {
           headers: { 'X-Requested-With': 'XMLHttpRequest' },
           signal: requestController.signal
         });
+        if (!isCurrent()) return;
         if (!response.ok) throw new Error(`Collection request failed: ${response.status}`);
 
-        const documentHtml = new DOMParser().parseFromString(await response.text(), 'text/html');
+        const text = await response.text();
+        if (!isCurrent()) return;
+        const documentHtml = new DOMParser().parseFromString(text, 'text/html');
         const nextFacets = documentHtml.querySelector(`collection-facets[data-section-id="${this.sectionId}"]`);
         if (!nextFacets) throw new Error('Collection response did not contain facets');
-        if (requestController.signal.aborted || !this.isConnected) return;
+        if (!isCurrent()) return;
 
         if (options.updateHistory !== false && navigationUrl.href !== window.location.href) {
           window.history.pushState({}, '', navigationUrl);
         }
 
         await closePromise;
-        if (requestController.signal.aborted || !this.isConnected) return;
+        if (!isCurrent()) return;
 
         let renderedFacets = this;
         if (keepDialogOpen) {
@@ -884,6 +917,7 @@ if (!customElements.get('collection-facets')) {
           nextProducts.dispatchEvent(new CustomEvent('collection:products-loaded', { bubbles: true }));
 
           window.requestAnimationFrame(() => {
+            if (!this.isConnected || this.requestGeneration !== generation) return;
             const nextBody = this.dialog.querySelector('.main-collection__filter-body');
             if (nextBody) nextBody.scrollTop = dialogScrollTop;
 
@@ -914,7 +948,7 @@ if (!customElements.get('collection-facets')) {
         }
         renderedFacets.scrollAfterUpdate();
       } catch (error) {
-        if (error.name === 'AbortError') return;
+        if (!isCurrent() || error.name === 'AbortError') return;
         window.location.assign(navigationUrl);
       } finally {
         if (this.requestController === requestController) {
