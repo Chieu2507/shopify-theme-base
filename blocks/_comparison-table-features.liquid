@@ -84,6 +84,11 @@
   </style>
 {% endif %}
 
+{% capture comparison_rows_native %}
+  {% for comparison_row in block.blocks %}
+    <!-- comparison-native-row-{{ forloop.index }}-start -->{% render comparison_row %}<!-- comparison-native-row-{{ forloop.index }}-end -->
+  {% endfor %}
+{% endcapture %}
 {% capture comparison_feature_column %}
 <div
   class="comparison-table__col grid comparison-table__col--feature{% if block.settings.keep_visible %} comparison-table__col--feature-sticky{% endif %}"
@@ -104,7 +109,9 @@
 
   {% if block.blocks.size > 0 or block.settings.row_mode == 'dynamic' %}
     {% for comparison_row in block.blocks %}
-      {% capture comparison_row_native %}{% render comparison_row %}{% endcapture %}
+      {% assign comparison_row_start = '<!-- comparison-native-row-' | append: forloop.index | append: '-start -->' %}
+      {% assign comparison_row_end = '<!-- comparison-native-row-' | append: forloop.index | append: '-end -->' %}
+      {% assign comparison_row_native = comparison_rows_native | split: comparison_row_start | last | split: comparison_row_end | first %}
       {% assign comparison_row_feature = comparison_row_native | split: '<!-- comparison-feature-end -->' | first %}
       {% assign comparison_row_index = forloop.index | append: '' %}
       {% assign comparison_row_aria_index = forloop.index | plus: 1 | append: '' %}
@@ -160,13 +167,15 @@
     {% if comparison_feature_dynamic_rows or block.blocks.size > 0 %}
       {% assign comparison_column_header = comparison_column_native | split: '<!-- comparison-column-rows -->' | first %}
       {% assign comparison_column_key = comparison_column_header | split: 'data-comparison-column-key="' | last | split: '"' | first %}
-      {% assign comparison_column_product_id = 'comparison-product-' | append: comparison_table_dom_id | append: '-' | append: comparison_column.id %}
+      {% assign comparison_column_product_id = comparison_column_header | split: 'id="comparison-product-' | last | split: '"' | first | prepend: 'comparison-product-' | replace: '__TABLE_NAMESPACE__', comparison_table_dom_id %}
       {{ comparison_column_header | replace: '__TABLE_NAMESPACE__', comparison_table_dom_id }}
       {% for comparison_row in block.blocks %}
-        {% capture comparison_row_native %}{% render comparison_row %}{% endcapture %}
+        {% assign comparison_row_start = '<!-- comparison-native-row-' | append: forloop.index | append: '-start -->' %}
+      {% assign comparison_row_end = '<!-- comparison-native-row-' | append: forloop.index | append: '-end -->' %}
+      {% assign comparison_row_native = comparison_rows_native | split: comparison_row_start | last | split: comparison_row_end | first %}
         {% assign comparison_value_marker = '<template data-comparison-value-key="' | append: comparison_column_key | append: '">' %}
-        {% assign comparison_feature_id = 'comparison-feature-' | append: comparison_table_dom_id | append: '-' | append: comparison_row.id %}
-        {% assign comparison_value_id = 'comparison-value-' | append: comparison_table_dom_id | append: '-' | append: comparison_column.id | append: '-' | append: comparison_row.id %}
+        {% assign comparison_feature_id = comparison_row_native | split: 'id="comparison-feature-' | last | split: '"' | first | prepend: 'comparison-feature-' | replace: '__TABLE_NAMESPACE__', comparison_table_dom_id %}
+        {% assign comparison_value_id = comparison_column_product_id | append: '-' | append: comparison_feature_id | append: '-value' %}
         <div class="comparison-table__row" role="row" aria-rowindex="{{ forloop.index | plus: 1 }}" data-comparison-table-row="{{ forloop.index }}">
           {% if comparison_row_native contains comparison_value_marker %}
             {% assign comparison_value_content = comparison_row_native | split: comparison_value_marker | last | split: '</template>' | first %}
