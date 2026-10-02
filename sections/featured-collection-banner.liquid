@@ -61,32 +61,7 @@
   and one product list are present, Banner position controls that pair's visual
   order; header placement and duplicated roles follow their configured order.
 {% endcomment %}
-{% liquid
-  assign featured_collection_banner_banner_blocks = section.blocks | where: 'type', 'banner'
-  assign featured_collection_banner_product_blocks = section.blocks | where: 'type', 'product-list-banner'
-  if featured_collection_banner_banner_blocks.size == 1 and featured_collection_banner_product_blocks.size == 1
-    for role in section.blocks
-      if role.type == 'banner'
-        assign featured_collection_banner_banner_order = forloop.index
-      elsif role.type == 'product-list-banner'
-        assign featured_collection_banner_products_order = forloop.index
-      endif
-    endfor
-    assign featured_collection_banner_first_order = featured_collection_banner_banner_order | at_most: featured_collection_banner_products_order
-    assign featured_collection_banner_last_order = featured_collection_banner_banner_order | at_least: featured_collection_banner_products_order
-    if featured_collection_banner_position == 'after'
-      assign featured_collection_banner_banner_order = featured_collection_banner_last_order
-      assign featured_collection_banner_products_order = featured_collection_banner_first_order
-    else
-      assign featured_collection_banner_banner_order = featured_collection_banner_first_order
-      assign featured_collection_banner_products_order = featured_collection_banner_last_order
-    endif
-  endif
-%}
-
 {% capture featured_collection_banner_style %}
-  {% if featured_collection_banner_banner_order != blank %}--featured-collection-banner-banner-order: {{ featured_collection_banner_banner_order }};{% endif %}
-  {% if featured_collection_banner_products_order != blank %}--featured-collection-banner-products-order: {{ featured_collection_banner_products_order }};{% endif %}
   {% if featured_collection_banner_gap_desktop != 30 %}--featured-collection-banner-gap-desktop: {{ featured_collection_banner_gap_desktop }}px;{% endif %}
   {% if featured_collection_banner_gap_mobile != 20 %}--featured-collection-banner-gap-mobile: {{ featured_collection_banner_gap_mobile }}px;{% endif %}
   {% if featured_collection_banner_padding_top != 50 %}--featured-collection-banner-padding-top: {{ featured_collection_banner_padding_top }}px;{% endif %}
@@ -103,7 +78,7 @@
   {% if featured_collection_banner_style != blank %}style="{{ featured_collection_banner_style }}"{% endif %}
 >
   <div class="container {{ featured_collection_banner_container_width }} featured-collection-banner__container{% if featured_collection_banner_no_padding %} featured-collection-banner__container--no-padding{% endif %}">
-    <div class="featured-collection-banner__content">
+    <div class="featured-collection-banner__content" data-banner-position="{{ featured_collection_banner_position }}">
       {% content_for 'blocks' %}
     </div>
   </div>
@@ -140,6 +115,25 @@
   .featured-collection-banner__content > :nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner) { --featured-collection-role-order: 1; }
   .featured-collection-banner__content > :nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner) { --featured-collection-role-order: 2; }
   .featured-collection-banner__content > :nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner) { --featured-collection-role-order: 3; }
+
+  /* Theme Block drops are lazy; layout reads rendered role classes, not child settings. */
+  .featured-collection-banner__content:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner)),
+  .featured-collection-banner__content:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner)) { --featured-collection-banner-banner-order: 1; --featured-collection-banner-products-order: 2; }
+
+  .featured-collection-banner__content[data-banner-position="after"]:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner)),
+  .featured-collection-banner__content[data-banner-position="after"]:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner)) { --featured-collection-banner-banner-order: 2; --featured-collection-banner-products-order: 1; }
+
+  .featured-collection-banner__content:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner)),
+  .featured-collection-banner__content:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner)) { --featured-collection-banner-banner-order: 1; --featured-collection-banner-products-order: 3; }
+
+  .featured-collection-banner__content[data-banner-position="after"]:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner)),
+  .featured-collection-banner__content[data-banner-position="after"]:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(1 of .block-header, .image-card--featured-collection-banner, .product-list-banner)) { --featured-collection-banner-banner-order: 3; --featured-collection-banner-products-order: 1; }
+
+  .featured-collection-banner__content:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner)),
+  .featured-collection-banner__content:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner)) { --featured-collection-banner-banner-order: 2; --featured-collection-banner-products-order: 3; }
+
+  .featured-collection-banner__content[data-banner-position="after"]:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner)),
+  .featured-collection-banner__content[data-banner-position="after"]:not(:has(> .image-card--featured-collection-banner ~ .image-card--featured-collection-banner)):not(:has(> .product-list-banner ~ .product-list-banner)):has(> .image-card--featured-collection-banner:nth-child(3 of .block-header, .image-card--featured-collection-banner, .product-list-banner)):has(> .product-list-banner:nth-child(2 of .block-header, .image-card--featured-collection-banner, .product-list-banner)) { --featured-collection-banner-banner-order: 3; --featured-collection-banner-products-order: 2; }
 
   .featured-collection-banner__content > .image-card--featured-collection-banner {
     order: var(--featured-collection-banner-banner-order, var(--featured-collection-role-order));
