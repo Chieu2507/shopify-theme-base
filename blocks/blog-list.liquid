@@ -12,7 +12,10 @@
 {% enddoc %}
 
 {% liquid
-  assign blog_list_source = closest.blog | default: block.settings.blog | default: blog
+  assign blog_list_source = closest.blog
+  unless use_section_blog
+    assign blog_list_source = blog_list_source | default: block.settings.blog | default: blog
+  endunless
 
   assign blog_list_max_posts = block.settings.max_posts | default: 4 | plus: 0
   if blog_list_max_posts < 1 or blog_list_max_posts > 24
