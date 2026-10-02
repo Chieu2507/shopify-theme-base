@@ -1,26 +1,5 @@
-{% doc %}
-  Renders one editable feature row; its nested values render in the matching product columns.
+{% render 'comparison-table-row-content', block: block %}
 
-  @param {string} comparison_table_dom_id - Section and table namespace for feature, tooltip and dialog IDs
-  @param {number} comparison_row_index - One-based row position within the feature column
-{% enddoc %}
-
-{% liquid
-  assign feature_label = block.settings.label | strip
-  assign feature_tooltip = block.settings.tooltip | strip
-  assign feature_label_id = 'comparison-feature-' | append: comparison_table_dom_id | append: '-' | append: block.id
-  assign feature_tooltip_id = feature_label_id | append: '-tooltip'
-  assign feature_dialog_id = feature_label_id | append: '-dialog'
-%}
-<div class="comparison-table__row" role="row" aria-rowindex="{{ comparison_row_index | plus: 1 }}" data-comparison-table-row="{{ comparison_row_index }}" data-comparison-table-feature-label="{{ feature_label | escape }}" {{ block.shopify_attributes }}>
-  <div class="comparison-table__cell comparison-table__cell--feature" role="rowheader" id="{{ feature_label_id }}">
-    {% if feature_tooltip != blank %}
-      {% render 'tooltip', label: feature_label, tooltip: feature_tooltip, tooltip_id: feature_tooltip_id, dialog_id: feature_dialog_id %}
-    {% else %}
-      <span class="comparison-table__label">{{ feature_label | escape }}</span>
-    {% endif %}
-  </div>
-</div>
 {% schema %}
 {
   "name": "Comparison row",

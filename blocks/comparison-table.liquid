@@ -96,16 +96,6 @@
   assign comparison_table_boxed_padding_bottom_mobile = block.settings.boxed_padding_bottom_mobile | default: 20 | plus: 0
   assign comparison_table_boxed_padding_horizontal_mobile = block.settings.boxed_padding_horizontal_mobile | default: 16 | plus: 0
   assign comparison_table_dom_id = 'comparison-table-' | append: section.id | append: '-' | append: block.id
-  assign comparison_table_rows = blank
-  assign comparison_table_dynamic_rows = false
-  for comparison_table_child in block.blocks
-    if comparison_table_child.type == '_comparison-table-features'
-      assign comparison_table_rows = comparison_table_child.blocks
-      if comparison_table_child.settings.row_mode == 'dynamic'
-        assign comparison_table_dynamic_rows = true
-      endif
-    endif
-  endfor
   assign comparison_table_column_count = 0
   for comparison_table_child in block.blocks
     if comparison_table_child.type == 'comparison-table-column'
@@ -173,20 +163,6 @@
 
 <script src="{{ 'comparison-table.js' | asset_url }}" defer></script>
 
-{% capture comparison_table_feature_column %}
-  {% content_for 'block', type: '_comparison-table-features', id: 'features', comparison_table_dom_id: comparison_table_dom_id, comparison_table_column_count: comparison_table_column_count %}
-{% endcapture %}
-{% assign comparison_table_keep_feature_visible = false %}
-{% if comparison_table_feature_column contains 'data-sticky="true"' %}
-  {% assign comparison_table_keep_feature_visible = true %}
-{% endif %}
-{% capture comparison_table_columns %}
-  {% for comparison_table_child in block.blocks %}
-    {% unless comparison_table_child.id == 'features' or comparison_table_child.type == '_comparison-table-features' %}
-      {% render comparison_table_child, comparison_table_dom_id: comparison_table_dom_id, comparison_table_rows: comparison_table_rows, comparison_table_dynamic_rows: comparison_table_dynamic_rows %}
-    {% endunless %}
-  {% endfor %}
-{% endcapture %}
 
 <div class="comparison-table__block comparison-table-block size-style{% if block.settings.boxed_layout %} comparison-table-block--boxed{% endif %}"{% if comparison_table_style != blank or comparison_table_block_spacing != blank %} style="{{ comparison_table_style }}{% if comparison_table_block_spacing != blank %} {{ comparison_table_block_spacing }}{% endif %}"{% endif %} {{ block.shopify_attributes }}>
   <comparison-table-rows
@@ -194,37 +170,9 @@
     class="comparison-table comparison-table--heading-{{ comparison_table_heading_font }}{% if block.settings.show_column_dividers %} comparison-table--dividers{% endif %}{{ comparison_table_scheme_class }}"
     data-row-style="{{ comparison_table_row_style }}"
     data-border-style="solid"
-    style="{% if comparison_table_rows.size > 0 or comparison_table_dynamic_rows %}--comparison-table-track-count: {{ comparison_table_rows.size | plus: 1 }};{% endif %}{% if comparison_table_column_min_width != 160 %}--comparison-table-column-min-width: {{ comparison_table_column_min_width }}px;{% endif %}{% if comparison_table_image_width != 200 %} --comparison-table-image-width: {{ comparison_table_image_width }}px;{% endif %}{% if comparison_table_heading_size != 'md' %} --comparison-table-heading-size: {{ comparison_table_heading_size_token }}; --comparison-table-heading-line-height: {{ comparison_table_heading_line_height_token }};{% endif %}{% if comparison_table_description_font != 'body' %} --comparison-description-font-family: {{ comparison_table_description_font_family }}; --comparison-description-font-weight: {{ comparison_table_description_font_weight }};{% endif %}{% if comparison_table_description_font_size != 'md' %} --comparison-description-font-size: {{ comparison_table_description_font_size_token }};{% endif %}{% if comparison_table_alignment != 'center' %} --comparison-table-column-alignment: {{ comparison_table_alignment_css }};{% endif %}{% if block.settings.show_column_dividers %} --comparison-table-divider-style: {{ comparison_table_divider_style }};{% endif %}{% if block.settings.boxed_layout %} --comparison-table-boxed-padding-top: {{ comparison_table_boxed_padding_top }}px; --comparison-table-boxed-padding-bottom: {{ comparison_table_boxed_padding_bottom }}px; --comparison-table-boxed-padding-horizontal: {{ comparison_table_boxed_padding_horizontal }}px; --comparison-table-boxed-padding-top-mobile: {{ comparison_table_boxed_padding_top_mobile }}px; --comparison-table-boxed-padding-bottom-mobile: {{ comparison_table_boxed_padding_bottom_mobile }}px; --comparison-table-boxed-padding-horizontal-mobile: {{ comparison_table_boxed_padding_horizontal_mobile }}px; --comparison-table-border-width: {{ comparison_table_border_width }}px; --comparison-table-box-shadow: {{ comparison_table_shadow_value }}; --comparison-table-corner-radius: {{ comparison_table_corner_radius_value }}; --comparison-table-row-corner-radius: {{ comparison_table_row_corner_radius_value }};{% endif %}"
+    style="{% if comparison_table_column_min_width != 160 %}--comparison-table-column-min-width: {{ comparison_table_column_min_width }}px;{% endif %}{% if comparison_table_image_width != 200 %} --comparison-table-image-width: {{ comparison_table_image_width }}px;{% endif %}{% if comparison_table_heading_size != 'md' %} --comparison-table-heading-size: {{ comparison_table_heading_size_token }}; --comparison-table-heading-line-height: {{ comparison_table_heading_line_height_token }};{% endif %}{% if comparison_table_description_font != 'body' %} --comparison-description-font-family: {{ comparison_table_description_font_family }}; --comparison-description-font-weight: {{ comparison_table_description_font_weight }};{% endif %}{% if comparison_table_description_font_size != 'md' %} --comparison-description-font-size: {{ comparison_table_description_font_size_token }};{% endif %}{% if comparison_table_alignment != 'center' %} --comparison-table-column-alignment: {{ comparison_table_alignment_css }};{% endif %}{% if block.settings.show_column_dividers %} --comparison-table-divider-style: {{ comparison_table_divider_style }};{% endif %}{% if block.settings.boxed_layout %} --comparison-table-boxed-padding-top: {{ comparison_table_boxed_padding_top }}px; --comparison-table-boxed-padding-bottom: {{ comparison_table_boxed_padding_bottom }}px; --comparison-table-boxed-padding-horizontal: {{ comparison_table_boxed_padding_horizontal }}px; --comparison-table-boxed-padding-top-mobile: {{ comparison_table_boxed_padding_top_mobile }}px; --comparison-table-boxed-padding-bottom-mobile: {{ comparison_table_boxed_padding_bottom_mobile }}px; --comparison-table-boxed-padding-horizontal-mobile: {{ comparison_table_boxed_padding_horizontal_mobile }}px; --comparison-table-border-width: {{ comparison_table_border_width }}px; --comparison-table-box-shadow: {{ comparison_table_shadow_value }}; --comparison-table-corner-radius: {{ comparison_table_corner_radius_value }}; --comparison-table-row-corner-radius: {{ comparison_table_row_corner_radius_value }};{% endif %}"
   >
-    {% if comparison_table_keep_feature_visible %}
-      <div
-        class="comparison-table__layout comparison-table__layout--feature-fixed comparison-table__scroll--with-feature grid"
-        role="table"
-        aria-label="{{ 'comparison_table.table_label' | t }}"
-        aria-description="{{ 'comparison_table.scroll_label' | t }}"
-      >
-        {{ comparison_table_feature_column }}
-        <div
-          class="comparison-table__scroll comparison-table__scroll--products grid scrollbar scrollbar--horizontal scrollbar--hidden-mobile"
-          role="group"
-          aria-label="{{ 'comparison_table.scroll_label' | t }}"
-          tabindex="0"
-        >
-          {{ comparison_table_columns }}
-        </div>
-      </div>
-    {% else %}
-      <div
-        class="comparison-table__scroll comparison-table__scroll--with-feature grid scrollbar scrollbar--horizontal scrollbar--hidden-mobile"
-        role="table"
-        aria-label="{{ 'comparison_table.table_label' | t }}"
-        aria-description="{{ 'comparison_table.scroll_label' | t }}"
-        tabindex="0"
-      >
-        {{ comparison_table_feature_column }}
-        {{ comparison_table_columns }}
-      </div>
-    {% endif %}
+    {% content_for 'block', type: '_comparison-table-features', id: 'features', comparison_table_dom_id: comparison_table_dom_id, comparison_table_column_count: comparison_table_column_count, comparison_table_columns: block.blocks %}
   </comparison-table-rows>
 </div>
 
@@ -414,6 +362,10 @@
 
   .comparison-table__scroll:has(> .comparison-table__col--data:last-child[data-column-shadow="large"]) {
     padding-inline-end: 24px;
+  }
+
+  .comparison-table__row-value {
+    display: contents;
   }
 
   .comparison-table__row {

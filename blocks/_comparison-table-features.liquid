@@ -2,6 +2,7 @@
   Renders the static feature column with legacy slots or editable row blocks.
 
   @param {string} comparison_table_dom_id - Section and table namespace for feature, tooltip and dialog IDs
+  @param {array} comparison_table_columns - Dynamic product column blocks supplied by the owning table
   @param {number} [comparison_table_column_count] - Number of product columns used for feature track sizing
 {% enddoc %}
 
@@ -83,6 +84,7 @@
   </style>
 {% endif %}
 
+{% capture comparison_feature_column %}
 <div
   class="comparison-table__col grid comparison-table__col--feature{% if block.settings.keep_visible %} comparison-table__col--feature-sticky{% endif %}"
   data-sticky="{% if block.settings.keep_visible %}true{% else %}false{% endif %}"
@@ -102,7 +104,7 @@
 
   {% if block.blocks.size > 0 or block.settings.row_mode == 'dynamic' %}
     {% for comparison_row in block.blocks %}
-      {% render comparison_row, comparison_table_dom_id: comparison_table_dom_id, comparison_row_index: forloop.index %}
+      {% render 'comparison-table-row-content', block: comparison_row, comparison_table_dom_id: comparison_table_dom_id, comparison_row_index: forloop.index %}
     {% endfor %}
   {% else %}
   {% assign comparison_feature_row_count = 1 %}
@@ -144,6 +146,34 @@
   {% endfor %}
   {% endif %}
 </div>
+
+{% endcapture %}
+{% assign comparison_feature_dynamic_rows = false %}
+{% if block.settings.row_mode == 'dynamic' %}{% assign comparison_feature_dynamic_rows = true %}{% endif %}
+{% capture comparison_product_columns %}
+  {% for comparison_column in comparison_table_columns %}
+    {% if comparison_column.type == 'comparison-table-column' %}
+      {% render 'comparison-table-column-content', block: comparison_column, comparison_table_dom_id: comparison_table_dom_id, comparison_table_rows: block.blocks, comparison_table_dynamic_rows: comparison_feature_dynamic_rows %}
+    {% endif %}
+  {% endfor %}
+{% endcapture %}
+{% assign comparison_feature_track_count = 17 %}
+{% if block.blocks.size > 0 or block.settings.row_mode == 'dynamic' %}
+  {% assign comparison_feature_track_count = block.blocks.size | plus: 1 %}
+{% endif %}
+{% if block.settings.keep_visible %}
+  <div class="comparison-table__layout comparison-table__layout--feature-fixed comparison-table__scroll--with-feature grid" role="table" aria-label="{{ 'comparison_table.table_label' | t }}" aria-description="{{ 'comparison_table.scroll_label' | t }}" style="--comparison-table-track-count: {{ comparison_feature_track_count }};">
+    {{ comparison_feature_column }}
+    <div class="comparison-table__scroll comparison-table__scroll--products grid scrollbar scrollbar--horizontal scrollbar--hidden-mobile" role="group" aria-label="{{ 'comparison_table.scroll_label' | t }}" tabindex="0">
+      {{ comparison_product_columns }}
+    </div>
+  </div>
+{% else %}
+  <div class="comparison-table__scroll comparison-table__scroll--with-feature grid scrollbar scrollbar--horizontal scrollbar--hidden-mobile" role="table" aria-label="{{ 'comparison_table.table_label' | t }}" aria-description="{{ 'comparison_table.scroll_label' | t }}" tabindex="0" style="--comparison-table-track-count: {{ comparison_feature_track_count }};">
+    {{ comparison_feature_column }}
+    {{ comparison_product_columns }}
+  </div>
+{% endif %}
 
 {% schema %}
 {
