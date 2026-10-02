@@ -380,6 +380,8 @@ function initialize(root) {
     if (mobileSummaryItems) mobileSummaryItems.inert = detailsInert;
   };
 
+  const isMobileSummaryExpanded = () => mobileSummaryToggle?.getAttribute('aria-expanded') === 'true';
+
   const updateMobileSummaryMode = () => {
     if (mobileSummaryToggle) mobileSummaryToggle.disabled = !mobileViewport.matches;
     if (!mobileViewport.matches) {
@@ -389,17 +391,17 @@ function initialize(root) {
     } else {
       measureCollapsedSummaryHeight();
       measureExpandedSummaryHeight();
-      setMobileSummaryExpanded(summary.dataset.mobileExpanded === 'true');
+      setMobileSummaryExpanded(isMobileSummaryExpanded());
     }
   };
 
   summary.dataset.mobileSticky = 'true';
   mobileSummaryToggle?.addEventListener('click', () => {
     if (!mobileViewport.matches) return;
-    setMobileSummaryExpanded(summary.dataset.mobileExpanded !== 'true');
+    setMobileSummaryExpanded(!isMobileSummaryExpanded());
   }, { signal });
   window.addEventListener('keydown', (event) => {
-    if (event.key !== 'Escape' || summary.dataset.mobileExpanded !== 'true') return;
+    if (event.key !== 'Escape' || !isMobileSummaryExpanded()) return;
     setMobileSummaryExpanded(false);
     mobileSummaryToggle?.focus();
   }, { signal });

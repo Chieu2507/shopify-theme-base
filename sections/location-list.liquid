@@ -36,13 +36,6 @@
   endif
 
   assign location_list_media_id = 'LocationListMedia-' | append: section.id
-  capture location_list_header
-    content_for 'block', type: 'group', id: 'header'
-  endcapture
-
-  capture location_list_group
-    content_for 'block', type: 'location-list', id: 'locations'
-  endcapture
 %}
 
 <div
@@ -52,11 +45,8 @@
 >
   <div class="section-spacing location-list__spacing color-scheme section-color-scope {{ location_list_scheme }}">
     <div class="container {{ location_list_container }} location-list__container{% if location_list_no_padding %} location-list__container--no-padding{% endif %}">
-      {{ location_list_header }}
       <div class="location-list__content">
-        <div class="location-list__stores">
-          {{ location_list_group }}
-        </div>
+        {% content_for 'blocks' %}
         <div class="location-list__media" id="{{ location_list_media_id }}" data-location-list-media aria-live="polite"></div>
       </div>
     </div>
@@ -94,14 +84,11 @@
     grid-template-columns: minmax(0, 5fr) minmax(0, 7fr);
     gap: var(--location-list-gap);
     align-items: stretch;
-    margin-top: var(--location-list-gap);
   }
 
-  .location-list__stores {
-    display: flex;
-    flex-direction: column;
-    justify-content: center;
-  }
+  .location-list__content > .group { grid-column: 1 / -1; min-width: 0; }
+  .location-list__content > .location-list-block { grid-column: 1; }
+  .location-list__content > .location-list__media { grid-column: 2; }
 
   .location-list__media {
     aspect-ratio: 3 / 2;
@@ -129,6 +116,7 @@
   }
 
   @media (max-width: 767.98px) {
+    .location-list__content > .location-list__media { grid-column: 1; }
     .location-list__spacing {
       padding-top: var(--location-list-padding-top-mobile, var(--location-list-padding-top));
       padding-right: var(--location-list-padding-right-mobile, var(--location-list-padding-right));
@@ -139,7 +127,6 @@
     .location-list__content {
       grid-template-columns: minmax(0, 1fr);
       gap: var(--location-list-gap-mobile, var(--location-list-gap));
-      margin-top: var(--location-list-gap-mobile, var(--location-list-gap));
     }
   }
 
@@ -212,7 +199,6 @@
   "name": "Location list",
   "class": "section-kernel",
   "enabled_on": { "templates": ["*"] },
-  "max_blocks": 12,
   "blocks": [
     { "type": "group" },
     { "type": "location-list" }
@@ -284,8 +270,6 @@
       "blocks": [
         {
           "type": "group",
-          "id": "header",
-          "static": true,
           "settings": {
             "direction": "vertical",
             "alignment": "left",
@@ -306,8 +290,6 @@
         },
         {
           "type": "location-list",
-          "id": "locations",
-          "static": true,
           "settings": { "active_background_color": "#F7EFED", "active_border_color": "#000000", "gap": 24, "gap_mobile": 16 },
           "blocks": [
             {

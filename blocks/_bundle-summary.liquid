@@ -37,6 +37,7 @@
   endunless
   assign bundle_add_bundle_label = 'bundle_builder.add_bundle' | t
   assign bundle_summary_heading_label = block.settings.heading | strip_html | strip | default: 'Your bundle'
+  assign bundle_summary_progress_id = 'BundleSummaryProgress-' | append: section.id | append: '-' | append: block.id | handleize
   assign bundle_summary_items_id = 'BundleSummaryItems-' | append: section.id | append: '-' | append: block.id | handleize
   assign bundle_summary_zero_price = 0 | money
   if settings.price_currency_code_product_cards
@@ -226,13 +227,13 @@
     <div class="bundle-summary__inner">
       <div class="bundle-summary__header">
         <h3 class="bundle-summary__heading heading-text heading-lg">
-          <button type="button" class="bundle-summary__toggle" data-bundle-summary-toggle aria-expanded="false" aria-controls="{{ bundle_summary_items_id }}" disabled>
+          <button type="button" class="bundle-summary__toggle" data-bundle-summary-toggle aria-expanded="false" aria-controls="{{ bundle_summary_progress_id }} {{ bundle_summary_items_id }}" disabled>
             <span>{% if block.settings.heading != blank %}{{ block.settings.heading }}{% else %}{{ bundle_summary_heading_label | escape }}{% endif %}</span>
-            <span class="bundle-summary__indicator" aria-hidden="true"></span>
+            <span class="bundle-summary__indicator" aria-hidden="true">{% render 'icon', icon: 'chevron', bare: true %}</span>
           </button>
         </h3>
 
-        <div class="bundle-summary__progress" data-bundle-progress hidden>
+        <div class="bundle-summary__progress" id="{{ bundle_summary_progress_id }}" data-bundle-progress hidden>
           <p class="bundle-summary__progress-message body-text body-{{ bundle_summary_message_font_size }}" data-bundle-progress-message aria-live="polite"></p>
           <div class="bundle-summary__progress-visual">
             <div
@@ -821,14 +822,20 @@
     }
 
     .bundle-summary[data-mobile-sticky='true'] .bundle-summary__indicator {
-      display: block;
+      display: flex;
       flex: none;
-      width: 9px;
-      height: 9px;
-      border-top: 1.5px solid currentColor;
-      border-left: 1.5px solid currentColor;
-      transform: translateY(2px) rotate(45deg);
-      transition: transform var(--motion-duration-standard, 280ms) var(--motion-ease-standard, cubic-bezier(0.2, 0.8, 0.2, 1));
+      align-items: center;
+      justify-content: center;
+      width: 20px;
+      height: 20px;
+    }
+
+    .bundle-summary__indicator svg {
+      display: block;
+      width: 20px;
+      height: 20px;
+      transform: rotate(180deg);
+      transition: transform 0.3s;
     }
 
     .bundle-summary[data-mobile-sticky='true'][data-mobile-expanded='true'] .bundle-summary__surface {
@@ -854,8 +861,8 @@
         visibility 0s;
     }
 
-    .bundle-summary[data-mobile-sticky='true'][data-mobile-expanded='true'] .bundle-summary__indicator {
-      transform: translateY(-2px) rotate(225deg);
+    .bundle-summary__toggle[aria-expanded='true'] .bundle-summary__indicator svg {
+      transform: rotate(0deg);
     }
 
     .bundle-summary[data-mobile-sticky='true'][data-mobile-expanded='true'] .bundle-summary__items {
@@ -968,7 +975,7 @@
     .bundle-summary[data-mobile-sticky='true'] .bundle-summary__header,
     .bundle-summary[data-mobile-sticky='true'] .bundle-summary__progress,
     .bundle-summary[data-mobile-sticky='true'] .bundle-summary__items,
-    .bundle-summary[data-mobile-sticky='true'] .bundle-summary__indicator {
+    .bundle-summary__indicator svg {
       transition: none !important;
     }
   }
