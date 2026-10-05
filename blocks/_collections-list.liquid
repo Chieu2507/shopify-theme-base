@@ -6,10 +6,6 @@
   their Liquid scope. The owning section supplies the shell and heading.
 {% enddoc %}
 {% liquid
-  assign collections_source = block.settings.custom_collections
-  if collections_source == blank
-    assign collections_source = collections
-  endif
   assign collections_per_page = block.settings.collections_per_page | default: 12 | at_least: 8 | at_most: 60
   assign collections_columns = block.settings.columns_desktop | default: 3 | plus: 0 | at_least: 2 | at_most: 6
   assign collections_columns_mobile = block.settings.columns_mobile | default: 1 | plus: 0 | at_least: 1 | at_most: 2
@@ -26,10 +22,12 @@
   assign collections_space_mobile = collections_margin_mobile | times: 2 | plus: collections_gaps_mobile
 %}
 {% capture collections_image_sizes %}(max-width: 767.98px) calc((100vw - {{ collections_space_mobile }}px) / {{ collections_columns_mobile }}), (max-width: 1149.98px) calc((100vw - {{ collections_space_tablet }}px) / {{ collections_columns }}), {% if section.settings.section_width != 'full_width' %}(min-width: {{ collections_page_width }}px) calc(({{ collections_page_width }}px - {{ collections_space_desktop }}px) / {{ collections_columns }}), {% endif %}calc((100vw - {{ collections_space_desktop }}px) / {{ collections_columns }}){% endcapture %}
-{% paginate collections_source by collections_per_page %}
+{% comment %}Shopify requires direct paginateable drops: assigning collections to an alias loses native pagination eligibility.{% endcomment %}
+{% if block.settings.custom_collections == blank %}
+{% paginate collections by collections_per_page %}
 <div class="collections-page-list" style="--collections-columns: {{ collections_columns }}; --collections-columns-mobile: {{ collections_columns_mobile }}; --collections-column-gap: {{ block.settings.column_gap_desktop }}px; --collections-row-gap: {{ block.settings.row_gap_desktop }}px; --collections-column-gap-mobile: {{ block.settings.column_gap_mobile }}px; --collections-row-gap-mobile: {{ block.settings.row_gap_mobile }}px;" {{ block.shopify_attributes }}>
   <div class="collections-page-list__grid">
-    {% for collection_item in collections_source %}
+    {% for collection_item in collections %}
       {% liquid
         assign card_loading = 'lazy'
         if forloop.index <= collections_columns
@@ -47,6 +45,29 @@
   {% content_for 'block', type: 'pagination', id: 'pagination', list_paginate: paginate %}
 </div>
 {% endpaginate %}
+{% else %}
+{% paginate block.settings.custom_collections by collections_per_page %}
+<div class="collections-page-list" style="--collections-columns: {{ collections_columns }}; --collections-columns-mobile: {{ collections_columns_mobile }}; --collections-column-gap: {{ block.settings.column_gap_desktop }}px; --collections-row-gap: {{ block.settings.row_gap_desktop }}px; --collections-column-gap-mobile: {{ block.settings.column_gap_mobile }}px; --collections-row-gap-mobile: {{ block.settings.row_gap_mobile }}px;" {{ block.shopify_attributes }}>
+  <div class="collections-page-list__grid">
+    {% for collection_item in block.settings.custom_collections %}
+      {% liquid
+        assign card_loading = 'lazy'
+        if forloop.index <= collections_columns
+          assign card_loading = 'eager'
+        endif
+        assign card_placeholder_index = forloop.index0 | modulo: 6 | plus: 1
+      %}
+      <div class="collections-page-list__item">
+        {% content_for 'block', type: 'collection-card', id: 'collection-card', closest.collection: collection_item, dynamic_title: true, landscape_ratio: 1.5, portrait_ratio: 0.6667, image_loading: card_loading, image_sizes: collections_image_sizes, placeholder_index: card_placeholder_index %}
+      </div>
+    {% else %}
+      <p class="collections-page-list__empty body-text body-md" role="status">{{ 'collections.empty' | t }}</p>
+    {% endfor %}
+  </div>
+  {% content_for 'block', type: 'pagination', id: 'pagination', list_paginate: paginate %}
+</div>
+{% endpaginate %}
+{% endif %}
 {% stylesheet %}
   .collections-page-list { min-width: 0; }
   .collections-page-list__grid { display: grid; grid-template-columns: repeat(var(--collections-columns, 3), minmax(0, 1fr)); gap: var(--collections-row-gap, 30px) var(--collections-column-gap, 12px); }
