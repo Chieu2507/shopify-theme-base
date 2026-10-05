@@ -8,6 +8,7 @@
   @param {number} [quantity_max] - Selected variant maximum
 {% enddoc %}
 
+{% assign quantity_label = block.settings.label | strip %}
 {% capture quantity_style %}
   {% if block.settings.style == 'custom' %}
     {% if block.settings.background_color != blank %}--product-buy-quantity-background: {{ block.settings.background_color }};{% endif %}
@@ -18,7 +19,7 @@
   {% endif %}
 {% endcapture %}
 <div class="product-buy-buttons__quantity form__field{% if block.settings.style == 'custom' %} product-buy-buttons__quantity--custom{% endif %}" data-buy-quantity{% if block.settings.style == 'custom' %} style="{{ quantity_style | strip }}"{% endif %} {{ block.shopify_attributes }}>
-  <label class="form__label visually-hidden" for="{{ form_id }}-quantity">{{ 'accessibility.quantity' | t }}</label>
+  <label class="form__label{% if quantity_label == blank %} visually-hidden{% endif %}" for="{{ form_id }}-quantity">{% if quantity_label != blank %}{{ quantity_label | escape }}{% else %}{{ 'accessibility.quantity' | t }}{% endif %}</label>
   <div class="product-buy-buttons__quantity-control">
     <button class="product-buy-buttons__quantity-button" type="button" aria-label="{{ 'cart.decrease' | t | escape }}" aria-controls="{{ form_id }}-quantity" data-quantity-decrease>
       {% render 'icon', icon: 'minus', bare: true %}
@@ -35,6 +36,7 @@
   "name": "t:general.quantity",
   "tag": null,
   "settings": [
+    { "type": "text", "id": "label", "label": "t:labels.label" },
     { "type": "select", "id": "style", "label": "t:labels.style", "options": [
       { "value": "default", "label": "t:options.product_quantity_style.default" },
       { "value": "custom", "label": "t:options.product_quantity_style.custom" }
