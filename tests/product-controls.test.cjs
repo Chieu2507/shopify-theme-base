@@ -24,7 +24,7 @@ const renderPicker = (options, extras = {}) => engine.parseAndRender(picker, {
   product: { id: 1, options_with_values: options, variants: [] },
   current_variant: { id: 1, available: true },
   settings: { variant_picker_style: 'button' },
-  color_option_display: 'color', ...extras,
+  ...extras,
 });
 
 test('native RGB swatches take precedence over fallback names and HEX strings remain supported', async () => {
@@ -41,8 +41,8 @@ test('partially configured and translated color options retain swatches with fal
   assert.equal((html.match(/class="swatch swatch--color/g) || []).length, 2);
   assert.ok(html.includes('background-color: rgb(1, 2, 3);'));
   assert.ok(html.includes('background-color: #1c4d8c;'));
-  const text = await renderPicker([{ name: 'Color', values: [optionValue('Red', { color: { rgb: '1, 2, 3' } })] }], { color_option_display: 'text' });
-  assert.doesNotMatch(text, /class="swatch swatch--/);
+  const legacy = await renderPicker([{ name: 'Color', values: [optionValue('Red', { color: { rgb: '1, 2, 3' } })] }], { color_option_display: 'text' });
+  assert.match(legacy, /class="swatch swatch--color/);
 });
 
 test('picker and product card use the same native swatch colors, including image-only swatch values', async () => {
@@ -84,6 +84,9 @@ test('color presentation follows Swatches settings independently of the normal p
   assert.doesNotMatch(color, /swatch__image/);
   const image = await render('variant_image');
   assert.match(image, /src="\/image-99.png"/);
+  assert.doesNotMatch(image, /--swatch-height-ratio:/);
+  const cardRatio = await renderPicker(options, { settings: { swatch_style: 'variant_image' }, swatch_height_ratio_override: '3 / 2' });
+  assert.match(cardRatio, /--swatch-height-ratio: 3 \/ 2;/);
   const button = await render('button');
   assert.doesNotMatch(button, /swatch-control|variant-picker__option--swatches/);
   assert.match(button, /variant-picker__button/);
@@ -99,4 +102,13 @@ test('quantity renders escaped custom labels and hides blank labels with an acce
   for (const label of ['', '   ', undefined]) {
     assert.match(await render(label), /class="form__label visually-hidden" for="ProductForm-quantity">accessibility.quantity<\/label>/);
   }
+});
+
+test('global swatch image ratio ignores the color ratio while Color keeps it', async () => {
+  const variables = fs.readFileSync('snippets/css-variables.liquid', 'utf8');
+  const start = variables.indexOf("  assign swatch_style = 'color'");
+  const end = variables.indexOf('  assign badge_radius', start);
+  const source = '{% liquid\n' + variables.slice(start, end) + '%}{{ swatch_height_ratio }}';
+  assert.equal(await engine.parseAndRender(source, { settings: { swatch_style: 'variant_image', swatch_height_ratio: '3_1' } }), '1 / 1');
+  assert.equal(await engine.parseAndRender(source, { settings: { swatch_style: 'color', swatch_height_ratio: '3_2' } }), '3 / 2');
 });
