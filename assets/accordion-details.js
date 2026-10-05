@@ -6,6 +6,15 @@
   const desktopBreakpoint = '(min-width: 768px)';
   const states = new WeakMap();
 
+  const verticalInsets = (element) => {
+    const style = getComputedStyle(element);
+    return ['paddingTop', 'paddingBottom', 'borderTopWidth', 'borderBottomWidth']
+      .reduce((total, property) => total + (Number.parseFloat(style[property]) || 0), 0);
+  };
+
+  const cssHeight = (element, borderBoxHeight) => Math.max(0, borderBoxHeight
+    - (getComputedStyle(element).boxSizing === 'border-box' ? 0 : verticalInsets(element)));
+
   const listenToMediaQuery = (mediaQuery, callback, signal) => {
     if (!mediaQuery) return;
 
@@ -57,7 +66,7 @@
 
   const cancelAnimations = (state, preserveVisualState = true) => {
     if (state.animations.length && preserveVisualState) {
-      state.details.style.height = `${state.details.getBoundingClientRect().height}px`;
+      state.details.style.height = `${cssHeight(state.details, state.details.getBoundingClientRect().height)}px`;
       state.content.style.opacity = getComputedStyle(state.content).opacity;
       state.content.style.transform = getComputedStyle(state.content).transform;
     }
@@ -92,6 +101,7 @@
   const finishAnimation = (state, animationId) => {
     if (state.animationId !== animationId) return;
 
+    state.animations.forEach((animation) => animation.cancel());
     state.animations = [];
     state.details.open = state.isOpen;
     updateAccessibilityState(state);
@@ -118,11 +128,14 @@
       const animations = [];
 
       if (isOpen) {
-        const startHeight = details.getBoundingClientRect().height;
+        const startHeight = cssHeight(details, details.getBoundingClientRect().height);
         details.style.height = `${startHeight}px`;
         details.open = true;
 
-        const endHeight = details.scrollHeight;
+        // Measure the natural border box, including caller-owned padding/borders.
+        details.style.removeProperty('height');
+        const endHeight = cssHeight(details, details.getBoundingClientRect().height);
+        details.style.height = `${startHeight}px`;
         const startOpacity = 0;
         const startTransform = 'translateY(10px)';
         content.style.opacity = `${startOpacity}`;
@@ -145,8 +158,8 @@
       } else {
         if (!details.open) details.open = true;
 
-        const startHeight = details.getBoundingClientRect().height;
-        const endHeight = summary.getBoundingClientRect().height;
+        const startHeight = cssHeight(details, details.getBoundingClientRect().height);
+        const endHeight = cssHeight(details, summary.getBoundingClientRect().height + verticalInsets(details));
         const startOpacity = Number.parseFloat(getComputedStyle(content).opacity) || 1;
 
         animations.push(
