@@ -1,6 +1,6 @@
 {% doc %}Fixed native checkout summary. Shopify Liquid owns pricing and discount allocation.{% enddoc %}
-<div class="cart-page__box cart-stack{% unless block.settings.inherit_color_scheme %} color-scheme section-color-scope {{ block.settings.color_scheme }}{% endunless %}" style="{% render 'cart-surface-style', settings: block.settings %} --cart-gap: {{ block.settings.gap_desktop }}px; --cart-gap-mobile: {{ block.settings.gap_mobile }}px; --cart-pad-top: {{ block.settings.padding_top | default: 0 }}px; --cart-pad-bottom: {{ block.settings.padding_bottom | default: 0 }}px;{% if block.settings.customize_mobile_padding %} --cart-pad-top-mobile: {{ block.settings.padding_top_mobile }}px; --cart-pad-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
-{% if block.settings.show_discount %}<form class="cart-page__discount" data-cart-page-discount><label class="visually-hidden" for="CartDiscount-{{ section.id }}">{{ 'cart_drawer.discount_code' | t }}</label><input id="CartDiscount-{{ section.id }}" name="discount" placeholder="{{ 'cart_drawer.discount_code' | t }}" required>{% assign apply_label = 'cart_drawer.apply' | t %}{% render 'theme-button', label: apply_label, type: 'submit', variant: 'secondary' %}</form>{% endif %}
+<div class="cart-page__box cart-stack{% unless block.settings.inherit_color_scheme %} color-scheme section-color-scope {{ block.settings.color_scheme }}{% endunless %}" style="text-transform: {% if block.settings.text_case == 'original' %}none{% else %}{{ block.settings.text_case }}{% endif %}; {% render 'cart-surface-style', settings: block.settings %} --cart-gap: {{ block.settings.gap_desktop }}px; --cart-gap-mobile: {{ block.settings.gap_mobile }}px; --cart-pad-top: {{ block.settings.padding_top | default: 0 }}px; --cart-pad-bottom: {{ block.settings.padding_bottom | default: 0 }}px;{% if block.settings.customize_mobile_padding %} --cart-pad-top-mobile: {{ block.settings.padding_top_mobile }}px; --cart-pad-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
+{% if block.settings.show_discount %}<form class="cart-page__discount" data-cart-page-discount><label class="visually-hidden" for="CartDiscount-{{ section.id }}">{{ 'cart_drawer.discount_code' | t }}</label><input id="CartDiscount-{{ section.id }}" name="discount" placeholder="{{ 'cart_drawer.discount_code' | t }}" required>{% assign apply_label = 'cart_drawer.apply' | t %}{% render 'theme-button', label: apply_label, type: 'submit', variant: block.settings.discount_button_style %}</form>{% endif %}
 <div class="cart-page__total"><span>{{ 'cart.subtotal' | t }}</span><span>{{ cart.items_subtotal_price | money_with_currency }}</span></div>
 {% for discount in cart.cart_level_discount_applications %}<div class="cart-page__total body-sm"><button class="cart-page__discount-chip" type="button" data-cart-page-discount-remove="{{ discount.title | escape }}">{% render 'icon', icon: 'tag', bare: true %}{{ discount.title | escape }}{% if discount.type == 'discount_code' %}{% render 'icon', icon: 'x-mark', bare: true %}{% endif %}</button><span>−{{ discount.total_allocated_amount | money_with_currency }}</span></div>{% endfor %}
 <div class="cart-page__total body-lg"><span>{{ 'cart.estimated_total' | t }}</span><strong>{{ cart.total_price | money_with_currency }}</strong></div>
@@ -59,6 +59,27 @@
       "default": true
     },
     {
+      "type": "select",
+      "id": "discount_button_style",
+      "label": "Discount button style",
+      "default": "secondary",
+      "options": [
+        {
+          "value": "primary",
+          "label": "Primary"
+        },
+        {
+          "value": "secondary",
+          "label": "Secondary"
+        },
+        {
+          "value": "tertiary",
+          "label": "Tertiary"
+        }
+      ],
+      "visible_if": "{{ block.settings.show_discount }}"
+    },
+    {
       "type": "checkbox",
       "id": "show_payment_icons",
       "label": "Show payment icons",
@@ -89,6 +110,26 @@
         {
           "value": "large",
           "label": "Large"
+        }
+      ]
+    },
+    {
+      "type": "select",
+      "id": "text_case",
+      "label": "Text case",
+      "default": "original",
+      "options": [
+        {
+          "value": "original",
+          "label": "Original"
+        },
+        {
+          "value": "uppercase",
+          "label": "Uppercase"
+        },
+        {
+          "value": "capitalize",
+          "label": "Capitalize"
         }
       ]
     },
