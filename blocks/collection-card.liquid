@@ -7,6 +7,12 @@
   `block.shopify_attributes` available to the Theme Editor inspector.
 
   @param {boolean} [placeholder] - Whether to render the storefront placeholder state
+  @param {boolean} [dynamic_title] - Use configured dynamic children instead of the editorial fixed title
+  @param {number} [landscape_ratio] - Parent media contract override
+  @param {number} [portrait_ratio] - Parent media contract override
+  @param {string} [image_loading] - Eager for first-row media; otherwise lazy
+  @param {string} [image_sizes] - Layout-aware responsive image sizes
+  @param {number} [placeholder_index] - Collection outline variant (1–6)
 {% enddoc %}
 
 {% liquid
@@ -46,9 +52,9 @@
     when 'square'
       assign collection_card_ratio = '1'
     when 'portrait'
-      assign collection_card_ratio = '0.8'
+      assign collection_card_ratio = portrait_ratio | default: '0.8'
     when 'landscape'
-      assign collection_card_ratio = '1.3333'
+      assign collection_card_ratio = landscape_ratio | default: '1.3333'
     when 'wide'
       assign collection_card_ratio = '1.7778'
     when 'custom'
@@ -99,6 +105,10 @@
     assign collection_card_padding_right_mobile = collection_card_padding_right
   endif
 
+  assign collection_card_image_loading = image_loading | default: 'lazy'
+  assign collection_card_image_sizes = image_sizes | default: '100vw'
+  assign collection_card_placeholder = placeholder_index | default: 1 | prepend: 'collection-'
+
   assign collection_card_is_placeholder = false
   if placeholder
     assign collection_card_is_placeholder = true
@@ -129,9 +139,9 @@
 >
   <div class="collection-card-kernel__media{% if collection_card_image == blank %} placeholder-image{% endif %}">
     {% if collection_card_image != blank %}
-      {{ collection_card_image | image_url: width: 1200 | image_tag: alt: collection_card_collection.title }}
+      {{ collection_card_image | image_url: width: 1200 | image_tag: alt: collection_card_collection.title, loading: collection_card_image_loading, sizes: collection_card_image_sizes, widths: '240, 360, 480, 640, 800, 1000, 1200' }}
     {% else %}
-      {{ 'collection-1' | placeholder_svg_tag }}
+      {{ collection_card_placeholder | placeholder_svg_tag }}
     {% endif %}
   </div>
 
@@ -146,7 +156,7 @@
   {% endif %}
 
   <div class="collection-card-kernel__content">
-    {% content_for 'block', type: 'collection-card-title', id: 'title' %}
+    {% unless dynamic_title %}{% content_for 'block', type: 'collection-card-title', id: 'title' %}{% endunless %}
     {% content_for 'blocks' %}
   </div>
 </article>
