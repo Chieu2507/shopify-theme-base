@@ -1,6 +1,7 @@
 (() => {
   if (window.__cartPageController) return;
   let busy = false;
+  let refreshRevision = 0;
   const rootPath = () => window.Shopify?.routes?.root || '/';
   const service = () => window.__cartDrawerController;
   const page = () => document.querySelector('[data-cart-page]');
@@ -19,15 +20,18 @@
   const refresh = async () => {
     const current = page();
     if (!current) return;
+    const revision = ++refreshRevision;
     const url = new URL(window.location.href);
     url.searchParams.set('section_id', current.dataset.sectionId);
     const response = await fetch(url, { cache: 'no-store' });
     if (!response.ok) throw new Error(current.dataset.updateError);
     const html = new DOMParser().parseFromString(await response.text(), 'text/html');
+    if (revision !== refreshRevision || current !== page()) return;
     const next = html.querySelector('[data-cart-page]');
     if (!next) throw new Error(current.dataset.updateError);
     const openTools = Array.from(current.querySelectorAll('details[open]')).map(el => el.querySelector('summary')?.textContent.trim());
     const focused = document.activeElement?.id;
+    current.querySelectorAll('[data-cart-page-edit]').forEach(form => window.ThemeOverlay?.get(form.closest('[data-component-overlay]'))?.destroy());
     current.replaceWith(next);
     next.querySelectorAll('details').forEach(el => {
       if (openTools.includes(el.querySelector('summary')?.textContent.trim())) el.open = true;
@@ -37,13 +41,17 @@
   const perform = async (action, rerender = true) => {
     if (busy || !page()) return;
     busy = true;
+    refreshRevision += 1;
     page().setAttribute('aria-busy', 'true');
     message('');
     try {
       await action();
       if (rerender) await refresh();
     } catch (error) {
+      page()?.querySelectorAll?.('[data-cart-page-quantity]').forEach(input => { input.value = input.dataset.currentQuantity; });
       message(error.message || page()?.dataset.updateError, true);
+      const editError = page()?.querySelector('[data-component-overlay][data-state="open"] [data-cart-page-edit-error]');
+      if (editError) { editError.textContent = error.message; editError.hidden = false; }
     } finally {
       busy = false;
       page()?.removeAttribute('aria-busy');
@@ -55,6 +63,11 @@
     perform(() => service().mutate('change', { id: line.dataset.lineKey, quantity: parsed }));
   };
   document.addEventListener('click', event => {
+    const editTrigger = event.target.closest('[data-cart-page-edit-open]');
+    if (editTrigger?.closest('[data-cart-page]')) {
+      window.ThemeOverlay?.get(document.getElementById(editTrigger.dataset.cartPageEditOpen))?.open({ opener: editTrigger });
+      return;
+    }
     const target = event.target.closest('[data-cart-page-step], [data-cart-page-remove], [data-cart-page-discount-remove]');
     if (!target?.closest('[data-cart-page]')) return;
     event.preventDefault();
@@ -97,10 +110,26 @@
       perform(async () => {
         const cart = await getCart();
         const original = cart.items.find(item => item.key === form.dataset.lineKey);
-        if (!original || String(original.variant_id) === String(data.get('id'))) return;
+        if (!original) return;
+        const quantity = Math.max(1, Number(data.get('quantity') || original.quantity));
+        if (String(original.variant_id) === String(data.get('id'))) {
+          await service().mutate('change', { id: original.key, quantity });
+          return;
+        }
         // Add first; an unavailable replacement leaves the original line intact.
-        await service().mutate('add', { items: [{ id: Number(data.get('id')), quantity: original.quantity, properties: original.properties || {}, ...(original.selling_plan_allocation ? { selling_plan: original.selling_plan_allocation.selling_plan.id } : {}) }] });
-        await service().mutate('change', { id: original.key, quantity: 0 });
+        const propertiesKey = value => JSON.stringify(Object.entries(value || {}).sort(([a], [b]) => a.localeCompare(b)));
+        const isReplacement = item => String(item.variant_id) === String(data.get('id'))
+          && propertiesKey(item.properties) === propertiesKey(original.properties)
+          && item.selling_plan_allocation?.selling_plan?.id === original.selling_plan_allocation?.selling_plan?.id;
+        const previousReplacement = cart.items.find(isReplacement);
+        const addedCart = await service().mutate('add', { items: [{ id: Number(data.get('id')), quantity, properties: original.properties || {}, ...(original.selling_plan_allocation ? { selling_plan: original.selling_plan_allocation.selling_plan.id } : {}) }] });
+        try {
+          await service().mutate('change', { id: original.key, quantity: 0 });
+        } catch (error) {
+          const addedLine = addedCart.items.find(isReplacement);
+          if (addedLine) await service().mutate('change', { id: addedLine.key, quantity: previousReplacement?.quantity || 0 });
+          throw error;
+        }
       });
     } else {
       perform(async () => {

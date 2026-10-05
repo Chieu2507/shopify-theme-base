@@ -3,7 +3,7 @@
   block for every product. The block owns the collection query, item count,
   grid/carousel layout, columns, and gaps; Product Card owns presentation.
 
-  @param {array} [recommendation_products] - Native recommended products supplied
+  @param {product[]} [recommendation_products] - Native recommended products supplied
   by the query-owning section. Used only when Use product recommendations is on.
 
   @example
@@ -156,6 +156,13 @@
   assign product_list_pagination_class = 'swiper-pagination--below product-list__pagination product-list__pagination--' | append: product_list_pagination_type
 %}
 
+{% liquid
+  assign product_list_real_items = blank
+  unless product_list_is_placeholder
+    assign product_list_real_items = product_list_items
+  endunless
+%}
+
 {% capture product_list_items_content %}
   {% if product_list_items != blank %}
     {% for product_list_item in product_list_items limit: product_list_item_limit %}
@@ -232,6 +239,7 @@
   <div class="product-list__carousel swiper-carousel__container" data-product-list-carousel>
     {% render 'product-collection-grid',
       collection: product_list_collection,
+      products: product_list_real_items,
       max_products: product_list_max_products,
       layout_type: product_list_layout,
       columns_desktop: block.settings.columns_desktop,
@@ -340,7 +348,7 @@
       "id": "use_recommendations",
       "label": "Use product recommendations",
       "default": false,
-      "info": "Recommend products for the current product or the first cart item."
+      "info": "Use in Recommended products sections; collection-based sections use the Collection source."
     },
     {
       "type": "select",
