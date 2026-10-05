@@ -1,3 +1,5 @@
+{% capture normalized_heading_size %}{% render 'heading-size-token', size: block.settings.heading_size, fallback: 'lg' %}{% endcapture %}
+{% assign normalized_heading_size = normalized_heading_size | strip %}
 {% doc %}
   Renders the article comments list and comment form when comments are enabled.
 {% enddoc %}
@@ -7,7 +9,7 @@
 <div class="article-comments article-comments--{{ block.settings.width | default: 'default' }}" style="--article-comments-padding-top: {{ block.settings.padding_top }}px; --article-comments-padding-bottom: {{ block.settings.padding_bottom }}px; --article-comments-padding-top-mobile: {% if block.settings.custom_mobile_padding %}{{ block.settings.padding_top_mobile }}{% else %}{{ block.settings.padding_top }}{% endif %}px; --article-comments-padding-bottom-mobile: {% if block.settings.custom_mobile_padding %}{{ block.settings.padding_bottom_mobile }}{% else %}{{ block.settings.padding_bottom }}{% endif %}px;" {{ block.shopify_attributes }}>
   {% if blog.comments_enabled? %}
     <div class="article-comments__container">
-      <{{ comments_heading_tag }} class="article-comments__title heading-text heading-{{ block.settings.heading_size | default: 'h3' }}">{{ 'blog.comment_form_title' | t }}</{{ comments_heading_tag }}>
+      <{{ comments_heading_tag }} class="article-comments__title heading-text heading-{{ normalized_heading_size }}"{% if normalized_heading_size == 'custom' %} style="font-size: {{ block.settings.custom_heading_size }}px;"{% endif %}>{{ 'blog.comment_form_title' | t }}</{{ comments_heading_tag }}>
     {% paginate article.comments by 10 %}
       <div id="{{ article_comments_anchor }}" class="article-comments__list">
         {% for comment in article.comments %}
@@ -112,31 +114,46 @@
       "label": "Heading size",
       "options": [
         {
-          "value": "h1",
-          "label": "Heading 1"
+          "value": "display",
+          "label": "t:options.heading_size.display"
         },
         {
-          "value": "h2",
-          "label": "Heading 2"
+          "value": "xl",
+          "label": "t:options.heading_size.xl"
         },
         {
-          "value": "h3",
-          "label": "Heading 3"
+          "value": "lg",
+          "label": "t:options.heading_size.lg"
         },
         {
-          "value": "h4",
-          "label": "Heading 4"
+          "value": "md",
+          "label": "t:options.heading_size.md"
         },
         {
-          "value": "h5",
-          "label": "Heading 5"
+          "value": "sm",
+          "label": "t:options.heading_size.sm"
         },
         {
-          "value": "h6",
-          "label": "Heading 6"
+          "value": "xs",
+          "label": "t:options.heading_size.xs"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.heading_size.custom"
         }
       ],
-      "default": "h3"
+      "default": "lg"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.heading_size == 'custom' }}"
     },
     {
       "type": "select",

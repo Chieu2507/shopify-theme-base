@@ -4,7 +4,7 @@
 {% enddoc %}
 {% assign blog_title_tag = block.settings.html_tag | default: 'h1' %}
 <div class="blog-title" style="--blog-block-padding-top: {{ block.settings.padding_top }}px; --blog-block-padding-bottom: {{ block.settings.padding_bottom }}px;{% if block.settings.customize_mobile_padding %} --blog-block-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --blog-block-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
-  <{{ blog_title_tag }} class="blog-title__heading heading-text heading-{{ block.settings.heading_size | default: 'xl' }}">{{ blog.title | escape }}</{{ blog_title_tag }}>
+  <{{ blog_title_tag }} class="blog-title__heading heading-text heading-{{ block.settings.heading_size | default: 'xl' }}"{% if block.settings.heading_size == 'custom' %} style="font-size: {{ block.settings.custom_heading_size }}px;"{% endif %}>{{ blog.title | escape }}</{{ blog_title_tag }}>
   {% if block.settings.show_rss_icon and blog != blank %}<a class="blog-title__rss" href="{{ blog.url }}.atom" aria-label="{{ 'blog.rss_feed' | t }}"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="5" cy="19" r="1.5" fill="currentColor" stroke="none"/><path d="M4 11a9 9 0 0 1 9 9M4 4a16 16 0 0 1 16 16"/></svg></a>{% endif %}
 </div>
 {% stylesheet %}
@@ -57,9 +57,24 @@
         {
           "value": "xs",
           "label": "t:options.heading_size.xs"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.heading_size.custom"
         }
       ],
       "default": "xl"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.heading_size == 'custom' }}"
     },
     {
       "type": "select",

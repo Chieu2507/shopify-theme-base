@@ -1,3 +1,5 @@
+{% capture normalized_heading_size %}{% render 'heading-size-token', size: block.settings.title_size, fallback: 'sm' %}{% endcapture %}
+{% assign normalized_heading_size = normalized_heading_size | strip %}
 {% doc %}
   Renders links to the previous and next articles in the current blog.
 {% enddoc %}
@@ -14,8 +16,8 @@
   endcase
 %}
 <nav class="article-pagination article-pagination--{{ block.settings.corner_radius | default: 'inherit' }}" aria-label="{{ 'blog.article_navigation' | t }}" style="--article-navigation-radius: {{ article_navigation_radius }}; --article-pagination-padding-top: {{ block.settings.padding_top }}px; --article-pagination-padding-bottom: {{ block.settings.padding_bottom }}px; {% if block.settings.custom_mobile_padding %}--article-pagination-padding-top-mobile: {{ block.settings.padding_top_mobile }}px;{% endif %} {% if block.settings.custom_mobile_padding %}--article-pagination-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
-  {% if blog.previous_article %}<a class="article-pagination__item article-pagination__item--previous" href="{{ blog.previous_article.url }}"><span class="article-pagination__label">{% render 'icon', icon: 'arrow-left', bare: true %}{{ 'blog.previous_post' | t }}</span><span class="article-pagination__title heading-text heading-{{ block.settings.title_size | default: 'h5' }}">{{ blog.previous_article.title | escape }}</span></a>{% endif %}
-  {% if blog.next_article %}<a class="article-pagination__item article-pagination__item--next" href="{{ blog.next_article.url }}"><span class="article-pagination__label">{{ 'blog.next_post' | t }}{% render 'icon', icon: 'arrow-right', bare: true %}</span><span class="article-pagination__title heading-text heading-{{ block.settings.title_size | default: 'h5' }}">{{ blog.next_article.title | escape }}</span></a>{% endif %}
+  {% if blog.previous_article %}<a class="article-pagination__item article-pagination__item--previous" href="{{ blog.previous_article.url }}"><span class="article-pagination__label">{% render 'icon', icon: 'arrow-left', bare: true %}{{ 'blog.previous_post' | t }}</span><span class="article-pagination__title heading-text heading-{{ normalized_heading_size }}"{% if normalized_heading_size == 'custom' %} style="font-size: {{ block.settings.custom_heading_size }}px;"{% endif %}>{{ blog.previous_article.title | escape }}</span></a>{% endif %}
+  {% if blog.next_article %}<a class="article-pagination__item article-pagination__item--next" href="{{ blog.next_article.url }}"><span class="article-pagination__label">{{ 'blog.next_post' | t }}{% render 'icon', icon: 'arrow-right', bare: true %}</span><span class="article-pagination__title heading-text heading-{{ normalized_heading_size }}"{% if normalized_heading_size == 'custom' %} style="font-size: {{ block.settings.custom_heading_size }}px;"{% endif %}>{{ blog.next_article.title | escape }}</span></a>{% endif %}
 </nav>
 
 {% stylesheet %}
@@ -39,31 +41,46 @@
       "label": "Title size",
       "options": [
         {
-          "value": "h1",
-          "label": "Heading 1"
+          "value": "display",
+          "label": "t:options.heading_size.display"
         },
         {
-          "value": "h2",
-          "label": "Heading 2"
+          "value": "xl",
+          "label": "t:options.heading_size.xl"
         },
         {
-          "value": "h3",
-          "label": "Heading 3"
+          "value": "lg",
+          "label": "t:options.heading_size.lg"
         },
         {
-          "value": "h4",
-          "label": "Heading 4"
+          "value": "md",
+          "label": "t:options.heading_size.md"
         },
         {
-          "value": "h5",
-          "label": "Heading 5"
+          "value": "sm",
+          "label": "t:options.heading_size.sm"
         },
         {
-          "value": "h6",
-          "label": "Heading 6"
+          "value": "xs",
+          "label": "t:options.heading_size.xs"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.heading_size.custom"
         }
       ],
-      "default": "h5"
+      "default": "sm"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.title_size == 'custom' }}"
     },
     {
       "type": "select",

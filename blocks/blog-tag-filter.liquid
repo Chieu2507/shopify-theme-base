@@ -24,7 +24,7 @@
       assign blog_filter_font = 'var(--font-accent-family)'
   endcase
 %}
-<nav class="blog-tag-filter blog-tag-filter--{{ block.settings.style | default: 'underline' }} heading-{{ block.settings.heading_size | default: 'lg' }}" aria-label="{{ 'blog.filter_by_tag' | t }}" style="--blog-tag-filter-font: {{ blog_filter_font }}; --blog-tag-filter-gap: {{ block.settings.gap_desktop }}px; --blog-tag-filter-gap-mobile: {{ block.settings.gap_mobile }}px; --blog-block-padding-top: {{ block.settings.padding_top }}px; --blog-block-padding-bottom: {{ block.settings.padding_bottom }}px;{% if block.settings.customize_mobile_padding %} --blog-block-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --blog-block-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
+<nav class="blog-tag-filter blog-tag-filter--{{ block.settings.style | default: 'underline' }} heading-{{ block.settings.heading_size | default: 'lg' }}" aria-label="{{ 'blog.filter_by_tag' | t }}" style="{% if block.settings.heading_size == 'custom' %}font-size: {{ block.settings.custom_heading_size }}px;{% endif %}--blog-tag-filter-font: {{ blog_filter_font }}; --blog-tag-filter-gap: {{ block.settings.gap_desktop }}px; --blog-tag-filter-gap-mobile: {{ block.settings.gap_mobile }}px; --blog-block-padding-top: {{ block.settings.padding_top }}px; --blog-block-padding-bottom: {{ block.settings.padding_bottom }}px;{% if block.settings.customize_mobile_padding %} --blog-block-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --blog-block-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
   <a class="blog-tag-filter__link{% if current_tags == blank %} is-active{% endif %}{% if block.settings.style == 'button' %} btn {% if current_tags == blank %}btn-primary{% else %}btn-secondary{% endif %}{% endif %}" href="{{ blog.url }}"{% if current_tags == blank %} aria-current="page"{% endif %}>{% if block.settings.style == 'icon' %}{% render 'icon', icon: 'tag', bare: true %}{% endif %}{{ 'blog.all_posts' | t }}</a>
   {% for tag in blog_filter_tags %}
     <a class="blog-tag-filter__link{% if current_tags contains tag %} is-active{% endif %}{% if block.settings.style == 'button' %} btn {% if current_tags contains tag %}btn-primary{% else %}btn-secondary{% endif %}{% endif %}" href="{{ blog.url }}/tagged/{{ tag | handleize }}"{% if current_tags contains tag %} aria-current="page"{% endif %}>{% if block.settings.style == 'icon' %}{% render 'icon', icon: 'tag', bare: true %}{% endif %}{{ tag | escape }}</a>
@@ -132,9 +132,24 @@
         {
           "value": "xs",
           "label": "t:options.heading_size.xs"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.heading_size.custom"
         }
       ],
       "default": "lg"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.heading_size == 'custom' }}"
     },
     {
       "type": "header",

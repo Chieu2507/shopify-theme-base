@@ -1,3 +1,5 @@
+{% capture normalized_heading_size %}{% render 'heading-size-token', size: block.settings.title_size, fallback: 'xl' %}{% endcapture %}
+{% assign normalized_heading_size = normalized_heading_size | strip %}
 {% doc %}
   Renders article title and metadata for the Article section.
 {% enddoc %}
@@ -27,7 +29,7 @@
       {% for tag in article.tags limit: 1 %}<li><a href="{{ blog.url }}/tagged/{{ tag | handleize }}">{{ tag | escape }}</a></li>{% endfor %}
     </ul>
   {% endif %}
-  <{{ article_title_tag }} class="article-blog-meta__title heading-text heading-{{ block.settings.title_size | default: 'h2' }}">{{ article.title | escape }}</{{ article_title_tag }}>
+  <{{ article_title_tag }} class="article-blog-meta__title heading-text heading-{{ normalized_heading_size }}"{% if normalized_heading_size == 'custom' %} style="font-size: {{ block.settings.custom_heading_size }}px;"{% endif %}>{{ article.title | escape }}</{{ article_title_tag }}>
   {% if block.settings.show_author or block.settings.show_date or block.settings.show_comments %}<div class="article-blog-meta__details">
     {% assign article_meta_has_author = false %}
     {% assign article_meta_has_date = false %}
@@ -136,31 +138,46 @@
       "label": "Title size",
       "options": [
         {
-          "value": "h1",
-          "label": "Heading 1"
+          "value": "display",
+          "label": "t:options.heading_size.display"
         },
         {
-          "value": "h2",
-          "label": "Heading 2"
+          "value": "xl",
+          "label": "t:options.heading_size.xl"
         },
         {
-          "value": "h3",
-          "label": "Heading 3"
+          "value": "lg",
+          "label": "t:options.heading_size.lg"
         },
         {
-          "value": "h4",
-          "label": "Heading 4"
+          "value": "md",
+          "label": "t:options.heading_size.md"
         },
         {
-          "value": "h5",
-          "label": "Heading 5"
+          "value": "sm",
+          "label": "t:options.heading_size.sm"
         },
         {
-          "value": "h6",
-          "label": "Heading 6"
+          "value": "xs",
+          "label": "t:options.heading_size.xs"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.heading_size.custom"
         }
       ],
-      "default": "h2"
+      "default": "xl"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.title_size == 'custom' }}"
     },
     {
       "type": "select",

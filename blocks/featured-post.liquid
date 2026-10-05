@@ -1,3 +1,5 @@
+{% capture normalized_heading_size %}{% render 'heading-size-token', size: block.settings.title_size, fallback: 'xl' %}{% endcapture %}
+{% assign normalized_heading_size = normalized_heading_size | strip %}
 {% doc %}
   Renders the first article as a featured blog post with optional content.
 {% enddoc %}
@@ -35,7 +37,7 @@
       {% endif %}
       <div class="blog-featured-post__body">
         {% if block.settings.show_title %}
-          <h2 class="blog-card__title blog-card__title--{{ block.settings.title_size }}"><a href="{{ featured_article.url }}">{{ featured_article.title | escape }}</a></h2>
+          <h2 class="blog-card__title heading-text heading-{{ normalized_heading_size }}"{% if normalized_heading_size == 'custom' %} style="font-size: {{ block.settings.custom_heading_size }}px;"{% endif %}><a href="{{ featured_article.url }}">{{ featured_article.title | escape }}</a></h2>
         {% endif %}
         {% if block.settings.show_description and featured_article.content != blank %}
           <div class="blog-card__description">{{ featured_article.content | strip_html | truncatewords: block.settings.description_words }}</div>
@@ -78,11 +80,8 @@
   .blog-featured-post__meta, .blog-featured-post__body { width: 100%; }
   .blog-featured-post__meta { margin: 0; font-size: var(--font-body-sm); line-height: 1.3; color: var(--text-color); opacity: 0.55; }
   .blog-featured-post__body { display: grid; justify-items: var(--blog-featured-content-align, start); gap: 0.75rem; }
-  .blog-featured-post .blog-card__title { max-width: 22ch; margin: 0; overflow-wrap: anywhere; font-size: clamp(2rem, 3vw, 3rem); line-height: 1.08; letter-spacing: -0.02em; }
+  .blog-featured-post .blog-card__title { max-width: 22ch; margin: 0; overflow-wrap: anywhere; }
   .blog-featured-post .blog-card__title a { color: inherit; text-decoration: none; }
-  .blog-featured-post .blog-card__title--h1 { font-size: var(--font-heading-display); line-height: var(--font-heading-display-line-height); }
-  .blog-featured-post .blog-card__title--h2 { font-size: var(--font-heading-xl); line-height: var(--font-heading-xl-line-height); }
-  .blog-featured-post .blog-card__title--h3 { font-size: var(--font-heading-lg); line-height: var(--font-heading-lg-line-height); }
   .blog-featured-post .blog-card__meta { margin: 0 0 0.75rem; font-size: var(--font-body-sm); color: var(--text-color); }
   .blog-featured-post .blog-card__description { color: var(--body-color); }
   .blog-featured-post__blocks { display: flex; flex-direction: column; align-items: var(--blog-featured-content-align, start); gap: var(--blog-featured-gap, 8px); width: 100%; }
@@ -94,7 +93,6 @@
     .blog-featured-post__blocks { gap: var(--blog-featured-gap-mobile, 8px); }
     .blog-featured-post__meta { margin-bottom: 16px; }
     .blog-featured-post__body { justify-items: var(--blog-featured-content-align, start); gap: var(--blog-featured-gap-mobile, 8px); }
-    .blog-featured-post .blog-card__title { font-size: clamp(1.75rem, 7vw, 2.25rem); line-height: 1.08; }
   }
 {% endstylesheet %}
 
@@ -292,20 +290,47 @@
       "label": "Title size",
       "options": [
         {
-          "value": "h1",
-          "label": "Heading 1"
+          "value": "display",
+          "label": "t:options.heading_size.display"
         },
         {
-          "value": "h2",
-          "label": "Heading 2"
+          "value": "xl",
+          "label": "t:options.heading_size.xl"
         },
         {
-          "value": "h3",
-          "label": "Heading 3"
+          "value": "lg",
+          "label": "t:options.heading_size.lg"
+        },
+        {
+          "value": "md",
+          "label": "t:options.heading_size.md"
+        },
+        {
+          "value": "sm",
+          "label": "t:options.heading_size.sm"
+        },
+        {
+          "value": "xs",
+          "label": "t:options.heading_size.xs"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.heading_size.custom"
         }
       ],
-      "default": "h2",
+      "default": "xl",
       "visible_if": "{{ block.settings.show_title }}"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.title_size == 'custom' }}"
     },
     {
       "type": "checkbox",
