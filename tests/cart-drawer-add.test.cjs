@@ -158,6 +158,36 @@ test('sold out response stays in form, announces error, and permits retry', asyn
   assert.equal(f.requests.length, 2);
 });
 
+test('tracked inventory replaces generic cart errors with the remaining quantity', async () => {
+  const f = fixture();
+  f.drawer.dataset.cartInventoryError = 'Only __COUNT__ left in stock.';
+  f.form.dataset.inventoryQuantity = '3';
+  f.form.dataset.inventoryManagement = 'shopify';
+  f.form.dataset.inventoryPolicy = 'deny';
+  f.submit();
+  f.requests[0].resolve(response({ message: 'Cart Error' }, false));
+  await tick();
+  assert.equal(f.form.children[0].textContent, 'Only 3 left in stock.');
+  assert.doesNotMatch(f.form.children[0].textContent, /Cart Error/);
+});
+
+test('tracked inventory reports the quantity still available after existing cart units', async () => {
+  const f = fixture();
+  const existingLine = {
+    dataset: { variantId: '42', lineKey: 'existing-line' },
+    querySelector: () => ({ value: '2' }),
+  };
+  f.drawer.querySelectorAll = (selector) => selector.includes('[data-cart-line]') ? [existingLine] : [];
+  f.drawer.dataset.cartInventoryError = 'Only __COUNT__ left in stock.';
+  f.form.dataset.inventoryQuantity = '3';
+  f.form.dataset.inventoryManagement = 'shopify';
+  f.form.dataset.inventoryPolicy = 'deny';
+  f.submit();
+  f.requests[0].resolve(response({ message: 'Cart Error' }, false));
+  await tick();
+  assert.equal(f.form.children[0].textContent, 'Only 1 left in stock.');
+});
+
 test('network or cart refresh failure never opens the drawer and clears busy state', async () => {
   for (const failCart of [false, true]) {
     const f = fixture();
