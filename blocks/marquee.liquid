@@ -56,6 +56,10 @@
   else
     assign marquee_gap_mobile = marquee_gap_mobile | plus: 0
   endif
+  assign padding_top_mobile = block.settings.padding_top_mobile | default: padding_top | plus: 0
+  assign padding_bottom_mobile = block.settings.padding_bottom_mobile | default: padding_bottom | plus: 0
+  assign padding_left_mobile = block.settings.padding_left_mobile | default: padding_left | plus: 0
+  assign padding_right_mobile = block.settings.padding_right_mobile | default: padding_right | plus: 0
 %}
 
 {% capture marquee_style %}
@@ -67,6 +71,12 @@
   {% if padding_right != 0 %}--marquee-padding-right: {{ padding_right }}px;{% endif %}
   {% if marquee_gap_desktop != 48 %}--marquee-gap: {{ marquee_gap_desktop }}px;{% endif %}
   {% if marquee_gap_mobile != 32 %}--marquee-gap-mobile: {{ marquee_gap_mobile }}px;{% endif %}
+  {% if block.settings.customize_mobile_padding %}
+    --marquee-padding-top-mobile: {{ padding_top_mobile }}px;
+    --marquee-padding-bottom-mobile: {{ padding_bottom_mobile }}px;
+    --marquee-padding-left-mobile: {{ padding_left_mobile }}px;
+    --marquee-padding-right-mobile: {{ padding_right_mobile }}px;
+  {% endif %}
 {% endcapture %}
 {% assign marquee_style = marquee_style | strip | replace: '\n', ' ' %}
 
@@ -119,7 +129,7 @@
     gap: var(--marquee-gap, 48px);
     width: max-content;
     min-width: 0;
-    max-width: min-content;
+    max-width: none;
     animation: none;
     will-change: transform;
   }
@@ -142,6 +152,14 @@
   }
 
   @media (max-width: 767.98px) {
+    .marquee--block {
+      padding-top: var(--marquee-padding-top-mobile, var(--marquee-padding-top, 24px));
+      padding-bottom: var(--marquee-padding-bottom-mobile, var(--marquee-padding-bottom, 24px));
+    }
+    .marquee--block .container.full-width.marquee__container {
+      padding-left: var(--marquee-padding-left-mobile, var(--marquee-padding-left, 0px));
+      padding-right: var(--marquee-padding-right-mobile, var(--marquee-padding-right, 0px));
+    }
     .marquee--block .marquee__track {
       gap: var(--marquee-gap-mobile, var(--marquee-gap, 48px));
     }
@@ -200,10 +218,22 @@
     const selector = '.marquee--block';
     const reducedMotion = window.matchMedia('(prefers-reduced-motion: reduce)');
 
-    const setFocusableState = (element) => {
-      element.setAttribute('aria-hidden', 'true');
-      element.querySelectorAll('a, button, input, select, textarea, [tabindex]').forEach((focusable) => {
-        focusable.setAttribute('tabindex', '-1');
+    const prepareClone = (clone) => {
+      clone.setAttribute('aria-hidden', 'true');
+      if (!window.Shopify?.designMode) clone.setAttribute('inert', '');
+      // Keep Shopify block attributes so copies select their source in the editor.
+      [clone, ...clone.querySelectorAll('*')].forEach((element) => {
+        element.removeAttribute('id');
+        // Hidden/inert copies cannot enter the shared reveal lifecycle.
+        // Render their content immediately instead of inheriting opacity: 0.
+        element.classList.remove('reveal-pending');
+        if (element.hasAttribute('data-block-animation') || element.hasAttribute('data-component-reveal')) {
+          element.setAttribute('data-block-animation', 'none');
+          element.removeAttribute('data-component-reveal');
+        }
+        if (element.matches('a, button, input, select, textarea, [tabindex]')) {
+          element.setAttribute('tabindex', '-1');
+        }
       });
     };
 
@@ -212,93 +242,131 @@
 
       const track = marquee.querySelector('.marquee__track');
       const viewport = marquee.querySelector('.marquee__viewport');
-      if (!track || !viewport || track.children.length === 0) return;
+      if (!track || !viewport) return;
 
-      let clones = [];
-      let isSyncing = false;
+      let frame = 0;
+      let scrollFrame = 0;
+      let lastScrollY = window.scrollY;
+      let destroyed = false;
+      let measuredLayout = '';
+      const originalItems = () => [...track.children].filter((item) => !item.hasAttribute('data-marquee-clone'));
+      const observeMutations = () => mutationObserver.observe(track, {
+        attributes: true,
+        childList: true,
+        characterData: true,
+        subtree: true
+      });
 
       const syncClones = () => {
-        if (isSyncing) return;
-        isSyncing = true;
+        if (destroyed) return;
         mutationObserver.disconnect();
+        track.querySelectorAll('[data-marquee-clone]').forEach((clone) => clone.remove());
+        const items = originalItems();
+        resizeObserver.disconnect();
+        resizeObserver.observe(viewport);
+        items.forEach((item) => resizeObserver.observe(item));
 
-        clones.forEach((clone) => clone.remove());
-        const originalItems = [...track.children].filter((item) => !item.hasAttribute('data-marquee-clone'));
-        if (originalItems.length === 0) {
-          isSyncing = false;
+        const gap = parseFloat(getComputedStyle(track).columnGap) || 0;
+        // Include the trailing gap so the next cycle starts at the exact seam.
+        const distance = items.reduce((width, item) => width + item.getBoundingClientRect().width + gap, 0);
+        measuredLayout = layoutSignature();
+        if (items.length === 0 || distance <= 0 || viewport.clientWidth === 0) {
+          marquee.classList.remove('marquee--ready');
+          track.style.removeProperty('--marquee-loop-distance');
+          observeMutations();
           return;
         }
 
-        const appendCloneSet = (setIndex) => {
-          originalItems.forEach((item, itemIndex) => {
+        // Keep a full viewport of content beyond the end of one animation cycle.
+        const copyCount = Math.max(1, Math.ceil((viewport.clientWidth + gap) / distance));
+        const fragment = document.createDocumentFragment();
+        for (let setIndex = 0; setIndex < copyCount; setIndex += 1) {
+          items.forEach((item) => {
             const clone = item.cloneNode(true);
-            setFocusableState(clone);
+            prepareClone(clone);
             clone.dataset.marqueeClone = 'true';
-            clone.dataset.marqueeCloneIndex = String(setIndex * originalItems.length + itemIndex);
-            track.appendChild(clone);
+            fragment.appendChild(clone);
           });
-        };
-
-        // One clone set is the loop distance. Add more sets until the track
-        // still covers the viewport after it has moved by that distance.
-        appendCloneSet(1);
-        const firstClone = track.querySelector('[data-marquee-clone]');
-        const loopDistance = firstClone.getBoundingClientRect().left - track.getBoundingClientRect().left;
-        let setIndex = 2;
-        while (track.scrollWidth < viewport.clientWidth + loopDistance && setIndex <= 100) {
-          appendCloneSet(setIndex);
-          setIndex += 1;
         }
-
-        clones = [...track.children].filter((item) => item.hasAttribute('data-marquee-clone'));
-
-        mutationObserver.observe(track, {
-          attributes: true,
-          childList: true,
-          subtree: true
-        });
-        isSyncing = false;
+        track.appendChild(fragment);
+        track.style.setProperty('--marquee-loop-distance', `${distance}px`);
+        marquee.classList.add('marquee--ready');
+        observeMutations();
       };
 
+      const scheduleSync = () => {
+        if (destroyed || frame) return;
+        frame = requestAnimationFrame(() => {
+          frame = 0;
+          syncClones();
+        });
+      };
+      const layoutSignature = () => [
+        viewport.clientWidth,
+        getComputedStyle(track).columnGap,
+        ...originalItems().map((item) => item.getBoundingClientRect().width.toFixed(2))
+      ].join(':');
       const mutationObserver = new MutationObserver((mutations) => {
         if (mutations.some((mutation) => {
+          const element = mutation.target.nodeType === Node.ELEMENT_NODE ? mutation.target : mutation.target.parentElement;
+          if (element?.closest('[data-marquee-clone]')) return false;
           if (mutation.type === 'attributes') {
-            if (mutation.attributeName === 'class' || mutation.attributeName === 'style') return false;
+            if (mutation.target === track) return false;
             if (mutation.attributeName.startsWith('data-shopify-editor')) return false;
           }
-          return !mutation.target.closest?.('[data-marquee-clone]');
-        })) {
-          syncClones();
-          updateDistance();
+          return true;
+        })) scheduleSync();
+      });
+      const resizeObserver = new ResizeObserver(() => {
+        if (layoutSignature() !== measuredLayout) scheduleSync();
+      });
+
+      const handleScroll = () => {
+        if (scrollFrame || destroyed) return;
+        scrollFrame = requestAnimationFrame(() => {
+          scrollFrame = 0;
+          const scrollY = window.scrollY;
+          const delta = Math.max(-50, Math.min(50, scrollY - lastScrollY));
+          lastScrollY = scrollY;
+          const bounds = viewport.getBoundingClientRect();
+          const distance = parseFloat(track.style.getPropertyValue('--marquee-loop-distance'));
+          if (!delta || !distance || bounds.bottom <= 0 || bounds.top >= window.innerHeight) return;
+
+          // Move the existing loop's phase, keeping autoplay and the seamless seam.
+          // Upward scrolling has extra influence so it visibly reverses the text.
+          const pixels = delta * (delta < 0 ? 0.7 : 0.35);
+          track.getAnimations().forEach((animation) => {
+            if (!['marquee-scroll-left', 'marquee-scroll-right'].includes(animation.animationName)) return;
+            const duration = Number(animation.effect?.getComputedTiming().duration);
+            if (!duration || animation.currentTime === null) return;
+            const time = Number(animation.currentTime) + pixels / distance * duration;
+            animation.currentTime = ((time % duration) + duration) % duration;
+          });
+        });
+      };
+      // Scrolling text owns this effect; other placements keep their existing motion.
+      const scrollReactive = marquee.closest('.text-marquee-custom') && !marquee.classList.contains('marquee--static');
+      if (scrollReactive) window.addEventListener('scroll', handleScroll, { passive: true });
+
+      instances.set(marquee, {
+        destroy: () => {
+          destroyed = true;
+          cancelAnimationFrame(frame);
+          cancelAnimationFrame(scrollFrame);
+          if (scrollReactive) window.removeEventListener('scroll', handleScroll);
+          resizeObserver.disconnect();
+          mutationObserver.disconnect();
         }
       });
-
       syncClones();
-
-      const updateDistance = () => {
-        const firstClone = clones[0];
-        if (!firstClone) return;
-        const distance = firstClone.getBoundingClientRect().left - track.getBoundingClientRect().left;
-        track.style.setProperty('--marquee-loop-distance', `${distance}px`);
-      };
-
-      const resizeObserver = new ResizeObserver(() => {
-        syncClones();
-        updateDistance();
-      });
-      resizeObserver.observe(viewport);
-      updateDistance();
-      marquee.classList.add('marquee--ready');
-
-      instances.set(marquee, { clones, resizeObserver, mutationObserver });
     };
 
     const destroy = (marquee) => {
       const state = instances.get(marquee);
       if (!state) return;
-      state.resizeObserver.disconnect();
-      state.mutationObserver.disconnect();
+      state.destroy();
       marquee.querySelectorAll('[data-marquee-clone]').forEach((clone) => clone.remove());
+      marquee.querySelector('.marquee__track')?.style.removeProperty('--marquee-loop-distance');
       marquee.classList.remove('marquee--ready');
       instances.delete(marquee);
     };
@@ -401,7 +469,7 @@
     {
       "type": "range",
       "id": "padding_top",
-      "label": "t:options.position.top",
+      "label": "Top padding",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -411,7 +479,7 @@
     {
       "type": "range",
       "id": "padding_bottom",
-      "label": "t:options.position.bottom",
+      "label": "Bottom padding",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -421,7 +489,7 @@
     {
       "type": "range",
       "id": "padding_left",
-      "label": "t:labels.left_padding",
+      "label": "Left padding",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -431,12 +499,62 @@
     {
       "type": "range",
       "id": "padding_right",
-      "label": "t:labels.right_padding",
+      "label": "Right padding",
       "min": 0,
       "max": 100,
       "step": 1,
       "unit": "px",
       "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_padding",
+      "label": "t:labels.customize_mobile_padding",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "padding_top_mobile",
+      "label": "Mobile top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "label": "Mobile bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_left_mobile",
+      "label": "Mobile left padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_right_mobile",
+      "label": "Mobile right padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
     }
   ],
   "presets": [
