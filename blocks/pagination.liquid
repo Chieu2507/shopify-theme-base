@@ -1,53 +1,26 @@
 {% doc %}
-  Renders native Shopify blog pagination using shared button tokens.
-  @param {object} [blog_paginate] - Native paginate drop passed by the owning archive block
-  The owning blog section must render this block inside its paginate tag.
+  Blog pagination adapter for the shared collection pagination component.
+  @param {object} [blog_paginate] - Native paginate drop from the archive block
 {% enddoc %}
 {% # theme-check-disable UndefinedObject %}
 {% liquid
   assign pagination_data = blog_paginate | default: paginate
-  assign blog_pagination_variant = block.settings.style | default: 'primary'
-  if blog_pagination_variant == 'outline'
-    assign blog_pagination_variant = 'secondary'
-  elsif blog_pagination_variant == 'text'
-    assign blog_pagination_variant = 'tertiary'
+  assign pagination_style = block.settings.style | default: 'primary'
+  if pagination_style == 'text'
+    assign pagination_style = 'tertiary'
   endif
-  assign blog_pagination_previous = 'collection.previous' | t
-  assign blog_pagination_next = 'collection.next' | t
-  assign blog_pagination_current = pagination_data.current_page | append: ''
+  assign pagination_height = block.settings.height | replace: '-', '_'
 %}
+{{ 'component-pagination.css' | asset_url | stylesheet_tag }}
 {% if pagination_data.pages > 1 %}
-  <nav class="blog-pagination blog-pagination--{{ block.settings.style }} blog-pagination--height-{{ block.settings.height }}" aria-label="{{ 'accessibility.pagination' | t }}" style="--blog-pagination-padding-top: {{ block.settings.padding_top }}px; --blog-pagination-padding-bottom: {{ block.settings.padding_bottom }}px; --blog-pagination-padding-left: {{ block.settings.padding_left }}px; --blog-pagination-padding-right: {{ block.settings.padding_right }}px;{% if block.settings.customize_mobile_padding %} --blog-pagination-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --blog-pagination-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
-    {% if pagination_data.previous %}{% render 'theme-button', label: blog_pagination_previous, url: pagination_data.previous.url, variant: 'tertiary', class: 'blog-pagination__button' %}{% endif %}
-    {% for part in pagination_data.parts %}
-      {% assign blog_pagination_part_title = part.title | append: '' %}
-      {% if part.is_link %}
-        {% render 'theme-button', label: part.title, url: part.url, variant: 'tertiary', class: 'blog-pagination__button' %}
-      {% elsif blog_pagination_part_title == blog_pagination_current %}
-        <span class="blog-pagination__button btn btn-{{ blog_pagination_variant }}" aria-current="page">{{ part.title }}</span>
-      {% else %}<span class="blog-pagination__ellipsis">{{ part.title }}</span>{% endif %}
-    {% endfor %}
-    {% if pagination_data.next %}{% render 'theme-button', label: blog_pagination_next, url: pagination_data.next.url, variant: 'tertiary', class: 'blog-pagination__button' %}{% endif %}
+  <nav class="theme-pagination body-text body-sm" data-style="{{ pagination_style }}" data-height="{{ pagination_height }}" aria-label="{{ 'accessibility.pagination' | t }}" style="--pagination-padding-top: {{ block.settings.padding_top }}px; --pagination-padding-bottom: {{ block.settings.padding_bottom }}px; --pagination-padding-left: {{ block.settings.padding_left }}px; --pagination-padding-right: {{ block.settings.padding_right }}px;{% if block.settings.customize_mobile_padding %} --pagination-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --pagination-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
+    {% render 'pagination-pages', paginate: pagination_data %}
   </nav>
 {% elsif request.design_mode %}
-  <div class="blog-pagination blog-pagination--empty" {{ block.shopify_attributes }}>{{ 'blog.pagination_empty' | t }}</div>
+  <div class="body-sm" {{ block.shopify_attributes }}>{{ 'blog.pagination_empty' | t }}</div>
 {% endif %}
 {% # theme-check-enable UndefinedObject %}
-{% stylesheet %}
-  .blog-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: var(--blog-pagination-padding-top, 0px) var(--blog-pagination-padding-right, 0px) var(--blog-pagination-padding-bottom, 0px) var(--blog-pagination-padding-left, 0px); }
-  .blog-pagination__button { --button-padding-inline-desktop: 12px; --button-padding-inline-mobile: 12px; min-width: var(--blog-pagination-height, var(--button-height)); min-height: var(--blog-pagination-height, var(--button-height)); }
-  .blog-pagination--outline [aria-current] { --button-background: transparent; --button-border: currentColor; --button-border-width: 1px; }
-  .blog-pagination--height-extra-small { --blog-pagination-height: 28px; }
-  .blog-pagination--height-small { --blog-pagination-height: 36px; }
-  .blog-pagination--height-medium { --blog-pagination-height: 44px; }
-  .blog-pagination--height-large { --blog-pagination-height: 52px; }
-  .blog-pagination--height-extra-large { --blog-pagination-height: 60px; }
-  .blog-pagination--empty { opacity: 0.65; font-size: var(--font-body-sm); }
-  @media (max-width: 767.98px) {
-    .blog-pagination { padding-top: var(--blog-pagination-padding-top-mobile, var(--blog-pagination-padding-top)); padding-bottom: var(--blog-pagination-padding-bottom-mobile, var(--blog-pagination-padding-bottom)); }
-    .blog-pagination__button { min-width: var(--blog-pagination-height, var(--button-height-mobile)); min-height: var(--blog-pagination-height, var(--button-height-mobile)); }
-  }
-{% endstylesheet %}
+
 {% schema %}
 {
   "name": "Pagination",
