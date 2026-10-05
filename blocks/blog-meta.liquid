@@ -2,6 +2,7 @@
   Renders article title and metadata for the Article section.
 {% enddoc %}
 
+{% assign article_comments_block = section.blocks | where: 'type', 'comments' | first %}
 {% assign article_title_tag = block.settings.html_title_tag | default: 'h1' %}
 {% assign article_meta_gap_desktop = block.settings.gap_desktop | default: 10 | plus: 0 %}
 {% assign article_meta_gap_mobile = block.settings.gap_mobile | default: 10 | plus: 0 %}
@@ -32,7 +33,7 @@
     {% assign article_meta_has_date = false %}
     {% if block.settings.show_date %}{{ article.published_at | time_tag: format: 'date' }}{% assign article_meta_has_date = true %}{% endif %}
     {% if block.settings.show_author and article.author != blank %}{% if article_meta_has_date %}<span class="article-blog-meta__separator" aria-hidden="true">·</span>{% endif %}{{ article.author | escape }}{% assign article_meta_has_author = true %}{% endif %}
-    {% if block.settings.show_comments %}{% if article_meta_has_author or article_meta_has_date %}<span class="article-blog-meta__separator" aria-hidden="true">·</span>{% endif %}{% if blog.comments_enabled? %}<a href="#comments-{{ section.id }}">{{ 'blog.comments_count' | t: count: article.comments_count }}</a>{% else %}<span>{{ 'blog.comments_count' | t: count: article.comments_count }}</span>{% endif %}{% endif %}
+    {% if block.settings.show_comments %}{% if article_meta_has_author or article_meta_has_date %}<span class="article-blog-meta__separator" aria-hidden="true">·</span>{% endif %}{% if blog.comments_enabled? and article_comments_block != blank %}<a href="#comments-{{ section.id }}-{{ article_comments_block.id }}">{{ 'blog.comments_count' | t: count: article.comments_count }}</a>{% else %}<span>{{ 'blog.comments_count' | t: count: article.comments_count }}</span>{% endif %}{% endif %}
   </div>{% endif %}
 </div>
 

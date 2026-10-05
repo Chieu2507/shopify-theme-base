@@ -2,14 +2,14 @@
   Renders the article comments list and comment form when comments are enabled.
 {% enddoc %}
 
-{% assign article_comments_anchor = 'comments-' | append: section.id %}
+{% assign article_comments_anchor = 'comments-' | append: section.id | append: '-' | append: block.id %}
 {% assign comments_heading_tag = block.settings.html_heading_tag | default: 'h2' %}
 <div class="article-comments article-comments--{{ block.settings.width | default: 'default' }}" style="--article-comments-padding-top: {{ block.settings.padding_top }}px; --article-comments-padding-bottom: {{ block.settings.padding_bottom }}px; --article-comments-padding-top-mobile: {% if block.settings.custom_mobile_padding %}{{ block.settings.padding_top_mobile }}{% else %}{{ block.settings.padding_top }}{% endif %}px; --article-comments-padding-bottom-mobile: {% if block.settings.custom_mobile_padding %}{{ block.settings.padding_bottom_mobile }}{% else %}{{ block.settings.padding_bottom }}{% endif %}px;" {{ block.shopify_attributes }}>
   {% if blog.comments_enabled? %}
     <div class="article-comments__container">
       <{{ comments_heading_tag }} class="article-comments__title heading-text heading-{{ block.settings.heading_size | default: 'h3' }}">{{ 'blog.comment_form_title' | t }}</{{ comments_heading_tag }}>
     {% paginate article.comments by 10 %}
-      <div id="comments-{{ section.id }}" class="article-comments__list">
+      <div id="{{ article_comments_anchor }}" class="article-comments__list">
         {% for comment in article.comments %}
           <article class="article-comment">
             <p class="article-comment__author">{{ comment.author | escape }}</p>
