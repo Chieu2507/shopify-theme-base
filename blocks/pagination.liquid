@@ -1,10 +1,17 @@
 {% doc %}
-  Blog pagination adapter for the shared collection pagination component.
-  @param {object} [blog_paginate] - Native paginate drop from the archive block
+  Native resource pagination adapter for the shared collection pagination component.
+  @param {object} [blog_paginate] - Native paginate drop from the blog archive
+  @param {object} [list_paginate] - Native paginate drop from the collections list
+  @param {string} [native_page_links] - Pre-rendered native links for isolated setting-array query scope
+  @param {number} [native_page_count] - Materialized page count paired with native_page_links
 {% enddoc %}
 {% # theme-check-disable UndefinedObject %}
 {% liquid
-  assign pagination_data = blog_paginate | default: paginate
+  assign pagination_data = list_paginate | default: blog_paginate | default: paginate
+  assign pagination_pages = native_page_count
+  if pagination_pages == blank
+    assign pagination_pages = pagination_data.pages
+  endif
   assign pagination_style = block.settings.style | default: 'primary'
   if pagination_style == 'text'
     assign pagination_style = 'tertiary'
@@ -12,9 +19,13 @@
   assign pagination_height = block.settings.height | replace: '-', '_'
 %}
 {{ 'component-pagination.css' | asset_url | stylesheet_tag }}
-{% if pagination_data.pages > 1 %}
+{% if pagination_pages > 1 %}
   <nav class="theme-pagination body-text body-sm" data-style="{{ pagination_style }}" data-height="{{ pagination_height }}" aria-label="{{ 'accessibility.pagination' | t }}" style="--pagination-padding-top: {{ block.settings.padding_top }}px; --pagination-padding-bottom: {{ block.settings.padding_bottom }}px; --pagination-padding-left: {{ block.settings.padding_left }}px; --pagination-padding-right: {{ block.settings.padding_right }}px;{% if block.settings.customize_mobile_padding %} --pagination-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --pagination-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
-    {% render 'pagination-pages', paginate: pagination_data %}
+    {% if native_page_links != blank %}
+      {{ native_page_links }}
+    {% else %}
+      {% render 'pagination-pages', paginate: pagination_data %}
+    {% endif %}
   </nav>
 {% elsif request.design_mode %}
   <div class="body-sm" {{ block.shopify_attributes }}>{{ 'blog.pagination_empty' | t }}</div>
