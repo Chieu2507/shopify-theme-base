@@ -6,6 +6,21 @@ const initialize = (section) => {
   const panels = [...section.querySelectorAll('[data-collections-with-tabs-panel]')];
   if (!tabs.length || !panels.length) return;
 
+  // Collection panels are siblings of the header and tab rows. The active
+  // collection therefore owns color tokens at the composition containers.
+  const colorScope = section.querySelector('[data-collections-with-tabs-color-scope]') || section;
+  const synchronizeColors = (panel) => {
+    const selectedScheme = panel?.dataset.collectionsWithTabsColorScheme || '';
+    const background = panel?.dataset.collectionsWithTabsBackground || '';
+    const previousScheme = colorScope.dataset.collectionsWithTabsAppliedScheme || colorScope.dataset.collectionsWithTabsBaseScheme;
+    const nextScheme = selectedScheme || colorScope.dataset.collectionsWithTabsBaseScheme;
+    if (previousScheme && previousScheme !== nextScheme) colorScope.classList.remove(previousScheme);
+    if (nextScheme) colorScope.classList.add(nextScheme);
+    colorScope.dataset.collectionsWithTabsAppliedScheme = nextScheme || '';
+    if (background) colorScope.style.setProperty('--background-color', background);
+    else colorScope.style.removeProperty('--background-color');
+  };
+
   const controller = new AbortController();
   let timer = 0;
   let progressFrame = 0;
@@ -38,6 +53,7 @@ const initialize = (section) => {
       tab.tabIndex = active ? 0 : -1;
     });
     const activePanel = panels.find((panel) => panel.dataset.collectionsWithTabsId === activeId) || panels[0];
+    synchronizeColors(activePanel);
     window.cancelAnimationFrame(activationFrame);
     panels.forEach((panel) => {
       const active = panel === activePanel;
