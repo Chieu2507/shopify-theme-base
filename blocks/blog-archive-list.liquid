@@ -17,18 +17,20 @@
   assign blog_archive_gap_mobile = block.settings.gap_mobile | default: 30 | plus: 0
 %}
 
+{% paginate blog_archive_source.articles by section.settings.posts_per_page %}
 <div
   class="blog-archive-list"
   style="--blog-archive-columns: {{ blog_archive_columns }}; --blog-archive-gap-horizontal: {{ blog_archive_gap_horizontal }}px; --blog-archive-gap-vertical: {{ blog_archive_gap_vertical }}px; --blog-archive-gap-mobile: {{ blog_archive_gap_mobile }}px;"
   {{ block.shopify_attributes }}
 >
-  {% capture blog_archive_featured %}{% content_for 'block', type: 'featured-post', id: 'featured-post' %}{% endcapture %}
+  {% capture blog_archive_featured %}{% content_for 'block', type: 'featured-post', id: 'featured-post', closest.article: blog_archive_source.articles.first %}{% endcapture %}
   {% assign blog_archive_featured = blog_archive_featured | strip %}
   {% assign blog_archive_offset = 0 %}
   {% if blog_archive_featured != blank and blog_archive_source.articles != blank %}{% assign blog_archive_offset = 1 %}{{ blog_archive_featured }}{% endif %}
+  {% assign blog_archive_item_limit = section.settings.posts_per_page | minus: blog_archive_offset %}
   <div class="blog-archive-list__items">
     {% if blog_archive_source != blank and blog_archive_source.articles != blank %}
-      {% for blog_archive_article in blog_archive_source.articles offset: blog_archive_offset %}
+      {% for blog_archive_article in blog_archive_source.articles offset: blog_archive_offset limit: blog_archive_item_limit %}
         <div class="blog-archive-list__item">
           {% content_for 'block', type: 'blog-card', id: 'blog-card', closest.article: blog_archive_article, placeholder: false %}
         </div>
@@ -37,8 +39,9 @@
       <div class="blog-archive-list__empty" role="status">{{ 'blog.archive_empty' | t }}</div>
     {% endif %}
   </div>
-  {% content_for 'block', type: 'pagination', id: 'pagination' %}
+  {% content_for 'block', type: 'pagination', id: 'pagination', blog_paginate: paginate %}
 </div>
+{% endpaginate %}
 
 {% stylesheet %}
   .blog-archive-list {

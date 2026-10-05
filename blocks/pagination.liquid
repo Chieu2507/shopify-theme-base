@@ -1,9 +1,11 @@
 {% doc %}
   Renders native Shopify blog pagination using shared button tokens.
+  @param {object} [blog_paginate] - Native paginate drop passed by the owning archive block
   The owning blog section must render this block inside its paginate tag.
 {% enddoc %}
 {% # theme-check-disable UndefinedObject %}
 {% liquid
+  assign pagination_data = blog_paginate | default: paginate
   assign blog_pagination_variant = block.settings.style | default: 'primary'
   if blog_pagination_variant == 'outline'
     assign blog_pagination_variant = 'secondary'
@@ -12,19 +14,19 @@
   endif
   assign blog_pagination_previous = 'collection.previous' | t
   assign blog_pagination_next = 'collection.next' | t
-  assign blog_pagination_current = paginate.current_page | append: ''
+  assign blog_pagination_current = pagination_data.current_page | append: ''
 %}
-{% if paginate.pages > 1 %}
+{% if pagination_data.pages > 1 %}
   <nav class="blog-pagination blog-pagination--{{ block.settings.style }} blog-pagination--height-{{ block.settings.height }}" aria-label="{{ 'accessibility.pagination' | t }}" style="--blog-pagination-padding-top: {{ block.settings.padding_top }}px; --blog-pagination-padding-bottom: {{ block.settings.padding_bottom }}px; --blog-pagination-padding-left: {{ block.settings.padding_left }}px; --blog-pagination-padding-right: {{ block.settings.padding_right }}px;{% if block.settings.customize_mobile_padding %} --blog-pagination-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --blog-pagination-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
-    {% if paginate.previous %}{% render 'theme-button', label: blog_pagination_previous, url: paginate.previous.url, variant: 'tertiary', class: 'blog-pagination__button' %}{% endif %}
-    {% for part in paginate.parts %}
+    {% if pagination_data.previous %}{% render 'theme-button', label: blog_pagination_previous, url: pagination_data.previous.url, variant: 'tertiary', class: 'blog-pagination__button' %}{% endif %}
+    {% for part in pagination_data.parts %}
       {% if part.is_link %}
         {% render 'theme-button', label: part.title, url: part.url, variant: 'tertiary', class: 'blog-pagination__button' %}
       {% elsif part.title == blog_pagination_current %}
         <span class="blog-pagination__button btn btn-{{ blog_pagination_variant }}" aria-current="page">{{ part.title }}</span>
       {% else %}<span class="blog-pagination__ellipsis">{{ part.title }}</span>{% endif %}
     {% endfor %}
-    {% if paginate.next %}{% render 'theme-button', label: blog_pagination_next, url: paginate.next.url, variant: 'tertiary', class: 'blog-pagination__button' %}{% endif %}
+    {% if pagination_data.next %}{% render 'theme-button', label: blog_pagination_next, url: pagination_data.next.url, variant: 'tertiary', class: 'blog-pagination__button' %}{% endif %}
   </nav>
 {% elsif request.design_mode %}
   <div class="blog-pagination blog-pagination--empty" {{ block.shopify_attributes }}>{{ 'blog.pagination_empty' | t }}</div>
