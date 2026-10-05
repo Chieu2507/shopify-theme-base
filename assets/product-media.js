@@ -211,6 +211,7 @@ class ProductMediaGallery extends HTMLElement {
     pagination.replaceChildren();
     pagination.classList.remove(
       'swiper-pagination-bullets',
+      'swiper-pagination-progressbar',
       'swiper-pagination-clickable',
       'swiper-pagination-horizontal',
       'swiper-pagination-vertical',
@@ -309,6 +310,7 @@ class ProductMediaGallery extends HTMLElement {
     }
 
     const pagination = this.querySelector('[data-product-media-pagination]');
+    const paginationType = pagination?.dataset.paginationType === 'progress_bar' ? 'progressbar' : 'bullets';
     this.mainSwiper = createSwiperCarousel(main, {
       modules: showPagination ? [Pagination, Thumbs] : [Thumbs],
       slidesPerView,
@@ -323,7 +325,7 @@ class ProductMediaGallery extends HTMLElement {
         previous: '[data-product-media-previous]',
         next: '[data-product-media-next]'
       },
-      ...(showPagination && pagination ? { pagination: { el: pagination, clickable: true } } : {}),
+      ...(showPagination && pagination ? { pagination: { el: pagination, type: paginationType, clickable: paginationType === 'bullets' } } : {}),
       ...(this.thumbnailSwiper ? { thumbs: { swiper: this.thumbnailSwiper, autoScrollOffset: 1 } } : {}),
       a11y: { enabled: true },
     });

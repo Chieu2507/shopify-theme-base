@@ -934,11 +934,16 @@ chung, ratio không đổi theo breakpoint.
 
 | ID | Type | Values | Default | Mapping / constraint |
 | --- | --- | --- | --- | --- |
-| swatch_style | select | color, variant_image | color | `--swatch-style`; quyết định ưu tiên color/ảnh variant |
+| swatch_style | select | color, variant_image, button, dropdown | color | Kiểu hiển thị cho option màu ở picker sản phẩm; option còn lại theo Variant pickers |
 | swatch_width_desktop | range | 16–64px, step 1 | 40 | `--swatch-width` |
 | swatch_width_mobile | range | 16–64px, step 1 | 40 | `--swatch-width-mobile` |
-| swatch_height_ratio | select | 1:1, 3:2, 2:1, 3:1 | 3:1 | `--swatch-height-ratio` |
+| swatch_height_ratio | select | 1:1, 3:2, 2:1, 3:1 | 3:1 | Chỉ hiện và áp dụng cho Color; Variant image dùng 1:1 |
 | swatch_selected_style | select | border, underline | underline | `--swatch-selected-style` và `.swatches--selected-*` |
+
+Color và Variant image hiện Width desktop/mobile và Selected variant style.
+Button và Dropdown ẩn các control này. Block Variant picker không có override
+Swatches; Product cards và picker trong Bundle giữ cấu hình swatch riêng theo
+Product cards.
 
 `--swatch-radius` lấy từ `radius_swatches`. Không component nào được tạo token
 màu/size/radius swatch ngoài contract này; product card chỉ được remap
