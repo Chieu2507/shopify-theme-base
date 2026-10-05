@@ -32,10 +32,15 @@
     const openTools = Array.from(current.querySelectorAll('details[open]')).map(el => el.querySelector('summary')?.textContent.trim());
     const focused = document.activeElement?.id;
     current.querySelectorAll('[data-cart-page-edit]').forEach(form => window.ThemeOverlay?.get(form.closest('[data-component-overlay]'))?.destroy());
+    window.__themeAccordionDetailsController?.cleanupRoot(current);
     current.replaceWith(next);
     next.querySelectorAll('details').forEach(el => {
-      if (openTools.includes(el.querySelector('summary')?.textContent.trim())) el.open = true;
+      if (openTools.includes(el.querySelector('summary')?.textContent.trim())) {
+        el.open = true;
+        if (el.hasAttribute('data-accordion-details')) el.dataset.accordionState = 'open';
+      }
     });
+    window.__themeAccordionDetailsController?.initializeRoot(next);
     if (focused) document.getElementById(focused)?.focus({ preventScroll: true });
   };
   const perform = async (action, rerender = true) => {
