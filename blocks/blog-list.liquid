@@ -7,6 +7,7 @@
 
   An empty blog renders the same placeholder cards in the editor and storefront.
 
+  @param {boolean} [mobile_pagination] - Keep mobile pagination when desktop pagination is disabled
   @param {article} [excluded_article] - Current article omitted from related posts
   @param {boolean} [use_section_blog] - Use the supplied section blog, including an intentionally blank selection
 
@@ -153,6 +154,11 @@
   assign blog_list_carousel_id = 'BlogListCarousel-' | append: block.id
   assign blog_list_aria_label = blog_list_source.title | default: 'Blog posts'
   assign blog_list_pagination_class = 'swiper-pagination--below blog-list__pagination blog-list__pagination--' | append: blog_list_pagination_type
+  assign blog_list_render_pagination = blog_list_show_pagination
+  if mobile_pagination and blog_list_layout == 'carousel' and blog_list_show_pagination == false
+    assign blog_list_render_pagination = true
+    assign blog_list_pagination_class = blog_list_pagination_class | append: ' blog-list__pagination--mobile-only'
+  endif
   assign blog_list_previous_label = 'collection_tabs.previous' | t
   assign blog_list_next_label = 'collection_tabs.next' | t
   assign blog_list_navigation_wrapper_class = 'blog-list__navigation blog-list__navigation--' | append: blog_list_navigation_position
@@ -173,7 +179,7 @@
 
 {% capture blog_list_pagination %}
   {% render 'swiper-pagination',
-    show: blog_list_show_pagination,
+    show: blog_list_render_pagination,
     type: blog_list_pagination_type,
     class: blog_list_pagination_class,
     style: blog_list_pagination_style
@@ -299,6 +305,7 @@
 {% endif %}
 
 {% stylesheet %}
+  @media (min-width: 768px) { .blog-list__pagination--mobile-only { display: none; } }
   .blog-list {
     width: 100%;
     min-width: 0;
