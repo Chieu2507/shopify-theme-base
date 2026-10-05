@@ -12,16 +12,13 @@ const initialize = (section) => {
   const synchronizeColors = (panel) => {
     const selectedScheme = panel?.dataset.collectionsWithTabsColorScheme || '';
     const background = panel?.dataset.collectionsWithTabsBackground || '';
-    {
-      const scope = colorScope;
-      const previousScheme = scope.dataset.collectionsWithTabsAppliedScheme || scope.dataset.collectionsWithTabsBaseScheme;
-      const nextScheme = selectedScheme || scope.dataset.collectionsWithTabsBaseScheme;
-      if (previousScheme && previousScheme !== nextScheme) scope.classList.remove(previousScheme);
-      if (nextScheme) scope.classList.add(nextScheme);
-      scope.dataset.collectionsWithTabsAppliedScheme = nextScheme || '';
-      if (background) scope.style.setProperty('--background-color', background);
-      else scope.style.removeProperty('--background-color');
-    }
+    const previousScheme = colorScope.dataset.collectionsWithTabsAppliedScheme || colorScope.dataset.collectionsWithTabsBaseScheme;
+    const nextScheme = selectedScheme || colorScope.dataset.collectionsWithTabsBaseScheme;
+    if (previousScheme && previousScheme !== nextScheme) colorScope.classList.remove(previousScheme);
+    if (nextScheme) colorScope.classList.add(nextScheme);
+    colorScope.dataset.collectionsWithTabsAppliedScheme = nextScheme || '';
+    if (background) colorScope.style.setProperty('--background-color', background);
+    else colorScope.style.removeProperty('--background-color');
   };
 
   const controller = new AbortController();
