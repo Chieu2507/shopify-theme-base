@@ -105,8 +105,8 @@
     assign collection_card_padding_right_mobile = collection_card_padding_right
   endif
 
-  assign collection_card_image_loading = image_loading | default: 'lazy'
-  assign collection_card_image_sizes = image_sizes | default: '100vw'
+  assign collection_card_image_loading = image_loading
+  assign collection_card_image_sizes = image_sizes
   assign collection_card_placeholder = placeholder_index | default: 1 | prepend: 'collection-'
 
   assign collection_card_is_placeholder = false
@@ -139,7 +139,11 @@
 >
   <div class="collection-card-kernel__media{% if collection_card_image == blank %} placeholder-image{% endif %}">
     {% if collection_card_image != blank %}
-      {{ collection_card_image | image_url: width: 1200 | image_tag: alt: collection_card_collection.title, loading: collection_card_image_loading, sizes: collection_card_image_sizes, widths: '240, 360, 480, 640, 800, 1000, 1200' }}
+      {% if collection_card_image_sizes != blank %}
+        {{ collection_card_image | image_url: width: 1200 | image_tag: alt: collection_card_collection.title, loading: collection_card_image_loading, sizes: collection_card_image_sizes, widths: '240, 360, 480, 640, 800, 1000, 1200' }}
+      {% else %}
+        {{ collection_card_image | image_url: width: 1200 | image_tag: alt: collection_card_collection.title }}
+      {% endif %}
     {% else %}
       {{ collection_card_placeholder | placeholder_svg_tag }}
     {% endif %}
