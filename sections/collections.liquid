@@ -4,11 +4,18 @@
     assign collections_width = 'full-width'
   endif
   assign collections_alignment = section.settings.content_alignment | default: 'left'
+  assign collections_flex_alignment = 'flex-start'
+  case collections_alignment
+    when 'center'
+      assign collections_flex_alignment = 'center'
+    when 'right'
+      assign collections_flex_alignment = 'flex-end'
+  endcase
 %}
 {% style %}
   #shopify-section-{{ section.id }} { background: {{ section.settings.background_color | default: section.settings.color_scheme.settings.background }}; }
 {% endstyle %}
-<div class="collections-page section-spacing color-scheme section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}" style="--flex-align: {{ collections_alignment }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --collections-page-gap: {{ section.settings.gap_desktop }}px; --collections-page-gap-mobile: {{ section.settings.gap_mobile }}px;{% if section.settings.customize_mobile_padding %} --section-padding-top-mobile: {{ section.settings.padding_top_mobile }}px; --section-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;{% endif %}">
+<div class="collections-page section-spacing color-scheme section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}" style="--flex-align: {{ collections_flex_alignment }}; --text-align: {{ collections_alignment }}; --section-padding-top: {{ section.settings.padding_top }}px; --section-padding-bottom: {{ section.settings.padding_bottom }}px; --collections-page-gap: {{ section.settings.gap_desktop }}px; --collections-page-gap-mobile: {{ section.settings.gap_mobile }}px;{% if section.settings.customize_mobile_padding %} --section-padding-top-mobile: {{ section.settings.padding_top_mobile }}px; --section-padding-bottom-mobile: {{ section.settings.padding_bottom_mobile }}px;{% endif %}">
   {% if section.settings.show_top_divider %}<div class="collections-page__divider{% if section.settings.divider_full_width %} collections-page__divider--full{% endif %}" aria-hidden="true"></div>{% endif %}
   <div class="container {{ collections_width }} align-content collections-page__container">
     {% content_for 'blocks' %}
@@ -25,6 +32,7 @@
   .collections-page__divider--bottom { inset-block-start: auto; inset-block-end: 0; }
   @media (min-width: 768px) and (max-width: 1149.98px) {
     .collections-page { padding-block: calc(var(--section-padding-top) * 0.75) calc(var(--section-padding-bottom) * 0.75); }
+    .collections-page__divider { --page-margin-current: var(--page-margin-tablet); }
   }
   @media (max-width: 767.98px) {
     .collections-page { padding-block: var(--section-padding-top-mobile, calc(var(--section-padding-top) * 0.5)) var(--section-padding-bottom-mobile, calc(var(--section-padding-bottom) * 0.5)); }
