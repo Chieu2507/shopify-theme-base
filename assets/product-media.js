@@ -358,7 +358,8 @@ class ProductMediaGallery extends HTMLElement {
       moved: false,
     };
     this.mainSwiper.allowTouchMove = false;
-    event.currentTarget.setPointerCapture?.(event.pointerId);
+    // Capture only after a drag starts. Capturing on pointerdown retargets a
+    // normal click to the carousel, losing the media that opens the lightbox.
     // Swiper's own pointer listeners must not compete with this desktop-only
     // fallback. A normal click still reaches the gallery click handler.
     event.stopPropagation();
@@ -378,6 +379,7 @@ class ProductMediaGallery extends HTMLElement {
       }
       drag.axis = 'horizontal';
       drag.moved = true;
+      event.currentTarget.setPointerCapture?.(event.pointerId);
     }
 
     if (drag.axis !== 'horizontal') return;
