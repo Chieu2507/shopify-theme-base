@@ -24,18 +24,17 @@
       {% if form.errors %}<div class="article-comments__error" role="alert">{{ form.errors | default_errors }}</div>{% endif %}
       {% if form.posted_successfully? %}<p role="status">{% if blog.moderated? %}{{ 'blog.comment_success_moderated' | t }}{% else %}{{ 'blog.comment_success' | t }}{% endif %}</p>{% endif %}
       <div class="article-comments__form">
-        <div class="article-comments__field">
-          <label class="visually-hidden" for="comment-author-{{ section.id }}-{{ block.id }}">{{ 'blog.comment_form_name' | t }}</label>
-          <input id="comment-author-{{ section.id }}-{{ block.id }}" type="text" name="comment[author]" value="{{ form.author | escape }}" placeholder="{{ block.settings.name_placeholder | default: 'Name' | escape }}" required>
-        </div>
-        <div class="article-comments__field">
-          <label class="visually-hidden" for="comment-email-{{ section.id }}-{{ block.id }}">{{ 'blog.comment_form_email' | t }}</label>
-          <input id="comment-email-{{ section.id }}-{{ block.id }}" type="email" name="comment[email]" value="{{ form.email | escape }}" placeholder="{{ block.settings.email_placeholder | default: 'Email' | escape }}" required>
-        </div>
-        <div class="article-comments__field article-comments__field--body">
-          <label class="visually-hidden" for="comment-body-{{ section.id }}-{{ block.id }}">{{ 'blog.comment_form_body' | t }}</label>
-          <textarea id="comment-body-{{ section.id }}-{{ block.id }}" name="comment[body]" placeholder="{{ block.settings.comment_placeholder | default: 'Comment' | escape }}" required>{{ form.body | escape }}</textarea>
-        </div>
+        {% liquid
+          assign comment_author_id = 'comment-author-' | append: section.id | append: '-' | append: block.id
+          assign comment_email_id = 'comment-email-' | append: section.id | append: '-' | append: block.id
+          assign comment_body_id = 'comment-body-' | append: section.id | append: '-' | append: block.id
+          assign comment_author_label = 'blog.comment_form_name' | t
+          assign comment_email_label = 'blog.comment_form_email' | t
+          assign comment_body_label = 'blog.comment_form_body' | t
+        %}
+        {% render 'form-field', id: comment_author_id, name: 'comment[author]', label: comment_author_label, value: form.author, placeholder: block.settings.name_placeholder, autocomplete: 'name', required: true, hide_label: true, class: 'article-comments__field' %}
+        {% render 'form-field', id: comment_email_id, name: 'comment[email]', label: comment_email_label, type: 'email', value: form.email, placeholder: block.settings.email_placeholder, autocomplete: 'email', required: true, hide_label: true, class: 'article-comments__field' %}
+        {% render 'form-field', id: comment_body_id, name: 'comment[body]', label: comment_body_label, control: 'textarea', value: form.body, placeholder: block.settings.comment_placeholder, required: true, hide_label: true, class: 'article-comments__field article-comments__field--body' %}
         {% if blog.moderated? %}<p class="article-comments__note">{{ 'blog.comment_moderation_notice' | t }}</p>{% endif %}
         <button class="btn btn--primary" type="submit">{{ 'blog.comment_form_submit' | t }}</button>
       </div>
@@ -64,9 +63,7 @@
   .article-comments__form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); column-gap: 12px; row-gap: 20px; width: 100%; }
   .article-comments__field { display: grid; gap: 8px; }
   .article-comments__field--body { grid-column: 1 / -1; }
-  .article-comments__form input, .article-comments__form textarea { box-sizing: border-box; width: 100%; border: var(--input-border-width) solid var(--input-border-color); border-radius: var(--input-radius); background: transparent; }
-  .article-comments__form input { min-height: 44px; padding: 0 12px; }
-  .article-comments__form textarea { min-height: 148px; padding: 12px; resize: vertical; }
+  .article-comments__form textarea { min-height: 148px; resize: vertical; }
   .article-comments__note { grid-column: 1 / -1; margin: 0; color: var(--body-color); font-size: var(--font-body-sm); text-align: left; }
   .article-comments__form .btn { grid-column: 1 / -1; justify-self: center; }
   @media (max-width: 767.98px) {
