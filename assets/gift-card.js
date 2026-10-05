@@ -14,16 +14,19 @@
   button.hidden = false;
   const label = button.textContent;
   let feedbackTimer;
+  const showSuccess = () => {
+    button.textContent = button.dataset.copied;
+    status.textContent = button.dataset.copied;
+    feedbackTimer = setTimeout(() => {
+      button.textContent = label;
+      status.textContent = '';
+    }, 3000);
+  };
   button.addEventListener('click', async () => {
     clearTimeout(feedbackTimer);
     try {
       await navigator.clipboard.writeText(button.dataset.code);
-      button.textContent = button.dataset.copied;
-      status.textContent = button.dataset.copied;
-      feedbackTimer = setTimeout(() => {
-        button.textContent = label;
-        status.textContent = '';
-      }, 3000);
+      showSuccess();
     } catch {
       const code = root.querySelector('#GiftCardCode');
       const selection = window.getSelection();
@@ -32,7 +35,16 @@
       selection.removeAllRanges();
       selection.addRange(range);
       code.focus();
-      status.textContent = button.dataset.error;
+      // Theme Editor iframes can deny Clipboard API but allow user-initiated copy.
+      let copied = false;
+      try { copied = document.execCommand('copy'); } catch { /* Manual selection stays available. */ }
+      if (copied) {
+        selection.removeAllRanges();
+        button.focus();
+        showSuccess();
+      } else {
+        status.textContent = button.dataset.error;
+      }
     }
   });
 })();
