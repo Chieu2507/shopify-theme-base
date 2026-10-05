@@ -22,16 +22,19 @@
   style="--blog-archive-columns: {{ blog_archive_columns }}; --blog-archive-gap-horizontal: {{ blog_archive_gap_horizontal }}px; --blog-archive-gap-vertical: {{ blog_archive_gap_vertical }}px; --blog-archive-gap-mobile: {{ blog_archive_gap_mobile }}px;"
   {{ block.shopify_attributes }}
 >
-  {% content_for 'block', type: 'featured-post', id: 'featured-post' %}
+  {% capture blog_archive_featured %}{% content_for 'block', type: 'featured-post', id: 'featured-post' %}{% endcapture %}
+  {% assign blog_archive_featured = blog_archive_featured | strip %}
+  {% assign blog_archive_offset = 0 %}
+  {% if blog_archive_featured != blank and blog_archive_source.articles != blank %}{% assign blog_archive_offset = 1 %}{{ blog_archive_featured }}{% endif %}
   <div class="blog-archive-list__items">
     {% if blog_archive_source != blank and blog_archive_source.articles != blank %}
-      {% for blog_archive_article in blog_archive_source.articles offset: 1 %}
+      {% for blog_archive_article in blog_archive_source.articles offset: blog_archive_offset %}
         <div class="blog-archive-list__item">
           {% content_for 'block', type: 'blog-card', id: 'blog-card', closest.article: blog_archive_article, placeholder: false %}
         </div>
       {% endfor %}
-    {% elsif request.design_mode %}
-      <div class="blog-archive-list__empty">Add articles to this blog to preview the archive.</div>
+    {% else %}
+      <div class="blog-archive-list__empty" role="status">{{ 'blog.archive_empty' | t }}</div>
     {% endif %}
   </div>
   {% content_for 'block', type: 'pagination', id: 'pagination' %}
@@ -83,7 +86,7 @@
     {
       "type": "select",
       "id": "columns",
-      "label": "Columns",
+      "label": "Desktop columns",
       "options": [
         { "value": "2", "label": "2" },
         { "value": "3", "label": "3" },
@@ -95,7 +98,7 @@
     {
       "type": "range",
       "id": "gap_horizontal",
-      "label": "Horizontal gap",
+      "label": "Desktop column gap",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -105,7 +108,7 @@
     {
       "type": "range",
       "id": "gap_vertical",
-      "label": "Vertical gap",
+      "label": "Desktop row gap",
       "min": 0,
       "max": 100,
       "step": 1,
@@ -115,7 +118,7 @@
     {
       "type": "range",
       "id": "gap_mobile",
-      "label": "Vertical gap mobile",
+      "label": "Mobile row gap",
       "min": 0,
       "max": 100,
       "step": 1,

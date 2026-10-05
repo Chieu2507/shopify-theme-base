@@ -1,35 +1,183 @@
 {% doc %}
-  Renders native Shopify pagination for the blog article list.
+  Renders native Shopify blog pagination using shared button tokens.
+  The owning blog section must render this block inside its paginate tag.
 {% enddoc %}
-
 {% # theme-check-disable UndefinedObject %}
+{% liquid
+  assign blog_pagination_variant = block.settings.style | default: 'primary'
+  if blog_pagination_variant == 'outline'
+    assign blog_pagination_variant = 'secondary'
+  elsif blog_pagination_variant == 'text'
+    assign blog_pagination_variant = 'tertiary'
+  endif
+  assign blog_pagination_previous = 'collection.previous' | t
+  assign blog_pagination_next = 'collection.next' | t
+  assign blog_pagination_current = paginate.current_page | append: ''
+%}
 {% if paginate.pages > 1 %}
-  <nav class="blog-pagination blog-pagination--{{ block.settings.style }} blog-pagination--height-{{ block.settings.height }}" aria-label="Pagination" style="--blog-pagination-padding-top: {{ block.settings.padding_top }}px; --blog-pagination-padding-bottom: {{ block.settings.padding_bottom }}px; --blog-pagination-padding-left: {{ block.settings.padding_left }}px; --blog-pagination-padding-right: {{ block.settings.padding_right }}px;" {{ block.shopify_attributes }}>
-    {{ paginate | default_pagination }}
+  <nav class="blog-pagination blog-pagination--{{ block.settings.style }} blog-pagination--height-{{ block.settings.height }}" aria-label="{{ 'accessibility.pagination' | t }}" style="--blog-pagination-padding-top: {{ block.settings.padding_top }}px; --blog-pagination-padding-bottom: {{ block.settings.padding_bottom }}px; --blog-pagination-padding-left: {{ block.settings.padding_left }}px; --blog-pagination-padding-right: {{ block.settings.padding_right }}px;{% if block.settings.customize_mobile_padding %} --blog-pagination-padding-top-mobile: {{ block.settings.padding_top_mobile }}px; --blog-pagination-padding-bottom-mobile: {{ block.settings.padding_bottom_mobile }}px;{% endif %}" {{ block.shopify_attributes }}>
+    {% if paginate.previous %}{% render 'theme-button', label: blog_pagination_previous, url: paginate.previous.url, variant: 'tertiary', class: 'blog-pagination__button' %}{% endif %}
+    {% for part in paginate.parts %}
+      {% if part.is_link %}
+        {% render 'theme-button', label: part.title, url: part.url, variant: 'tertiary', class: 'blog-pagination__button' %}
+      {% elsif part.title == blog_pagination_current %}
+        <span class="blog-pagination__button btn btn-{{ blog_pagination_variant }}" aria-current="page">{{ part.title }}</span>
+      {% else %}<span class="blog-pagination__ellipsis">{{ part.title }}</span>{% endif %}
+    {% endfor %}
+    {% if paginate.next %}{% render 'theme-button', label: blog_pagination_next, url: paginate.next.url, variant: 'tertiary', class: 'blog-pagination__button' %}{% endif %}
   </nav>
 {% elsif request.design_mode %}
-  <div class="blog-pagination blog-pagination--empty" {{ block.shopify_attributes }}>Pagination appears when this blog has more than one page.</div>
+  <div class="blog-pagination blog-pagination--empty" {{ block.shopify_attributes }}>{{ 'blog.pagination_empty' | t }}</div>
 {% endif %}
 {% # theme-check-enable UndefinedObject %}
-
 {% stylesheet %}
-  .blog-pagination { display: flex; justify-content: center; padding-top: var(--blog-pagination-padding-top, 0px); padding-right: var(--blog-pagination-padding-right, 0px); padding-bottom: var(--blog-pagination-padding-bottom, 0px); padding-left: var(--blog-pagination-padding-left, 0px); }
-  .blog-pagination a, .blog-pagination span { display: inline-flex; align-items: center; justify-content: center; min-width: 2.5rem; min-height: 2.5rem; padding-inline: 0.75rem; color: inherit; }
-  .blog-pagination--empty { opacity: 0.65; font-size: 0.875rem; }
+  .blog-pagination { display: flex; flex-wrap: wrap; align-items: center; justify-content: center; gap: 8px; padding: var(--blog-pagination-padding-top, 0px) var(--blog-pagination-padding-right, 0px) var(--blog-pagination-padding-bottom, 0px) var(--blog-pagination-padding-left, 0px); }
+  .blog-pagination__button { --button-padding-inline-desktop: 12px; --button-padding-inline-mobile: 12px; min-width: var(--blog-pagination-height, var(--button-height)); min-height: var(--blog-pagination-height, var(--button-height)); }
+  .blog-pagination--outline [aria-current] { --button-background: transparent; --button-border: currentColor; --button-border-width: 1px; }
+  .blog-pagination--height-extra-small { --blog-pagination-height: 28px; }
+  .blog-pagination--height-small { --blog-pagination-height: 36px; }
+  .blog-pagination--height-medium { --blog-pagination-height: 44px; }
+  .blog-pagination--height-large { --blog-pagination-height: 52px; }
+  .blog-pagination--height-extra-large { --blog-pagination-height: 60px; }
+  .blog-pagination--empty { opacity: 0.65; font-size: var(--font-body-sm); }
+  @media (max-width: 767.98px) {
+    .blog-pagination { padding-top: var(--blog-pagination-padding-top-mobile, var(--blog-pagination-padding-top)); padding-bottom: var(--blog-pagination-padding-bottom-mobile, var(--blog-pagination-padding-bottom)); }
+    .blog-pagination__button { min-width: var(--blog-pagination-height, var(--button-height-mobile)); min-height: var(--blog-pagination-height, var(--button-height-mobile)); }
+  }
 {% endstylesheet %}
-
 {% schema %}
 {
   "name": "Pagination",
   "tag": null,
   "settings": [
-    { "type": "select", "id": "style", "label": "Style", "options": [ { "value": "primary", "label": "Primary" }, { "value": "secondary", "label": "Secondary" }, { "value": "outline", "label": "Outline" }, { "value": "text", "label": "Text" } ], "default": "primary" },
-    { "type": "select", "id": "height", "label": "Height", "options": [ { "value": "inherit", "label": "Inherit" }, { "value": "small", "label": "Small" }, { "value": "medium", "label": "Medium" }, { "value": "large", "label": "Large" } ], "default": "inherit" },
-    { "type": "header", "content": "Padding" },
-    { "type": "range", "id": "padding_top", "label": "Top", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
-    { "type": "range", "id": "padding_bottom", "label": "Bottom", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
-    { "type": "range", "id": "padding_left", "label": "Left", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 },
-    { "type": "range", "id": "padding_right", "label": "Right", "min": 0, "max": 100, "step": 1, "unit": "px", "default": 0 }
+    {
+      "type": "select",
+      "id": "style",
+      "label": "Style",
+      "options": [
+        {
+          "value": "primary",
+          "label": "Primary"
+        },
+        {
+          "value": "secondary",
+          "label": "Secondary"
+        },
+        {
+          "value": "outline",
+          "label": "Outline"
+        },
+        {
+          "value": "text",
+          "label": "Text"
+        }
+      ],
+      "default": "primary"
+    },
+    {
+      "type": "select",
+      "id": "height",
+      "label": "Height",
+      "options": [
+        {
+          "value": "inherit",
+          "label": "Inherit"
+        },
+        {
+          "value": "extra-small",
+          "label": "Extra small"
+        },
+        {
+          "value": "small",
+          "label": "Small"
+        },
+        {
+          "value": "medium",
+          "label": "Medium"
+        },
+        {
+          "value": "large",
+          "label": "Large"
+        },
+        {
+          "value": "extra-large",
+          "label": "Extra large"
+        }
+      ],
+      "default": "inherit"
+    },
+    {
+      "type": "header",
+      "content": "Padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "Top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "Bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_left",
+      "label": "Left padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "range",
+      "id": "padding_right",
+      "label": "Right padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_padding",
+      "label": "t:labels.customize_mobile_padding",
+      "default": false
+    },
+    {
+      "type": "range",
+      "id": "padding_top_mobile",
+      "label": "Mobile top padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom_mobile",
+      "label": "Mobile bottom padding",
+      "min": 0,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 0,
+      "visible_if": "{{ block.settings.customize_mobile_padding }}"
+    }
   ],
   "presets": [
     {
