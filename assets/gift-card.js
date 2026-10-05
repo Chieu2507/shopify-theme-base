@@ -28,21 +28,28 @@
       await navigator.clipboard.writeText(button.dataset.code);
       showSuccess();
     } catch {
-      const code = root.querySelector('#GiftCardCode');
-      const selection = window.getSelection();
-      const range = document.createRange();
-      range.selectNodeContents(code);
-      selection.removeAllRanges();
-      selection.addRange(range);
-      code.focus();
       // Theme Editor iframes can deny Clipboard API but allow user-initiated copy.
+      const input = document.createElement('textarea');
+      input.value = button.dataset.code;
+      input.setAttribute('readonly', '');
+      input.style.position = 'fixed';
+      input.style.opacity = '0';
+      document.body.appendChild(input);
+      input.select();
       let copied = false;
       try { copied = document.execCommand('copy'); } catch { /* Manual selection stays available. */ }
+      input.remove();
       if (copied) {
-        selection.removeAllRanges();
         button.focus();
         showSuccess();
       } else {
+        const code = root.querySelector('#GiftCardCode');
+        const selection = window.getSelection();
+        const range = document.createRange();
+        range.selectNodeContents(code);
+        selection.removeAllRanges();
+        selection.addRange(range);
+        code.focus();
         status.textContent = button.dataset.error;
       }
     }
