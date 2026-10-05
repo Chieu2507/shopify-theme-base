@@ -7,6 +7,7 @@
 
   An empty blog renders the same placeholder cards in the editor and storefront.
 
+  @param {article} [excluded_article] - Current article omitted from related posts
   @param {boolean} [use_section_blog] - Use the supplied section blog, including an intentionally blank selection
 
   @example
@@ -30,6 +31,9 @@
   assign blog_list_is_placeholder = false
   if blog_list_source != blank and blog_list_source.articles != blank
     assign blog_list_items = blog_list_source.articles
+    if excluded_article != blank
+      assign blog_list_items = blog_list_items | reject: 'id', excluded_article.id
+    endif
   else
     assign blog_list_placeholder_count = blog_list_max_posts
     assign blog_list_items = (1..blog_list_placeholder_count)
