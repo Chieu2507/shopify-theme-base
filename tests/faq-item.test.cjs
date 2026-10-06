@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const path = require('node:path');
 const { loadLiquid, stripShopifyMetadata } = require('./helpers/liquid-engine.cjs');
 const Liquid = loadLiquid();
-// Exercise the row's Liquid visibility guard with the nested HTML supplied by
+// Exercise the row's Liquid rendering with the nested HTML supplied by
 // Shopify content_for. The shared disclosure has its own behavior tests.
 const source = stripShopifyMetadata(fs.readFileSync(path.join(__dirname, '../blocks/faq_item.liquid'), 'utf8'))
   .replace(/{%\s*content_for 'blocks'\s*%}/g, '{{ nested_answer }}')
@@ -25,9 +25,11 @@ test('legacy inline answer remains supported', async () => {
   assert.match(await render({ question: 'Shipping?', answer: '<p>Three days.</p>' }), /<details>[\s\S]*Three days/);
 });
 
-test('missing and empty nested answers omit inert storefront rows but retain editor rows', async () => {
-  assert.doesNotMatch(await render({ question: 'Empty?' }), /<details>/);
-  assert.doesNotMatch(await render({ question: 'Empty?' }, [{ id: 'answer' }], '  \n  '), /<details>/);
+test('missing and empty answers retain storefront questions with editor-only placeholders', async () => {
+  const empty = await render({ question: 'Empty?' });
+  assert.match(empty, /<details>[\s\S]*Empty\?/);
+  assert.doesNotMatch(empty, /Share the answer/);
+  assert.match(await render({ question: 'Empty?' }, [{ id: 'answer' }], '  \n  '), /<details>/);
   assert.match(await render({ question: 'Empty?' }, [], '', true), /<details>[\s\S]*Share the answer/);
   assert.match(await render({ question: 'Empty?' }, [{ id: 'answer' }], '', true), /<details>/);
 });
