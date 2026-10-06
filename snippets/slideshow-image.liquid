@@ -3,6 +3,7 @@
   Fixed-height mobile panoramas are cropped on the CDN before downloading,
   preserving the existing centered cover composition at both mobile bands.
   Images with a merchant focal point retain their original source/crop.
+  Crop density is capped by source resolution so CDN requests never upscale.
 
   @param {image} image - Desktop artwork
   @param {image} [mobile_image] - Mobile artwork; falls back to desktop
@@ -24,7 +25,6 @@
       assign crop_mobile_panorama = true
     endif
   endif
-  assign double_height = frame_height | times: 2
   assign desktop_media = '(min-width: 768px)'
   capture desktop_srcset
     echo image | image_url: width: 750
@@ -40,19 +40,43 @@
   endcapture
   capture narrow_srcset
     if crop_mobile_panorama
-      echo mobile_artwork | image_url: width: 480, height: frame_height, crop: 'center'
-      echo ' 1x, '
-      echo mobile_artwork | image_url: width: 960, height: double_height, crop: 'center'
-      echo ' 2x'
+      assign available_density = mobile_artwork.height | times: 1.0 | divided_by: frame_height | at_most: 3
+      for density in (1..3)
+        assign crop_density = density | at_most: available_density
+        assign crop_width = 480 | times: crop_density | round
+        assign crop_height = frame_height | times: crop_density | round
+        unless forloop.first
+          echo ', '
+        endunless
+        echo mobile_artwork | image_url: width: crop_width, height: crop_height, crop: 'center'
+        echo ' '
+        echo crop_density
+        echo 'x'
+        if crop_density == available_density
+          break
+        endif
+      endfor
     endif
   endcapture
   capture mobile_srcset
     if crop_mobile_panorama
-      echo mobile_artwork | image_url: width: 768, height: frame_height, crop: 'center'
-      echo ' 1x, '
-      echo mobile_artwork | image_url: width: 1536, height: double_height, crop: 'center'
-      echo ' 2x'
-    elsif frame_height > 0
+      assign available_density = mobile_artwork.height | times: 1.0 | divided_by: frame_height | at_most: 3
+      for density in (1..3)
+        assign crop_density = density | at_most: available_density
+        assign crop_width = 768 | times: crop_density | round
+        assign crop_height = frame_height | times: crop_density | round
+        unless forloop.first
+          echo ', '
+        endunless
+        echo mobile_artwork | image_url: width: crop_width, height: crop_height, crop: 'center'
+        echo ' '
+        echo crop_density
+        echo 'x'
+        if crop_density == available_density
+          break
+        endif
+      endfor
+    else
       echo mobile_artwork | image_url: width: 750
       echo ' 750w, '
       echo mobile_artwork | image_url: width: 1100
@@ -63,12 +87,6 @@
       echo ' 2000w, '
       echo mobile_artwork | image_url: width: 2400
       echo ' 2400w'
-    else
-      comment
-        Adapt/preset frames have no known pixel height in Liquid. Keep their
-        previous 1200px source rather than undersizing a cover image.
-      endcomment
-      echo mobile_artwork | image_url: width: 1200
     endif
   endcapture
   assign mobile_sizes = '100vw'
