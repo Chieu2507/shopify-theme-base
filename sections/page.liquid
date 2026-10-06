@@ -1,26 +1,243 @@
-{% comment %}
-  This section is used in the page template to render store pages like About us
-  or Contact us.
+{% liquid
+  assign page_scheme = section.settings.color_scheme.id | default: section.settings.color_scheme | default: 'scheme-1' | handleize
+  assign page_background = section.settings.background_color | default: section.settings.color_scheme.settings.background | default: settings.color_schemes[page_scheme].settings.background
+  assign page_container = 'page-width'
+  if section.settings.section_width == 'full_width'
+    assign page_container = 'full-width'
+  endif
+  assign page_alignment = 'start'
+  case section.settings.alignment
+    when 'center'
+      assign page_alignment = 'center'
+    when 'right'
+      assign page_alignment = 'end'
+  endcase
+  assign page_alignment_mobile = page_alignment
+  if section.settings.customize_mobile_alignment
+    assign page_alignment_mobile = 'start'
+    case section.settings.alignment_mobile
+      when 'center'
+        assign page_alignment_mobile = 'center'
+      when 'right'
+        assign page_alignment_mobile = 'end'
+    endcase
+  endif
+  assign page_title_tag = section.settings.html_tag | default: 'h1'
+  unless page_title_tag == 'div' or page_title_tag == 'h1' or page_title_tag == 'h2' or page_title_tag == 'h3' or page_title_tag == 'h4' or page_title_tag == 'h5' or page_title_tag == 'h6'
+    assign page_title_tag = 'h1'
+  endunless
+%}
+{% capture page_heading_size %}{% render 'heading-size-token', size: section.settings.heading_size, fallback: 'xl' %}{% endcapture %}
 
-  https://shopify.dev/docs/storefronts/themes/architecture/templates/page
-{% endcomment %}
+{% style %}
+  #shopify-section-{{ section.id }} {
+    background-color: {% if page_background != blank %}{{ page_background }}{% else %}var(--background-color){% endif %};
+  }
+{% endstyle %}
 
-<div class="container page-width section-color-scope {{ section.settings.color_scheme | default: 'scheme-1' }}">
-  <h1 class="heading-text heading-xl">{{ page.title }}</h1>
-
-  <div class="body-text body-md rte">{{ page.content }}</div>
+<div class="page-content section-spacing color-scheme section-color-scope {{ page_scheme }}" style="--flex-align: {{ page_alignment }}; --flex-align-mobile: {{ page_alignment_mobile }}; --page-padding-top: {{ section.settings.padding_top | default: 50 }}px; --page-padding-bottom: {{ section.settings.padding_bottom | default: 50 }}px;{% if section.settings.background_color != blank %} --page-background: {{ section.settings.background_color | escape }};{% endif %}">
+  <div class="container {{ page_container }}">
+    <div class="page-content__inner align-content">
+      {% if section.settings.show_title %}
+        <{{ page_title_tag }} class="page-content__title heading-text heading-{{ page_heading_size | strip }}">{{ page.title | escape }}</{{ page_title_tag }}>
+      {% endif %}
+      {% if page.content != blank %}
+        <div class="page-content__body body-text body-md rte">{{ page.content }}</div>
+      {% endif %}
+    </div>
+  </div>
 </div>
+
+{% stylesheet %}
+  .page-content {
+    padding-block: var(--page-padding-top, 50px) var(--page-padding-bottom, 50px);
+    background-color: var(--page-background, var(--background-color));
+  }
+  .page-content__inner { gap: var(--layout-grid-gap, 1rem); overflow-wrap: anywhere; }
+  .page-content__title { max-width: 100%; margin: 0; }
+  .page-content__body { width: 100%; min-width: 0; }
+  .page-content__body :where(img, video, iframe, table) { max-width: 100%; }
+  .page-content__body :where(img, video) { height: auto; }
+  .page-content__body table { display: block; overflow-x: auto; }
+  .page-content__body :where(ul, ol) { padding-inline-start: 1.5em; }
+  .page-content__body > :first-child { margin-top: 0; }
+  .page-content__body > :last-child { margin-bottom: 0; }
+  @media (min-width: 768px) and (max-width: 1149.98px) {
+    .page-content { padding-block: calc(var(--page-padding-top, 50px) * .75) calc(var(--page-padding-bottom, 50px) * .75); }
+  }
+  @media (max-width: 767.98px) {
+    .page-content { padding-block: calc(var(--page-padding-top, 50px) * .5) calc(var(--page-padding-bottom, 50px) * .5); }
+  }
+{% endstylesheet %}
 
 {% schema %}
 {
   "name": "t:general.page",
-  "enabled_on": { "templates": ["page"] },
+  "class": "section-page",
+  "enabled_on": {
+    "templates": [
+      "page"
+    ]
+  },
   "settings": [
+    {
+      "type": "header",
+      "content": "t:general.content"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_title",
+      "label": "t:labels.show_page_title",
+      "default": true
+    },
+    {
+      "type": "select",
+      "id": "heading_size",
+      "label": "t:labels.heading_size",
+      "options": [
+        {
+          "value": "display",
+          "label": "t:options.heading_size.display"
+        },
+        {
+          "value": "xl",
+          "label": "t:options.heading_size.xl"
+        },
+        {
+          "value": "lg",
+          "label": "t:options.heading_size.lg"
+        },
+        {
+          "value": "md",
+          "label": "t:options.heading_size.md"
+        },
+        {
+          "value": "sm",
+          "label": "t:options.heading_size.sm"
+        },
+        {
+          "value": "xs",
+          "label": "t:options.heading_size.xs"
+        }
+      ],
+      "default": "xl",
+      "visible_if": "{{ section.settings.show_title }}"
+    },
+    {
+      "type": "select",
+      "id": "html_tag",
+      "label": "t:labels.html_tag",
+      "options": [
+        {
+          "value": "div",
+          "label": "t:options.html_tag.paragraph"
+        },
+        {
+          "value": "h1",
+          "label": "t:options.html_tag.h1"
+        },
+        {
+          "value": "h2",
+          "label": "t:options.html_tag.h2"
+        },
+        {
+          "value": "h3",
+          "label": "t:options.html_tag.h3"
+        },
+        {
+          "value": "h4",
+          "label": "t:options.html_tag.h4"
+        },
+        {
+          "value": "h5",
+          "label": "t:options.html_tag.h5"
+        },
+        {
+          "value": "h6",
+          "label": "t:options.html_tag.h6"
+        }
+      ],
+      "default": "h1",
+      "visible_if": "{{ section.settings.show_title }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:labels.section_width",
+      "options": [
+        {
+          "value": "page_width",
+          "label": "t:options.section_width.page_width"
+        },
+        {
+          "value": "full_width",
+          "label": "t:options.section_width.full_width"
+        }
+      ],
+      "default": "page_width"
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment",
+      "label": "t:labels.alignment",
+      "default": "left"
+    },
+    {
+      "type": "checkbox",
+      "id": "customize_mobile_alignment",
+      "label": "t:labels.customize_mobile_alignment",
+      "default": false
+    },
+    {
+      "type": "text_alignment",
+      "id": "alignment_mobile",
+      "label": "t:labels.mobile_alignment",
+      "default": "left",
+      "visible_if": "{{ section.settings.customize_mobile_alignment }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.appearance"
+    },
     {
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "t:labels.color_scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "alpha": true,
+      "label": "t:labels.background_color"
+    },
+    {
+      "type": "header",
+      "content": "t:general.section_padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:social_links_settings.top_padding",
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 50
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:social_links_settings.bottom_padding",
+      "min": 0,
+      "max": 200,
+      "step": 2,
+      "unit": "px",
+      "default": 50
     }
   ]
 }
