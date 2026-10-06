@@ -1,8 +1,11 @@
 {% doc %}Fixed Search results composition; collection toolbar consumes explicit native Search context.{% enddoc %}
+{% assign search_results_query = search.terms | strip %}
+{% if search.performed and search_results_query != blank %}
 <collection-facets class="main-collection__facets search-page__results" data-section-id="{{ section.id }}" style="--collection-gap:{{ block.settings.gap }}px;--search-results-gap:{{ block.settings.gap }}px;--search-results-gap-mobile:{{ block.settings.gap_mobile }}px;--search-results-padding-top:{{ block.settings.padding_top }}px;--search-results-padding-bottom:{{ block.settings.padding_bottom }}px;{% if block.settings.customize_mobile_padding %}--search-results-padding-top-mobile:{{ block.settings.padding_top_mobile }}px;--search-results-padding-bottom-mobile:{{ block.settings.padding_bottom_mobile }}px;{% endif %}{% unless block.settings.tab_font == 'default' %}--search-tab-font-family:var(--font-{{ block.settings.tab_font }}-family);{% endunless %}" {{ block.shopify_attributes }}>
- {% if search.performed or request.design_mode %}{% content_for 'block', type: '_collection-toolbar', id: 'toolbar', search_resource: search %}{% endif %}
+ {% content_for 'block', type: '_collection-toolbar', id: 'toolbar', search_resource: search %}
  {% content_for 'block', type: '_search-products', id: 'products', results_per_page: block.settings.results_per_page %}
 </collection-facets>
+{% endif %}
 {% stylesheet %}
 .main-collection--blocks .main-collection__facets.search-page__results { padding-block: var(--search-results-padding-top,0px) var(--search-results-padding-bottom,0px); row-gap: var(--search-results-gap,50px); }
 .search-page__results .search-page__summary { margin-block: 0 var(--search-results-gap,50px); }
