@@ -13,6 +13,17 @@
   assign search_page_label = 'search.title' | t
   assign search_page_placeholder = 'search.placeholder' | t
 
+  assign escaped_search_terms = search.terms | escape
+  assign search_input_id = 'SearchPageInput-' | append: section.id
+  assign search_types = search.types | join: ','
+  assign search_sort = search.sort_by | default: search.default_sort_by
+%}
+
+{% style %}
+  #shopify-section-{{ section.id }} { background: {{ section.settings.background_color | default: section.settings.color_scheme.settings.background }}; }
+{% endstyle %}
+{% paginate search.results by section.settings.results_per_page %}
+{% liquid
   assign product_count = 0
   assign collection_count = 0
   assign page_count = 0
@@ -42,12 +53,12 @@
     endif
   endif
 %}
-
 <div
   class="section-spacing search-page__spacing color-scheme section-color-scope {{ search_scheme }}"
   data-search-page
+  style="--search-padding-top: {{ section.settings.padding_top }}px; --search-padding-bottom: {{ section.settings.padding_bottom }}px; --search-columns: {{ section.settings.columns_desktop }}; --search-columns-mobile: {{ section.settings.columns_mobile }};"
 >
-  <div class="container page-width search-page__container">
+  <div class="container {% if section.settings.section_width == 'full' %}full-width{% else %}page-width{% endif %} search-page__container">
     <div class="search-page__header">
       <h1 class="search-page__title heading-text heading-xl heading-mobile-lg">{{ 'search.title' | t }}</h1>
 
@@ -56,35 +67,51 @@
           {% render 'icon', icon: 'magnifying-glass', bare: true %}
         </button>
         {% render 'form-field',
-          id: 'SearchPageInput',
+          id: search_input_id,
           name: 'q',
           label: search_page_label,
           type: 'search',
           value: search.terms,
           placeholder: search_page_placeholder,
+          hide_label: true,
           class: 'search-page__field body-text body-xl'
         %}
+        <button class="search-page__clear overlay-close" type="button" data-search-page-clear aria-label="{{ 'search.clear' | t | escape }}" hidden>
+          {% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}
+        </button>
+        <input type="hidden" name="options[prefix]" value="last">
+        {% if search_types != blank %}<input type="hidden" name="type" value="{{ search_types | escape }}">{% endif %}
       </form>
     </div>
 
+    {% unless search.performed %}
+      {% if section.settings.show_recently_viewed %}
+        <div class="search-page__recently-viewed" data-recently-viewed data-limit="{{ section.settings.recently_viewed_limit }}" hidden>
+          <h2 class="heading-text heading-md">{{ 'search.recently_viewed' | t }}</h2>
+          <div class="search-page__product-grid" data-recently-viewed-grid></div>
+        </div>
+      {% endif %}
+    {% endunless %}
     {% if search.performed %}
+      {% render 'search-filters', search: search, section: section, search_types: search_types, sort_by: search_sort %}
       {% if search.results_count == 0 %}
-        <p class="search-page__empty body-text body-md">{{ 'search.no_results_html' | t: terms: search.terms }}</p>
+        <p class="search-page__empty body-text body-md">{{ 'search.no_results_html' | t: terms: escaped_search_terms }}</p>
       {% else %}
         <p class="search-page__summary body-text body-md" role="status">
-          {{ 'search.results_for_html' | t: terms: search.terms, count: search.results_count }}
+          {{ 'search.results_for_html' | t: terms: escaped_search_terms, count: search.results_count }}
         </p>
 
         <div class="search-page__results">
+
           <div class="search-page__tabs scrollbar scrollbar--horizontal" role="tablist" aria-label="{{ 'search.title' | t | escape }}">
             {% if product_count > 0 %}
               <button
-                id="SearchPageTabProducts"
+                id="SearchPageTabProducts-{{ section.id }}"
                 class="search-page__tab eyebrow-text"
                 type="button"
                 role="tab"
                 aria-selected="{% if active_result_type == 'products' %}true{% else %}false{% endif %}"
-                aria-controls="SearchPagePanelProducts"
+                aria-controls="SearchPagePanelProducts-{{ section.id }}"
                 data-search-page-tab="products"
               >
                 {{ 'search.products' | t }}
@@ -92,12 +119,12 @@
             {% endif %}
             {% if collection_count > 0 %}
               <button
-                id="SearchPageTabCollections"
+                id="SearchPageTabCollections-{{ section.id }}"
                 class="search-page__tab eyebrow-text"
                 type="button"
                 role="tab"
                 aria-selected="{% if active_result_type == 'collections' %}true{% else %}false{% endif %}"
-                aria-controls="SearchPagePanelCollections"
+                aria-controls="SearchPagePanelCollections-{{ section.id }}"
                 data-search-page-tab="collections"
               >
                 {{ 'search.collections' | t }}
@@ -105,12 +132,12 @@
             {% endif %}
             {% if page_count > 0 or article_count > 0 %}
               <button
-                id="SearchPageTabPages"
+                id="SearchPageTabPages-{{ section.id }}"
                 class="search-page__tab eyebrow-text"
                 type="button"
                 role="tab"
                 aria-selected="{% if active_result_type == 'pages' %}true{% else %}false{% endif %}"
-                aria-controls="SearchPagePanelPages"
+                aria-controls="SearchPagePanelPages-{{ section.id }}"
                 data-search-page-tab="pages"
               >
                 {{ 'search.pages' | t }}
@@ -118,15 +145,15 @@
             {% endif %}
           </div>
 
-          {% paginate search.results by 20 %}
+
             {% if product_count > 0 %}
               <div
-                id="SearchPagePanelProducts"
+                id="SearchPagePanelProducts-{{ section.id }}"
                 class="search-page__panel"
                 role="tabpanel"
-                aria-labelledby="SearchPageTabProducts"
+                aria-labelledby="SearchPageTabProducts-{{ section.id }}"
                 data-search-page-panel="products"
-                {% unless active_result_type == 'products' %}hidden{% endunless %}
+
               >
                 <div class="search-page__product-grid">
                   {% for result in search.results %}
@@ -140,12 +167,12 @@
 
             {% if collection_count > 0 %}
               <div
-                id="SearchPagePanelCollections"
+                id="SearchPagePanelCollections-{{ section.id }}"
                 class="search-page__panel"
                 role="tabpanel"
-                aria-labelledby="SearchPageTabCollections"
+                aria-labelledby="SearchPageTabCollections-{{ section.id }}"
                 data-search-page-panel="collections"
-                {% unless active_result_type == 'collections' %}hidden{% endunless %}
+
               >
                 <div class="search-page__collection-grid">
                   {% for result in search.results %}
@@ -169,12 +196,12 @@
 
             {% if page_count > 0 or article_count > 0 %}
               <div
-                id="SearchPagePanelPages"
+                id="SearchPagePanelPages-{{ section.id }}"
                 class="search-page__panel"
                 role="tabpanel"
-                aria-labelledby="SearchPageTabPages"
+                aria-labelledby="SearchPageTabPages-{{ section.id }}"
                 data-search-page-panel="pages"
-                {% unless active_result_type == 'pages' %}hidden{% endunless %}
+
               >
                 <ul class="search-page__page-list">
                   {% for result in search.results %}
@@ -198,17 +225,19 @@
                 {{ paginate | default_pagination }}
               </nav>
             {% endif %}
-          {% endpaginate %}
+
         </div>
       {% endif %}
     {% endif %}
   </div>
 </div>
+{% endpaginate %}
+<script src="{{ 'search-page.js' | asset_url }}" defer></script>
 
 {% stylesheet %}
   .search-page__spacing {
     min-height: 50vh;
-    padding-block: clamp(3rem, 7vw, 7rem);
+    padding-block: var(--search-padding-top, 60px) var(--search-padding-bottom, 60px);
     background-color: var(--background-color);
   }
 
@@ -231,15 +260,22 @@
     gap: 1rem;
     min-height: 4.75rem;
     padding-inline: 0;
-    border-bottom: 1px solid var(--border-color);
+    padding-inline: 1.25rem;
+    border: 1px solid var(--border-color);
+    border-radius: var(--input-radius);
+  }
+
+  .search-page__form:focus-within {
+    outline: 2px solid currentColor;
+    outline-offset: 3px;
   }
 
   .search-page__submit {
     display: inline-flex;
     align-items: center;
     justify-content: center;
-    width: 1.5rem;
-    height: 1.5rem;
+    width: 44px;
+    height: 44px;
     flex: 0 0 auto;
     padding: 0;
     border: 0;
@@ -248,9 +284,12 @@
   }
 
   .search-page__submit svg {
-    width: 100%;
-    height: 100%;
+    width: 1.5rem;
+    height: 1.5rem;
   }
+
+  .search-page__clear { flex: 0 0 auto; }
+  .search-page__clear[hidden] { display: none; }
 
   .search-page__field {
     min-width: 0;
@@ -269,13 +308,12 @@
   }
 
   .search-page__field .form__control {
-    width: auto !important;
+    width: 100% !important;
     min-width: 0 !important;
     min-height: 0 !important;
     padding: 0 !important;
     border: 0 !important;
     border-radius: 0 !important;
-    outline: 0;
     background: transparent !important;
     color: inherit;
     font: inherit;
@@ -346,7 +384,7 @@
   .search-page__product-grid,
   .search-page__collection-grid {
     display: grid;
-    grid-template-columns: repeat(4, minmax(0, 1fr));
+    grid-template-columns: repeat(var(--search-columns, 4), minmax(0, 1fr));
     gap: var(--layout-grid-gap);
   }
 
@@ -400,9 +438,29 @@
     margin-block-start: 3rem;
   }
 
+  .search-page__tabs { display: none; }
+  .search-page--enhanced .search-page__tabs { display: flex; }
+  .search-page__page-title { overflow-wrap: anywhere; }
+  .search-page__toolbar { margin-block: 2rem; }
+  .search-page__recently-viewed { margin-block-start: 3rem; }
+  .search-page__recently-viewed[hidden] { display: none; }
+  .search-page__recently-viewed h2 { margin-block-end: 1.5rem; }
+  .search-page__filter-form { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; }
+  .search-page__filter-form > .form__field { min-width: 12rem; }
+  .search-page__filters { flex-basis: 100%; }
+  .search-page__filters > summary { padding-block: 1rem; cursor: pointer; }
+  .search-page__filter-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1.5rem; padding-block: 1rem; }
+  .search-page__filter-group { min-width: 0; margin: 0; border: 1px solid var(--border-color); padding: 1rem; }
+  .search-page__filter-values { display: grid; gap: .75rem; max-height: 18rem; overflow: auto; }
+  .search-page__filter-value { display: flex; align-items: center; gap: .5rem; }
+  .search-page__active-filters { display: flex; flex-wrap: wrap; gap: 1rem; margin-block-start: 1rem; }
+  @media (min-width: 768px) and (max-width: 1149.98px) {
+    .search-page__spacing { padding-block: calc(var(--search-padding-top, 60px) * .75) calc(var(--search-padding-bottom, 60px) * .75); }
+    .search-page__product-grid, .search-page__collection-grid { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+  }
   @media (max-width: 767.98px) {
     .search-page__spacing {
-      padding-block: 3rem;
+      padding-block: calc(var(--search-padding-top, 60px) * .5) calc(var(--search-padding-bottom, 60px) * .5);
     }
 
     .search-page__form {
@@ -411,7 +469,7 @@
 
     .search-page__product-grid,
     .search-page__collection-grid {
-      grid-template-columns: repeat(2, minmax(0, 1fr));
+      grid-template-columns: repeat(var(--search-columns-mobile, 2), minmax(0, 1fr));
       gap: 1rem;
     }
 
@@ -423,57 +481,139 @@
   }
 {% endstylesheet %}
 
-{% javascript %}
-(() => {
-  const instances = new WeakMap();
 
-  const initialize = (searchPage) => {
-    if (!searchPage || instances.has(searchPage)) return;
-    const controller = new AbortController();
-    const tabs = searchPage.querySelectorAll('[data-search-page-tab]');
-    const panels = searchPage.querySelectorAll('[data-search-page-panel]');
-
-    tabs.forEach((tab) => tab.addEventListener('click', () => {
-      const selectedType = tab.dataset.searchPageTab;
-      tabs.forEach((item) => item.setAttribute('aria-selected', String(item === tab)));
-      panels.forEach((panel) => { panel.hidden = panel.dataset.searchPagePanel !== selectedType; });
-    }, { signal: controller.signal }));
-
-    instances.set(searchPage, controller);
-  };
-
-  const initializeRoot = (root = document) => {
-    if (root.matches?.('[data-search-page]')) initialize(root);
-    root.querySelectorAll?.('[data-search-page]').forEach(initialize);
-  };
-
-  const destroyRoot = (root) => {
-    const searchPages = [];
-    if (root.matches?.('[data-search-page]')) searchPages.push(root);
-    root.querySelectorAll?.('[data-search-page]').forEach((searchPage) => searchPages.push(searchPage));
-    searchPages.forEach((searchPage) => {
-      instances.get(searchPage)?.abort();
-      instances.delete(searchPage);
-    });
-  };
-
-  document.addEventListener('shopify:section:load', (event) => initializeRoot(event.target));
-  document.addEventListener('shopify:section:unload', (event) => destroyRoot(event.target));
-  initializeRoot();
-})();
-{% endjavascript %}
 
 {% schema %}
 {
   "name": "t:general.search",
   "class": "section-search",
-  "enabled_on": { "templates": ["search"] },
+  "enabled_on": {
+    "templates": [
+      "search"
+    ]
+  },
   "settings": [
+    {
+      "type": "header",
+      "content": "t:general.layout"
+    },
+    {
+      "type": "select",
+      "id": "section_width",
+      "label": "t:labels.section_width",
+      "options": [
+        {
+          "value": "page",
+          "label": "t:options.section_width.page_width"
+        },
+        {
+          "value": "full",
+          "label": "t:options.section_width.full_width"
+        }
+      ],
+      "default": "page"
+    },
+    {
+      "type": "range",
+      "id": "results_per_page",
+      "label": "t:labels.search_results_per_page",
+      "min": 8,
+      "max": 48,
+      "step": 4,
+      "default": 20
+    },
+    {
+      "type": "range",
+      "id": "columns_desktop",
+      "label": "t:labels.desktop_columns",
+      "min": 2,
+      "max": 5,
+      "step": 1,
+      "default": 4
+    },
+    {
+      "type": "select",
+      "id": "columns_mobile",
+      "label": "t:labels.mobile_columns",
+      "options": [
+        {
+          "value": "1",
+          "label": "1"
+        },
+        {
+          "value": "2",
+          "label": "2"
+        }
+      ],
+      "default": "2"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_recently_viewed",
+      "label": "t:labels.search_recently_viewed",
+      "default": true
+    },
+    {
+      "type": "range",
+      "id": "recently_viewed_limit",
+      "label": "t:labels.search_recently_viewed_limit",
+      "min": 2,
+      "max": 8,
+      "step": 1,
+      "default": 4,
+      "visible_if": "{{ section.settings.show_recently_viewed }}"
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_filtering",
+      "label": "t:labels.search_enable_filtering",
+      "default": true
+    },
+    {
+      "type": "checkbox",
+      "id": "enable_sorting",
+      "label": "t:labels.search_enable_sorting",
+      "default": true
+    },
+    {
+      "type": "header",
+      "content": "t:general.appearance"
+    },
     {
       "type": "color_scheme",
       "id": "color_scheme",
       "label": "t:labels.color_scheme",
       "default": "scheme-1"
+    },
+    {
+      "type": "color",
+      "id": "background_color",
+      "label": "t:labels.background_color",
+      "alpha": true
+    },
+    {
+      "type": "header",
+      "content": "t:general.section_padding"
+    },
+    {
+      "type": "range",
+      "id": "padding_top",
+      "label": "t:social_links_settings.top_padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 60
+    },
+    {
+      "type": "range",
+      "id": "padding_bottom",
+      "label": "t:social_links_settings.bottom_padding",
+      "min": 0,
+      "max": 160,
+      "step": 4,
+      "unit": "px",
+      "default": 60
     }
   ]
 }
