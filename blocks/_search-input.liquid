@@ -13,6 +13,7 @@
  if placeholder == blank
   assign placeholder = 'search.placeholder' | t
  endif
+ assign search_heading_custom_size = block.settings.custom_heading_size | default: 24 | plus: 0
  assign search_label = 'search.title' | t
  assign types = ''
  if block.settings.show_products
@@ -26,8 +27,10 @@
  endif
  assign types = types | remove_first: ','
 %}
+{% capture search_heading_size %}{% render 'heading-size-token', size: block.settings.heading_size, fallback: 'xl' %}{% endcapture %}
+{% assign search_heading_size = search_heading_size | strip %}
 <div class="search-page__header" {{ block.shopify_attributes }} style="--search-input-gap:{{ block.settings.gap }}px;--search-input-width:{{ block.settings.input_width }}px;--search-input-height:{{ block.settings.input_height }}px;--search-input-padding:{{ block.settings.input_padding }}px">
- <{{ block.settings.heading_tag }} class="search-page__title heading-text heading-{{ block.settings.heading_size }}">{{ heading }}</{{ block.settings.heading_tag }}>
+ <{{ block.settings.heading_tag }} class="search-page__title heading-block heading-text heading-{{ search_heading_size }}"{% if search_heading_size == 'custom' %} style="--heading-block-custom-size: {{ search_heading_custom_size }}px"{% endif %}>{{ heading }}</{{ block.settings.heading_tag }}>
  <div class="search-page__smart-anchor" data-search-smart data-smart-enabled="{{ block.settings.enable_smart_search }}" data-show-products="{{ block.settings.show_products }}" data-show-collections="{{ block.settings.show_collections }}" data-show-blog-posts="{{ block.settings.show_blog_posts }}" data-show-pages="{{ block.settings.show_pages }}" data-show-recent="{{ block.settings.show_recently_viewed }}" data-recent-limit="{{ block.settings.recently_viewed_limit }}" data-predictive-search-url="{{ routes.predictive_search_url }}" data-search-url="{{ routes.search_url }}" data-products-label="{{ 'search.products' | t | escape }}" data-collections-label="{{ 'search.collections' | t | escape }}" data-blog-posts-label="{{ 'search.blog_posts' | t | escape }}" data-pages-label="{{ 'search.pages' | t | escape }}" data-suggestions-label="{{ 'search.suggestions' | t | escape }}" data-recent-searches-label="{{ 'search.recent_searches' | t | escape }}" data-clear-history-label="{{ 'search.clear_recent_searches' | t | escape }}" data-recent-label="{{ 'search.recently_viewed' | t | escape }}" data-loading-label="{{ 'accessibility.loading' | t | escape }}" data-error-label="{{ 'search.predictive_error' | t | escape }}" data-no-results-label="{{ 'search.no_results' | t | escape }}" data-view-all-label="{{ 'search.view_all_results' | t | escape }}">
   <form class="search-page__form{% if search.terms != blank %} has-query{% endif %}" action="{{ routes.search_url }}" method="get" role="search">
     {% render 'form-field', id: input_id, name: 'q', label: search_label, type: 'search', value: search.terms, placeholder: placeholder, autocomplete: 'off', hide_label: true, class: 'search-page__field body-text body-md' %}
@@ -43,6 +46,7 @@
 {% stylesheet %}
 .search-page__header { display: grid; gap: var(--search-input-gap); margin-block-end: 40px; }
 .search-page__title { margin: 0; text-align: center; }
+.search-page__title.heading-block { text-align: center; }
 .search-page__smart-anchor { width: min(100%, var(--search-input-width)); margin-inline: auto; position: relative; }
 .search-page__smart-anchor.is-open { z-index: calc(var(--z-modal, 1000) + 1); }
 .search-page__form { display: flex; align-items: center; gap: 12px; min-height: var(--search-input-height); padding-inline: var(--search-input-padding); border: var(--input-border-width, 1px) solid var(--input-border-color, var(--border-color)); border-radius: var(--input-radius); background: var(--input-background-color); }
@@ -79,18 +83,13 @@
       "id": "heading_tag",
       "label": "t:labels.html_tag",
       "options": [
-        {
-          "value": "h1",
-          "label": "H1"
-        },
-        {
-          "value": "h2",
-          "label": "H2"
-        },
-        {
-          "value": "h3",
-          "label": "H3"
-        }
+        { "value": "div", "label": "t:options.html_tag.paragraph" },
+        { "value": "h1", "label": "t:options.html_tag.h1" },
+        { "value": "h2", "label": "t:options.html_tag.h2" },
+        { "value": "h3", "label": "t:options.html_tag.h3" },
+        { "value": "h4", "label": "t:options.html_tag.h4" },
+        { "value": "h5", "label": "t:options.html_tag.h5" },
+        { "value": "h6", "label": "t:options.html_tag.h6" }
       ],
       "default": "h1"
     },
@@ -99,20 +98,26 @@
       "id": "heading_size",
       "label": "t:labels.heading_size",
       "options": [
-        {
-          "value": "md",
-          "label": "MD"
-        },
-        {
-          "value": "lg",
-          "label": "LG"
-        },
-        {
-          "value": "xl",
-          "label": "XL"
-        }
+        { "value": "display", "label": "t:options.heading_size.display" },
+        { "value": "xl", "label": "t:options.heading_size.xl" },
+        { "value": "lg", "label": "t:options.heading_size.lg" },
+        { "value": "md", "label": "t:options.heading_size.md" },
+        { "value": "sm", "label": "t:options.heading_size.sm" },
+        { "value": "xs", "label": "t:options.heading_size.xs" },
+        { "value": "custom", "label": "t:options.heading_size.custom" }
       ],
       "default": "xl"
+    },
+    {
+      "type": "range",
+      "id": "custom_heading_size",
+      "label": "Custom size",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "px",
+      "default": 24,
+      "visible_if": "{{ block.settings.heading_size == 'custom' }}"
     },
     {
       "type": "range",
