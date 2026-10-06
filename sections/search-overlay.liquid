@@ -199,41 +199,6 @@
     .search-overlay__product-grid, .search-overlay__collection-grid, .search-overlay__article-grid { grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
   }
 
-  /* Page input reuses the shared search controller in a centered presentation. */
-  .search-overlay--compact .search-overlay__panel,
-  .search-overlay--compact[data-mobile-layout='drawer'] .search-overlay__panel { inset: min(18vh, 10.5rem) auto auto 50%; width: min(550px, calc(100vw - 32px)); max-height: calc(100dvh - min(18vh, 10.5rem) - 24px); padding: 0; margin: 0 0 0 max(-275px, calc(-50vw + 16px)); background: transparent; overflow-y: auto; }
-  .search-overlay--compact .search-overlay__container { width: 100%; padding: 0; }
-  .search-overlay--compact .search-overlay__backdrop { background: rgb(0 0 0 / .45); --backdrop-blur: 6px; }
-  .search-overlay--compact .search-overlay__form { position: sticky; top: 0; z-index: 2; width: 100%; min-height: 48px; margin-bottom: 10px; border-radius: 0; background: var(--overlay-background-color, #fff); }
-  .search-overlay--compact .search-overlay__icon { display: none; }
-  .search-overlay--compact .search-overlay__input.form__control { min-height: 48px; padding-inline: 18px 52px; border: 0; box-shadow: none; }
-  .search-overlay__compact-submit { display: none; }
-  .search-overlay--compact:not(.search-overlay--has-query) .search-overlay__compact-submit { display: flex; position: absolute; inset-inline-end: 12px; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 6px; border: 0; background: transparent; color: inherit; }
-  .search-overlay--compact:not(.search-overlay--has-query) .search-overlay__close { display: none; }
-  .search-overlay--compact .search-overlay__input:focus { outline: 0; box-shadow: none; }
-  .search-overlay--compact .search-overlay__form:focus-within { outline: 2px solid var(--input-focus-color); outline-offset: 2px; }
-  .search-overlay--compact .search-overlay__close { inset-inline-start: auto; inset-inline-end: 12px; width: 32px; height: 32px; }
-  .search-overlay--compact .search-overlay__results { display: block; padding: 30px; background: var(--overlay-background-color, #fff); }
-  .search-overlay--compact .search-overlay__results[hidden] { display: none; }
-  .search-overlay--compact h2 { margin: 0 0 24px; }
-  .search-overlay--compact section + section { margin-top: 24px; }
-  .search-overlay__recent-row { display: grid; grid-template-columns: 80px minmax(0, 1fr) 40px; gap: 16px; align-items: center; margin-bottom: 16px; }
-  .search-overlay__recent-row:last-child { margin-bottom: 0; }
-  .search-overlay__recent-image, .search-overlay__recent-image img { display: block; width: 80px; height: 80px; object-fit: cover; background: var(--input-background-color); }
-  .search-overlay__recent-info { display: grid; gap: 6px; }
-  .search-overlay__recent-info a { color: inherit; text-decoration: none; }
-  .search-overlay__recent-row .product-card__quick-add { position: static; opacity: 1; visibility: visible; transform: none; width: 40px; }
-  .search-overlay__recent-row .product-card__quick-add-button { width: 40px; min-width: 40px; min-height: 40px; height: 40px; padding: 10px; }
-  .search-overlay--compact .search-overlay__result-card { display: grid; grid-template-columns: 80px 1fr; column-gap: 16px; margin-bottom: 16px; }
-  .search-overlay--compact .search-overlay__image { width: 80px; height: 80px; grid-row: span 2; }
-  .search-overlay--compact .search-overlay__view-all { position: sticky; z-index: 1; bottom: -30px; padding-block: 16px; background: var(--overlay-background-color); }
-  .search-overlay--compact .search-overlay__view-all .btn { width: 100%; }
-  .search-overlay__page-link { display: block; color: inherit; margin-bottom: 20px; }
-  .search-overlay__chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 24px; }
-  .search-overlay__chips button { padding: 8px 12px; background: var(--input-background-color); border: 0; border-radius: var(--button-radius); color: inherit; cursor: pointer; }
-  body:has(.search-overlay--compact:is([data-state='opening'], [data-state='open'], [data-state='closing'])) .shopify-section.section-header,
-  body:has(.search-overlay--compact:is([data-state='opening'], [data-state='open'], [data-state='closing'])) .shopify-section.section-announcement-bar { z-index: auto; }
-  @media (max-width: 767.98px) { .search-overlay--compact .search-overlay__results { padding: 20px; } .search-overlay__recent-row { grid-template-columns: 64px minmax(0, 1fr) 40px; gap: 12px; } .search-overlay__recent-image, .search-overlay__recent-image img { width: 64px; height: 64px; } }
 {% endstylesheet %}
 
 {% javascript %}
@@ -361,22 +326,17 @@
     presentation.close({ restoreFocus: !force, immediate: force });
   };
 
-  const open = ({ focus = true, compact = false, query = '' } = {}) => {
+  const open = ({ focus = true } = {}) => {
     const { overlay, input } = state;
     if (!overlay || !input) return;
     const presentation = state.presentation || (window.ThemeOverlay ? window.ThemeOverlay.get(overlay) : null);
     state.presentation = presentation;
-    overlay.classList.toggle('search-overlay--compact', compact);
-    overlay.classList.toggle('search-overlay--has-query', !!query);
-    input.value = query;
     const header = document.querySelector('.shopify-section.header');
     overlay.style.setProperty('--search-overlay-top', `${Math.max(0, header?.getBoundingClientRect().bottom || 0)}px`);
     synchronizePanelPadding(header, overlay);
     presentation?.open({ opener: state.editorSelected ? null : state.opener || document.activeElement, focus, restoreFocus: !state.editorSelected });
     if (focus) input.focus({ preventScroll: true });
-    if (query) input.dispatchEvent(new Event('input'));
-    else if (compact) renderRecent();
-    else startPlaceholderRotation();
+    startPlaceholderRotation();
     document.dispatchEvent(new CustomEvent('search-overlay:open', { detail: { header } }));
   };
 
@@ -386,61 +346,6 @@
   const card = (item, showPrice = false) => {
     const image = imageUrl(item);
     return `<a class="search-overlay__result-card" href="${escapeHtml(item.url)}">${image ? `<img class="search-overlay__image" src="${escapeHtml(image)}" alt="${escapeHtml(item.title)}" loading="lazy">` : '<span class="search-overlay__image"></span>'}<span class="search-overlay__result-title accent-text body-sm">${escapeHtml(item.title)}</span>${showPrice ? `<span class="search-overlay__price card-price-text body-xs">${escapeHtml(money(item.price))}</span>` : ''}</a>`;
-  };
-
-  const bindSuggestions = (results, input) => results.querySelectorAll('[data-search-suggestion]').forEach((button) => button.addEventListener('click', () => {
-    input.value = button.dataset.searchSuggestion;
-    input.dispatchEvent(new Event('input'));
-    input.focus();
-  }));
-  const renderRecent = async () => {
-    const { overlay, input, results } = state;
-    if (!overlay?.classList.contains('search-overlay--compact')) return;
-    state.recentController?.abort();
-    const controller = new AbortController();
-    state.recentController = controller;
-    const owner = state.opener?.closest?.('[data-search-page]');
-    const paths = owner?.dataset.smartSearchRecent === 'false' ? [] : window.ThemeRecentlyViewed?.read().slice(0, Number(owner?.dataset.smartSearchLimit) || 5) || [];
-    results.innerHTML = '';
-    results.hidden = !paths.length;
-    input.setAttribute('aria-expanded', String(!!paths.length));
-    if (!paths.length) return;
-    results.innerHTML = `<p role="status">${escapeHtml(overlay.dataset.loadingLabel)}</p>`;
-    const rows = await window.ThemeRecentlyViewed.load(paths, '[data-recently-viewed-row]', controller.signal);
-    if (controller.signal.aborted || state.overlay !== overlay || input.value.trim()) return;
-    results.innerHTML = '';
-    const valid = rows.filter(Boolean);
-    results.hidden = !valid.length;
-    if (valid.length) {
-      const heading = document.createElement('h2');
-      heading.className = 'heading-text heading-md';
-      heading.textContent = overlay.dataset.recentLabel;
-      results.append(heading, ...valid);
-      results.dispatchEvent(new CustomEvent('collection:products-loaded', { bubbles: true }));
-    }
-  };
-  const highlight = (text, query) => {
-    const index = text.toLocaleLowerCase().indexOf(query.toLocaleLowerCase());
-    return index < 0 ? escapeHtml(text) : `${escapeHtml(text.slice(0, index))}<strong>${escapeHtml(text.slice(index, index + query.length))}</strong>${escapeHtml(text.slice(index + query.length))}`;
-  };
-  const renderCompact = async (data, query, overlay, results, input) => {
-    const labels = overlay.dataset;
-    const groups = [['products', labels.productsLabel], ['collections', labels.collectionsLabel], ['articles', labels.blogPostsLabel], ['pages', labels.pagesLabel]];
-    const queries = data.queries || [];
-    const suggestions = queries.length ? `<section><h2 class="heading-text heading-sm">${escapeHtml(labels.suggestionsLabel)}</h2><div class="search-overlay__chips">${queries.map(item => `<button type="button" data-search-suggestion="${escapeHtml(item.text)}">${highlight(item.text || '', query)}</button>`).join('')}</div></section>` : '';
-    results.innerHTML = suggestions + groups.filter(([key]) => data[key]?.length).map(([key, label]) => `<section><h2 class="heading-text heading-sm">${escapeHtml(label)}</h2><div data-compact-group="${key}">${data[key].slice(0, 5).map(item => key === 'pages' ? `<a class="search-overlay__page-link body-text body-sm" href="${escapeHtml(item.url)}">${escapeHtml(item.title)}</a>` : card(item, key === 'products')).join('')}</div></section>`).join('');
-    if (!results.innerHTML) results.innerHTML = `<p role="status">${escapeHtml(labels.noResultsLabel)}</p>`;
-    results.innerHTML += viewAllMarkup(overlay, query, labels.viewAllLabel, true);
-    results.hidden = false;
-    bindSuggestions(results, input);
-    const paths = (data.products || []).slice(0, 5).map(item => { try { return new URL(item.url, window.location.origin).pathname; } catch { return ''; } });
-    if (!paths.length || !window.ThemeRecentlyViewed) return;
-    const controller = state.controller;
-    const rows = await window.ThemeRecentlyViewed.load(paths, '[data-recently-viewed-row]', controller?.signal);
-    if (controller?.signal.aborted || input.value.trim() !== query || state.overlay !== overlay) return;
-    const group = results.querySelector('[data-compact-group="products"]');
-    rows.forEach((row, index) => { if (row && group?.children[index]) group.children[index].replaceWith(row); });
-    results.dispatchEvent(new CustomEvent('collection:products-loaded', { bubbles: true }));
   };
 
   const getResourceTypes = (overlay) => {
@@ -463,7 +368,7 @@
 
   const render = (resourceResults, query, targetOverlay = state.overlay, targetResults = state.results, targetInput = state.input) => {
     if (!targetOverlay || !targetResults) return;
-    if (targetOverlay.classList.contains('search-overlay--compact')) { renderCompact(resourceResults, query, targetOverlay, targetResults, targetInput); return; }
+
     const products = resourceResults.products || [];
     const collections = resourceResults.collections || [];
     const articles = resourceResults.articles || [];
@@ -540,8 +445,7 @@
         nextOverlay.classList.remove('search-overlay--has-results');
         nextInput.setAttribute('aria-expanded', 'false');
         resetPlaceholder(nextInput);
-        if (nextOverlay.classList.contains('search-overlay--compact')) renderRecent();
-        else startPlaceholderRotation();
+        startPlaceholderRotation();
         return;
       }
       stopPlaceholderRotation();
@@ -591,21 +495,6 @@
     initializeOverlay(getOverlay());
     state.opener = event.target.closest('[data-search-overlay-open]');
     open({ focus: true });
-  });
-
-  const openPageSearch = (input) => {
-    initializeOverlay(getOverlay());
-    if (!state.overlay || state.presentation?.isOpen()) return;
-    state.opener = input;
-    open({ compact: true, query: input.value, focus: true });
-  };
-  document.addEventListener('focusin', (event) => {
-    if (!event.target.matches?.('[data-search-page] input[name="q"]')) return;
-    if (state.returningFocus) { state.returningFocus = false; return; }
-    openPageSearch(event.target);
-  });
-  document.addEventListener('click', (event) => {
-    if (event.target.matches?.('[data-search-page] input[name="q"]')) openPageSearch(event.target);
   });
 
   document.addEventListener('keydown', (event) => {
