@@ -46,8 +46,6 @@
     document.addEventListener('shopify:block:select',event=>{if(anchor.closest('[data-shopify-editor-block]')?.contains(event.target)||event.target.contains?.(anchor))show();},options);
     document.addEventListener('shopify:block:deselect',()=>close(),options);
     lifecycle.signal.addEventListener('abort',()=>close());syncClear();instances.set(root,lifecycle);
-    const pageQuery=new URLSearchParams(window.location.search).get('q');
-    if(window.location.pathname===anchor.dataset.searchUrl&&pageQuery)window.ThemeSearchSuggestions?.recordSearch(pageQuery);
   };
   const roots=parent=>[...(parent.matches?.('[data-search-page]')?[parent]:[]),...parent.querySelectorAll('[data-search-page]')];
   const init=(parent=document)=>roots(parent).forEach(initialize);

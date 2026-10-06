@@ -89,4 +89,8 @@
     target.dispatchEvent(new CustomEvent('collection:products-loaded',{bubbles:true}));
   };
   window.ThemeSearchSuggestions={escape,types,request,render,recent,bindTabs,readHistory,recordSearch,clearHistory};
+  // This shared deferred asset follows the section controller in document order.
+  // Capture landed searches here after the history service is available.
+  const searchRoot = typeof document !== 'undefined' && document.querySelector('[data-search-smart]');
+  if (searchRoot && location.pathname === searchRoot.dataset.searchUrl) recordSearch(new URLSearchParams(location.search).get('q'));
 })();
