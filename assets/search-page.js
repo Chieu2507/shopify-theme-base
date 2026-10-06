@@ -13,10 +13,10 @@
     root.classList.add('search-page--enhanced');
     if(instances.has(root))return;
     const lifecycle=new AbortController(), options={signal:lifecycle.signal};
-    const anchor=root.querySelector('[data-search-smart]'),input=anchor?.querySelector('input[name="q"]'),results=anchor?.querySelector('[data-search-smart-results]'),clear=root.querySelector('[data-search-page-clear]'),backdrop=root.querySelector('[data-search-smart-backdrop]');
+    const anchor=root.querySelector('[data-search-smart]'),input=anchor?.querySelector('input[name="q"]'),results=anchor?.querySelector('[data-search-smart-results]'),clear=root.querySelector('[data-search-page-clear]'),backdrop=root.querySelector('[data-search-smart-backdrop]'),form=clear?.form||clear?.closest('form');
     if(!input)return;
     let open=false,suppress=false,timer,request,revision=0;
-    const syncClear=()=>{if(clear)clear.hidden=!input.value;};
+    const syncClear=()=>{const hasQuery=Boolean(input.value);if(clear)clear.hidden=!hasQuery;if(form){if(hasQuery)form.classList.add('has-query');else form.classList.remove('has-query');}};
     const resize=()=>anchor.style.setProperty('--search-suggestions-height',`${Math.max(120,window.innerHeight-anchor.getBoundingClientRect().bottom-30)}px`);
     const close=(restore=false)=>{open=false;revision++;clearTimeout(timer);request?.abort();anchor.classList.remove('is-open');results.hidden=true;backdrop.hidden=true;input.setAttribute('aria-expanded','false');if(restore){suppress=true;input.focus({preventScroll:true});suppress=false;}};
     const update=()=>{
