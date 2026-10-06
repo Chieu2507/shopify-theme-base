@@ -1,8 +1,8 @@
 (() => {
   const escape = (value = '') => String(value).replace(/[&<>"']/g, (c) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
   const types = (root) => ['query', ...[['showProducts','product'],['showCollections','collection'],['showBlogPosts','article'],['showPages','page']].filter(([flag]) => root.dataset[flag] !== 'false').map(([,type]) => type)].join(',');
-  const request = async (root, query, signal) => {
-    const params = new URLSearchParams({q:query,'resources[type]':types(root),'resources[limit]':'5','resources[limit_scope]':'each'});
+  const request = async (root, query, signal, limit = 5) => {
+    const params = new URLSearchParams({q:query,'resources[type]':types(root),'resources[limit]':String(limit),'resources[limit_scope]':'each'});
     const response = await fetch(`${root.dataset.predictiveSearchUrl}?${params}`, {signal,headers:{Accept:'application/json'}});
     if (!response.ok) throw new Error('Predictive search failed');
     return (await response.json()).resources?.results || {};

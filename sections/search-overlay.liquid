@@ -221,8 +221,6 @@
     controller: null,
     placeholderTimer: null,
     opener: null,
-    returningFocus: false,
-    recentController: null,
   };
 
   const getOverlay = (root = document) => {
@@ -296,8 +294,6 @@
   };
 
   const resetSearchState = () => {
-    state.returningFocus = state.presentation?.restoreFocus !== false && !!state.opener?.closest?.('[data-search-page]');
-    state.recentController?.abort();
     stopPlaceholderRotation();
     if (state.input) state.input.value = '';
     resetPlaceholder(state.input);
@@ -437,8 +433,7 @@
       nextOverlay.classList.toggle('search-overlay--has-query', !!query);
       window.clearTimeout(state.timer);
       state.controller?.abort();
-      state.recentController?.abort();
-      if (!query) {
+        if (!query) {
         nextResults.hidden = true;
         nextResults.innerHTML = '';
         nextResults.classList.remove('search-overlay__results--has-suggestions');
@@ -458,14 +453,15 @@
         const requestController = state.controller;
         const params = new URLSearchParams({ q: query, 'resources[type]': getResourceTypes(nextOverlay), 'resources[limit]': '10', 'resources[limit_scope]': 'each' });
         try {
-          const response = await fetch(`${nextOverlay.dataset.predictiveSearchUrl}?${params}`, {
-            headers: { Accept: 'application/json' },
-            signal: requestController.signal,
-          });
-          if (!response.ok) throw new Error('Predictive search failed');
-          const data = await response.json();
+          let resourceResults;
+          if (window.ThemeSearchSuggestions) resourceResults = await window.ThemeSearchSuggestions.request(nextOverlay, query, requestController.signal, 10);
+          else {
+            const response = await fetch(`${nextOverlay.dataset.predictiveSearchUrl}?${params}`, { headers: { Accept: 'application/json' }, signal: requestController.signal });
+            if (!response.ok) throw new Error('Predictive search failed');
+            resourceResults = (await response.json()).resources?.results || {};
+          }
           if (state.overlay !== nextOverlay || state.input !== nextInput || query !== nextInput.value.trim()) return;
-          render(data.resources?.results || {}, query, nextOverlay, nextResults, nextInput);
+          render(resourceResults, query, nextOverlay, nextResults, nextInput);
           nextInput.setAttribute('aria-expanded', 'true');
         } catch (error) {
           if (error.name !== 'AbortError' && state.overlay === nextOverlay) {
