@@ -19,9 +19,23 @@
   assign slide_image_loading = 'lazy'
   assign slide_image_fetchpriority = 'auto'
   assign slide_mobile_height = 0
-  if section.settings.mobile_height == 'custom'
-    assign slide_mobile_height = section.settings.mobile_height_custom | default: 670
-  endif
+  comment
+    Match the Slideshow mobile preset heights (rem at the foundation's 10px root).
+    Adapt and full screen have no fixed pixel height, so retain uncropped sources.
+  endcomment
+  assign slide_mobile_height_preset = section.settings.mobile_height | default: 'small'
+  case slide_mobile_height_preset
+    when 'extra_small'
+      assign slide_mobile_height = 320
+    when 'small'
+      assign slide_mobile_height = 440
+    when 'medium'
+      assign slide_mobile_height = 560
+    when 'large'
+      assign slide_mobile_height = 680
+    when 'extra_large'
+      assign slide_mobile_height = 820
+  endcase
   if section.blocks.first != blank and section.blocks.first.id == block.id
     assign slide_image_loading = 'eager'
     assign slide_image_fetchpriority = 'high'
