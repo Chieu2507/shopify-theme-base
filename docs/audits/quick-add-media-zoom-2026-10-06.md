@@ -19,3 +19,24 @@ The gallery swipe guard treated movement of at least 4px as a drag, while the Qu
 Shared component and setting coverage audit: PASS WITH FOLLOW-UPS because actual storefront/Theme Editor QA remains unavailable. No new setting or lifecycle ownership was introduced. A separate nested overlay Escape handling concern was observed during source review and left outside this focused change.
 
 Cleanup: no Shopify preview watcher was started. Temporary fixture server stopped; ports 9292 and 9293 have no listener at handoff. No cart or customer state was changed.
+
+## Deployed storefront follow-up — 2026-10-06
+
+The user's authenticated Chrome development preview reproduced the remaining defect: pointer clicks on Aurelia Laurel Collar's Quick add strip did not open the viewer, while Enter on the same image opened the correct native lightbox. Markup had `data-zoom="open_lightbox"` and a complete lightbox. The CDN's current JavaScript included the earlier pointer fix, but the actual loaded gallery resource was the unversioned relative import `product-media.js` from Quick add. This lets a browser retain an older gallery module after theme uploads; custom-element registration cannot replace the first loaded definition.
+
+Quick add and Quick view now pass the Shopify-versioned `product-media.js | asset_url` from their overlay markup into the existing lazy feature loader. Both entry points use the same versioned module so the first overlay opened registers the current shared gallery. Other product modules and the shared gallery behavior are unchanged. No schema or merchant setting changed. Existing open pages require a normal reload to acquire the new loader/markup; user cache was not cleared.
+
+Validation of this follow-up:
+
+- PASS: actual deployed desktop pointer click on Collar image 2 opens its native lightbox at 2/5; pointer click on the full image enables zoom (`is-zoomed`, scale 2.41546).
+- PASS: closing returns focus to View media 2; pointer click on image 3 opens 3/5; closing/reopening Quick add and clicking image 1 opens 1/5.
+- PASS: actual deployed 390×844 viewport image click opens the native lightbox. Temporary viewport override reset afterward.
+- PASS: asset inventory after reload shows `product-media.js?v=98961424724439777631791267214`, where the failing preview loaded the unversioned URL.
+- PASS: 2 loader regression tests, existing 9 media pointer/pagination tests, both loader module syntax checks, and diff whitespace.
+- PASS: Theme Check 0 errors / 34 existing warnings; scoped upload of only assets/quick-add.js, assets/quick-view.js, sections/quick-add.liquid, sections/quick-view.liquid to verified unpublished development theme 144448127024.
+- PASS: no browser console errors during deployed verification.
+- NOT TESTED: Theme Editor's existing iframe reload, Quick view as the first overlay after navigation, video/model media, and real touch-device gestures. No schema changes require editor-setting migration.
+
+Proof files (deployed storefront): `/tmp/quickadd-collar-lightbox-deployed.jpg`, `/tmp/quickadd-collar-zoom-deployed.jpg`, `/tmp/quickadd-collar-mobile-lightbox.jpg`.
+
+Working development preview is retained in Chrome with Collar's native lightbox visible: https://spinel-theme.myshopify.com/collections/aurelia?preview_theme_id=144448127024 . No cart/customer mutation, Git commit/push, or base synchronization was performed. No watcher was started; port 9292 has no listener.
