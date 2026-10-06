@@ -1146,6 +1146,25 @@
     close({ force: true });
   });
 
-  window[controllerKey] = { initialize: (root) => initialize(getDrawer(root)) };
+  // Shared cart transport for surfaces such as /cart. Liquid section rendering
+  // remains responsible for the page markup; this keeps drawer and badge state in sync.
+  const mutate = async (operation, payload) => {
+    const root = window.Shopify?.routes?.root || '/';
+    const response = await fetch(`${root}cart/${operation}.js`, {
+      method: 'POST', credentials: 'same-origin',
+      headers: { Accept: 'application/json', 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    const data = await response.json();
+    if (!response.ok) throw new Error(data.description || data.message || 'Unable to update your cart.');
+    const cart = data.items && Number.isFinite(data.item_count) ? data : await fetchCart();
+    if (state.drawer) await updateCartUI(cart);
+    else updateHeaderCount(cart);
+    return cart;
+  };
+  window[controllerKey] = {
+    initialize: (root) => initialize(getDrawer(root)),
+    mutate, getStoredDiscountCodes, mergeDiscountCodes, isDiscountApplied,
+  };
   initialize(getDrawer());
 })();

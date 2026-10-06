@@ -2,6 +2,10 @@
   assign item_collection = block.settings.collection
   assign item_title = block.settings.custom_title | default: item_collection.title | default: 'Collection title'
   assign item_image = block.settings.custom_image | default: item_collection.featured_image | default: item_collection.image
+  assign item_scheme = blank
+  if block.settings.color_type == 'color_scheme'
+    assign item_scheme = block.settings.color_scheme.id | default: block.settings.color_scheme | default: 'scheme-1' | handleize
+  endif
   assign item_id = block.id
   assign item_title_tag = section.settings.title_tag | default: 'div'
   assign item_title_size = section.settings.title_size | default: 'heading_2'
@@ -24,8 +28,8 @@
   </button>
   {% if item_collection != blank %}<a class="btn btn--secondary btn--icon collections-with-tabs__tab-action" href="{{ item_collection.url }}" aria-label="View {{ item_title | escape }}">↗</a>{% endif %}
 </div>
-<div id="CollectionsWithTabsPanel-{{ item_id }}" class="collections-with-tabs__panel{% if block.settings.color_type == 'color_scheme' %} color-scheme section-color-scope {{ block.settings.color_scheme | default: 'scheme-1' }}{% endif %}" role="tabpanel" aria-labelledby="CollectionsWithTabsTab-{{ item_id }}" hidden data-collections-with-tabs-panel data-collections-with-tabs-id="{{ item_id }}">
-    <div class="media collections-with-tabs__media{% if block.settings.custom_background %} collections-with-tabs__media--custom{% endif %}" style="--collections-with-tabs-panel-ratio: {{ image_ratio }}{% if block.settings.custom_background %};--collections-with-tabs-custom-background: {{ block.settings.background_color }}{% endif %}">
+<div id="CollectionsWithTabsPanel-{{ item_id }}" class="collections-with-tabs__panel" role="tabpanel" aria-labelledby="CollectionsWithTabsTab-{{ item_id }}" hidden data-collections-with-tabs-panel data-collections-with-tabs-color-scheme="{{ item_scheme }}" data-collections-with-tabs-background="{% if block.settings.custom_background %}{{ block.settings.background_color | escape }}{% endif %}" data-collections-with-tabs-id="{{ item_id }}">
+    <div class="media collections-with-tabs__media" style="--collections-with-tabs-panel-ratio: {{ image_ratio }}">
       <div class="media__inner{% if item_image == blank %} placeholder-image{% endif %}">
         {% if item_image != blank %}
           {{ item_image | image_url: width: 1600 | image_tag: widths: '480, 720, 960, 1200, 1600', sizes: '(max-width: 767px) 100vw, 50vw', alt: item_title, loading: 'lazy' }}

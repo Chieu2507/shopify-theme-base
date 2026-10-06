@@ -18,6 +18,24 @@
   assign slide_scheme = slide_scheme | handleize
   assign slide_image_loading = 'lazy'
   assign slide_image_fetchpriority = 'auto'
+  assign slide_mobile_height = 0
+  comment
+    Match the Slideshow mobile preset heights (rem at the foundation's 10px root).
+    Adapt and full screen have no fixed pixel height, so retain uncropped sources.
+  endcomment
+  assign slide_mobile_height_preset = section.settings.mobile_height | default: 'small'
+  case slide_mobile_height_preset
+    when 'extra_small'
+      assign slide_mobile_height = 320
+    when 'small'
+      assign slide_mobile_height = 440
+    when 'medium'
+      assign slide_mobile_height = 560
+    when 'large'
+      assign slide_mobile_height = 680
+    when 'extra_large'
+      assign slide_mobile_height = 820
+  endcase
   if section.blocks.first != blank and section.blocks.first.id == block.id
     assign slide_image_loading = 'eager'
     assign slide_image_fetchpriority = 'high'
@@ -30,6 +48,12 @@
   {% if block.settings.mobile_gap != 12 %}--slideshow-slide-gap-mobile: {{ block.settings.mobile_gap }}px;{% endif %}
   {% if slide_content_width == 'custom' %}--hero-content-max-width: {{ block.settings.content_max_width | default: 640 }}px;{% endif %}
 {% endcapture %}
+
+{% if slide_image_loading == 'eager' and section.index == 1 and slide_media_type == 'image' and block.settings.image != blank %}
+  <!-- theme-lcp-preloads:start -->
+  {% render 'slideshow-image', image: block.settings.image, mobile_image: block.settings.mobile_image, mobile_height: slide_mobile_height, preload: true %}
+  <!-- theme-lcp-preloads:end -->
+{% endif %}
 
 <div
   class="swiper-slide slideshow-slide slideshow-slide--{{ slide_layout }} hero hero--width-full hero--classic hero--content-{{ slide_content_width }} hero--desktop-adapt hero--mobile-adapt color-scheme section-color-scope {{ slide_scheme }}"
@@ -45,12 +69,7 @@
         {% if slide_media_type == 'video' and block.settings.video != blank %}
           {{ block.settings.video | video_tag: image_size: '2400x', autoplay: true, loop: true, muted: true, controls: false, playsinline: true, class: 'slideshow-slide__video' }}
         {% elsif block.settings.image != blank %}
-          <picture>
-            {% if block.settings.mobile_image != blank %}
-              <source media="(max-width: 767.98px)" sizes="100vw" srcset="{{ block.settings.mobile_image | image_url: width: 375 }} 375w, {{ block.settings.mobile_image | image_url: width: 550 }} 550w, {{ block.settings.mobile_image | image_url: width: 750 }} 750w, {{ block.settings.mobile_image | image_url: width: 1100 }} 1100w, {{ block.settings.mobile_image | image_url: width: 1500 }} 1500w">
-            {% endif %}
-            {{ block.settings.image | image_url: width: 2400 | image_tag: widths: '750, 1100, 1500, 2000, 2400', sizes: '100vw', loading: slide_image_loading, fetchpriority: slide_image_fetchpriority, alt: '' }}
-          </picture>
+          {% render 'slideshow-image', image: block.settings.image, mobile_image: block.settings.mobile_image, mobile_height: slide_mobile_height, loading: slide_image_loading, fetchpriority: slide_image_fetchpriority %}
         {% else %}
           {{ 'lifestyle-1' | placeholder_svg_tag: 'hero__placeholder' }}
         {% endif %}

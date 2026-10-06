@@ -34,6 +34,11 @@
     assign media_mobile_show_pagination = false
   endif
 
+  assign media_mobile_pagination_type = block.settings.mobile_pagination_type | default: 'bullets'
+  unless media_mobile_pagination_type == 'progress_bar' or media_mobile_pagination_type == 'bullets'
+    assign media_mobile_pagination_type = 'bullets'
+  endunless
+
   assign media_full_width = false
   if block.settings.full_width_media
     assign media_full_width = true
@@ -186,8 +191,12 @@
       {% endcapture %}
 
       {% capture product_media_main_pagination %}
-        <div class="swiper-pagination product-media-gallery__pagination{% if media_controls_color_scheme != blank %} color-scheme {{ media_controls_color_scheme }}{% endif %}" data-product-media-pagination data-pagination-type="bullets"></div>
+        <div class="swiper-pagination product-media-gallery__pagination{% if media_controls_color_scheme != blank %} color-scheme {{ media_controls_color_scheme }}{% endif %}" data-product-media-pagination data-pagination-type="{{ media_mobile_pagination_type }}" hidden></div>
       {% endcapture %}
+      {% assign product_media_inline_pagination = product_media_main_pagination %}
+      {% if media_mobile_pagination_type == 'progress_bar' %}
+        {% assign product_media_inline_pagination = blank %}
+      {% endif %}
 
       {% render 'swiper-carousel',
         id: main_swiper_id,
@@ -195,7 +204,7 @@
         root_class: 'media-gallery__main product-media-gallery__main',
         root_attributes: 'data-product-main-swiper',
         aria_label: media_main_aria_label,
-        pagination: product_media_main_pagination,
+        pagination: product_media_inline_pagination,
         show_next_slide_preview_on_mobile: media_mobile_show_next_slide
       %}
 
@@ -209,6 +218,9 @@
             </button>
           {% endif %}
         </div>
+        {% if media_mobile_pagination_type == 'progress_bar' %}
+          {{ product_media_main_pagination }}
+        {% endif %}
       </div>
 
       {% if media_product.media.size > 1 %}
@@ -283,7 +295,8 @@
       "max": 200,
       "step": 4,
       "unit": "px",
-      "default": 72
+      "default": 72,
+      "visible_if": "{{ block.settings.desktop_layout == 'left_thumbnails' or block.settings.desktop_layout == 'bottom_thumbnails' or block.settings.desktop_layout == 'stacked_thumbnails' }}"
     },
     {
       "type": "select",
@@ -350,6 +363,17 @@
       "label": "t:labels.show_pagination",
       "default": true,
       "visible_if": "{{ block.settings.mobile_layout == 'slider' }}"
+    },
+    {
+      "type": "select",
+      "id": "mobile_pagination_type",
+      "label": "t:labels.type",
+      "options": [
+        { "value": "progress_bar", "label": "t:options.collection_pagination.progress_bar" },
+        { "value": "bullets", "label": "t:options.collection_pagination.bullets" }
+      ],
+      "default": "bullets",
+      "visible_if": "{{ block.settings.mobile_layout == 'slider' and block.settings.mobile_show_pagination }}"
     },
     {
       "type": "checkbox",

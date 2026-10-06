@@ -43,7 +43,6 @@
   endif
 
   assign swatch_limit = settings.product_card_swatch_limit | default: 4 | plus: 0
-  assign sold_out_label = 'products.sold_out' | t
   assign swatch_option_value_count = 0
   if swatch_option != blank
     for option_value in swatch_option.values
@@ -157,7 +156,7 @@
         {% endif %}
       {% endif %}
       <li class="product-card__swatch-item{% if swatch_is_sold_out %} product-card__swatch-item--sold-out{% endif %}">
-        <label class="product-card__swatch-label{% if swatch_is_sold_out %} product-card__swatch-label--sold-out{% endif %}">
+        {% capture card_swatch_input %}
           <input
             class="product-card__swatch-input"
             type="radio"
@@ -176,22 +175,11 @@
             {% endif %}
             {% if swatch_is_sold_out %}disabled{% endif %}
           >
-          {% render 'swatch',
-            value: option_value.name,
-            swatch: option_value.swatch,
-            image: swatch_image,
-            style: swatch_type,
-            class: 'product-card__swatch-box',
-            decorative: true
-          %}
-          {% if swatch_is_sold_out %}
-            <svg class="variant-strike product-card__swatch-strike" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1 1" preserveAspectRatio="none" fill="none">
-              <path d="M0 0 L1 1" stroke="#ffffff" stroke-width="2" stroke-opacity="0.6" vector-effect="non-scaling-stroke"></path>
-              <path d="M0 0 L1 1" stroke="#E4E4E4" vector-effect="non-scaling-stroke"></path>
-            </svg>
-          {% endif %}
-          <span class="visually-hidden">{{ option_value.name | escape }}{% if swatch_is_sold_out %}, {{ sold_out_label | escape }}{% endif %}</span>
-        </label>
+        {% endcapture %}
+        {% assign card_swatch_state = 'available' %}
+        {% if swatch_is_sold_out %}{% assign card_swatch_state = 'sold-out' %}{% endif %}
+        {% capture card_swatch_class %}product-card__swatch-label{% if swatch_is_sold_out %} product-card__swatch-label--sold-out{% endif %}{% endcapture %}
+        {% render 'swatch-option', input_markup: card_swatch_input, value: option_value.name, swatch: option_value.swatch, image: swatch_image, style: swatch_type, selected_style: selected_style, state: card_swatch_state, class: card_swatch_class, visual_class: 'product-card__swatch-box' %}
       </li>
       {% if option_value.product_url == blank and swatch_variant != blank %}
         {% capture swatch_variant_template %}

@@ -1,6 +1,15 @@
 <!doctype html>
 <html lang="{{ request.locale.iso_code }}">
   <head>
+    {% # Establish the viewport before evaluating responsive image hints. %}
+    {% render 'meta-tags' %}
+
+    {% comment %}The owning section supplies matching art-directed hints; discover
+      its LCP source before fonts, styles and header/overlay markup are parsed.{% endcomment %}
+    {% if content_for_layout contains '<!-- theme-lcp-preloads:start -->' %}
+      {% assign lcp_preloads = content_for_layout | split: '<!-- theme-lcp-preloads:start -->' | last | split: '<!-- theme-lcp-preloads:end -->' | first %}
+      {{ lcp_preloads }}
+    {% endif %}
     {% # Inlined CSS Variables %}
     {% render 'css-variables' %}
 
@@ -19,7 +28,8 @@
 
     {% # Load and preload the critical CSS %}
     {{ 'critical.css' | asset_url | stylesheet_tag: preload: true }}
-    {{ 'component-overlay.css' | asset_url | stylesheet_tag }}
+    <link rel="stylesheet" href="{{ 'component-overlay.css' | asset_url }}" media="print" onload="this.media='all'">
+    <noscript>{{ 'component-overlay.css' | asset_url | stylesheet_tag }}</noscript>
     <script src="{{ 'component-overlay.js' | asset_url }}" defer></script>
     {% comment %} Footer-only disclosure styles should not delay the first paint. {% endcomment %}
     <link rel="stylesheet" href="{{ 'accordion-details.css' | asset_url }}" media="print" onload="this.media='all'">
@@ -39,9 +49,6 @@
       <script type="module" src="{{ 'timeline-list.js' | asset_url }}"></script>
     {% endif %}
 
-    {% # Social, title, etc. %}
-    {% render 'meta-tags' %}
-
     {{ content_for_header }}
   </head>
 
@@ -56,8 +63,14 @@
       {{ content_for_layout }}
     </main>
 
+    {% comment %}Fixed overlays do not participate in page flow. Parse the
+      meaningful page content before their hidden product/form markup.{% endcomment %}
     {% sections 'overlay-group' %}
+
     {% sections 'footer-group' %}
     {% render 'component-overlay-cursor' %}
+    {% if request.page_type == 'product' %}{% section 'recently-viewed-card' %}{% endif %}
+    <script src="{{ 'recently-viewed.js' | asset_url }}" defer></script>
+    <script src="{{ 'search-suggestions.js' | asset_url }}" defer></script>
   </body>
 </html>
