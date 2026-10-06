@@ -5,6 +5,7 @@ import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.j
 const LIGHTBOX_ZOOM_SCALE = 3;
 const LIGHTBOX_MAX_IMAGE_SIZE = 2000;
 const LIGHTBOX_DRAG_THRESHOLD = 4;
+const QUICK_ADD_STRIP_DRAG_THRESHOLD = 6;
 const LIGHTBOX_DISMISS_AXIS_RATIO = 1.15;
 const LIGHTBOX_DISMISS_ANIMATION_MS = 240;
 const clamp = (value, min, max) => Math.min(max, Math.max(min, value));
@@ -211,6 +212,7 @@ class ProductMediaGallery extends HTMLElement {
     pagination.replaceChildren();
     pagination.classList.remove(
       'swiper-pagination-bullets',
+      'swiper-pagination-progressbar',
       'swiper-pagination-clickable',
       'swiper-pagination-horizontal',
       'swiper-pagination-vertical',
@@ -309,6 +311,7 @@ class ProductMediaGallery extends HTMLElement {
     }
 
     const pagination = this.querySelector('[data-product-media-pagination]');
+    const paginationType = pagination?.dataset.paginationType === 'progress_bar' ? 'progressbar' : 'bullets';
     this.mainSwiper = createSwiperCarousel(main, {
       modules: showPagination ? [Pagination, Thumbs] : [Thumbs],
       slidesPerView,
@@ -323,7 +326,7 @@ class ProductMediaGallery extends HTMLElement {
         previous: '[data-product-media-previous]',
         next: '[data-product-media-next]'
       },
-      ...(showPagination && pagination ? { pagination: { el: pagination, clickable: true } } : {}),
+      ...(showPagination && pagination ? { pagination: { el: pagination, type: paginationType, clickable: paginationType === 'bullets' } } : {}),
       ...(this.thumbnailSwiper ? { thumbs: { swiper: this.thumbnailSwiper, autoScrollOffset: 1 } } : {}),
       a11y: { enabled: true },
     });
@@ -372,7 +375,7 @@ class ProductMediaGallery extends HTMLElement {
     const deltaX = event.clientX - drag.startX;
     const deltaY = event.clientY - drag.startY;
     if (!drag.axis) {
-      if (Math.hypot(deltaX, deltaY) < 6) return;
+      if (Math.hypot(deltaX, deltaY) < QUICK_ADD_STRIP_DRAG_THRESHOLD) return;
       if (Math.abs(deltaY) > Math.abs(deltaX)) {
         this.finishQuickAddStripDrag(event, false);
         return;
@@ -613,7 +616,12 @@ class ProductMediaGallery extends HTMLElement {
     if (state.mediaPointerId === event.pointerId) {
       const deltaX = event.clientX - state.mediaStartX;
       const deltaY = event.clientY - state.mediaStartY;
-      if (!state.mediaMoved && Math.hypot(deltaX, deltaY) >= LIGHTBOX_DRAG_THRESHOLD) {
+      // The strip owns a larger click tolerance than lightbox panning. Both
+      // gallery listeners must agree or ordinary pointer jitter blocks zoom.
+      const threshold = this.galleryMode === 'quick-add-strip'
+        ? QUICK_ADD_STRIP_DRAG_THRESHOLD
+        : LIGHTBOX_DRAG_THRESHOLD;
+      if (!state.mediaMoved && Math.hypot(deltaX, deltaY) >= threshold) {
         state.mediaMoved = true;
       }
       if (state.mediaMoved) state.mediaSuppressClickUntil = performance.now() + 300;
