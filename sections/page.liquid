@@ -1,5 +1,6 @@
 {% liquid
   assign page_scheme = section.settings.color_scheme.id | default: section.settings.color_scheme | default: 'scheme-1' | handleize
+  assign page_background = section.settings.background_color | default: section.settings.color_scheme.settings.background | default: settings.color_schemes[page_scheme].settings.background
   assign page_container = 'page-width'
   if section.settings.section_width == 'full_width'
     assign page_container = 'full-width'
@@ -30,7 +31,7 @@
 
 {% style %}
   #shopify-section-{{ section.id }} {
-    background-color: {% if section.settings.background_color != blank %}{{ section.settings.background_color }}{% else %}var(--background-color){% endif %};
+    background-color: {% if page_background != blank %}{{ page_background }}{% else %}var(--background-color){% endif %};
   }
 {% endstyle %}
 
