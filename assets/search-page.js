@@ -34,12 +34,20 @@
     clear?.addEventListener('click',()=>{input.value='';input.focus({preventScroll:true});update();},options);
     backdrop?.addEventListener('click',()=>close(true),options);
     anchor.addEventListener('keydown',event=>{if(event.key==='Escape'&&open){event.preventDefault();event.stopPropagation();close(true);}if(event.key==='ArrowDown'&&event.target===input&&open){const first=results.querySelector('a,button');if(first){event.preventDefault();first.focus();}}},options);
-    results.addEventListener('click',event=>{const button=event.target.closest('[data-search-suggestion]');if(!button){if(event.target.closest('a,button[type="submit"]'))close();return;}input.value=button.dataset.searchSuggestion;input.focus({preventScroll:true});update();},options);
+    results.addEventListener('click',event=>{
+      if(event.target.closest('[data-search-history-clear]')){window.ThemeSearchSuggestions?.clearHistory();input.focus({preventScroll:true});update();return;}
+      const button=event.target.closest('[data-search-suggestion]');
+      if(!button){const link=event.target.closest('a');if(link?.closest('.search-suggestions__footer'))window.ThemeSearchSuggestions?.recordSearch(input.value);if(event.target.closest('a,button[type="submit"]'))close();return;}
+      input.value=button.dataset.searchSuggestion;input.focus({preventScroll:true});update();
+    },options);
+    form?.addEventListener('submit',()=>window.ThemeSearchSuggestions?.recordSearch(input.value),options);
     document.addEventListener('focusin',event=>{if(open&&!anchor.contains(event.target)&&event.target!==backdrop)close();},options);
     window.addEventListener('resize',resize,options);
     document.addEventListener('shopify:block:select',event=>{if(anchor.closest('[data-shopify-editor-block]')?.contains(event.target)||event.target.contains?.(anchor))show();},options);
     document.addEventListener('shopify:block:deselect',()=>close(),options);
     lifecycle.signal.addEventListener('abort',()=>close());syncClear();instances.set(root,lifecycle);
+    const pageQuery=new URLSearchParams(window.location.search).get('q');
+    if(window.location.pathname===anchor.dataset.searchUrl&&pageQuery)window.ThemeSearchSuggestions?.recordSearch(pageQuery);
   };
   const roots=parent=>[...(parent.matches?.('[data-search-page]')?[parent]:[]),...parent.querySelectorAll('[data-search-page]')];
   const init=(parent=document)=>roots(parent).forEach(initialize);
