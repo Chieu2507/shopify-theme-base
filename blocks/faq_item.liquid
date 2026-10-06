@@ -13,9 +13,11 @@
   endif
 %}
 
+{% capture faq_nested_answer %}{% content_for 'blocks' %}{% endcapture %}
+{% assign faq_nested_answer = faq_nested_answer | strip %}
 {% capture faq_answer %}
-  {% if block.blocks.size > 0 %}
-    {% content_for 'blocks' %}
+  {% if faq_nested_answer != blank %}
+    {{ faq_nested_answer }}
   {% elsif block.settings.answer != blank %}
     {{ block.settings.answer }}
   {% elsif request.design_mode %}
@@ -40,9 +42,7 @@
   </span>
 {% endcapture %}
 
-{% if faq_answer != blank or request.design_mode %}
-  {% render 'accordion-details', id: faq_item_id, content_id: faq_content_id, class: 'faq-item', summary_class: 'faq-item__summary', content_class: 'faq-item__content', content_inner_class: 'faq-item__content-inner', summary: faq_summary, content: faq_answer, initially_open: block.settings.initially_open, attributes: block.shopify_attributes %}
-{% endif %}
+{% render 'accordion-details', id: faq_item_id, content_id: faq_content_id, class: 'faq-item', summary_class: 'faq-item__summary', content_class: 'faq-item__content', content_inner_class: 'faq-item__content-inner', summary: faq_summary, content: faq_answer, initially_open: block.settings.initially_open, attributes: block.shopify_attributes %}
 
 {% stylesheet %}
   .faq-item { min-width: 0; }

@@ -564,6 +564,7 @@ const initialize = (root) => {
   const useCenteredSlidePreview = root.dataset.showNextSlidePreviewOnDesktop === 'true';
   const transition = root.dataset.transition === 'fade' ? 'fade' : 'slide';
   const fade = transition === 'fade' && !useCenteredSlidePreview;
+  if (fade) viewport.dataset.swiperNextSlidePreview = 'false';
   const manualLoop = manualLoopRequested && loop ? createManualLoop(viewport) : null;
   const paginationModules = pagination && !manualLoop ? [Pagination] : [];
   const modules = fade ? [EffectFade, ...paginationModules] : paginationModules;
@@ -574,12 +575,12 @@ const initialize = (root) => {
     ...(fade ? { fadeEffect: { crossFade: true } } : {}),
     preventInteractionOnTransition: true,
     speed: prefersReducedMotion() ? 0 : 600,
-    slidesPerView: number(root.dataset.swiperColumnsMobile, 1),
-    spaceBetween: number(root.dataset.swiperGapMobile, 12),
+    slidesPerView: fade ? 1 : number(root.dataset.swiperColumnsMobile, 1),
+    spaceBetween: fade ? 0 : number(root.dataset.swiperGapMobile, 12),
     breakpoints: {
       [desktopBreakpoint]: {
-        slidesPerView: desktopColumns,
-        spaceBetween: number(root.dataset.swiperGapDesktop, 16),
+        slidesPerView: fade ? 1 : desktopColumns,
+        spaceBetween: fade ? 0 : number(root.dataset.swiperGapDesktop, 16),
         ...(useCenteredSlidePreview ? { centeredSlides: true, spaceBetween: 24 } : {})
       }
     },

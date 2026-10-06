@@ -1,0 +1,103 @@
+{% doc %}
+  Renders slideshow artwork and matching, media-qualified preload hints.
+  Fixed-height mobile panoramas are cropped on the CDN before downloading,
+  preserving the existing centered cover composition at both mobile bands.
+  Images with a merchant focal point retain their original source/crop.
+
+  @param {image} image - Desktop artwork
+  @param {image} [mobile_image] - Mobile artwork; falls back to desktop
+  @param {number} [mobile_height] - Fixed mobile frame height, when configured
+  @param {string} [sizes] - Desktop rendered width, defaults to 100vw
+  @param {string} [loading] - eager for the first visible slide, otherwise lazy
+  @param {string} [fetchpriority] - high only for the first visible slide
+  @param {boolean} [preload] - Output hints instead of the picture
+{% enddoc %}
+{% liquid
+  assign mobile_artwork = mobile_image | default: image
+  assign image_sizes = sizes | default: '100vw'
+  assign frame_height = mobile_height | default: 0 | plus: 0
+  assign mobile_cover_width = frame_height | times: mobile_artwork.aspect_ratio
+  assign mobile_focal_point = mobile_artwork.presentation.focal_point | default: '50.0% 50.0%'
+  assign crop_mobile_panorama = false
+  if frame_height > 0 and mobile_cover_width > 768
+    if mobile_focal_point == '50.0% 50.0%' or mobile_focal_point == '50% 50%'
+      assign crop_mobile_panorama = true
+    endif
+  endif
+  assign double_height = frame_height | times: 2
+  assign desktop_media = '(min-width: 768px)'
+  capture desktop_srcset
+    echo image | image_url: width: 750
+    echo ' 750w, '
+    echo image | image_url: width: 1100
+    echo ' 1100w, '
+    echo image | image_url: width: 1500
+    echo ' 1500w, '
+    echo image | image_url: width: 2000
+    echo ' 2000w, '
+    echo image | image_url: width: 2400
+    echo ' 2400w'
+  endcapture
+  capture narrow_srcset
+    if crop_mobile_panorama
+      echo mobile_artwork | image_url: width: 480, height: frame_height, crop: 'center'
+      echo ' 1x, '
+      echo mobile_artwork | image_url: width: 960, height: double_height, crop: 'center'
+      echo ' 2x'
+    endif
+  endcapture
+  capture mobile_srcset
+    if crop_mobile_panorama
+      echo mobile_artwork | image_url: width: 768, height: frame_height, crop: 'center'
+      echo ' 1x, '
+      echo mobile_artwork | image_url: width: 1536, height: double_height, crop: 'center'
+      echo ' 2x'
+    elsif frame_height > 0
+      echo mobile_artwork | image_url: width: 750
+      echo ' 750w, '
+      echo mobile_artwork | image_url: width: 1100
+      echo ' 1100w, '
+      echo mobile_artwork | image_url: width: 1500
+      echo ' 1500w, '
+      echo mobile_artwork | image_url: width: 2000
+      echo ' 2000w, '
+      echo mobile_artwork | image_url: width: 2400
+      echo ' 2400w'
+    else
+      comment
+        Adapt/preset frames have no known pixel height in Liquid. Keep their
+        previous 1200px source rather than undersizing a cover image.
+      endcomment
+      echo mobile_artwork | image_url: width: 1200
+    endif
+  endcapture
+  assign mobile_sizes = '100vw'
+  unless crop_mobile_panorama
+    if mobile_cover_width > 0
+      capture mobile_sizes
+        echo '(max-width: 767.98px) max(100vw, '
+        echo mobile_cover_width | ceil
+        echo 'px), 100vw'
+      endcapture
+    endif
+  endunless
+%}
+{% if preload %}
+  {% if crop_mobile_panorama %}
+    <link rel="preload" as="image" imagesrcset="{{ narrow_srcset | strip | escape }}" media="(max-width: 479.98px)" fetchpriority="high">
+    <link rel="preload" as="image" imagesrcset="{{ mobile_srcset | strip | escape }}" media="(min-width: 480px) and (max-width: 767.98px)" fetchpriority="high">
+  {% else %}
+    <link rel="preload" as="image" imagesrcset="{{ mobile_srcset | strip | escape }}" imagesizes="{{ mobile_sizes | strip | escape }}" media="(max-width: 767.98px)" fetchpriority="high">
+  {% endif %}
+  <link rel="preload" as="image" imagesrcset="{{ desktop_srcset | strip | escape }}" imagesizes="{{ image_sizes | escape }}" media="{{ desktop_media }}" fetchpriority="high">
+{% else %}
+  <picture>
+    {% if crop_mobile_panorama %}
+      <source media="(max-width: 479.98px)" srcset="{{ narrow_srcset | strip | escape }}">
+      <source media="(max-width: 767.98px)" srcset="{{ mobile_srcset | strip | escape }}">
+    {% else %}
+      <source media="(max-width: 767.98px)" srcset="{{ mobile_srcset | strip | escape }}" sizes="{{ mobile_sizes | strip | escape }}">
+    {% endif %}
+    {{ image | image_url: width: 2400 | image_tag: widths: '750, 1100, 1500, 2000, 2400', sizes: image_sizes, loading: loading, fetchpriority: fetchpriority, alt: '' }}
+  </picture>
+{% endif %}
