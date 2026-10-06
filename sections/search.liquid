@@ -17,6 +17,7 @@
   assign search_input_id = 'SearchPageInput-' | append: section.id
   assign search_types = search.types | join: ','
   assign search_sort = search.sort_by | default: search.default_sort_by
+  assign search_article_label = 'search.blog_posts' | t
 %}
 
 {% style %}
@@ -210,7 +211,7 @@
                         <a href="{{ result.url }}">
                           <span class="search-page__page-title body-text body-md">{{ result.title | escape }}</span>
                           {% if result.object_type == 'article' %}
-                            <span class="search-page__page-type eyebrow-text">{{ result.blog.title | default: 'Article' | escape }}</span>
+                            <span class="search-page__page-type eyebrow-text">{{ result.blog.title | default: search_article_label | escape }}</span>
                           {% endif %}
                         </a>
                       </li>
@@ -447,7 +448,9 @@
   .search-page__recently-viewed h2 { margin-block-end: 1.5rem; }
   .search-page__filter-form { display: flex; flex-wrap: wrap; align-items: end; gap: 1rem; }
   .search-page__filter-form > .form__field { min-width: 12rem; }
-  .search-page__filters { flex-basis: 100%; }
+  .search-page__filters { flex: 1 1 auto; }
+  .search-page__filters[open] { flex-basis: 100%; order: 2; }
+  .search-page__filters[open] ~ .btn { order: 3; }
   .search-page__filters > summary { padding-block: 1rem; cursor: pointer; }
   .search-page__filter-groups { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 15rem), 1fr)); gap: 1.5rem; padding-block: 1rem; }
   .search-page__filter-group { min-width: 0; margin: 0; border: 1px solid var(--border-color); padding: 1rem; }
