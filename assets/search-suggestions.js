@@ -11,13 +11,43 @@
     const index = text.toLocaleLowerCase().indexOf(query.toLocaleLowerCase());
     return index < 0 ? escape(text) : `${escape(text.slice(0,index))}<strong>${escape(text.slice(index,index+query.length))}</strong>${escape(text.slice(index+query.length))}`;
   };
+  const bindTabs = (root, target) => {
+    const tabs = Array.from(target.querySelectorAll('[data-search-smart-tab]'));
+    const panels = target.querySelectorAll('[data-search-smart-panel]');
+    const select = (tab, focus = false) => {
+      root.dataset.smartActiveGroup = tab.dataset.searchSmartTab;
+      tabs.forEach(item => {
+        const active = item === tab;
+        item.setAttribute('aria-selected', String(active));
+        item.tabIndex = active ? 0 : -1;
+      });
+      panels.forEach(panel => { panel.hidden = panel.dataset.searchSmartPanel !== root.dataset.smartActiveGroup; });
+      if (focus) tab.focus({ preventScroll: true });
+    };
+    tabs.forEach((tab, index) => {
+      tab.addEventListener('click', () => select(tab));
+      tab.addEventListener('keydown', event => {
+        const next = { ArrowRight: (index + 1) % tabs.length, ArrowLeft: (index - 1 + tabs.length) % tabs.length, Home: 0, End: tabs.length - 1 }[event.key];
+        if (next === undefined) return;
+        event.preventDefault();
+        select(tabs[next], true);
+      });
+    });
+    if (tabs.length) select(tabs.find(tab => tab.dataset.searchSmartTab === root.dataset.smartActiveGroup) || tabs[0]);
+  };
   const render = async (root, target, data, query, signal) => {
+    if (signal.aborted) return;
     const labels = root.dataset;
-    const groups = [['products',labels.productsLabel],['collections',labels.collectionsLabel],['articles',labels.blogPostsLabel],['pages',labels.pagesLabel]];
+    const groups = [['products',labels.productsLabel],['collections',labels.collectionsLabel],['articles',labels.blogPostsLabel],['pages',labels.pagesLabel]].filter(([key]) => data[key]?.length);
     const queries = data.queries || [];
-    target.innerHTML = (queries.length ? `<section><h2 class="heading-text heading-sm">${escape(labels.suggestionsLabel)}</h2><div class="search-suggestions__chips">${queries.map(item => `<button type="button" data-search-suggestion="${escape(item.text)}">${highlight(item.text || '',query)}</button>`).join('')}</div></section>` : '') + groups.filter(([key]) => data[key]?.length).map(([key,label]) => `<section><h2 class="heading-text heading-sm">${escape(label)}</h2><div data-search-group="${key}">${data[key].map(item => `<a class="search-suggestions__link body-text body-sm" href="${escape(item.url)}">${escape(item.title)}</a>`).join('')}</div></section>`).join('');
+    const suggestions = queries.length ? `<section><h2 class="heading-text heading-sm">${escape(labels.suggestionsLabel)}</h2><div class="search-suggestions__chips">${queries.map(item => `<button type="button" data-search-suggestion="${escape(item.text)}">${highlight(item.text || '',query)}</button>`).join('')}</div></section>` : '';
+    const groupId = key => `${target.id}-${key}`;
+    const tablist = groups.length ? `<div class="search-suggestions__tabs" role="tablist" aria-label="${escape(labels.searchTypesLabel || labels.suggestionsLabel)}">${groups.map(([key,label]) => `<button class="search-suggestions__tab body-text body-sm" type="button" role="tab" id="${escape(groupId(key))}-tab" aria-controls="${escape(groupId(key))}-panel" aria-selected="false" tabindex="-1" data-search-smart-tab="${key}">${escape(label)}</button>`).join('')}</div>` : '';
+    const panels = groups.map(([key]) => `<div class="search-suggestions__tabpanel" role="tabpanel" id="${escape(groupId(key))}-panel" aria-labelledby="${escape(groupId(key))}-tab" data-search-smart-panel="${key}" hidden><div data-search-group="${key}">${data[key].map(item => `<a class="search-suggestions__link body-text body-sm" href="${escape(item.url)}">${escape(item.title)}</a>`).join('')}</div></div>`).join('');
+    target.innerHTML = suggestions + tablist + panels;
     if (!target.innerHTML) target.innerHTML = `<p role="status">${escape(labels.noResultsLabel)}</p>`;
     target.innerHTML += `<div class="search-suggestions__footer"><a class="btn btn--primary" href="${escape(labels.searchUrl)}?q=${encodeURIComponent(query)}&options%5Bprefix%5D=last">${escape(labels.viewAllLabel)}</a></div>`;
+    bindTabs(root, target);
     const paths = (data.products || []).map(item => {try {const url=new URL(item.url,location.origin);return url.origin===location.origin ? url.pathname : '';} catch {return '';}});
     const rows = await window.ThemeRecentlyViewed?.load(paths,'[data-recently-viewed-row]',signal) || [];
     if (signal.aborted) return;
@@ -35,5 +65,5 @@
     target.hidden=!valid.length;
     target.dispatchEvent(new CustomEvent('collection:products-loaded',{bubbles:true}));
   };
-  window.ThemeSearchSuggestions={escape,types,request,render,recent};
+  window.ThemeSearchSuggestions={escape,types,request,render,recent,bindTabs};
 })();
