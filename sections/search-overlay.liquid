@@ -80,6 +80,7 @@
         </span>
         <label class="visually-hidden" for="SearchOverlayInput">{{ 'search.title' | t }}</label>
         <input id="SearchOverlayInput" class="search-overlay__input form__control form__control--input" name="q" type="search" autocomplete="off" placeholder="{{ search_overlay_placeholder | escape }}" role="combobox" aria-autocomplete="list" aria-controls="SearchOverlayResults" aria-expanded="false" data-search-overlay-input>
+        <button class="search-overlay__compact-submit" type="submit" aria-label="{{ 'search.submit' | t | escape }}">{% render 'icon', icon: 'magnifying-glass', bare: true %}</button>
         <button class="overlay-close search-overlay__close" type="button" aria-label="{{ 'search.close' | t }}" data-overlay-close data-search-overlay-close>{% render 'icon', icon: 'x-mark', bare: true, class: 'overlay-close__icon' %}</button>
       </form>
 
@@ -205,6 +206,9 @@
   .search-overlay--compact .search-overlay__form { position: sticky; top: 0; z-index: 2; width: 100%; min-height: 48px; margin-bottom: 10px; border-radius: 0; background: var(--overlay-background-color, #fff); }
   .search-overlay--compact .search-overlay__icon { display: none; }
   .search-overlay--compact .search-overlay__input.form__control { min-height: 48px; padding-inline: 18px 52px; border: 0; box-shadow: none; }
+  .search-overlay__compact-submit { display: none; }
+  .search-overlay--compact:not(.search-overlay--has-query) .search-overlay__compact-submit { display: flex; position: absolute; inset-inline-end: 12px; align-items: center; justify-content: center; width: 32px; height: 32px; padding: 6px; border: 0; background: transparent; color: inherit; }
+  .search-overlay--compact:not(.search-overlay--has-query) .search-overlay__close { display: none; }
   .search-overlay--compact .search-overlay__input:focus { outline: 0; box-shadow: none; }
   .search-overlay--compact .search-overlay__form:focus-within { outline: 2px solid var(--input-focus-color); outline-offset: 2px; }
   .search-overlay--compact .search-overlay__close { inset-inline-start: auto; inset-inline-end: 12px; width: 32px; height: 32px; }
@@ -326,7 +330,7 @@
   };
 
   const resetSearchState = () => {
-    state.returningFocus = !!state.opener?.closest?.('[data-search-page]');
+    state.returningFocus = state.presentation?.restoreFocus !== false && !!state.opener?.closest?.('[data-search-page]');
     state.recentController?.abort();
     stopPlaceholderRotation();
     if (state.input) state.input.value = '';
@@ -362,6 +366,7 @@
     const presentation = state.presentation || (window.ThemeOverlay ? window.ThemeOverlay.get(overlay) : null);
     state.presentation = presentation;
     overlay.classList.toggle('search-overlay--compact', compact);
+    overlay.classList.toggle('search-overlay--has-query', !!query);
     input.value = query;
     const header = document.querySelector('.shopify-section.header');
     overlay.style.setProperty('--search-overlay-top', `${Math.max(0, header?.getBoundingClientRect().bottom || 0)}px`);
@@ -523,6 +528,7 @@
 
     nextInput.addEventListener('input', () => {
       const query = nextInput.value.trim();
+      nextOverlay.classList.toggle('search-overlay--has-query', !!query);
       window.clearTimeout(state.timer);
       state.controller?.abort();
       state.recentController?.abort();
@@ -613,6 +619,7 @@
   document.addEventListener('shopify:section:unload', (event) => {
     if (!state.overlay) return;
     const target = event.target;
+    if (target?.contains?.(state.opener) && target !== state.sectionRoot) { close({ force: true }); return; }
     if (target === state.sectionRoot || target?.contains?.(state.overlay)) {
       close({ force: true });
       state.presentation?.destroy();
