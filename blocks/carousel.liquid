@@ -5,6 +5,10 @@
 {% enddoc %}
 
 {% liquid
+  assign carousel_transition = block.settings.transition_style | default: 'slide'
+  unless carousel_transition == 'slide' or carousel_transition == 'fade'
+    assign carousel_transition = 'slide'
+  endunless
   assign carousel_columns_desktop = block.settings.columns_desktop | default: '4' | plus: 0
   if carousel_columns_desktop < 1 or carousel_columns_desktop > 6
     assign carousel_columns_desktop = 4
@@ -256,10 +260,16 @@
   {% if block.settings.image_text_card_content_color != blank %}--image-text-card-content-color: {{ block.settings.image_text_card_content_color | escape }};{% endif %}
 {% endcapture %}
 
+{% if carousel_transition == 'fade' %}
+  <link rel="stylesheet" href="{{ 'swiper-12.2.0-effect-fade.min.css' | asset_url }}" media="print" onload="this.media='all'">
+  <noscript>{{ 'swiper-12.2.0-effect-fade.min.css' | asset_url | stylesheet_tag }}</noscript>
+{% endif %}
+
 <div
   class="carousel-block carousel-block--width-{{ carousel_width_mode }} carousel-block--card-icon-{{ image_text_card_toggle_icon }}"
   style="{{ carousel_style | strip }}"
   data-carousel-block
+  data-transition="{{ carousel_transition }}"
   data-image-text-card-heading-tag="{{ image_text_card_heading_tag }}"
   data-swiper-columns-desktop="{{ carousel_columns_desktop }}"
   data-swiper-columns-mobile="{{ carousel_columns_mobile }}"
@@ -282,7 +292,6 @@
       root_class: 'carousel-block__viewport',
       aria_label: 'Carousel',
       pagination: carousel_pagination,
-      show_next_slide_preview: carousel_show_next_slide_preview,
       autoplay: carousel_autoplay,
       pause_on_hover: carousel_pause_on_hover,
       autoplay_delay: carousel_delay,
@@ -379,6 +388,7 @@
     }
   ],
   "settings": [
+    { "type": "select", "id": "transition_style", "label": "Style", "options": [{ "value": "slide", "label": "Slide" }, { "value": "fade", "label": "Fade" }], "default": "slide" },
     {
       "type": "header",
       "content": "t:general.layout"
