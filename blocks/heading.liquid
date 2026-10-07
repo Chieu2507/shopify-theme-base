@@ -9,6 +9,8 @@
   {% content_for 'block', type: 'heading', id: 'heading' %}
 {% enddoc %}
 
+{% assign block_plain_text = block.settings.text | strip_html | replace: '&nbsp;', '' | replace: '&#160;', '' | strip %}
+
 {% liquid
   assign heading_size = block.settings.heading_size | default: 'display'
   unless heading_size == 'display' or heading_size == 'xl' or heading_size == 'lg' or heading_size == 'md' or heading_size == 'sm' or heading_size == 'xs' or heading_size == 'custom'
@@ -127,12 +129,14 @@
   <{{ heading_tag }}
     class="{{ heading_class }}"
     {% if heading_style != blank %}style="{{ heading_style }}"{% endif %}
+    {% if block_plain_text == blank %}data-content-empty{% endif %}
     {{ block.shopify_attributes }}
   >{{ block.settings.text }}</{{ heading_tag }}>
 {% else %}
   <div
     class="heading-block size-style heading-block--empty"
     {% if heading_style != blank %}style="{{ heading_style }}"{% endif %}
+    {% if block_plain_text == blank %}data-content-empty{% endif %}
     {{ block.shopify_attributes }}
   ></div>
 {% endif %}
