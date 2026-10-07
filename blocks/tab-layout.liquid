@@ -445,7 +445,12 @@
     if (!viewAll.length) return;
 
     const url = trigger?.dataset.collectionUrl?.trim() || '';
-    if (url) {
+    const available = Boolean(url) && trigger?.dataset.viewAllAvailable === 'true';
+    viewAll.forEach((button) => {
+      const wrapper = button.closest('[data-collection-tabs-view-all-wrapper]');
+      if (wrapper) wrapper.hidden = !available;
+    });
+    if (available) {
       viewAll.forEach((button) => {
         button.setAttribute('href', url);
         button.removeAttribute('aria-disabled');

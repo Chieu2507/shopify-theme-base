@@ -31,6 +31,20 @@
 
   assign featured_blog_posts_source = section.settings.blog
 
+  assign featured_blog_posts_list_block = section.blocks | where: 'type', 'blog-grid' | first
+  assign featured_blog_posts_display_limit = featured_blog_posts_list_block.settings.max_posts | default: 3 | plus: 0
+  if featured_blog_posts_display_limit < 1 or featured_blog_posts_display_limit > 8
+    assign featured_blog_posts_display_limit = 3
+  endif
+  comment
+    Blog Grid renders one lead article in addition to max_posts supporting cards.
+  endcomment
+  assign featured_blog_posts_display_limit = featured_blog_posts_display_limit | plus: 1
+  assign featured_blog_posts_show_view_all = false
+  if featured_blog_posts_list_block != blank and featured_blog_posts_source != blank and featured_blog_posts_source.articles_count > featured_blog_posts_display_limit
+    assign featured_blog_posts_show_view_all = true
+  endif
+
   assign featured_blog_posts_padding_top = section.settings.padding_top | default: 0 | plus: 0
   assign featured_blog_posts_padding_bottom = section.settings.padding_bottom | default: 0 | plus: 0
   assign featured_blog_posts_padding_top_mobile = section.settings.padding_top_mobile | default: 0 | plus: 0
@@ -61,9 +75,11 @@
     <div class="featured-blog-posts__header">
       {% content_for 'block', type: 'header', id: 'header' %}
     </div>
-    <div class="featured-blog-posts__actions">
-      {% content_for 'block', type: 'view-all-button', id: 'featured-blog-posts-view-all', closest.blog: featured_blog_posts_source %}
-    </div>
+    {% if featured_blog_posts_show_view_all %}
+      <div class="featured-blog-posts__actions">
+        {% content_for 'block', type: 'view-all-button', id: 'featured-blog-posts-view-all', closest.blog: featured_blog_posts_source %}
+      </div>
+    {% endif %}
     <div class="featured-blog-posts__grid">
       {% content_for 'block', type: 'blog-grid', id: 'blog-grid', closest.blog: featured_blog_posts_source, use_section_blog: true %}
     </div>
