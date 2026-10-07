@@ -733,11 +733,10 @@
     }
 
     .header__mobile-drawer-surface {
-      position: relative;
+      position: absolute;
       display: flex;
       width: 100%;
-      height: 100dvh;
-      min-height: 100dvh;
+      min-height: 0;
       overflow: hidden;
       border-radius: var(--drawer-radius);
       background: var(--overlay-background-color);
@@ -746,11 +745,10 @@
 
     .header__mobile-drawer.component-overlay[data-mobile-layout='drawer'] .header__mobile-drawer-surface {
       --overlay-rest-transform: translateX(-100%);
-      inset: 0 auto 0 0;
-      width: 100%;
-      max-width: 100vw;
-      height: 100dvh;
-      max-height: 100dvh;
+      /* Left-anchored navigation shares the drawer padding settings. */
+      inset: var(--overlay-drawer-inset) auto var(--overlay-drawer-inset) var(--overlay-drawer-inset);
+      width: calc(100% - var(--overlay-drawer-inset) - var(--overlay-drawer-inset));
+      max-width: 40rem;
       margin: 0;
       border: var(--overlay-popover-border-width) solid var(--overlay-border-color);
       border-radius: 0 var(--drawer-radius) var(--drawer-radius) 0;
@@ -758,6 +756,16 @@
       color: var(--overlay-text-color);
       transform: var(--overlay-rest-transform);
       transition: transform var(--overlay-motion-duration, var(--motion-duration-standard)) var(--overlay-motion-ease, var(--motion-ease-standard));
+    }
+
+    @media (max-width: 500px) {
+      .header__mobile-drawer.component-overlay[data-mobile-layout='drawer'] .header__mobile-drawer-surface {
+        inset: 0;
+        width: 100%;
+        max-width: 100%;
+        height: 100dvh;
+        max-height: 100dvh;
+      }
     }
 
     .header__mobile-drawer.component-overlay[data-state='open'] .header__mobile-drawer-surface {
