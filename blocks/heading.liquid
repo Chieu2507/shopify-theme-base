@@ -10,9 +10,9 @@
 {% enddoc %}
 
 {% liquid
-  assign heading_size = block.settings.heading_size | default: 'lg'
+  assign heading_size = block.settings.heading_size | default: 'display'
   unless heading_size == 'display' or heading_size == 'xl' or heading_size == 'lg' or heading_size == 'md' or heading_size == 'sm' or heading_size == 'xs' or heading_size == 'custom'
-    assign heading_size = 'lg'
+    assign heading_size = 'display'
   endunless
 
   assign heading_custom_size = block.settings.custom_heading_size | default: 24 | plus: 0
@@ -24,6 +24,22 @@
   unless heading_tag == 'div' or heading_tag == 'h1' or heading_tag == 'h2' or heading_tag == 'h3' or heading_tag == 'h4' or heading_tag == 'h5' or heading_tag == 'h6'
     assign heading_tag = 'h2'
   endunless
+  if heading_size == 'display'
+    case heading_tag
+      when 'h1'
+        assign heading_size = 'display'
+      when 'h3'
+        assign heading_size = 'lg'
+      when 'h4'
+        assign heading_size = 'md'
+      when 'h5'
+        assign heading_size = 'sm'
+      when 'h6'
+        assign heading_size = 'xs'
+      else
+        assign heading_size = 'xl'
+    endcase
+  endif
 
   assign heading_width_mode = block.settings.width | default: 'fit'
   unless heading_width_mode == 'fit' or heading_width_mode == 'fill' or heading_width_mode == 'custom'
@@ -172,6 +188,7 @@
       "type": "select",
       "id": "heading_size",
       "label": "t:labels.heading_size",
+      "info": "Display follows the HTML tag typography from Theme Settings. A div uses H2 settings.",
       "options": [
         { "value": "display", "label": "t:options.heading_size.display" },
         { "value": "xl", "label": "t:options.heading_size.xl" },
@@ -181,7 +198,7 @@
         { "value": "xs", "label": "t:options.heading_size.xs" },
         { "value": "custom", "label": "t:options.heading_size.custom" }
       ],
-      "default": "lg"
+      "default": "display"
     },
     {
       "type": "range",
@@ -373,7 +390,7 @@
       "category": "t:general.basic",
       "settings": {
         "text": "<p>Heading</p>",
-        "heading_size": "lg",
+        "heading_size": "display",
         "html_tag": "h2",
         "width": "fit",
         "customize_mobile_size": false,

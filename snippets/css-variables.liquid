@@ -1,6 +1,10 @@
 {% liquid
   assign primary_font = settings.type_primary_font
   assign body_font = primary_font
+  assign button_font_weight = settings.button_font_weight | default: 'inherit'
+  unless button_font_weight == '300' or button_font_weight == '400' or button_font_weight == '500' or button_font_weight == '600' or button_font_weight == '700' or button_font_weight == '800' or button_font_weight == '900'
+    assign button_font_weight = 'inherit'
+  endunless
   assign heading_font = settings.type_heading_font
   assign accent_font = settings.type_accent_font
   if heading_font == blank
@@ -837,6 +841,10 @@
 %}
 
 {% style %}
+  {% if button_font_weight != 'inherit' %}
+    {% if body_font != blank %}{{ body_font | font_modify: 'weight', button_font_weight | font_face: font_display: 'swap' }}{% endif %}
+    {% if heading_font != blank %}{{ heading_font | font_modify: 'weight', button_font_weight | font_face: font_display: 'swap' }}{% endif %}
+  {% endif %}
   {% # Loads font variants with display: swap. %}
   {% if body_font != blank %}
     {{ body_font | font_face: font_display: 'swap' }}
@@ -1039,7 +1047,7 @@
     --button-font-size: {{ button_font_size }};
     --button-font-size-mobile: {{ button_font_size_mobile }};
     --button-letter-spacing: {{ button_letter_spacing }};
-    --button-font-weight: var(--font-body-weight);
+    --button-font-weight: {% if button_font_weight == 'inherit' %}var(--font-body-weight){% else %}{{ button_font_weight }}{% endif %};
     --button-font-family: {{ button_primary_font_family }};
     --button-text-case: {{ button_primary_text_case }};
     --button-border-width: {{ button_primary_border_width }}px;
@@ -1295,4 +1303,19 @@
       --button-hover-border: var(--button-{{ button_default_variant }}-hover-border);
     }
   {% endfor %}
+
+  .btn {
+    {% if settings.button_primary_background_color != blank %}
+      --button-primary-background: {{ settings.button_primary_background_color }};
+    {% endif %}
+    {% if settings.button_primary_text_color != blank %}
+      --button-primary-text: {{ settings.button_primary_text_color }};
+    {% endif %}
+    {% if settings.button_secondary_background_color != blank %}
+      --button-secondary-background: {{ settings.button_secondary_background_color }};
+    {% endif %}
+    {% if settings.button_secondary_text_color != blank %}
+      --button-secondary-text: {{ settings.button_secondary_text_color }};
+    {% endif %}
+  }
 {% endstyle %}
