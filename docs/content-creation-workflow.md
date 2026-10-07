@@ -35,7 +35,7 @@ Hướng dẫn mới, cụ thể của người dùng được ưu tiên hơn fi
 
 | Thành phần | Yêu cầu |
 | --- | --- |
-| Ảnh | Trung bình 4 ảnh/sản phẩm. Thiếu ảnh thì dùng ảnh sản phẩm gốc làm tham chiếu để render bổ sung, thay đổi góc hoặc bối cảnh. |
+| Ảnh | Tối thiểu 4 ảnh cho từng sản phẩm. Nếu design chỉ có 1 ảnh: ảnh 1 là ảnh sản phẩm, ảnh 2 là product life, ảnh 3 và 4 là các góc nhìn khác của cùng sản phẩm. Dùng ảnh gốc làm tham chiếu để render phần thiếu. |
 | Description | Có mô tả đầy đủ, phù hợp đúng sản phẩm. |
 | Giá | Có giá gốc và giá khuyến mãi. |
 | Tồn kho | Số lượng trung bình 20; không lấy mặc định 100 từ receipt cũ. |
@@ -75,11 +75,13 @@ Hướng dẫn mới, cụ thể của người dùng được ưu tiên hơn fi
 
 - Khi dùng trình tạo ảnh để tạo hoặc bổ sung ảnh sản phẩm (catalog, ảnh variant và product life), dùng **model `gpt-6-luna` với reasoning effort `max`** cho agent thực hiện tác vụ. Đây là cấu hình model của agent gọi công cụ tạo ảnh; không phải tham số model của công cụ tạo ảnh. Nếu môi trường không hỗ trợ cấu hình này, báo rõ giới hạn, không tự tuyên bố đã dùng đúng model.
 - Lấy ảnh đúng sản phẩm từ thiết kế/nguồn được cung cấp; upload vào Shopify Files/product media, không đưa ảnh nội dung vào theme `assets`.
-- Dùng mốc **4 ảnh để rà soát từng sản phẩm**, đồng thời kiểm tra trung bình toàn bộ nhóm. Sản phẩm dưới 4 ảnh phải được liệt kê rõ, không dùng sản phẩm nhiều ảnh để che phần còn thiếu.
+- Mỗi sản phẩm phải có **tối thiểu 4 ảnh**. Sản phẩm dưới 4 ảnh phải được liệt kê rõ là chưa đạt, không dùng trung bình toàn bộ nhóm hoặc sản phẩm nhiều ảnh để che phần còn thiếu.
+- Nếu sản phẩm trong design chỉ có một ảnh, giữ ảnh đó làm **ảnh 1 — ảnh sản phẩm/catalog**; tạo **ảnh 2 — product life** có đối tượng đang sử dụng đúng sản phẩm theo quy tắc bên dưới; tạo **ảnh 3 và 4 — hai góc nhìn khác của chính sản phẩm**, chẳng hạn mặt sau, bên trái, bên phải hoặc góc nghiêng tùy cấu tạo và góc ảnh gốc. Chọn góc bổ sung có ích để người xem hiểu sản phẩm, không lặp ảnh hoặc chỉ đổi nền để tính đủ 4 ảnh.
+- Ảnh góc bổ sung phải nhất quán với ảnh gốc về hình dáng, màu, tỷ lệ và chi tiết nhận diện. Đối chiếu nguồn bổ sung khi có; không tự bịa chi tiết ở mặt khuất. Nếu không đủ căn cứ để dựng một góc, chọn góc khác có thể xác minh hoặc ghi rõ cần thêm ảnh tham chiếu.
 - Với mỗi màu thực tế, có ảnh catalog và ảnh lifestyle/ảnh phụ phù hợp màu đó theo quy trình đã dùng cho Strideo. Nhiều màu có thể cần hơn 4 ảnh.
 - Ảnh render phải giữ đúng hình dáng và nhận diện sản phẩm, màu variant và tỷ lệ khung ảnh của thiết kế. Không dùng một ảnh màu khác để giả lập đã đủ ảnh cho mọi màu.
 - Gắn ảnh catalog làm ảnh chính của variant. Gắn ảnh phụ đúng màu vào variant metafield `custom.secondary_image` theo contract hiện có; kiểm tra definition và kiểu `file_reference` trước khi ghi.
-- Sắp xếp gallery theo cặp catalog/ảnh phụ từng màu. Thêm alt mô tả đúng sản phẩm và màu.
+- Với sản phẩm chỉ có một ảnh design, sắp xếp gallery theo thứ tự catalog → product life → góc bổ sung 1 → góc bổ sung 2. Với nhiều màu, tổ chức theo từng màu, bắt đầu bằng cặp catalog/product life rồi đến các góc bổ sung của màu đó; gắn đúng media/metafield cho variant. Thêm alt mô tả đúng sản phẩm, màu và góc nhìn hoặc hành động sử dụng.
 - Chờ media ở trạng thái sẵn sàng, rồi kiểm tra URL thực tế và ảnh khi đổi variant.
 
 ### Ảnh product life: sản phẩm được sử dụng trong thực tế
@@ -185,6 +187,7 @@ Liệt kê rõ mục chưa có dữ liệu, chưa tạo, chưa gắn hoặc chư
 
 ## Nguồn quy tắc
 
+- Chat cập nhật **content-creation-workflow.md**, 07/10/2026: tối thiểu 4 ảnh cho từng sản phẩm, thay mốc trung bình 4 ảnh trước đây; khi design chỉ có 1 ảnh, thứ tự là ảnh sản phẩm → product life → hai góc nhìn khác phù hợp của cùng sản phẩm.
 - Chat cập nhật **content-creation-workflow.md**, 07/10/2026: mỗi template có blog riêng mang tên template; ví dụ blog Perky chứa mọi bài viết mới của template Perky.
 - Chat cập nhật **content-creation-workflow.md**, 07/10/2026: tác vụ dùng trình tạo ảnh sản phẩm dùng model `gpt-6-luna`, reasoning effort `max`.
 - Chat cập nhật **content-creation-workflow.md**, 07/10/2026: ảnh product life phải thể hiện đối tượng đang sử dụng đúng sản phẩm (đeo trang sức, mang giày, trẻ chơi đồ chơi, người dùng thoa serum); hiểu sản phẩm và kiểm tra tính chân thực, thiết thực, không chỉ đặt sản phẩm vào một không gian.
