@@ -145,6 +145,8 @@
   data-currency="{{ cart.currency.iso_code | default: shop.currency }}"
   data-cart-add-error="{{ 'cart.add_error' | t | escape }}"
   data-cart-update-error="{{ 'cart.update_error' | t | escape }}"
+  data-cart-inventory-error="{{ 'products.inventory_low_stock' | t: count: '__COUNT__' | escape }}"
+  data-cart-inventory-sold-out="{{ 'products.sold_out' | t | escape }}"
   data-cart-note-saved="{{ 'cart_drawer.note_saved' | t | escape }}"
   data-cart-note-error="{{ 'cart_drawer.note_error' | t | escape }}"
   data-cart-discount-applied="{{ 'cart_drawer.discount_applied' | t | escape }}"
@@ -258,7 +260,16 @@
               {% if line_original_price > line_current_price %}
                 {% assign line_is_sale = true %}
               {% endif %}
-              <article class="cart-drawer__item{% if line_is_sale %} is-sale{% endif %}" data-cart-line data-line-key="{{ item.key | escape }}" data-variant-id="{{ item.variant_id }}" data-compare-price="{{ line_original_price }}">
+              <article
+                class="cart-drawer__item{% if line_is_sale %} is-sale{% endif %}"
+                data-cart-line
+                data-line-key="{{ item.key | escape }}"
+                data-variant-id="{{ item.variant_id }}"
+                data-compare-price="{{ line_original_price }}"
+                {% if item.variant.inventory_quantity != blank %}data-inventory-quantity="{{ item.variant.inventory_quantity }}"{% endif %}
+                {% if item.variant.inventory_management != blank %}data-inventory-management="{{ item.variant.inventory_management | escape }}"{% endif %}
+                {% if item.variant.inventory_policy != blank %}data-inventory-policy="{{ item.variant.inventory_policy | escape }}"{% endif %}
+              >
                 <a class="cart-drawer__item-media" href="{{ item.url }}" aria-label="{{ item.product.title | escape }}">
                   {% render 'image', image: item.image, class: 'cart-drawer__image', width: 240, widths: '120, 180, 240', sizes: '7rem', placeholder: 'product-1' %}
                 </a>

@@ -28,6 +28,15 @@ const html=await engine.parseAndRender(title,{block:{settings:{title_size:saved,
 assert.ok(html.includes('heading-'+v)||html.includes('blog-card__title--'+v),saved);
 const tab=stripShopifyMetadata(fs.readFileSync('blocks/collections-with-tabs-item.liquid','utf8'));
 const tabHtml=await engine.parseAndRender(tab,{block:{settings:{custom_title:'Collection'}},section:{settings:{title_size:saved,title_tag:'h3'}}});
-assert.match(tabHtml,new RegExp('<h3[^>]*tab-title--'+v+'[^>]*>Collection</h3>'));
+assert.match(tabHtml,new RegExp('<h3[^>]*(?:tab-title--|heading-)'+v+'[^>]*>Collection</h3>'));
 }
+});
+test('thumbnail custom size renders pixels independently of its HTML tag',async()=>{
+const src=stripShopifyMetadata(fs.readFileSync('blocks/collection-thumbnail.liquid','utf8'));
+const html=await engine.parseAndRender(src,{block:{settings:{custom_title:'Custom'}},section:{settings:{heading_size:'custom',custom_heading_size:37,html_tag:'h3'}}});
+assert.match(html,/<h3[^>]*heading-custom[^>]*style="font-size: 37px;"[^>]*>Custom<\/h3>/);
+});
+test('global typography groups use the same names as visual heading options',()=>{
+const src=fs.readFileSync('config/settings_schema.json','utf8');
+for(const [i,v]of scale.entries()){assert.ok(!src.includes('"t:general.heading_'+(i+1)+'"'));assert.ok(src.includes('"t:options.heading_size.'+v+'"'));}
 });

@@ -221,7 +221,7 @@
   };
 
   const updateHeaderHeight = (header, stickyType) => {
-    const height = `${header.offsetHeight}px`;
+    const height = `${getHeaderLayoutTarget(header).offsetHeight}px`;
     header.style.setProperty('--header-layout-height', height);
     if (stickyType === 'none') {
       document.documentElement.style.removeProperty('--header-height');
@@ -230,6 +230,11 @@
     }
     updateStickyHeaderHeight(header, stickyType);
   };
+
+  // Home overlays have a zero-height wrapper from first paint. Measure the
+  // visible header surface for sticky offsets and scroll-up translation.
+  const getHeaderLayoutTarget = (header) =>
+    header.querySelector('.header-top[data-header-overlap-first-section]') || header;
 
   const getStickyTarget = (header, stickyType) => {
     if (stickyType === 'top_header_only') {
@@ -244,7 +249,7 @@
       );
     }
 
-    return header;
+    return getHeaderLayoutTarget(header);
   };
 
   const updateStickyHeaderHeight = (header, stickyType = header.dataset.stickyType || 'none') => {
@@ -380,7 +385,7 @@
         return;
       }
 
-      const revealThreshold = Math.max(header.offsetHeight, 64);
+      const revealThreshold = Math.max(getHeaderLayoutTarget(header).offsetHeight, 64);
       const shouldReveal =
         forceShow ||
         scrollY <= 8 ||
