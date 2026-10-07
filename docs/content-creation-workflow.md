@@ -137,9 +137,17 @@ Hướng dẫn mới, cụ thể của người dùng được ưu tiên hơn fi
 
 ## 4. Blog post
 
-Phần này là quy trình mặc định bổ sung cho file hướng dẫn; chưa tìm thấy bộ quy tắc blog post riêng được người dùng chốt trước đây. Không coi các mặc định này là lời nhắn gốc.
+### Blog riêng cho từng template
 
-- Kiểm tra blog và bài viết đã có trước khi tạo. Dùng đúng blog đang được section chọn hoặc blog người dùng chỉ định; không mặc định mọi template đều dùng `News`.
+- Mỗi template có một blog riêng để chứa các bài viết mới của template đó. Blog mang tên template và dùng handle `<template-slug>`; ví dụ làm template Perky thì dùng blog **Perky**, handle `perky`, rồi tạo mọi bài viết mới của Perky trong blog này.
+- Kiểm tra blog theo tên, handle và ID trước khi tạo. Nếu đã có blog đúng template thì dùng lại; nếu chưa có thì tạo blog trước, lấy ID trả về rồi dùng ID đó khi tạo bài viết. Không tạo blog riêng cho từng bài hoặc tạo trùng blog mỗi lần chạy.
+- Không gắn bài mới vào `News` hoặc blog của template khác chỉ vì section hiện đang chọn blog đó. Nếu người dùng chỉ định rõ một blog đích khác, ưu tiên chỉ định đó.
+- Khi được yêu cầu gắn nội dung vào Theme Editor, chọn blog riêng của template trong picker của section và gắn article thuộc blog đó. Kiểm tra trang blog, link bài viết và nút View all đều dẫn đúng blog.
+- Đọc lại quan hệ article → blog sau khi tạo; lưu blog ID/title/handle cùng article ID/handle vào manifest và receipt/audit. Không tự chuyển bài viết có sẵn ngoài phạm vi yêu cầu.
+
+### Nội dung và hiển thị bài viết
+
+- Kiểm tra bài viết đã có trong blog đích trước khi tạo để tránh trùng lặp.
 - Mỗi bài có title, handle, nội dung đầy đủ, excerpt, ảnh đại diện và alt. Nội dung đúng chủ đề template, dùng cùng ngôn ngữ với thiết kế.
 - Title giữ nội dung tiêu đề trong thiết kế; không tự thêm hậu tố template. Với bài mới cần phân biệt trong shop dùng chung, dùng handle `<template-slug>-<article-slug>`.
 - Nội dung có phần mở đầu, các đoạn/đề mục dễ đọc và kết thúc phù hợp; excerpt là tóm tắt ngắn cho blog card, không để HTML lỗi hoặc placeholder.
@@ -170,13 +178,14 @@ Báo ngắn gọn số lượng đã tạo/cập nhật và các phần còn thi
 
 - **Product:** description, giá bán/giá gốc, tồn kho, summary, tag, Color/metafield, Size nếu có, số ảnh và ảnh theo màu; ảnh product life có đối tượng sử dụng, hành động đúng và tương tác/tỷ lệ chân thực.
 - **Collection:** hậu tố template, ảnh, membership đúng, khả dụng và resource/link trong editor.
-- **Blog post:** blog đích, title, body, excerpt, ảnh, metadata, trạng thái/ngày đăng và link thật.
+- **Blog post:** blog riêng đúng template, quan hệ article → blog, title, body, excerpt, ảnh, metadata, trạng thái/ngày đăng và link thật; picker và nút View all dẫn đúng blog khi có yêu cầu gắn vào editor.
 - **Preview:** dữ liệu hiển thị sau reload; desktop/mobile và tương tác liên quan đã kiểm tra.
 
 Liệt kê rõ mục chưa có dữ liệu, chưa tạo, chưa gắn hoặc chưa kiểm tra. Không báo “hoàn thành” dựa trên placeholder hoặc receipt của template khác.
 
 ## Nguồn quy tắc
 
+- Chat cập nhật **content-creation-workflow.md**, 07/10/2026: mỗi template có blog riêng mang tên template; ví dụ blog Perky chứa mọi bài viết mới của template Perky.
 - Chat cập nhật **content-creation-workflow.md**, 07/10/2026: tác vụ dùng trình tạo ảnh sản phẩm dùng model `gpt-6-luna`, reasoning effort `max`.
 - Chat cập nhật **content-creation-workflow.md**, 07/10/2026: ảnh product life phải thể hiện đối tượng đang sử dụng đúng sản phẩm (đeo trang sức, mang giày, trẻ chơi đồ chơi, người dùng thoa serum); hiểu sản phẩm và kiểm tra tính chân thực, thiết thực, không chỉ đặt sản phẩm vào một không gian.
 - Chat **Tạo sản phẩm - collection**, 24–25/07/2026: trung bình 4 ảnh, description, giá gốc/khuyến mãi, tồn kho trung bình 20, metafield summary, tag New/Bestseller, Color liên kết metafield; chuẩn hóa Birthstone/Material thành Color và dùng Size phù hợp.
