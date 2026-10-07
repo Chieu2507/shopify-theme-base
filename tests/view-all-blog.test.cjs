@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const { loadLiquid, stripShopifyMetadata } = require('./helpers/liquid-engine.cjs');
 const Liquid = loadLiquid();
 const block = stripShopifyMetadata(fs.readFileSync('blocks/view-all-button.liquid', 'utf8'));
-const engine = new Liquid({ templates: { icon: '', ...Object.fromEntries(['view-all-button', 'theme-button'].map((name) => [name, stripShopifyMetadata(fs.readFileSync(`snippets/${name}.liquid`, 'utf8'))])) } });
+const engine = new Liquid({ templates: { icon: '', ...Object.fromEntries(['view-all-button', 'theme-button', 'section-content-slot'].map((name) => [name, stripShopifyMetadata(fs.readFileSync(`snippets/${name}.liquid`, 'utf8'))])) } });
 engine.registerFilter('t', (key) => key);
 const render = (closest = {}, settings = {}, designMode = false) => engine.parseAndRenderSync(block, { block: { settings: { button_label: 'View all', ...settings } }, closest, request: { design_mode: designMode } });
 const links = (html) => [...html.matchAll(/<a\s[^>]*href="([^"]+)"/g)].map((match) => match[1]);
@@ -75,7 +75,7 @@ test('resource section limits follow the list defaults and validation rather tha
 });
 
 const tabsBlock = stripShopifyMetadata(fs.readFileSync('blocks/tabs-view-all-button.liquid', 'utf8'));
-const tabsEngine = new Liquid({ templates: { icon: '', 'size-style': '', ...Object.fromEntries(['view-all-button', 'theme-button'].map((name) => [name, stripShopifyMetadata(fs.readFileSync(`snippets/${name}.liquid`, 'utf8'))])) } });
+const tabsEngine = new Liquid({ templates: { icon: '', 'size-style': '', ...Object.fromEntries(['view-all-button', 'theme-button', 'section-content-slot'].map((name) => [name, stripShopifyMetadata(fs.readFileSync(`snippets/${name}.liquid`, 'utf8'))])) } });
 tabsEngine.registerFilter('t', (key) => key);
 function renderTabs(counts, designMode = false) {
   return tabsEngine.parseAndRenderSync(tabsBlock, {

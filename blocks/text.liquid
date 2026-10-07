@@ -9,6 +9,8 @@
   {% content_for 'block', type: 'text', id: 'text' %}
 {% enddoc %}
 
+{% assign block_plain_text = block.settings.text | strip_html | replace: '&nbsp;', '' | replace: '&#160;', '' | strip %}
+
 {% liquid
   assign text_size = block.settings.text_size | default: 'md'
   unless text_size == 'xs' or text_size == 'sm' or text_size == 'md' or text_size == 'lg' or text_size == 'xl' or text_size == 'xxl'
@@ -100,9 +102,10 @@
   <div
     class="{{ text_class }}"
     {% if text_style != blank %}style="{{ text_style }}"{% endif %}
+    {% if block_plain_text == blank %}data-content-empty{% endif %}
     {{ block.shopify_attributes }}
   >
-    {% if block.settings.height_limit != blank and block.settings.height_limit != 'none' %}
+    {% if block_plain_text != blank and block.settings.height_limit != blank and block.settings.height_limit != 'none' %}
       {% liquid
         assign text_height = 200
         case block.settings.height_limit

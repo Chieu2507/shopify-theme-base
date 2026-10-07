@@ -172,12 +172,16 @@
 {% endcapture %}
 {% assign header_style = header_style | strip %}
 
+{% capture header_content %}{% content_for 'blocks' %}{% endcapture %}
+{% assign header_plain_text = header_content | strip_html | replace: '&nbsp;', '' | replace: '&#160;', '' | strip %}
+
 <div
   class="block-header size-style layout-flow layout-flow--responsive motion-block"
   {% if header_style != blank %}style="{{ header_style }}"{% endif %}
+  {% if header_plain_text == blank %}data-content-empty{% endif %}
   {{ block.shopify_attributes }}
 >
-  {% content_for 'blocks' %}
+  {{ header_content }}
 </div>
 
 {% stylesheet %}
@@ -480,7 +484,7 @@
           "type": "heading",
           "settings": {
             "text": "<p>Build your base</p>",
-            "heading_size": "lg",
+            "heading_size": "display",
             "html_tag": "h2"
           }
         },

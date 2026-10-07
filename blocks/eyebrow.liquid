@@ -9,6 +9,8 @@
   {% content_for 'block', type: 'eyebrow', id: 'eyebrow' %}
 {% enddoc %}
 
+{% assign block_plain_text = block.settings.text | strip_html | replace: '&nbsp;', '' | replace: '&#160;', '' | strip %}
+
 {% liquid
   assign border_thickness = block.settings.border_thickness | default: 0
   assign border_thickness = border_thickness | plus: 0
@@ -78,6 +80,7 @@
   <div
     class="{{ eyebrow_class }}"
     {% if eyebrow_style != blank %}style="{{ eyebrow_style }}"{% endif %}
+    {% if block_plain_text == blank %}data-content-empty{% endif %}
     {{ block.shopify_attributes }}
   >
     {% if block.settings.show_icon %}
