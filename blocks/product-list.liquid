@@ -163,6 +163,11 @@
   endunless
 %}
 
+{% capture product_list_promo_cards %}{% content_for 'blocks' %}{% endcapture %}
+{% liquid
+  assign product_list_actual_count = product_list_items.size | at_most: product_list_item_limit
+  assign product_list_last_position = product_list_actual_count | plus: 1
+%}
 {% capture product_list_items_content %}
   {% if product_list_items != blank %}
     {% for product_list_item in product_list_items limit: product_list_item_limit %}
@@ -174,11 +179,13 @@
           assign product_list_card_placeholder = true
         endif
       %}
+      {% render 'product-list-promo-items', cards: product_list_promo_cards, position: forloop.index, last_position: product_list_last_position, layout: product_list_layout %}
       <div class="{% if product_list_layout == 'carousel' %}swiper-slide {% endif %}product-collection-grid__item product-card-layout__item product-list__item">
         {% content_for 'block', type: 'product-card', id: 'product-card', product: product_list_card_product, closest.product: product_list_card_product, placeholder: product_list_card_placeholder %}
       </div>
     {% endfor %}
   {% endif %}
+  {% render 'product-list-promo-items', cards: product_list_promo_cards, position: product_list_last_position, last_position: product_list_last_position, layout: product_list_layout %}
 {% endcapture %}
 
 {% capture product_list_pagination_style %}
@@ -223,6 +230,9 @@
 {% endcapture %}
 {% assign product_list_navigation_markup = product_list_navigation_markup | strip %}
 
+{% if product_list_promo_cards contains '<!--promo-card-slot:' %}
+  <script data-theme-module="{{ 'product-list-promos.js' | asset_url }}"></script>
+{% endif %}
 {% if product_list_layout == 'carousel' %}
   <script data-theme-module="{{ 'product-collection-carousel.js' | asset_url }}"></script>
 {% endif %}
@@ -235,6 +245,7 @@
   data-collection-url="{{ product_list_collection.url | escape }}"
   {{ block.shopify_attributes }}
 >
+  <div class="product-list__mobile-promos" data-product-list-mobile-promos></div>
   {% if product_list_navigation_position == 'top' %}{{ product_list_navigation_markup }}{% endif %}
   <div class="product-list__carousel section-list-layout__main swiper-carousel__container" data-product-list-carousel>
     {% render 'product-collection-grid',
@@ -278,6 +289,8 @@
     width: 100%;
     min-width: 0;
   }
+
+
 
   .product-list__carousel {
     position: relative;
@@ -339,7 +352,7 @@
   "tag": null,
   "blocks": [
     {
-      "type": "product-card"
+      "type": "promo-card"
     }
   ],
   "settings": [
