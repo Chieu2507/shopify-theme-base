@@ -77,10 +77,10 @@ test('resource section limits follow the list defaults and validation rather tha
 const tabsBlock = stripShopifyMetadata(fs.readFileSync('blocks/tabs-view-all-button.liquid', 'utf8'));
 const tabsEngine = new Liquid({ templates: { icon: '', 'size-style': '', ...Object.fromEntries(['view-all-button', 'theme-button', 'section-content-slot'].map((name) => [name, stripShopifyMetadata(fs.readFileSync(`snippets/${name}.liquid`, 'utf8'))])) } });
 tabsEngine.registerFilter('t', (key) => key);
-function renderTabs(counts, designMode = false) {
+function renderTabs(counts, designMode = false, settings = {}) {
   return tabsEngine.parseAndRenderSync(tabsBlock, {
     section: { settings: { max_products: 4 }, blocks: counts.map((count) => ({ type: 'collection-tab', settings: { collection: count === null ? null : { url: `/collections/${count}`, products_count: count } } })) },
-    block: { settings: {} }, request: { design_mode: designMode }
+    block: { settings }, request: { design_mode: designMode }
   });
 }
 
@@ -137,5 +137,26 @@ test('migration copies legacy static blog resources once and preserves other mer
     document.sections.editorial.settings.blog = '';
     assert.equal(migrate(document), 0);
     assert.equal(document.sections.editorial.settings.blog, '');
+  }
+});
+
+
+test('mobile visibility preference preserves standard resource links and missing-resource behavior', () => {
+  for (const hide_view_all_mobile of [false, true]) {
+    const html = render({ blog: { url: '/blogs/news' } }, { hide_view_all_mobile });
+    assert.deepEqual(links(html), ['/blogs/news', '/blogs/news']);
+    assert.equal(html.includes('collection-list-view-all--hide-mobile'), hide_view_all_mobile);
+    assert.equal(render({}, { hide_view_all_mobile }).trim(), '');
+  }
+});
+
+test('mobile visibility preference preserves tab overflow and collection switching hooks', () => {
+  for (const hide_view_all_mobile of [false, true]) {
+    const html = renderTabs([5], false, { hide_view_all_mobile });
+    assert.deepEqual(links(html), ['/collections/5']);
+    assert.equal(html.includes('collection-tabs-view-all--hide-mobile'), hide_view_all_mobile);
+    assert.match(html, /data-collection-tabs-view-all-wrapper/);
+    assert.equal(renderTabs([4], false, { hide_view_all_mobile }).trim(), '');
+    assert.match(renderTabs([4, 5], false, { hide_view_all_mobile }), /data-collection-tabs-view-all-wrapper\s+hidden/);
   }
 });
