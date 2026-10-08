@@ -1,7 +1,8 @@
 {% doc %}
   Renders one collection tab in a Collection Tabs section. The block owns
   the collection resource and tab label. Product Card is the only fixed static
-  child, rendered once per product in the selected collection; section settings
+  child, rendered once per product. Dynamic Promo card children are inserted
+  at product boundaries using the shared Product list contract; section settings
   own the shared product-list presentation.
 
   @example
@@ -158,6 +159,11 @@
   endif
 %}
 
+{% capture collection_tab_promo_cards %}{% content_for 'blocks' %}{% endcapture %}
+{% liquid
+  assign collection_tab_actual_count = collection_tab_items.size | at_most: collection_tab_item_limit
+  assign collection_tab_last_position = collection_tab_actual_count | plus: 1
+%}
 {% capture collection_tab_items_content %}
   {% if collection_tab_items != blank %}
     {% for collection_tab_item in collection_tab_items limit: collection_tab_item_limit %}
@@ -169,11 +175,13 @@
           assign collection_tab_card_placeholder = true
         endif
       %}
+      {% render 'product-list-promo-items', cards: collection_tab_promo_cards, position: forloop.index, last_position: collection_tab_last_position, layout: collection_tab_layout %}
       <div class="{% if collection_tab_layout == 'carousel' %}swiper-slide {% endif %}product-collection-grid__item product-card-layout__item collection-tab__product">
         {% content_for 'block', type: 'product-card', id: 'product-card', product: collection_tab_card_product, closest.product: collection_tab_card_product, placeholder: collection_tab_card_placeholder %}
       </div>
     {% endfor %}
   {% endif %}
+  {% render 'product-list-promo-items', cards: collection_tab_promo_cards, position: collection_tab_last_position, last_position: collection_tab_last_position, layout: collection_tab_layout %}
 {% endcapture %}
 
 {% capture collection_tab_pagination_style %}
@@ -190,6 +198,9 @@
 {% endcapture %}
 {% assign collection_tab_navigation_center_style = collection_tab_navigation_center_style | strip %}
 
+{% if collection_tab_promo_cards contains '<!--promo-card-slot:' %}
+  <script data-theme-module="{{ 'product-list-promos.js' | asset_url }}"></script>
+{% endif %}
 <div
   class="collection-tab"
   data-collection-tab
@@ -224,6 +235,7 @@
     aria-hidden="{% if collection_tab_is_initial %}false{% else %}true{% endif %}"
     {% unless collection_tab_is_initial %}hidden{% endunless %}
   >
+    <div class="product-list__mobile-promos" data-product-list-mobile-promos></div>
     {% if collection_tab_show_grid %}
       <div
         class="collection-tab__carousel swiper-carousel__container"
@@ -363,7 +375,7 @@
   "name": "t:general.collection_tab",
   "tag": null,
   "blocks": [
-    { "type": "product-card" }
+    { "type": "promo-card" }
   ],
   "settings": [
     {
