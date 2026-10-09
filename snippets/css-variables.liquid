@@ -72,6 +72,7 @@
       assign default_secondary_hover_border = scheme.settings.button_secondary_hover_border | default: default_secondary_hover_border
       assign default_tertiary_text = scheme.settings.button_tertiary_text | default: default_tertiary_text
       assign default_tertiary_hover_text = scheme.settings.button_tertiary_hover_text | default: default_tertiary_hover_text
+      break
     endif
   endfor
 
@@ -93,6 +94,7 @@
       assign overlay_border_color = scheme.settings.border | default: overlay_border_color
       assign overlay_shadow_color = scheme.settings.shadow | default: overlay_shadow_color
       assign overlay_color = overlay_shadow_color
+      break
     endif
   endfor
 
@@ -843,25 +845,7 @@
 %}
 
 {% style %}
-  {% if button_font_weight != 'inherit' %}
-    {% if body_font != blank %}{{ body_font | font_modify: 'weight', button_font_weight | font_face: font_display: 'swap' }}{% endif %}
-    {% if heading_font != blank %}{{ heading_font | font_modify: 'weight', button_font_weight | font_face: font_display: 'swap' }}{% endif %}
-  {% endif %}
-  {% # Loads font variants with display: swap. %}
-  {% if body_font != blank %}
-    {{ body_font | font_face: font_display: 'swap' }}
-    {{ body_font | font_modify: 'weight', 'bold' | font_face: font_display: 'swap' }}
-    {{ body_font | font_modify: 'weight', 'bold' | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
-    {{ body_font | font_modify: 'style', 'italic' | font_face: font_display: 'swap' }}
-  {% endif %}
-  {% if heading_font != blank %}
-    {{ heading_font | font_face: font_display: 'swap' }}
-    {{ heading_font | font_modify: 'weight', 'bold' | font_face: font_display: 'swap' }}
-  {% endif %}
-  {% if accent_font != blank %}
-    {{ accent_font | font_face: font_display: 'swap' }}
-    {{ accent_font | font_modify: 'weight', 'bold' | font_face: font_display: 'swap' }}
-  {% endif %}
+  {% render 'font-faces', body_font: body_font, heading_font: heading_font, accent_font: accent_font, button_font_weight: button_font_weight %}
 
   :root {
     --header-height: 0px;

@@ -4,12 +4,15 @@
     {% # Establish the viewport before evaluating responsive image hints. %}
     {% render 'meta-tags' %}
 
-    {% comment %}The owning section supplies matching art-directed hints; discover
-      its LCP source before fonts, styles and header/overlay markup are parsed.{% endcomment %}
-    {% if content_for_layout contains '<!-- theme-lcp-preloads:start -->' %}
-      {% assign lcp_preloads = content_for_layout | split: '<!-- theme-lcp-preloads:start -->' | last | split: '<!-- theme-lcp-preloads:end -->' | first %}
-      {{ lcp_preloads }}
-    {% endif %}
+    {% comment %}The owning section supplies matching art-directed LCP hints.
+      Reading content_for_layout here renders Template before Header in the
+      Theme Editor, so discover these early hints only on the storefront.{% endcomment %}
+    {% unless request.design_mode %}
+      {% if content_for_layout contains '<!-- theme-lcp-preloads:start -->' %}
+        {% assign lcp_preloads = content_for_layout | split: '<!-- theme-lcp-preloads:start -->' | last | split: '<!-- theme-lcp-preloads:end -->' | first %}
+        {{ lcp_preloads }}
+      {% endif %}
+    {% endunless %}
     {% # Inlined CSS Variables %}
     {% render 'css-variables' %}
 
@@ -64,11 +67,11 @@
       {{ content_for_layout }}
     </main>
 
-    {% comment %}Fixed overlays do not participate in page flow. Parse the
-      meaningful page content before their hidden product/form markup.{% endcomment %}
-    {% sections 'overlay-group' %}
-
     {% sections 'footer-group' %}
+
+    {% comment %}Render fixed overlays after the page content and footer so
+      Theme Editor groups follow Header, Template, Footer, Overlay order.{% endcomment %}
+    {% sections 'overlay-group' %}
     {% render 'component-overlay-cursor' %}
     {% if request.page_type == 'product' %}{% section 'recently-viewed-card' %}{% endif %}
     <script src="{{ 'recently-viewed.js' | asset_url }}" defer></script>
