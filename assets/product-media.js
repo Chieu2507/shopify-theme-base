@@ -239,13 +239,15 @@ class ProductMediaGallery extends HTMLElement {
       this.variantIdsFor(slide).includes(normalizedVariantId),
     );
 
+    let visibilityChanged = false;
     slides.forEach((slide) => {
       const variantIds = this.variantIdsFor(slide);
       const hidden = hasLinkedMedia && variantIds.length > 0 && !variantIds.includes(normalizedVariantId);
+      if (slide.hidden !== hidden) visibilityChanged = true;
       this.setMediaVisibility(slide, hidden);
     });
 
-    return true;
+    return visibilityChanged;
   }
 
   destroyGallery() {
@@ -453,21 +455,29 @@ class ProductMediaGallery extends HTMLElement {
     const variantId = String(event.detail?.variantId || event.detail?.variant?.id || '');
     const featuredMediaId = event.detail?.variant?.featured_media?.id;
     window.requestAnimationFrame(() => {
+      const previousVariantMediaId = this.dataset.currentVariantMediaId || '';
+      const activeMediaId = this.activeMediaId();
+      const preserveActiveMedia = this.productInformation?.hasAttribute('data-featured-product')
+        && (!featuredMediaId || String(featuredMediaId) === previousVariantMediaId);
       this.dataset.currentVariantId = variantId;
-      const filtersVariantMedia = this.applyVariantMediaFilter(variantId);
+      const visibilityChanged = this.applyVariantMediaFilter(variantId);
       this.syncThumbnailVisibility();
       this.syncGalleryOverflow();
       const visibleMediaIds = new Set(this.visibleSlides().map((slide) => String(slide.dataset.mediaId)));
-      const mediaId = featuredMediaId && visibleMediaIds.has(String(featuredMediaId))
+      const mediaId = preserveActiveMedia && visibleMediaIds.has(activeMediaId)
+        ? activeMediaId
+        : featuredMediaId && visibleMediaIds.has(String(featuredMediaId))
         ? String(featuredMediaId)
         : this.activeMediaId();
-      this.dataset.currentVariantMediaId = mediaId || '';
+      this.dataset.currentVariantMediaId = featuredMediaId ? String(featuredMediaId) : previousVariantMediaId;
 
-      if (filtersVariantMedia) {
+      if (visibilityChanged) {
         this.destroyGallery();
         this.initializeGallery(mediaId, { instant: false });
         return;
       }
+
+      if (preserveActiveMedia || (this.mainSwiper && mediaId === activeMediaId)) return;
 
       if (this.galleryMode === 'desktop-static') {
         if (mediaId) this.scrollToMedia(String(mediaId), true);
@@ -997,7 +1007,9 @@ class ProductMediaGallery extends HTMLElement {
   showMedia(mediaId, instant = false) {
     const slides = Array.from(this.mainSwiper?.slides || []);
     const index = slides.findIndex((slide) => String(slide.dataset.mediaId) === String(mediaId));
-    if (index >= 0) this.mainSwiper.slideTo(index, instant ? 0 : undefined);
+    if (index >= 0 && index !== this.mainSwiper.activeIndex) {
+      this.mainSwiper.slideTo(index, instant ? 0 : undefined);
+    }
   }
 
   scrollToMedia(mediaId, instant = false) {
