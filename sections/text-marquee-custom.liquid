@@ -36,16 +36,9 @@
       assign section_alignment = 'start'
   endcase
 
-  assign section_height_mode = section.settings.height | default: 'fit'
-  unless section_height_mode == 'fit' or section_height_mode == 'fill'
-    assign section_height_mode = 'fit'
-  endunless
-
   assign section_position_source = 'top'
   if section_direction == 'horizontal'
-    assign section_position_source = section.settings.position_horizontal | default: section.settings.position | default: 'center'
-  elsif section_height_mode == 'fill'
-    assign section_position_source = section.settings.position | default: 'center'
+    assign section_position_source = section.settings.position_horizontal | default: 'center'
   endif
   assign section_position_name = section_position_source
   case section_position_name
@@ -138,21 +131,20 @@
     gap: section_gap_desktop,
     gap_mobile: section_gap_mobile
   %}
-  {% if section_vertical_on_mobile and section_justify_mobile == 'flex-start' and section_justify != 'flex-start' %}--layout-flow-justify-content-mobile: flex-start;{% endif %}
   --text-marquee-custom-align: {{ section_alignment }};
   {% if section_mobile_alignment_enabled %}--text-marquee-custom-align-mobile: {{ section_alignment_mobile }};{% endif %}
 {% endcapture %}
 {% assign section_content_style = section_content_style | strip %}
 
 <div
-  class="text-marquee-custom color-scheme {{ color_scheme }} text-marquee-custom--height-{{ section_height_mode }}"
+  class="section-spacing text-marquee-custom text-marquee-custom--{{ section_direction }}{% if section_vertical_on_mobile %} text-marquee-custom--mobile-vertical{% endif %} color-scheme {{ color_scheme }}"
   {% if section_style != blank %}style="{{ section_style }}"{% endif %}
 >
   {% if section.settings.background_image != blank %}
     <div class="text-marquee-custom__background" aria-hidden="true"></div>
   {% endif %}
   <div class="container {{ section_container_width }} text-marquee-custom__container">
-    <div class="text-marquee-custom__content layout-flow layout-flow--responsive" style="{{ section_content_style }}">
+    <div class="text-marquee-custom__content layout-flow layout-flow--responsive layout-flow--{{ section_direction }}{% if section_vertical_on_mobile %} layout-flow--mobile-vertical{% endif %}" style="{{ section_content_style }}">
       {% content_for 'blocks' %}
     </div>
   </div>
@@ -199,11 +191,6 @@
     text-align: var(--flex-align);
   }
 
-  .section-text-marquee-custom .text-marquee-custom--height-fill,
-  .section-text-marquee-custom .text-marquee-custom--height-fill > .text-marquee-custom__container,
-  .section-text-marquee-custom .text-marquee-custom--height-fill > .text-marquee-custom__container > .text-marquee-custom__content {
-    height: 100%;
-  }
 
   .section-text-marquee-custom .text-marquee-custom__content > * {
     min-width: 0;
@@ -230,23 +217,50 @@
 
 {% schema %}
 {
-  "name": "Scrolling Text Images",
+  "name": "Text marquee (custom)",
   "class": "section-text-marquee-custom",
-  "enabled_on": { "templates": ["*"] },
+  "enabled_on": {
+    "templates": [
+      "*"
+    ]
+  },
   "blocks": [
-    { "type": "header" },
-    { "type": "eyebrow" },
-    { "type": "heading" },
-    { "type": "text" },
-    { "type": "image" },
-    { "type": "video" },
-    { "type": "button" },
-    { "type": "buttons" },
-    { "type": "icon" },
-    { "type": "divider" },
-    { "type": "spacer" },
-    { "type": "scroll-to" },
-    { "type": "marquee" }
+    {
+      "type": "header"
+    },
+    {
+      "type": "eyebrow"
+    },
+    {
+      "type": "heading"
+    },
+    {
+      "type": "text"
+    },
+    {
+      "type": "image"
+    },
+    {
+      "type": "video"
+    },
+    {
+      "type": "button"
+    },
+    {
+      "type": "buttons"
+    },
+    {
+      "type": "icon"
+    },
+    {
+      "type": "spacer"
+    },
+    {
+      "type": "scroll-to"
+    },
+    {
+      "type": "marquee"
+    }
   ],
   "settings": [
     {
@@ -258,9 +272,18 @@
       "id": "section_width",
       "label": "t:labels.section_width",
       "options": [
-        { "value": "page_width", "label": "t:options.section_width.page_width" },
-        { "value": "full_width", "label": "t:options.section_width.full_width" },
-        { "value": "full_width_no_padding", "label": "t:options.section_width.full_width_no_padding" }
+        {
+          "value": "page_width",
+          "label": "t:options.section_width.page_width"
+        },
+        {
+          "value": "full_width",
+          "label": "t:options.section_width.full_width"
+        },
+        {
+          "value": "full_width_no_padding",
+          "label": "t:options.section_width.full_width_no_padding"
+        }
       ],
       "default": "full_width"
     },
@@ -269,32 +292,34 @@
       "id": "direction",
       "label": "t:labels.direction",
       "options": [
-        { "value": "horizontal", "label": "t:options.direction.horizontal" },
-        { "value": "vertical", "label": "t:options.direction.vertical" }
+        {
+          "value": "horizontal",
+          "label": "t:options.direction.horizontal"
+        },
+        {
+          "value": "vertical",
+          "label": "t:options.direction.vertical"
+        }
       ],
       "default": "vertical"
-    },
-    {
-      "type": "select",
-      "id": "position",
-      "label": "t:labels.position",
-      "options": [
-        { "value": "top", "label": "t:options.position.top" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "bottom", "label": "t:options.position.bottom" },
-        { "value": "space-between", "label": "t:options.alignment.space_between" }
-      ],
-      "default": "center",
-      "visible_if": "{{ section.settings.direction == 'vertical' and section.settings.height == 'fill' }}"
     },
     {
       "type": "select",
       "id": "position_horizontal",
       "label": "t:labels.position",
       "options": [
-        { "value": "top", "label": "t:options.position.top" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "bottom", "label": "t:options.position.bottom" }
+        {
+          "value": "top",
+          "label": "t:options.position.top"
+        },
+        {
+          "value": "center",
+          "label": "t:options.alignment.center"
+        },
+        {
+          "value": "bottom",
+          "label": "t:options.position.bottom"
+        }
       ],
       "default": "center",
       "visible_if": "{{ section.settings.direction == 'horizontal' }}"
@@ -304,10 +329,22 @@
       "id": "horizontal_alignment",
       "label": "t:labels.alignment",
       "options": [
-        { "value": "left", "label": "t:options.alignment.left" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" },
-        { "value": "space-between", "label": "t:options.alignment.space_between" }
+        {
+          "value": "left",
+          "label": "t:options.alignment.left"
+        },
+        {
+          "value": "center",
+          "label": "t:options.alignment.center"
+        },
+        {
+          "value": "right",
+          "label": "t:options.alignment.right"
+        },
+        {
+          "value": "space-between",
+          "label": "t:options.alignment.space_between"
+        }
       ],
       "default": "left",
       "visible_if": "{{ section.settings.direction == 'horizontal' }}"
@@ -324,9 +361,18 @@
       "id": "alignment",
       "label": "t:labels.alignment",
       "options": [
-        { "value": "left", "label": "t:options.alignment.left" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" }
+        {
+          "value": "left",
+          "label": "t:options.alignment.left"
+        },
+        {
+          "value": "center",
+          "label": "t:options.alignment.center"
+        },
+        {
+          "value": "right",
+          "label": "t:options.alignment.right"
+        }
       ],
       "default": "left",
       "visible_if": "{{ section.settings.direction == 'vertical' }}"
@@ -336,9 +382,18 @@
       "id": "alignment_mobile",
       "label": "t:labels.alignment_mobile",
       "options": [
-        { "value": "left", "label": "t:options.alignment.left" },
-        { "value": "center", "label": "t:options.alignment.center" },
-        { "value": "right", "label": "t:options.alignment.right" }
+        {
+          "value": "left",
+          "label": "t:options.alignment.left"
+        },
+        {
+          "value": "center",
+          "label": "t:options.alignment.center"
+        },
+        {
+          "value": "right",
+          "label": "t:options.alignment.right"
+        }
       ],
       "default": "left",
       "visible_if": "{{ section.settings.direction == 'vertical' or section.settings.customize_mobile_alignment }}"
@@ -366,20 +421,6 @@
       "step": 1,
       "unit": "px",
       "default": 12
-    },
-    {
-      "type": "header",
-      "content": "t:general.size"
-    },
-    {
-      "type": "select",
-      "id": "height",
-      "label": "t:labels.height",
-      "options": [
-        { "value": "fit", "label": "t:options.width.fit" },
-        { "value": "fill", "label": "t:options.width.fill" }
-      ],
-      "default": "fill"
     },
     {
       "type": "header",
@@ -457,46 +498,138 @@
   ],
   "presets": [
     {
-      "name": "Scrolling Text Images",
+      "name": "Text marquee (custom)",
       "category": "t:general.content",
+      "settings": {
+        "section_width": "full_width_no_padding",
+        "direction": "vertical",
+        "gap_desktop": 0,
+        "gap_mobile": 0,
+        "color_scheme": "scheme-1",
+        "background_color": "#ffffff",
+        "padding_top": 0,
+        "padding_bottom": 0,
+        "customize_mobile_padding": false,
+        "position_horizontal": "center",
+        "horizontal_alignment": "left",
+        "alignment": "left",
+        "alignment_mobile": "left"
+      },
       "blocks": [
         {
           "type": "marquee",
           "settings": {
-                "animation_direction": "backward",
-                "animation_speed": 1,
-                "gap_desktop": 48,
-                "gap_mobile": 32,
-                "padding_top": 24,
-                "padding_bottom": 24,
-                "padding_left": 0,
-                "padding_right": 0
+            "animation_direction": "backward",
+            "animation_speed": 1,
+            "gap_desktop": 32,
+            "gap_mobile": 32,
+            "padding_top": 28,
+            "padding_bottom": 28,
+            "customize_mobile_padding": true,
+            "padding_top_mobile": 24,
+            "padding_bottom_mobile": 24,
+            "show_top_divider": true,
+            "enable_parallax": true,
+            "alignment": "center",
+            "width": "fill",
+            "color_type": "inherit"
           },
           "blocks": [
-                {
-                  "type": "marquee-item",
-                  "settings": { "direction": "horizontal", "position": "center" },
-                  "blocks": [
-                    { "type": "heading", "settings": { "text": "<p>Diamond statement</p>", "heading_size": "display", "html_tag": "div" } },
-                    { "type": "image", "settings": { "image_ratio_desktop": "custom", "image_ratio_custom_width_desktop": 2, "image_ratio_custom_height_desktop": 1, "width_desktop": "fill", "corner_radius": "square" } }
-                  ]
-                },
-                {
-                  "type": "marquee-item",
-                  "settings": { "direction": "horizontal", "position": "center" },
-                  "blocks": [
-                    { "type": "heading", "settings": { "text": "<p>Birthstone</p>", "heading_size": "display", "html_tag": "div" } },
-                    { "type": "image", "settings": { "image_ratio_desktop": "custom", "image_ratio_custom_width_desktop": 2, "image_ratio_custom_height_desktop": 1, "width_desktop": "fill", "corner_radius": "square" } }
-                  ]
-                },
-                {
-                  "type": "marquee-item",
-                  "settings": { "direction": "horizontal", "position": "center" },
-                  "blocks": [
-                    { "type": "heading", "settings": { "text": "<p>Diamond statement</p>", "heading_size": "display", "html_tag": "div" } },
-                    { "type": "image", "settings": { "image_ratio_desktop": "custom", "image_ratio_custom_width_desktop": 2, "image_ratio_custom_height_desktop": 1, "width_desktop": "fill", "corner_radius": "square" } }
-                  ]
-                }
+            {
+              "type": "_marquee-heading",
+              "settings": {
+                "text": "SUSTAINABLE MANUFACTURING",
+                "heading_size": "md",
+                "color_role": "heading",
+                "opacity": 100
+              }
+            },
+            {
+              "type": "_marquee-icon",
+              "settings": {
+                "source": "custom",
+                "icon": "star",
+                "custom_icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\"><svg x=\"1.9956\" y=\"0.44035\" preserveAspectRatio=\"none\" overflow=\"visible\" style=\"display: block; stroke: none;\" width=\"20.6888\" height=\"22.1593\" viewBox=\"0 0 20.6888 22.1593\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<g id=\"Group 1\">\n<path id=\"Vector\" d=\"M20.5885 10.8074C20.5047 10.6398 20.2953 10.5561 20.1277 10.5142C19.1643 10.5142 10.8702 10.1791 10.8702 0.544577C10.8702 0.251354 10.6189 1.94609e-05 10.3257 1.94609e-05C10.0324 1.94609e-05 9.7811 0.251354 9.7811 0.544577C9.7811 10.1791 1.48706 10.5142 0.565502 10.5142C0.439835 10.5142 0.314168 10.5561 0.23039 10.6398C0.146612 10.6817 0.104723 10.7655 0.0628336 10.8074C-0.0209445 10.975 -0.0209445 11.1844 0.0628336 11.352C0.146612 11.5195 0.356057 11.6452 0.565502 11.6452C0.565502 11.6452 0.565503 11.6452 0.607392 11.6452C1.57084 11.6452 9.82299 11.9803 9.82299 21.6148C9.82299 21.908 10.0743 22.1593 10.3676 22.1593C10.6608 22.1593 10.9121 21.908 10.9121 21.6148C10.9121 12.0222 19.1643 11.6452 20.1277 11.6452C20.3372 11.6452 20.5047 11.5195 20.6304 11.352C20.7142 11.1844 20.7142 10.975 20.5885 10.8074ZM10.3257 17.5097C9.11088 13.5302 6.13675 11.8127 3.79096 11.0587C6.13675 10.3047 9.11088 8.58728 10.3257 4.60782C11.5404 8.58728 14.5146 10.3047 16.8604 11.0587C14.5146 11.8127 11.5404 13.5302 10.3257 17.5097Z\" fill=\"#7A5025\"/>\n</g>\n</svg></svg>",
+                "icon_width": 24,
+                "icon_padding": 0
+              }
+            },
+            {
+              "type": "_marquee-heading",
+              "settings": {
+                "text": "ALWAYS 14K SOLID GOLD",
+                "heading_size": "md",
+                "color_role": "heading",
+                "opacity": 100
+              }
+            },
+            {
+              "type": "_marquee-icon",
+              "settings": {
+                "source": "custom",
+                "icon": "star",
+                "custom_icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\"><svg x=\"1.9956\" y=\"0.44035\" preserveAspectRatio=\"none\" overflow=\"visible\" style=\"display: block; stroke: none;\" width=\"20.6888\" height=\"22.1593\" viewBox=\"0 0 20.6888 22.1593\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<g id=\"Group 1\">\n<path id=\"Vector\" d=\"M20.5885 10.8074C20.5047 10.6398 20.2953 10.5561 20.1277 10.5142C19.1643 10.5142 10.8702 10.1791 10.8702 0.544577C10.8702 0.251354 10.6189 1.94609e-05 10.3257 1.94609e-05C10.0324 1.94609e-05 9.7811 0.251354 9.7811 0.544577C9.7811 10.1791 1.48706 10.5142 0.565502 10.5142C0.439835 10.5142 0.314168 10.5561 0.23039 10.6398C0.146612 10.6817 0.104723 10.7655 0.0628336 10.8074C-0.0209445 10.975 -0.0209445 11.1844 0.0628336 11.352C0.146612 11.5195 0.356057 11.6452 0.565502 11.6452C0.565502 11.6452 0.565503 11.6452 0.607392 11.6452C1.57084 11.6452 9.82299 11.9803 9.82299 21.6148C9.82299 21.908 10.0743 22.1593 10.3676 22.1593C10.6608 22.1593 10.9121 21.908 10.9121 21.6148C10.9121 12.0222 19.1643 11.6452 20.1277 11.6452C20.3372 11.6452 20.5047 11.5195 20.6304 11.352C20.7142 11.1844 20.7142 10.975 20.5885 10.8074ZM10.3257 17.5097C9.11088 13.5302 6.13675 11.8127 3.79096 11.0587C6.13675 10.3047 9.11088 8.58728 10.3257 4.60782C11.5404 8.58728 14.5146 10.3047 16.8604 11.0587C14.5146 11.8127 11.5404 13.5302 10.3257 17.5097Z\" fill=\"#7A5025\"/>\n</g>\n</svg></svg>",
+                "icon_width": 24,
+                "icon_padding": 0
+              }
+            },
+            {
+              "type": "_marquee-heading",
+              "settings": {
+                "text": "RECYCLED GOLD AND SILVER",
+                "heading_size": "md",
+                "color_role": "heading",
+                "opacity": 100
+              }
+            },
+            {
+              "type": "_marquee-icon",
+              "settings": {
+                "source": "custom",
+                "icon": "star",
+                "custom_icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\"><svg x=\"1.9956\" y=\"0.44035\" preserveAspectRatio=\"none\" overflow=\"visible\" style=\"display: block; stroke: none;\" width=\"20.6888\" height=\"22.1593\" viewBox=\"0 0 20.6888 22.1593\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<g id=\"Group 1\">\n<path id=\"Vector\" d=\"M20.5885 10.8074C20.5047 10.6398 20.2953 10.5561 20.1277 10.5142C19.1643 10.5142 10.8702 10.1791 10.8702 0.544577C10.8702 0.251354 10.6189 1.94609e-05 10.3257 1.94609e-05C10.0324 1.94609e-05 9.7811 0.251354 9.7811 0.544577C9.7811 10.1791 1.48706 10.5142 0.565502 10.5142C0.439835 10.5142 0.314168 10.5561 0.23039 10.6398C0.146612 10.6817 0.104723 10.7655 0.0628336 10.8074C-0.0209445 10.975 -0.0209445 11.1844 0.0628336 11.352C0.146612 11.5195 0.356057 11.6452 0.565502 11.6452C0.565502 11.6452 0.565503 11.6452 0.607392 11.6452C1.57084 11.6452 9.82299 11.9803 9.82299 21.6148C9.82299 21.908 10.0743 22.1593 10.3676 22.1593C10.6608 22.1593 10.9121 21.908 10.9121 21.6148C10.9121 12.0222 19.1643 11.6452 20.1277 11.6452C20.3372 11.6452 20.5047 11.5195 20.6304 11.352C20.7142 11.1844 20.7142 10.975 20.5885 10.8074ZM10.3257 17.5097C9.11088 13.5302 6.13675 11.8127 3.79096 11.0587C6.13675 10.3047 9.11088 8.58728 10.3257 4.60782C11.5404 8.58728 14.5146 10.3047 16.8604 11.0587C14.5146 11.8127 11.5404 13.5302 10.3257 17.5097Z\" fill=\"#7A5025\"/>\n</g>\n</svg></svg>",
+                "icon_width": 24,
+                "icon_padding": 0
+              }
+            },
+            {
+              "type": "_marquee-heading",
+              "settings": {
+                "text": "MADE WITH LOVE",
+                "heading_size": "md",
+                "color_role": "heading",
+                "opacity": 100
+              }
+            },
+            {
+              "type": "_marquee-icon",
+              "settings": {
+                "source": "custom",
+                "icon": "star",
+                "custom_icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\"><svg x=\"1.9956\" y=\"0.44035\" preserveAspectRatio=\"none\" overflow=\"visible\" style=\"display: block; stroke: none;\" width=\"20.6888\" height=\"22.1593\" viewBox=\"0 0 20.6888 22.1593\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<g id=\"Group 1\">\n<path id=\"Vector\" d=\"M20.5885 10.8074C20.5047 10.6398 20.2953 10.5561 20.1277 10.5142C19.1643 10.5142 10.8702 10.1791 10.8702 0.544577C10.8702 0.251354 10.6189 1.94609e-05 10.3257 1.94609e-05C10.0324 1.94609e-05 9.7811 0.251354 9.7811 0.544577C9.7811 10.1791 1.48706 10.5142 0.565502 10.5142C0.439835 10.5142 0.314168 10.5561 0.23039 10.6398C0.146612 10.6817 0.104723 10.7655 0.0628336 10.8074C-0.0209445 10.975 -0.0209445 11.1844 0.0628336 11.352C0.146612 11.5195 0.356057 11.6452 0.565502 11.6452C0.565502 11.6452 0.565503 11.6452 0.607392 11.6452C1.57084 11.6452 9.82299 11.9803 9.82299 21.6148C9.82299 21.908 10.0743 22.1593 10.3676 22.1593C10.6608 22.1593 10.9121 21.908 10.9121 21.6148C10.9121 12.0222 19.1643 11.6452 20.1277 11.6452C20.3372 11.6452 20.5047 11.5195 20.6304 11.352C20.7142 11.1844 20.7142 10.975 20.5885 10.8074ZM10.3257 17.5097C9.11088 13.5302 6.13675 11.8127 3.79096 11.0587C6.13675 10.3047 9.11088 8.58728 10.3257 4.60782C11.5404 8.58728 14.5146 10.3047 16.8604 11.0587C14.5146 11.8127 11.5404 13.5302 10.3257 17.5097Z\" fill=\"#7A5025\"/>\n</g>\n</svg></svg>",
+                "icon_width": 24,
+                "icon_padding": 0
+              }
+            },
+            {
+              "type": "_marquee-heading",
+              "settings": {
+                "text": "TARNISH-FREE",
+                "heading_size": "md",
+                "color_role": "heading",
+                "opacity": 100
+              }
+            },
+            {
+              "type": "_marquee-icon",
+              "settings": {
+                "source": "custom",
+                "icon": "star",
+                "custom_icon": "<svg xmlns=\"http://www.w3.org/2000/svg\" width=\"24\" height=\"24\" viewBox=\"0 0 24 24\" fill=\"none\" aria-hidden=\"true\" focusable=\"false\"><svg x=\"1.9956\" y=\"0.44035\" preserveAspectRatio=\"none\" overflow=\"visible\" style=\"display: block; stroke: none;\" width=\"20.6888\" height=\"22.1593\" viewBox=\"0 0 20.6888 22.1593\" fill=\"none\" xmlns=\"http://www.w3.org/2000/svg\">\n<g id=\"Group 1\">\n<path id=\"Vector\" d=\"M20.5885 10.8074C20.5047 10.6398 20.2953 10.5561 20.1277 10.5142C19.1643 10.5142 10.8702 10.1791 10.8702 0.544577C10.8702 0.251354 10.6189 1.94609e-05 10.3257 1.94609e-05C10.0324 1.94609e-05 9.7811 0.251354 9.7811 0.544577C9.7811 10.1791 1.48706 10.5142 0.565502 10.5142C0.439835 10.5142 0.314168 10.5561 0.23039 10.6398C0.146612 10.6817 0.104723 10.7655 0.0628336 10.8074C-0.0209445 10.975 -0.0209445 11.1844 0.0628336 11.352C0.146612 11.5195 0.356057 11.6452 0.565502 11.6452C0.565502 11.6452 0.565503 11.6452 0.607392 11.6452C1.57084 11.6452 9.82299 11.9803 9.82299 21.6148C9.82299 21.908 10.0743 22.1593 10.3676 22.1593C10.6608 22.1593 10.9121 21.908 10.9121 21.6148C10.9121 12.0222 19.1643 11.6452 20.1277 11.6452C20.3372 11.6452 20.5047 11.5195 20.6304 11.352C20.7142 11.1844 20.7142 10.975 20.5885 10.8074ZM10.3257 17.5097C9.11088 13.5302 6.13675 11.8127 3.79096 11.0587C6.13675 10.3047 9.11088 8.58728 10.3257 4.60782C11.5404 8.58728 14.5146 10.3047 16.8604 11.0587C14.5146 11.8127 11.5404 13.5302 10.3257 17.5097Z\" fill=\"#7A5025\"/>\n</g>\n</svg></svg>",
+                "icon_width": 24,
+                "icon_padding": 0
+              }
+            }
           ]
         }
       ]
