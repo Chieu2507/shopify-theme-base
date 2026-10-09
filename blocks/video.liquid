@@ -1,12 +1,18 @@
 {% doc %}
   Renders a responsive video kernel from an uploaded Shopify video or a YouTube/Vimeo URL.
 
-  The block owns source selection, aspect ratio, width, play button and outer
-  spacing. The shared video snippet owns video markup, controls and playback.
+  The block owns source selection, aspect ratio, width, solid or gradient overlay,
+  play button and outer spacing. The shared video snippet owns video markup, controls and playback.
 
   @example
   {% content_for 'block', type: 'video', id: 'video' %}
 {% enddoc %}
+{% capture effective_overlay %}
+  {% if block.settings.show_overlay %}
+    {% render 'overlay-background', overlay_settings: block.settings %}
+  {% endif %}
+{% endcapture %}
+{% assign effective_overlay = effective_overlay | strip %}
 
 {% liquid
   assign video_source = block.settings.video_source | default: 'uploaded'
@@ -217,6 +223,7 @@
   --video-block-height: {{ video_height_desktop }};
   --video-block-ratio-mobile: {{ aspect_ratio_mobile }};
   --video-block-height-mobile: {{ video_height_mobile }};
+  --video-block-overlay: {{ effective_overlay | default: 'transparent' | escape }};
   --video-block-radius: {{ video_radius }};
   --video-play-button-size: {{ play_button_size_desktop }}px;
   --video-play-button-size-mobile: {{ play_button_size_mobile }}px;
@@ -259,6 +266,16 @@
     padding-right: var(--video-block-padding-right, 0px);
     padding-bottom: var(--video-block-padding-bottom, 0px);
     padding-left: var(--video-block-padding-left, 0px);
+  }
+
+  .video-block__media::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: 1;
+    border-radius: inherit;
+    background: var(--video-block-overlay, transparent);
+    pointer-events: none;
   }
 
   .video-block__media {
@@ -541,6 +558,47 @@
         { "value": "full", "label": "t:options.radius_video.full" }
       ],
       "default": "inherit"
+    },
+    {
+      "type": "header",
+      "content": "t:general.overlay"
+    },
+    {
+      "type": "checkbox",
+      "id": "show_overlay",
+      "label": "t:labels.show_overlay",
+      "default": false
+    },
+    {
+      "type": "select",
+      "id": "overlay_style",
+      "label": "t:labels.overlay_style",
+      "options": [
+        {
+          "value": "solid",
+          "label": "t:options.overlay_style.solid"
+        },
+        {
+          "value": "gradient",
+          "label": "t:options.overlay_style.gradient"
+        }
+      ],
+      "default": "solid",
+      "visible_if": "{{ block.settings.show_overlay }}"
+    },
+    {
+      "type": "color",
+      "id": "overlay_color",
+      "label": "t:labels.overlay_color",
+      "alpha": true,
+      "visible_if": "{{ block.settings.show_overlay and block.settings.overlay_style == 'solid' }}"
+    },
+    {
+      "type": "color_background",
+      "id": "overlay_gradient",
+      "default": "linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.52))",
+      "label": "t:labels.overlay_gradient",
+      "visible_if": "{{ block.settings.show_overlay and block.settings.overlay_style == 'gradient' }}"
     },
     {
       "type": "header",
