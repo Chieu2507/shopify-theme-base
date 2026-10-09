@@ -24,6 +24,11 @@
   endcapture
   assign image_ratio_desktop = image_ratio_desktop | strip
   assign image_height_desktop = 'auto'
+  assign image_fill_desktop = false
+  if image_ratio_desktop_setting == 'auto' and block.settings.height_desktop == 'fill'
+    assign image_height_desktop = '100%'
+    assign image_fill_desktop = true
+  endif
   if image_ratio_desktop_setting == 'square' or image_ratio_desktop_setting == 'portrait' or image_ratio_desktop_setting == 'landscape' or image_ratio_desktop_setting == 'wide' or image_ratio_desktop_setting == 'custom'
     assign image_height_desktop = '100%'
   endif
@@ -34,6 +39,11 @@
   endcapture
   assign image_ratio_mobile = image_ratio_mobile | strip
   assign image_height_mobile = 'auto'
+  assign image_fill_mobile = false
+  if image_ratio_mobile_setting == 'auto' and block.settings.height_mobile == 'fill'
+    assign image_height_mobile = '100%'
+    assign image_fill_mobile = true
+  endif
   if image_ratio_mobile_setting == 'square' or image_ratio_mobile_setting == 'portrait' or image_ratio_mobile_setting == 'landscape' or image_ratio_mobile_setting == 'wide' or image_ratio_mobile_setting == 'custom'
     assign image_height_mobile = '100%'
   endif
@@ -131,6 +141,12 @@
   assign padding_right_mobile = block.settings.padding_right_mobile | default: 0 | plus: 0
 
   assign image_class = 'image-block size-style size-style--contain image-block--ratio-desktop-' | append: image_ratio_desktop_setting
+  if image_fill_desktop
+    assign image_class = image_class | append: ' image-block--height-fill'
+  endif
+  if image_fill_mobile
+    assign image_class = image_class | append: ' image-block--height-fill-mobile'
+  endif
   if block.settings.show_image_first_mobile
     assign image_class = image_class | append: ' image-block--first-mobile'
   endif
@@ -209,6 +225,7 @@
   }
 
   .image-block .image-block__media > picture,
+    .image-block .image-block__media > picture > img,
   .image-block .image-block__media > img,
   .image-block .image-block__media .image__placeholder {
     display: block;
@@ -238,10 +255,23 @@
     }
 
     .image-block .image-block__media > picture,
+    .image-block .image-block__media > picture > img,
     .image-block .image-block__media > img,
     .image-block .image-block__media .image__placeholder {
       height: var(--image-block-image-height-mobile, var(--image-block-image-height, auto));
     }
+  }
+  /* Fill removes image intrinsic height from the row's sizing: sibling content
+     or a definite parent height owns the frame. Auto remains intrinsic. */
+  @media (min-width: 768px) {
+    .image-block--height-fill { display: flex; height: 100%; min-height: 0; align-self: stretch; }
+    .image-block--height-fill > .image-block__media { flex: 1 1 auto; height: auto; min-height: 0; }
+    .image-block--height-fill .image-block__media > :is(img, picture, .image__placeholder) { position: absolute; inset: 0; height: 100%; }
+  }
+  @media (max-width: 767.98px) {
+    .image-block--height-fill-mobile { display: flex; height: 100%; min-height: 0; align-self: stretch; }
+    .image-block--height-fill-mobile > .image-block__media { flex: 1 1 auto; height: auto; min-height: 0; }
+    .image-block--height-fill-mobile .image-block__media > :is(img, picture, .image__placeholder) { position: absolute; inset: 0; height: 100%; }
   }
 {% endstylesheet %}
 
@@ -340,6 +370,23 @@
       "visible_if": "{{ block.settings.device == 'desktop' }}"
     },
     {
+      "type": "select",
+      "id": "height_desktop",
+      "label": "t:labels.height",
+      "options": [
+        {
+          "value": "auto",
+          "label": "t:options.image_ratio.auto"
+        },
+        {
+          "value": "fill",
+          "label": "t:options.width.fill"
+        }
+      ],
+      "default": "auto",
+      "visible_if": "{{ block.settings.device == 'desktop' and block.settings.image_ratio_desktop == 'auto' }}"
+    },
+    {
       "type": "number",
       "id": "image_ratio_custom_width_desktop",
       "label": "W",
@@ -435,6 +482,23 @@
       ],
       "default": "auto",
       "visible_if": "{{ block.settings.device == 'mobile' }}"
+    },
+    {
+      "type": "select",
+      "id": "height_mobile",
+      "label": "t:labels.height",
+      "options": [
+        {
+          "value": "auto",
+          "label": "t:options.image_ratio.auto"
+        },
+        {
+          "value": "fill",
+          "label": "t:options.width.fill"
+        }
+      ],
+      "default": "auto",
+      "visible_if": "{{ block.settings.device == 'mobile' and block.settings.image_ratio_mobile == 'auto' }}"
     },
     {
       "type": "number",
