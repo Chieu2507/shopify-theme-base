@@ -69,18 +69,20 @@
 {% stylesheet %}
   .gallery-image { position: relative; min-width: 0; overflow: hidden; aspect-ratio: 1; background: var(--color-foreground-alpha-10, rgb(0 0 0 / 0.08)); }
   .gallery-image__media, .gallery-image__media > picture, .gallery-image__media > img, .gallery-image__media .image__placeholder { display: block; width: 100%; height: 100%; }
-  .gallery-image__media img { object-fit: cover; transition: transform 400ms ease; }
+  .gallery-image__media :is(img, .image__placeholder) { object-fit: cover; transition: scale var(--motion-duration-slow, 500ms) var(--motion-ease-standard, ease), clip-path var(--motion-duration-slow, 500ms) var(--motion-ease-standard, ease); }
   .gallery-image__overlay { position: absolute; inset: 0; z-index: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 0.5rem; padding: 1rem; color: var(--color-background, #fff); background: var(--gallery-overlay-background, transparent); opacity: 1; transform: scale(1); transition: opacity 280ms ease, transform 280ms ease; }
   .gallery-image--overlay-hover .gallery-image__overlay { opacity: 0; transform: scale(1.04); }
   .gallery-image--overlay-hover:hover .gallery-image__overlay, .gallery-image--overlay-hover:focus-within .gallery-image__overlay { opacity: 1; transform: scale(1); }
-  .gallery-image:hover .gallery-image__media img { transform: scale(1.03); }
+  @media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+    .gallery-image:is(:hover, :focus-within) .gallery-image__media :is(img, .image__placeholder) { scale: var(--motion-image-zoom, 1); }
+  }
   .gallery-image__icon { width: 20px; height: 20px; }
   .gallery-image__button { display: inline-flex; align-items: center; justify-content: center; width: 48px; height: 48px; padding: 0; color: var(--gallery-social-color, #6A372F); background: var(--gallery-social-background, #fff); text-decoration: none; border: 0; border-radius: 50%; transition: background-color 180ms ease, color 180ms ease, transform 180ms ease; }
   .gallery-image__button:hover, .gallery-image__button:focus-visible { color: var(--gallery-social-color, #6A372F); background: var(--gallery-social-background, #fff); transform: translateY(-2px); }
   .gallery-image__tag { font: var(--font-body--style, inherit); font-size: var(--gallery-tag-font-size, var(--font-body-md)); line-height: 1.2; }
   .gallery-image__icon--letter { display: inline-flex; align-items: center; justify-content: center; width: 20px; height: 20px; font-weight: 700; font-size: 0.9rem; line-height: 1; }
   @media (max-width: 767.98px) { .gallery-image__tag { font-size: var(--gallery-tag-font-size-mobile, var(--gallery-tag-font-size, var(--font-body-md))); } }
-  @media (prefers-reduced-motion: reduce) { .gallery-image__overlay, .gallery-image__media img { transition: none; } }
+  @media (prefers-reduced-motion: reduce) { .gallery-image__overlay, .gallery-image__media :is(img, .image__placeholder) { transition: none; } }
 {% endstylesheet %}
 
 {% schema %}

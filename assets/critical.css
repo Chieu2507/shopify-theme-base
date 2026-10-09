@@ -247,6 +247,33 @@ svg {
   height: auto;
 }
 
+/* Shared image hover follows Theme Settings for real artwork and placeholders. */
+.media-hover-zoom__media { overflow: clip; }
+
+@media (hover: hover) and (pointer: fine) and (prefers-reduced-motion: no-preference) {
+  /* Images and SVG placeholders without a component hover owner still follow the global setting.
+   * Clip the scaled image to its original bounds without changing its parent.
+   * Hotspot images stay fixed so product markers remain anchored to the image. */
+  :where(img, svg.placeholder-svg, svg[class*="__placeholder"], svg.placeholder-image, .placeholder-image svg, svg.collection-page-links__image, svg.collection-banner__image, svg.header-mega-menu__banner-image, svg.main-collection__promotion-image):not(:where(.media-hover-zoom .media-hover-zoom__media :is(img, svg), .image-card--zoom .background-media :is(img, svg), .product-card__image > :is(img, svg), .product-card__secondary-image > :is(img, svg), .product-media-gallery[data-zoom='click_hover'] .product-media--image :is(img, svg), .product-media-lightbox__image, .site-logo__image, .product-card__placeholder svg, .gallery-image__media :is(img, svg), .section-hotspot :is(img, svg), .section-hotspot-gallery :is(img, svg), .section-hotspot-full-width-carousel :is(img, svg), [data-product-callout] :is(img, svg))) {
+    scale: 1;
+    clip-path: inset(0 round var(--media-radius, 0px));
+    transition: scale var(--motion-duration-slow, 500ms) var(--motion-ease-standard, ease), clip-path var(--motion-duration-slow, 500ms) var(--motion-ease-standard, ease);
+  }
+
+  :where(img, svg.placeholder-svg, svg[class*="__placeholder"], svg.placeholder-image, .placeholder-image svg, svg.collection-page-links__image, svg.collection-banner__image, svg.header-mega-menu__banner-image, svg.main-collection__promotion-image):not(:where(.media-hover-zoom .media-hover-zoom__media :is(img, svg), .image-card--zoom .background-media :is(img, svg), .product-card__image > :is(img, svg), .product-card__secondary-image > :is(img, svg), .product-media-gallery[data-zoom='click_hover'] .product-media--image :is(img, svg), .product-media-lightbox__image, .site-logo__image, .product-card__placeholder svg, .gallery-image__media :is(img, svg), .section-hotspot :is(img, svg), .section-hotspot-gallery :is(img, svg), .section-hotspot-full-width-carousel :is(img, svg), [data-product-callout] :is(img, svg))):hover {
+    scale: var(--motion-image-zoom, 1);
+    clip-path: inset(calc(50% - 50% / var(--motion-image-zoom, 1)) round var(--media-radius, 0px));
+  }
+
+  .media-hover-zoom .media-hover-zoom__media :where(img, svg) {
+    transition: transform var(--motion-duration-slow, 500ms) var(--motion-ease-standard, ease);
+  }
+
+  .media-hover-zoom:is(:hover, :focus-within) .media-hover-zoom__media :where(img, svg) {
+    transform: scale(var(--motion-image-zoom, 1));
+  }
+}
+
 /* Reusable media surface: a section supplies placement and dimensions, while
  * this primitive keeps media, placeholders, and overlay in one clipped box. */
 .media {
@@ -1880,6 +1907,7 @@ legend {
   transition: opacity var(--product-card-image-hover-duration) var(--product-card-image-hover-ease);
 }
 
+.product-card__media .product-card__placeholder > svg,
 .product-card__media .product-card__secondary-image > img {
   transition: transform var(--product-card-image-hover-duration) var(--product-card-image-hover-ease);
 }
@@ -1919,7 +1947,8 @@ legend {
 }
 
 @media (min-width: 768px) and (hover: hover) and (pointer: fine) {
-  .product-card__media:is(:hover, :focus-within) .product-card__image > img {
+  .product-card__media:is(:hover, :focus-within) .product-card__image > img,
+  .product-card__media:is(:hover, :focus-within) .product-card__placeholder > svg {
     transform: scale(var(--product-card-image-zoom, var(--motion-image-zoom)));
   }
 
@@ -1944,6 +1973,7 @@ legend {
   }
 }
 
+.product-card__image-link:focus-visible .product-card__placeholder > svg,
 .product-card__image-link:focus-visible .product-card__image > img,
 .product-card__image-link:focus-visible .product-card__secondary-image > img {
   transform: scale(var(--product-card-image-zoom, var(--motion-image-zoom)));
