@@ -8,6 +8,10 @@
   unless gallery_header_vertical_alignment == 'top' or gallery_header_vertical_alignment == 'middle' or gallery_header_vertical_alignment == 'bottom'
     assign gallery_header_vertical_alignment = 'middle'
   endunless
+  assign gallery_header_position = section.settings.header_position | default: 'beside'
+  unless gallery_header_position == 'above' or gallery_header_position == 'beside'
+    assign gallery_header_position = 'beside'
+  endunless
   assign gallery_scheme = section.settings.color_scheme.id | default: section.settings.color_scheme | default: 'scheme-1'
 %}
 
@@ -37,7 +41,7 @@
       class: 'hotspot-gallery__background'
     %}
   {% endif %}
-  <div class="hotspot-gallery__layout container {{ gallery_container }}{% if gallery_width == 'full_width_no_padding' %} hotspot-gallery__layout--no-padding{% endif %}">
+  <div class="hotspot-gallery__layout container {{ gallery_container }}{% if gallery_width == 'full_width_no_padding' %} hotspot-gallery__layout--no-padding{% endif %}" data-header-position="{{ gallery_header_position }}">
     {% capture hotspot_gallery_header_content %}{% content_for 'block', type: 'header', id: 'header' %}{% endcapture %}
     {% capture hotspot_gallery_header_class %}hotspot-gallery__header hotspot-gallery__header--{{ gallery_header_vertical_alignment }}{% if section.settings.enable_header_sticky %} hotspot-gallery__header--sticky{% endif %}{% endcapture %}
     {% render 'section-content-slot', content: hotspot_gallery_header_content, class: hotspot_gallery_header_class %}
@@ -62,6 +66,14 @@
     grid-template-columns: fit-content(50%) minmax(0, 1fr);
     align-items: center;
     gap: var(--hotspot-gallery-content-gap, 40px);
+  }
+
+  .hotspot-gallery__layout[data-header-position="above"] {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  .hotspot-gallery__layout[data-header-position="above"] .hotspot-gallery__header--sticky {
+    position: static;
   }
 
   .hotspot-gallery__header {
@@ -147,6 +159,22 @@
         }
       ],
       "default": "full_width"
+    },
+    {
+      "type": "select",
+      "id": "header_position",
+      "label": "Header position",
+      "options": [
+        {
+          "value": "above",
+          "label": "Above section"
+        },
+        {
+          "value": "beside",
+          "label": "Beside images"
+        }
+      ],
+      "default": "beside"
     },
     {
       "type": "range",
