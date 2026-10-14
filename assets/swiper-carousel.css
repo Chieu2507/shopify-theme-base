@@ -219,7 +219,7 @@
   width: var(--swiper-pagination-bullet-width, var(--swiper-pagination-bullet-size, 8px));
   height: var(--swiper-pagination-bullet-height, var(--swiper-pagination-bullet-size, 8px));
   box-sizing: border-box;
-  border-radius: var(--swiper-pagination-bullet-border-radius, 1000px);
+  border-radius: inherit;
   content: '';
   pointer-events: none;
   transform: translate(-50%, -50%);
@@ -240,7 +240,8 @@
 ) .swiper-pagination-bullet::after {
   background: var(--swiper-pagination-color, var(--body-color));
   opacity: 0;
-  transform: translate(-50%, -50%) scaleX(0);
+  transform: translate(-50%, -50%);
+  clip-path: inset(0 100% 0 0 round var(--swiper-pagination-bullet-border-radius, 1000px));
   transform-origin: left center;
 }
 
@@ -277,14 +278,14 @@
   .swiper-pagination.swiper-pagination-bullets
 ) .swiper-pagination-bullet-active::after {
   opacity: 1;
-  transform: translate(-50%, -50%) scaleX(1);
+  transform: translate(-50%, -50%);
+  clip-path: inset(0 round var(--swiper-pagination-bullet-border-radius, 1000px));
 }
 
 .swiper[data-swiper-autoplay='true'] > :is(
   .swiper-pagination[data-pagination-type='bullets'],
   .swiper-pagination.swiper-pagination-bullets
 ) .swiper-pagination-bullet-active::after {
-  transform: translate(-50%, -50%) scaleX(0);
   animation: swiper-pagination-bullet-progress var(--swiper-pagination-bullet-progress-duration, 4s) linear both;
 }
 
@@ -292,16 +293,24 @@
   .swiper-pagination[data-pagination-type='bullets'],
   .swiper-pagination.swiper-pagination-bullets
 ) .swiper-pagination-bullet-active::after {
-  transform-origin: right center;
+  animation-name: swiper-pagination-bullet-progress-rtl;
 }
 
 @keyframes swiper-pagination-bullet-progress {
   from {
-    transform: translate(-50%, -50%) scaleX(0);
+    clip-path: inset(0 100% 0 0 round var(--swiper-pagination-bullet-border-radius, 1000px));
   }
-
   to {
-    transform: translate(-50%, -50%) scaleX(1);
+    clip-path: inset(0 round var(--swiper-pagination-bullet-border-radius, 1000px));
+  }
+}
+
+@keyframes swiper-pagination-bullet-progress-rtl {
+  from {
+    clip-path: inset(0 0 0 100% round var(--swiper-pagination-bullet-border-radius, 1000px));
+  }
+  to {
+    clip-path: inset(0 round var(--swiper-pagination-bullet-border-radius, 1000px));
   }
 }
 
@@ -322,7 +331,8 @@
     .swiper-pagination.swiper-pagination-bullets
   ) .swiper-pagination-bullet-active::after {
     animation: none;
-    transform: translate(-50%, -50%) scaleX(1);
+    transform: translate(-50%, -50%);
+    clip-path: inset(0 round var(--swiper-pagination-bullet-border-radius, 1000px));
   }
 }
 

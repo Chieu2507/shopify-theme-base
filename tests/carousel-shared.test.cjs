@@ -146,3 +146,28 @@ test('Slide background video pauses for reduced motion and cleans up on editor u
   context.initializeThemeModule();
   assert.equal(observers.length, 2);
 });
+
+
+test('Slide conditional settings cover every reference layout and appearance branch', () => {
+  const settings = Object.fromEntries(schema('blocks/slide.liquid').settings.filter((s) => s.id).map((s) => [s.id, s]));
+  const rules = {
+    alignment: "{{ block.settings.direction == 'vertical' }}",
+    position: "{{ block.settings.direction == 'vertical' and block.settings.height == 'fill' }}",
+    position_horizontal: "{{ block.settings.direction == 'horizontal' }}",
+    horizontal_alignment: "{{ block.settings.direction == 'horizontal' }}",
+    customize_mobile_alignment: "{{ block.settings.direction == 'horizontal' }}",
+    alignment_mobile: "{{ block.settings.direction == 'horizontal' and block.settings.customize_mobile_alignment }}",
+    custom_radius: "{{ block.settings.corner_radius == 'custom' }}",
+    background_image: "{{ block.settings.background_media == 'image' }}",
+    background_video: "{{ block.settings.background_media == 'video' }}",
+    overlay_color: '{{ block.settings.show_overlay }}',
+    backdrop_blur: '{{ block.settings.show_overlay }}',
+    color_scheme: "{{ block.settings.appearance_type == 'scheme' }}",
+  };
+  for (const edge of ['top', 'bottom', 'left', 'right']) rules[`padding_${edge}_mobile`] = '{{ block.settings.customize_mobile_padding }}';
+  for (const [id, rule] of Object.entries(rules)) assert.equal(settings[id].visible_if, rule, id);
+  assert.equal(settings.open_in_new_tab.visible_if, undefined);
+  assert.deepEqual([settings.gap_desktop.max, settings.gap_mobile.max], [50, 50]);
+  assert.deepEqual([settings.custom_radius.min, settings.custom_radius.max, settings.custom_radius.default], [0, 40, 20]);
+  assert.equal(settings.backdrop_blur.max, 100);
+});

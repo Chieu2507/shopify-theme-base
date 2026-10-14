@@ -59,6 +59,10 @@ and desktop/mobile padding. Background videos play only while visible and
 pause for reduced motion or a hidden tab. The slide root carries editor attributes;
 background/overlay layers are decorative, and nested links and controls stay
 interactive above the block link. Theme Editor omits the block-link destination.
+Slide Gap ranges from 0–50px; Custom corner radius ranges from 0–40px
+(default 20px), and Backdrop blur ranges from 0–100px. Image/Video pickers,
+overlay color/blur, color scheme and mobile padding follow their owning switches.
+Open link in new tab remains visible even with an empty Link.
 Vertical layouts inherit desktop alignment on mobile; a horizontal layout can
 stack vertically and set its own mobile alignment without changing its position.
 
@@ -161,7 +165,10 @@ dimensions. Their width tokens are `--swiper-pagination-bullet-hit-width` and
 `--swiper-pagination-bullet-hit-size`. The `::before` and `::after` layers own
 the visible dot and active indicator through the bullet width/height and
 active width/height tokens. Override these tokens on the pagination root
-instead of resizing or painting the button itself. Optional placement/spacing
+instead of resizing or painting the button itself. The fill inherits the button
+radius and reveals through a rounded clip-path, following Essen, so autoplay
+does not compress the end radius. RTL reveals from the right; reduced motion
+shows the complete fill. Optional placement/spacing
 tokens intentionally have consumer fallbacks; they are not missing global
 settings.
 
