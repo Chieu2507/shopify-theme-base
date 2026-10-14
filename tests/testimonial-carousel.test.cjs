@@ -6,42 +6,53 @@ const { migrateTestimonialCarousel } = require('../scripts/migrate-testimonial-c
 const read = (file) => fs.readFileSync(file, 'utf8');
 const schema = (file) => JSON.parse(read(file).match(/{% schema %}([\s\S]*?){% endschema %}/)[1]);
 
-test('testimonial migration preserves content and ordering and leaves other carousels intact', () => {
-  const carousel = { type: 'carousel', settings: { loop: true }, blocks: {
-    slideA: { type: 'slide', settings: { gap_desktop: 36 }, blocks: { text: { type: 'text', settings: { text: 'Review' } } } },
-    itemB: { type: 'testimonial-item', settings: { direction: 'horizontal' } },
+test('testimonial migration rehomes legacy content into static split slots and preserves carousel order', () => {
+  const image = { type: 'image', settings: { image: 'shopify://image/review.jpg' } };
+  const quote = { type: 'text', settings: { text: 'Review' } };
+  const carousel = { type: '_testimonial-carousel', settings: { loop: true, controls_style: 'fraction' }, blocks: {
+    slideA: { type: '_testimonial-slide', settings: { gap_desktop: 36 }, blocks: { quote }, block_order: ['quote'] },
+    itemB: { type: 'testimonial-item', blocks: { photo: image, copy: { type: 'group', blocks: { quote }, block_order: ['quote'] } } },
   }, block_order: ['itemB', 'slideA'], disabled: true };
-  const original = structuredClone(carousel);
+  const other = { type: 'carousel', blocks: { regular: { type: 'slide' } } };
   const document = { sections: {
     reviews: { type: 'testimonial-carousel', blocks: { carousel } },
-    gallery: { type: 'gallery-carousel', blocks: { normal: structuredClone(carousel) } },
-    background: { type: 'testimonials-background-custom', blocks: { normal: structuredClone(carousel) } },
-    horizontal: { type: 'testimonials-horizontal-custom', blocks: { normal: structuredClone(carousel) } },
+    gallery: { type: 'gallery-carousel', blocks: { normal: structuredClone(other) } },
   } };
   assert.equal(migrateTestimonialCarousel(document), true);
-  const expected = structuredClone(original);
-  expected.type = '_testimonial-carousel';
-  expected.blocks.slideA.type = '_testimonial-slide';
-  assert.deepEqual(carousel, expected);
-  for (const name of ['gallery', 'background', 'horizontal']) assert.deepEqual(document.sections[name].blocks.normal, original);
+  assert.equal(carousel.type, 'carousel_split');
+  assert.deepEqual(carousel.settings, { loop: true });
+  assert.deepEqual(carousel.block_order, ['itemB', 'slideA']);
+  assert.equal(carousel.disabled, true);
+  for (const slide of Object.values(carousel.blocks)) {
+    assert.equal(slide.type, 'slide_split');
+    assert.deepEqual(Object.keys(slide.blocks), ['image', 'content']);
+    assert.equal(slide.blocks.image.static, true);
+    assert.equal(slide.blocks.content.static, true);
+    assert.deepEqual(slide.blocks.content.blocks.quote, quote);
+    assert.deepEqual(slide.blocks.content.block_order, ['quote']);
+    assert.equal(slide.block_order, undefined);
+  }
+  assert.equal(carousel.blocks.itemB.blocks.image.settings.image, image.settings.image);
+  assert.deepEqual(document.sections.gallery.blocks.normal, other);
   assert.equal(migrateTestimonialCarousel(document), false);
 });
 
-test('private testimonial blocks are explicitly allowed by section and carousel schemas', () => {
-  const generic = schema('blocks/carousel.liquid');
-  assert.ok(!generic.blocks.some((b) => b.type === 'testimonial-item' || b.type.startsWith('_testimonial')));
-  const privateCarousel = schema('blocks/_testimonial-carousel.liquid');
-  assert.deepEqual(privateCarousel.blocks.map((b) => b.type), ['testimonial-item', '_testimonial-slide']);
-  for (const name of ['testimonial-carousel']) {
-    const section = schema(`sections/${name}.liquid`);
-    assert.ok(section.blocks.some((b) => b.type === '_testimonial-carousel'));
-    for (const preset of section.presets) {
-      const carousels = preset.blocks.filter((b) => b.type === '_testimonial-carousel');
-      assert.ok(carousels.length);
-      for (const carousel of carousels) for (const child of carousel.blocks || []) {
-        assert.ok(privateCarousel.blocks.some((b) => b.type === child.type), `${name}: ${child.type}`);
-      }
-    }
+test('split composition uses exact child slots and obsolete private blocks are removed', () => {
+  const section = schema('sections/testimonial-carousel.liquid');
+  assert.equal(section.name, 'Testimonial: split');
+  assert.equal(section.max_blocks, 1);
+  assert.deepEqual(section.blocks, [{ type: 'carousel_split' }]);
+  assert.deepEqual(schema('blocks/carousel_split.liquid').blocks, [{ type: 'slide_split' }]);
+  assert.deepEqual(schema('blocks/slide_split.liquid').blocks, [{ type: 'image' }, { type: 'group' }]);
+  for (const file of ['blocks/_testimonial-carousel.liquid', 'blocks/_testimonial-slide.liquid', 'assets/testimonial-carousel.js']) assert.equal(fs.existsSync(file), false);
+  const source = read('blocks/slide_split.liquid');
+  assert.match(source, /content_for 'block', type: 'image', id: 'image'/);
+  assert.match(source, /content_for 'block', type: 'group', id: 'content'/);
+  assert.match(source, /data-carousel-previous/);
+  assert.match(source, /data-carousel-next/);
+  for (const carousel of section.presets[0].blocks) for (const slide of carousel.blocks) {
+    assert.equal(slide.type, 'slide_split');
+    assert.deepEqual(slide.blocks.map((b) => [b.id, b.static]), [['image', true], ['content', true]]);
   }
 });
 
@@ -91,11 +102,11 @@ test('generic and testimonial modules initialize and unload independently withou
     return {
       selector, dataset: {}, classList: { toggle() {} }, style: { setProperty(key, value) { this[key] = value; } },
       matches: (s) => s === selector, hasAttribute: () => false, querySelectorAll: () => [],
-      querySelector: (s) => s === '[data-swiper-carousel]' ? viewport : s === '.testimonial-item' && selector === '[data-testimonial-carousel]' ? {} : null,
+      querySelector: (s) => s === '[data-swiper-carousel]' ? viewport : s === '.testimonial-item' && selector === '[data-testimonial-split]' ? {} : null,
     };
   };
   const normal = makeRoot('[data-carousel-block]');
-  const testimonial = makeRoot('[data-testimonial-carousel]');
+  const testimonial = makeRoot('[data-testimonial-split]');
   const document = {
     readyState: 'loading', querySelectorAll: (selector) => [normal, testimonial].filter((root) => root.matches(selector)),
     addEventListener(name, fn) { if (!events.has(name)) events.set(name, []); events.get(name).push(fn); },
@@ -111,7 +122,7 @@ test('generic and testimonial modules initialize and unload independently withou
   });
   let runtime = read('assets/carousel-runtime.js').replace(/^import .*;\n/gm, '').replace('export const createCarouselRuntime', 'globalThis.createCarouselRuntime');
   vm.runInContext(runtime, context);
-  for (const [file, binding] of [['carousel-block', 'normalInit'], ['testimonial-carousel', 'testimonialInit']]) {
+  for (const [file, binding] of [['carousel-block', 'normalInit'], ['testimonial-split', 'testimonialInit']]) {
     const source = read(`assets/${file}.js`).replace(/^import .*;\n/gm, '').replace('export const initializeThemeModule', `globalThis.${binding}`);
     vm.runInContext(source, context);
   }
@@ -120,8 +131,7 @@ test('generic and testimonial modules initialize and unload independently withou
   assert.equal(resize.size, 0);
   context.testimonialInit(document);
   assert.equal(creations.length, 2);
-  assert.equal(resize.size, 1);
-  assert.equal(testimonial.style['--testimonial-controls-gap-half'], '18px');
+  assert.equal(resize.size, 0);
   context.normalInit(document); context.testimonialInit(document);
   assert.equal(creations.length, 2);
   const fire = (name, target) => events.get(name).forEach((fn) => fn({ target }));
@@ -134,5 +144,32 @@ test('generic and testimonial modules initialize and unload independently withou
   assert.equal(resize.size, 0);
   fire('shopify:section:load', testimonial);
   assert.equal(creations.length, 3);
-  assert.equal(resize.size, 1);
+  assert.equal(resize.size, 0);
+});
+
+test('split runtime makes inactive slides inert and transfers navigation focus', () => {
+  let config;
+  let focused = 0;
+  const focusedControl = { matches: (selector) => selector === '[data-carousel-next]' };
+  const slides = [0, 1].map((index) => ({
+    inert: false,
+    contains: (element) => index === 0 && element === focusedControl,
+    toggleAttribute(name, enabled) { this.inert = enabled; },
+    removeAttribute() { this.inert = false; },
+    querySelector: () => ({ focus: () => focused++ }),
+  }));
+  const listeners = new Map();
+  const swiper = { slides, activeIndex: 0, on: (name, fn) => listeners.set(name, fn), off: (name) => listeners.delete(name) };
+  const context = vm.createContext({ document: { activeElement: focusedControl }, createCarouselRuntime: (options) => { config = options; } });
+  vm.runInContext(read('assets/testimonial-split.js').replace(/^import .*;\n/gm, '').replace('export const initializeThemeModule', 'globalThis.initializeThemeModule'), context);
+  const cleanup = config.onInitialize({ contains: () => true }, swiper);
+  assert.deepEqual(slides.map((s) => s.inert), [false, true]);
+  assert.equal(focused, 0);
+  swiper.activeIndex = 1;
+  listeners.get('slideChange update')();
+  assert.deepEqual(slides.map((s) => s.inert), [true, false]);
+  assert.equal(focused, 1);
+  cleanup();
+  assert.deepEqual(slides.map((s) => s.inert), [false, false]);
+  assert.equal(listeners.size, 0);
 });

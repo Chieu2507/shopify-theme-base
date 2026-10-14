@@ -21,35 +21,42 @@ Before changing any common Carousel composition, run
 and full Theme Check. Do not expand the allow-list to bypass a failing preset;
 repair the preset composition while preserving its content.
 
-## Separate testimonial and general blocks
+## Testimonial: split and common Carousel
 
-The general `carousel` / `slide` pair remains reusable. Only `sections/testimonial-carousel.liquid`
-explicitly allows the private `_testimonial-carousel` block, which owns
-`testimonial-item` and `_testimonial-slide` children. Private blocks are not
-offered through `@theme`, so the testimonial carousel is added directly to its
-owning section rather than a general Group.
+`sections/testimonial-carousel.liquid` keeps its saved section type but is named
+**Testimonial: split**. It allows only `carousel_split` (maximum one). The split
+Carousel allows only `slide_split`; each split Slide renders fixed static
+`image` and `content` (Group) slots. The Group owns testimonial content.
+Desktop uses two equal columns with the image on the right; mobile stacks image
+above content. Previous/Next controls remain within the active slide's content. Inactive
+slides are inert; navigation focus moves to an enabled control on the newly
+active slide, and editor unload restores the slide state.
 
-`carousel-block.js` initializes only `[data-carousel-block]` roots.
-`testimonial-carousel.js` initializes only `[data-testimonial-carousel]` roots
-and owns testimonial gap synchronization. Both use `carousel-runtime.js` for
-Swiper, controls and editor lifecycle, with separate instance state and cleanup.
-Each pair has its own schema; testimonial schema excludes gallery/card controls.
+`testimonial-split.js` initializes only `[data-testimonial-split]` roots. Common
+`carousel-block.js` initializes `[data-carousel-block]`. Both use
+`carousel-runtime.js` with separate state and editor cleanup. The split supports
+one visible slide, Slide/Fade transitions, looping and opt-in autoplay. It does
+not use common Carousel pagination or expose extra child types.
 
-The Testimonial: Carousel preset uses the private types. Background and
-horizontal testimonial sections keep the general `carousel` / `slide` pair.
-For template/group JSON pulled from an older theme, run:
+The superseded `_testimonial-carousel`, `_testimonial-slide` and their runtime
+module are removed. Background and Horizontal testimonial sections retain the
+common `carousel` / `slide` contract. `testimonial-item` is still allowed by the
+Gallery Header composition and is therefore retained.
+
+For saved JSON using old testimonial block types, run:
 
 ```sh
 node scripts/migrate-testimonial-carousel.cjs templates/<template>.json
 ```
 
-The migration uses private types in `testimonial-carousel` and repairs any
-mistaken private types in Background/Horizontal back to common `carousel`/`slide`,
-preserving IDs, settings, nested content, disabled state and ordering.
-It is idempotent and leaves other section types unchanged. Run common-option
-cleanup afterward if repairing a saved private carousel in Background/Horizontal.
-Remote theme
-configuration must be pulled and migrated before deploying the split.
+The migration converts the old Testimonial Carousel to the split pair, preserves
+section/carousel/slide IDs, content, ordering and disabled state, and rehomes each
+slide's image and Group in the required static `image`/`content` slots. Static
+slot keys necessarily change; nested content IDs stay intact. Unsupported old
+carousel settings are removed. Other sections are unchanged except repair of
+mistaken split/private types in Background/Horizontal to common blocks. The
+migration is idempotent. Migrate remote saved JSON locally before deploying;
+this task does not change store data.
 
 ## Liquid markup
 

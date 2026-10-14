@@ -23,7 +23,7 @@ test('common schemas expose only the reference settings and choices', () => {
 test('cleanup migration removes obsolete common settings without changing private Testimonial or content', () => {
   const { migrateCommonCarouselOptions } = require('../scripts/migrate-common-carousel-options.cjs');
   const content = { type: 'text', settings: { text: 'A review' } };
-  const privateBlock = { type: '_testimonial-carousel', settings: { loop: true, controls_style: 'fraction' } };
+  const privateBlock = { type: 'carousel_split', settings: { loop: true, controls_style: 'fraction' } };
   const document = { blocks: {
     common: { type: 'carousel', settings: { transition_style: 'fade', custom_columns: true, columns_per_breakpoint: 'md:3', loop: true, controls_style: 'fraction', pagination_max_width: 300, navigation_position: 'top', navigation_style: 'icon_only', gap_desktop: 80 }, blocks: {
       slide: { type: 'slide', settings: { border_type: 'solid', border_color: '#ff0000', background_color: '#000000', corner_radius: 'pill', shadow: 'large', link_label: 'Old label' }, blocks: { content } },
