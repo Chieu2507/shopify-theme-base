@@ -39,6 +39,9 @@
 
   .hero .media__inner {
     z-index: 0;
+  }
+
+  .hero:is([data-hero-parallax='vertical'], [data-hero-parallax='horizontal'], [data-hero-parallax='zoom']) .media__inner {
     will-change: transform;
   }
 
@@ -63,7 +66,15 @@
     object-fit: cover;
   }
 
-  .hero__video--mobile {
+  /* The shared media primitive sizes picture, but its nested image must also
+     fill the surface before object-fit can crop it to the Hero dimensions. */
+  .hero .media__inner > picture > img {
+    display: block;
+    width: 100%;
+    height: 100%;
+  }
+
+  .hero .media__inner > .hero__video--mobile {
     display: none;
   }
 
@@ -261,16 +272,16 @@
       grid-column: 1;
     }
 
-    .hero__video--desktop:has(+ .hero__video--mobile) {
+    .hero .media__inner > .hero__video--desktop:has(+ .hero__video--mobile) {
       display: none;
     }
 
-    .hero__video--mobile {
+    .hero .media__inner > .hero__video--mobile {
       display: block;
     }
   }
 
   @media (prefers-reduced-motion: reduce) {
-    .hero .media__inner { transform: none !important; }
+    .hero .media__inner { transform: none !important; will-change: auto; }
   }
 {% endstylesheet %}
