@@ -51,7 +51,7 @@ Validate with `node --test tests/columns.test.cjs` and full Theme Check.
 Adding a Column creates Image → Heading → Text → Button, matching the reference
 composition with original copy. Its preset uses vertical direction, left alignment,
 Fit height and 8px desktop/mobile gaps. Adding Columns creates four such columns
-with distinct headings, descriptions and button labels. Preset changes apply to
+with matching Heading titles, original descriptions and Button label buttons. Preset changes apply to
 new blocks; existing merchant content is retained.
 
 `blocks/_columns-column.liquid` is the dedicated child of Columns. Row/Footer
