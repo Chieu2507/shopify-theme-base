@@ -64,6 +64,7 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
   const interval = window.setInterval(() => {
     if (
       document.hidden ||
+      prefersReducedMotion() ||
       swiper.destroyed ||
       swiper.isLocked ||
       (pauseOnHover && swiper.wrapperEl?.matches(':hover')) ||

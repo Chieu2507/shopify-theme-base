@@ -11,7 +11,10 @@ export const initializeThemeModule = createCarouselRuntime({
       const control = focused?.matches?.('[data-carousel-previous]') ? '[data-carousel-previous]'
         : focused?.matches?.('[data-carousel-next]') ? '[data-carousel-next]' : null;
       const moveFocus = control && root.contains(focused) && !active?.contains(focused);
-      swiper.slides?.forEach((slide) => slide.toggleAttribute('inert', slide !== active));
+      swiper.slides?.forEach((slide) => {
+        const inactive = slide !== active;
+        if (slide.hasAttribute('inert') !== inactive) slide.toggleAttribute('inert', inactive);
+      });
       if (moveFocus) {
         const next = active?.querySelector(`${control}:not(:disabled)`)
           || active?.querySelector('.testimonial-split-controls__button:not(:disabled)');

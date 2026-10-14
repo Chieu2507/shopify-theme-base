@@ -153,6 +153,7 @@ test('split runtime makes inactive slides inert and transfers navigation focus',
   const focusedControl = { matches: (selector) => selector === '[data-carousel-next]' };
   const slides = [0, 1].map((index) => ({
     inert: false,
+    hasAttribute() { return this.inert; },
     contains: (element) => index === 0 && element === focusedControl,
     toggleAttribute(name, enabled) { this.inert = enabled; },
     removeAttribute() { this.inert = false; },
@@ -172,4 +173,30 @@ test('split runtime makes inactive slides inert and transfers navigation focus',
   cleanup();
   assert.deepEqual(slides.map((s) => s.inert), [false, false]);
   assert.equal(listeners.size, 0);
+});
+
+test('shared autoplay pauses after reduced motion changes and cleans up its timer', () => {
+  let tick;
+  let cleared;
+  let motion = false;
+  let hovered = false;
+  let focused = false;
+  let advanced = 0;
+  let restarted = 0;
+  const document = { hidden: false, activeElement: {} };
+  const context = vm.createContext({ document, window: {
+    matchMedia: () => ({ matches: motion }),
+    setInterval(fn, delay) { tick = fn; assert.equal(delay, 4000); return 7; },
+    clearInterval(id) { cleared = id; },
+  } });
+  vm.runInContext(read('assets/swiper-carousel.js').replace(/^import .*;\n/gm, '').replace(/^export const (\w+) =/gm, 'globalThis.$1 ='), context);
+  const swiper = { wrapperEl: { matches: () => hovered }, slideNext: () => advanced++, slideTo: () => restarted++ };
+  const cleanup = context.bindSwiperAutoplay(swiper, { delay: 4000, scope: { contains: () => focused } });
+  tick(); assert.equal(advanced, 1);
+  motion = true; tick(); assert.equal(advanced, 1);
+  motion = false; hovered = true; tick(); assert.equal(advanced, 1);
+  hovered = false; focused = true; tick(); assert.equal(advanced, 1);
+  focused = false; document.hidden = true; tick(); assert.equal(advanced, 1);
+  document.hidden = false; swiper.isEnd = true; tick(); assert.equal(restarted, 1);
+  cleanup(); assert.equal(cleared, 7);
 });

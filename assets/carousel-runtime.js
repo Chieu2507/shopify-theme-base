@@ -1,5 +1,5 @@
 import { EffectFade, Pagination } from './swiper-loader.js';
-import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
+import { bindSwiperAutoplay, createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
 // Each owner gets independent state and scoped Theme Editor lifecycle.
 export const createCarouselRuntime = ({ rootSelector, slideSelector, onInitialize }) => {
@@ -158,23 +158,8 @@ const prefersReducedMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const bindCarouselAutoplay = (swiper, root, delay, pauseOnHover) => {
-  if (!swiper || swiper.destroyed || prefersReducedMotion()) return () => {};
-
-  const interval = window.setInterval(() => {
-    if (
-      document.hidden ||
-      swiper.destroyed ||
-      swiper.isLocked ||
-      (pauseOnHover && swiper.wrapperEl?.matches(':hover')) ||
-      root.contains(document.activeElement)
-    ) return;
-
-    swiper.isEnd ? swiper.slideTo(0) : swiper.slideNext();
-  }, Math.min(60000, Math.max(1000, number(delay, 4000))));
-
-  return () => window.clearInterval(interval);
-};
+const bindCarouselAutoplay = (swiper, root, delay, pauseOnHover) =>
+  bindSwiperAutoplay(swiper, { scope: root, delay, pauseOnHover });
 
 const bindRevealAutoplay = (state, root, delay, pauseOnHover) => {
   if (!state || prefersReducedMotion()) return () => {};
@@ -182,6 +167,7 @@ const bindRevealAutoplay = (state, root, delay, pauseOnHover) => {
   const interval = window.setInterval(() => {
     if (
       document.hidden ||
+      prefersReducedMotion() ||
       (pauseOnHover && root.matches(':hover')) ||
       root.contains(document.activeElement)
     ) return;

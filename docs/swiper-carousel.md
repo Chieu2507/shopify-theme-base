@@ -24,7 +24,9 @@ repair the preset composition while preserving its content.
 ## Testimonial: split and common Carousel
 
 `sections/testimonial-carousel.liquid` keeps its saved section type but is named
-**Testimonial: split**. It allows only `carousel_split` (maximum one). The split
+**Testimonial: split**. Split block labels in the editor are **Carousel** and
+**Slide**; their stable file/type IDs remain `carousel_split` and `slide_split`.
+It allows only `carousel_split` (maximum one). The split
 Carousel allows only `slide_split`; each split Slide renders fixed static
 `image` and `content` (Group) slots. The Group owns testimonial content.
 Desktop uses two equal columns with the image on the right; mobile stacks image
