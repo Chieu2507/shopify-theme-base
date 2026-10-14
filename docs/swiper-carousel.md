@@ -330,3 +330,26 @@ Live Theme Editor replacement/reorder QA remains pending.
 
 The import organization was restored to the centralized loader at user request;
 the shared autoplay, resize, slide controls and destroy cleanup refactor remains.
+
+## Shopify CDN module version correction — 2026-10-14
+
+The reported development-theme editor session (139628773461, Carousel
+carousel_yKLqNM) logged a real module-link failure: newly versioned consumers
+imported unversioned swiper-carousel.js and could not find observeSwiperResize.
+This allowed old shared runtime code to coexist with new consumers/styles;
+local uncached runtime tests did not cover this deployment behavior.
+
+The head now renders theme-module-import-map before any module script/loader.
+Each relative shared dependency and bundled Swiper dependency is remapped from
+its unversioned asset URL to the current Shopify asset_url, including its version
+query. Source imports and swiper-loader's central exports remain unchanged.
+The map is document-scoped: an editor document already holding an old module
+requires a fresh preview document to resolve through the new map. Do not reload
+an unsaved editor session or save unrelated merchant edits automatically.
+
+Validation includes mapping coverage for all static relative module imports and
+shared-only version changes. A browser regression fixture serves the old shared
+module at the unversioned URL and the new module at its versioned URL: import
+mapping loads the current factory/clock/resize helper, with no console errors.
+Bullets measured 3025ms for a 3s setting and its clip matched the remaining clock.
+Reference: https://html.spec.whatwg.org/dev/webappapis.html#import-maps
