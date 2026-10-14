@@ -50,31 +50,77 @@ const prefersReducedMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-/**
- * Binds the theme's shared interval-based autoplay contract to any Swiper
- * instance. The returned cleanup function is safe to call during editor
- * section unloads and component disconnects.
- */
+/** One elapsed-time clock owns autoplay navigation and pagination progress. */
 export const bindSwiperAutoplay = (swiper, settings = {}) => {
   if (!swiper || swiper.destroyed || prefersReducedMotion()) return () => {};
 
   const delay = Math.min(60000, Math.max(1000, Number(settings.delay) || 4000));
   const scope = settings.scope || swiper.el;
-  const pauseOnHover = settings.pauseOnHover !== false;
-  const interval = window.setInterval(() => {
-    if (
-      document.hidden ||
-      prefersReducedMotion() ||
-      swiper.destroyed ||
-      swiper.isLocked ||
-      (pauseOnHover && swiper.wrapperEl?.matches(':hover')) ||
-      scope.contains(document.activeElement)
-    ) return;
-
-    swiper.isEnd ? swiper.slideTo(0) : swiper.slideNext();
-  }, delay);
-
-  return () => window.clearInterval(interval);
+  const motion = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+  const pagination = swiper.el?.querySelector('.swiper-pagination');
+  const previousClock = pagination?.getAttribute('data-autoplay-clock');
+  const previousProgress = pagination?.style.getPropertyValue('--carousel-autoplay-progress');
+  let elapsed = 0;
+  let lastTime = null;
+  let pendingAdvance = false;
+  let frame;
+  let stopped = false;
+  let paintedProgress = null;
+  const paint = (progress, paused) => {
+    if (!pagination) return;
+    const state = paused ? 'paused' : 'running';
+    if (pagination.dataset.autoplayClock !== state) pagination.dataset.autoplayClock = state;
+    const value = String(progress);
+    if (paintedProgress !== value) {
+      pagination.style.setProperty('--carousel-autoplay-progress', value);
+      paintedProgress = value;
+    }
+  };
+  const reset = () => {
+    elapsed = 0;
+    lastTime = null;
+    pendingAdvance = false;
+    paint(0, Boolean(swiper.animating));
+  };
+  const resetTime = () => { lastTime = null; };
+  const tick = (time) => {
+    if (stopped || swiper.destroyed) return;
+    const delta = lastTime === null ? 0 : Math.max(0, time - lastTime);
+    lastTime = time;
+    const paused = document.hidden || motion?.matches || swiper.isLocked || swiper.animating
+      || (settings.pauseOnHover !== false && swiper.wrapperEl?.matches(':hover'))
+      || scope.contains(document.activeElement);
+    if (paused) paint(elapsed / delay, true);
+    else if (pendingAdvance) {
+      // The completed fill was painted on the preceding frame before navigation.
+      pendingAdvance = false;
+      swiper.isEnd ? swiper.slideTo(0) : swiper.slideNext();
+      reset();
+    } else {
+      elapsed = Math.min(delay, elapsed + delta);
+      paint(elapsed / delay, false);
+      pendingAdvance = elapsed === delay;
+    }
+    frame = window.requestAnimationFrame(tick);
+  };
+  swiper.on('slideChange', reset);
+  swiper.on('slideChangeTransitionEnd', resetTime);
+  document.addEventListener('visibilitychange', resetTime);
+  paint(0, true);
+  frame = window.requestAnimationFrame(tick);
+  return () => {
+    stopped = true;
+    window.cancelAnimationFrame(frame);
+    swiper.off('slideChange', reset);
+    swiper.off('slideChangeTransitionEnd', resetTime);
+    document.removeEventListener('visibilitychange', resetTime);
+    if (pagination) {
+      if (previousClock === null) pagination.removeAttribute('data-autoplay-clock');
+      else pagination.setAttribute('data-autoplay-clock', previousClock);
+      if (previousProgress) pagination.style.setProperty('--carousel-autoplay-progress', previousProgress);
+      else pagination.style.removeProperty('--carousel-autoplay-progress');
+    }
+  };
 };
 
 export const bindSwiperControls = (swiper, controls = {}) => {

@@ -195,7 +195,14 @@ active width/height tokens. Override these tokens on the pagination root
 instead of resizing or painting the button itself. The fill inherits the button
 radius and reveals through a rounded clip-path, following Essen, so autoplay
 does not compress the end radius. RTL reveals from the right; reduced motion
-shows the complete fill. Optional placement/spacing
+shows the complete fill when autoplay is disabled by reduced motion at startup.
+When autoplay is active, Bullets and Progress bar read
+`--carousel-autoplay-progress` from the pagination root marked
+`data-autoplay-clock`. The shared clock accumulates unpaused time, paints 100%
+before navigating, and restarts after manual navigation and transition completion.
+The configured delay is the full dwell time after the slide settles. Hover,
+keyboard focus, hidden tabs and reduced motion pause both navigation and fill.
+Progress bar keeps native slide-position behavior when autoplay is off. Optional placement/spacing
 tokens intentionally have consumer fallbacks; they are not missing global
 settings.
 
