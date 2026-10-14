@@ -15,8 +15,9 @@ custom width 10–100% (default 50%).
 
 Mobile column counts apply below 768px; desktop counts apply from 768px onward.
 
-Mobile swipe uses native horizontal scrolling, scroll snap and keyboard focus,
-without JavaScript. It is disabled by CSS from 768px onward. Desktop Custom width
+Mobile swipe uses the shared Swiper factory with touch/drag and keyboard focus,
+without a scrollbar or pagination. Swiper is destroyed from 768px onward, restoring
+the desktop grid. Without JavaScript, the mobile layout remains a grid. Desktop Custom width
 never shrinks the mobile container. Vertical mobile gap does not affect swipe.
 
 Before deploying to saved templates, run:

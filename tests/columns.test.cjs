@@ -111,3 +111,33 @@ test('Column rendering applies fill, custom radius, shadow and independent mobil
   const editor=renderBlock('blocks/_columns-column.liquid',{link:'/details'},true);
   assert.doesNotMatch(editor,/href="\/details"/);
 });
+test('mobile Swiper initializes once, restores desktop grid and cleans up editor lifecycle', () => {
+  const vm = require('node:vm');
+  const listeners = new Map();
+  const media = { matches: true, addEventListener: (_, cb) => listeners.set('media', cb), removeEventListener: () => listeners.delete('media') };
+  const motion = { matches: false, addEventListener() {}, removeEventListener() {} };
+  const classes = () => { const values = new Set(); return { add: (v) => values.add(v), remove: (v) => values.delete(v), contains: (v) => values.has(v) }; };
+  const slide = { classList: classes() };
+  const wrapper = { classList: classes(), children: [slide] };
+  const events = new Map();
+  const root = { matches: () => true, querySelector: () => wrapper, querySelectorAll: () => [], getAttribute: () => 'Columns', addEventListener: (type, cb) => events.set(type, cb), removeEventListener: (type) => events.delete(type) };
+  const documentEvents = new Map();
+  let creates = 0, destroys = 0, options;
+  const context = vm.createContext({
+    document: { readyState: 'loading', addEventListener: (type, cb) => documentEvents.set(type, cb) },
+    window: { matchMedia: (query) => query.includes('reduced') ? motion : media },
+    getComputedStyle: () => ({ getPropertyValue: (key) => key.includes('count') ? '2' : '0px' }),
+    createSwiperCarousel: (_, config) => { creates++; options = config; return { slides: [slide], params: config, update() {}, slideNext() {}, slidePrev() {}, slideTo() {} }; },
+    destroySwiperCarousel: () => destroys++, observeSwiperResize() {},
+  });
+  vm.runInContext(fs.readFileSync('assets/columns-swipe.js', 'utf8').replace(/^import .*;\n/gm, '').replace('export const initializeThemeModule', 'globalThis.initializeThemeModule'), context);
+  context.initializeThemeModule(root); context.initializeThemeModule(root);
+  assert.equal(creates, 1); assert.equal(options.slidesPerView, 2); assert.equal(options.spaceBetween, 0);
+  assert.equal(slide.classList.contains('swiper-slide'), true);
+  media.matches = false; listeners.get('media')();
+  assert.equal(destroys, 1); assert.equal(wrapper.classList.contains('swiper-wrapper'), false);
+  assert.equal(slide.classList.contains('swiper-slide'), false);
+  media.matches = true; listeners.get('media')(); assert.equal(creates, 2);
+  documentEvents.get('shopify:section:unload')({ target: root });
+  assert.equal(destroys, 2); assert.equal(events.size, 0); assert.equal(listeners.size, 0);
+});

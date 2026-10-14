@@ -36,11 +36,14 @@
   {% if block.settings.width == 'custom' %}--columns-width: {{ block.settings.custom_width | default: 50 | at_least: 10 | at_most: 100 }}%;{% endif %}
 {% endcapture %}
 {% assign columns_style = columns_style | strip %}
+{% if block.settings.enable_swipe_mobile %}<script data-theme-module="{{ 'columns-swipe.js' | asset_url }}"></script>{% endif %}
 <div class="block-columns{% if block.settings.enable_swipe_mobile %} block-columns--swipe-mobile{% endif %}"
   {% if columns_style != blank %}style="{{ columns_style }}"{% endif %}
-  {% if block.settings.enable_swipe_mobile %}tabindex="0" role="region" aria-label="{{ 'accessibility.columns' | t | escape }}"{% endif %}
+  {% if block.settings.enable_swipe_mobile %}data-columns-swipe tabindex="0" role="region" aria-label="{{ 'accessibility.columns' | t | escape }}"{% endif %}
   {{ block.shopify_attributes }}>
+  {% if block.settings.enable_swipe_mobile %}<div class="columns-swipe-wrapper">{% endif %}
   {% content_for 'blocks' %}
+  {% if block.settings.enable_swipe_mobile %}</div>{% endif %}
 </div>
 {% stylesheet %}
   .block-columns {
@@ -74,17 +77,35 @@
       padding-block: var(--columns-padding-top) var(--columns-padding-bottom);
     }
   }
+  .block-columns--swipe-mobile { display: block; }
+  .columns-swipe-wrapper {
+    display: grid;
+    grid-template-columns: repeat(var(--columns-current-columns), minmax(0, 1fr));
+    column-gap: inherit;
+    row-gap: inherit;
+  }
+  .columns-swipe-wrapper > .columns-column { min-width: 0; max-width: 100%; }
   @media (max-width: 767.98px) {
     .block-columns--swipe-mobile {
-      grid-template-columns: none;
-      grid-auto-flow: column;
-      grid-auto-columns: calc((100% - (var(--columns-current-columns) - 1) * var(--columns-gap-horizontal-mobile)) / var(--columns-current-columns));
+      overflow: hidden;
       row-gap: 0;
-      overflow-x: auto;
-      scroll-snap-type: x mandatory;
-      overscroll-behavior-inline: contain;
     }
-    .block-columns--swipe-mobile > .columns-column { scroll-snap-align: start; }
+    .block-columns--swipe-mobile.swiper-initialized > .columns-swipe-wrapper {
+      display: flex;
+      gap: 0;
+      width: 100%;
+      height: 100%;
+      position: relative;
+      box-sizing: content-box;
+      transition-property: transform;
+      transition-timing-function: var(--swiper-wrapper-transition-timing-function, initial);
+      align-items: stretch;
+    }
+    .columns-swipe-wrapper > .swiper-slide {
+      flex-shrink: 0;
+      flex-basis: auto;
+      height: auto;
+    }
   }
 {% endstylesheet %}
 {% schema %}
