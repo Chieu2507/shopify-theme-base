@@ -14,6 +14,7 @@ test('common schemas expose only the reference settings and choices', () => {
     const definition = schema(`blocks/${type}.liquid`);
     assert.deepEqual(definition.settings.filter((s) => s.id).map((s) => s.id).sort(), expected[type].sort());
   }
+  assert.deepEqual(schema('blocks/carousel.liquid').blocks, [{ type: 'slide' }]);
   const slide = schema('blocks/slide.liquid');
   assert.deepEqual(slide.settings.find((s) => s.id === 'corner_radius').options.map((o) => o.value), ['inherit', 'square', 'rounded', 'custom']);
   assert.deepEqual(slide.settings.find((s) => s.id === 'shadow').options.map((o) => o.value), ['none', 'extra_small', 'small']);

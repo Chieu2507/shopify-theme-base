@@ -3,6 +3,24 @@
 The theme exposes a reusable Swiper rendering and lifecycle contract for
 slideshow, featured collection, content list, and product media surfaces.
 
+## Required common Carousel child contract
+
+The common `blocks/carousel.liquid` allows exactly one direct child type:
+`slide` from `blocks/slide.liquid`. Keep its schema allow-list as
+`"blocks": [{ "type": "slide" }]`. Do not add `@theme`, `@app`, private testimonial
+blocks, Gallery items, or Image/Text card items directly to the common Carousel.
+
+All section presets and saved template/group JSON must use the same hierarchy:
+`Carousel → Slide → content blocks`. Gallery and Image/Text card content belongs
+inside a Slide. Slide owns its existing content allow-list; this rule does not
+restrict which compatible content blocks may be nested inside it.
+
+The private Testimonial Carousel remains a separate section-owned contract.
+Before changing any common Carousel composition, run
+`node --test tests/carousel-shared.test.cjs tests/testimonial-carousel.test.cjs`
+and full Theme Check. Do not expand the allow-list to bypass a failing preset;
+repair the preset composition while preserving its content.
+
 ## Separate testimonial and general blocks
 
 The general `carousel` / `slide` pair remains reusable. Only `sections/testimonial-carousel.liquid`
