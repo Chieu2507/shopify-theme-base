@@ -158,8 +158,8 @@ const prefersReducedMotion = () =>
   typeof window.matchMedia === 'function' &&
   window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-const bindCarouselAutoplay = (swiper, root, delay, pauseOnHover) =>
-  bindSwiperAutoplay(swiper, { scope: root, delay, pauseOnHover });
+const bindCarouselAutoplay = (swiper, root, delay, pauseOnHover, getIndex) =>
+  bindSwiperAutoplay(swiper, { scope: root, delay, pauseOnHover, getIndex });
 
 const bindRevealAutoplay = (state, root, delay, pauseOnHover) => {
   if (!state || prefersReducedMotion()) return () => {};
@@ -666,7 +666,8 @@ const initialize = (root) => {
           swiper,
           root,
           number(root.dataset.swiperAutoplayDelay, 4000),
-          root.dataset.swiperAutoplayPauseOnHover !== 'false'
+          root.dataset.swiperAutoplayPauseOnHover !== 'false',
+          manualLoop ? () => manualLoop.logicalIndex(swiper.activeIndex) : undefined
         )
       : null
   };

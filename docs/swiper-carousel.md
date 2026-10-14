@@ -275,3 +275,21 @@ Timing regression tests cover 1/3/4/7/10 seconds and both CSS timeline consumers
 
 Live Theme Editor verification was limited by a disconnected Hot Reload preview.
 The local fix requires the updated assets to be loaded by the development theme.
+
+## Carousel runtime correction — 2026-10-14
+
+The previous clock still paused for Swiper's 600ms slide transition, producing
+approximately 3.6s/7.6s slide intervals for 3s/7s settings. Carousel now counts
+transition time within the configured interval; navigation waits if a transition
+is still in progress. Logical clone restoration does not restart the clock.
+Slideshow retains its existing separate runtime.
+
+Progress bar's inline Swiper transition duration also affected clipping; the
+clock-driven fill explicitly disables that transition. Product/Blog/Collection
+list carousels now use the shared elapsed-time clock instead of setInterval,
+including visibility pause and cleanup when a mobile-only carousel is destroyed.
+
+Runtime measurement with the real bundled Swiper in Chrome: 3s Bullets measured
+3029ms and 7s Progress bar measured 7029ms, within two rendering frames; progress
+bar's computed transition duration is 0s. Both computed clip values match the
+painted remaining percentage. Live Shopify preview verification remains pending.

@@ -67,6 +67,7 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
   let frame;
   let stopped = false;
   let paintedProgress = null;
+  let currentIndex = settings.getIndex?.();
   const paint = (progress, paused) => {
     if (!pagination) return;
     const state = paused ? 'paused' : 'running';
@@ -79,6 +80,11 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
     }
   };
   const reset = () => {
+    if (settings.getIndex) {
+      const index = settings.getIndex();
+      if (index === currentIndex) return;
+      currentIndex = index;
+    }
     elapsed = 0;
     lastTime = null;
     pendingAdvance = false;
@@ -89,15 +95,14 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
     if (stopped || swiper.destroyed) return;
     const delta = lastTime === null ? 0 : Math.max(0, time - lastTime);
     lastTime = time;
-    const paused = document.hidden || motion?.matches || swiper.isLocked || swiper.animating
+    const paused = document.hidden || motion?.matches || swiper.isLocked || settings.isVisible?.() === false
       || (settings.pauseOnHover !== false && swiper.wrapperEl?.matches(':hover'))
       || scope.contains(document.activeElement);
     if (paused) paint(elapsed / delay, true);
-    else if (pendingAdvance) {
+    else if (pendingAdvance && !swiper.animating) {
       // The completed fill was painted on the preceding frame before navigation.
       pendingAdvance = false;
       swiper.isEnd ? swiper.slideTo(0) : swiper.slideNext();
-      reset();
     } else {
       elapsed = Math.min(delay, elapsed + delta);
       paint(elapsed / delay, false);
@@ -106,7 +111,6 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
     frame = window.requestAnimationFrame(tick);
   };
   swiper.on('slideChange', reset);
-  swiper.on('slideChangeTransitionEnd', resetTime);
   document.addEventListener('visibilitychange', resetTime);
   paint(0, true);
   frame = window.requestAnimationFrame(tick);
@@ -114,7 +118,6 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
     stopped = true;
     window.cancelAnimationFrame(frame);
     swiper.off('slideChange', reset);
-    swiper.off('slideChangeTransitionEnd', resetTime);
     document.removeEventListener('visibilitychange', resetTime);
     if (pagination) {
       if (previousClock === null) pagination.removeAttribute('data-autoplay-clock');
