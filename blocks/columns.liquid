@@ -34,19 +34,6 @@
   {% assign padding_bottom_mobile_value = block.settings.padding_bottom_mobile | default: 0 | at_least: 0 | at_most: 100 %}
   {% if block.settings.customize_mobile_padding %}--columns-padding-bottom-mobile: {{ padding_bottom_mobile_value }}px;{% endif %}
   {% if block.settings.width == 'custom' %}--columns-width: {{ block.settings.custom_width | default: 50 | at_least: 10 | at_most: 100 }}%;{% endif %}
-  {% if block.settings.custom_columns %}
-    {% assign entries = block.settings.columns_per_breakpoint | downcase | split: ',' %}
-    {% for entry in entries %}
-      {% assign parts = entry | split: ':' %}
-      {% assign key = parts.first | strip %}
-      {% assign value = parts.last | strip %}
-      {% assign count = value | plus: 0 | floor %}
-      {% assign canonical = count | append: '' %}
-      {% assign valid_key = false %}
-      {% case key %}{% when 'xs', 'sm', 'md', 'lg', 'xl', 'xxl' %}{% assign valid_key = true %}{% endcase %}
-      {% if valid_key and parts.size == 2 and canonical == value and count >= 1 and count <= 50 %}--columns-count-{{ key }}: {{ count }};{% endif %}
-    {% endfor %}
-  {% endif %}
 {% endcapture %}
 {% assign columns_style = columns_style | strip %}
 <div class="block-columns{% if block.settings.enable_swipe_mobile %} block-columns--swipe-mobile{% endif %}"
@@ -59,12 +46,6 @@
   .block-columns {
     --columns-count-desktop: 4;
     --columns-count-mobile: 1;
-    --columns-count-xs: initial;
-    --columns-count-sm: initial;
-    --columns-count-md: initial;
-    --columns-count-lg: initial;
-    --columns-count-xl: initial;
-    --columns-count-xxl: initial;
     --columns-gap-horizontal: 20px;
     --columns-gap-vertical: 30px;
     --columns-gap-horizontal-mobile: 12px;
@@ -74,7 +55,7 @@
     --columns-padding-bottom: 0px;
     --columns-padding-top-mobile: initial;
     --columns-padding-bottom-mobile: initial;
-    --columns-current-columns: var(--columns-count-xs, var(--columns-count-mobile));
+    --columns-current-columns: var(--columns-count-mobile);
     display: grid;
     grid-template-columns: repeat(var(--columns-current-columns), minmax(0, 1fr));
     column-gap: var(--columns-gap-horizontal-mobile);
@@ -84,26 +65,14 @@
     padding-block: var(--columns-padding-top-mobile, var(--columns-padding-top)) var(--columns-padding-bottom-mobile, var(--columns-padding-bottom));
   }
   .block-columns > .columns-column { width: 100%; min-width: 0; max-width: 100%; }
-  @media (min-width: 576px) {
-    .block-columns { --columns-current-columns: var(--columns-count-sm, var(--columns-count-xs, var(--columns-count-mobile))); }
-  }
   @media (min-width: 768px) {
     .block-columns {
-      --columns-current-columns: var(--columns-count-md, var(--columns-count-desktop));
+      --columns-current-columns: var(--columns-count-desktop);
       width: var(--columns-width);
       column-gap: var(--columns-gap-horizontal);
       row-gap: var(--columns-gap-vertical);
       padding-block: var(--columns-padding-top) var(--columns-padding-bottom);
     }
-  }
-  @media (min-width: 992px) {
-    .block-columns { --columns-current-columns: var(--columns-count-lg, var(--columns-count-md, var(--columns-count-desktop))); }
-  }
-  @media (min-width: 1200px) {
-    .block-columns { --columns-current-columns: var(--columns-count-xl, var(--columns-count-lg, var(--columns-count-md, var(--columns-count-desktop)))); }
-  }
-  @media (min-width: 1400px) {
-    .block-columns { --columns-current-columns: var(--columns-count-xxl, var(--columns-count-xl, var(--columns-count-lg, var(--columns-count-md, var(--columns-count-desktop))))); }
   }
   @media (max-width: 767.98px) {
     .block-columns--swipe-mobile {
@@ -181,19 +150,6 @@
       "id": "enable_swipe_mobile",
       "label": "t:labels.enable_swipe_mobile",
       "default": false
-    },
-    {
-      "type": "checkbox",
-      "id": "custom_columns",
-      "label": "t:labels.columns_custom_columns",
-      "default": false
-    },
-    {
-      "type": "text",
-      "id": "columns_per_breakpoint",
-      "label": "t:labels.columns_breakpoints",
-      "info": "t:info.columns_breakpoints",
-      "visible_if": "{{ block.settings.custom_columns }}"
     },
     {
       "type": "header",

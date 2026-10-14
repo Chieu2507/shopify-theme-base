@@ -29,13 +29,6 @@ function migrateColumns(document) {
         settings.gap_horizontal_mobile ??= settings.gap_mobile;
         settings.gap_vertical_mobile ??= settings.gap_mobile;
       }
-      const desktop = Number(settings.columns_desktop || 4);
-      const mobile = Number(settings.columns_mobile || 1);
-      const tablet = Number(settings.columns_tablet || desktop);
-      if (!settings.custom_columns && (tablet !== desktop || desktop < 2 || mobile > 2)) {
-        settings.custom_columns = true;
-        settings.columns_per_breakpoint = `xs:${mobile}, sm:${mobile}, md:${tablet}, lg:${tablet}, xl:${desktop}, xxl:${desktop}`;
-      }
       for (const [id, value] of Object.entries(settings)) {
         const definition = settingsById.get(id);
         if (!definition) delete settings[id];
