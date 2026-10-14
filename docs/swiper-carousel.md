@@ -3,7 +3,77 @@
 The theme exposes a reusable Swiper rendering and lifecycle contract for
 slideshow, featured collection, content list, and product media surfaces.
 
+## Separate testimonial and general blocks
+
+The general `carousel` / `slide` pair remains reusable. Only `sections/testimonial-carousel.liquid`
+explicitly allows the private `_testimonial-carousel` block, which owns
+`testimonial-item` and `_testimonial-slide` children. Private blocks are not
+offered through `@theme`, so the testimonial carousel is added directly to its
+owning section rather than a general Group.
+
+`carousel-block.js` initializes only `[data-carousel-block]` roots.
+`testimonial-carousel.js` initializes only `[data-testimonial-carousel]` roots
+and owns testimonial gap synchronization. Both use `carousel-runtime.js` for
+Swiper, controls and editor lifecycle, with separate instance state and cleanup.
+Each pair has its own schema; testimonial schema excludes gallery/card controls.
+
+The Testimonial: Carousel preset uses the private types. Background and
+horizontal testimonial sections keep the general `carousel` / `slide` pair.
+For template/group JSON pulled from an older theme, run:
+
+```sh
+node scripts/migrate-testimonial-carousel.cjs templates/<template>.json
+```
+
+The migration uses private types in `testimonial-carousel` and repairs any
+mistaken private types in Background/Horizontal back to common `carousel`/`slide`,
+preserving IDs, settings, nested content, disabled state and ordering.
+It is idempotent and leaves other section types unchanged. Run common-option
+cleanup afterward if repairing a saved private carousel in Background/Horizontal.
+Remote theme
+configuration must be pulled and migrated before deploying the split.
+
 ## Liquid markup
+
+The common Carousel has Layout, Gap, Size, Navigation, Pagination, Autoplay and
+Padding controls. Shared column/navigation/pagination/autoplay labels, choices
+follow Product List in Featured Collection when the option exists
+in the reference. Navigation/Pagination defaults follow the inspected reference. Existing spacing and pause-on-hover IDs remain stable. Gap
+range/default and speed validation follow Product List. The reference retains
+one desktop column, Outside/Inside navigation and Primary/Secondary/Outline;
+Product List-only Top and Icon only choices are excluded. Desktop/mobile column
+counts use the standard 768px breakpoint; custom breakpoint columns are removed.
+Preview overflow follows the configured desktop column count. Navigation centering subtracts the
+pagination padding/size as in Product List.
+
+Navigation Position, Style, Icon and Behavior are visible only when desktop
+navigation is enabled. Pagination Type remains visible regardless of device
+switches. Desktop top padding (0–70px) and mobile top padding (0–50px) are visible
+only for their enabled device. Progress bar exposes Limit width when either
+device is enabled; Max width (100–500px, step 10px) additionally requires Limit
+width. Bullets never expose width controls. The width cap applies to both devices.
+
+Slide owns child flow, mobile stacking/alignment, fit/fill height, background
+image/video, overlay and blur, border thickness, radius, shadow, a block link,
+and desktop/mobile padding. Background videos play only while visible and
+pause for reduced motion or a hidden tab. The slide root carries editor attributes;
+background/overlay layers are decorative, and nested links and controls stay
+interactive above the block link. Theme Editor omits the block-link destination.
+Vertical layouts inherit desktop alignment on mobile; a horizontal layout can
+stack vertically and set its own mobile alignment without changing its position.
+
+The rebuild uses the observed editor behavior of reference theme 139629002837;
+the trial theme does not expose source through Shopify CLI. Common Carousel
+excludes transition, loop, fraction controls and all
+card-specific settings. Slide excludes border style/color, background color,
+custom link-label controls and radius/shadow choices absent from the reference.
+Only Inherit/Square/Rounded/Custom radius and None/Extra small/Small shadow remain.
+Preset and saved template cleanup removes unsupported settings while retaining
+block IDs, child content and order. For older pulled JSON, run:
+
+```sh
+node scripts/migrate-common-carousel-options.cjs templates/<template>.json
+```
 
 Capture direct `.swiper-slide` items and render the shared viewport:
 
