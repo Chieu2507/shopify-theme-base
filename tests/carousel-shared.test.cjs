@@ -75,9 +75,10 @@ test('all existing Carousel/Slide presets refer to supported settings and childr
 
 test('common Carousel has no custom breakpoint columns or configuration hook', () => {
   assert.equal(fs.existsSync('assets/carousel-columns.js'), false);
-  for (const file of ['blocks/carousel.liquid', 'assets/carousel-block.js', 'assets/carousel-runtime.js', 'locales/en.default.schema.json']) {
+  for (const file of ['blocks/carousel.liquid', 'assets/carousel-block.js', 'assets/carousel-runtime.js']) {
     assert.doesNotMatch(read(file), /custom_columns|columns_per_breakpoint|carousel-columns|data-carousel-columns|configureCarouselColumns|configureOptions/, file);
   }
+  assert.doesNotMatch(read('locales/en.default.schema.json'), /\"carousel_(?:custom_columns|columns_per_breakpoint)\"/);
 });
 
 test('Navigation and Pagination expose the reference controls and conditional widths', () => {

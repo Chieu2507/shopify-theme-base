@@ -1,6 +1,6 @@
 {% doc %}
-  Renders Columns using the grid type ID for compatibility with saved templates.
-  The grid owns column counts, horizontal/vertical gaps, mobile swipe, width
+  Renders Columns with dedicated Column children.
+  Columns owns column counts, horizontal/vertical gaps, mobile swipe, width
   and vertical padding. The existing Column kernel owns child content layout.
 {% enddoc %}
 
@@ -14,108 +14,108 @@
     assign columns_mobile = 1
   endif
 %}
-{% capture grid_style %}
-  {% if columns_desktop != 4 %}--grid-columns-desktop: {{ columns_desktop }};{% endif %}
-  {% if columns_mobile != 1 %}--grid-columns-mobile: {{ columns_mobile }};{% endif %}
+{% capture columns_style %}
+  {% if columns_desktop != 4 %}--columns-count-desktop: {{ columns_desktop }};{% endif %}
+  {% if columns_mobile != 1 %}--columns-count-mobile: {{ columns_mobile }};{% endif %}
   {% assign gap_horizontal_value = block.settings.gap_horizontal | default: 20 | at_least: 0 | at_most: 100 %}
-  {% if gap_horizontal_value != 20 %}--grid-gap-horizontal: {{ gap_horizontal_value }}px;{% endif %}
+  {% if gap_horizontal_value != 20 %}--columns-gap-horizontal: {{ gap_horizontal_value }}px;{% endif %}
   {% assign gap_vertical_value = block.settings.gap_vertical | default: 30 | at_least: 0 | at_most: 100 %}
-  {% if gap_vertical_value != 30 %}--grid-gap-vertical: {{ gap_vertical_value }}px;{% endif %}
+  {% if gap_vertical_value != 30 %}--columns-gap-vertical: {{ gap_vertical_value }}px;{% endif %}
   {% assign gap_horizontal_mobile_value = block.settings.gap_horizontal_mobile | default: 12 | at_least: 0 | at_most: 50 %}
-  {% if gap_horizontal_mobile_value != 12 %}--grid-gap-horizontal-mobile: {{ gap_horizontal_mobile_value }}px;{% endif %}
+  {% if gap_horizontal_mobile_value != 12 %}--columns-gap-horizontal-mobile: {{ gap_horizontal_mobile_value }}px;{% endif %}
   {% assign gap_vertical_mobile_value = block.settings.gap_vertical_mobile | default: 30 | at_least: 0 | at_most: 50 %}
-  {% unless block.settings.enable_swipe_mobile %}{% if gap_vertical_mobile_value != 30 %}--grid-gap-vertical-mobile: {{ gap_vertical_mobile_value }}px;{% endif %}{% endunless %}
+  {% unless block.settings.enable_swipe_mobile %}{% if gap_vertical_mobile_value != 30 %}--columns-gap-vertical-mobile: {{ gap_vertical_mobile_value }}px;{% endif %}{% endunless %}
   {% assign padding_top_value = block.settings.padding_top | default: 0 | at_least: 0 | at_most: 100 %}
-  {% if padding_top_value != 0 %}--grid-padding-top: {{ padding_top_value }}px;{% endif %}
+  {% if padding_top_value != 0 %}--columns-padding-top: {{ padding_top_value }}px;{% endif %}
   {% assign padding_bottom_value = block.settings.padding_bottom | default: 0 | at_least: 0 | at_most: 100 %}
-  {% if padding_bottom_value != 0 %}--grid-padding-bottom: {{ padding_bottom_value }}px;{% endif %}
+  {% if padding_bottom_value != 0 %}--columns-padding-bottom: {{ padding_bottom_value }}px;{% endif %}
   {% assign padding_top_mobile_value = block.settings.padding_top_mobile | default: 0 | at_least: 0 | at_most: 100 %}
-  {% if block.settings.customize_mobile_padding %}--grid-padding-top-mobile: {{ padding_top_mobile_value }}px;{% endif %}
+  {% if block.settings.customize_mobile_padding %}--columns-padding-top-mobile: {{ padding_top_mobile_value }}px;{% endif %}
   {% assign padding_bottom_mobile_value = block.settings.padding_bottom_mobile | default: 0 | at_least: 0 | at_most: 100 %}
-  {% if block.settings.customize_mobile_padding %}--grid-padding-bottom-mobile: {{ padding_bottom_mobile_value }}px;{% endif %}
-  {% if block.settings.width == 'custom' %}--grid-width: {{ block.settings.custom_width | default: 50 | at_least: 10 | at_most: 100 }}%;{% endif %}
+  {% if block.settings.customize_mobile_padding %}--columns-padding-bottom-mobile: {{ padding_bottom_mobile_value }}px;{% endif %}
+  {% if block.settings.width == 'custom' %}--columns-width: {{ block.settings.custom_width | default: 50 | at_least: 10 | at_most: 100 }}%;{% endif %}
   {% if block.settings.custom_columns %}
     {% assign entries = block.settings.columns_per_breakpoint | downcase | split: ',' %}
     {% for entry in entries %}
       {% assign parts = entry | split: ':' %}
       {% assign key = parts.first | strip %}
       {% assign value = parts.last | strip %}
-      {% assign count = value | plus: 0 %}
+      {% assign count = value | plus: 0 | floor %}
       {% assign canonical = count | append: '' %}
       {% assign valid_key = false %}
       {% case key %}{% when 'xs', 'sm', 'md', 'lg', 'xl', 'xxl' %}{% assign valid_key = true %}{% endcase %}
-      {% if valid_key and parts.size == 2 and canonical == value and count >= 1 and count <= 50 %}--grid-columns-{{ key }}: {{ count }};{% endif %}
+      {% if valid_key and parts.size == 2 and canonical == value and count >= 1 and count <= 50 %}--columns-count-{{ key }}: {{ count }};{% endif %}
     {% endfor %}
   {% endif %}
 {% endcapture %}
-{% assign grid_style = grid_style | strip %}
-<div class="block-grid{% if block.settings.enable_swipe_mobile %} block-grid--swipe-mobile{% endif %}"
-  {% if grid_style != blank %}style="{{ grid_style }}"{% endif %}
+{% assign columns_style = columns_style | strip %}
+<div class="block-columns{% if block.settings.enable_swipe_mobile %} block-columns--swipe-mobile{% endif %}"
+  {% if columns_style != blank %}style="{{ columns_style }}"{% endif %}
   {% if block.settings.enable_swipe_mobile %}tabindex="0" role="region" aria-label="{{ 'accessibility.columns' | t | escape }}"{% endif %}
   {{ block.shopify_attributes }}>
   {% content_for 'blocks' %}
 </div>
 {% stylesheet %}
-  .block-grid {
-    --grid-columns-desktop: 4;
-    --grid-columns-mobile: 1;
-    --grid-columns-xs: initial;
-    --grid-columns-sm: initial;
-    --grid-columns-md: initial;
-    --grid-columns-lg: initial;
-    --grid-columns-xl: initial;
-    --grid-columns-xxl: initial;
-    --grid-gap-horizontal: 20px;
-    --grid-gap-vertical: 30px;
-    --grid-gap-horizontal-mobile: 12px;
-    --grid-gap-vertical-mobile: 30px;
-    --grid-width: 100%;
-    --grid-padding-top: 0px;
-    --grid-padding-bottom: 0px;
-    --grid-padding-top-mobile: initial;
-    --grid-padding-bottom-mobile: initial;
-    --grid-current-columns: var(--grid-columns-xs, var(--grid-columns-mobile));
+  .block-columns {
+    --columns-count-desktop: 4;
+    --columns-count-mobile: 1;
+    --columns-count-xs: initial;
+    --columns-count-sm: initial;
+    --columns-count-md: initial;
+    --columns-count-lg: initial;
+    --columns-count-xl: initial;
+    --columns-count-xxl: initial;
+    --columns-gap-horizontal: 20px;
+    --columns-gap-vertical: 30px;
+    --columns-gap-horizontal-mobile: 12px;
+    --columns-gap-vertical-mobile: 30px;
+    --columns-width: 100%;
+    --columns-padding-top: 0px;
+    --columns-padding-bottom: 0px;
+    --columns-padding-top-mobile: initial;
+    --columns-padding-bottom-mobile: initial;
+    --columns-current-columns: var(--columns-count-xs, var(--columns-count-mobile));
     display: grid;
-    grid-template-columns: repeat(var(--grid-current-columns), minmax(0, 1fr));
-    column-gap: var(--grid-gap-horizontal-mobile);
-    row-gap: var(--grid-gap-vertical-mobile);
+    grid-template-columns: repeat(var(--columns-current-columns), minmax(0, 1fr));
+    column-gap: var(--columns-gap-horizontal-mobile);
+    row-gap: var(--columns-gap-vertical-mobile);
     width: 100%;
     min-width: 0;
-    padding-block: var(--grid-padding-top-mobile, var(--grid-padding-top)) var(--grid-padding-bottom-mobile, var(--grid-padding-bottom));
+    padding-block: var(--columns-padding-top-mobile, var(--columns-padding-top)) var(--columns-padding-bottom-mobile, var(--columns-padding-bottom));
   }
-  .block-grid > .block-column { width: 100%; min-width: 0; max-width: 100%; }
+  .block-columns > .columns-column { width: 100%; min-width: 0; max-width: 100%; }
   @media (min-width: 576px) {
-    .block-grid { --grid-current-columns: var(--grid-columns-sm, var(--grid-columns-xs, var(--grid-columns-mobile))); }
+    .block-columns { --columns-current-columns: var(--columns-count-sm, var(--columns-count-xs, var(--columns-count-mobile))); }
   }
   @media (min-width: 768px) {
-    .block-grid {
-      --grid-current-columns: var(--grid-columns-md, var(--grid-columns-desktop));
-      width: var(--grid-width);
-      column-gap: var(--grid-gap-horizontal);
-      row-gap: var(--grid-gap-vertical);
-      padding-block: var(--grid-padding-top) var(--grid-padding-bottom);
+    .block-columns {
+      --columns-current-columns: var(--columns-count-md, var(--columns-count-desktop));
+      width: var(--columns-width);
+      column-gap: var(--columns-gap-horizontal);
+      row-gap: var(--columns-gap-vertical);
+      padding-block: var(--columns-padding-top) var(--columns-padding-bottom);
     }
   }
   @media (min-width: 992px) {
-    .block-grid { --grid-current-columns: var(--grid-columns-lg, var(--grid-columns-md, var(--grid-columns-desktop))); }
+    .block-columns { --columns-current-columns: var(--columns-count-lg, var(--columns-count-md, var(--columns-count-desktop))); }
   }
   @media (min-width: 1200px) {
-    .block-grid { --grid-current-columns: var(--grid-columns-xl, var(--grid-columns-lg, var(--grid-columns-md, var(--grid-columns-desktop)))); }
+    .block-columns { --columns-current-columns: var(--columns-count-xl, var(--columns-count-lg, var(--columns-count-md, var(--columns-count-desktop)))); }
   }
   @media (min-width: 1400px) {
-    .block-grid { --grid-current-columns: var(--grid-columns-xxl, var(--grid-columns-xl, var(--grid-columns-lg, var(--grid-columns-md, var(--grid-columns-desktop))))); }
+    .block-columns { --columns-current-columns: var(--columns-count-xxl, var(--columns-count-xl, var(--columns-count-lg, var(--columns-count-md, var(--columns-count-desktop))))); }
   }
   @media (max-width: 767.98px) {
-    .block-grid--swipe-mobile {
+    .block-columns--swipe-mobile {
       grid-template-columns: none;
       grid-auto-flow: column;
-      grid-auto-columns: calc((100% - (var(--grid-current-columns) - 1) * var(--grid-gap-horizontal-mobile)) / var(--grid-current-columns));
+      grid-auto-columns: calc((100% - (var(--columns-current-columns) - 1) * var(--columns-gap-horizontal-mobile)) / var(--columns-current-columns));
       row-gap: 0;
       overflow-x: auto;
       scroll-snap-type: x mandatory;
       overscroll-behavior-inline: contain;
     }
-    .block-grid--swipe-mobile > .block-column { scroll-snap-align: start; }
+    .block-columns--swipe-mobile > .columns-column { scroll-snap-align: start; }
   }
 {% endstylesheet %}
 {% schema %}
@@ -124,7 +124,7 @@
   "tag": null,
   "blocks": [
     {
-      "type": "_column"
+      "type": "_columns-column"
     }
   ],
   "settings": [
@@ -185,14 +185,14 @@
     {
       "type": "checkbox",
       "id": "custom_columns",
-      "label": "t:labels.grid_custom_columns",
+      "label": "t:labels.columns_custom_columns",
       "default": false
     },
     {
       "type": "text",
       "id": "columns_per_breakpoint",
-      "label": "t:labels.grid_columns_per_breakpoint",
-      "info": "t:info.grid_columns_per_breakpoint",
+      "label": "t:labels.columns_breakpoints",
+      "info": "t:info.columns_breakpoints",
       "visible_if": "{{ block.settings.custom_columns }}"
     },
     {
@@ -222,7 +222,7 @@
     {
       "type": "range",
       "id": "gap_horizontal_mobile",
-      "label": "t:labels.grid_horizontal_mobile",
+      "label": "t:labels.columns_horizontal_mobile",
       "min": 0,
       "max": 50,
       "step": 1,
@@ -232,7 +232,7 @@
     {
       "type": "range",
       "id": "gap_vertical_mobile",
-      "label": "t:labels.grid_vertical_mobile",
+      "label": "t:labels.columns_vertical_mobile",
       "min": 0,
       "max": 50,
       "step": 1,
@@ -330,10 +330,10 @@
       "category": "t:general.layout",
       "blocks": [
         {
-          "type": "_column",
+          "type": "_columns-column",
           "settings": {
-            "gap_desktop": 16,
-            "gap_mobile": 12
+            "gap_desktop": 8,
+            "gap_mobile": 8
           },
           "blocks": [
             {
@@ -348,7 +348,7 @@
             {
               "type": "heading",
               "settings": {
-                "text": "<p>Featured detail</p>",
+                "text": "<p>Considered design</p>",
                 "heading_size": "lg",
                 "html_tag": "h3",
                 "width": "fill"
@@ -357,7 +357,7 @@
             {
               "type": "text",
               "settings": {
-                "text": "<p>Introduce a product, collection, or idea. Share a few useful details to help customers explore your brand.</p>",
+                "text": "<p>Discover thoughtful shapes and details designed to become part of your everyday routine.</p>",
                 "text_size": "sm",
                 "width": "fill"
               }
@@ -365,7 +365,7 @@
             {
               "type": "button",
               "settings": {
-                "button_label": "Learn more",
+                "button_label": "Explore the details",
                 "button_style": "tertiary",
                 "width": "fit"
               }
@@ -373,10 +373,10 @@
           ]
         },
         {
-          "type": "_column",
+          "type": "_columns-column",
           "settings": {
-            "gap_desktop": 16,
-            "gap_mobile": 12
+            "gap_desktop": 8,
+            "gap_mobile": 8
           },
           "blocks": [
             {
@@ -391,7 +391,7 @@
             {
               "type": "heading",
               "settings": {
-                "text": "<p>Featured detail</p>",
+                "text": "<p>Made with care</p>",
                 "heading_size": "lg",
                 "html_tag": "h3",
                 "width": "fill"
@@ -400,7 +400,7 @@
             {
               "type": "text",
               "settings": {
-                "text": "<p>Introduce a product, collection, or idea. Share a few useful details to help customers explore your brand.</p>",
+                "text": "<p>Learn about the materials and finishing touches that give each piece its character.</p>",
                 "text_size": "sm",
                 "width": "fill"
               }
@@ -408,7 +408,7 @@
             {
               "type": "button",
               "settings": {
-                "button_label": "Learn more",
+                "button_label": "Meet the collection",
                 "button_style": "tertiary",
                 "width": "fit"
               }
@@ -416,10 +416,10 @@
           ]
         },
         {
-          "type": "_column",
+          "type": "_columns-column",
           "settings": {
-            "gap_desktop": 16,
-            "gap_mobile": 12
+            "gap_desktop": 8,
+            "gap_mobile": 8
           },
           "blocks": [
             {
@@ -434,7 +434,7 @@
             {
               "type": "heading",
               "settings": {
-                "text": "<p>Featured detail</p>",
+                "text": "<p>Your own expression</p>",
                 "heading_size": "lg",
                 "html_tag": "h3",
                 "width": "fill"
@@ -443,7 +443,7 @@
             {
               "type": "text",
               "settings": {
-                "text": "<p>Introduce a product, collection, or idea. Share a few useful details to help customers explore your brand.</p>",
+                "text": "<p>Find pieces that reflect your style, from quiet accents to distinctive finishing touches.</p>",
                 "text_size": "sm",
                 "width": "fill"
               }
@@ -451,7 +451,7 @@
             {
               "type": "button",
               "settings": {
-                "button_label": "Learn more",
+                "button_label": "Find your style",
                 "button_style": "tertiary",
                 "width": "fit"
               }
@@ -459,10 +459,10 @@
           ]
         },
         {
-          "type": "_column",
+          "type": "_columns-column",
           "settings": {
-            "gap_desktop": 16,
-            "gap_mobile": 12
+            "gap_desktop": 8,
+            "gap_mobile": 8
           },
           "blocks": [
             {
@@ -477,7 +477,7 @@
             {
               "type": "heading",
               "settings": {
-                "text": "<p>Featured detail</p>",
+                "text": "<p>Everyday favourites</p>",
                 "heading_size": "lg",
                 "html_tag": "h3",
                 "width": "fill"
@@ -486,7 +486,7 @@
             {
               "type": "text",
               "settings": {
-                "text": "<p>Introduce a product, collection, or idea. Share a few useful details to help customers explore your brand.</p>",
+                "text": "<p>Explore versatile essentials to wear, enjoy, and return to season after season.</p>",
                 "text_size": "sm",
                 "width": "fill"
               }
@@ -494,7 +494,7 @@
             {
               "type": "button",
               "settings": {
-                "button_label": "Learn more",
+                "button_label": "Discover favourites",
                 "button_style": "tertiary",
                 "width": "fit"
               }
