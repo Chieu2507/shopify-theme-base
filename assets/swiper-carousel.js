@@ -60,6 +60,7 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
   const pagination = swiper.el?.querySelector('.swiper-pagination');
   const previousClock = pagination?.getAttribute('data-autoplay-clock');
   const previousProgress = pagination?.style.getPropertyValue('--carousel-autoplay-progress');
+  const previousRemaining = pagination?.style.getPropertyValue('--carousel-autoplay-remaining');
   let elapsed = 0;
   let lastTime = null;
   let pendingAdvance = false;
@@ -73,6 +74,7 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
     const value = String(progress);
     if (paintedProgress !== value) {
       pagination.style.setProperty('--carousel-autoplay-progress', value);
+      pagination.style.setProperty('--carousel-autoplay-remaining', `${(1 - progress) * 100}%`);
       paintedProgress = value;
     }
   };
@@ -119,6 +121,8 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
       else pagination.setAttribute('data-autoplay-clock', previousClock);
       if (previousProgress) pagination.style.setProperty('--carousel-autoplay-progress', previousProgress);
       else pagination.style.removeProperty('--carousel-autoplay-progress');
+      if (previousRemaining) pagination.style.setProperty('--carousel-autoplay-remaining', previousRemaining);
+      else pagination.style.removeProperty('--carousel-autoplay-remaining');
     }
   };
 };

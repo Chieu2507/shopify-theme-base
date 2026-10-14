@@ -34,6 +34,7 @@ function harness(delay) {
     swiper, pagination, document, events, documentEvents, frames, cleanup,
     frame(time) { const [id, callback] = frames.entries().next().value; frames.delete(id); callback(time); },
     get progress() { return Number(properties.get('--carousel-autoplay-progress')); },
+    get remaining() { return properties.get('--carousel-autoplay-remaining'); },
     get advances() { return advances; },
     hover(value) { hovered = value; }, focus(value) { focused = value; }, reduce(value) { motion = value; },
   };
@@ -43,10 +44,13 @@ for (const delay of [1000, 3000, 4000, 7000, 10000]) test(`pagination completes 
   const h = harness(delay);
   h.frame(0); h.frame(delay / 2);
   assert.equal(h.progress, 0.5); assert.equal(h.advances, 0);
+  assert.equal(h.remaining, '50%');
   h.frame(delay);
   assert.equal(h.progress, 1); assert.equal(h.advances, 0);
+  assert.equal(h.remaining, '0%');
   h.frame(delay + 16);
   assert.equal(h.advances, 1); assert.equal(h.progress, 0);
+  assert.equal(h.remaining, '100%');
   h.frame(delay + 616);
   assert.equal(h.progress, 0);
   h.swiper.animating = false; h.events.get('slideChangeTransitionEnd')();
@@ -80,4 +84,11 @@ test('manual slide changes restart the full delay instead of keeping an old time
   h.frame(8100); assert.equal(h.progress, 1); assert.equal(h.advances, 0);
   h.frame(8116); assert.equal(h.advances, 1);
   h.cleanup();
+});
+
+test('pagination CSS consumes the autoplay clock without a separate four-second animation', () => {
+  const css=fs.readFileSync('assets/swiper-carousel.css','utf8');
+  assert.doesNotMatch(css, /@keyframes swiper-pagination-bullet-progress|animation: swiper-pagination-bullet-progress/);
+  assert.match(css, /\.swiper-pagination-bullet-active::after\s*\{[^}]*var\(--carousel-autoplay-remaining, 100%\)/);
+  assert.match(css, /\.swiper-pagination-progressbar-fill\s*\{[^}]*var\(--carousel-autoplay-remaining, 100%\)/);
 });

@@ -263,3 +263,15 @@ Each button supplies a numeric `data-swiper-slide-index`; the binder delegates
 clicks within the supplied scope, updates an optional active class and
 `aria-current`, and returns cleanup for editor unloads. `scrollActiveIntoView`
 is opt-in and respects reduced-motion preferences.
+
+## Pagination timeline correction — 2026-10-14
+
+Bullets and Progress bar both consume the same elapsed autoplay clock. Removed
+the independent four-second CSS keyframes. JavaScript paints the remaining fill
+as a percentage through `--carousel-autoplay-remaining`; LTR and RTL clipping
+read that value directly. The fill completes before navigation, resets on slide
+change, and pauses with autoplay for hover, focus, hidden tabs and reduced motion.
+Timing regression tests cover 1/3/4/7/10 seconds and both CSS timeline consumers.
+
+Live Theme Editor verification was limited by a disconnected Hot Reload preview.
+The local fix requires the updated assets to be loaded by the development theme.
