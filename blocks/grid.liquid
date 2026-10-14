@@ -1,183 +1,131 @@
 {% doc %}
-  Renders a responsive grid compound block. Every direct child theme block is
-  treated as one grid item and keeps the order supplied by the theme editor.
-
-  The grid owns columns, a shared gap, vertical alignment, and padding. Child
-  blocks own their content and presentation.
-
-  @example
-  {% content_for 'block', type: 'grid', id: 'grid' %}
+  Renders Columns using the grid type ID for compatibility with saved templates.
+  The grid owns column counts, horizontal/vertical gaps, mobile swipe, width
+  and vertical padding. The existing Column kernel owns child content layout.
 {% enddoc %}
 
 {% liquid
-  assign grid_columns_desktop = block.settings.columns_desktop | default: 3 | plus: 0
-  if grid_columns_desktop < 1 or grid_columns_desktop > 6
-    assign grid_columns_desktop = 3
+  assign columns_desktop = block.settings.columns_desktop | default: 4 | plus: 0 | floor
+  if columns_desktop < 2 or columns_desktop > 6
+    assign columns_desktop = 4
   endif
-
-  assign grid_columns_tablet = block.settings.columns_tablet | default: 2 | plus: 0
-  if grid_columns_tablet < 1 or grid_columns_tablet > 6
-    assign grid_columns_tablet = 2
+  assign columns_mobile = block.settings.columns_mobile | default: 1 | plus: 0 | floor
+  if columns_mobile < 1 or columns_mobile > 2
+    assign columns_mobile = 1
   endif
-
-  assign grid_columns_mobile = block.settings.columns_mobile | default: 1 | plus: 0
-  if grid_columns_mobile < 1 or grid_columns_mobile > 6
-    assign grid_columns_mobile = 1
-  endif
-
-  assign grid_gap = block.settings.gap | default: 24 | plus: 0
-  if grid_gap < 0 or grid_gap > 100
-    assign grid_gap = 24
-  endif
-  assign grid_gap_mobile = block.settings.gap_mobile | default: 16 | plus: 0
-  if grid_gap_mobile < 0 or grid_gap_mobile > 100
-    assign grid_gap_mobile = 16
-  endif
-
-  assign grid_alignment = 'flex-start'
-  case block.settings.alignment
-    when 'middle'
-      assign grid_alignment = 'center'
-    when 'bottom'
-      assign grid_alignment = 'flex-end'
-  endcase
-
-  assign grid_alignment_mobile = grid_alignment
-  if block.settings.customize_mobile_alignment
-    case block.settings.alignment_mobile
-      when 'middle'
-        assign grid_alignment_mobile = 'center'
-      when 'bottom'
-        assign grid_alignment_mobile = 'flex-end'
-      when 'top'
-        assign grid_alignment_mobile = 'flex-start'
-    endcase
-  endif
-
-  assign grid_padding_top = block.settings.padding_top | default: 0 | plus: 0
-  assign grid_padding_bottom = block.settings.padding_bottom | default: 0 | plus: 0
-  assign grid_padding_left = block.settings.padding_left | default: 0 | plus: 0
-  assign grid_padding_right = block.settings.padding_right | default: 0 | plus: 0
-  assign grid_padding_top_mobile = block.settings.padding_top_mobile | default: 0 | plus: 0
-  assign grid_padding_bottom_mobile = block.settings.padding_bottom_mobile | default: 0 | plus: 0
-  assign grid_padding_left_mobile = block.settings.padding_left_mobile | default: 0 | plus: 0
-  assign grid_padding_right_mobile = block.settings.padding_right_mobile | default: 0 | plus: 0
-
-  if grid_padding_top < 0 or grid_padding_top > 100
-    assign grid_padding_top = 0
-  endif
-  if grid_padding_bottom < 0 or grid_padding_bottom > 100
-    assign grid_padding_bottom = 0
-  endif
-  if grid_padding_left < 0 or grid_padding_left > 100
-    assign grid_padding_left = 0
-  endif
-  if grid_padding_right < 0 or grid_padding_right > 100
-    assign grid_padding_right = 0
-  endif
-  if grid_padding_top_mobile < 0 or grid_padding_top_mobile > 100
-    assign grid_padding_top_mobile = 0
-  endif
-  if grid_padding_bottom_mobile < 0 or grid_padding_bottom_mobile > 100
-    assign grid_padding_bottom_mobile = 0
-  endif
-  if grid_padding_left_mobile < 0 or grid_padding_left_mobile > 100
-    assign grid_padding_left_mobile = 0
-  endif
-  if grid_padding_right_mobile < 0 or grid_padding_right_mobile > 100
-    assign grid_padding_right_mobile = 0
-  endif
-
 %}
-
 {% capture grid_style %}
-  {% if grid_columns_desktop != 3 %}--grid-columns-desktop: {{ grid_columns_desktop }};{% endif %}
-  {% if grid_columns_tablet != 2 %}--grid-columns-tablet: {{ grid_columns_tablet }};{% endif %}
-  {% if grid_columns_mobile != 1 %}--grid-columns-mobile: {{ grid_columns_mobile }};{% endif %}
-  {% if grid_gap != 24 %}--grid-gap: {{ grid_gap }}px;{% endif %}
-  --grid-gap-mobile: {{ grid_gap_mobile }}px;
-  {% if grid_alignment != 'flex-start' %}--grid-align-items: {{ grid_alignment }};{% endif %}
-  {% if block.settings.customize_mobile_alignment and grid_alignment_mobile != grid_alignment %}--grid-align-items-mobile: {{ grid_alignment_mobile }};{% endif %}
-  {% if grid_padding_top != 0 %}--grid-padding-top: {{ grid_padding_top }}px;{% endif %}
-  {% if grid_padding_bottom != 0 %}--grid-padding-bottom: {{ grid_padding_bottom }}px;{% endif %}
-  {% if grid_padding_left != 0 %}--grid-padding-left: {{ grid_padding_left }}px;{% endif %}
-  {% if grid_padding_right != 0 %}--grid-padding-right: {{ grid_padding_right }}px;{% endif %}
-  {% if block.settings.customize_mobile_padding %}
-    {% if grid_padding_top_mobile != grid_padding_top %}--grid-padding-top-mobile: {{ grid_padding_top_mobile }}px;{% endif %}
-    {% if grid_padding_bottom_mobile != grid_padding_bottom %}--grid-padding-bottom-mobile: {{ grid_padding_bottom_mobile }}px;{% endif %}
-    {% if grid_padding_left_mobile != grid_padding_left %}--grid-padding-left-mobile: {{ grid_padding_left_mobile }}px;{% endif %}
-    {% if grid_padding_right_mobile != grid_padding_right %}--grid-padding-right-mobile: {{ grid_padding_right_mobile }}px;{% endif %}
+  {% if columns_desktop != 4 %}--grid-columns-desktop: {{ columns_desktop }};{% endif %}
+  {% if columns_mobile != 1 %}--grid-columns-mobile: {{ columns_mobile }};{% endif %}
+  {% assign gap_horizontal_value = block.settings.gap_horizontal | default: 20 | at_least: 0 | at_most: 100 %}
+  {% if gap_horizontal_value != 20 %}--grid-gap-horizontal: {{ gap_horizontal_value }}px;{% endif %}
+  {% assign gap_vertical_value = block.settings.gap_vertical | default: 30 | at_least: 0 | at_most: 100 %}
+  {% if gap_vertical_value != 30 %}--grid-gap-vertical: {{ gap_vertical_value }}px;{% endif %}
+  {% assign gap_horizontal_mobile_value = block.settings.gap_horizontal_mobile | default: 12 | at_least: 0 | at_most: 50 %}
+  {% if gap_horizontal_mobile_value != 12 %}--grid-gap-horizontal-mobile: {{ gap_horizontal_mobile_value }}px;{% endif %}
+  {% assign gap_vertical_mobile_value = block.settings.gap_vertical_mobile | default: 30 | at_least: 0 | at_most: 50 %}
+  {% unless block.settings.enable_swipe_mobile %}{% if gap_vertical_mobile_value != 30 %}--grid-gap-vertical-mobile: {{ gap_vertical_mobile_value }}px;{% endif %}{% endunless %}
+  {% assign padding_top_value = block.settings.padding_top | default: 0 | at_least: 0 | at_most: 100 %}
+  {% if padding_top_value != 0 %}--grid-padding-top: {{ padding_top_value }}px;{% endif %}
+  {% assign padding_bottom_value = block.settings.padding_bottom | default: 0 | at_least: 0 | at_most: 100 %}
+  {% if padding_bottom_value != 0 %}--grid-padding-bottom: {{ padding_bottom_value }}px;{% endif %}
+  {% assign padding_top_mobile_value = block.settings.padding_top_mobile | default: 0 | at_least: 0 | at_most: 100 %}
+  {% if block.settings.customize_mobile_padding %}--grid-padding-top-mobile: {{ padding_top_mobile_value }}px;{% endif %}
+  {% assign padding_bottom_mobile_value = block.settings.padding_bottom_mobile | default: 0 | at_least: 0 | at_most: 100 %}
+  {% if block.settings.customize_mobile_padding %}--grid-padding-bottom-mobile: {{ padding_bottom_mobile_value }}px;{% endif %}
+  {% if block.settings.width == 'custom' %}--grid-width: {{ block.settings.custom_width | default: 50 | at_least: 10 | at_most: 100 }}%;{% endif %}
+  {% if block.settings.custom_columns %}
+    {% assign entries = block.settings.columns_per_breakpoint | downcase | split: ',' %}
+    {% for entry in entries %}
+      {% assign parts = entry | split: ':' %}
+      {% assign key = parts.first | strip %}
+      {% assign value = parts.last | strip %}
+      {% assign count = value | plus: 0 %}
+      {% assign canonical = count | append: '' %}
+      {% assign valid_key = false %}
+      {% case key %}{% when 'xs', 'sm', 'md', 'lg', 'xl', 'xxl' %}{% assign valid_key = true %}{% endcase %}
+      {% if valid_key and parts.size == 2 and canonical == value and count >= 1 and count <= 50 %}--grid-columns-{{ key }}: {{ count }};{% endif %}
+    {% endfor %}
   {% endif %}
 {% endcapture %}
 {% assign grid_style = grid_style | strip %}
-
-<div
-  class="block-grid"
+<div class="block-grid{% if block.settings.enable_swipe_mobile %} block-grid--swipe-mobile{% endif %}"
   {% if grid_style != blank %}style="{{ grid_style }}"{% endif %}
-  {{ block.shopify_attributes }}
->
+  {% if block.settings.enable_swipe_mobile %}tabindex="0" role="region" aria-label="{{ 'accessibility.columns' | t | escape }}"{% endif %}
+  {{ block.shopify_attributes }}>
   {% content_for 'blocks' %}
 </div>
-
 {% stylesheet %}
   .block-grid {
+    --grid-columns-desktop: 4;
+    --grid-columns-mobile: 1;
+    --grid-columns-xs: initial;
+    --grid-columns-sm: initial;
+    --grid-columns-md: initial;
+    --grid-columns-lg: initial;
+    --grid-columns-xl: initial;
+    --grid-columns-xxl: initial;
+    --grid-gap-horizontal: 20px;
+    --grid-gap-vertical: 30px;
+    --grid-gap-horizontal-mobile: 12px;
+    --grid-gap-vertical-mobile: 30px;
+    --grid-width: 100%;
+    --grid-padding-top: 0px;
+    --grid-padding-bottom: 0px;
+    --grid-padding-top-mobile: initial;
+    --grid-padding-bottom-mobile: initial;
+    --grid-current-columns: var(--grid-columns-xs, var(--grid-columns-mobile));
     display: grid;
-    grid-template-columns: repeat(var(--grid-columns-desktop, 3), minmax(0, 1fr));
-    gap: var(--grid-gap, var(--layout-grid-gap, 24px));
-    align-items: var(--grid-align-items, flex-start);
+    grid-template-columns: repeat(var(--grid-current-columns), minmax(0, 1fr));
+    column-gap: var(--grid-gap-horizontal-mobile);
+    row-gap: var(--grid-gap-vertical-mobile);
     width: 100%;
     min-width: 0;
-    padding-top: var(--grid-padding-top, 0px);
-    padding-right: var(--grid-padding-right, 0px);
-    padding-bottom: var(--grid-padding-bottom, 0px);
-    padding-left: var(--grid-padding-left, 0px);
+    padding-block: var(--grid-padding-top-mobile, var(--grid-padding-top)) var(--grid-padding-bottom-mobile, var(--grid-padding-bottom));
   }
-
-  .block-grid > * {
-    min-width: 0;
+  .block-grid > .block-column { width: 100%; min-width: 0; max-width: 100%; }
+  @media (min-width: 576px) {
+    .block-grid { --grid-current-columns: var(--grid-columns-sm, var(--grid-columns-xs, var(--grid-columns-mobile))); }
   }
-
-  @media (min-width: 768px) and (max-width: 1149.98px) {
+  @media (min-width: 768px) {
     .block-grid {
-      grid-template-columns: repeat(var(--grid-columns-tablet, 2), minmax(0, 1fr));
+      --grid-current-columns: var(--grid-columns-md, var(--grid-columns-desktop));
+      width: var(--grid-width);
+      column-gap: var(--grid-gap-horizontal);
+      row-gap: var(--grid-gap-vertical);
+      padding-block: var(--grid-padding-top) var(--grid-padding-bottom);
     }
   }
-
+  @media (min-width: 992px) {
+    .block-grid { --grid-current-columns: var(--grid-columns-lg, var(--grid-columns-md, var(--grid-columns-desktop))); }
+  }
+  @media (min-width: 1200px) {
+    .block-grid { --grid-current-columns: var(--grid-columns-xl, var(--grid-columns-lg, var(--grid-columns-md, var(--grid-columns-desktop)))); }
+  }
+  @media (min-width: 1400px) {
+    .block-grid { --grid-current-columns: var(--grid-columns-xxl, var(--grid-columns-xl, var(--grid-columns-lg, var(--grid-columns-md, var(--grid-columns-desktop))))); }
+  }
   @media (max-width: 767.98px) {
-    .block-grid {
-      grid-template-columns: repeat(var(--grid-columns-mobile, 1), minmax(0, 1fr));
-      gap: var(--grid-gap-mobile, var(--layout-grid-gap, 16px));
-      align-items: var(--grid-align-items-mobile, var(--grid-align-items, flex-start));
-      padding-top: var(--grid-padding-top-mobile, var(--grid-padding-top, 0px));
-      padding-right: var(--grid-padding-right-mobile, var(--grid-padding-right, 0px));
-      padding-bottom: var(--grid-padding-bottom-mobile, var(--grid-padding-bottom, 0px));
-      padding-left: var(--grid-padding-left-mobile, var(--grid-padding-left, 0px));
+    .block-grid--swipe-mobile {
+      grid-template-columns: none;
+      grid-auto-flow: column;
+      grid-auto-columns: calc((100% - (var(--grid-current-columns) - 1) * var(--grid-gap-horizontal-mobile)) / var(--grid-current-columns));
+      row-gap: 0;
+      overflow-x: auto;
+      scroll-snap-type: x mandatory;
+      overscroll-behavior-inline: contain;
     }
+    .block-grid--swipe-mobile > .block-column { scroll-snap-align: start; }
   }
-
 {% endstylesheet %}
-
 {% schema %}
 {
-  "name": "t:general.grid",
+  "name": "t:general.columns",
   "tag": null,
   "blocks": [
-    { "type": "header" },
-    { "type": "heading" },
-    { "type": "eyebrow" },
-    { "type": "text" },
-    { "type": "image" },
-    { "type": "image-comparison" },
-    { "type": "image-card" },
-    { "type": "video" },
-    { "type": "button" },
-    { "type": "buttons" },
-    { "type": "icon" },
-    { "type": "divider" },
-    { "type": "spacer" },
-    { "type": "group" },
-    { "type": "email-signup" },
-    { "type": "product-card" }
+    {
+      "type": "_column"
+    }
   ],
   "settings": [
     {
@@ -185,60 +133,67 @@
       "content": "t:general.layout"
     },
     {
-      "type": "range",
+      "type": "select",
       "id": "columns_desktop",
       "label": "t:labels.desktop_columns",
-      "min": 1,
-      "max": 6,
-      "step": 1,
-      "default": 3
-    },
-    {
-      "type": "range",
-      "id": "columns_tablet",
-      "label": "t:labels.tablet_columns",
-      "min": 1,
-      "max": 6,
-      "step": 1,
-      "default": 2
-    },
-    {
-      "type": "range",
-      "id": "columns_mobile",
-      "label": "t:labels.mobile_columns",
-      "min": 1,
-      "max": 6,
-      "step": 1,
-      "default": 1
+      "options": [
+        {
+          "value": "2",
+          "label": "2"
+        },
+        {
+          "value": "3",
+          "label": "3"
+        },
+        {
+          "value": "4",
+          "label": "4"
+        },
+        {
+          "value": "5",
+          "label": "5"
+        },
+        {
+          "value": "6",
+          "label": "6"
+        }
+      ],
+      "default": "4"
     },
     {
       "type": "select",
-      "id": "alignment",
-      "label": "t:labels.alignment",
+      "id": "columns_mobile",
+      "label": "t:labels.mobile_columns",
       "options": [
-        { "value": "top", "label": "t:options.vertical_alignment.top" },
-        { "value": "middle", "label": "t:options.vertical_alignment.middle" },
-        { "value": "bottom", "label": "t:options.vertical_alignment.bottom" }
+        {
+          "value": "1",
+          "label": "1"
+        },
+        {
+          "value": "2",
+          "label": "2"
+        }
       ],
-      "default": "top"
+      "default": "1"
     },
     {
       "type": "checkbox",
-      "id": "customize_mobile_alignment",
-      "label": "t:labels.customize_mobile_alignment",
+      "id": "enable_swipe_mobile",
+      "label": "t:labels.enable_swipe_mobile",
       "default": false
     },
     {
-      "type": "select",
-      "id": "alignment_mobile",
-      "label": "t:labels.mobile_alignment",
-      "options": [
-        { "value": "top", "label": "t:options.vertical_alignment.top" },
-        { "value": "middle", "label": "t:options.vertical_alignment.middle" },
-        { "value": "bottom", "label": "t:options.vertical_alignment.bottom" }
-      ],
-      "default": "top",
-      "visible_if": "{{ block.settings.customize_mobile_alignment }}"
+      "type": "checkbox",
+      "id": "custom_columns",
+      "label": "t:labels.grid_custom_columns",
+      "default": false
+    },
+    {
+      "type": "text",
+      "id": "columns_per_breakpoint",
+      "label": "t:labels.grid_columns_per_breakpoint",
+      "info": "t:info.grid_columns_per_breakpoint",
+      "visible_if": "{{ block.settings.custom_columns }}"
     },
     {
       "type": "header",
@@ -246,23 +201,75 @@
     },
     {
       "type": "range",
-      "id": "gap",
-      "label": "t:labels.gap",
+      "id": "gap_horizontal",
+      "label": "t:labels.horizontal_gap",
       "min": 0,
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 24
+      "default": 20
     },
     {
       "type": "range",
-      "id": "gap_mobile",
-      "label": "t:labels.gap_mobile",
+      "id": "gap_vertical",
+      "label": "t:labels.vertical_gap",
       "min": 0,
       "max": 100,
       "step": 1,
       "unit": "px",
-      "default": 16
+      "default": 30
+    },
+    {
+      "type": "range",
+      "id": "gap_horizontal_mobile",
+      "label": "t:labels.grid_horizontal_mobile",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "default": 12
+    },
+    {
+      "type": "range",
+      "id": "gap_vertical_mobile",
+      "label": "t:labels.grid_vertical_mobile",
+      "min": 0,
+      "max": 50,
+      "step": 1,
+      "unit": "px",
+      "default": 30,
+      "visible_if": "{{ block.settings.enable_swipe_mobile == false }}"
+    },
+    {
+      "type": "header",
+      "content": "t:general.size"
+    },
+    {
+      "type": "select",
+      "id": "width",
+      "label": "t:labels.carousel_desktop_width",
+      "options": [
+        {
+          "value": "fill",
+          "label": "t:options.width.fill"
+        },
+        {
+          "value": "custom",
+          "label": "t:options.width.custom"
+        }
+      ],
+      "default": "fill"
+    },
+    {
+      "type": "range",
+      "id": "custom_width",
+      "label": "t:labels.custom_width",
+      "min": 10,
+      "max": 100,
+      "step": 1,
+      "unit": "%",
+      "default": 50,
+      "visible_if": "{{ block.settings.width == 'custom' }}"
     },
     {
       "type": "header",
@@ -289,29 +296,9 @@
       "default": 0
     },
     {
-      "type": "range",
-      "id": "padding_left",
-      "label": "t:labels.left_padding",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "px",
-      "default": 0
-    },
-    {
-      "type": "range",
-      "id": "padding_right",
-      "label": "t:labels.right_padding",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "px",
-      "default": 0
-    },
-    {
       "type": "checkbox",
       "id": "customize_mobile_padding",
-      "label": "t:labels.customize_mobile_padding",
+      "label": "t:labels.slide_custom_for_mobile",
       "default": false
     },
     {
@@ -335,63 +322,184 @@
       "unit": "px",
       "default": 0,
       "visible_if": "{{ block.settings.customize_mobile_padding }}"
-    },
-    {
-      "type": "range",
-      "id": "padding_left_mobile",
-      "label": "t:labels.mobile_left_padding",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "px",
-      "default": 0,
-      "visible_if": "{{ block.settings.customize_mobile_padding }}"
-    },
-    {
-      "type": "range",
-      "id": "padding_right_mobile",
-      "label": "t:labels.mobile_right_padding",
-      "min": 0,
-      "max": 100,
-      "step": 1,
-      "unit": "px",
-      "default": 0,
-      "visible_if": "{{ block.settings.customize_mobile_padding }}"
     }
   ],
   "presets": [
     {
-      "name": "t:general.grid",
+      "name": "t:general.columns",
       "category": "t:general.layout",
-      "settings": {
-        "columns_desktop": 3,
-        "columns_tablet": 2,
-        "columns_mobile": 1,
-        "gap": 24,
-        "gap_mobile": 16,
-        "alignment": "top",
-        "customize_mobile_alignment": false,
-        "alignment_mobile": "top",
-        "customize_mobile_padding": false
-      },
       "blocks": [
         {
-          "type": "text",
+          "type": "_column",
           "settings": {
-            "text": "<p>Grid item one</p>"
-          }
+            "gap_desktop": 16,
+            "gap_mobile": 12
+          },
+          "blocks": [
+            {
+              "type": "image",
+              "settings": {
+                "image_ratio_desktop": "square",
+                "image_ratio_mobile": "square",
+                "width_desktop": "fill",
+                "width_mobile": "fill"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "text": "<p>Featured detail</p>",
+                "heading_size": "lg",
+                "html_tag": "h3",
+                "width": "fill"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Introduce a product, collection, or idea. Share a few useful details to help customers explore your brand.</p>",
+                "text_size": "sm",
+                "width": "fill"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "button_label": "Learn more",
+                "button_style": "tertiary",
+                "width": "fit"
+              }
+            }
+          ]
         },
         {
-          "type": "text",
+          "type": "_column",
           "settings": {
-            "text": "<p>Grid item two</p>"
-          }
+            "gap_desktop": 16,
+            "gap_mobile": 12
+          },
+          "blocks": [
+            {
+              "type": "image",
+              "settings": {
+                "image_ratio_desktop": "square",
+                "image_ratio_mobile": "square",
+                "width_desktop": "fill",
+                "width_mobile": "fill"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "text": "<p>Featured detail</p>",
+                "heading_size": "lg",
+                "html_tag": "h3",
+                "width": "fill"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Introduce a product, collection, or idea. Share a few useful details to help customers explore your brand.</p>",
+                "text_size": "sm",
+                "width": "fill"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "button_label": "Learn more",
+                "button_style": "tertiary",
+                "width": "fit"
+              }
+            }
+          ]
         },
         {
-          "type": "text",
+          "type": "_column",
           "settings": {
-            "text": "<p>Grid item three</p>"
-          }
+            "gap_desktop": 16,
+            "gap_mobile": 12
+          },
+          "blocks": [
+            {
+              "type": "image",
+              "settings": {
+                "image_ratio_desktop": "square",
+                "image_ratio_mobile": "square",
+                "width_desktop": "fill",
+                "width_mobile": "fill"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "text": "<p>Featured detail</p>",
+                "heading_size": "lg",
+                "html_tag": "h3",
+                "width": "fill"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Introduce a product, collection, or idea. Share a few useful details to help customers explore your brand.</p>",
+                "text_size": "sm",
+                "width": "fill"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "button_label": "Learn more",
+                "button_style": "tertiary",
+                "width": "fit"
+              }
+            }
+          ]
+        },
+        {
+          "type": "_column",
+          "settings": {
+            "gap_desktop": 16,
+            "gap_mobile": 12
+          },
+          "blocks": [
+            {
+              "type": "image",
+              "settings": {
+                "image_ratio_desktop": "square",
+                "image_ratio_mobile": "square",
+                "width_desktop": "fill",
+                "width_mobile": "fill"
+              }
+            },
+            {
+              "type": "heading",
+              "settings": {
+                "text": "<p>Featured detail</p>",
+                "heading_size": "lg",
+                "html_tag": "h3",
+                "width": "fill"
+              }
+            },
+            {
+              "type": "text",
+              "settings": {
+                "text": "<p>Introduce a product, collection, or idea. Share a few useful details to help customers explore your brand.</p>",
+                "text_size": "sm",
+                "width": "fill"
+              }
+            },
+            {
+              "type": "button",
+              "settings": {
+                "button_label": "Learn more",
+                "button_style": "tertiary",
+                "width": "fit"
+              }
+            }
+          ]
         }
       ]
     }
