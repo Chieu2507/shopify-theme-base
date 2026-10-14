@@ -1,6 +1,7 @@
 import { A11y, Swiper } from './swiper-loader.js';
 
 const instances = new WeakMap();
+const autoplayBindings = new WeakMap();
 const CONTROL_EVENTS = ['afterInit', 'fromEdge', 'lock', 'resize', 'slideChange', 'toEdge', 'unlock', 'update'];
 
 const isElement = (value) => value?.nodeType === 1 && typeof value.matches === 'function';
@@ -52,6 +53,7 @@ const prefersReducedMotion = () =>
 
 /** One elapsed-time clock owns autoplay navigation and pagination progress. */
 export const bindSwiperAutoplay = (swiper, settings = {}) => {
+  if (swiper) autoplayBindings.get(swiper)?.();
   if (!swiper || swiper.destroyed || prefersReducedMotion()) return () => {};
 
   const delay = Math.min(60000, Math.max(1000, Number(settings.delay) || 4000));
@@ -114,10 +116,13 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
   document.addEventListener('visibilitychange', resetTime);
   paint(0, true);
   frame = window.requestAnimationFrame(tick);
-  return () => {
+  const cleanup = () => {
+    if (stopped) return;
     stopped = true;
     window.cancelAnimationFrame(frame);
     swiper.off('slideChange', reset);
+    swiper.off('destroy', cleanup);
+    autoplayBindings.delete(swiper);
     document.removeEventListener('visibilitychange', resetTime);
     if (pagination) {
       if (previousClock === null) pagination.removeAttribute('data-autoplay-clock');
@@ -128,6 +133,40 @@ export const bindSwiperAutoplay = (swiper, settings = {}) => {
       else pagination.style.removeProperty('--carousel-autoplay-remaining');
     }
   };
+  autoplayBindings.set(swiper, cleanup);
+  swiper.on('destroy', cleanup);
+  return cleanup;
+};
+
+/** Coalesce size changes and release the observer when Swiper is destroyed. */
+export const observeSwiperResize = (swiper, element = swiper?.el) => {
+  if (!swiper || swiper.destroyed || !element || typeof ResizeObserver === 'undefined') return () => {};
+  let previousWidth = 0;
+  let previousHeight = 0;
+  let frame = null;
+  let stopped = false;
+  const observer = new ResizeObserver(([entry]) => {
+    const width = Math.round(entry?.contentRect?.width || element.clientWidth);
+    const height = Math.round(entry?.contentRect?.height || element.clientHeight);
+    if (stopped || swiper.destroyed || !width || (width === previousWidth && height === previousHeight)) return;
+    previousWidth = width;
+    previousHeight = height;
+    if (frame !== null) return;
+    frame = window.requestAnimationFrame(() => {
+      frame = null;
+      if (!stopped && !swiper.destroyed) swiper.update();
+    });
+  });
+  const cleanup = () => {
+    if (stopped) return;
+    stopped = true;
+    observer.disconnect();
+    if (frame !== null) window.cancelAnimationFrame(frame);
+    swiper.off('destroy', cleanup);
+  };
+  observer.observe(element);
+  swiper.on('destroy', cleanup);
+  return cleanup;
 };
 
 export const bindSwiperControls = (swiper, controls = {}) => {
@@ -267,7 +306,17 @@ export const createSwiperCarousel = (element, options = {}) => {
   const { controls, ...swiperOptions } = options;
   const swiper = new Swiper(element, buildSwiperOptions(swiperOptions));
   const controlsCleanup = controls ? bindSwiperControls(swiper, controls) : null;
-  instances.set(element, { controlsCleanup, swiper });
+  let released = false;
+  const cleanup = () => {
+    if (released) return;
+    released = true;
+    controlsCleanup?.();
+    autoplayBindings.get(swiper)?.();
+    instances.delete(element);
+    delete element.dataset.swiperReady;
+  };
+  swiper.on('destroy', cleanup);
+  instances.set(element, { cleanup, swiper });
   element.dataset.swiperReady = 'true';
   return swiper;
 };
@@ -284,7 +333,7 @@ export const destroySwiperCarousel = (target, deleteInstance = true, cleanupStyl
   const record = element ? instances.get(element) : null;
   const swiper = record?.swiper || getSwiperFromTarget(target);
 
-  record?.controlsCleanup?.();
+  record?.cleanup?.();
   if (swiper && !swiper.destroyed) swiper.destroy(deleteInstance, cleanupStyles);
   if (element) {
     delete element.dataset.swiperReady;

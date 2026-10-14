@@ -1,57 +1,8 @@
-import * as swiperCarousel from './swiper-carousel.js';
 import { EffectFade } from './swiper-loader.js';
+import { bindSwiperControls, bindSwiperSlideControls, createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
 
-const { createSwiperCarousel, destroySwiperCarousel } = swiperCarousel;
 const instances = new WeakMap();
 const timelineSelector = '[data-timeline-list]';
-
-const bindTimelineSlideControls = (swiper, options = {}) => {
-  if (!swiper || swiper.destroyed) return () => {};
-
-  const scope = options.scope || swiper.el;
-  const selector = options.selector || '[data-swiper-slide-index]';
-  const controller = new AbortController();
-  const getControls = () => Array.from(scope.querySelectorAll(selector));
-  let previousActiveIndex = null;
-  const update = () => {
-    if (swiper.destroyed) return;
-    const activeIndex = Number.isInteger(swiper.realIndex) ? swiper.realIndex : swiper.activeIndex;
-    const activeControl = getControls().find((control) =>
-      Number(control.getAttribute('data-swiper-slide-index')) === activeIndex,
-    );
-    getControls().forEach((control) => {
-      const active = control === activeControl;
-      control.classList.toggle('is-active', active);
-      if (active) control.setAttribute('aria-current', options.currentValue || 'step');
-      else control.removeAttribute('aria-current');
-    });
-
-    if (options.scrollActiveIntoView && activeControl && previousActiveIndex !== null && activeIndex !== previousActiveIndex) {
-      activeControl.scrollIntoView?.({ block: 'nearest', inline: 'nearest', behavior: prefersReducedMotion() ? 'auto' : 'smooth' });
-    }
-    previousActiveIndex = activeIndex;
-  };
-
-  scope.addEventListener('click', (event) => {
-    const control = event.target.closest?.(selector);
-    if (!control || !scope.contains(control)) return;
-    const index = Number(control.getAttribute('data-swiper-slide-index'));
-    if (!Number.isInteger(index) || index < 0 || index >= swiper.slides.length) return;
-    event.preventDefault();
-    if (index !== swiper.realIndex) swiper.slideTo(index, swiper.params.speed);
-  }, { signal: controller.signal });
-
-  const updateEvents = ['activeIndexChange', 'slideChangeTransitionEnd', 'slidesUpdated', 'update'];
-  updateEvents.forEach((eventName) => swiper.on(eventName, update));
-  update();
-  return () => {
-    controller.abort();
-    updateEvents.forEach((eventName) => swiper.off(eventName, update));
-  };
-};
-
-const bindSwiperControls = swiperCarousel.bindSwiperControls;
-const bindSwiperSlideControls = swiperCarousel.bindSwiperSlideControls || bindTimelineSlideControls;
 
 const prefersReducedMotion = () =>
   typeof window !== 'undefined' &&

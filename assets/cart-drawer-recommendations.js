@@ -1,5 +1,5 @@
 import { Pagination } from './swiper-loader.js';
-import { createSwiperCarousel, destroySwiperCarousel } from './swiper-carousel.js';
+import { createSwiperCarousel, destroySwiperCarousel, observeSwiperResize } from './swiper-carousel.js';
 
 const carouselSelector = '[data-cart-drawer-recommendation-list]';
 const instances = new WeakMap();
@@ -13,7 +13,7 @@ const destroy = (carousel) => {
   const instance = instances.get(carousel);
   if (!instance) return;
 
-  instance.resizeObserver?.disconnect();
+  instance.resizeCleanup?.();
   destroySwiperCarousel(carousel);
   instances.delete(carousel);
 };
@@ -45,21 +45,8 @@ const initialize = (carousel) => {
   });
   if (!swiper) return;
 
-  let observedWidth = 0;
-  let observedHeight = 0;
-  const resizeObserver = typeof ResizeObserver === 'undefined'
-    ? null
-    : new ResizeObserver(([entry]) => {
-      const width = Math.round(entry?.contentRect?.width || carousel.clientWidth);
-      const height = Math.round(entry?.contentRect?.height || carousel.clientHeight);
-      if (swiper.destroyed || !width || (width === observedWidth && height === observedHeight)) return;
-      observedWidth = width;
-      observedHeight = height;
-      swiper.update();
-      swiper.pagination?.update();
-    });
-  resizeObserver?.observe(carousel);
-  instances.set(carousel, { swiper, resizeObserver });
+  const resizeCleanup = observeSwiperResize(swiper, carousel);
+  instances.set(carousel, { swiper, resizeCleanup });
 };
 
 const initializeRoot = (root = document) => {

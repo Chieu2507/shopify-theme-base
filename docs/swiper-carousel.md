@@ -293,3 +293,40 @@ Runtime measurement with the real bundled Swiper in Chrome: 3s Bullets measured
 3029ms and 7s Progress bar measured 7029ms, within two rendering frames; progress
 bar's computed transition duration is 0s. Both computed clip values match the
 painted remaining percentage. Live Shopify preview verification remains pending.
+
+## Shared Swiper audit — 2026-10-14
+
+Reusable responsibilities now live in `assets/swiper-carousel.js`:
+
+| Responsibility | Shared owner | Consumers |
+| --- | --- | --- |
+| Instance reuse and destroy cleanup | createSwiperCarousel/destroySwiperCarousel | All Swiper consumers |
+| Autoplay clock and pagination fill | bindSwiperAutoplay | Common Carousel and product/collection/blog carousels |
+| Navigation and indexed slide controls | bindSwiperControls/bindSwiperSlideControls | Common Carousel, Timeline and composition owners |
+| Resize update coalescing | observeSwiperResize | Product/collection/blog carousels and cart drawer recommendations |
+
+Timeline's duplicated slide-control fallback was removed. Resize observation
+ignores unchanged dimensions, coalesces bursts into one frame, cancels pending
+work on cleanup, and disconnects on direct Swiper destruction. Autoplay rebinding
+replaces the previous clock; direct destruction also releases its listeners.
+The factory clears its record and controls even when another owner calls native
+Swiper.destroy instead of the shared destructor.
+
+All Swiper imports use one entry point, `swiper-loader.js`, exporting A11y,
+EffectFade, Pagination, Swiper and Thumbs. Consumers select the exports they need;
+the browser caches the module graph. This keeps vendor paths and versions in one
+file, following the requested code organization.
+Slideshow's runtime behavior, native scrolling in Columns, resource ownership,
+and section-specific layout/loop/reveal behavior remain owned by their consumers.
+
+Validation: 28 scoped tests pass; full suite 268/276 passes. The same eight failed
+tests also fail against the pre-refactor HEAD snapshot: five promo render tests
+cannot resolve a snippet, one scheme render test has a lookup failure, one
+quantity-label expectation is stale, and a TCP probe cannot bind inside the
+sandbox. No new full-suite failure was introduced. Theme Check: zero errors,
+six existing warnings. Browser smoke imports all modified consumers with the
+real bundled Swiper and exercises the shared factory, clock and resize helper.
+Live Theme Editor replacement/reorder QA remains pending.
+
+The import organization was restored to the centralized loader at user request;
+the shared autoplay, resize, slide controls and destroy cleanup refactor remains.

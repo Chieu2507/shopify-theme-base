@@ -37,6 +37,7 @@ function harness(delay, options = {}) {
     get remaining() { return properties.get('--carousel-autoplay-remaining'); },
     get advances() { return advances; },
     hover(value) { hovered = value; }, focus(value) { focused = value; }, reduce(value) { motion = value; },
+    rebind() { return context.bindSwiperAutoplay(swiper, { delay, scope: { contains: () => focused }, ...options }); },
   };
 }
 
@@ -64,6 +65,19 @@ for (const delay of [1000, 3000, 4000, 7000, 10000]) test(`pagination completes 
   assert.equal(h.progress, 0.5);
   h.cleanup();
   assert.equal(h.frames.size, 0); assert.equal(h.events.size, 0); assert.equal(h.documentEvents.size, 0);
+});
+
+test('rebinding autoplay replaces its clock and direct destruction releases listeners', () => {
+  const h = harness(3000);
+  const cleanup = h.rebind();
+  assert.equal(h.frames.size, 1);
+  h.cleanup(); // An old owner cannot stop the newly bound clock.
+  assert.equal(h.frames.size, 1);
+  h.events.get('destroy')();
+  assert.equal(h.frames.size, 0);
+  assert.equal(h.events.size, 0);
+  assert.equal(h.documentEvents.size, 0);
+  cleanup();
 });
 
 test('hover, keyboard focus, reduced motion and hidden tabs pause the same clock', () => {
