@@ -1,5 +1,5 @@
 {% doc %}
-  Renders a registered icon or a defensively checked custom SVG, optionally as a link.
+  Renders a registered icon or an isolated custom SVG image, optionally as a link.
 
   The caller owns the accessible name. A link is only rendered when a label is
   provided; decorative output is hidden from assistive technology.
@@ -41,27 +41,12 @@
     assign icon_padding = 0
   endif
 
-  assign custom_icon_markup = custom_icon | default: '' | strip
-  assign custom_icon_valid = false
-  if custom_icon_markup != blank
-    assign custom_icon_lower = custom_icon_markup | downcase
-    if custom_icon_lower contains '<svg' and custom_icon_lower contains '</svg>'
-      assign custom_icon_valid = true
-      if custom_icon_lower contains '<script' or custom_icon_lower contains '<foreignobject' or custom_icon_lower contains '<iframe' or custom_icon_lower contains '<object' or custom_icon_lower contains '<embed' or custom_icon_lower contains '<form' or custom_icon_lower contains '<input' or custom_icon_lower contains '<button' or custom_icon_lower contains '<a' or custom_icon_lower contains '<img' or custom_icon_lower contains '<video' or custom_icon_lower contains '<audio' or custom_icon_lower contains 'javascript:' or custom_icon_lower contains 'data:' or custom_icon_lower contains 'onload=' or custom_icon_lower contains 'onclick=' or custom_icon_lower contains 'onerror=' or custom_icon_lower contains 'onmouseover=' or custom_icon_lower contains '{{' or custom_icon_lower contains '{%'
-        assign custom_icon_valid = false
-      endif
-    endif
-  endif
-
-  if icon_source == 'custom' and custom_icon_valid == false
-    assign icon_source = 'library'
-  endif
-
   assign icon_body = blank
   if icon_source == 'custom'
-    if custom_icon_valid
-      assign icon_body = custom_icon_markup
-    endif
+    capture icon_body
+      render 'custom-icon-image', markup: custom_icon
+    endcapture
+    assign icon_body = icon_body | strip
   else
     capture icon_body
       case icon_name
@@ -192,7 +177,7 @@
     assign icon_body = icon_body | strip
   endif
 
-  if bare and class != blank and icon_body != blank
+  if bare and class != blank and icon_body != blank and icon_source == 'library'
     assign bare_svg_start = '<svg class="' | append: class | append: '"'
     assign icon_body = icon_body | replace_first: '<svg', bare_svg_start
   endif
@@ -202,6 +187,9 @@
     assign icon_wrapper = 'a'
   endif
   assign icon_class = 'icon icon-renderer'
+  if icon_source == 'custom'
+    assign icon_class = icon_class | append: ' icon-renderer--custom'
+  endif
   if class != blank
     assign icon_class = icon_class | append: ' ' | append: class
   endif
@@ -249,7 +237,8 @@
     overflow: hidden;
   }
 
-  .icon-renderer > svg {
+  .icon-renderer > svg,
+  .icon-renderer > .icon-renderer__custom-image {
     display: block;
     width: 100%;
     height: auto;
