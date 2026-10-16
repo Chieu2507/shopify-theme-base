@@ -29,6 +29,25 @@ body {
   color: var(--body-color);
 }
 
+/* Reserve the server-rendered overlay header geometry before section CSS. */
+.section-header:has(.header-top[data-header-overlap-first-section]) {
+  position: relative;
+  height: 0;
+  margin-block-end: 0;
+  overflow: visible;
+  z-index: var(--z-drawer, 200);
+}
+
+/* The overlay scheme supplies text/icon colors, not a painted header surface.
+   Resolve its server-rendered state before header.js adds wrapper classes. */
+.section-header:not([data-sticky-type]):has(.header-top[data-header-overlay]),
+.header.header--overlay {
+  background-color: transparent;
+}
+.section-header:has(.header-top--transparent-scheme) .header-top {
+  background-color: transparent;
+}
+
 /*
  * Header first-paint layout:
  * Header Theme Blocks are organized into their final columns by header.js.
@@ -3078,10 +3097,10 @@ legend {
 /* Announcement geometry is required before section CSS and its module load. */
 .announcement-bar { --announcement-bar-loop-distance: 0px; position: relative; width: 100%; overflow: hidden; color: var(--body-color); background: var(--announcement-bar-background, var(--background-color)); padding: var(--announcement-bar-padding-top, 8px) var(--announcement-bar-padding-right, 0px) var(--announcement-bar-padding-bottom, 8px) var(--announcement-bar-padding-left, 0px); }
 .announcement-bar__inner { position: relative; z-index: 1; display: flex; align-items: center; width: 100%; min-height: 2rem; }
-.announcement-bar__background, .announcement-bar__overlay, .announcement-bar__background-image, .announcement-bar__background-image > picture, .announcement-bar__background-image > picture > img { position: absolute; inset: 0; width: 100%; height: 100%; }
+.announcement-bar .announcement-bar__background, .announcement-bar .announcement-bar__overlay, .announcement-bar .announcement-bar__background-image, .announcement-bar .announcement-bar__background-image > picture, .announcement-bar .announcement-bar__background-image > picture > img, .announcement-bar .announcement-bar__background-image > img { position: absolute; inset: 0; width: 100%; height: 100%; }
 .announcement-bar__background { z-index: 0; pointer-events: none; }
 .announcement-bar__background-image { overflow: hidden; }
-.announcement-bar__background-image > picture > img { object-fit: cover; }
+.announcement-bar .announcement-bar__background-image > picture > img, .announcement-bar .announcement-bar__background-image > img { object-fit: cover; }
 .announcement-bar__overlay { background: var(--announcement-bar-overlay-color, transparent); }
 .announcement-bar__viewport { flex: 1 1 auto; min-width: 0; overflow: hidden; }
 .announcement-bar--slider .announcement-bar__inner { width: 100%; max-width: 100%; justify-content: center; margin-inline: auto; }

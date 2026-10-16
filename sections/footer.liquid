@@ -166,6 +166,9 @@ if (!customElements.get('footer-scroll-reveal')) {
       this.addEventListener('focusin', focus);
       const events = ['shopify:section:select', 'shopify:section:deselect', 'shopify:block:select', 'shopify:block:deselect'];
       events.forEach(name => document.addEventListener(name, select));
+      // Reordering one Footer moves its siblings without resizing them.
+      const layoutEvents = ['shopify:section:load', 'shopify:section:unload', 'shopify:section:reorder'];
+      layoutEvents.forEach(name => document.addEventListener(name, schedule));
       this.cleanup = () => {
         cancelAnimationFrame(frame);
         observer.disconnect();
@@ -173,6 +176,7 @@ if (!customElements.get('footer-scroll-reveal')) {
         removeEventListener('resize', schedule);
         this.removeEventListener('focusin', focus);
         events.forEach(name => document.removeEventListener(name, select));
+        layoutEvents.forEach(name => document.removeEventListener(name, schedule));
         this.classList.remove('footer-reveal--active', 'footer-reveal--past');
         this.removeAttribute('style');
       };
