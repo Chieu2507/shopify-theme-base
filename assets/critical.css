@@ -283,6 +283,7 @@ svg {
 
 .media__inner,
 .media__inner > picture,
+.media__inner > picture > img,
 .media__inner > img,
 .media__inner > video,
 .media__inner > svg {
@@ -291,6 +292,26 @@ svg {
   display: block;
   width: 100%;
   height: 100%;
+}
+
+/* Standalone section backgrounds keep their paint separate from content. */
+.media-background-surface {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+/* Background paint may bleed inside the clipped media surface; layout and
+ * parallax transforms remain owned by the unchanged media frame. */
+.media__inner > :is(picture, img, video, svg),
+.background-media-paint.background-media-paint {
+  position: absolute;
+  inset: -1px;
+  width: calc(100% + 2px);
+  height: calc(100% + 2px);
+  max-width: none;
+  object-fit: cover;
 }
 
 .overlay {
